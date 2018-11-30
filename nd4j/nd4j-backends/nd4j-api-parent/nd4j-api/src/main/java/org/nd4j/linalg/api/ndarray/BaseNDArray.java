@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.ByteOrder;
@@ -58,7 +57,6 @@ import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Assign;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
@@ -1301,6 +1299,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray cumsumi(int dimension) {
+        validateNumericalArray("cumsumi");
 
         if(isScalar())
             return this;
@@ -1401,6 +1400,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number sumNumber() {
+        validateNumericalArray("sum");
         val scalar = sum(Integer.MAX_VALUE);
         Nd4j.getExecutioner().commit();
         return scalar.getDouble(0);
@@ -1442,6 +1442,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray cumsum(int dimension) {
+        validateNumericalArray("cumsum");
         return dup().cumsumi(dimension);
     }
 
@@ -1463,6 +1464,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray putScalar(long i, double value) {
+        Preconditions.checkArgument(dataType() != DataType.BOOL || value == 0.0 || value == 1.0, "Cannot put value %s into boolean array" +
+                " - only putScalar with values 0 or 1 is allowed on boolean arrays", value);
         if (i < 0)
             i += rank();
 
@@ -1498,6 +1501,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray putScalar(int[] indexes, double value) {
         Nd4j.getCompressor().autoDecompress(this);
 
+        Preconditions.checkArgument(dataType() != DataType.BOOL || value == 0.0 || value == 1.0, "Cannot put value %s into boolean array" +
+                " - only putScalar with values 0 or 1 is allowed on boolean arrays", value);
 
         for (int i = 0; i < indexes.length; i++) {
             if (indexes[i] < 0)
@@ -1523,6 +1528,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray putScalar(long[] indexes, double value) {
         Nd4j.getCompressor().autoDecompress(this);
+
+        Preconditions.checkArgument(dataType() != DataType.BOOL || value == 0.0 || value == 1.0, "Cannot put value %s into boolean array" +
+                " - only putScalar with values 0 or 1 is allowed on boolean arrays", value);
 
 
         for (int i = 0; i < indexes.length; i++) {
@@ -1556,6 +1564,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Nd4j.getCompressor().autoDecompress(this);
         autoProcessScalarCall();
 
+        Preconditions.checkArgument(dataType() != DataType.BOOL || value == 0.0 || value == 1.0, "Cannot put value %s into boolean array" +
+                " - only putScalar with values 0 or 1 is allowed on boolean arrays", value);
+
         if (rank() > 2)
             throw new IllegalStateException("Cannot use putScalar(int,int,double) on a rank " + rank() + " INDArray");
         long offset = Shape.getOffsetUnsafe(jvmShapeInfo.javaShapeInformation, row, col);
@@ -1567,6 +1578,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray putScalar(long dim0, long dim1, long dim2, double value) {
         Nd4j.getCompressor().autoDecompress(this);
         autoProcessScalarCall();
+
+        Preconditions.checkArgument(dataType() != DataType.BOOL || value == 0.0 || value == 1.0, "Cannot put value %s into boolean array" +
+                " - only putScalar with values 0 or 1 is allowed on boolean arrays", value);
 
         if (rank() != 3)
             throw new IllegalStateException(
@@ -1591,6 +1605,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray putScalar(long dim0, long dim1, long dim2, long dim3, double value) {
         Nd4j.getCompressor().autoDecompress(this);
         autoProcessScalarCall();
+        Preconditions.checkArgument(dataType() != DataType.BOOL || value == 0.0 || value == 1.0, "Cannot put value %s into boolean array" +
+                " - only putScalar with values 0 or 1 is allowed on boolean arrays", value);
 
         if (rank() != 4)
             throw new IllegalStateException(
@@ -1625,6 +1641,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray eps(Number other) {
+        validateNumericalArray("eps");
         return Nd4j.getExecutioner().exec(new ScalarEps(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
@@ -1638,42 +1655,50 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray eps(INDArray other) {
+        validateNumericalArray("eps");
         return Nd4j.getExecutioner().exec(new Eps(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
     }
 
     @Override
     public INDArray lt(Number other) {
+        validateNumericalArray("less than (lt)");
         return Nd4j.getExecutioner().exec(new ScalarLessThan(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other)).z();
     }
 
     @Override
     public INDArray lte(Number other) {
+        validateNumericalArray("less than or equals (lte)");
         return Nd4j.getExecutioner().exec(new ScalarLessThanOrEqual(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
     @Override
     public INDArray eq(Number other) {
+        Preconditions.checkArgument(dataType() != DataType.BOOL || other == 0.0 || other == 1.0, "Scalar equality on boolean arrays can only be applied with values 0 or 1: got value %s",other);
         return Nd4j.getExecutioner().exec(new ScalarEquals(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
     @Override
     public INDArray gt(Number other) {
+        validateNumericalArray("greater than (gt)");
         return Nd4j.getExecutioner().exec(new ScalarGreaterThan(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other)).z();
     }
 
     @Override
     public INDArray gte(Number other) {
+        validateNumericalArray("greater than or equals (gte)");
         return Nd4j.getExecutioner().exec(new ScalarGreaterThanOrEqual(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
 
     @Override
     public INDArray lt(INDArray other) {
+        validateNumericalArray("less than (lt)");
         return Nd4j.getExecutioner().exec(new OldLessThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
     }
 
     @Override
     public INDArray neq(Number other) {
+        Preconditions.checkArgument(dataType() != DataType.BOOL || other == 0.0 || other == 1.0, "Scalar non-equality on boolean arrays can only be applied with values 0 or 1: got value %s",other);
         return Nd4j.getExecutioner().exec(new ScalarNotEquals(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
@@ -1689,6 +1714,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray gt(INDArray other) {
+        validateNumericalArray("greater than (gt)");
         return Nd4j.getExecutioner().exec(new OldGreaterThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
     }
 
@@ -1697,6 +1723,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray neg() {
+        validateNumericalArray("negatiwe (neg)");
         return Nd4j.getExecutioner().exec(new Negative(this, Nd4j.createUninitialized(this.shape(), this.ordering())))
                 .z();
     }
@@ -1706,6 +1733,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray negi() {
+        validateNumericalArray("negative (negi)");
         Nd4j.getExecutioner().exec(new Negative(this));
         return this;
     }
@@ -1717,7 +1745,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray rdivi(Number n, INDArray result) {
-
+        validateNumericalArray("rdivi");
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
         Nd4j.getExecutioner().exec(new ScalarReverseDivision(this, null, result, result.length(), n));
@@ -1733,6 +1761,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray rsubi(Number n, INDArray result) {
+        validateNumericalArray("rsubi");
 
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
@@ -1751,6 +1780,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray divi(Number n, INDArray result) {
+        validateNumericalArray("divi");
 
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
@@ -1770,6 +1800,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray muli(Number n, INDArray result) {
+        validateNumericalArray("muli");
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
         Nd4j.getExecutioner().exec(new ScalarMultiplication(this, null, result, result.lengthLong(), n));
@@ -1787,6 +1818,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray subi(Number n, INDArray result) {
+        validateNumericalArray("subi");
 
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
@@ -1806,6 +1838,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray addi(Number n, INDArray result) {
+        validateNumericalArray("addi");
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
@@ -1835,7 +1868,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray dup() {
         WorkspaceUtils.assertValidArray(this, "Cannot duplicate INDArray");
-        if (this.isCompressed() && this.ordering() == Nd4j.order().charValue()) {
+        if (this.isCompressed() && this.ordering() == Nd4j.order()) {
             INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
             ret.markAsCompressed(true);
             return ret;
@@ -2206,6 +2239,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double squaredDistance(INDArray other) {
+        validateNumericalArray("squaredDistance");
         double d2 = distance2(other);
         return d2 * d2;
     }
@@ -2215,6 +2249,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double distance2(INDArray other) {
+        validateNumericalArray("distance2");
         Nd4j.getCompressor().autoDecompress(this);
         return Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this, other)).getFinalResult().doubleValue();
     }
@@ -2224,6 +2259,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double distance1(INDArray other) {
+        validateNumericalArray("distance1");
         Nd4j.getCompressor().autoDecompress(this);
         return Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(this, other)).getFinalResult().doubleValue();
     }
@@ -3119,41 +3155,49 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray rdiviColumnVector(INDArray columnVector) {
+        validateNumericalArray("rdiviColumnVector");
         return doColumnWise(columnVector, 't');
     }
 
     @Override
     public INDArray rdivColumnVector(INDArray columnVector) {
+        validateNumericalArray("rdivColumnVector");
         return dup().rdiviColumnVector(columnVector);
     }
 
     @Override
     public INDArray rdiviRowVector(INDArray rowVector) {
+        validateNumericalArray("rdiviRowVector");
         return doRowWise(rowVector, 't');
     }
 
     @Override
     public INDArray rdivRowVector(INDArray rowVector) {
+        validateNumericalArray("rdivRowVector");
         return dup().rdiviRowVector(rowVector);
     }
 
     @Override
     public INDArray rsubiColumnVector(INDArray columnVector) {
+        validateNumericalArray("rsubiColumnVector");
         return doColumnWise(columnVector, 'h');
     }
 
     @Override
     public INDArray rsubColumnVector(INDArray columnVector) {
+        validateNumericalArray("rsubColumnVector");
         return dup().rsubiColumnVector(columnVector);
     }
 
     @Override
     public INDArray rsubiRowVector(INDArray rowVector) {
+        validateNumericalArray("rsubiRowVector");
         return doRowWise(rowVector, 'h');
     }
 
     @Override
     public INDArray rsubRowVector(INDArray rowVector) {
+        validateNumericalArray("rsubRowVector");
         return dup().rsubiRowVector(rowVector);
     }
 
@@ -3166,8 +3210,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray put(int i, INDArray element) {
-        if (!element.isScalar())
-            throw new IllegalArgumentException("Element must be a scalar");
+        Preconditions.checkArgument(element.isScalar(), "Element must be a scalar: element has shape %ndShape", element);
         return putScalar(i, element.getDouble(0));
     }
 
@@ -3179,6 +3222,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray diviColumnVector(INDArray columnVector) {
+        validateNumericalArray("diviColumnVector");
         return doColumnWise(columnVector, 'd');
     }
 
@@ -3190,6 +3234,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray divColumnVector(INDArray columnVector) {
+        validateNumericalArray("divColumnVector");
         return dup().diviColumnVector(columnVector);
     }
 
@@ -3201,6 +3246,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray diviRowVector(INDArray rowVector) {
+        validateNumericalArray("diviRowVector");
         return doRowWise(rowVector, 'd');
     }
 
@@ -3212,6 +3258,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray divRowVector(INDArray rowVector) {
+        validateNumericalArray("divRowVector");
         return dup().diviRowVector(rowVector);
     }
 
@@ -3223,6 +3270,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray muliColumnVector(INDArray columnVector) {
+        validateNumericalArray("muliColumnVector");
         return doColumnWise(columnVector, 'm');
     }
 
@@ -3234,6 +3282,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mulColumnVector(INDArray columnVector) {
+        validateNumericalArray("mulColumnVector");
         return dup().muliColumnVector(columnVector);
     }
 
@@ -3245,6 +3294,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray muliRowVector(INDArray rowVector) {
+        validateNumericalArray("muliRowVector");
         return doRowWise(rowVector, 'm');
     }
 
@@ -3256,6 +3306,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mulRowVector(INDArray rowVector) {
+        validateNumericalArray("mulRowVector");
         return dup().muliRowVector(rowVector);
     }
 
@@ -3267,6 +3318,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray subiColumnVector(INDArray columnVector) {
+        validateNumericalArray("subiColumnVector");
         return doColumnWise(columnVector, 's');
     }
 
@@ -3278,6 +3330,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray subColumnVector(INDArray columnVector) {
+        validateNumericalArray("subColumnVector");
         return dup().subiColumnVector(columnVector);
     }
 
@@ -3289,6 +3342,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray subiRowVector(INDArray rowVector) {
+        validateNumericalArray("subiRowVector");
         return doRowWise(rowVector, 's');
     }
 
@@ -3300,6 +3354,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray subRowVector(INDArray rowVector) {
+        validateNumericalArray("subRowVector");
         return dup().subiRowVector(rowVector);
     }
 
@@ -3311,6 +3366,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray addiColumnVector(INDArray columnVector) {
+        validateNumericalArray("addiColumnVector");
         return doColumnWise(columnVector, 'a');
     }
 
@@ -3327,6 +3383,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray addColumnVector(INDArray columnVector) {
+        validateNumericalArray("addColumnVector");
         return dup().addiColumnVector(columnVector);
     }
 
@@ -3338,11 +3395,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray addiRowVector(INDArray rowVector) {
+        validateNumericalArray("addiRowVector");
         return doRowWise(rowVector, 'a');
     }
 
     @Override
     public INDArray putiRowVector(INDArray rowVector) {
+        validateNumericalArray("putiRowVector");
         return doRowWise(rowVector, 'p');
     }
 
@@ -3354,6 +3413,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray addRowVector(INDArray rowVector) {
+        validateNumericalArray("addRowVector");
         return dup().addiRowVector(rowVector);
     }
 
@@ -3535,6 +3595,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray div(INDArray other, INDArray result) {
+        validateNumericalArray("div");
         return divi(other, result);
     }
 
@@ -3546,6 +3607,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mul(INDArray other) {
+        validateNumericalArray("mul");
         val z = Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering());
         return muli(other, z);
     }
@@ -3570,6 +3632,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray sub(INDArray other) {
+        validateNumericalArray("sub");
         return subi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
     }
 
@@ -3593,6 +3656,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray add(INDArray other) {
+        validateNumericalArray("add");
         return addi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
     }
 
@@ -3605,6 +3669,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray add(INDArray other, INDArray result) {
+        validateNumericalArray("add");
         return dup().addi(other, result);
     }
 
@@ -3618,6 +3683,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mmuli(INDArray other, MMulTranspose transpose) {
+        validateNumericalArray("mmuli");
         return dup().mmuli(other, this,transpose);
     }
 
@@ -3629,6 +3695,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mmuli(INDArray other) {
+        validateNumericalArray("mmuli");
         return dup().mmuli(other, this);
     }
 
@@ -3654,6 +3721,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mmuli(INDArray other, INDArray result) {
+        validateNumericalArray("mmuli");
         LinAlgExceptions.assertMultiplies(this, other);
         if(other.rank() == 1){
             //GEMV edge case
@@ -3760,6 +3828,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray divi(INDArray other) {
+        validateNumericalArray("divi");
         return divi(other, this);
     }
 
@@ -3772,6 +3841,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray divi(INDArray other, INDArray result) {
+        validateNumericalArray("divi");
         if (other.isScalar()) {
             return divi(other.getDouble(0), result);
         }
@@ -3804,6 +3874,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray muli(INDArray other) {
+        validateNumericalArray("muli");
         return muli(other, this);
     }
 
@@ -3816,6 +3887,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray muli(INDArray other, INDArray result) {
+        validateNumericalArray("muli");
         if (other.isScalar()) {
             return muli(other.getDouble(0), result);
         }
@@ -3861,6 +3933,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray subi(INDArray other, INDArray result) {
+        validateNumericalArray("subi");
         if (other.isScalar()) {
             return subi(other.getDouble(0), result);
         }
@@ -3907,6 +3980,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray addi(INDArray other, INDArray result) {
+        validateNumericalArray("addi");
         if (other.isScalar()) {
             return this.addi(other.getDouble(0), result);
         }
@@ -3941,6 +4015,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray normmax(int... dimension) {
+        validateNumericalArray("normmax");
         return Nd4j.getExecutioner().exec(new NormMax(this), dimension);
     }
 
@@ -3952,6 +4027,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray rdiv(INDArray other) {
+        validateNumericalArray("rdiv");
         return dup().rdivi(other);
     }
 
@@ -3975,6 +4051,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray rdiv(INDArray other, INDArray result) {
+        validateNumericalArray("rdiv");
         return dup().rdivi(other, result);
     }
 
@@ -3987,6 +4064,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray rdivi(INDArray other, INDArray result) {
+        validateNumericalArray("rdivi");
         return other.divi(this, result);
     }
 
@@ -3999,6 +4077,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray rsub(INDArray other, INDArray result) {
+        validateNumericalArray("rsub");
         return dup().rsubi(other, result);
     }
 
@@ -4008,6 +4087,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray rsub(INDArray other) {
+        validateNumericalArray("rsub");
         return dup().rsubi(other);
     }
 
@@ -4029,6 +4109,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray rsubi(INDArray other, INDArray result) {
+        validateNumericalArray("rsubi");
         return other.subi(this, result);
     }
 
@@ -4040,6 +4121,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(Number value) {
+        Preconditions.checkState(dataType() != DataType.BOOL || value == 0.0 || value == 1.0, "Only values 0 or 1 are allowed for scalar " +
+                "assign on boolean arrays: got value %s on to assign to boolean array with shape %ndShape", value, this);
         Nd4j.getExecutioner().exec(new ScalarSet(this, value));
         return this;
     }
@@ -4254,7 +4337,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray rsub(Number n) {
-        //return dup().rsubi(n);
+        validateNumericalArray("rsub");
         return rsubi(n, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), n),this.shape(), this.ordering()));
     }
 
@@ -4265,7 +4348,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray div(Number n) {
-        //return dup().divi(n);
+        validateNumericalArray("div");
         return divi(n, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), n),this.shape(), this.ordering()));
     }
 
@@ -4276,7 +4359,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray mul(Number n) {
-        // return dup().muli(n);
+        validateNumericalArray("mul");
         return muli(n, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), n), this.shape(), this.ordering()));
     }
 
@@ -4287,7 +4370,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray sub(Number n) {
-        //return dup().subi(n);
+        validateNumericalArray("sub");
         return subi(n, Nd4j.createUninitialized(this.dataType(), this.shape(), this.ordering()));
     }
 
@@ -4298,7 +4381,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray add(Number n) {
-        //return dup().addi(n);
+        validateNumericalArray("add");
         return addi(n, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), n),this.shape(), this.ordering()));
     }
 
@@ -4450,8 +4533,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray transpose() {
-        if (rank() < 2)
-            throw new ND4JIllegalStateException("Can't transpose array with rank < 2");
+        Preconditions.checkState(rank() >= 2, "Can't transpose array with rank < 2: array shape %ndShape", this);
 
         return permute(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
     }
@@ -4465,8 +4547,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray transposei() {
-        if (rank() < 2)
-            throw new ND4JIllegalStateException("Can't transpose array with rank < 2");
+        Preconditions.checkState(rank() >= 2, "Can't transpose array with rank < 2: array shape %ndShape", this);
         
         return permutei(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
     }
@@ -4612,6 +4693,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray prod(int... dimension) {
+        validateNumericalArray("prod");
         return Nd4j.getExecutioner().exec(new Prod(this), dimension);
     }
 
@@ -4623,16 +4705,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mean(int... dimension) {
+        validateNumericalArray("mean");
         return Nd4j.getExecutioner().exec(new Mean(this), dimension);
     }
 
     @Override
     public INDArray amean(int... dimension) {
+        validateNumericalArray("amean");
         return Nd4j.getExecutioner().exec(new AMean(this), dimension);
     }
 
     @Override
     public INDArray mean(@NonNull INDArray result, int... dimension) {
+        validateNumericalArray("mean");
         return Nd4j.getExecutioner().exec(new Mean(this, result), dimension);
     }
 
@@ -4644,6 +4729,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray var(int... dimension) {
+        validateNumericalArray("var");
         return Nd4j.getExecutioner().exec(new Variance(this), dimension);
     }
 
@@ -4656,6 +4742,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray var(boolean biasCorrected, int... dimension) {
+        validateNumericalArray("var");
         return Nd4j.getExecutioner().exec(new Variance(this, biasCorrected), dimension);
     }
 
@@ -4672,6 +4759,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray amax(int... dimension) {
+        validateNumericalArray("amax");
         return Nd4j.getExecutioner().exec(new AMax(this), dimension);
     }
 
@@ -4688,6 +4776,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray amin(int... dimension) {
+        validateNumericalArray("amin");
         return Nd4j.getExecutioner().exec(new AMin(this), dimension);
     }
 
@@ -4699,6 +4788,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray sum(int... dimension) {
+        validateNumericalArray("sum");
         return Nd4j.getExecutioner().exec(new Sum(this), dimension);
     }
 
@@ -4710,6 +4800,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray entropy(int... dimension) {
+        validateNumericalArray("entropy");
         return Nd4j.getExecutioner().exec(new Entropy(this), dimension);
     }
 
@@ -4720,6 +4811,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray shannonEntropy(int... dimension) {
+        validateNumericalArray("shannonEntropy");
         return Nd4j.getExecutioner().exec(new ShannonEntropy(this), dimension);
     }
 
@@ -4730,11 +4822,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray logEntropy(int... dimension) {
+        validateNumericalArray("logEntropy");
         return Nd4j.getExecutioner().exec(new LogEntropy(this), dimension);
     }
 
     @Override
     public INDArray sum(@NonNull INDArray result, int... dimension) {
+        validateNumericalArray("sum");
         return Nd4j.getExecutioner().exec(new Sum(this, result), dimension);
     }
 
@@ -4747,6 +4841,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray norm1(int... dimension) {
+        validateNumericalArray("norm1");
         return Nd4j.getExecutioner().exec(new Norm1(this), dimension);
     }
 
@@ -4759,17 +4854,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray std(int... dimension) {
+        validateNumericalArray("std");
         return Nd4j.getExecutioner().exec(new StandardDeviation(this), dimension);
     }
 
     @Override
     public INDArray std(boolean biasCorrected, int... dimension) {
+        validateNumericalArray("std");
         return Nd4j.getExecutioner().exec(new StandardDeviation(this, biasCorrected),
                 dimension);
     }
 
     @Override
     public Number stdNumber(boolean biasCorrected) {
+        validateNumericalArray("stdNumber");
         return Nd4j.getExecutioner().exec(new StandardDeviation(this, biasCorrected),
                 new int[] {Integer.MAX_VALUE})
                 .getDouble(0);
@@ -4783,6 +4881,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray norm2(int... dimension) {
+        validateNumericalArray("norm2");
         return Nd4j.getExecutioner().exec(new Norm2(this), dimension);
     }
 
@@ -4952,7 +5051,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
 
             if(numNonNewAxis > rank()) {
-                throw new IllegalArgumentException("Too many indices for array. Number of indexes must be <= rank()");
+                throw new IllegalArgumentException("Too many indices for array. Number of indexes must be <= rank(): rank " +
+                        rank() + " array with indices " + Arrays.toString(indexes));
             }
         }
 
@@ -5756,6 +5856,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray remainder(INDArray denominator, INDArray result) {
+        validateNumericalArray("remainder");
         RemainderOp op = new RemainderOp(this, denominator, result);
         Nd4j.getExecutioner().exec(op);
         return result;
@@ -5768,6 +5869,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray remainder(Number denominator, INDArray result) {
+        validateNumericalArray("remainder");
         ScalarRemainder op = new ScalarRemainder(this, null, result, this.length(), denominator);
         Nd4j.getExecutioner().exec(op);
         return result;
@@ -5775,6 +5877,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray remainderi(INDArray denominator) {
+        validateNumericalArray("remainderi");
         RemainderOp op = new RemainderOp(this, denominator, this);
         Nd4j.getExecutioner().exec(op);
         return this;
@@ -5782,6 +5885,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray remainderi(Number denominator) {
+        validateNumericalArray("remainderi");
         ScalarRemainder op = new ScalarRemainder(this, null, this, this.length(), denominator);
         Nd4j.getExecutioner().exec(op);
         return this;
@@ -5789,11 +5893,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray fmod(INDArray denominator) {
+        validateNumericalArray("fmod");
         return fmod(denominator, Nd4j.createUninitialized(this.shape()));
     }
 
     @Override
     public INDArray fmod(INDArray denominator, INDArray result) {
+        validateNumericalArray("fmod");
         OldFModOp op = new OldFModOp(this, denominator, result);
         Nd4j.getExecutioner().exec(op);
         return result;
@@ -5806,6 +5912,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray fmod(Number denominator, INDArray result) {
+        validateNumericalArray("fmod");
         ScalarFMod op = new ScalarFMod(this, null, result, this.length(), denominator);
         Nd4j.getExecutioner().exec(op);
         return result;
@@ -5813,6 +5920,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray fmodi(INDArray denominator) {
+        validateNumericalArray("fmodi");
         OldFModOp op = new OldFModOp(this, denominator, this);
         Nd4j.getExecutioner().exec(op);
         return this;
@@ -5820,6 +5928,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray fmodi(Number denominator) {
+        validateNumericalArray("fmodi");
         ScalarFMod op = new ScalarFMod(this, null, this, this.length(), denominator);
         Nd4j.getExecutioner().exec(op);
         return this;
@@ -6184,6 +6293,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number percentileNumber(Number quantile) {
+        validateNumericalArray("percentileNumber");
         if (quantile.intValue() < 0 || quantile.intValue() > 100)
             throw new ND4JIllegalStateException("Percentile value should be in 0...100 range");
 
@@ -6197,15 +6307,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number medianNumber() {
+        validateNumericalArray("medianNumber");
         return percentileNumber(50);
     }
 
     @Override
     public INDArray median(int... dimension) {
+        validateNumericalArray("median");
         return percentile(50, dimension);
     }
 
     protected double getPercentile(Number quantile, INDArray sorted) {
+        validateNumericalArray("getPercentile");
         if (quantile.intValue() == 0)
             return sorted.getDouble(0);
         else if (quantile.intValue() == 100)
@@ -6226,6 +6339,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray percentile(Number quantile, int... dimension) {
+        validateNumericalArray("percentile");
         if (quantile.doubleValue() < 0 || quantile.doubleValue() > 100)
             throw new ND4JIllegalStateException("Percentile value should be in 0...100 range");
 
@@ -6401,5 +6515,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new UnsupportedOperationException("This method is usable only on String dataType, but got [" + this.dataType() + "]");
 
         return Nd4j.getExecutioner().getString(((Utf8Buffer) this.data()), index);
+    }
+
+    /**
+     * Validate that the operation is being applied on a numerical array (not boolean or utf8).
+     * Some operations (such as sum, norm2, add(Number) etc don't make sense when applied to boolean/utf8 arrays
+     * @param opName Operation name to print in the exception
+     */
+    protected void validateNumericalArray(String opName){
+        if(dataType() == DataType.BOOL || dataType() == DataType.UTF8)
+            throw new IllegalStateException("Cannot apply " + opName + " to array with " + dataType() + " datatype. Array shape: " + Arrays.toString(shape()));
     }
 }
