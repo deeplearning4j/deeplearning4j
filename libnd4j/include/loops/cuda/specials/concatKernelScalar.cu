@@ -29,7 +29,7 @@ namespace nd4j {
 
         auto z = static_cast<T *>(vz);
         Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
-        T **input = (T **) data;
+        auto input = reinterpret_cast<T **>(data);
 
         for (int i = tid; i < numArrays; i += blockDim.x * gridDim.x)
             z[i] = input[i][0];

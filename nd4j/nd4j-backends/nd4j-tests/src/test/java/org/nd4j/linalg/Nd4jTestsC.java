@@ -6132,6 +6132,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcat_1() throws Exception{
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         for(char order : new char[]{'c', 'f'}) {
 
             INDArray arr1 = Nd4j.create(new double[]{1, 2}, new long[]{1, 2}, order);

@@ -1986,7 +1986,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 
 		dim3 launchDims(128, 128, 16384);
 		auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-		BUILD_SINGLE_SELECTOR(zType, concatKernelScalarGeneric, (launchDims, stream, numArrays, ddata, dZ), LIBND4J_TYPES);
+		BUILD_SINGLE_SELECTOR(zType, concatKernelScalarGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(ddata[0]), dZ), LIBND4J_TYPES);
 
 	} else if (isVstack) {
 		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
@@ -1994,7 +1994,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 
 		dim3 launchDims(128, 512, 16384);
 		auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-		BUILD_SINGLE_SELECTOR(zType, concatKernelVStackGeneric, (launchDims, stream, numArrays, ddata, dinputShapeInfo, dZ, dZShapeInfo), LIBND4J_TYPES);
+		BUILD_SINGLE_SELECTOR(zType, concatKernelVStackGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(ddata[0]), reinterpret_cast<Nd4jPointer *>(dinputShapeInfo[0]), dZ, dZShapeInfo), LIBND4J_TYPES);
 
 	} else if (isHstack) {
 		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
