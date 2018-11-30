@@ -4448,7 +4448,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.getExecutioner().exec(new BroadcastLessThan(initial, mask, result, 1));
 
         for (int i = 0; i < initial.rows(); i++) {
-            assertEquals(exp, result.getRow(i));
+            val row = result.getRow(i);
+            assertEquals("Failed at row " + i, exp, row);
         }
     }
 

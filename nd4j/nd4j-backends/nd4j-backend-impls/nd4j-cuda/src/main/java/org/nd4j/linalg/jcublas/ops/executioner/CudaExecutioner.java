@@ -760,7 +760,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        validateDataType(Nd4j.dataType(), op);
+        //validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -940,6 +940,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
                             ((Variance) op).isBiasCorrected());
                 AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+
+                op.setFinalResult(op.z().getDouble(0));
             } else if (op.y() != null) {
                 Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
                 Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);

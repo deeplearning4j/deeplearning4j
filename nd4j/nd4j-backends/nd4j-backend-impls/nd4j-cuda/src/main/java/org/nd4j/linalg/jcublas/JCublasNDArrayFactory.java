@@ -18,6 +18,7 @@ package org.nd4j.linalg.jcublas;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
@@ -338,9 +339,16 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         int length = 0;
-        for (INDArray m : matrices)
+        DataType t = null;
+        for (INDArray m : matrices) {
             length += m.length();
-        INDArray ret = Nd4j.create(new int[] {1, length}, order);
+            if (t == null)
+                t = m.dataType();
+
+            Preconditions.checkArgument(t == m.dataType(), "Arrays must have same data type");
+        }
+
+        INDArray ret = Nd4j.create(t, new long[] {length}, order);
         int linearIndex = 0;
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
@@ -561,7 +569,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
         nativeOps.specialConcat(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
-                    (DoublePointer) ret.data().addressPointer(),
+                    ret.data().addressPointer(),
                     (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
 
@@ -623,7 +631,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         else
             throw new UnsupportedOperationException("2D input is expected");
 
-        return pullRows(source, Nd4j.createUninitialized(shape, order), sourceDimension, indexes);
+        return pullRows(source, Nd4j.createUninitialized(source.dataType(), shape, order), sourceDimension, indexes);
     }
 
     @Override
@@ -632,6 +640,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         if (indexes == null || indexes.length < 1)
             throw new IllegalStateException("Indexes can't be null or zero-length");
+
+        Preconditions.checkArgument(source.dataType() == destination.dataType(), "Source and Destination data types must be the same");
 
         long[] shape = null;
         if (sourceDimension == 1)
@@ -1416,7 +1426,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         nativeOps.tear(extraz,
                     null,
                     (LongPointer) tensor.shapeInfoDataBuffer().addressPointer(),
-                    (DoublePointer) AtomicAllocator.getInstance().getPointer(tensor, context),
+                    AtomicAllocator.getInstance().getPointer(tensor, context),
                     (LongPointer) AtomicAllocator.getInstance().getPointer(tensor.shapeInfoDataBuffer(), context),
                     new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
                     (LongPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
