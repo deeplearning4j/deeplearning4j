@@ -2906,6 +2906,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testConcatHorizontally() {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray rowVector = Nd4j.ones(1, 5);
         INDArray other = Nd4j.ones(1, 5);
         INDArray concat = Nd4j.hstack(other, rowVector);
