@@ -92,9 +92,4 @@ public class EqualsWithEps extends BaseReduceFloatOp {
     public Type getOpType() {
         return Type.REDUCE3;
     }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatintPointType();
-    }
 }

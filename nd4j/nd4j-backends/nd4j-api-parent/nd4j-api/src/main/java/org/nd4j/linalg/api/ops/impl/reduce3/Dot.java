@@ -90,9 +90,4 @@ public class Dot extends BaseReduceFloatOp {
         //TODO KEEP DIMS
         return Arrays.asList(f().dotBp(arg(0), arg(1), f1.get(0), false, dimensions));
     }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatintPointType();
-    }
 }

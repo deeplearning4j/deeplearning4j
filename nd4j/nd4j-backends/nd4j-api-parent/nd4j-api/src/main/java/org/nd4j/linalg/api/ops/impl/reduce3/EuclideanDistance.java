@@ -123,9 +123,4 @@ public class EuclideanDistance extends BaseReduceFloatOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatintPointType();
-    }
 }

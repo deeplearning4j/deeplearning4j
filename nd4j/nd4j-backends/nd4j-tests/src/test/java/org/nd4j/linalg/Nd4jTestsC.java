@@ -4260,7 +4260,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
-
     @Test
     public void testAveraging2() {
 

@@ -131,9 +131,4 @@ public class CosineDistance extends BaseReduceFloatOp {
     public String tensorflowName() {
         return "cosine_distance";
     }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatintPointType();
-    }
 }

@@ -856,7 +856,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                     null,
                     null,
                     (LongPointer) (target == null ? null :  target.shapeInfoDataBuffer().addressPointer()),
-                    target == null ? null : (DoublePointer) z,
+                    target == null ? null : z,
                     null,
                     arrays.length,
                     len, true);
@@ -892,13 +892,13 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             }
 
             nativeOps.average(extras,
-                    null,
+                    dataPointers,
                     (LongPointer) arrays[0].shapeInfoDataBuffer().addressPointer(),
                     null,
                     null,
-                    null,
+                    target == null ? null : target.data().addressPointer(),
                     (LongPointer) (target == null ? null :  target.shapeInfoDataBuffer().addressPointer()),
-                    target == null ? null : (DoublePointer) null,
+                    null,
                     null,
                     arrays.length,
                     len, true);
@@ -935,7 +935,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             throw new RuntimeException("Input arrays are missing");
 
         // we assume all arrays have equal length,
-        INDArray ret = Nd4j.createUninitialized(arrays[0].shape(), arrays[0].ordering());
+        INDArray ret = Nd4j.createUninitialized(arrays[0].dataType(), arrays[0].shape(), arrays[0].ordering());
 
         return average(ret, arrays);
     }

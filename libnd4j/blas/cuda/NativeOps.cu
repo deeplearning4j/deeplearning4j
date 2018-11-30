@@ -2133,7 +2133,7 @@ void NativeOps::average(Nd4jPointer *extras,
 	cudaStream_t * stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 	int mode = getDeviceId(extras[3]);
 
-	void **dX = reinterpret_cast<void **>(dx);
+	auto dX = reinterpret_cast<void **>(dx);
 
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("averageFloat called\n");
@@ -2141,13 +2141,13 @@ void NativeOps::average(Nd4jPointer *extras,
 	auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
 	// launching on gpu
 	if (mode == 0) {
-		dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(float), funcAttributes[45]);		
+		dim3 launchDims(256, 256, 4096);
 		// averagingKernelFloat<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dX, dz, n, length, propagate);		
     	BUILD_SINGLE_SELECTOR(xType, averagingKernelGeneric, (launchDims, stream, dX, dz, n, length, propagate), LIBND4J_TYPES);		    	
         nd4j::DebugHelper::checkErrorCode(stream, "AverageFloat(...) failed");
 	} else {
 		// launching on host memory
-        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(dX, dz, dzShapeInfo, n, length, propagate), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(x, z, zShapeInfo, n, length, propagate), LIBND4J_TYPES);
 	}
 }
 
