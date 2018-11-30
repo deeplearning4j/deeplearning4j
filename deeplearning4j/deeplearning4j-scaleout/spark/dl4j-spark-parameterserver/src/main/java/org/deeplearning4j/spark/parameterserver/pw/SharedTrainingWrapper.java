@@ -95,6 +95,7 @@ public class SharedTrainingWrapper {
     protected ThreadLocal<BlockingObserver> observer = new ThreadLocal<>();
     protected EncodedGradientsAccumulator accumulator;
     protected Model originalModel;
+    protected int originalModelDeviceAffinity;
 
     protected UpdatesConsumer consumer;
 
@@ -245,7 +246,8 @@ public class SharedTrainingWrapper {
 
 
             // now we're attaching VoidParameterServer to GradientsAccumulator, but doing that only once
-            if (wrapper == null) {
+            //But also reinit if device changes for master thread - at least until this is fixed https://github.com/deeplearning4j/deeplearning4j/issues/6795
+            if (wrapper == null || originalModelDeviceAffinity != Nd4j.getAffinityManager().getDeviceForCurrentThread()) {
                 log.debug("Starting ParallelWrapper at thread {}", Thread.currentThread().getId());
 
                 model = worker.getInitialModel();
@@ -321,6 +323,7 @@ public class SharedTrainingWrapper {
 
                     // we're saving reference to original model
                     originalModel = model;
+                    originalModelDeviceAffinity = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
                     // if we're running in spark localhost mode - we don't want double initialization
                     if (!ModelParameterServer.getInstance().isInitialized()) {
@@ -431,7 +434,7 @@ public class SharedTrainingWrapper {
                     accumulator.fallbackToSingleConsumerMode(true);
                     accumulator.touch();
 
-                    // checking if there were updated params received (i.e. if that's failover routine
+                    // checking if there were updated params received (i.e. if that's failover routine)
                     val mParams = modelParamsSupplier.get();
                     if (mParams != null) {
                         log.info("Updating model params to the most recent ones...");
