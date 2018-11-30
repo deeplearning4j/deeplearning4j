@@ -51,10 +51,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.blas.*;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.nativeblas.BaseNativeNDArrayFactory;
-import org.nd4j.nativeblas.LongPointerWrapper;
-import org.nd4j.nativeblas.NativeOps;
-import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -420,7 +417,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         outputShape[dimension] = sumAlongDim;
 
-        INDArray ret = Nd4j.createUninitialized(outputShape, Nd4j.order());
+        INDArray ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order());
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
@@ -436,8 +433,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         for (int i = 0; i < toConcat.length; i++) {
             shapeInfoPointers[i] = AddressRetriever.retrieveDeviceAddress(toConcat[i].shapeInfoDataBuffer(), context);
             dataPointers[i] = AtomicAllocator.getInstance().getPointer(toConcat[i], context).address();
-            hostShapeInfoPointers[i] =
-                            AtomicAllocator.getInstance().getHostPointer(toConcat[i].shapeInfoDataBuffer()).address();
+            hostShapeInfoPointers[i] = AtomicAllocator.getInstance().getHostPointer(toConcat[i].shapeInfoDataBuffer()).address();
 
             sumAlongDim += toConcat[i].size(dimension);
             for (int j = 0; j < toConcat[i].rank(); j++)
@@ -446,12 +442,11 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                                     "Illegal concatenation at array " + i + " and shape element " + j);
                 }
 
-            Pair<DataBuffer, DataBuffer> tadBuffers =
-                            tadManager.getTADOnlyShapeInfo(toConcat[i], new int[] {dimension});
+            val tadBuffers = tadManager.getTADOnlyShapeInfo(toConcat[i], new int[] {dimension});
 
             long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
 
-            DataBuffer offsets = tadBuffers.getSecond();
+            val offsets = tadBuffers.getSecond();
             long devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context).address();
 
             tadPointers[i] = devTadShapeInfo;
@@ -460,38 +455,36 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
         // getting tadOnlyShape for result
-        Pair<DataBuffer, DataBuffer> zBuffers = tadManager.getTADOnlyShapeInfo(ret, new int[] {dimension});
-
+        val zBuffers = tadManager.getTADOnlyShapeInfo(ret, new int[] {dimension});
+        val hostPointers = new LongPointer(hostShapeInfoPointers);
+        val hosthost = new PointerPointerWrapper(hostPointers);
 
         //System.out.println("shapePointers: " + Arrays.toString(shapeInfoPointers));
 
-        Pointer dZ = AtomicAllocator.getInstance().getPointer(ret, context);
-        Pointer dZShapeInfo = AddressRetriever.retrieveDevicePointer(ret.shapeInfoDataBuffer(), context);
+        val dZ = AtomicAllocator.getInstance().getPointer(ret, context);
+        val dZShapeInfo = AddressRetriever.retrieveDevicePointer(ret.shapeInfoDataBuffer(), context);
 
 
 
-        CudaDoubleDataBuffer tempData = new CudaDoubleDataBuffer(toConcat.length);
-        CudaDoubleDataBuffer tempShapes = new CudaDoubleDataBuffer(toConcat.length);
-        CudaDoubleDataBuffer tempTAD = new CudaDoubleDataBuffer(toConcat.length);
-        CudaDoubleDataBuffer tempOffsets = new CudaDoubleDataBuffer(toConcat.length);
+        val tempData = new CudaDoubleDataBuffer(toConcat.length);
+        val tempShapes = new CudaDoubleDataBuffer(toConcat.length);
+        val tempTAD = new CudaDoubleDataBuffer(toConcat.length);
+        val tempOffsets = new CudaDoubleDataBuffer(toConcat.length);
 
-        AtomicAllocator.getInstance().memcpyBlocking(tempData, new LongPointer(dataPointers), dataPointers.length * 8,
-                        0);
-        AtomicAllocator.getInstance().memcpyBlocking(tempShapes, new LongPointer(shapeInfoPointers),
-                        shapeInfoPointers.length * 8, 0);
+        AtomicAllocator.getInstance().memcpyBlocking(tempData, new LongPointer(dataPointers), dataPointers.length * 8,0);
+        AtomicAllocator.getInstance().memcpyBlocking(tempShapes, new LongPointer(shapeInfoPointers), shapeInfoPointers.length * 8, 0);
         AtomicAllocator.getInstance().memcpyBlocking(tempTAD, new LongPointer(tadPointers), tadPointers.length * 8, 0);
-        AtomicAllocator.getInstance().memcpyBlocking(tempOffsets, new LongPointer(offsetsPointers),
-                        offsetsPointers.length * 8, 0);
+        AtomicAllocator.getInstance().memcpyBlocking(tempOffsets, new LongPointer(offsetsPointers), offsetsPointers.length * 8, 0);
 
-        Pointer dataPointer = AtomicAllocator.getInstance().getPointer(tempData, context);
-        Pointer shapesPointer = AtomicAllocator.getInstance().getPointer(tempShapes, context);
-        Pointer tadPointer = AtomicAllocator.getInstance().getPointer(tempTAD, context);
-        Pointer offsetPointer = AtomicAllocator.getInstance().getPointer(tempOffsets, context);
+        val dataPointer = AtomicAllocator.getInstance().getPointer(tempData, context);
+        val shapesPointer = AtomicAllocator.getInstance().getPointer(tempShapes, context);
+        val tadPointer = AtomicAllocator.getInstance().getPointer(tempTAD, context);
+        val offsetPointer = AtomicAllocator.getInstance().getPointer(tempOffsets, context);
 
 
         // System.out.println("ShapesPointer after conversion: " + shapesPointer);
 
-        PointerPointer extras = new PointerPointer(AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()),
+        val extras = new PointerPointer(AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()),
                         context.getOldStream(), allocator.getDeviceIdPointer(), context.getBufferAllocation(),
                         context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
                         AddressRetriever.retrieveHostPointer(toConcat[0].shapeInfoDataBuffer()),
@@ -506,7 +499,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 dimension,
                 toConcat.length,
                 null,
-                null,
+                hosthost,
                 new PointerPointer(new Pointer[] {dataPointer}),
                 new PointerPointer(new Pointer[] {shapesPointer}),
                 null,

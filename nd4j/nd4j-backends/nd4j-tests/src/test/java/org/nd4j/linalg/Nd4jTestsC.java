@@ -962,6 +962,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testVStackDifferentOrders() {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray expected = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
 
         for (char order : new char[] {'c', 'f'}) {
