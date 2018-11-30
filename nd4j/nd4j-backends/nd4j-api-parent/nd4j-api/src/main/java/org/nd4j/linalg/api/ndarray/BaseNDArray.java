@@ -6526,6 +6526,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     protected void validateNumericalArray(String opName){
         if(dataType() == DataType.BOOL || dataType() == DataType.UTF8)
-            throw new IllegalStateException("Cannot apply " + opName + " to array with " + dataType() + " datatype. Array shape: " + Arrays.toString(shape()));
+            throw new IllegalStateException("Cannot apply operation " + opName + " to array with " + dataType() + " datatype. Array shape: " + Arrays.toString(shape()));
     }
 }

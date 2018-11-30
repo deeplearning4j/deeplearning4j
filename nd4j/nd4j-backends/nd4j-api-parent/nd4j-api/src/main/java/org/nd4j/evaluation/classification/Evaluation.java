@@ -304,39 +304,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         confusion = new ConfusionMatrix<>(classes);
     }
 
-
-//    /**
-//     * Evaluate the output
-//     * using the given true labels,
-//     * the input to the multi layer network
-//     * and the multi layer network to
-//     * use for evaluation
-//     * @param trueLabels the labels to ise
-//     * @param input the input to the network to use
-//     *              for evaluation
-//     * @param network the network to use for output
-//     */
-//    public void eval(INDArray trueLabels, INDArray input, ComputationGraph network) {
-//        eval(trueLabels, network.output(false, input)[0]);
-//    }
-//
-//
-//    /**
-//     * Evaluate the output
-//     * using the given true labels,
-//     * the input to the multi layer network
-//     * and the multi layer network to
-//     * use for evaluation
-//     * @param trueLabels the labels to ise
-//     * @param input the input to the network to use
-//     *              for evaluation
-//     * @param network the network to use for output
-//     */
-//    public void eval(INDArray trueLabels, INDArray input, MultiLayerNetwork network) {
-//        eval(trueLabels, network.output(input, Layer.TrainingMode.TEST));
-//    }
-
-
     /**
      * Collects statistics on the real outcomes vs the
      * guesses. This is for logistic outcome matrices.
@@ -397,7 +364,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         final int nRows = realOutcomes.rows();
 
         if (nCols == 1) {
-            INDArray binaryGuesses = guesses.gt(binaryDecisionThreshold == null ? 0.5 : binaryDecisionThreshold);
+            INDArray binaryGuesses = guesses.gt(binaryDecisionThreshold == null ? 0.5 : binaryDecisionThreshold).castTo(Nd4j.defaultFloatingPointType());
 
             INDArray notLabel = realOutcomes.rsub(1.0); //Invert entries (assuming 1 and 0)
             INDArray notGuess = binaryGuesses.rsub(1.0);

@@ -101,7 +101,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
             Obtained mean and std dev are compared to theoretical
             Transformed values should be the same as X with the same seed.
          */
-        long randSeed = 41732786;
+        long randSeed = 12345;
 
         int nFeatures = 2;
         int nSamples = 6400;
@@ -136,7 +136,8 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         sampleStd = myNormalizer.getStd();
         sampleStdDelta = Transforms.abs(sampleStd.sub(normData.theoreticalStd));
 
-        assertTrue(sampleStdDelta.div(normData.theoreticalStd).max(1).mul(100).getDouble(0, 0) < tolerancePerc);
+        double actualmaxDiff = sampleStdDelta.div(normData.theoreticalStd).max(1).mul(100).getDouble(0, 0);
+        assertTrue(actualmaxDiff < tolerancePerc);
 
         tolerancePerc = 1; //within 1%
         normIterator.setPreProcessor(myNormalizer);
