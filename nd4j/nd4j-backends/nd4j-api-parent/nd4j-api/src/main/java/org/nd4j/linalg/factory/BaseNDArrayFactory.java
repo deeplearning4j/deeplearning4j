@@ -17,6 +17,7 @@
 package org.nd4j.linalg.factory;
 
 
+import com.google.common.util.concurrent.AtomicDouble;
 import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
@@ -41,6 +42,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Base NDArrayFactory class.
@@ -1388,13 +1391,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray trueScalar(Number value) {
         val ws = Nd4j.getMemoryManager().getCurrentWorkspace();
 
-        if (value instanceof Double)
+        if (value instanceof Double || value instanceof AtomicDouble)   /* note that org.nd4j.linalg.primitives.AtomicDouble extends com.google.common.util.concurrent.AtomicDouble */
                 return create(new double[] {value.doubleValue()}, new long[] {}, new long[] {}, DataType.DOUBLE, ws);
         else if (value instanceof Float)
                 return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, DataType.FLOAT, ws);
-        else if (value instanceof Long)
+        else if (value instanceof Long || value instanceof AtomicLong)
                 return create(new long[] {value.longValue()}, new long[] {}, new long[] {}, DataType.LONG, ws);
-        else if (value instanceof Integer)
+        else if (value instanceof Integer || value instanceof AtomicInteger)
                 return create(new int[] {value.intValue()}, new long[] {}, new long[] {}, DataType.INT, ws);
         else if (value instanceof Short)
             return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, DataType.SHORT, ws);

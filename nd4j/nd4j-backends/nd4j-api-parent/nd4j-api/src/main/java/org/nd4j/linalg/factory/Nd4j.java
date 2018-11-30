@@ -2382,9 +2382,12 @@ public class Nd4j {
 
 
         }
-        ret = Nd4j.create(data2.size(), numColumns);
-        for (int i = 0; i < data2.size(); i++)
-            ret.putRow(i, Nd4j.create(Nd4j.createBuffer(data2.get(i))));
+        ret = Nd4j.create(Nd4j.defaultFloatingPointType(), data2.size(), numColumns);
+        for (int i = 0; i < data2.size(); i++) {
+            float[] row = data2.get(i);
+            INDArray arr = Nd4j.create(row, new long[]{1, row.length}, Nd4j.defaultFloatingPointType());
+            ret.putRow(i, arr);
+        }
         return ret;
     }
 
@@ -2419,7 +2422,9 @@ public class Nd4j {
      * @return the read txt method
      */
     public static INDArray readNumpy(String filePath, String split) throws IOException {
-        return readNumpy(new FileInputStream(filePath), split);
+        try(InputStream is = new FileInputStream(filePath)) {
+            return readNumpy(is, split);
+        }
     }
 
     /**
