@@ -953,8 +953,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testSoftmaxDerivative() {
-        INDArray input = Nd4j.create(new double[] {-1.07, -0.01, 0.45, 0.95, 0.45, 0.16, 0.20, 0.80, 0.89, 0.25})
-                .transpose();
+        INDArray input = Nd4j.create(new double[] {-1.07, -0.01, 0.45, 0.95, 0.45, 0.16, 0.20, 0.80, 0.89, 0.25}).reshape(1, -1).transpose();
         INDArray output = Nd4j.create(10, 1);
         Nd4j.getExecutioner().exec(new SoftMaxDerivative(input, output));
     }
@@ -6325,8 +6324,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testMeshGrid(){
 
-        INDArray x1 = Nd4j.create(new double[]{1,2,3,4});
-        INDArray y1 = Nd4j.create(new double[]{5,6,7});
+        INDArray x1 = Nd4j.create(new double[]{1,2,3,4}).reshape(1, -1);
+        INDArray y1 = Nd4j.create(new double[]{5,6,7}).reshape(1, -1);
 
         INDArray expX = Nd4j.create(new double[][]{
                 {1,2,3,4},

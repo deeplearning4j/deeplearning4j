@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformAnyOp;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
@@ -103,7 +104,10 @@ public class IsMax extends BaseTransformAnyOp {
 
     @Override
     public DataBuffer extraArgsDataBuff(DataType dtype) {
-        return this.extraArgs == null ? null : Nd4j.createBuffer(DataType.LONG, 1, false);
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
+            return this.extraArgs == null ? null : Nd4j.createBuffer(DataType.LONG, 1, false);
+        else
+            return super.extraArgsDataBuff(dtype);
     }
 
     @Override
