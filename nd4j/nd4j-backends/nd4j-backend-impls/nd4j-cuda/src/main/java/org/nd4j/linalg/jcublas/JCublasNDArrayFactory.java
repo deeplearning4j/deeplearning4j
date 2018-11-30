@@ -711,7 +711,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             return target.assign(arrays[0]);
 
         // we do averaging on GPU only if ALL devices have p2p links
-        if (CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed() && nativeOps.isP2PAvailable()) {
+        //if (CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed() && nativeOps.isP2PAvailable()) {
+        if (true) {
             Nd4j.getExecutioner().push();
 
             long len = target.lengthLong();
@@ -746,7 +747,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
             PointerPointer x = new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context));
 
-            nativeOps.accumulate(extras, x, (LongPointer) arrays[0].shapeInfoDataBuffer().addressPointer(), x, null, null, (LongPointer)  allocator.getHostPointer(target.shapeInfoDataBuffer()) , z, (LongPointer)  allocator.getPointer(target.shapeInfoDataBuffer()), arrays.length, len);
+            nativeOps.accumulate(extras, null, (LongPointer) arrays[0].shapeInfoDataBuffer().addressPointer(), x, null, null, (LongPointer)  allocator.getHostPointer(target.shapeInfoDataBuffer()) , z, (LongPointer)  allocator.getPointer(target.shapeInfoDataBuffer()), arrays.length, len);
 
             allocator.getFlowController().registerAction(context, target, arrays);
 
@@ -779,12 +780,12 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
             nativeOps.accumulate(extras,
                     dataPointers,
-                    null,
-                    null,
                     (LongPointer) arrays[0].shapeInfoDataBuffer().addressPointer(),
-                    dataPointers,
-                    (LongPointer) null,
-                    AtomicAllocator.getInstance().getPointer(target, context),
+                    null,
+                    null,
+                    target == null ? null : AtomicAllocator.getInstance().getHostPointer(target),
+                    target == null ? null : (LongPointer) AtomicAllocator.getInstance().getHostPointer(target.shapeInfoDataBuffer()),
+                    null,
                     null,
                     arrays.length,
                     len);

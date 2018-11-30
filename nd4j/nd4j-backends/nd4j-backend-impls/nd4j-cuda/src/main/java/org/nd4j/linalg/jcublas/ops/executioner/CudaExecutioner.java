@@ -719,11 +719,25 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 .getPointer(AtomicAllocator.getInstance().getConstantBuffer(op.getDimension()), context);
 
 
-        nativeOps.execBroadcast(xShapeInfoHostPointer, op.opNum(),
-                    null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
-                    null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
-                null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                    (IntPointer) dimensionPointer, op.getDimension().length);
+        switch (op.getOpType()) {
+            case BROADCAST:
+                nativeOps.execBroadcast(xShapeInfoHostPointer, op.opNum(),
+                        null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                        null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
+                        null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
+                        (IntPointer) dimensionPointer, op.getDimension().length);
+                break;
+            case BROADCAST_BOOL:
+                nativeOps.execBroadcastBool(xShapeInfoHostPointer, op.opNum(),
+                        null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                        null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
+                        null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
+                        (IntPointer) dimensionPointer, op.getDimension().length);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unknown opType: " + op.getOpType());
+        }
+
 
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
