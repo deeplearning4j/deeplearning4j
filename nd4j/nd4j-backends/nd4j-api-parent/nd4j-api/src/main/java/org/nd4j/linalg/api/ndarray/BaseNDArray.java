@@ -1673,7 +1673,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray eq(Number other) {
-        Preconditions.checkArgument(dataType() != DataType.BOOL || other == 0.0 || other == 1.0, "Scalar equality on boolean arrays can only be applied with values 0 or 1: got value %s",other);
+        Preconditions.checkArgument(dataType() != DataType.BOOL || other.doubleValue() == 0.0 || other.doubleValue() == 1.0, "Scalar equality on boolean arrays can only be applied with values 0 or 1: got value %s",other);
         return Nd4j.getExecutioner().exec(new ScalarEquals(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
@@ -1698,7 +1698,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray neq(Number other) {
-        Preconditions.checkArgument(dataType() != DataType.BOOL || other == 0.0 || other == 1.0, "Scalar non-equality on boolean arrays can only be applied with values 0 or 1: got value %s",other);
+        Preconditions.checkArgument(dataType() != DataType.BOOL || other.doubleValue() == 0.0 || other.doubleValue() == 1.0, "Scalar non-equality on boolean arrays can only be applied with values 0 or 1: got value %s",other);
         return Nd4j.getExecutioner().exec(new ScalarNotEquals(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other)).z();
     }
 
@@ -4121,7 +4121,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(Number value) {
-        Preconditions.checkState(dataType() != DataType.BOOL || value == 0.0 || value == 1.0, "Only values 0 or 1 are allowed for scalar " +
+        Preconditions.checkState(dataType() != DataType.BOOL || value.doubleValue() == 0.0 || value.doubleValue() == 1.0, "Only values 0 or 1 are allowed for scalar " +
                 "assign on boolean arrays: got value %s on to assign to boolean array with shape %ndShape", value, this);
         Nd4j.getExecutioner().exec(new ScalarSet(this, value));
         return this;
