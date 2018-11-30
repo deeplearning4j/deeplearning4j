@@ -84,10 +84,12 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
     @Override
     public boolean validateDataTypes() {
         if (y() != null)
-            Preconditions.checkArgument(x().dataType() == y().dataType(),"Op.X type must be the same as Op.Y type");
+            Preconditions.checkArgument(x().dataType() == y().dataType(),"Op.X type must be the same as Op.Y type:" +
+                    " x.dataType=%s, y.dataType=%s, op=%s", x.dataType(), y.dataType(), getClass().getName());
 
         if (z() != null)
-            Preconditions.checkArgument(z().dataType() == x().dataType(), "Op.Z must be the same as Op.X type");
+            Preconditions.checkArgument(z().dataType() == x().dataType(), "Op.Z must be the same as Op.X type. Op.X.datatype=%s, " +
+                    "Op.Z.datatype=%s", x().dataType(), z.dataType());
 
         return true;
     }

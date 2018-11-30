@@ -86,7 +86,7 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
     @Override
     public boolean validateDataTypes() {
         if (z() != null)
-            Preconditions.checkArgument(z().isR(),"Op.Z must be one of floating types");
+            Preconditions.checkArgument(z().isR(),"Op.Z must be one of floating types: z.datatype=%s for op %s", z().dataType(), getClass());
 
         return true;
     }

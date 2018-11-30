@@ -159,7 +159,8 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
 
     @Override
     public boolean validateDataTypes() {
-        Preconditions.checkArgument(z().isB(), "Op.Z must have floating point type, since one of operands is floating point");
+        Preconditions.checkArgument(z().isB(), "Op.Z must have floating point type, since one of operands is floating point." +
+                " op.z.datatype=" + z().dataType());
 
         return true;
     }
