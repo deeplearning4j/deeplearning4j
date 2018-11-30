@@ -144,10 +144,6 @@ public class TestSameDiffDense extends BaseDL4JTest {
 
     @Test
     public void testSameDiffDenseForwardMultiLayer() {
-        KnownCrashingTests.skipCrashingTest();
-        //Only run test for CPU backend for now:
-        assumeTrue("CPU".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend")));
-
         for (int minibatch : new int[]{5, 1}) {
             int nIn = 3;
             int nOut = 4;
@@ -233,7 +229,6 @@ public class TestSameDiffDense extends BaseDL4JTest {
 
     @Test
     public void testSameDiffDenseBackward() {
-        KnownCrashingTests.skipCrashingTest();
         int nIn = 3;
         int nOut = 4;
 
