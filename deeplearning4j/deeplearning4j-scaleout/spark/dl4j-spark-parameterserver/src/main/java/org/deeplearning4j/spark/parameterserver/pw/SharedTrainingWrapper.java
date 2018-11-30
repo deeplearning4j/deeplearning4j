@@ -214,6 +214,8 @@ public class SharedTrainingWrapper {
             exceptionEncountered.set(false);
             exception = null;
 
+            log.info("Thread {} set as master. Device affinity for current thread: {}", Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
             SharedTrainingConfiguration trainingConfiguration = worker.getBroadcastConfiguration().getValue();
             VoidConfiguration voidConfiguration = worker.getBroadcastConfiguration().getValue().getVoidConfiguration();
 
