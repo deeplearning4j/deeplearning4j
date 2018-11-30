@@ -916,10 +916,10 @@ TEST_F(MultiDataTypeTests, ndarray_applyTransformFloat_test1) {
     x4.applyTransform(nd4j::transform::Sqrt, &result3);
     ASSERT_EQ(result3, exp4);
 
-    x2.applyTransform(nd4j::transform::Sqrt, (void*)nullptr);
+    x2.applyTransform(nd4j::transform::Sqrt);
     ASSERT_EQ(x2, exp3);
 
-    x3.applyTransform(nd4j::transform::Sqrt, (void*)nullptr);
+    x3.applyTransform(nd4j::transform::Sqrt);
     ASSERT_EQ(x3, exp2);
 }
 
@@ -956,10 +956,10 @@ TEST_F(MultiDataTypeTests, ndarray_applyTransformSame_test1) {
     x4.applyTransform(nd4j::transform::Square, &result4);
     ASSERT_EQ(result4, exp4);
 
-    x2.applyTransform(nd4j::transform::Square, (void*)nullptr);
+    x2.applyTransform(nd4j::transform::Square);
     ASSERT_EQ(x2, exp2);
 
-    x3.applyTransform(nd4j::transform::Square, (void*)nullptr);
+    x3.applyTransform(nd4j::transform::Square);
     ASSERT_EQ(x3, exp3);
 
     x5.applyTransform(nd4j::transform::Square, &result5);    
@@ -1031,16 +1031,16 @@ TEST_F(MultiDataTypeTests, ndarray_applyTransformStrict_test1) {
     x4.applyTransform(nd4j::transform::CubeDerivative, &result4);
     ASSERT_EQ(result4, exp4);
 
-    x1.applyTransform(nd4j::transform::CubeDerivative, (void*)nullptr);
+    x1.applyTransform(nd4j::transform::CubeDerivative);
     ASSERT_EQ(x1, exp1);
 
-    x2.applyTransform(nd4j::transform::CubeDerivative, (void*)nullptr);
+    x2.applyTransform(nd4j::transform::CubeDerivative);
     ASSERT_EQ(x2, exp2);
 
-    x3.applyTransform(nd4j::transform::CubeDerivative, (void*)nullptr);
+    x3.applyTransform(nd4j::transform::CubeDerivative);
     ASSERT_EQ(x3, exp3);
 
-    x4.applyTransform(nd4j::transform::CubeDerivative, (void*)nullptr);
+    x4.applyTransform(nd4j::transform::CubeDerivative);
     ASSERT_EQ(x4, exp5);
 }
 

@@ -1034,10 +1034,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
                 INDArray inF = inC.dup('f');
                 System.out.println("C stride " + Arrays.toString(inC.tensorAlongDimension(0,dims).stride()) + " and f stride " + Arrays.toString(inF.tensorAlongDimension(0,dims).stride()));
-                for(int i = 0; i < inC.tensorssAlongDimension(dims); i++) {
+                for(int i = 0; i < inC.tensorsAlongDimension(dims); i++) {
                     System.out.println(inC.tensorAlongDimension(i,dims).ravel());
                 }
-                for(int i = 0; i < inF.tensorssAlongDimension(dims); i++) {
+                for(int i = 0; i < inF.tensorsAlongDimension(dims); i++) {
                     System.out.println(inF.tensorAlongDimension(i,dims).ravel());
                 }
             }
@@ -1325,7 +1325,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
             INDArray zC = Nd4j.create(shape, 'c');
             zC.setData(Nd4j.linspace(1, 24, 24, DataType.DOUBLE).data());
-            for (int tad = 0; tad < zC.tensorssAlongDimension(dim); tad++) {
+            for (int tad = 0; tad < zC.tensorsAlongDimension(dim); tad++) {
                 INDArray javaTad = zC.javaTensorAlongDimension(tad, dim);
                 System.out.println("Tad " + tad + " is " + zC.tensorAlongDimension(tad, dim));
             }
@@ -1339,7 +1339,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             INDArray exp = Nd4j.create(expLinspaced[i], shape, 'c');
             INDArray expF = Nd4j.create(shape, 'f');
             expF.assign(exp);
-            for (int tad = 0; tad < zC.tensorssAlongDimension(dim); tad++) {
+            for (int tad = 0; tad < zC.tensorsAlongDimension(dim); tad++) {
                 System.out.println(zC.tensorAlongDimension(tad, dim).offset() + " and f offset is "
                         + zF.tensorAlongDimension(tad, dim).offset());
             }
@@ -3245,7 +3245,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         subset1.assign(1.0);
 
         INDArray subset2 = in.get(NDArrayIndex.interval(5, 8), NDArrayIndex.interval(nCols / 2, nCols));
-        subset2.assign(2.0);
+        subset2.assign(3.0);
         INDArray assertion = Nd4j.create(new double[] {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 11.0, 12.0,
                 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0,
                 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0,
@@ -4473,7 +4473,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
         for (int i = 0; i < initial.rows(); i++) {
-            assertEquals(exp, result.getRow(i));
+            assertEquals("Failed at row " + i, exp, result.getRow(i));
         }
     }
 
@@ -4496,7 +4496,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
         for (int i = 0; i < initial.rows(); i++) {
-            assertEquals(exp, result.getRow(i));
+            assertEquals("Failed at row " + i,exp, result.getRow(i));
         }
     }
 
@@ -4518,7 +4518,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
         for (int i = 0; i < initial.rows(); i++) {
-            assertEquals(exp, result.getRow(i));
+            assertEquals("Failed at row " + i, exp, result.getRow(i));
         }
     }
 

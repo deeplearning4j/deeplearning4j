@@ -1395,7 +1395,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             INDArray[] exp = new INDArray[shape.length];    //Nd4j.create(shape);
             for( int i=0; i<exp.length; i++ ){
                 exp[i] = Nd4j.create(shape);
-                long nTensors = exp[i].tensorssAlongDimension(i);
+                long nTensors = exp[i].tensorsAlongDimension(i);
                 for( long j=0; j<nTensors; j++ ){
                     INDArray tad = exp[i].tensorAlongDimension((int)j, i);
                     tad.assign(arr[i].getArr());

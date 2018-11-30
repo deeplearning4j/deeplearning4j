@@ -238,7 +238,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to calculate the number of vectors for
      * @return the number of possible vectors along a dimension
      */
-    long tensorssAlongDimension(int... dimension);
+    long tensorsAlongDimension(int... dimension);
 
     /**
      * Get the vector along a particular dimension

@@ -69,8 +69,9 @@ namespace graph {
         auto scope = _scopes[scopeId];
         
         // creating new Node
-        auto node = new Node(OpType_CUSTOM, 0, nodeId);
-        node->setCustomOp(op);
+//        auto node = new Node(OpType_CUSTOM, 0, nodeId);
+        auto node = new Node(op, nodeId);
+//        node->setCustomOp(op);
         node->setScopeInfo(scopeId);
 
         // mapping inputs here

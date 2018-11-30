@@ -1288,18 +1288,27 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public float getFloat(long i) {
-        if (dataType() == DataType.DOUBLE) {
-            return (float) ((DoubleIndexer) indexer).get(offset() + i);
-        } else if (dataType() == DataType.INT) {
-            return ((IntIndexer) indexer).get(offset() + i);
-        } else if (dataType() == DataType.LONG) {
-            return ((LongIndexer) indexer).get(offset() + i);
-        } else if (dataType() == DataType.HALF) {
-            return ((HalfIndexer) indexer).get(offset() + i);
-        } else if (dataType() == DataType.BOOL) {
-            return ((BooleanIndexer) indexer).get(offset() + i) ? 1.0f : 0.0f;
-        } else {
-            return ((FloatIndexer) indexer).get(offset() + i);
+        switch (dataType()) {
+            case DOUBLE:
+                return (float) ((DoubleIndexer) indexer).get(offset() + i);
+            case BOOL:
+                return ((BooleanIndexer) indexer).get(offset() + i) ? 1.f : 0.f;
+            case INT:
+                return (float) ((IntIndexer) indexer).get(offset() + i);
+            case SHORT:
+                return (float) ((ShortIndexer) indexer).get(offset() + i);
+            case HALF:
+                return (float) ((HalfIndexer) indexer).get(offset() + i);
+            case UBYTE:
+                return (float) ((UByteIndexer) indexer).get(offset() + i);
+            case BYTE:
+                return (float) ((ByteIndexer) indexer).get(offset() + i);
+            case LONG:
+                return (float)  ((LongIndexer) indexer).get(offset() + i);
+            case FLOAT:
+                return ((FloatIndexer) indexer).get(offset() + i);
+            default:
+                throw new UnsupportedOperationException();
         }
     }
 
@@ -1312,8 +1321,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return ((BooleanIndexer) indexer).get(offset() + i) ? 1 : 0;
             case INT:
                 return ((IntIndexer) indexer).get(offset() + i);
+            case HALF:
+                return (int) ((HalfIndexer) indexer).get(offset() + i);
             case SHORT:
                 return ((ShortIndexer) indexer).get(offset() + i);
+            case UBYTE:
+                return ((UByteIndexer) indexer).get(offset() + i);
             case BYTE:
                 return ((ByteIndexer) indexer).get(offset() + i);
             case LONG:

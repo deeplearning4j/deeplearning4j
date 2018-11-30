@@ -54,7 +54,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.primitives.Atomic;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.LongPointerWrapper;
@@ -458,8 +457,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         INDArray ret = null;
         if (op.z() == null || op.z() == op.x()) {
             if (op.isComplexAccumulation()) {
-                val xT = op.x().tensorssAlongDimension(dimension);
-                val yT = op.y().tensorssAlongDimension(dimension);
+                val xT = op.x().tensorsAlongDimension(dimension);
+                val yT = op.y().tensorsAlongDimension(dimension);
 
                 // we intentionally want to set it to 0.0
                 ret = Nd4j.createUninitialized(dtype, new long[] {xT, yT});
@@ -664,7 +663,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        validateDataType(Nd4j.dataType(), op);
+        //validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -1652,7 +1651,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         nativeOps.execAggregate(extraArgs, op.opNum(), xPtr, numArguments, sPtr, numShapeArguments,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
                     numIndexArguments, iPtr, numIntArrays,
-                    (FloatPointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
+                    AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
                     numRealArguments, SameDiff.getDataTypeAsByte(DataType.FLOAT));
     }
 
@@ -2169,8 +2168,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         if (op.opName().equalsIgnoreCase("im2col")) {
-            val dtype = Nd4j.dataType();
-
             val xArr = op.inputArguments()[0];
             val zArr = op.outputArguments()[0];
 
@@ -2211,12 +2208,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             nativeOps.execTransformSame(xShapeHost, 9,
                     null, (LongPointer) hxShape, x, (LongPointer) xShape,
-                    null, (LongPointer) hzShape, (DoublePointer) z, (LongPointer) zShape, extraArgs);
+                    null, (LongPointer) hzShape, z, (LongPointer) zShape, extraArgs);
 
             //AtomicAllocator.getInstance().getAllocationPoint(zArr).tickDeviceWrite();
             AtomicAllocator.getInstance().getFlowController().registerAction(context, zArr, xArr);
 
-            //Nd4j.getExecutioner().commit();
+            Nd4j.getExecutioner().commit();
 
             return;
         } else if (op.opName().equalsIgnoreCase("col2im")) {

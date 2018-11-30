@@ -96,7 +96,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             INDArray arr = p.getFirst().assign(testValues);
 
             //Along dimension 0: expect row vector with length 'rows'
-            assertEquals(cols, arr.tensorssAlongDimension(0));
+            assertEquals(cols, arr.tensorsAlongDimension(0));
             for (int i = 0; i < cols; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 0);
                 INDArray javaTad = arr.javaTensorAlongDimension(i, 0);
@@ -106,7 +106,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             }
 
             //Along dimension 1: expect row vector with length 'cols'
-            assertEquals(rows, arr.tensorssAlongDimension(1));
+            assertEquals(rows, arr.tensorsAlongDimension(1));
             for (int i = 0; i < rows; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 1);
                 assertArrayEquals(new int[] {1, cols}, tad.shape());
@@ -125,7 +125,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             INDArray tadTest = arr.tensorAlongDimension(0, 0);
             assertEquals(javaTad, tadTest);
             //Along dimension 0: expect row vector with length 'rows'
-            assertEquals("Failed on " + p.getValue(), cols * dim2, arr.tensorssAlongDimension(0));
+            assertEquals("Failed on " + p.getValue(), cols * dim2, arr.tensorsAlongDimension(0));
             for (int i = 0; i < cols * dim2; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 0);
                 assertArrayEquals(new int[] {1, rows}, tad.shape());
@@ -133,7 +133,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             }
 
             //Along dimension 1: expect row vector with length 'cols'
-            assertEquals(rows * dim2, arr.tensorssAlongDimension(1));
+            assertEquals(rows * dim2, arr.tensorsAlongDimension(1));
             for (int i = 0; i < rows * dim2; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 1);
                 assertArrayEquals(new int[] {1, cols}, tad.shape());
@@ -141,7 +141,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             }
 
             //Along dimension 2: expect row vector with length 'dim2'
-            assertEquals(rows * cols, arr.tensorssAlongDimension(2));
+            assertEquals(rows * cols, arr.tensorsAlongDimension(2));
             for (int i = 0; i < rows * cols; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 2);
                 assertArrayEquals(new int[] {1, dim2}, tad.shape());
@@ -164,7 +164,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             INDArray arr = p.getFirst().assign(testValues);
 
             //Along dimension 0,1: expect matrix with shape [rows,cols]
-            assertEquals(dim2, arr.tensorssAlongDimension(0, 1));
+            assertEquals(dim2, arr.tensorsAlongDimension(0, 1));
             for (int i = 0; i < dim2; i++) {
                 INDArray javaTad = arr.javaTensorAlongDimension(i, 0, 1);
                 INDArray tad = arr.tensorAlongDimension(i, 0, 1);
@@ -177,7 +177,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             }
 
             //Along dimension 0,2: expect matrix with shape [rows,dim2]
-            assertEquals(cols, arr.tensorssAlongDimension(0, 2));
+            assertEquals(cols, arr.tensorsAlongDimension(0, 2));
             for (int i = 0; i < cols; i++) {
                 INDArray javaTad = arr.javaTensorAlongDimension(i, 0, 2);
                 INDArray tad = arr.tensorAlongDimension(i, 0, 2);
@@ -187,7 +187,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             }
 
             //Along dimension 1,2: expect matrix with shape [cols,dim2]
-            assertEquals(rows, arr.tensorssAlongDimension(1, 2));
+            assertEquals(rows, arr.tensorsAlongDimension(1, 2));
             for (int i = 0; i < rows; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 1, 2);
                 assertArrayEquals(new long[] {cols, dim2}, tad.shape());
@@ -204,7 +204,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             INDArray arr = p.getFirst().assign(testValues);
 
             //Along dimension 0,1: expect matrix with shape [rows,cols]
-            assertEquals(dim2 * dim3, arr.tensorssAlongDimension(0, 1));
+            assertEquals(dim2 * dim3, arr.tensorsAlongDimension(0, 1));
             for (int i = 0; i < dim2 * dim3; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 0, 1);
                 assertArrayEquals(new long[] {rows, cols}, tad.shape());
@@ -212,7 +212,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             }
 
             //Along dimension 0,2: expect matrix with shape [rows,dim2]
-            assertEquals(cols * dim3, arr.tensorssAlongDimension(0, 2));
+            assertEquals(cols * dim3, arr.tensorsAlongDimension(0, 2));
             for (int i = 0; i < cols * dim3; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 0, 2);
                 assertArrayEquals(new long[] {rows, dim2}, tad.shape());
@@ -220,7 +220,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             }
 
             //Along dimension 0,3: expect matrix with shape [rows,dim3]
-            assertEquals(cols * dim2, arr.tensorssAlongDimension(0, 3));
+            assertEquals(cols * dim2, arr.tensorsAlongDimension(0, 3));
             for (int i = 0; i < cols * dim2; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 0, 3);
                 assertArrayEquals(new long[] {rows, dim3}, tad.shape());
@@ -229,7 +229,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
 
 
             //Along dimension 1,2: expect matrix with shape [cols,dim2]
-            assertEquals(rows * dim3, arr.tensorssAlongDimension(1, 2));
+            assertEquals(rows * dim3, arr.tensorsAlongDimension(1, 2));
             for (int i = 0; i < rows * dim3; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 1, 2);
                 assertArrayEquals(new long[] {cols, dim2}, tad.shape());
@@ -237,7 +237,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             }
 
             //Along dimension 1,3: expect matrix with shape [cols,dim3]
-            assertEquals(rows * dim2, arr.tensorssAlongDimension(1, 3));
+            assertEquals(rows * dim2, arr.tensorsAlongDimension(1, 3));
             for (int i = 0; i < rows * dim2; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 1, 3);
                 assertArrayEquals(new long[] {cols, dim3}, tad.shape());
@@ -245,7 +245,7 @@ public class TestTensorAlongDimension extends BaseNd4jTest {
             }
 
             //Along dimension 2,3: expect matrix with shape [dim2,dim3]
-            assertEquals(rows * cols, arr.tensorssAlongDimension(2, 3));
+            assertEquals(rows * cols, arr.tensorsAlongDimension(2, 3));
             for (int i = 0; i < rows * cols; i++) {
                 INDArray tad = arr.tensorAlongDimension(i, 2, 3);
                 assertArrayEquals(new long[] {dim2, dim3}, tad.shape());

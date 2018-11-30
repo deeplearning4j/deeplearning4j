@@ -1587,25 +1587,25 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
 
 //////////////////////////////////////////////////////////////////////////
 // perform array transformation
-    void NDArray::applyTransform(nd4j::transform::FloatOps op, void *extraParams) {
-        applyTransform(op, this, extraParams);
-    }
+    // void NDArray::applyTransform(nd4j::transform::FloatOps op, void *extraParams) {
+    //     applyTransform(op, this, extraParams);
+    // }
 
-    void NDArray::applyTransform(nd4j::transform::AnyOps op, void *extraParams) {
-        applyTransform(op, this, extraParams);
-    }
+    // void NDArray::applyTransform(nd4j::transform::AnyOps op, void *extraParams) {
+    //     applyTransform(op, this, extraParams);
+    // }
 
-    void NDArray::applyTransform(nd4j::transform::SameOps op, void *extraParams) {
-        applyTransform(op, this, extraParams);
-    }
+    // void NDArray::applyTransform(nd4j::transform::SameOps op, void *extraParams) {
+    //     applyTransform(op, this, extraParams);
+    // }
 
-    void NDArray::applyTransform(nd4j::transform::BoolOps op, void *extraParams) {
-        applyTransform(op, this, extraParams);
-    }
+    // void NDArray::applyTransform(nd4j::transform::BoolOps op, void *extraParams) {
+    //     applyTransform(op, this, extraParams);
+    // }
 
-    void NDArray::applyTransform(nd4j::transform::StrictOps op, void *extraParams) {
-        applyTransform(op, this, extraParams);
-    }
+    // void NDArray::applyTransform(nd4j::transform::StrictOps op, void *extraParams) {
+    //     applyTransform(op, this, extraParams);
+    // }
 
     // perform array transformation
     NDArray NDArray::transform(nd4j::transform::FloatOps op, void *extraParams) const {

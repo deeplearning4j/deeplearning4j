@@ -520,26 +520,15 @@ namespace nd4j {
         */          
         Nd4jLong argMax(std::initializer_list<int> dimensions = {});
 
-        /**
-         *
-         */
+        
         void applyTransform(nd4j::transform::FloatOps op, NDArray *target = nullptr, void *extraParams = nullptr);
-        void applyTransform(nd4j::transform::FloatOps, void *extraParams = nullptr);
-
         void applyTransform(nd4j::transform::SameOps op, NDArray *target = nullptr, void *extraParams = nullptr);
-        void applyTransform(nd4j::transform::SameOps, void *extraParams = nullptr);
-
         void applyTransform(nd4j::transform::AnyOps op, NDArray *target = nullptr, void *extraParams = nullptr);
-        void applyTransform(nd4j::transform::AnyOps , void *extraParams = nullptr);
-
         void applyTransform(nd4j::transform::BoolOps op, NDArray *target = nullptr, void *extraParams = nullptr);
-        void applyTransform(nd4j::transform::BoolOps, void *extraParams = nullptr);
-
         void applyTransform(nd4j::transform::StrictOps op, NDArray *target = nullptr, void *extraParams = nullptr);
-        void applyTransform(nd4j::transform::StrictOps, void *extraParams = nullptr);
 
         /**
-        *  apply OpName transformation to this array and store result in new array being returned
+        *  apply OpName transformation to this array and store result in new array to be returned
         *  extraParams - extra parameters for operation
         */
         NDArray transform(nd4j::transform::FloatOps op, void *extraParams = nullptr) const;

@@ -510,7 +510,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public long tensorssAlongDimension(int... dimension) {
+    public long tensorsAlongDimension(int... dimension) {
         return 0;
     }
 
@@ -2012,7 +2012,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         INDArray sorted = Nd4j.getNDArrayFactory().sort(this.dup(this.ordering()), false, dimension);
 
         // there's no practical sense doing this on GPU, stride will be just size of TAD.
-        INDArray ret = Nd4j.createUninitialized(sorted.tensorssAlongDimension(dimension));
+        INDArray ret = Nd4j.createUninitialized(sorted.tensorsAlongDimension(dimension));
         for (int i = 0; i < ret.length(); i++) {
             ret.putScalar(i, getPercentile(quantile, sorted.tensorAlongDimension(i, dimension)));
         }

@@ -751,6 +751,12 @@ namespace nd4j {
 
 
         Node* Node::clone() {
+            if (this->_customOp && this->_opType == nd4j::graph::OpType_CUSTOM) {
+                auto clone = new Node(this->_customOp, _id);
+                clone->pullValues(this);
+                return clone;
+            }
+            else {
             auto clone = new Node(_opType, _opNum, _id);
 
             clone->pullValues(this);
@@ -764,6 +770,7 @@ namespace nd4j {
             }
 
             return clone;
+            }
         }
     }
 }

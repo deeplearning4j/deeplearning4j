@@ -214,7 +214,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
 
     public BaseCudaDataBuffer(long length, int elementSize, boolean initialize) {
-        this.allocationMode = AllocationMode.LONG_SHAPE;
+        this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
         initTypeAndSize();
         this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
                         new AllocationShape(length, elementSize, dataType()), initialize);
@@ -271,7 +271,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(long length, int elementSize, boolean initialize, @NonNull MemoryWorkspace workspace) {
-        this.allocationMode = AllocationMode.LONG_SHAPE;
+        this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
         initTypeAndSize();
 
         this.attached = true;
@@ -320,6 +320,34 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
                 indexer = LongIndexer.create((LongPointer) pointer);
+                break;
+            case BOOL:
+                this.attached = true;
+                this.parentWorkspace = workspace;
+
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBooleanPointer();
+                indexer = BooleanIndexer.create((BooleanPointer) pointer);
+                break;
+            case SHORT:
+                this.attached = true;
+                this.parentWorkspace = workspace;
+
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+                indexer = ShortIndexer.create((ShortPointer) pointer);
+                break;
+            case BYTE:
+                this.attached = true;
+                this.parentWorkspace = workspace;
+
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBytePointer();
+                indexer = ByteIndexer.create((BytePointer) pointer);
+                break;
+            case UBYTE:
+                this.attached = true;
+                this.parentWorkspace = workspace;
+
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asBytePointer();
+                indexer = UByteIndexer.create((BytePointer) pointer);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown data type: " + dataType());

@@ -345,7 +345,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testTad() {
         INDArray arr = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(2, 3, 2);
-        for (int i = 0; i < arr.tensorssAlongDimension(0); i++) {
+        for (int i = 0; i < arr.tensorsAlongDimension(0); i++) {
             System.out.println(arr.tensorAlongDimension(i, 0));
         }
     }
@@ -883,21 +883,21 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testHistogram1() throws Exception {
         INDArray x = Nd4j.linspace(1, 1000, 100000, DataType.DOUBLE);
-        INDArray z = Nd4j.zeros(20);
+        INDArray z = Nd4j.zeros(DataType.DOUBLE,new long[]{20});
 
         INDArray xDup = x.dup();
         INDArray zDup = z.dup();
 
-        INDArray zExp = Nd4j.create(20).assign(5000);
+        INDArray zExp = Nd4j.create(DataType.DOUBLE, 20).assign(5000);
 
         Histogram histogram = new Histogram(x, z);
 
         Nd4j.getExecutioner().exec(histogram);
 
+        Nd4j.getExecutioner().commit();
+
         assertEquals(xDup, x);
         assertNotEquals(zDup, z);
-
-        log.info("bins: {}", z);
 
         assertEquals(zExp, z);
     }
@@ -909,7 +909,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
         INDArray xDup = x.dup();
 
-        INDArray zExp = Nd4j.zeros(10).putScalar(0, 3f).putScalar(5, 3f).putScalar(9, 3f);
+        INDArray zExp = Nd4j.zeros(DataType.FLOAT, 10).putScalar(0, 3f).putScalar(5, 3f).putScalar(9, 3f);
 
         Histogram histogram = new Histogram(x, 10);
 
@@ -962,7 +962,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
 
             INDArray out = Nd4j.getExecutioner().exec(new EuclideanDistance(first, second), 1, 2, 3);
-            for (int i = 0; i < first.tensorssAlongDimension(1, 2, 3); i++) {
+            for (int i = 0; i < first.tensorsAlongDimension(1, 2, 3); i++) {
                 val j = first.javaTensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer().asLong();
                 val t = first.tensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer().asLong();
 
@@ -974,7 +974,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
                             Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(first, 1, 2, 3);
             Pair<DataBuffer, DataBuffer> secondTadInfo =
                             Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(second, 1, 2, 3);
-            for (int i = 0; i < first.tensorssAlongDimension(1, 2, 3); i++) {
+            for (int i = 0; i < first.tensorsAlongDimension(1, 2, 3); i++) {
                 assertEquals(first.javaTensorAlongDimension(i, 1, 2, 3).offset(), firstTadInfo.getSecond().getLong(i));
                 assertEquals(second.javaTensorAlongDimension(i, 1, 2, 3).offset(),
                                 secondTadInfo.getSecond().getLong(i));
@@ -1032,13 +1032,15 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testMean1() throws Exception {
-        INDArray array = Nd4j.create(32, 100, 100);
+        INDArray array = Nd4j.create(32, 100, 100).assign((float) -119f);
         for (int i = 0; i < 32; i++) {
-            array.tensorAlongDimension(i, 1, 2).assign((float) 100 + i);
+            val tad = array.tensorAlongDimension(i, 1, 2);
+            tad.assign((float) 100 + i);
         }
 
         for (int i = 0; i < 32; i++) {
             INDArray tensor = array.tensorAlongDimension(i, 1, 2);
+            log.info("tad {}: {}", i, array.getDouble(0));
             assertEquals((float) (100 + i) * (100 * 100), tensor.sumNumber().floatValue(), 0.001f);
             assertEquals((float) 100 + i, tensor.meanNumber().floatValue(), 0.001f);
         }

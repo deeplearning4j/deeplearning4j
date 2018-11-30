@@ -150,7 +150,7 @@ namespace nd4j {
             _rootState._long = rootSeed;
 
             // used to build second, node state
-            _nodeState._long = nodeSeed;
+            _nodeState._long = (nodeSeed != 0 ? nodeSeed: 1298567341LL);
         }
 
 

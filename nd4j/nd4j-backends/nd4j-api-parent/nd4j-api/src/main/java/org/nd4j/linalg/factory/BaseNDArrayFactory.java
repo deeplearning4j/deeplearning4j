@@ -19,28 +19,18 @@ package org.nd4j.linalg.factory;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.val;
-import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.indexer.DoubleIndexer;
-import org.bytedeco.javacpp.indexer.FloatIndexer;
-import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -966,18 +956,18 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
         // FIXME: int cast
 
-        INDArray[] retAlongDimensionArrays = new INDArray[(int) ret.tensorssAlongDimension(dimension)];
+        INDArray[] retAlongDimensionArrays = new INDArray[(int) ret.tensorsAlongDimension(dimension)];
         for (int i = 0; i < retAlongDimensionArrays.length; i++)
             retAlongDimensionArrays[i] = ret.tensorAlongDimension(i, dimension);
 
         for (INDArray arr : toConcat) {
             long arrTensorLength = -1;
 
-            if (arr.tensorssAlongDimension(dimension) != ret.tensorssAlongDimension(dimension))
+            if (arr.tensorsAlongDimension(dimension) != ret.tensorsAlongDimension(dimension))
                 throw new IllegalStateException("Illegal concatenate. Tensors along dimension must be same length.");
 
 
-            for (int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
+            for (int i = 0; i < arr.tensorsAlongDimension(dimension); i++) {
                 INDArray retLinear = retAlongDimensionArrays[i];
                 INDArray arrTensor = arr.tensorAlongDimension(i, dimension);
 
