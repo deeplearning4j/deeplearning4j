@@ -116,6 +116,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     @Override
     public void validateDeviceId() {
         if(deviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            log.info("Creating new CudnnBatchNormalizationContext - previous device {}, current device {}", deviceId, Nd4j.getAffinityManager().getDeviceForCurrentThread());
             cudnnContext = new CudnnBatchNormalizationContext();
             meanCache = null;
             varCache = null;

@@ -3855,13 +3855,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     protected void validateHelperWorkspaceThreads(){
         if(helperWorkspacesDeviceId == -1) {
             helperWorkspacesDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            if(helperWorkspaces != null){
+                helperWorkspaces.clear();
+            }
             return;
         }
 
         if(helperWorkspacesDeviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            log.info("Clearing helper workspaces - previous device {}, current device {}", helperWorkspacesDeviceId, Nd4j.getAffinityManager().getDeviceForCurrentThread());
             if(helperWorkspaces != null){
                 helperWorkspaces.clear();
             }
+            helperWorkspacesDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         }
     }
 

@@ -130,6 +130,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     @Override
     public void validateDeviceId() {
         if(deviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            log.info("Creating new CudnnConvolutionContext - previous device {}, current device {}", deviceId, Nd4j.getAffinityManager().getDeviceForCurrentThread());
             cudnnContext = new CudnnConvolutionContext();
             deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         }
