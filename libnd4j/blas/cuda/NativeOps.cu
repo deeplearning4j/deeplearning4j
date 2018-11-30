@@ -1420,7 +1420,7 @@ void NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
                                     void *dZ, Nd4jLong *dZShapeInfo,
                                     void *extraParams) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-    dim3 launchDims(512, 1024, 16384);
+    auto reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
     auto xRank = shape::rank(hXShapeInfo);
     auto zRank = shape::rank(hZShapeInfo);
@@ -1430,7 +1430,22 @@ void NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
     if (!DataTypeUtils::isR(zType))
         throw datatype_exception::build("NativeOps::execTransformFloat requires Z to have floating point type", zType);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
+    if (opNum == transform::Histogram) {
+        dim3 launchDims(256, 256, 32768);
+
+        Nd4jPointer maskedAllocPointer;
+        auto length = shape::length(hZShapeInfo);
+        cudaMalloc(reinterpret_cast<void **>(&maskedAllocPointer), length * launchDims.x * DataTypeUtils::sizeOf(nd4j::DataType::INT64));
+        auto imaskedAllocPointer = reinterpret_cast<int *>(maskedAllocPointer);
+
+        BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, imaskedAllocPointer, reductionPointer, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
+
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+        cudaFree(maskedAllocPointer);
+    } else {
+        dim3 launchDims(512, 1024, 16384);
+        BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
+    }
 }
 
 

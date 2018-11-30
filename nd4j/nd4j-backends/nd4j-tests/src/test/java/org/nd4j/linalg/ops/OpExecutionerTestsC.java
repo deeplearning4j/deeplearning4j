@@ -883,21 +883,21 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testHistogram1() throws Exception {
         INDArray x = Nd4j.linspace(1, 1000, 100000, DataType.DOUBLE);
-        INDArray z = Nd4j.zeros(20);
+        INDArray z = Nd4j.zeros(DataType.DOUBLE,new long[]{20});
 
         INDArray xDup = x.dup();
         INDArray zDup = z.dup();
 
-        INDArray zExp = Nd4j.create(20).assign(5000);
+        INDArray zExp = Nd4j.create(DataType.DOUBLE, 20).assign(5000);
 
         Histogram histogram = new Histogram(x, z);
 
         Nd4j.getExecutioner().exec(histogram);
 
+        Nd4j.getExecutioner().commit();
+
         assertEquals(xDup, x);
         assertNotEquals(zDup, z);
-
-        log.info("bins: {}", z);
 
         assertEquals(zExp, z);
     }
@@ -909,7 +909,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
         INDArray xDup = x.dup();
 
-        INDArray zExp = Nd4j.zeros(10).putScalar(0, 3f).putScalar(5, 3f).putScalar(9, 3f);
+        INDArray zExp = Nd4j.zeros(DataType.FLOAT, 10).putScalar(0, 3f).putScalar(5, 3f).putScalar(9, 3f);
 
         Histogram histogram = new Histogram(x, 10);
 

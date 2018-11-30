@@ -75,7 +75,7 @@ public class Histogram extends BaseTransformFloatOp {
     }
 
     public Histogram(INDArray x, int numberOfBins) {
-        this(x, Nd4j.create(numberOfBins));
+        this(x, Nd4j.create(x.dataType(), numberOfBins));
     }
 
     @Override
