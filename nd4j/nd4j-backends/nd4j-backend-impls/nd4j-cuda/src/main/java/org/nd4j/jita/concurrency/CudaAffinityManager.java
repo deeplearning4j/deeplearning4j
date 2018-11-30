@@ -157,7 +157,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
         List<Integer> devices = new ArrayList<>(CudaEnvironment.getInstance().getConfiguration().getAvailableDevices());
 //        logger.trace("Manually mapping thread [{}] to device [{}], out of [{}] devices...", threadId, deviceId, devices.size());
         String stackTrace = ExceptionUtils.getStackTrace(new Exception());
-        logger.trace("Manually mapping thread [{}] to device [{}], out of [{}] devices: stacktrace = {}", threadId, deviceId, devices.size(), stackTrace);
+        logger.info("Manually mapping thread [{}] to device [{}], out of [{}] devices: stacktrace = {}", threadId, deviceId, devices.size(), stackTrace);
         affinityMap.put(threadId, deviceId);
     }
 
@@ -358,7 +358,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
     @Override
     public void unsafeSetDevice(Integer deviceId) {
         String stackTrace = ExceptionUtils.getStackTrace(new Exception());
-        logger.info("unsafeSetDevice({}) called at {}", deviceId, stackTrace );
+        logger.info("unsafeSetDevice({}) for thread {} called at {}", deviceId, Thread.currentThread().getId(), stackTrace );
         NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
     }
 
