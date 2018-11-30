@@ -1165,7 +1165,7 @@ void NativeOps::execTransformSame(Nd4jPointer *extraPointers,int opNum,
                                    void *dZ, Nd4jLong *dZShapeInfo,
                                    void *extraParams) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-    dim3 launchDims(512, 1024, 8192);
+    dim3 launchDims(512, 512, 16384);
 
     auto xRank = shape::rank(hXShapeInfo);
 	auto zRank = shape::rank(hZShapeInfo);
@@ -1175,8 +1175,11 @@ void NativeOps::execTransformSame(Nd4jPointer *extraPointers,int opNum,
     if (xType != zType)
         throw std::runtime_error("NativeOps::execTransformSame requires X & Z to have same type");
 
+    //nd4j_printf("Going to execute transformSame; opNum: %i\n", opNum);
 
     BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES);
+
+    nd4j::DebugHelper::checkErrorCode(stream, "execTransformSame(...) failed");
 }
 
 void NativeOps::execTransformBool(Nd4jPointer *extraPointers,int opNum,

@@ -1652,7 +1652,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         nativeOps.execAggregate(extraArgs, op.opNum(), xPtr, numArguments, sPtr, numShapeArguments,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
                     numIndexArguments, iPtr, numIntArrays,
-                    (FloatPointer) AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
+                    AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
                     numRealArguments, SameDiff.getDataTypeAsByte(DataType.FLOAT));
     }
 
@@ -2169,8 +2169,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         if (op.opName().equalsIgnoreCase("im2col")) {
-            val dtype = Nd4j.dataType();
-
             val xArr = op.inputArguments()[0];
             val zArr = op.outputArguments()[0];
 
@@ -2211,12 +2209,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             nativeOps.execTransformSame(xShapeHost, 9,
                     null, (LongPointer) hxShape, x, (LongPointer) xShape,
-                    null, (LongPointer) hzShape, (DoublePointer) z, (LongPointer) zShape, extraArgs);
+                    null, (LongPointer) hzShape, z, (LongPointer) zShape, extraArgs);
 
             //AtomicAllocator.getInstance().getAllocationPoint(zArr).tickDeviceWrite();
             AtomicAllocator.getInstance().getFlowController().registerAction(context, zArr, xArr);
 
-            //Nd4j.getExecutioner().commit();
+            Nd4j.getExecutioner().commit();
 
             return;
         } else if (op.opName().equalsIgnoreCase("col2im")) {

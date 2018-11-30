@@ -4473,7 +4473,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
         for (int i = 0; i < initial.rows(); i++) {
-            assertEquals(exp, result.getRow(i));
+            assertEquals("Failed at row " + i, exp, result.getRow(i));
         }
     }
 
@@ -4496,7 +4496,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
         for (int i = 0; i < initial.rows(); i++) {
-            assertEquals(exp, result.getRow(i));
+            assertEquals("Failed at row " + i,exp, result.getRow(i));
         }
     }
 
@@ -4518,7 +4518,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
         for (int i = 0; i < initial.rows(); i++) {
-            assertEquals(exp, result.getRow(i));
+            assertEquals("Failed at row " + i, exp, result.getRow(i));
         }
     }
 
