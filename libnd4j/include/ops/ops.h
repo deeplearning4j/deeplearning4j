@@ -503,20 +503,19 @@ namespace simdOps {
 	class CopyPws {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return d2;
+			return static_cast<Z>(d2);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return d2;
+			return static_cast<Z>(d2);
 		}
 
 		op_def static Z op(X d1) {
-			return d1;
+			return static_cast<Z>(d1);
 		}
 
-		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return params[0];
+			return static_cast<Z>(d1);
 		}
 	};
 
@@ -536,20 +535,19 @@ namespace simdOps {
 	class Copy2 {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return d2;
+			return static_cast<Z>(d2);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return d2;
+			return static_cast<Z>(d2);
 		}
 
 		op_def static Z op(X d1) {
-			return d1;
+			return static_cast<Z>(d1);
 		}
 
-		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return static_cast<Z>(params[0]);
+			return static_cast<Z>(d1);
 		}
 	};
 

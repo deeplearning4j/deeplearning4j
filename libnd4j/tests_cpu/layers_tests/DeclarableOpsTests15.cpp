@@ -37,3 +37,11 @@ public:
         fflush(stdout);
     }
 };
+
+TEST_F(DeclarableOpsTests15, Test_Half_assign_1) {
+    auto x = NDArrayFactory::create<float16>('c', {2, 5});
+    int y = 1;
+    x.assign(y);
+
+    ASSERT_EQ(10, x.sumNumber().e<int>(0));
+}
