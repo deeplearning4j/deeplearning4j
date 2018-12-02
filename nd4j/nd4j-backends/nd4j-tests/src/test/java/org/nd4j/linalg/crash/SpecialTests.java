@@ -372,8 +372,15 @@ public class SpecialTests extends BaseNd4jTest {
 
     @Test
     public void testCastHalf_2() throws Exception {
-        val array = Nd4j.create(DataType.HALF, 2, 5).addi(2);
-        assertEquals(20.f, array.sumNumber().floatValue(), 1e-3);
+        val array = Nd4j.create(DataType.HALF, 2, 5).assign(1);
+        assertEquals(10.f, array.sumNumber().floatValue(), 1e-3);
+    }
+
+    @Test
+    public void testCastHalf_3() throws Exception {
+        val arrayY = Nd4j.create(DataType.FLOAT, 2, 5).assign(2);
+        val arrayX = Nd4j.create(DataType.HALF, 2, 5).assign(arrayY);
+        assertEquals(20.f, arrayX.sumNumber().floatValue(), 1e-3);
     }
 
     @Test
