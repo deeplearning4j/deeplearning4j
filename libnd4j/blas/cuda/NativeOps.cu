@@ -630,6 +630,8 @@ void NativeOps::execPairwiseTransform(
 #else
     BUILD_SINGLE_SELECTOR_THRICE(xType, functions::pairwise_transforms::PairWiseTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dY, dYShapeInfo, hYShapeInfo, dZ, dZShapeInfo, hZShapeInfo, extraParams), LIBND4J_TYPES)
 #endif
+
+    DEBUG_KERNEL(stream, opNum);
 }
 
 void NativeOps::execPairwiseTransformBool(
@@ -2342,7 +2344,7 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    dim3 launchDims(256, 512, 32768);
+    dim3 launchDims(256, 256, 32768);
 
     if (xType != yType)
         throw nd4j::datatype_exception::build("NativeOps::execReduce3 requires Y operand to have X type", xType, yType);
@@ -2351,6 +2353,8 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
         throw nd4j::datatype_exception::build("NativeOps::execReduce3 requires Z operand to have floating point data type", zType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, 1, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), LIBND4J_TYPES, FLOAT_TYPES)
+
+    DEBUG_KERNEL(stream, opNum);
 }
 
 ////////////////////////////////////////////////////////////////////////

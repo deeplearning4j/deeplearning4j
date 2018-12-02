@@ -158,7 +158,11 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         long bytes = requiredMemoryBytes;
         // hack for misalignment avoidance for 16bit data opType
-        if (dataBuffer.dataType() == DataType.HALF) {
+        if (dataBuffer.dataType() == DataType.UBYTE || dataBuffer.dataType() == DataType.BYTE || dataBuffer.dataType() == DataType.BOOL) {
+            if (bytes % 4 != 0) {
+                bytes += bytes % 4;
+            }
+        } else if (dataBuffer.dataType() == DataType.HALF || dataBuffer.dataType() == DataType.SHORT) {
             if (bytes % 4 != 0) {
                 bytes += 2;
             }

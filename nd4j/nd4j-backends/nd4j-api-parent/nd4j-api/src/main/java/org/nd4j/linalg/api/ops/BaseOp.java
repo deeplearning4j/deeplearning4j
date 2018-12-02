@@ -126,7 +126,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             return extraArgz;
 
         if (extraArgs != null) {
-            if (Shape.isZ(dtype)) {
+            if (Shape.isZ(dtype) || Shape.isB(dtype)) {
                 long extraz[] = new long[extraArgs.length];
                 for (int i = 0; i < extraArgs.length; i++) {
                     if (extraArgs[i] instanceof Number) {
