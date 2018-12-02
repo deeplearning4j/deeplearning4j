@@ -316,7 +316,7 @@ public class SpecialTests extends BaseNd4jTest {
 
     @Test
     public void reproduceWorkspaceCrash_2(){
-        val dtypes = new DataType[]{DataType.LONG, DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
+        val dtypes = new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.LONG, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
         for (val dX : dtypes) {
             for (val dZ: dtypes) {
                 val array = Nd4j.create(dX, 2, 5).assign(1);
@@ -324,7 +324,7 @@ public class SpecialTests extends BaseNd4jTest {
                 log.info("Trying to cast {} to {}", dX, dZ);
                 val casted = array.castTo(dZ);
 
-                val exp = Nd4j.create(dZ, 100, 100).assign(1);
+                val exp = Nd4j.create(dZ, 2, 5).assign(1);
                 assertEquals(exp, casted);
             }
         }
@@ -335,7 +335,7 @@ public class SpecialTests extends BaseNd4jTest {
         val conf = WorkspaceConfiguration.builder().build();
 
         val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
-        val dtypes = new DataType[]{DataType.LONG, DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
+        val dtypes = new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.LONG, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
         for (val dX : dtypes) {
             for (val dZ: dtypes) {
                 try(val ws2 = ws.notifyScopeEntered()) {
