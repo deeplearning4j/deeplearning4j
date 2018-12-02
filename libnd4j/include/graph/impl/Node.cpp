@@ -567,7 +567,7 @@ namespace nd4j {
 
                         if (node->extraBools() != nullptr && node->extraBools()->size() > 0)
                             for (int e = 0; e < (int) node->extraBools()->size(); e++) {
-                                block->getBArguments()->emplace_back(node->extraBools()->Get(e));
+                                block->getBArguments()->push_back(node->extraBools()->Get(e));
                             }
 
                         if (node->extraInteger() != nullptr && node->extraInteger()->size() > 0)
@@ -598,7 +598,7 @@ namespace nd4j {
 
                         if (node->extraBools() != nullptr && node->extraBools()->size() > 0)
                             for (int e = 0; e < (int) node->extraBools()->size(); e++) {
-                                block->getBArguments()->emplace_back(node->extraBools()->Get(e));
+                                block->getBArguments()->push_back(node->extraBools()->Get(e));
                             }
 
                         if (node->extraInteger() != nullptr && node->extraInteger()->size() > 0)
@@ -637,7 +637,7 @@ namespace nd4j {
 
                         if (node->extraBools() != nullptr && node->extraBools()->size() > 0)
                             for (int e = 0; e < (int) node->extraBools()->size(); e++) {
-                                block->getBArguments()->emplace_back(node->extraBools()->Get(e));
+                                block->getBArguments()->push_back(node->extraBools()->Get(e));
                             }
 
                         for (auto v: _dimensions)

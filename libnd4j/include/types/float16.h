@@ -311,6 +311,10 @@ local_def ihalf cpu_float2ihalf_rn(float f)
         assign((float)rhs);
     }
 
+    local_def void assign(const bool rhs) {
+        assign(rhs ? 1.0f : 0.0f);
+    }
+
     local_def void assign(long unsigned int rhs) {
         assign((float)rhs);
     }
