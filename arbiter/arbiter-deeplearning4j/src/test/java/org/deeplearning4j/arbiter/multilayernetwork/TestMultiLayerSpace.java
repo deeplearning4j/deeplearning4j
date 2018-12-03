@@ -207,7 +207,7 @@ public class TestMultiLayerSpace {
                                                         .build(), new IntegerParameterSpace(1, 3)) //1-3 identical layers
                                         .addLayer(new OutputLayerSpace.Builder().nIn(10).nOut(10)
                                                         .activation(Activation.SOFTMAX).build())
-                                        .pretrain(false).backprop(true).build();
+                                        .build();
 
         int nParams = mls.numParameters();
         assertEquals(4, nParams);
@@ -244,8 +244,6 @@ public class TestMultiLayerSpace {
 
 
             MultiLayerConfiguration conf = mls.getValue(rvs).getMultiLayerConfiguration();
-            assertEquals(false, conf.isPretrain());
-            assertEquals(true, conf.isBackprop());
 
             int nLayers = conf.getConfs().size();
             assertTrue(nLayers >= 3 && nLayers <= 5); //1 conv + 1-3 dense layers + 1 output layer: 2 to 4
@@ -332,7 +330,7 @@ public class TestMultiLayerSpace {
                                                                                         new GaussianReconstructionDistribution(),
                                                                                         new BernoulliReconstructionDistribution()))
                                                         .build())
-                                        .backprop(false).pretrain(true).build();
+                                        .build();
 
         int numParams = mls.numParameters();
 
