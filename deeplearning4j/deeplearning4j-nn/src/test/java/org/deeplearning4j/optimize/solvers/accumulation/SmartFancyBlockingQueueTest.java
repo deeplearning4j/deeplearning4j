@@ -33,7 +33,7 @@ import static org.junit.Assert.*;
 
 @Slf4j
 public class SmartFancyBlockingQueueTest {
-    @Test
+    @Test(timeout = 120000L)
     public void testSFBQ_1() throws Exception {
         val queue = new SmartFancyBlockingQueue(8, Nd4j.create(5, 5));
 
@@ -52,7 +52,7 @@ public class SmartFancyBlockingQueueTest {
         assertEquals(1, queue.size());
     }
 
-    @Test
+    @Test(timeout = 120000L)
     public void testSFBQ_2() throws Exception {
         final val queue = new SmartFancyBlockingQueue(1285601, Nd4j.create(5, 5));
         final val barrier = new CyclicBarrier(4);
@@ -115,7 +115,7 @@ public class SmartFancyBlockingQueueTest {
     }
 
 
-    @Test
+    @Test(timeout = 120000L)
     public void testSFBQ_3() throws Exception {
         final val queue = new SmartFancyBlockingQueue(1285601, Nd4j.create(5, 5));
 
@@ -187,7 +187,7 @@ public class SmartFancyBlockingQueueTest {
             t.join();
     }
 
-    @Test
+    @Test(timeout = 120000L)
     public void testSFBQ_4() throws Exception {
         final val queue = new SmartFancyBlockingQueue(16, Nd4j.create(5, 5));
         final val barrier = new CyclicBarrier(4);
@@ -255,7 +255,7 @@ public class SmartFancyBlockingQueueTest {
     }
 
 
-    @Test
+    @Test(timeout = 120000L)
     public void testSFBQ_5() throws Exception {
         final val queue = new SmartFancyBlockingQueue(16, Nd4j.create(5, 5));
         final val barrier = new CyclicBarrier(4);
