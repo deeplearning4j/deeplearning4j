@@ -57,8 +57,6 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
 
     @Test
     public void testCompareMlpTrainingIris(){
-        KnownCrashingTests.skipCrashingTest();  //squaredsubtract_bp
-
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         NormalizerStandardize std = new NormalizerStandardize();
         std.fit(iter);

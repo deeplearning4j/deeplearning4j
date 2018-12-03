@@ -17,6 +17,7 @@
 package org.deeplearning4j.clustering.kdtree;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
 import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -63,7 +64,9 @@ public class KDTree implements Serializable {
             int successor;
             while (true) {
                 //exactly equal
-                if (node.getPoint().neq(point).sum(Integer.MAX_VALUE).getDouble(0) == 0) {
+                INDArray pt = node.getPoint();
+                INDArray countEq = Nd4j.getExecutioner().execAndReturn(new Any(pt.neq(point))).z();
+                if (countEq.getInt(0) == 0) {
                     return;
                 } else {
                     successor = successor(node, point, disc);
