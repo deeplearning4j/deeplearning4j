@@ -563,9 +563,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         outputShape[dimension] = sumAlongDim;
 
-        PointerPointer dummy = new PointerPointer(new Pointer[] {null});
+        val dummy = new PointerPointer(new Pointer[] {null});
 
-        INDArray ret = Nd4j.createUninitialized(outputShape, Nd4j.order());
+        val ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order());
 
 
         nativeOps.specialConcat(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,

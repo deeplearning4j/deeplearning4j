@@ -167,12 +167,24 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer dimensionPointer = AtomicAllocator.getInstance()
                 .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
 
-        nativeOps.execBroadcast(xShapeInfoHostPointer, op.opNum(),
-                null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.x().shapeInfoDataBuffer()), x, (LongPointer) xShapeInfo,
-                null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.y().shapeInfoDataBuffer()), y, (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),context),
-                null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.z().shapeInfoDataBuffer()), z, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                (IntPointer) dimensionPointer, dimension.length);
-
+        switch (op.getOpType()) {
+            case BROADCAST:
+                nativeOps.execBroadcast(xShapeInfoHostPointer, op.opNum(),
+                        null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.x().shapeInfoDataBuffer()), x, (LongPointer) xShapeInfo,
+                        null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.y().shapeInfoDataBuffer()), y, (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),context),
+                        null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.z().shapeInfoDataBuffer()), z, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                        (IntPointer) dimensionPointer, dimension.length);
+                break;
+            case BROADCAST_BOOL:
+                nativeOps.execBroadcastBool(xShapeInfoHostPointer, op.opNum(),
+                        null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.x().shapeInfoDataBuffer()), x, (LongPointer) xShapeInfo,
+                        null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.y().shapeInfoDataBuffer()), y, (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),context),
+                        null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.z().shapeInfoDataBuffer()), z, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                        (IntPointer) dimensionPointer, dimension.length);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unknown op type: " + op.getOpType());
+        }
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
@@ -265,8 +277,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
+        DataType argsType;
+        switch (op.getOpType()) {
+            case REDUCE_LONG:
+            case REDUCE_BOOL:
+                argsType = op.x().dataType();
+                break;
+            default:
+                argsType = op.z().dataType();
+        }
 
-        Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()), context) : null;
+        Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(argsType), context) : null;
         Pointer dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context); //AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
 
             if (op instanceof Variance) {
@@ -713,9 +734,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Pointer z = AtomicAllocator.getInstance().getPointer(op.z(), context);
         Pointer zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context);
-        //long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(op.getDimension()), context);
-        Pointer dimensionPointer = AtomicAllocator.getInstance()
-                .getPointer(AtomicAllocator.getInstance().getConstantBuffer(op.getDimension()), context);
+        Pointer dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(op.getDimension()), context);
 
 
         switch (op.getOpType()) {
@@ -736,8 +755,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             default:
                 throw new UnsupportedOperationException("Unknown opType: " + op.getOpType());
         }
-
-
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 

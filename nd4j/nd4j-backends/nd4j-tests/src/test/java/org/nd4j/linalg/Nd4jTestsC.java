@@ -4419,7 +4419,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void tesAbsReductions4() throws Exception {
-        INDArray array = Nd4j.create(new double[] {-2, -2, 2, 2});
+        INDArray array = Nd4j.create(new double[] {-2, -2, 2, 3});
+        assertEquals(1.0, array.sumNumber().doubleValue(), 1e-5);
 
         assertEquals(4, array.scan(Conditions.absGreaterThanOrEqual(0.0)).intValue());
     }

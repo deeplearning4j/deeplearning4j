@@ -190,20 +190,23 @@ __device__ void ReduceLongFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSha
 
     sPartials[threadIdx.x] = OpType::startingValue(x);
 
-    if (xEws > 0)
-        for (int i = tid; i < len; i += (blockDim.x * gridDim.x)) 
-            sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[i * xEws], extraParams), extraParams);          
-    else
-        for (int i = tid; i < len; i += blockDim.x * gridDim.x)                 
+    if (xEws > 0) {
+        for (int i = tid; i < len; i += (blockDim.x * gridDim.x)) {
+            sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[i * xEws], extraParams), extraParams);
+        }
+    } else {
+        for (int i = tid; i < len; i += blockDim.x * gridDim.x) {
             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams), extraParams);
-
+        }
+    }
     __syncthreads();
+
     aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, len), extraParams);
     __syncthreads();
 
     if (gridDim.x > 1) {
         
-        unsigned int *tc = (unsigned int *)reductionBuffer;
+        auto tc = reinterpret_cast<unsigned int *>(reductionBuffer);
         __shared__ bool amLast;
         
         tid = threadIdx.x;
@@ -221,7 +224,6 @@ __device__ void ReduceLongFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSha
         __syncthreads();
 
         if (amLast) {
-            
             tc[16384] = 0;
             sPartials[threadIdx.x] = OpType::startingValue(x);
 
@@ -240,7 +242,7 @@ __device__ void ReduceLongFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSha
     else {
         
         if (threadIdx.x == 0) {
-            unsigned int *tc = (unsigned *)reductionBuffer;
+            auto tc = reinterpret_cast<unsigned int*>(reductionBuffer);
             tc[16384] = 0;
             z[0] = OpType::postProcess(sPartials[0], len, extraParams);
         }

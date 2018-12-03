@@ -2006,7 +2006,7 @@ namespace simdOps {
             X eps = extraParams[1];
 
             auto mode = static_cast<int>(extraParams[2]);
-            //nd4j_printf("value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
+            //printf("value: %f; comp: %f; eps: %f; mode: %i;\n", (float) d1, (float) compare, (float) eps, mode);
 
 			switch (mode) {
 				case 0: // equals
@@ -2039,10 +2039,10 @@ namespace simdOps {
 					return nd4j::math::nd4j_abs<X>(d1) <= compare ? 1 : 0;
                 case 14:
                     // isFinite
-                    return !(nd4j::math::nd4j_isinf(d1) || nd4j::math::nd4j_isnan(d1));
+                    return !(nd4j::math::nd4j_isinf(d1) || nd4j::math::nd4j_isnan(d1)) ? 1 : 0;
                 case 15:
                     // isInfinite
-                    return nd4j::math::nd4j_isinf(d1) || nd4j::math::nd4j_isnan(d1);
+                    return nd4j::math::nd4j_isinf(d1) || nd4j::math::nd4j_isnan(d1) ? 1 : 0;
 				default:
 					printf("Undefined match condition: [%i]\n", mode);
 			}
