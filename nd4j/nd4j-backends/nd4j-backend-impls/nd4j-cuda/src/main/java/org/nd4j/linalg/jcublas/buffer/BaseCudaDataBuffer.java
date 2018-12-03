@@ -971,7 +971,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public void read(DataInputStream s) {
         try {
             val savedMode = AllocationMode.valueOf(s.readUTF());
-            allocationMode = AllocationMode.LONG_SHAPE;
+            allocationMode = AllocationMode.MIXED_DATA_TYPES;
 
             long locLength = 0;
 
@@ -989,15 +989,71 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 globalType = Nd4j.dataType();
             }
 
-            if (t != globalType && (!t.equals(DataType.INT) && !t.equals(DataType.LONG)) && Nd4j.sizeOfDataType(globalType) < Nd4j.sizeOfDataType(t)) {
-                log.warn("Loading a data stream with opType different from what is set globally. Expect precision loss");
-                if (globalType == DataType.INT)
-                    log.warn("Int to float/double widening UNSUPPORTED!!!");
-            }
             if (t == DataType.COMPRESSED) {
                 type = t;
                 return;
-            } else if (t == DataType.LONG || globalType == DataType.LONG) {
+            }
+
+            this.elementSize = (byte) Nd4j.sizeOfDataType(t);
+            this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, t), false);
+            this.trackingPoint = allocationPoint.getObjectId();
+            this.type = t;
+
+            switch (type) {
+                case DOUBLE: {
+                        this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asDoublePointer();
+                        indexer = DoubleIndexer.create((DoublePointer) pointer);
+                    }
+                    break;
+                case FLOAT: {
+                        this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asFloatPointer();
+                        indexer = FloatIndexer.create((FloatPointer) pointer);
+                    }
+                    break;
+                case HALF: {
+                        this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asShortPointer();
+                        indexer = HalfIndexer.create((ShortPointer) pointer);
+                    }
+                    break;
+                case LONG: {
+                        this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asLongPointer();
+                        indexer = LongIndexer.create((LongPointer) pointer);
+                    }
+                    break;
+                case INT: {
+                        this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asIntPointer();
+                        indexer = IntIndexer.create((IntPointer) pointer);
+                    }
+                    break;
+                case SHORT: {
+                        this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asShortPointer();
+                        indexer = ShortIndexer.create((ShortPointer) pointer);
+                    }
+                    break;
+                case UBYTE: {
+                        this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asBytePointer();
+                        indexer = UByteIndexer.create((BytePointer) pointer);
+                    }
+                    break;
+                case BYTE: {
+                        this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asBytePointer();
+                        indexer = ByteIndexer.create((BytePointer) pointer);
+                    }
+                    break;
+                case BOOL: {
+                        this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asBooleanPointer();
+                        indexer = BooleanIndexer.create((BooleanPointer) pointer);
+                    }
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Unsupported data type: " + type);
+            }
+
+            readContent(s, t, t);
+            allocationPoint.tickHostWrite();
+
+            /*
+             if (t == DataType.LONG || globalType == DataType.LONG) {
                 this.elementSize = 8;
                 this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
                         new AllocationShape(length, elementSize, t), false);
@@ -1158,6 +1214,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
 
         // we call sync to copyback data to host
         AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(allocationPoint);

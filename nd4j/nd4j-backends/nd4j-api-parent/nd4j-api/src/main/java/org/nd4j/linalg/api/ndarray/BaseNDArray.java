@@ -5987,11 +5987,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     //Custom deserialization for Java serialization
     protected void read(ObjectInputStream s) {
+        val tempBuffer = Nd4j.createBuffer(1, false);
+        val headerShape = tempBuffer.readHeader(s);
+
         shapeInformation = Nd4j.createBuffer(new int[Shape.shapeInfoLength(rank())], 0);
-        shapeInformation.read(s);
+        shapeInformation.read(s, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getRight());
+
         setShapeInformation(Pair.create(shapeInformation, shapeInformation.asLong()));
-        data = Nd4j.createBuffer(length(), false);
-        data().read(s);
+
+        val headerData = tempBuffer.readHeader(s);
+        data = Nd4j.createBuffer(headerData.getRight(), headerData.getMiddle(), false);
+        data().read(s, headerData.getLeft(), headerData.getMiddle(), headerData.getRight());
     }
 
 

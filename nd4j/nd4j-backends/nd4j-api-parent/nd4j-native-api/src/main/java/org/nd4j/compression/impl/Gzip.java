@@ -70,7 +70,7 @@ public class Gzip extends AbstractCompressor {
             DataInputStream dis = new DataInputStream(gzip);
 
             DataBuffer bufferRestored = Nd4j.createBuffer(dataType, descriptor.getNumberOfElements(), false);
-            bufferRestored.read(dis);
+            bufferRestored.read(dis, DataBuffer.AllocationMode.MIXED_DATA_TYPES, descriptor.getNumberOfElements(), dataType);
 
             return bufferRestored;
         } catch (Exception e) {

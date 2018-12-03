@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.buffer;
 
+import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
@@ -204,7 +205,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
         assertion.write(dos);
 
         DataBuffer clone = assertion.dup();
-        assertion.read(new DataInputStream(new ByteArrayInputStream(bos.toByteArray())));
+        val stream = new DataInputStream(new ByteArrayInputStream(bos.toByteArray()));
+        val header = clone.readHeader(stream);
+        assertion.read(stream, header.getLeft(), header.getMiddle(), header.getRight());
         assertArrayEquals(assertion.asFloat(), clone.asFloat(), 0.0001f);
     }
 

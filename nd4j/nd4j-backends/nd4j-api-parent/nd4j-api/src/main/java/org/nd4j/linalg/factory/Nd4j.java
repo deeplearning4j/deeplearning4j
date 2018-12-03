@@ -2643,21 +2643,20 @@ public class Nd4j {
      */
     public static INDArray read(DataInputStream dis) throws IOException {
         var shapeInformation = Nd4j.createBufferDetached(new long[1], DataType.LONG);
-        shapeInformation.read(dis);
+        val headerShape = shapeInformation.readHeader(dis);
+        shapeInformation.read(dis, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getThird());
         val length = Shape.length(shapeInformation);
-        DataType type;
-        DataBuffer data;
+        DataType type = null;
+        DataBuffer data = null;
+
+        val headerData = shapeInformation.readHeader(dis);
         try {
             // current version contains dtype in extras
+            data = CompressedDataBuffer.readUnknown(dis, headerData.getFirst(), headerData.getMiddle(), headerData.getRight());
             type = ArrayOptionsHelper.dataType(shapeInformation.asLong());
-            data = CompressedDataBuffer.readUnknown(dis, length, type);
         } catch (ND4JUnknownDataTypeException e) {
-            //Must be a legacy array, pre dtype changes... read as default floating point type
-            type = Nd4j.defaultFloatingPointType();
-            data = CompressedDataBuffer.readUnknown(dis, length, type);
-
             // manually setting data type
-            long extras = ArrayOptionsHelper.setOptionBit(0L, type);
+            long extras = ArrayOptionsHelper.setOptionBit(0L, headerData.getRight());
             shapeInformation.put(shapeInformation.length() - 3, extras);
         }
 

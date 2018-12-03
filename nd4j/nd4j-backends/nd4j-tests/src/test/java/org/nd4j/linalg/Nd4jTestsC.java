@@ -6464,6 +6464,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(5, array.length());
         assertArrayEquals(new long[]{1, 5}, array.shape());
+        assertEquals(exp.dataType(), array.dataType());
         assertEquals(exp, array);
 
         val bos = new ByteArrayOutputStream();

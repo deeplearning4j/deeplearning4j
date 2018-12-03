@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ndarray;
 
 
+import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -68,8 +69,10 @@ public class BaseNDArrayProxy implements java.io.Serializable {
 
     //Custom deserialization for Java serialization
     protected void read(ObjectInputStream s) throws IOException, ClassNotFoundException {
-        data = Nd4j.createBuffer(length, false);
-        data.read(s);
+        val header = Nd4j.createBuffer(1, false).readHeader(s);
+        data = Nd4j.createBuffer(header.getRight(), length, false);
+
+        data.read(s, header.getLeft(), header.getMiddle(), header.getRight());
     }
 
     // WRITE DONE HERE
