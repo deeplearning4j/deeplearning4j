@@ -43,10 +43,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.*;
 import java.util.Collection;
 
@@ -968,6 +965,47 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    public void read(InputStream is, AllocationMode allocationMode, long length, DataType dataType) {
+        super.read(is, allocationMode, length, dataType);
+        this.allocationPoint.tickHostWrite();
+    }
+
+    @Override
+    public void pointerIndexerByCurrentType(DataType currentType) {
+        //
+        /*
+        switch (currentType) {
+            case LONG:
+                pointer = new LongPointer(length());
+                setIndexer(LongIndexer.create((LongPointer) pointer));
+                type = DataType.LONG;
+                break;
+            case INT:
+                pointer = new IntPointer(length());
+                setIndexer(IntIndexer.create((IntPointer) pointer));
+                type = DataType.INT;
+                break;
+            case DOUBLE:
+                pointer = new DoublePointer(length());
+                indexer = DoubleIndexer.create((DoublePointer) pointer);
+                break;
+            case FLOAT:
+                pointer = new FloatPointer(length());
+                setIndexer(FloatIndexer.create((FloatPointer) pointer));
+                break;
+            case HALF:
+                pointer = new ShortPointer(length());
+                setIndexer(HalfIndexer.create((ShortPointer) pointer));
+                break;
+            case COMPRESSED:
+                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
+        */
+    }
+
+    //@Override
     public void read(DataInputStream s) {
         try {
             val savedMode = AllocationMode.valueOf(s.readUTF());

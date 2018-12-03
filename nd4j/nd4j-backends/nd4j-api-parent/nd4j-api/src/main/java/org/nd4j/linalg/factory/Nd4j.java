@@ -2642,8 +2642,10 @@ public class Nd4j {
      * @throws IOException
      */
     public static INDArray read(DataInputStream dis) throws IOException {
-        var shapeInformation = Nd4j.createBufferDetached(new long[1], DataType.LONG);
-        val headerShape = shapeInformation.readHeader(dis);
+        val tempBuffer = Nd4j.createBuffer(1, false);
+        val headerShape = tempBuffer.readHeader(dis);
+
+        var shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle().longValue()}, headerShape.getRight());
         shapeInformation.read(dis, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getThird());
         val length = Shape.length(shapeInformation);
         DataType type = null;
