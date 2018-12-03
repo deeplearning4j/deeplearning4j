@@ -83,7 +83,7 @@ public class ParameterServerParallelWrapperTest {
                                         .reportScoreAfterAveraging(true).prefetchBuffer(3).build();
         parameterServerParallelWrapper.fit(mnistTrain);
 
-        Thread.sleep(60000);
+        Thread.sleep(2000);
         parameterServerParallelWrapper.close();
 
 

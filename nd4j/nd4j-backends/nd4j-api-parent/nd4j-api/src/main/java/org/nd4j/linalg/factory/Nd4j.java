@@ -2033,7 +2033,20 @@ public class Nd4j {
     }
 
     /**
-     * Generate a linearly spaced vector
+     * Generate a linearly spaced 1d vector of the default floating point datatype
+     *
+     * @param lower upper bound
+     * @param upper lower bound
+     * @param num   the step size
+     * @return the linearly spaced vector
+     */
+    public static INDArray linspace(double lower, double upper, long num) {
+        return linspace(lower, upper, num, Nd4j.defaultFloatingPointType());
+    }
+
+
+    /**
+     * Generate a linearly spaced 1d vector of the specified datatype
      *
      * @param lower upper bound
      * @param upper lower bound

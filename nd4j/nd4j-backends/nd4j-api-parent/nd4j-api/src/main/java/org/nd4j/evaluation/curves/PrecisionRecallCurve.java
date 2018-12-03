@@ -16,10 +16,10 @@
 
 package org.nd4j.evaluation.curves;
 
-import com.google.common.base.Preconditions;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.nd4j.base.Preconditions;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
