@@ -69,8 +69,7 @@ public class ArbiterCLIRunnerTest {
                         .build(),new IntegerParameterSpace(1,2),true)   //1-2 identical layers (except nIn)
                 .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                .numEpochs(3)
-                .pretrain(false).backprop(true).build();
+                .numEpochs(3).build();
          assertEquals(mls,MultiLayerSpace.fromJson(mls.toJson()));
         //Define configuration:
         Map<String,Object> commands = new HashMap<>();
