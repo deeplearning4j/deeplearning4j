@@ -6437,13 +6437,53 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testLegacyDeserialization_1() throws Exception {
-        val f = new ClassPathResource("legacy/NDArray.bin").getFile();
+        val f = new ClassPathResource("legacy/NDArray_javacpp.bin").getFile();
 
         val array = Nd4j.read(new FileInputStream(f));
         val exp = Nd4j.linspace(1, 120, 120, DataType.DOUBLE).reshape(2, 3, 4, 5);
 
         assertEquals(120, array.length());
         assertArrayEquals(new long[]{2, 3, 4, 5}, array.shape());
+        assertEquals(exp, array);
+
+        val bos = new ByteArrayOutputStream();
+        Nd4j.write(bos, array);
+
+        val bis = new ByteArrayInputStream(bos.toByteArray());
+        val array2 = Nd4j.read(bis);
+
+        assertEquals(exp, array2);
+    }
+
+    @Test
+    public void testLegacyDeserialization_2() throws Exception {
+        val f = new ClassPathResource("legacy/NDArray_longshape_float.bin").getFile();
+
+        val array = Nd4j.read(new FileInputStream(f));
+        val exp = Nd4j.linspace(1, 5, 5, DataType.FLOAT).reshape(1, -1);
+
+        assertEquals(5, array.length());
+        assertArrayEquals(new long[]{1, 5}, array.shape());
+        assertEquals(exp, array);
+
+        val bos = new ByteArrayOutputStream();
+        Nd4j.write(bos, array);
+
+        val bis = new ByteArrayInputStream(bos.toByteArray());
+        val array2 = Nd4j.read(bis);
+
+        assertEquals(exp, array2);
+    }
+
+    @Test
+    public void testLegacyDeserialization_3() throws Exception {
+        val f = new ClassPathResource("legacy/NDArray_longshape_double.bin").getFile();
+
+        val array = Nd4j.read(new FileInputStream(f));
+        val exp = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape(1, -1);
+
+        assertEquals(5, array.length());
+        assertArrayEquals(new long[]{1, 5}, array.shape());
         assertEquals(exp, array);
 
         val bos = new ByteArrayOutputStream();

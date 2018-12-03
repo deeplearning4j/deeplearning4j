@@ -1726,10 +1726,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             } else if (savedMode.equals(AllocationMode.LONG_SHAPE)) {
                 length = s.readLong();
                 val currentType = DataType.valueOf(s.readUTF());
-                if (currentType != DataType.COMPRESSED)
-                    type = DataTypeUtil.getDtypeFromContext();
-                else
-                    type = currentType;
+                type = currentType;
 
                 if (currentType == DataType.LONG)
                     elementSize = 8;
@@ -1749,7 +1746,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 pointerIndexerByCurrentType(currentType);
 
                 if (currentType != DataType.COMPRESSED)
-                    readContent(s, currentType, DataTypeUtil.getDtypeFromContext());
+                    readContent(s, currentType, currentType);
             } else if (allocationMode.equals(AllocationMode.MIXED_DATA_TYPES)) {
                 length = s.readLong();
                 type = DataType.valueOf(s.readUTF());
