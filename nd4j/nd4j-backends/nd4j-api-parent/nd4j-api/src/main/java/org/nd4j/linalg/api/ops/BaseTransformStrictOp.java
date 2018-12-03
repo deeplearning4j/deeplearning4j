@@ -92,13 +92,14 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
 
     @Override
     public boolean validateDataTypes() {
-        Preconditions.checkArgument(x().isR(), "Op.X must be one of floating types");
+        Preconditions.checkArgument(x().isR(), "Op.X must be one of floating types: x.datatype=%s for op %s", x().dataType(), getClass());
 
         if (y() != null)
-            Preconditions.checkArgument(y().isR(),"Op.Y must be one of floating types");
+            Preconditions.checkArgument(y().isR(),"Op.Y must be one of floating types: y.datatype=%s for op %s", y().dataType(), getClass());
 
         if (z() != null)
-            Preconditions.checkArgument(z().dataType() == x().dataType(), "Op.Z must have the same type as Op.X ");
+            Preconditions.checkArgument(z().dataType() == x().dataType(), "Op.Z must have the same type as Op.X: x.datatype=%s, z.datatype=%s for op %s",
+                    x.dataType(), z.dataType(), getClass());
 
         return true;
     }

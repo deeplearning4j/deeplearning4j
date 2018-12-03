@@ -52,15 +52,8 @@ import static org.junit.Assume.assumeTrue;
 @Slf4j
 public class TestSameDiffDenseVertex extends BaseDL4JTest {
 
-    private static final boolean PRINT_RESULTS = true;
-    private static final boolean RETURN_ON_FIRST_FAILURE = false;
-    private static final double DEFAULT_EPS = 1e-6;
-    private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
-    private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
-
     @Test
     public void testSameDiffDenseVertex() {
-        KnownCrashingTests.skipCrashingTest();      //TODO REMOVE THIS ONCE FIXED
 
         int nIn = 3;
         int nOut = 4;
@@ -79,7 +72,6 @@ public class TestSameDiffDenseVertex extends BaseDL4JTest {
                     ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                             .trainingWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
                             .inferenceWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
-//                            .updater(new Sgd(1.0))
                             .updater(new Sgd(0.0))
                             .graphBuilder()
                             .addInputs("in")
@@ -148,6 +140,8 @@ public class TestSameDiffDenseVertex extends BaseDL4JTest {
                     }
 
                     assertEquals(gStd.gradient(), gSD.gradient());
+
+                    System.out.println("========================================================================");
 
                     //Sanity check: different minibatch size
                     in = Nd4j.rand(2 * minibatch, nIn);

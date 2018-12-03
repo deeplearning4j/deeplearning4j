@@ -61,9 +61,6 @@ public class RegressionTest050 extends BaseDL4JTest {
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(2, conf.getConfs().size());
 
-        assertTrue(conf.isBackprop());
-        assertFalse(conf.isPretrain());
-
         DenseLayer l0 = (DenseLayer) conf.getConf(0).getLayer();
         assertEquals("relu", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
@@ -98,9 +95,6 @@ public class RegressionTest050 extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(2, conf.getConfs().size());
-
-        assertTrue(conf.isBackprop());
-        assertFalse(conf.isPretrain());
 
         DenseLayer l0 = (DenseLayer) conf.getConf(0).getLayer();
         assertTrue(l0.getActivationFn() instanceof ActivationLReLU);
@@ -143,9 +137,6 @@ public class RegressionTest050 extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(3, conf.getConfs().size());
-
-        assertTrue(conf.isBackprop());
-        assertFalse(conf.isPretrain());
 
         ConvolutionLayer l0 = (ConvolutionLayer) conf.getConf(0).getLayer();
         assertEquals("tanh", l0.getActivationFn().toString());

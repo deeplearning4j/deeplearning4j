@@ -77,7 +77,7 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
         }
 
         confB.setInputType(conf.isUseLSTM() ? InputType.recurrent(nIn) : InputType.feedForward(nIn));
-        MultiLayerConfiguration mlnconf2 = confB.pretrain(false).backprop(true).build();
+        MultiLayerConfiguration mlnconf2 = confB.build();
         MultiLayerNetwork model = new MultiLayerNetwork(mlnconf2);
         model.init();
         if (conf.getListeners() != null) {
@@ -112,7 +112,7 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
         }
 
         confB2.setInputType(conf.isUseLSTM() ? InputType.recurrent(nIn) : InputType.feedForward(nIn));
-        MultiLayerConfiguration mlnconf = confB2.pretrain(false).backprop(true).build();
+        MultiLayerConfiguration mlnconf = confB2.build();
         MultiLayerNetwork model2 = new MultiLayerNetwork(mlnconf);
         model2.init();
         if (conf.getListeners() != null) {

@@ -65,7 +65,7 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
         if(shape != null){
-            return Collections.singletonList(LongShapeDescriptor.fromShape(shape, Nd4j.defaultFloatintPointType()));
+            return Collections.singletonList(LongShapeDescriptor.fromShape(shape, Nd4j.defaultFloatingPointType()));
         } else {
             List<LongShapeDescriptor> ret = new ArrayList<>(1);
             val shape = sameDiff.getShapeForVarName(args()[0].getVarName());

@@ -313,7 +313,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             workspaceMgr.assertNotOpen(ArrayType.UPDATER_WORKING_MEM, "Updater working memory");
         }
         for (UpdaterBlock ub : updaterBlocks) {
-            if (ub.skipDueToPretrainConfig()) {
+            if (ub.skipDueToPretrainConfig(this instanceof LayerUpdater)) {
                 //Should skip some updater blocks sometimes
                 //For example, VAE decoder params while doing supervised backprop
                 continue;
@@ -406,7 +406,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         }
 
         GradientNormalization normalization = layer.getConfig().getGradientNormalization();
-        if (normalization == null || normalization == GradientNormalization.None || layer.getConfig().isPretrain())
+        if (normalization == null || normalization == GradientNormalization.None)
             return; //no op
 
         final double threshold = layer.getConfig().getGradientNormalizationThreshold();

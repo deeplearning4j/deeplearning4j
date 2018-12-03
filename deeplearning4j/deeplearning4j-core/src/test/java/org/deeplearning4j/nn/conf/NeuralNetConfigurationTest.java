@@ -184,15 +184,6 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         assertEquals(modelWeights, modelWeights2);
     }
 
-    @Test
-    public void testPretrain() {
-        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
-
-        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, false);
-
-        assertNotEquals(model.conf().isPretrain(), model2.conf().isPretrain());
-    }
-
 
     private static NeuralNetConfiguration getConfig(int nIn, int nOut, WeightInit weightInit, boolean pretrain) {
         DenseLayer layer = new DenseLayer.Builder().nIn(nIn).nOut(nOut).weightInit(weightInit).dist(new NormalDistribution(1, 1))
@@ -201,7 +192,6 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer)
                         .build();
-        conf.setPretrain(pretrain);
         return conf;
     }
 
@@ -315,10 +305,6 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
                 .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(42).layer(layer).build();
-
-        assertFalse(conf.isPretrain());
-        conf.setPretrain(pretrain);
-        assertTrue(conf.isPretrain());
     }
 
 }

@@ -172,9 +172,11 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     public boolean validateDataTypes() {
         if (y() != null) {
             if (y().isR() || x().isR())
-                Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point");
+                Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point:" +
+                        " x.dataType=%s, y.dataType=%s, z.dataType=%s, op=%s", x.dataType(), y.dataType(), z.dataType(), getClass().getName());
         } else if (x().isR())
-            Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point");
+            Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point:" +
+                    " x.dataType=%s, z.dataType=%s, op=%s", x.dataType(), z.dataType(), getClass().getName());
 
 
         return true;

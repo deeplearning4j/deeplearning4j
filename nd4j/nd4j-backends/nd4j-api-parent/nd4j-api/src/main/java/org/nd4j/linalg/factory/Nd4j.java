@@ -28,7 +28,6 @@ import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JEnvironmentVars;
@@ -1365,14 +1364,28 @@ public class Nd4j {
 
     public static DataBuffer createBufferDetached(long[] shape, DataType type) {
         long length = ArrayUtil.prodLong(shape);
-        if (type == DataType.INT)
-            return DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
-        else if (type == DataType.LONG)
-            return DATA_BUFFER_FACTORY_INSTANCE.createLong(length);
-        else if (type == DataType.HALF)
-            return DATA_BUFFER_FACTORY_INSTANCE.createHalf(length);
+        switch (type){
 
-        return type == DataType.DOUBLE ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
+            case DOUBLE:
+                DATA_BUFFER_FACTORY_INSTANCE.createDouble(length);
+            case FLOAT:
+                DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
+            case HALF:
+                return DATA_BUFFER_FACTORY_INSTANCE.createHalf(length);
+            case LONG:
+                return DATA_BUFFER_FACTORY_INSTANCE.createLong(length);
+            case INT:
+                return DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
+            case SHORT:
+            case UBYTE:
+            case BYTE:
+            case BOOL:
+            case UTF8:
+            case COMPRESSED:
+            case UNKNOWN:
+            default:
+                throw new UnsupportedOperationException("Cannot create type: " + type);
+        }
     }
 
     /**
@@ -1742,11 +1755,32 @@ public class Nd4j {
     }
 
     /**
-     * This method sets dataType for the current JVM runtime
-     * @param dType
+     * DEPRECATED - use {@link #setDefaultDataTypes(DataType, DataType)}
+     * This method sets dataType for the current JVM.
+     * @param dType Data type to set
+     * @deprecated use {@link #setDefaultDataTypes(DataType, DataType)}. Equivalent to {@code setDefaultDataTypes(dtype, (dtype.isFPType() ? dtype : defaultFloatingPointType()))}
      */
-    public static void setDataType(@NonNull DataType dType) {
-        DataTypeUtil.setDTypeForContext(dType);
+    @Deprecated
+    public static void setDataType(@NonNull DataType dtype) {
+        setDefaultDataTypes(dtype, (dtype.isFPType() ? dtype : defaultFloatingPointType()));
+    }
+
+    /**
+     * Set the default data types.<br>
+     * The default data types are used for array creation methods where no data type is specified.<br>
+     * When the user explicitly provides a datatype (such as in Nd4j.ones(DataType.FLOAT, 1, 10)) these default values
+     * will not be used.<br>
+     * defaultType: used in methods such as Nd4j.ones(1,10) and Nd4j.zeros(10).<br>
+     * defaultFloatingPointType: used internally where a floating point array needs to be created, but no datatype is specified.
+     * defaultFloatingPointType must be one of DOUBLE, FLOAT or HALF
+     *
+     * @param defaultType              Default datatype for new arrays (used when no type is specified).
+     * @param defaultFloatingPointType Default datatype for new floating point arrays (used when no type is specified. Must be one of DOUBLE, FLOAT or HALF
+     */
+    public static void setDefaultDataTypes(@NonNull DataType defaultType, @NonNull DataType defaultFloatingPointType){
+        Preconditions.checkArgument(defaultFloatingPointType.isFPType(), "Invalid default floating point type: %s is not a floating point type", defaultFloatingPointType);
+        DataTypeUtil.setDTypeForContext(defaultType);
+        Nd4j.defaultFloatingPointDataType.set(defaultFloatingPointType);
     }
 
     /**
@@ -2348,9 +2382,12 @@ public class Nd4j {
 
 
         }
-        ret = Nd4j.create(data2.size(), numColumns);
-        for (int i = 0; i < data2.size(); i++)
-            ret.putRow(i, Nd4j.create(Nd4j.createBuffer(data2.get(i))));
+        ret = Nd4j.create(Nd4j.defaultFloatingPointType(), data2.size(), numColumns);
+        for (int i = 0; i < data2.size(); i++) {
+            float[] row = data2.get(i);
+            INDArray arr = Nd4j.create(row, new long[]{1, row.length}, Nd4j.defaultFloatingPointType());
+            ret.putRow(i, arr);
+        }
         return ret;
     }
 
@@ -2385,7 +2422,9 @@ public class Nd4j {
      * @return the read txt method
      */
     public static INDArray readNumpy(String filePath, String split) throws IOException {
-        return readNumpy(new FileInputStream(filePath), split);
+        try(InputStream is = new FileInputStream(filePath)) {
+            return readNumpy(is, split);
+        }
     }
 
     /**
@@ -2461,7 +2500,7 @@ public class Nd4j {
                 if (lineNum == 4) {
                     String shapeString = line.split(":")[1].replace("[", "").replace("],", "");
                     if (shapeString.isEmpty()) {
-                        newArr = Nd4j.scalar(Nd4j.defaultFloatintPointType(), 0);
+                        newArr = Nd4j.scalar(Nd4j.defaultFloatingPointType(), 0);
                     } else {
                         String[] shapeArr = shapeString.split(",");
                         rank = shapeArr.length;
@@ -2471,10 +2510,10 @@ public class Nd4j {
                         }
                         if (theOrder == 'f' && theShape[rank-1] == 1) {
                             //Hack fix for tad issue with 'f' order and rank-1 dim shape == 1
-                            newArr = Nd4j.create(Nd4j.defaultFloatintPointType(), theShape, 'c');
+                            newArr = Nd4j.create(Nd4j.defaultFloatingPointType(), theShape, 'c');
                         }
                         else {
-                            newArr = Nd4j.create(Nd4j.defaultFloatintPointType(), theShape, theOrder);
+                            newArr = Nd4j.create(Nd4j.defaultFloatingPointType(), theShape, theOrder);
                         }
                         subsetArr = new double[(int) theShape[rank - 1]];
                     }
@@ -2500,7 +2539,7 @@ public class Nd4j {
                                 e.printStackTrace();
                             }
                         }
-                        INDArray subTensor = Nd4j.create(subsetArr, new long[]{subsetArr.length}, Nd4j.defaultFloatintPointType());
+                        INDArray subTensor = Nd4j.create(subsetArr, new long[]{subsetArr.length}, Nd4j.defaultFloatingPointType());
                         newArr.tensorAlongDimension(tensorNum, rank - 1).addi(subTensor);
                         tensorNum++;
                     }
@@ -2613,7 +2652,8 @@ public class Nd4j {
             type = ArrayOptionsHelper.dataType(shapeInformation.asLong());
             data = CompressedDataBuffer.readUnknown(dis, length, type);
         } catch (ND4JUnknownDataTypeException e) {
-            type = Nd4j.dataType();
+            //Must be a legacy array, pre dtype changes... read as default floating point type
+            type = Nd4j.defaultFloatingPointType();
             data = CompressedDataBuffer.readUnknown(dis, length, type);
 
             // manually setting data type
@@ -6715,15 +6755,8 @@ public class Nd4j {
         return skipTheadSafetyChecks.get();
     }
 
-    public static DataType defaultFloatintPointType() {
-/*        if (Shape.isR(Nd4j.dataType()))
-            return Nd4j.dataType();
-*/
+    public static DataType defaultFloatingPointType() {
         return defaultFloatingPointDataType.get();
-    }
-
-    public static void setDefaultFloatingPointDataType(@NonNull DataType dtype) {
-        defaultFloatingPointDataType.set(dtype);
     }
 
     public static boolean isPrecisionBoostAllowed() {

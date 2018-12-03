@@ -226,7 +226,7 @@ public class OrthogonalDistribution extends BaseDistribution {
             numRows *= shape[i];
         long numCols = shape[shape.length - 1];
 
-        val dtype = Nd4j.defaultFloatintPointType();
+        val dtype = Nd4j.defaultFloatingPointType();
 
         val flatShape = new long[]{numRows, numCols};
         val flatRng =  Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(dtype, flatShape, Nd4j.order()), 0.0, 1.0), random);

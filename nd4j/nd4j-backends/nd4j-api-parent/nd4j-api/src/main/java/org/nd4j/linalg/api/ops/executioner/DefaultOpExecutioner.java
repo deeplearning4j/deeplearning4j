@@ -578,9 +578,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava())
                 && op.x().data().dataType() != expectedType
-                && op.x().data().dataType() != DataType.COMPRESSED)
+                && op.x().data().dataType() != DataType.COMPRESSED) {
             throw new ND4JIllegalStateException("op.X dataType is [" + op.x().data().dataType()
-                            + "] instead of expected [" + expectedType + "]");
+                    + "] instead of expected [" + expectedType + "] - x.shape = " + Arrays.toString(op.x().shape())
+                    + (op.y() != null ? ", y.shape=" + Arrays.toString(op.y().shape()) : "")
+                    + ", z.shape=" + Arrays.toString(op.z().shape()) + " - op: " + op.getClass().getName());
+        }
 /*
         if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava())
                         && op.z().data().dataType() != expectedType
@@ -590,9 +593,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
         */
 
         if (op.y() != null && !Shape.isEmpty(op.y().shapeInfoJava())
-                && op.y().data().dataType() != expectedType)
+                && op.y().data().dataType() != expectedType) {
             throw new ND4JIllegalStateException("op.Y dataType is [" + op.y().data().dataType()
-                            + "] instead of expected [" + expectedType + "]");
+                    + "] instead of expected [" + expectedType + "] - x.shape = " + Arrays.toString(op.x().shape())
+                    + (op.y() != null ? ", y.shape=" + Arrays.toString(op.y().shape()) : "")
+                    + ", z.shape=" + Arrays.toString(op.z().shape()) + " - op: " + op.getClass().getName());
+
+        }
 
 
         if (Nd4j.getExecutioner().isVerbose()) {
@@ -619,7 +626,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return builder.toString();
     }
 
-    public static void validateDataType(DataType expectedType, INDArray... operands) {
+    public static void validateDataType(DataType expectedType, Object op, INDArray... operands) {
         if (operands == null || operands.length == 0)
             return;
 
@@ -628,9 +635,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
             if (operand == null)
                 continue;
 
-            if (operand.data().dataType() != expectedType)
-                throw new ND4JIllegalStateException("INDArray [" + cnt++ + "] dataType is [" + operand.data().dataType()
-                                + "] instead of expected [" + expectedType + "]");
+            if (operand.data().dataType() != expectedType) {
+                throw new ND4JIllegalStateException("INDArray [" + cnt + "] dataType is [" + operand.data().dataType()
+                        + "] instead of expected [" + expectedType + "]" + (op != null ? " op: " + op.getClass().getName() : ""));
+            }
+            cnt++;
         }
     }
 

@@ -653,8 +653,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                                                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                                                         .nOut(outputNum).weightInit(WeightInit.XAVIER)
                                                                         .activation(Activation.SOFTMAX).build())
-                                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).backprop(backprop)
-                                        .pretrain(pretrain);
+                                        .setInputType(InputType.convolutionalFlat(28, 28, 1));
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf.build());
         model.init();

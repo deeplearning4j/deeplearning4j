@@ -50,7 +50,6 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
 
     @Test
     public void testTsne() throws Exception {
-        KnownCrashingTests.skipCrashingTest();
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);

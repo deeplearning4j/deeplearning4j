@@ -74,7 +74,6 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
 
     @Test
     public void lossFunctionGradientCheck() {
-        KnownCrashingTests.skipCrashingTest();  //https://gist.github.com/AlexDBlack/cdf1a4d1ada7912859ee9dda3b1dc254
         ILossFunction[] lossFunctions = new ILossFunction[] {new LossBinaryXENT(), new LossBinaryXENT(),
                         new LossCosineProximity(), new LossHinge(), new LossKLD(), new LossKLD(), new LossL1(),
                         new LossL1(), new LossL1(), new LossL2(), new LossL2(), new LossMAE(), new LossMAE(),
@@ -224,8 +223,6 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
 
     @Test
     public void lossFunctionGradientCheckLossLayer() {
-        KnownCrashingTests.skipCrashingTest();
-
         ILossFunction[] lossFunctions = new ILossFunction[] {new LossBinaryXENT(), new LossBinaryXENT(),
                         new LossCosineProximity(), new LossHinge(), new LossKLD(), new LossKLD(), new LossL1(),
                         new LossL1(), new LossL2(), new LossL2(), new LossMAE(), new LossMAE(), new LossMAPE(),
@@ -513,7 +510,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 ret[1] = Nd4j.rand(new long[] {labelsShape[0], labelWidth});
                 break;
             case "LossMultiLabel":
-                ret[1] = Nd4j.rand(labelsShape).lt(0.3).castTo(Nd4j.defaultFloatintPointType());
+                ret[1] = Nd4j.rand(labelsShape).lt(0.3).castTo(Nd4j.defaultFloatingPointType());
                 // ensure that there is no example that is all ones or all zeros
                 final INDArray sum = ret[1].sum(0);
                 for (int i = 0; i < labelsShape[0]; i++) {

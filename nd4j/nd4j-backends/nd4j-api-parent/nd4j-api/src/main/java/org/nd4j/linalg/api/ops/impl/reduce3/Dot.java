@@ -22,7 +22,6 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
-import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -89,5 +88,10 @@ public class Dot extends BaseReduceFloatOp {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //TODO KEEP DIMS
         return Arrays.asList(f().dotBp(arg(0), arg(1), f1.get(0), false, dimensions));
+    }
+
+    @Override
+    public DataType resultType() {
+        return Nd4j.defaultFloatingPointType();
     }
 }

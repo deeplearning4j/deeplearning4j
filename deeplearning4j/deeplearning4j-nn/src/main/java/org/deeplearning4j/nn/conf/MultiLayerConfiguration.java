@@ -55,8 +55,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     protected List<NeuralNetConfiguration> confs;
     protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
-    protected boolean pretrain = false;
-    protected boolean backprop = true;
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
@@ -392,10 +390,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
         protected double dampingFactor = 100;
         protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
-        @Deprecated
-        protected boolean pretrain = false;
-        @Deprecated
-        protected boolean backprop = true;
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = DEFAULT_TBPTT_LENGTH;
         protected int tbpttBackLength = DEFAULT_TBPTT_LENGTH;
@@ -421,20 +415,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         public Builder inputPreProcessors(Map<Integer, InputPreProcessor> processors) {
             this.inputPreProcessors = processors;
-            return this;
-        }
-
-        /**
-         * Whether to do back prop or not
-         *
-         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork#fit(DataSetIterator)} when training for backprop.
-         *
-         * @param backprop whether to do back prop or not
-         * @return
-         */
-        @Deprecated
-        public Builder backprop(boolean backprop) {
-            this.backprop = backprop;
             return this;
         }
 
@@ -512,20 +492,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          */
         public Builder tBPTTBackwardLength(int backwardLength) {
             this.tbpttBackLength = backwardLength;
-            return this;
-        }
-
-        /**
-         * Whether to do pre train or not
-         *
-         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork#pretrain(DataSetIterator)} when training for layerwise pretraining.
-         *
-         * @param pretrain whether to do pre train or not
-         * @return builder pattern
-         */
-        @Deprecated
-        public Builder pretrain(boolean pretrain) {
-            this.pretrain = pretrain;
             return this;
         }
 
@@ -621,19 +587,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 }
 
             }
-            // Sets pretrain on the layer to track update for that specific layer
-            if (isPretrain()) {
-                for (int j = 0; j < confs.size(); j++) {
-                    Layer l = confs.get(j).getLayer();
-                    if (l instanceof BasePretrainNetwork)
-                        confs.get(j).setPretrain(pretrain);
-                }
-            }
 
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
-            conf.pretrain = pretrain;
-            conf.backprop = backprop;
             conf.inputPreProcessors = inputPreProcessors;
             conf.backpropType = backpropType;
             conf.tbpttFwdLength = tbpttFwdLength;

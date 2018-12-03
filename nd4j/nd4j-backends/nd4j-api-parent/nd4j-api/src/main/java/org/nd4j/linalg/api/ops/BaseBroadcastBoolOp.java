@@ -208,9 +208,10 @@ public abstract class BaseBroadcastBoolOp extends BaseOp implements BroadcastOp 
 
         val op = opNum();
 
-        Preconditions.checkArgument(x().dataType() == y().dataType(), "Op.X and Op.Y must have the same data type");
+        Preconditions.checkArgument(x().dataType() == y().dataType(), "Op.X and Op.Y must have the same data type: x.dataType=%s, y.dataType=%s, op=%s",
+                x.dataType(), y.dataType(), getClass().getName());
 
-        Preconditions.checkArgument(z().isB(), "Op.Z must have bool type");
+        Preconditions.checkArgument(z().isB(), "Op.Z must have bool type: z has type %s for op %s", z().dataType(), getClass());
 
         return true;
     }

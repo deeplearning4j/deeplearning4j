@@ -49,6 +49,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
@@ -66,7 +67,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
 
     @Override
     public DataType getDataType(){
-        return DataType.FLOAT;
+        return DataType.DOUBLE;
     }
 
     @Test
@@ -332,6 +333,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
 
     @Test
     public void testAEScoreFunctionSimple() throws Exception {
+        DataType dt = Nd4j.defaultFloatingPointType();
 
         for(RegressionEvaluation.Metric metric : new RegressionEvaluation.Metric[]{RegressionEvaluation.Metric.MSE,
                 RegressionEvaluation.Metric.MAE}) {
@@ -342,7 +344,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
                     .addInputs("in")
                     .layer("0", new AutoEncoder.Builder().nIn(784).nOut(32).build(), "in")
                     .setOutputs("0")
-                    .pretrain(true).backprop(false)
+
                     .build();
 
             ComputationGraph net = new ComputationGraph(conf);
@@ -368,7 +370,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
                             .build();
 
             EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConf, net, iter);
-            EarlyStoppingResult<ComputationGraph> result = trainer.fit();
+            EarlyStoppingResult<ComputationGraph> result = trainer.pretrain();
 
             assertNotNull(result.getBestModel());
             assertTrue(result.getBestModelScore() > 0.0);
@@ -391,7 +393,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
                             .decoderLayerSizes(64)
                             .build(), "in")
                     .setOutputs("0")
-                    .pretrain(true).backprop(false)
+
                     .build();
 
             ComputationGraph net = new ComputationGraph(conf);
@@ -417,7 +419,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
                             .build();
 
             EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConf, net, iter);
-            EarlyStoppingResult<ComputationGraph> result = trainer.fit();
+            EarlyStoppingResult<ComputationGraph> result = trainer.pretrain();
 
             assertNotNull(result.getBestModel());
             assertTrue(result.getBestModelScore() > 0.0);
@@ -430,6 +432,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
         for(boolean logProb : new boolean[]{false, true}) {
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .updater(new Adam(1e-5))
                     .graphBuilder()
                     .addInputs("in")
                     .layer("0", new VariationalAutoencoder.Builder()
@@ -439,7 +442,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
                             .reconstructionDistribution(new BernoulliReconstructionDistribution(Activation.SIGMOID))
                             .build(), "in")
                     .setOutputs("0")
-                    .pretrain(true).backprop(false)
+
                     .build();
 
             ComputationGraph net = new ComputationGraph(conf);
@@ -466,7 +469,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
                             .build();
 
             EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConf, net, iter);
-            EarlyStoppingResult<ComputationGraph> result = trainer.fit();
+            EarlyStoppingResult<ComputationGraph> result = trainer.pretrain();
 
             assertNotNull(result.getBestModel());
             assertTrue(result.getBestModelScore() > 0.0);

@@ -121,10 +121,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
             listBuilder.layer(i, layers.get(i));
         }
 
-        if (backprop != null)
-            listBuilder.backprop(backprop.getValue(values));
-        if (pretrain != null)
-            listBuilder.pretrain(pretrain.getValue(values));
         if (backpropType != null)
             listBuilder.backpropType(backpropType.getValue(values));
         if (tbpttFwdLength != null)

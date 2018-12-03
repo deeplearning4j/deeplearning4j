@@ -103,7 +103,7 @@ public class MaxOut extends BaseTransformOp {
 
     @Override
     public DataType resultType() {
-        return Nd4j.defaultFloatintPointType();
+        return Nd4j.defaultFloatingPointType();
     }
 
     @Override
@@ -135,7 +135,7 @@ public class MaxOut extends BaseTransformOp {
         if(arr == null)
             return Collections.emptyList();
 
-        ret.add(LongShapeDescriptor.fromShape(arr.shape(), Nd4j.defaultFloatintPointType()));
+        ret.add(LongShapeDescriptor.fromShape(arr.shape(), Nd4j.defaultFloatingPointType()));
         this.n = arr.length();
         return ret;
     }

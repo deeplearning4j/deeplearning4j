@@ -223,8 +223,7 @@ public class BackTrackLineSearch implements LineOptimizer {
             if ((step < stepMin) || Nd4j.getExecutioner()
                             .execAndReturn(new Eps(parameters, candidateParameters,
                                             Nd4j.createUninitialized(DataType.BOOL, candidateParameters.shape(), candidateParameters.ordering()),
-                                            candidateParameters.length()))
-                            .sum(Integer.MAX_VALUE).getDouble(0) == candidateParameters.length()) {
+                                            candidateParameters.length())).castTo(DataType.FLOAT).sumNumber().longValue() == candidateParameters.length()) {
                 score = setScoreFor(parameters, workspaceMgr);
                 log.debug("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using original params. Score = {}",
                                 stepMin, score);

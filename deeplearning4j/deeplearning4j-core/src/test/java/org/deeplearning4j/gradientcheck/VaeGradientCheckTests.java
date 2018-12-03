@@ -186,7 +186,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                             .reconstructionDistribution(
                                     new GaussianReconstructionDistribution(pxzAfn))
                             .activation(afn).build())
-                    .pretrain(true).backprop(false).build();
+                    .build();
 
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
@@ -276,7 +276,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                                             reconstructionDistributions[i])
                                     .activation(Activation.TANH)
                                     .build())
-                    .pretrain(true).backprop(false).build();
+                    .build();
 
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
@@ -319,7 +319,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                                     new GaussianReconstructionDistribution(Activation.TANH))
                             .numSamples(numSamples).activation(Activation.TANH)
                             .build())
-                    .pretrain(true).backprop(false).build();
+                    .build();
 
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();

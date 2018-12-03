@@ -37,11 +37,6 @@ public class DummyConfig implements TrainingConfig {
     }
 
     @Override
-    public boolean isPretrain() {
-        return false;
-    }
-
-    @Override
     public double getL1ByParam(String paramName) {
         return 0;
     }
@@ -69,10 +64,5 @@ public class DummyConfig implements TrainingConfig {
     @Override
     public double getGradientNormalizationThreshold() {
         return 1.0;
-    }
-
-    @Override
-    public void setPretrain(boolean pretrain) {
-        //No op
     }
 }

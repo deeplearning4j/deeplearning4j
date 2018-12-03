@@ -24,11 +24,11 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -96,16 +96,18 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
         if (this.x() != null && this.x().isR())
             return this.x().dataType();
 
-        return Nd4j.defaultFloatintPointType();
+        return Nd4j.defaultFloatingPointType();
     }
 
     @Override
     public boolean validateDataTypes() {
         if (y() != null)
-            Preconditions.checkArgument(x().dataType() == y().dataType(),"Op.X [" + x().dataType() + "] type must be the same as Op.Y [" + y().dataType() + "]");
+            Preconditions.checkArgument(x().dataType() == y().dataType(),
+                    "Op.X [%s] type must be the same as Op.Y [%s] for op %s: x.shape=%ndShape, y.shape=%ndShape", x().dataType(),
+                    y().dataType(), getClass().getName(), x(), y() );
 
         if (z() != null)
-            Preconditions.checkArgument(z().isR(),"Op.X must be one of floating types");
+            Preconditions.checkArgument(z().isR(),"Op.Z (result array) must be one of floating types: z datatype = %s", z().dataType());
 
         return true;
     }

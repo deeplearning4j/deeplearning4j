@@ -67,8 +67,6 @@ public class TestSameDiffLambda extends BaseDL4JTest {
 
     @Test
     public void testSameDiffLamdaLayerBasic(){
-        KnownCrashingTests.skipCrashingTest();      //TODO REMOVE THIS ONCE FIXED
-
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
@@ -136,8 +134,6 @@ public class TestSameDiffLambda extends BaseDL4JTest {
 
     @Test
     public void testSameDiffLamdaVertexBasic(){
-        KnownCrashingTests.skipCrashingTest();      //TODO REMOVE THIS ONCE FIXED
-
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)

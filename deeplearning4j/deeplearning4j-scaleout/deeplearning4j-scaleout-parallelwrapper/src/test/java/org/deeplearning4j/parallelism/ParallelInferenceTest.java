@@ -208,8 +208,8 @@ public class ParallelInferenceTest {
         ParallelInference.ObservablesProvider provider =
                         new ParallelInference.ObservablesProvider(10000000L, 100, queue);
 
-        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(100));
-        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(100));
+        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(1,100));
+        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(1,100));
 
         assertNotEquals(null, observable1);
 
@@ -223,8 +223,8 @@ public class ParallelInferenceTest {
         ParallelInference.ObservablesProvider provider =
                         new ParallelInference.ObservablesProvider(10000000L, 100, queue);
 
-        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(100).assign(1.0));
-        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(100).assign(2.0));
+        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(1,100).assign(1.0));
+        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(1,100).assign(2.0));
 
         assertNotEquals(null, observable1);
 
@@ -247,10 +247,10 @@ public class ParallelInferenceTest {
         BasicInferenceObserver observer = new BasicInferenceObserver();
         ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, 2, queue);
 
-        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(100).assign(1.0));
-        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(100).assign(2.0));
+        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(1,100).assign(1.0));
+        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(1,100).assign(2.0));
 
-        InferenceObservable observable3 = provider.setInput(observer, Nd4j.create(100).assign(3.0));
+        InferenceObservable observable3 = provider.setInput(observer, Nd4j.create(1,100).assign(3.0));
 
 
         assertNotEquals(null, observable1);
@@ -282,11 +282,11 @@ public class ParallelInferenceTest {
         ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, 4, queue);
 
         BatchedInferenceObservable observable1 =
-                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(1.0));
+                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(1.0));
         BatchedInferenceObservable observable2 =
-                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(2.0));
+                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(2.0));
         BatchedInferenceObservable observable3 =
-                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(3.0));
+                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(3.0));
 
         INDArray bigOutput = Nd4j.create(3, 10);
         for (int i = 0; i < bigOutput.rows(); i++)

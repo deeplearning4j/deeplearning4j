@@ -82,10 +82,11 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
     @Override
     public boolean validateDataTypes() {
         if (y() != null)
-            Preconditions.checkArgument(x().dataType()  == y().dataType(),"Op.X type must be the same as Op.Y");
+            Preconditions.checkArgument(x().dataType()  == y().dataType(),"Op.X type must be the same as Op.Y:" +
+                            " x.dataType=%s, y.dataType=%s, op=%s", x.dataType(), y.dataType(), getClass().getName());
 
         if (z() != null)
-            Preconditions.checkArgument(z().isB(), "Op.X type must be bool");
+            Preconditions.checkArgument(z().isB(), "Op.X type must be bool: got type %s for op %s", x.dataType(), getClass());
 
         return true;
     }

@@ -185,7 +185,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         // IOU of any in the grid cell
         //We also need 1_ij^noobj, which is (a) no object, or (b) object present in grid cell, but this box doesn't
         // have the highest IOU
-        INDArray mask1_ij_obj = Nd4j.getExecutioner().execAndReturn(new IsMax(iou.dup('c'), 1));
+        INDArray mask1_ij_obj = Nd4j.create(DataType.BOOL, iou.shape(), 'c');
+        Nd4j.getExecutioner().execAndReturn(new IsMax(iou, mask1_ij_obj, 1));
         Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, maskObjectPresent, mask1_ij_obj, 0,2,3));
         INDArray mask1_ij_noobj = Transforms.not(mask1_ij_obj);
 
@@ -347,7 +348,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //Lc = 1^(obj)*(iou - predicted)^2 + lambdaNoObj * 1^(noobj) * (iou - predicted)^2 -> dLc/diou = 2*1^(obj)*(iou-predicted) + 2 * lambdaNoObj * 1^(noobj) * (iou-predicted) = 2*(iou-predicted) * (1^(obj) + lambdaNoObj * 1^(noobj))
         INDArray twoIOUSubPredicted = iou.subi(predictedConfidence).muli(2.0);  //Shape: [mb, b, h, w]. Note that when an object is present, IOU and confidence are the same. In-place to avoid copy op (iou no longer needed)
-        INDArray dLc_dIOU = twoIOUSubPredicted.muli(mask1_ij_obj.add(mask1_ij_noobj.muli(lambdaNoObj)));    //Modify mask1_ij_noobj - avoid extra temp array allocatino
+        INDArray dLc_dIOU = twoIOUSubPredicted.muli(mask1_ij_noobj.castTo(Nd4j.defaultFloatingPointType()).muli(lambdaNoObj).addi(mask1_ij_obj));
 
 
         INDArray dLc_dxy = Nd4j.createUninitialized(iouRet.dIOU_dxy.shape(), iouRet.dIOU_dxy.ordering());
@@ -468,8 +469,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         noIntMask2 = Transforms.or(noIntMask2.get(all(), all(), point(0), all(), all()), noIntMask2.get(all(), all(), point(1), all(), all()) );
         INDArray noIntMask = Transforms.or(noIntMask1, noIntMask2 );
 
-//        INDArray intMask = Nd4j.getExecutioner().execAndReturn(new Not(noIntMask, noIntMask, 0.0)); //Values 0 if no intersection
-        INDArray intMask = Nd4j.getExecutioner().execAndReturn(new Not(noIntMask)); //Values 0 if no intersection
+        INDArray intMask = Transforms.not(noIntMask); //Values 0 if no intersection
         Broadcast.mul(intMask, objectPresentMask, intMask, 0, 2, 3);
 
         //Mask the intersection area: should be 0 if no intersection

@@ -11231,7 +11231,7 @@ public class SameDiff {
                 ops.add(customOp);
             } else if (differentialFunction instanceof Op) {
                 if (log.isTraceEnabled())
-                    log.trace("Starting execution of Op op");
+                    log.trace("Starting execution of Op op: {}", ops.getClass().getSimpleName());
 
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
@@ -11253,7 +11253,7 @@ public class SameDiff {
                 putOrUpdateShapeForVarName(outVarName, outputShape.get(0), true);
                 INDArray z = op.z();
                 Preconditions.checkNotNull(z, "Could not get output array for op: %s", op.getClass());
-                if(outputShape.get(0).equals(z.shapeDescriptor())){
+                if(!outputShape.get(0).equals(z.shapeDescriptor())){
                     if(log.isTraceEnabled()){
                         log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
                                 op.getClass().getSimpleName(), Arrays.toString(z.shape()), outputShape.get(0).toString());

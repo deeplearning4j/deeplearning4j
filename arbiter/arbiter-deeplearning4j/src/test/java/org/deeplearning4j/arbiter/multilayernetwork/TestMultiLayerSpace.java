@@ -169,7 +169,7 @@ public class TestMultiLayerSpace {
 
     @Test
     public void testILossFunctionGetsSet() {
-        ILossFunction lossFunction = new LossMCXENT(Nd4j.create(new float[] {1f, 2f}));
+        ILossFunction lossFunction = new LossMCXENT(Nd4j.create(new float[] {1f, 2f}, new long[]{1,2}));
 
         MultiLayerConfiguration expected =
                         new NeuralNetConfiguration.Builder().updater(new Sgd(0.005)).seed(12345).list()
@@ -207,7 +207,7 @@ public class TestMultiLayerSpace {
                                                         .build(), new IntegerParameterSpace(1, 3)) //1-3 identical layers
                                         .addLayer(new OutputLayerSpace.Builder().nIn(10).nOut(10)
                                                         .activation(Activation.SOFTMAX).build())
-                                        .pretrain(false).backprop(true).build();
+                                        .build();
 
         int nParams = mls.numParameters();
         assertEquals(4, nParams);
@@ -244,8 +244,6 @@ public class TestMultiLayerSpace {
 
 
             MultiLayerConfiguration conf = mls.getValue(rvs).getMultiLayerConfiguration();
-            assertEquals(false, conf.isPretrain());
-            assertEquals(true, conf.isBackprop());
 
             int nLayers = conf.getConfs().size();
             assertTrue(nLayers >= 3 && nLayers <= 5); //1 conv + 1-3 dense layers + 1 output layer: 2 to 4
@@ -332,7 +330,7 @@ public class TestMultiLayerSpace {
                                                                                         new GaussianReconstructionDistribution(),
                                                                                         new BernoulliReconstructionDistribution()))
                                                         .build())
-                                        .backprop(false).pretrain(true).build();
+                                        .build();
 
         int numParams = mls.numParameters();
 
@@ -468,7 +466,7 @@ public class TestMultiLayerSpace {
                                         .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(2,
                                                         new OutputLayer.Builder()
                                                                         .lossFunction(new LossMSE(Nd4j.create(
-                                                                                        new double[] {1, 2, 3, 4, 5})))
+                                                                                        new double[] {1, 2, 3, 4, 5}, new long[]{1,5})))
                                                                         .nIn(10).nOut(5).build())
                                         .build();
 
@@ -477,8 +475,7 @@ public class TestMultiLayerSpace {
                                         .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(),
                                                         new FixedValue<>(2)) //2 identical layers
                                         .addLayer(new OutputLayerSpace.Builder()
-                                                        .iLossFunction(new LossMSE(
-                                                                        Nd4j.create(new double[] {1, 2, 3, 4, 5})))
+                                                        .iLossFunction(new LossMSE(Nd4j.create(new double[] {1, 2, 3, 4, 5}, new long[]{1,5})))
                                                         .nIn(10).nOut(5).build())
                                         .build();
 
@@ -630,13 +627,13 @@ public class TestMultiLayerSpace {
         @Override
         public Object trainData(Map<String, Object> dataParameters) {
             return new ExistingDataSetIterator(
-                    Collections.singletonList(new DataSet(Nd4j.create(1, 1, 28, 28), Nd4j.create(10))));
+                    Collections.singletonList(new DataSet(Nd4j.create(1, 1, 28, 28), Nd4j.create(1,10))));
         }
 
         @Override
         public Object testData(Map<String, Object> dataParameters) {
             return new ExistingDataSetIterator(
-                    Collections.singletonList(new DataSet(Nd4j.create(1, 1, 28, 28), Nd4j.create(10))));
+                    Collections.singletonList(new DataSet(Nd4j.create(1, 1, 28, 28), Nd4j.create(1,10))));
         }
 
         @Override

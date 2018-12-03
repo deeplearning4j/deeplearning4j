@@ -608,7 +608,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                         .dist(new UniformDistribution(0, 1))
                                         .activation(Activation.SOFTMAX).build(),
                                 "layer0", "layer2")
-                        .setOutputs("out").pretrain(true).backprop(false).build();
+                        .setOutputs("out").build();
 
 
         ComputationGraph net = new ComputationGraph(conf);
@@ -1672,7 +1672,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                         .nIn(10).nOut(10).encoderLayerSizes(10).decoderLayerSizes(10).build(), "in")
                 .layer("1", new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "0")
                 .setOutputs("1")
-                .pretrain(true)
+
                 .build();
 
         ComputationGraph net = new ComputationGraph(conf);

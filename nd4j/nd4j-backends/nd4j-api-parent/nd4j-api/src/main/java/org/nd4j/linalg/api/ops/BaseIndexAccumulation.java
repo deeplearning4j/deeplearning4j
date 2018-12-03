@@ -189,7 +189,8 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     public boolean validateDataTypes() {
 
         if (z() != null)
-            Preconditions.checkArgument(z().dataType() == DataType.LONG, "IndexReduce operations require LONG output");
+            Preconditions.checkArgument(z().dataType() == DataType.LONG, "IndexReduce operations require LONG output: " +
+                    "got result array of type %s for op %s", z.dataType(), getClass());
 
         return true;
     }

@@ -448,7 +448,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                                                                                         .activation(afn).build())
                                                         .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
                                                                         .activation(outputActivation).build())
-                                                        .pretrain(true).build();
+                                                        .build();
 
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();

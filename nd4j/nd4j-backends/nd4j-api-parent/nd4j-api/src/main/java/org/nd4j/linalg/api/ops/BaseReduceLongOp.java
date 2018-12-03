@@ -83,10 +83,11 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
     @Override
     public boolean validateDataTypes() {
         if (y() != null)
-            Preconditions.checkArgument(x().dataType() == y().dataType(), "Op.X type must be the same as Op.Y");
+            Preconditions.checkArgument(x().dataType() == y().dataType(), "Op.X type must be the same as Op.Y:" +
+                    " x.dataType=%s, y.dataType=%s, op=%s", x.dataType(), y.dataType(), getClass().getName());
 
         if (z() != null)
-            Preconditions.checkArgument( z().dataType() == DataType.LONG,"Op.Z must be long");
+            Preconditions.checkArgument( z().dataType() == DataType.LONG,"Op.Z must be long: has type %s for op %s", z().dataType(), getClass());
 
         return true;
     }

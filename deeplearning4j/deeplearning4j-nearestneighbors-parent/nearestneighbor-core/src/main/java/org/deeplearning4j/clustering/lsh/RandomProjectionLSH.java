@@ -165,7 +165,7 @@ public class RandomProjectionLSH implements LSH {
 
         INDArray res = Nd4j.zeros(DataType.BOOL, index.shape());
         Nd4j.getExecutioner().exec(new BroadcastEqualTo(index, pattern, res, -1));
-        return res.castTo(Nd4j.defaultFloatintPointType()).min(-1);
+        return res.castTo(Nd4j.defaultFloatingPointType()).min(-1);
     }
 
     @Override
