@@ -1299,6 +1299,16 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
+    public boolean any() {
+        return false;
+    }
+
+    @Override
+    public boolean none() {
+        return false;
+    }
+
+    @Override
     public boolean isS() {
         return false;
     }

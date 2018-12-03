@@ -2763,4 +2763,16 @@ public interface INDArray extends Serializable {
      * @return
      */
     boolean all();
+
+    /**
+     * This method checks if any of the elements within this array are non-zero (or true, in case of boolean)
+     * @return
+     */
+    boolean any();
+
+    /**
+     * This method checks if any of the elements within this array are non-zero (or true, in case of boolean)
+     * @return
+     */
+    boolean none();
 }

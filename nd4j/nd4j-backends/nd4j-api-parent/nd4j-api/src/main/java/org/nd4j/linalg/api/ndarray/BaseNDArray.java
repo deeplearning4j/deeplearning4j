@@ -40,6 +40,7 @@ import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
 import org.nd4j.linalg.api.ops.impl.reduce.same.*;
 import org.nd4j.linalg.api.ops.impl.reduce3.EqualsWithEps;
@@ -6515,6 +6516,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public boolean all() {
         val r = Nd4j.getExecutioner().exec(new All(this)).z();
         return r.getDouble(0) != 0.0;
+    }
+
+    @Override
+    public boolean any() {
+        val r = Nd4j.getExecutioner().exec(new Any(this)).z();
+        return r.getDouble(0) != 0.0;
+    }
+
+    @Override
+    public boolean none() {
+        return !any();
     }
 
     @Override
