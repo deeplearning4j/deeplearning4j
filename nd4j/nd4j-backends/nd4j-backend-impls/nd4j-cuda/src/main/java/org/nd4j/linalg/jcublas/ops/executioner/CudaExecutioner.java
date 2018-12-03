@@ -50,6 +50,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.compression.ThresholdCompression;
+import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
@@ -109,7 +110,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        validateDataType(Nd4j.dataType(), op);
+//        validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -1625,6 +1626,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         extraArgs.put(4, new CudaPointer(op.getSharedMemorySize()));
 
         long arguments[] = new long[numArguments];
+        val dataType = op.getArguments().get(0).dataType();
 
         for (int x = 0; x < numArguments; x++) {
             arguments[x] = op.getArguments().get(x) == null ? 0
@@ -1671,17 +1673,18 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         DataBuffer intBuffer = Nd4j.getDataBufferFactory().createInt(indexes);
 
         double[] reals = new double[numRealArguments];
+        INDArray realsBuffer;
         for (int x = 0; x < numRealArguments; x++) {
             reals[x] = op.getRealArguments().get(x).doubleValue();
         }
 
-        INDArray realsBuffer = Nd4j.create(reals);
+        realsBuffer = Nd4j.create(reals, new long[]{reals.length}, dataType);
 
         nativeOps.execAggregate(extraArgs, op.opNum(), xPtr, numArguments, sPtr, numShapeArguments,
                     (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
                     numIndexArguments, iPtr, numIntArrays,
                     AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
-                    numRealArguments, SameDiff.getDataTypeAsByte(DataType.FLOAT));
+                    numRealArguments, SameDiff.getDataTypeAsByte(dataType));
     }
 
     /**
