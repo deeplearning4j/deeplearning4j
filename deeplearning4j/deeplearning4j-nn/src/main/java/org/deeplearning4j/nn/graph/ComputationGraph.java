@@ -4666,7 +4666,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * a crash if we use the pointer initialized on one device, on another device.
      */
     protected void validateHelperWorkspaceThreads(){
-        log.info("Checking helper workspaces - thread {}, previous device {}, current device {}", Thread.currentThread().getId(), helperWorkspacesDeviceId, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+//        log.info("Checking helper workspaces - thread {}, previous device {}, current device {}", Thread.currentThread().getId(), helperWorkspacesDeviceId, Nd4j.getAffinityManager().getDeviceForCurrentThread());
         if(helperWorkspacesDeviceId == -1) {
             helperWorkspacesDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             if(helperWorkspaces != null){
