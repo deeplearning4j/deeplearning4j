@@ -34,7 +34,7 @@ namespace functions {
                              Nd4jLong *xShapeInfo,
                              void *y,
                              Nd4jLong *yShapeInfo,
-                             void *result,
+                             void *z,
                              Nd4jLong *resultShapeInfo,
                              int *dimension,
                              int dimensionLength,
@@ -46,7 +46,7 @@ namespace functions {
                                                xShapeInfo,
                                                y,
                                                yShapeInfo,
-                                               result,
+                                               z,
                                                resultShapeInfo,
                                                dimension,
                                                dimensionLength,
@@ -73,7 +73,7 @@ namespace functions {
 
                 auto x = reinterpret_cast<X *>(vx);
                 auto y = reinterpret_cast<Y *>(vy);
-                auto result = reinterpret_cast<Z *>(vz);
+                auto z = reinterpret_cast<Z *>(vz);
 
                 //decompose in to several sub tads after
                 //moving all dimensions (in sorted order)
@@ -92,7 +92,7 @@ namespace functions {
                     tadOffsets = tad->tadOffsets;
                 }
 
-                //int *resultStride = shape::stride(tadShapeShapeInfo);
+                //int *resultStride = shape::stride(tadShapeShapeInfo);                
                 auto tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
                 auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 auto yStride = shape::elementWiseStride(yShapeInfo);
@@ -104,6 +104,8 @@ namespace functions {
                 }
 
                 auto zEWS = shape::elementWiseStride(tadShapeInfoZ);
+                auto lenZ = shape::length(tadShapeInfoZ);
+                auto lenY = shape::length(yShapeInfo);
 
                 int tadsPerThread = tads / TAD_THRESHOLD;
                 int _threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
@@ -115,32 +117,31 @@ namespace functions {
                     auto offsetZ = tadOffsetZ[i];
 
                     if (tadEWS > 0 && yStride > 0 && zEWS > 0 && dimensionLength == 1) {
-                        auto oRes = result + offsetZ;
+                        auto oZ = z + offsetZ;
                         auto oX = x + offset;
 
                         if (tadEWS == 1 && yStride == 1 && zEWS == 1) {
 #pragma omp simd
-                            for (int f = 0; f < tadLength; f++) {
-                                oRes[f] = OpType::op(oX[f], y[f]);
-                            }
-                        } else {
+                            for (int f = 0; f < tadLength; f++)
+                                oZ[f] = OpType::op(oX[f], y[f]);                            
+                        } 
+                        else {
 #pragma omp simd
-                            for (int f = 0; f < tadLength; f++) {
-                                oRes[f * zEWS] = OpType::op(oX[f * tadEWS], y[f * yStride]);
-                            }
+                            for (int f = 0; f < tadLength; f++) 
+                                oZ[f * zEWS] = OpType::op(oX[f * tadEWS], y[f * yStride]);                            
                         }
                     }
-                    else {                        
+                    else {
 
                         // TODO: cover this codebranch with tests
-                        // all this stuff already happens within thread
+                        // all this stuff already happens within thread                        
                         for (int f = 0; f < tadLength; f++) {                            
 
                             auto xOffset = offset + shape::getIndexOffset(f, tadShapeShapeInfo, tadLength);
-                            auto zOffset = offsetZ + shape::getIndexOffset(f, tadShapeInfoZ, tadLength);
-                            auto yOffset = shape::getIndexOffset(f, yShapeInfo, tadLength);
+                            auto zOffset = offsetZ + shape::getIndexOffset(f, tadShapeInfoZ, lenZ);
+                            auto yOffset = shape::getIndexOffset(f, yShapeInfo, lenY);
 
-                            result[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+                            z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
                         }
                     }
                 }

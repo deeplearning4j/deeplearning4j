@@ -30,30 +30,35 @@ __global__ void flattenKernel(
                     int dOffset,
                     char order,
                     void *vz, Nd4jLong *zShapeInfo,
-                    void *vy,
-                    Nd4jLong *yShapeInfo) {
+                    void *vy, Nd4jLong *yShapeInfo) {
 
-    auto z = reinterpret_cast<T *>(vz);
-    auto y = reinterpret_cast<T *>(vy);
+    auto z = reinterpret_cast<T*>(vz);
+    auto y = reinterpret_cast<T*>(vy);
     
-    Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;   
+    __shared__ Nd4jLong lenY, lenZ, yOrder, zEWS, yEWS;
+
+    if (threadIdx.x == 0) {                
+        
+        yEWS = shape::elementWiseStride(yShapeInfo);
+        zEWS = shape::elementWiseStride(zShapeInfo);
+        lenY = shape::length(yShapeInfo);
+        lenZ = shape::length(zShapeInfo);
+    }
+    __syncthreads();
     
-    auto len = shape::length(yShapeInfo);
-    auto yOrder = shape::order(yShapeInfo);
-    auto zEWS = shape::elementWiseStride(zShapeInfo);
-    auto yEWS = shape::elementWiseStride(yShapeInfo);
+    Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;        
         
     if (zEWS >= 1 && yEWS >= 1 && yOrder == order) {
             
-        for (int i = tid; i < len; i+= gridDim.x * blockDim.x)
+        for (int i = tid; i < lenY; i += gridDim.x * blockDim.x)
             z[i * zEWS + dOffset] = y[i * yEWS];
     } 
     else {
         
-        for(auto i = tid; i < len; i+= gridDim.x * blockDim.x) {
+        for(auto i = tid; i < lenY; i += gridDim.x * blockDim.x) {
                 
-            auto offsetZ = shape::getIndexOffset(i, zShapeInfo, len);
-            auto offsetY = shape::getIndexOffset(i, yShapeInfo, len);
+            auto offsetZ = shape::getIndexOffset(i, zShapeInfo, lenZ);
+            auto offsetY = shape::getIndexOffset(i, yShapeInfo, lenY);
             z[offsetZ + dOffset] = y[offsetY];
         }
     } 
