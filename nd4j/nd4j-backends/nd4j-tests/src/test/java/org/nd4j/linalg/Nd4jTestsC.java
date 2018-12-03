@@ -4444,12 +4444,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
 
         Nd4j.getExecutioner().commit();
+        log.info("original: \n{}", initial);
 
         Nd4j.getExecutioner().exec(new BroadcastLessThan(initial, mask, result, 1));
 
+        Nd4j.getExecutioner().commit();
+        log.info("Comparison ----------------------------------------------");
         for (int i = 0; i < initial.rows(); i++) {
             val row = result.getRow(i);
             assertEquals("Failed at row " + i, exp, row);
+            log.info("-------------------");
         }
     }
 
@@ -5847,7 +5851,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(new long[]{3, 2}, newShape.shape());
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test(expected = IllegalStateException.class)
     public void testTranspose1() {
         val vector = Nd4j.trueVector(new float[]{1, 2, 3, 4, 5, 6});
 
@@ -5859,7 +5863,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(vector.shape(), transposed.shape());
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test(expected = IllegalStateException.class)
     public void testTranspose2() {
         val scalar = Nd4j.trueScalar(2.f);
 

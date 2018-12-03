@@ -55,7 +55,7 @@ public class CudaUByteDataBuffer extends BaseCudaDataBuffer {
     }
 
     public CudaUByteDataBuffer(long length, boolean initialize) {
-        super(length, 2, initialize);
+        super(length, 1, initialize);
     }
 
     public CudaUByteDataBuffer(long length, int elementSize) {
@@ -67,7 +67,7 @@ public class CudaUByteDataBuffer extends BaseCudaDataBuffer {
     }
 
     public CudaUByteDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
-        super(length, 2, initialize, workspace);
+        super(length, 1, initialize, workspace);
     }
 
     public CudaUByteDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {

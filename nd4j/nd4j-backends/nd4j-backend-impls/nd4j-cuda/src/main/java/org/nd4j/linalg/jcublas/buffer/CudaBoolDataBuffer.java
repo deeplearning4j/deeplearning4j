@@ -55,7 +55,7 @@ public class CudaBoolDataBuffer extends BaseCudaDataBuffer {
     }
 
     public CudaBoolDataBuffer(long length, boolean initialize) {
-        super(length, 2, initialize);
+        super(length, 1, initialize);
     }
 
     public CudaBoolDataBuffer(long length, int elementSize) {
@@ -67,7 +67,7 @@ public class CudaBoolDataBuffer extends BaseCudaDataBuffer {
     }
 
     public CudaBoolDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
-        super(length, 2, initialize, workspace);
+        super(length, 1, initialize, workspace);
     }
 
     public CudaBoolDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
