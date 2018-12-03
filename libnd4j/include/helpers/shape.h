@@ -975,6 +975,7 @@ namespace shape {
     * arrLen - array length
    */
     ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen);
+    ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOrderOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen, const char order);
     
     /**
    * Compute the real linear indices for the given shape and stride
@@ -1933,11 +1934,37 @@ template <typename T>
     INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen) {
         
         Nd4jLong offset = 0;
-        for(int i = 1; i <= *shapeInfo; i++) {
+
+        for(int i = 1; i <= *shapeInfo; ++i) {
             arrLen /= shapeInfo[i];
             if(arrLen > 0 && shapeInfo[i] > 1) {                
                 offset += (index / arrLen) * shapeInfo[i + *shapeInfo];
                 index %= arrLen;
+            }
+        }
+        return offset;
+    }
+
+//////////////////////////////////////////////////////////////////////    
+    INLINEDEF _CUDA_HD Nd4jLong getIndexOrderOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen, const char order) {
+
+        Nd4jLong offset = 0;
+        if(order == 'c') {
+            for(int i = 1; i <= *shapeInfo; ++i) {
+                arrLen /= shapeInfo[i];
+                if(arrLen > 0 && shapeInfo[i] > 1) {
+                    offset += (index / arrLen) * shapeInfo[i + *shapeInfo];
+                    index %= arrLen;
+                }
+            }
+        }
+        else {
+            for(int i = *shapeInfo; i >= 1 ; --i) {
+                arrLen /= shapeInfo[i];
+                if(arrLen > 0 && shapeInfo[i] > 1) {
+                    offset += (index / arrLen) * shapeInfo[i + *shapeInfo];
+                    index %= arrLen;
+                }
             }
         }
         return offset;

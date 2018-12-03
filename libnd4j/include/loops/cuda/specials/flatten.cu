@@ -35,32 +35,27 @@ __global__ void flattenKernel(
     auto z = reinterpret_cast<T*>(vz);
     auto y = reinterpret_cast<T*>(vy);
     
-    __shared__ Nd4jLong lenY, lenZ, yOrder, zEWS, yEWS;
+    __shared__ Nd4jLong lenY, yOrder, zEWS, yEWS;
 
     if (threadIdx.x == 0) {                
         
         yEWS = shape::elementWiseStride(yShapeInfo);
         zEWS = shape::elementWiseStride(zShapeInfo);
         lenY = shape::length(yShapeInfo);
-        lenZ = shape::length(zShapeInfo);
     }
     __syncthreads();
-    
+
     Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;        
         
     if (zEWS >= 1 && yEWS >= 1 && yOrder == order) {
-            
+ 
         for (int i = tid; i < lenY; i += gridDim.x * blockDim.x)
             z[i * zEWS + dOffset] = y[i * yEWS];
     } 
     else {
         
-        for(auto i = tid; i < lenY; i += gridDim.x * blockDim.x) {
-                
-            auto offsetZ = shape::getIndexOffset(i, zShapeInfo, lenZ);
-            auto offsetY = shape::getIndexOffset(i, yShapeInfo, lenY);
-            z[offsetZ + dOffset] = y[offsetY];
-        }
+        for(auto i = tid; i < lenY; i += gridDim.x * blockDim.x)
+            z[i * zEWS + dOffset] = y[shape::getIndexOrderOffset(i, yShapeInfo, lenY, order)];
     } 
 }
 
