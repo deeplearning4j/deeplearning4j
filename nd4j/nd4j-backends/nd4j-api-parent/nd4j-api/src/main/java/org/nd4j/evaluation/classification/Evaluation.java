@@ -16,9 +16,9 @@
 
 package org.nd4j.evaluation.classification;
 
-import com.google.common.base.Preconditions;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.EvaluationAveraging;
 import org.nd4j.evaluation.EvaluationUtils;
