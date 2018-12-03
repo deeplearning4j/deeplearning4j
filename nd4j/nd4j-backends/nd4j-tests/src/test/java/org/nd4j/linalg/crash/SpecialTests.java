@@ -312,15 +312,15 @@ public class SpecialTests extends BaseNd4jTest {
 
     @Test
     public void reproduceWorkspaceCrash_2(){
-        val dtypes = new DataType[]{DataType.LONG, DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
+        val dtypes = new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.LONG, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
         for (val dX : dtypes) {
             for (val dZ: dtypes) {
-                val array = Nd4j.create(dX, 100, 100).assign(1);
+                val array = Nd4j.create(dX, 2, 5).assign(1);
 
                 log.info("Trying to cast {} to {}", dX, dZ);
                 val casted = array.castTo(dZ);
 
-                val exp = Nd4j.create(dZ, 100, 100).assign(1);
+                val exp = Nd4j.create(dZ, 2, 5).assign(1);
                 assertEquals(exp, casted);
             }
         }
@@ -328,46 +328,81 @@ public class SpecialTests extends BaseNd4jTest {
 
     @Test
     public void reproduceWorkspaceCrash_3(){
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
         val conf = WorkspaceConfiguration.builder().build();
 
         val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
-        val dtypes = new DataType[]{DataType.LONG, DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
+        val dtypes = new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.LONG, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
         for (val dX : dtypes) {
             for (val dZ: dtypes) {
-                //try(val ws2 = ws.notifyScopeEntered()) {
-                    val array = Nd4j.create(dX, 100, 100).assign(1);
-
-                    Nd4j.getExecutioner().commit();
-
+                try(val ws2 = ws.notifyScopeEntered()) {
+                    val array = Nd4j.create(dX, 2, 5).assign(1);
                     log.info("Trying to cast {} to {}", dX, dZ);
                     val casted = array.castTo(dZ);
-
-                    Nd4j.getExecutioner().commit();
-
-                    val exp = Nd4j.create(dZ, 100, 100).assign(1);
-
-                    Nd4j.getExecutioner().commit();
-
+                    val exp = Nd4j.create(dZ, 2, 5).assign(1);
                     assertEquals(exp, casted);
 
                     Nd4j.getExecutioner().commit();
-             //   }
+                }
             }
         }
     }
 
     @Test
     public void testCastLong_1() {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
-
         val array = Nd4j.create(DataType.LONG, 100, 100).assign(1);
-        val castedA = array.castTo(DataType.BYTE).assign(0);
-        val castedB = array.castTo(DataType.BYTE).assign(0);
+        val second = Nd4j.create(DataType.LONG, 100, 100).assign(1);
+        log.info("----------------");
+        val castedA = array.castTo(DataType.BYTE).assign(3);
+        val castedB = array.castTo(DataType.BYTE).assign(3);
         Nd4j.getExecutioner().commit();
         assertEquals(castedA, castedB);
+
+        assertEquals(array, second);
+    }
+
+    @Test
+    public void testCastHalf_1() throws Exception {
+        val array = Nd4j.create(DataType.HALF, 2, 5).assign(1);
+        assertEquals(10.f, array.sumNumber().floatValue(), 1e-3);
+    }
+
+    @Test
+    public void testCastHalf_2() throws Exception {
+        val array = Nd4j.create(DataType.HALF, 2, 5).assign(1);
+        assertEquals(10.f, array.sumNumber().floatValue(), 1e-3);
+    }
+
+    @Test
+    public void testCastHalf_3() throws Exception {
+        val arrayY = Nd4j.create(DataType.FLOAT, 2, 5).assign(2);
+        val arrayX = Nd4j.create(DataType.HALF, 2, 5).assign(arrayY);
+        assertEquals(20.f, arrayX.sumNumber().floatValue(), 1e-3);
+    }
+
+    @Test
+    public void testReduce_Small_1() {
+        val array = Nd4j.create(DataType.SHORT, 100, 30).assign(1);
+        assertEquals(3000, array.sumNumber().intValue());
+    }
+
+    @Test
+    public void testReduce_Small_2() {
+        val array = Nd4j.create(DataType.BYTE, 100, 100).assign(0);
+        assertEquals(0, array.sumNumber().intValue());
+    }
+
+    @Test
+    public void testReduce3_Small_1() {
+        val arrayA = Nd4j.create(DataType.SHORT, 100, 100).assign(1);
+        val arrayB = Nd4j.create(DataType.SHORT, 100, 100).assign(1);
+        assertEquals(arrayA, arrayB);
+    }
+
+    @Test
+    public void testReduce3_Small_2() {
+        val arrayA = Nd4j.create(DataType.BYTE, 100, 100).assign(1);
+        val arrayB = Nd4j.create(DataType.BYTE, 100, 100).assign(1);
+        assertEquals(arrayA, arrayB);
     }
 
     @Test

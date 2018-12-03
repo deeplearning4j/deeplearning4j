@@ -124,6 +124,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
     public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataType type, boolean initialize) {
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 
+        if (requiredMemory % 8 != 0)
+            requiredMemory += requiredMemory % 8;
+
         if (!isUsed.get()) {
             if (disabledCounter.incrementAndGet() % 10 == 0)
                 log.warn("Worskpace was turned off, and wasn't enabled after {} allocations", disabledCounter.get());

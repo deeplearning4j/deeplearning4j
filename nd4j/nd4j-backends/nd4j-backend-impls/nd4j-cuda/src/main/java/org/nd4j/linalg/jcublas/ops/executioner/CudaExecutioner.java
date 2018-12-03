@@ -1170,8 +1170,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
-        Pointer extraArgs = op.extraArgs() != null
-                ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()), context) : null;
+        Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.getOpType() == Op.Type.SCALAR_BOOL ? op.x().dataType() : op.z().dataType()), context) : null;
 
         Pointer z = AtomicAllocator.getInstance().getPointer(op.z(), context);
         Pointer zShapeInfo = AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context);
@@ -1182,11 +1181,24 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
                 hostYShapeInfo, hostZShapeInfo, null, null);
 
-        nativeOps.execScalar(xShapeInfoHostPointer, op.opNum(),
-                null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
-                null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.scalar(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.scalar().shapeInfoDataBuffer(), context),
-                extraArgs);
+        switch (op.getOpType()) {
+            case SCALAR_BOOL:
+                nativeOps.execScalarBool(xShapeInfoHostPointer, op.opNum(),
+                        null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                        null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
+                        null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.scalar(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.scalar().shapeInfoDataBuffer(), context),
+                        extraArgs);
+                break;
+            case SCALAR:
+                nativeOps.execScalar(xShapeInfoHostPointer, op.opNum(),
+                        null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
+                        null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
+                        null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.scalar(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.scalar().shapeInfoDataBuffer(), context),
+                        extraArgs);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unknown op type: " + op.getOpType());
+        }
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.scalar());
 

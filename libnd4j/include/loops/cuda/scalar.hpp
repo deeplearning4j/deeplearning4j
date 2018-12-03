@@ -225,8 +225,9 @@ __device__ void ScalarTransform<X,Y,Z>::transformCuda(Nd4jLong n,
     int totalThreads = gridDim.x * blockDim.x;
     int tid = blockIdx.x * blockDim.x + threadIdx.x;            
             
-    for (Nd4jLong i = tid; i < n; i += totalThreads)
-        z[i * xEws] = OpType::op(x[i * xEws], y, params);
+    for (Nd4jLong i = tid; i < n; i += totalThreads) {
+        z[i * zEws] = OpType::op(x[i * xEws], y, params);
+    }
             
 }
 

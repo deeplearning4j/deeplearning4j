@@ -26,6 +26,7 @@
 #include <cfloat>
 #include <iosfwd>
 #include <iostream>
+#include <pointercast.h>
 
 // support for half precision conversion
 #ifdef __INTEL_COMPILER
@@ -246,6 +247,38 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 #endif
     }
 
+    local_def explicit operator double() const {
+        return static_cast<double>(static_cast<float>(*this));
+    }
+
+    local_def explicit operator Nd4jLong() const {
+        return static_cast<Nd4jLong>(static_cast<float>(*this));
+    }
+
+    local_def explicit operator int() const {
+        return static_cast<int>(static_cast<float>(*this));
+    }
+
+    local_def explicit operator bool() const {
+        return static_cast<float>(*this) > 0.0f;
+    }
+
+    local_def explicit operator int16_t() const {
+        return static_cast<int16_t>(static_cast<float>(*this));
+    }
+
+    local_def explicit operator uint16_t() const {
+        return static_cast<uint16_t>(static_cast<float>(*this));
+    }
+
+    local_def explicit operator uint8_t() const {
+        return static_cast<uint8_t>(static_cast<float>(*this));
+    }
+
+    local_def explicit operator int8_t() const {
+        return static_cast<int8_t>(static_cast<float>(*this));
+    }
+
     //    local_def operator double() const { return (float)*this; }
 
     local_def operator half() const { return data; }
@@ -278,6 +311,10 @@ local_def ihalf cpu_float2ihalf_rn(float f)
         assign((float)rhs);
     }
 
+    local_def void assign(const bool rhs) {
+        assign(rhs ? 1.0f : 0.0f);
+    }
+
     local_def void assign(long unsigned int rhs) {
         assign((float)rhs);
     }
@@ -295,10 +332,10 @@ local_def ihalf cpu_float2ihalf_rn(float f)
       auto t = __float2half_rn(rhs);
       auto b = *(data.getXP());
 
-#ifdef CUDA_9
-      data.assign(t);
-#else
+#ifdef CUDA_8
       *(data.getXP()) = t;
+#else
+      data.assign(t);
 #endif
 
 #else

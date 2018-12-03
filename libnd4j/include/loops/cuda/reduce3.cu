@@ -133,108 +133,108 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
 
 		if (extraParams != nullptr)
 			extraZ[2] = *(static_cast<Z*>(extraParams));
-		else 
+		else
 			extraZ[2] = (Z) 0.0f;
 	}
 
-	__syncthreads();
+        __syncthreads();
 
-	Z startingVal = OpType::startingValue(x);
-	Nd4jLong length = shape::length(xShapeInfo);
-	int xEws = shape::elementWiseStride(xShapeInfo);
-	int yEws = shape::elementWiseStride(yShapeInfo);
-	int tid = blockIdx.x * blockDim.x + threadIdx.x;
-	char xOrder = shape::order(xShapeInfo);
-	char yOrder = shape::order(yShapeInfo);
+        Z startingVal = OpType::startingValue(x);
+        Nd4jLong length = shape::length(xShapeInfo);
+        int xEws = shape::elementWiseStride(xShapeInfo);
+        int yEws = shape::elementWiseStride(yShapeInfo);
+        int tid = blockIdx.x * blockDim.x + threadIdx.x;
+        char xOrder = shape::order(xShapeInfo);
+        char yOrder = shape::order(yShapeInfo);
 
-	if(xOrder == yOrder && (xEws > 0 && yEws > 0) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
-		
-		if (xEws == 1 && yEws == 1) {
-			for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
-				startingVal = OpType::update(startingVal, OpType::opAtomic(x[i], y[i], extraZ), extraZ);
-			}
-		}
-		else {
-			for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) 
-				startingVal = OpType::update(startingVal, OpType::opAtomic(x[i * xEws], y[i * yEws], extraZ), extraZ);			
-		}
+        if(xOrder == yOrder && (xEws > 0 && yEws > 0) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
 
-		sPartials[threadIdx.x] = startingVal;
-	} 
-	else {
-
-		Z startingVal = OpType::startingValue(x);
-		sPartials[threadIdx.x] = startingVal;
-
-		for(Nd4jLong i = tid ;i < length; i += gridDim.x * blockDim.x) {
-			auto offset  = shape::getIndexOffset(i, xShapeInfo, length);
-			auto yOffset = shape::getIndexOffset(i, yShapeInfo, length);
-			sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[offset], y[yOffset], extraZ), extraZ);
-		}
-	}
-
-	__syncthreads();
-	aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, length), extraZ);
-	__syncthreads();
-
-	if (gridDim.x > 1) {
-    	
-    	unsigned int *tc = (unsigned int *)reductionBuffer;
-		__shared__ bool amLast;
-		int rank = shape::rank(xShapeInfo);
-		tid = threadIdx.x;
-		Z *extraBuffer = (Z *) allocationPointer;
-		if (threadIdx.x == 0) {
-			static_cast<Z*>(reductionBuffer)[blockIdx.x] = sPartials[0];
-			extraBuffer[blockIdx.x] = extraZ[0];
-			extraBuffer[gridDim.x + blockIdx.x] = extraZ[1];
-		}
-		
-		__threadfence();
-		__syncthreads();
-
-		if (threadIdx.x == 0) {
-		unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
-		amLast = (ticket == gridDim.x - 1);
-		}
-
-        sPartials[tid] = startingVal;
-		__syncthreads();
-
-		if (amLast) {
-			
-			tc[16384] = 0;
-			sPartials[threadIdx.x] = OpType::startingValue(x);
-
-            // TODO: later probably replace this. Right now we need extraZ sync for CosineSimilarity ONLY
-			if (tid == 0 && extraZ[0] != static_cast<Z>(0) && extraZ[1] != static_cast<Z>(0)) {
-				extraZ[0] = 0.0;
-				extraZ[1] = 0.0;
-                for (int i = 0; i < gridDim.x; i++) {
-                	extraZ[0] += extraBuffer[i];
-                    extraZ[1] += extraBuffer[gridDim.x + i];
+            if (xEws == 1 && yEws == 1) {
+                for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
+                    startingVal = OpType::update(startingVal, OpType::opAtomic(x[i], y[i], extraZ), extraZ);
                 }
-			}
+            }
+            else {
+                for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x)
+                    startingVal = OpType::update(startingVal, OpType::opAtomic(x[i * xEws], y[i * yEws], extraZ), extraZ);
+            }
 
-			for (Nd4jLong i = threadIdx.x; i < gridDim.x; i += blockDim.x) 
-					sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], static_cast<Z*>(reductionBuffer)[i], extraZ);						
-			
-			__syncthreads();					
-			aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraZ);
-			__syncthreads();
+            sPartials[threadIdx.x] = startingVal;
+        }
+        else {
 
-			if (threadIdx.x == 0) 
-				z[0] = OpType::postProcess(sPartials[0], length, extraZ);					
-		}
-	} 
-	else {
-		
-		if (tid == 0) {
-			unsigned int *tc = (unsigned *)reductionBuffer;
-			tc[16384] = 0;
-			z[0] = OpType::postProcess(sPartials[0], length, extraZ);
-		}
-	}
+            Z startingVal = OpType::startingValue(x);
+            sPartials[threadIdx.x] = startingVal;
+
+            for(Nd4jLong i = tid ;i < length; i += gridDim.x * blockDim.x) {
+                auto offset  = shape::getIndexOffset(i, xShapeInfo, length);
+                auto yOffset = shape::getIndexOffset(i, yShapeInfo, length);
+                sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[offset], y[yOffset], extraZ), extraZ);
+            }
+        }
+
+        __syncthreads();
+        aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, length), extraZ);
+        __syncthreads();
+
+        if (gridDim.x > 1) {
+
+            auto tc = reinterpret_cast<unsigned int *>(reductionBuffer);
+            __shared__ bool amLast;
+            int rank = shape::rank(xShapeInfo);
+            tid = threadIdx.x;
+            Z *extraBuffer = (Z *) allocationPointer;
+            if (threadIdx.x == 0) {
+				reinterpret_cast<Z*>(reductionBuffer)[blockIdx.x] = sPartials[0];
+                extraBuffer[blockIdx.x] = extraZ[0];
+                extraBuffer[gridDim.x + blockIdx.x] = extraZ[1];
+            }
+
+            __threadfence();
+            __syncthreads();
+
+            if (threadIdx.x == 0) {
+            unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
+            amLast = (ticket == gridDim.x - 1);
+            }
+
+            sPartials[tid] = startingVal;
+            __syncthreads();
+
+            if (amLast) {
+
+                tc[16384] = 0;
+                sPartials[threadIdx.x] = OpType::startingValue(x);
+
+                // TODO: later probably replace this. Right now we need extraZ sync for CosineSimilarity ONLY
+                if (tid == 0 && extraZ[0] != static_cast<Z>(0) && extraZ[1] != static_cast<Z>(0)) {
+                    extraZ[0] = 0.0;
+                    extraZ[1] = 0.0;
+                    for (int i = 0; i < gridDim.x; i++) {
+                        extraZ[0] += extraBuffer[i];
+                        extraZ[1] += extraBuffer[gridDim.x + i];
+                    }
+                }
+
+                for (Nd4jLong i = threadIdx.x; i < gridDim.x; i += blockDim.x)
+                        sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], static_cast<Z*>(reductionBuffer)[i], extraZ);
+
+                __syncthreads();
+                aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraZ);
+                __syncthreads();
+
+                if (threadIdx.x == 0)
+                    z[0] = OpType::postProcess(sPartials[0], length, extraZ);
+            }
+        }
+        else {
+
+            if (tid == 0) {
+                auto tc = reinterpret_cast<unsigned int*>(reductionBuffer);
+                tc[16384] = 0;
+                z[0] = OpType::postProcess(sPartials[0], length, extraZ);
+            }
+        }
 }
 
 //////////////////////////////////////////////////////////////////////////

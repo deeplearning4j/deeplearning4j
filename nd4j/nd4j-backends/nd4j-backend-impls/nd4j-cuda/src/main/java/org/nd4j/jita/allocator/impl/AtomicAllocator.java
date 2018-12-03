@@ -282,7 +282,7 @@ public class AtomicAllocator implements Allocator {
      * @param buffer
      */
     @Override
-    public Pointer getPointer(DataBuffer buffer, CudaContext context) {
+    public Pointer getPointer(@NonNull DataBuffer buffer, CudaContext context) {
         return memoryHandler.getDevicePointer(buffer, context);
     }
 

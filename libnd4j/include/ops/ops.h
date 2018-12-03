@@ -503,20 +503,19 @@ namespace simdOps {
 	class CopyPws {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return d2;
+			return static_cast<Z>(d2);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return d2;
+			return static_cast<Z>(d2);
 		}
 
 		op_def static Z op(X d1) {
-			return d1;
+			return static_cast<Z>(d1);
 		}
 
-		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return params[0];
+			return static_cast<Z>(d1);
 		}
 	};
 
@@ -536,20 +535,19 @@ namespace simdOps {
 	class Copy2 {
 	public:
 		op_def static Z op(X d1, Y d2) {
-			return d2;
+			return static_cast<Z>(d2);
 		}
 
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return d2;
+			return static_cast<Z>(d2);
 		}
 
 		op_def static Z op(X d1) {
-			return d1;
+			return static_cast<Z>(d1);
 		}
 
-		// op for MetaOps
 		op_def static Z op(X d1, Y *params) {
-			return static_cast<Z>(params[0]);
+			return static_cast<Z>(d1);
 		}
 	};
 
@@ -3354,7 +3352,7 @@ namespace simdOps {
     /**
 	* Op to check equality within arrays
 	*/
-    template <typename X, typename Y>
+    template <typename X, typename Z>
     class EqualsWithEps {
     public:
         static const int extraParamsLen = 0;
@@ -3367,49 +3365,49 @@ namespace simdOps {
             //no-op
         }
 
-        op_def static Y startingValue(X *input) {
-            return static_cast<Y>(0.0f);
+        op_def static Z startingValue(X *input) {
+            return static_cast<Z>(0.0f);
         }
 
-        op_def static Y postProcess(Y reduction, Nd4jLong n, Y *extraParamsRef) {
+        op_def static Z postProcess(Z reduction, Nd4jLong n, Z *extraParamsRef) {
             return reduction;
         }
 
-        op_def static Y op(X d1, X d2, Y *extraParamsRef) {
+        op_def static Z op(X d1, X d2, Z *extraParamsRef) {
 
-        	Y eps = nd4j::math::nd4j_abs<Y>(extraParamsRef[2]);
-    	    Y diff = static_cast<Y>(nd4j::math::nd4j_abs<X>(d1 - d2));
+            Z eps = nd4j::math::nd4j_abs<Z>(extraParamsRef[2]);
+            Z diff = static_cast<Z>(nd4j::math::nd4j_abs<X>(d1 - d2));
 
 
     		// works well except in the range of very large numbers
     		if (diff <= eps)
-    	    	return static_cast<Y>(0.f);
+    	    	return static_cast<Z>(0.f);
 
     	    // Knuth approach
     	    // works well except in the range of very small numbers
-		    if (diff <= nd4j::math::nd4j_max<Y>(nd4j::math::nd4j_abs<Y>(static_cast<Y>(d1)), nd4j::math::nd4j_abs<Y>(static_cast<Y>(d2))) * static_cast<Y>(eps))
-		    	return static_cast<Y>(0.f);
+		    if (diff <= nd4j::math::nd4j_max<Z>(nd4j::math::nd4j_abs<Z>(static_cast<Z>(d1)), nd4j::math::nd4j_abs<Z>(static_cast<Z>(d2))) * eps)
+		    	return static_cast<Z>(0.f);
 
-        	return static_cast<Y>(1.f);
+        	return static_cast<Z>(1.f);
         }
 
 
 #ifdef __CUDACC__
         __device__
-		static inline Y opAtomic(X d1, X d2, Y *extraParamsRef) {
+		static inline Z opAtomic(X d1, X d2, Z *extraParamsRef) {
 			return op(d1, d2, extraParamsRef);
 		}
 #endif
 
-        op_def static Y update(Y old, Y opOutput, Y *extraParamsRef) {
+        op_def static Z update(Z old, Z opOutput, Z *extraParamsRef) {
             return opOutput + old;
         }
 
-        op_def static Y merge(X old, Y opOutput, Y *extraParamsRef) {
+        op_def static Z merge(X old, Z opOutput, Z *extraParamsRef) {
             return update(old, opOutput, extraParamsRef);
         }
 
-        op_def static void aggregateExtraParams(Y *extraParamsTotal, Y *extraParamsLocal) {}
+        op_def static void aggregateExtraParams(Z *extraParamsTotal, Z *extraParamsLocal) {}
     };
 
 
