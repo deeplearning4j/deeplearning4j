@@ -139,7 +139,7 @@ abstract public class KerasConvolution extends KerasLayer {
                  * Theano's default behavior is to rotate filters by 180 degree before application.
                  */
                 paramValue = kerasParamValue.dup();
-                for (int i = 0; i < paramValue.tensorssAlongDimension(2, 3); i++) {
+                for (int i = 0; i < paramValue.tensorsAlongDimension(2, 3); i++) {
                     //dup required since we only want data from the view not the whole array
                     INDArray copyFilter = paramValue.tensorAlongDimension(i, 2, 3).dup();
                     double[] flattenedFilter = copyFilter.ravel().data().asDouble();

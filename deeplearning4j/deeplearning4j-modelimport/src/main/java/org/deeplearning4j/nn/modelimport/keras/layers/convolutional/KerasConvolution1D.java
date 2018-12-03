@@ -197,7 +197,7 @@ public class KerasConvolution1D extends KerasConvolution {
                     paramValue = paramValue.reshape(
                             paramValue.size(0), paramValue.size(1),
                             paramValue.size(2), 1).dup();
-                    for (int i = 0; i < paramValue.tensorssAlongDimension(2, 3); i++) {
+                    for (int i = 0; i < paramValue.tensorsAlongDimension(2, 3); i++) {
                         INDArray copyFilter = paramValue.tensorAlongDimension(i, 2, 3).dup();
                         double[] flattenedFilter = copyFilter.ravel().data().asDouble();
                         ArrayUtils.reverse(flattenedFilter);
