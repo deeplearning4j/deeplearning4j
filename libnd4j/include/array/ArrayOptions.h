@@ -45,8 +45,11 @@
 // quantized values
 #define ARRAY_QUANTIZED 1024
 
-//  16 bit float
+//  16 bit float FP16
 #define ARRAY_HALF 4096
+
+//  16 bit bfloat16
+#define ARRAY_BHALF 2048
 
 // regular 32 bit float
 #define ARRAY_FLOAT 8192
@@ -157,6 +160,8 @@ namespace nd4j {
             return nd4j::DataType::DOUBLE;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_HALF))
             return nd4j::DataType::HALF;
+        else if (hasPropertyBitSet(shapeInfo, ARRAY_BHALF))
+            return nd4j::DataType::BFLOAT16;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_BOOL))
             return nd4j::DataType ::BOOL;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_UNSIGNED)) {
@@ -267,6 +272,7 @@ namespace nd4j {
     FORCEINLINE _CUDA_HD void ArrayOptions::resetDataType(Nd4jLong *shapeInfo) {
         unsetPropertyBit(shapeInfo, ARRAY_BOOL);
         unsetPropertyBit(shapeInfo, ARRAY_HALF);
+        unsetPropertyBit(shapeInfo, ARRAY_BHALF);
         unsetPropertyBit(shapeInfo, ARRAY_FLOAT);
         unsetPropertyBit(shapeInfo, ARRAY_DOUBLE);
         unsetPropertyBit(shapeInfo, ARRAY_INT);
@@ -292,6 +298,9 @@ namespace nd4j {
                 break;
             case nd4j::DataType::HALF:
                 setPropertyBit(shapeInfo, ARRAY_HALF);
+                break;
+            case nd4j::DataType::BFLOAT16:
+                setPropertyBit(shapeInfo, ARRAY_BHALF);
                 break;
             case nd4j::DataType::FLOAT32:
                 setPropertyBit(shapeInfo, ARRAY_FLOAT);

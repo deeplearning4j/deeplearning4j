@@ -1486,9 +1486,9 @@ namespace simdOps {
 		op_def static X op(X d1, X *params) {
 			if (d1 > params[1])
 				return params[1];
-			else if (d1 < params[0])
+			if (d1 < params[0])
 				return params[0];
-			else return d1;
+			return d1;
 		}
 	};
 

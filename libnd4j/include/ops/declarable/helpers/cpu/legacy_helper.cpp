@@ -142,21 +142,44 @@ namespace helpers {
     void reduceNorm1(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), reduceNorm1_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
+    
+    ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    static void sxeLossWithLogits_(NDArray* input, NDArray* epsilon, NDArray* output) {
+    static void sigmCrossEntropy_(NDArray* logits, NDArray* labels, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
             return nd4j::math::nd4j_max<T>(x, (T)0.f) - x * y + nd4j::math::nd4j_log<T,T>((T)1.f + nd4j::math::nd4j_exp<T,T>(-nd4j::math::nd4j_abs(x)));
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        logits->applyPairwiseLambda<T>(labels, functor, output);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void sxeLossWithLogits_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void sigmCrossEntropy_, (NDArray* logits, NDArray* labels, NDArray* output);, FLOAT_TYPES);
 
-    void sxeLossWithLogits(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
-        BUILD_SINGLE_SELECTOR(theFirst->dataType(), sxeLossWithLogits_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
+    void sigmCrossEntropy(NDArray* logits, NDArray* labels, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(logits->dataType(), sigmCrossEntropy_, (logits, labels, output), FLOAT_TYPES);
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    static void sigmCrossEntropyGrad_(NDArray* logits, NDArray* labels, NDArray* output) {
+        // 1 - labels - 1 / (1 + exp(logits))
+        auto functor = LAMBDA_TT(x, y) {            
+            if(x <= 0)
+                return static_cast<T>(1.) - y - static_cast<T>(1.) / (static_cast<T>(1.) + nd4j::math::nd4j_exp<T,T>(x));
+            auto e = nd4j::math::nd4j_exp<T,T>(-x);
+            return static_cast<T>(1.) - y - e / (static_cast<T>(1.) + e);            
+        };
+
+        logits->applyPairwiseLambda<T>(labels, functor, output);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void sigmCrossEntropyGrad_, (NDArray* logits, NDArray* labels, NDArray*output);, FLOAT_TYPES);
+
+    void sigmCrossEntropyGrad(NDArray* logits, NDArray* labels, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(logits->dataType(), sigmCrossEntropyGrad_, (logits, labels, output), FLOAT_TYPES);
+    }
+    
+    ////////////////////////////////////////////////////////////////////////
     template <typename T>
     static void tanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
