@@ -139,7 +139,7 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
 
         __syncthreads();
 
-        Z startingVal = OpType::startingValue(x);
+		sPartials[threadIdx.x] = OpType::startingValue(x);
         Nd4jLong length = shape::length(xShapeInfo);
         int xEws = shape::elementWiseStride(xShapeInfo);
         int yEws = shape::elementWiseStride(yShapeInfo);
@@ -151,20 +151,17 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
 
             if (xEws == 1 && yEws == 1) {
                 for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
-                    startingVal = OpType::update(startingVal, OpType::opAtomic(x[i], y[i], extraZ), extraZ);
+					sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i], y[i], extraZ), extraZ);
                 }
             }
             else {
-                for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x)
-                    startingVal = OpType::update(startingVal, OpType::opAtomic(x[i * xEws], y[i * yEws], extraZ), extraZ);
+                for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
+					sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i * xEws], y[i * yEws], extraZ), extraZ);
+				}
             }
-
-            sPartials[threadIdx.x] = startingVal;
         }
         else {
-
-            Z startingVal = OpType::startingValue(x);
-            sPartials[threadIdx.x] = startingVal;
+            sPartials[threadIdx.x] = OpType::startingValue(x);
 
             for(Nd4jLong i = tid ;i < length; i += gridDim.x * blockDim.x) {
                 auto offset  = shape::getIndexOffset(i, xShapeInfo, length);
@@ -198,7 +195,7 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
             amLast = (ticket == gridDim.x - 1);
             }
 
-            sPartials[tid] = startingVal;
+            sPartials[tid] = OpType::startingValue(x);
             __syncthreads();
 
             if (amLast) {

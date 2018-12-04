@@ -94,9 +94,9 @@ public class CompressedDataBuffer extends BaseDataBuffer {
      * @param s
      * @return
      */
-    public static DataBuffer readUnknown(DataInputStream s, long length, DataType type) {
+    public static DataBuffer readUnknown(DataInputStream s, AllocationMode allocMode, long length, DataType type) {
         DataBuffer buffer = Nd4j.createBuffer(type, length, false);
-        buffer.read(s);
+        buffer.read(s, allocMode, length, type);
         // if buffer is uncompressed, it'll be valid buffer, so we'll just return it
         if (buffer.dataType() != DataType.COMPRESSED)
             return buffer;

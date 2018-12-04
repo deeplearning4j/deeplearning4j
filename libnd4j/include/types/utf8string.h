@@ -36,7 +36,7 @@ namespace nd4j {
         ~utf8string();
 
         utf8string(const char *string, int length);
-        explicit utf8string(std::string* string);
+        utf8string(const std::string &string);
         utf8string(const utf8string &other);
         utf8string& operator=(const utf8string &other);
 

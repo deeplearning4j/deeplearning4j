@@ -18,9 +18,11 @@ package org.nd4j.linalg.jcublas;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import lombok.var;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -201,7 +203,17 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(Collection<String> strings, long[] shape, char order) {
-        return null;
+        val pairShape = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order, DataType.UTF8);
+        val buffer = new Utf8Buffer(strings);
+        val list = new ArrayList<String>(strings);
+
+        for (int e = 0; e < list.size(); e++) {
+            val cstr = list.get(e);
+            val str = new Nd4jCuda.utf8string(cstr, cstr.length());
+            buffer.put(e, str);
+        }
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
     }
 
     @Override
@@ -410,6 +422,10 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
+        boolean allScalars = true;
+
+        var outputShape = ArrayUtil.copy(toConcat[0].shape());
+
         if (toConcat.length == 1)
             return toConcat[0];
 
@@ -418,12 +434,16 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             if (toConcat[i].isCompressed())
                 Nd4j.getCompressor().decompressi(toConcat[i]);
 
+            allScalars &= toConcat[i].rank() == 0;
+
             sumAlongDim += toConcat[i].size(dimension);
         }
 
-        val outputShape = ArrayUtil.copy(toConcat[0].shape());
-
-        outputShape[dimension] = sumAlongDim;
+        if (allScalars) {
+            outputShape = new long[]{sumAlongDim};
+        } else {
+            outputShape[dimension] = sumAlongDim;
+        }
 
         INDArray ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order());
 
@@ -450,16 +470,17 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                                     "Illegal concatenation at array " + i + " and shape element " + j);
                 }
 
-            val tadBuffers = tadManager.getTADOnlyShapeInfo(toConcat[i], new int[] {dimension});
+            if (!allScalars) {
+                val tadBuffers = tadManager.getTADOnlyShapeInfo(toConcat[i], new int[]{dimension});
 
-            long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
+                long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
 
-            val offsets = tadBuffers.getSecond();
-            long devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context).address();
+                val offsets = tadBuffers.getSecond();
+                long devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context).address();
 
-            tadPointers[i] = devTadShapeInfo;
-            offsetsPointers[i] = devTadOffsets;
-
+                tadPointers[i] = devTadShapeInfo;
+                offsetsPointers[i] = devTadOffsets;
+            }
         }
 
         // getting tadOnlyShape for result
@@ -1551,7 +1572,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(float[] data, long[] shape, long[] stride, char order, DataType dataType) {
-        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
     }
 
     @Override

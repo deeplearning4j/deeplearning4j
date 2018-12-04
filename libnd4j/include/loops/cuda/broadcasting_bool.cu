@@ -84,6 +84,7 @@ namespace functions {
 		//to the back.
 		//permuted version of the x shape info for setting up the tad problem
 	  __shared__ Nd4jLong tadLength;
+      __shared__ Nd4jLong tadLengthZ;
       __shared__ Nd4jLong tadEWS;
             __shared__ int numTads;
       __shared__ Nd4jLong yEWS;
@@ -96,6 +97,7 @@ namespace functions {
         }
 
    	    tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+        tadLengthZ = shape::length(tadOnlyShapeInfoZ);
         tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
         numTads = shape::length(xShapeInfo) / tadLength;
         yEWS = shape::elementWiseStride(yShapeInfo);
@@ -104,13 +106,12 @@ namespace functions {
       }
       __syncthreads();
 
+        __shared__ Nd4jLong tadOffsetForBlock;
+        __shared__ Nd4jLong tadOffsetForBlockZ;
+        __shared__ Z *rR;
+        __shared__ X *rX;
+
 		for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-
-
-            __shared__ Nd4jLong tadOffsetForBlock;
-            __shared__ Nd4jLong tadOffsetForBlockZ;
-            __shared__ Z *rR;
-            __shared__ X *rX;
             if (threadIdx.x == 0) {
                 tadOffsetForBlockZ = tadOffsetsZ[r];
                 auto vr = reinterpret_cast<void *>(result);
@@ -138,13 +139,12 @@ namespace functions {
                 }
             }
             else {
-
                 for (Nd4jLong i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                    
                     auto xOffset = tadOffsetForBlock  + shape::getIndexOffset(i, tadOnlyShapeInfo,  tadLength);
-                    auto zOffset = tadOffsetForBlockZ + shape::getIndexOffset(i, tadOnlyShapeInfoZ, tadLength);
+                    auto zOffset = tadOffsetForBlockZ + shape::getIndexOffset(i, tadOnlyShapeInfoZ, tadLengthZ);
                     auto yOffset = shape::getIndexOffset(i, yShapeInfo, tadLength);
- 
+
+
                     result[zOffset] = OpType::op(x[xOffset], y[yOffset]);
                 }
             }

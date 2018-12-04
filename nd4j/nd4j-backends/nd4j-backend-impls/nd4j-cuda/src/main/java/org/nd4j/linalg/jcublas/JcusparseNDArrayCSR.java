@@ -151,4 +151,14 @@ public class JcusparseNDArrayCSR extends BaseSparseNDArrayCSR {
     public boolean all() {
         return false;
     }
+
+    @Override
+    public boolean any() {
+        return false;
+    }
+
+    @Override
+    public boolean none() {
+        return false;
+    }
 }

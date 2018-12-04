@@ -829,8 +829,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         double tiny = 1.000000000000001;
         assertTrue(ones.eps(tiny).all());
         INDArray consec = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
-        assertTrue(consec.eps(5).sumNumber().doubleValue() == 1);
-        assertTrue(consec.sub(1).eps(5).sumNumber().doubleValue() == 1);
+        assertTrue(consec.eps(5).any());
+        assertTrue(consec.sub(1).eps(5).any());
         assertTrue(consec.sub(1).eps(5).getDouble(0, 5) == 1);
     }
 

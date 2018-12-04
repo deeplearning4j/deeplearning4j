@@ -37,14 +37,16 @@ namespace nd4j {
         _length = length;
         _buffer = new char[_length];
         _allocated = true;
+        std::memset(_buffer, 0, _length + 1);
         std::memcpy(_buffer, string, _length);
     }
 
-    utf8string::utf8string(std::string *str) {
-        _length = str->length();
+    utf8string::utf8string(const std::string &str) {
+        _length = str.length();
         _buffer = new char[_length + 1];
         _allocated = true;
-        std::memcpy(_buffer, str->data(), _length);
+        std::memset(_buffer, 0, _length + 1);
+        std::memcpy(_buffer, str.data(), _length);
         _buffer[_length] = 0;
     }
 
@@ -52,6 +54,7 @@ namespace nd4j {
         _length = other._length;
         _buffer = new char[_length+1];
         _allocated = true;
+        std::memset(_buffer, 0, _length + 1);
         std::memcpy(_buffer, other._buffer, _length);
         _buffer[_length] = 0;
     }
@@ -63,16 +66,9 @@ namespace nd4j {
     }
 
     utf8string& utf8string::operator=(const utf8string &other) {
-//        if (_allocated && _length > 0)
-//            delete[] _buffer;
         if (this != &other) {
             utf8string temp(other);
             Swap(temp);
-//        _length = other._length;
-//        _buffer = new char[_length+1];
-//        _allocated = true;
-//        std::memcpy(_buffer, other._buffer, _length);
-//        _buffer[_length] = 0;
         }
         return *this;
     }

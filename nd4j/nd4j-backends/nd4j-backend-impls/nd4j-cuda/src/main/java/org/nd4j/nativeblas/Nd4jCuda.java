@@ -293,8 +293,10 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
         private native void allocate(@Cast("char*") String string, int length);
         public utf8string(@Cast("char*") BytePointer string, int length) { super((Pointer)null); allocate(string, length); }
         private native void allocate(@Cast("char*") BytePointer string, int length);
-        public utf8string(@StdString @Cast({"char*", "std::string*"}) BytePointer string) { super((Pointer)null); allocate(string); }
-        private native void allocate(@StdString @Cast({"char*", "std::string*"}) BytePointer string);
+        public utf8string(@StdString BytePointer string) { super((Pointer)null); allocate(string); }
+        private native void allocate(@StdString BytePointer string);
+        public utf8string(@StdString String string) { super((Pointer)null); allocate(string); }
+        private native void allocate(@StdString String string);
         public utf8string(@Const @ByRef utf8string other) { super((Pointer)null); allocate(other); }
         private native void allocate(@Const @ByRef utf8string other);
         public native @ByRef @Name("operator =") utf8string put(@Const @ByRef utf8string other);
@@ -7297,6 +7299,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long arrLen);
     @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long arrLen);
     @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long arrLen);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOrderOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long arrLen, char order);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOrderOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long arrLen, char order);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOrderOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long arrLen, char order);
     
     /**
    * Compute the real linear indices for the given shape and stride
@@ -7593,6 +7598,8 @@ public static final int PREALLOC_SIZE = 33554432;
      * @param index the index to map
      * @return the mapped indexes along each dimension
      */
+
+//////////////////////////////////////////////////////////////////////    
 
 //////////////////////////////////////////////////////////////////////    
 

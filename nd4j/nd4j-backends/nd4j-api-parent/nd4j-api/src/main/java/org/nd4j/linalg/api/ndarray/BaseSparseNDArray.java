@@ -2030,4 +2030,19 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public DataType dataType() {
         return data().dataType();
     }
+
+    @Override
+    public boolean all() {
+        return false;
+    }
+
+    @Override
+    public boolean any() {
+        return false;
+    }
+
+    @Override
+    public boolean none() {
+        return false;
+    }
 }

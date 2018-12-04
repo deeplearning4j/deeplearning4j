@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -33,6 +34,7 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -434,6 +436,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long st = profilingHookIn(op);
         checkForCompression(op);
 
+        if (dimension == null || dimension.length == 0)
+            dimension = new int[]{Integer.MAX_VALUE};
         //validateDataType(Nd4j.dataType(), op);
 
         if (dimension != null && dimension.length > 1)
@@ -486,11 +490,23 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 ret = Nd4j.createUninitialized(dtype, new long[] {xT, yT});
             } else {
                 if (op.y() != null) {
-                    val xT = op.x().tensorAlongDimension(0, dimension).lengthLong();
-                    val yT = op.y().lengthLong();
+                    //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
+                    if (op.x().lengthLong() == op.y().lengthLong()) {
+                        //Pairwise
+                        if (op.x().tensorsAlongDimension(dimension) != op.y().tensorsAlongDimension(dimension)) {
+                            throw new ND4JIllegalStateException("Number of TADs along dimension don't match: (x shape = " +
+                                    Arrays.toString(op.x().shape()) + ", y shape = " + Arrays.toString(op.y().shape()) +
+                                    ", dimension = " + Arrays.toString(dimension) + ")");
+                        }
+                    } else {
+                        //Every X TAD vs. entirety of Y
+                        val xTADSize = op.x().lengthLong() / op.x().tensorsAlongDimension(dimension);
 
-                    if (xT != yT)
-                        throw new ND4JIllegalStateException("Number of TADs along dimension doesn't match");
+                        if (xTADSize != op.y().length()) {
+                            throw new ND4JIllegalStateException("Size of TADs along dimension don't match for pairwise execution:" +
+                                    " (x TAD size = " + xTADSize + ", y size = " + op.y().lengthLong());
+                        }
+                    }
                 }
 
                 // in case of regular accumulation we don't care about array state before op
@@ -516,7 +532,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        validateDataType(Nd4j.dataType(), op);
+        //validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -595,7 +611,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
         Pointer extraArgs = op.extraArgs() != null
-                ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()), context) : null;
+                ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.x().dataType()), context) : null;
         //Pointer dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
         Pointer dimensionPointer = AtomicAllocator.getInstance()
                 .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
@@ -902,6 +918,26 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 retShape = new long[] {retShape[0], 1};
         } else if (retShape.length == 0) {
             retShape = new long[] {1, 1};
+        }
+
+        if (op.y() != null) {
+            //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
+            if (op.x().lengthLong() == op.y().lengthLong()) {
+                //Pairwise
+                if (op.x().tensorsAlongDimension(dimension) != op.y().tensorsAlongDimension(dimension)) {
+                    throw new ND4JIllegalStateException("Number of TADs along dimension don't match: (x shape = " +
+                            Arrays.toString(op.x().shape()) + ", y shape = " + Arrays.toString(op.y().shape()) +
+                            ", dimension = " + Arrays.toString(dimension) + ")");
+                }
+            } else {
+                //Every X TAD vs. entirety of Y
+                val xTADSize = op.x().lengthLong() / op.x().tensorsAlongDimension(dimension);
+
+                if (xTADSize != op.y().length()) {
+                    throw new ND4JIllegalStateException("Size of TADs along dimension don't match for pairwise execution:" +
+                            " (x TAD size = " + xTADSize + ", y size = " + op.y().lengthLong());
+                }
+            }
         }
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape)) {
@@ -1328,7 +1364,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         // SoftMax, LogSoftMax, SoftMaxDerivative
         if (op.getOpType() == Op.Type.TRANSFORM_STRICT && (op.opNum() >= 0 && op.opNum() <= 2)) {
                 tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), new int[] {0});
-                tadMaxBuffers = tadManager.getTADOnlyShapeInfo(op.x(), new int[] {1});
+                tadMaxBuffers = tadManager.getTADOnlyShapeInfo(op.x().rank() == 1 ? op.x().reshape(1, -1) : op.x(), new int[] {1});
 
                 hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
                 devTadShapeInfo = allocator.getPointer(tadBuffers.getFirst(), context);
@@ -2548,6 +2584,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public ExecutionerType type() {
         return ExecutionerType.CUDA;
+    }
+
+    @Override
+    public String getString(Utf8Buffer buffer, long index) {
+        val addr = ((LongIndexer) buffer.indexer()).get(index);
+        val ptr = new PagedPointer(addr);
+        val str = new Nd4jCuda.utf8string(ptr);
+        return str._buffer().substring(0, str._length());
     }
 }
 

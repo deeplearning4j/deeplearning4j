@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.buffer;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
@@ -25,6 +26,7 @@ import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.primitives.AtomicDouble;
+import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
@@ -1601,14 +1603,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
-    public void read(InputStream is) {
+    public void read(InputStream is, AllocationMode allocationMode, long length, DataType dataType) {
         if (is instanceof DataInputStream) {
-            read((DataInputStream) is);
+            read((DataInputStream) is, allocationMode, length, dataType);
         }
 
         else {
             DataInputStream dis2 = new DataInputStream(is);
-            read(dis2);
+            read(dis2, allocationMode, length, dataType);
         }
     }
 
@@ -1690,7 +1692,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void doReadObject(ObjectInputStream s) {
         try {
             s.defaultReadObject();
-            read(s);
+            val header = BaseDataBuffer.readHeader(s);
+            read(s, header.getLeft(), header.getMiddle(), header.getRight());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -1698,20 +1701,38 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     }
 
+    public static Triple<AllocationMode, Long, DataType> readHeader(@NonNull InputStream is)  {
+        try {
+            DataInputStream dis = is instanceof DataInputStream ? (DataInputStream) is : new DataInputStream(is);
+            val alloc = AllocationMode.valueOf(dis.readUTF());
+            long length = 0;
+            if (alloc.ordinal() < 3) {
+                length = dis.readInt();
+            } else {
+                length = dis.readLong();
+            }
+            val type = DataType.valueOf(dis.readUTF());
 
+            return Triple.tripleOf(alloc, length, type);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
-    public void read(DataInputStream s) {
+    public void read(DataInputStream s, @NonNull AllocationMode allocMode, long len, @NonNull DataType dtype) {
         try {
             //referencing = Collections.synchronizedSet(new HashSet<String>());
-            val savedMode = AllocationMode.valueOf(s.readUTF());
-            allocationMode = AllocationMode.MIXED_DATA_TYPES;
+            val savedMode = allocMode;
+            this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
+            type = dtype;
+            length = len;
 
             // old AllocationMode values are: DIRECT, HEAP, JAVACPP. Just using legacy here
             if (savedMode.ordinal() < 3) {
                 //Do an implicit conversion: keep current buffer data type unchanged, and convert values from source type
-                length = s.readInt();
-                DataType sourceType = DataType.valueOf(s.readUTF());
+                length = len;
+                DataType sourceType = dtype;
                 pointerIndexerByCurrentType(type);      //also updates indexer based on newly set length
 
                 if (sourceType != DataType.COMPRESSED) {
@@ -1724,8 +1745,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 //wrappedBuffer = pointer().asByteBuffer();
 
             } else if (savedMode.equals(AllocationMode.LONG_SHAPE)) {
-                length = s.readLong();
-                val currentType = DataType.valueOf(s.readUTF());
+                length = len;
+                val currentType = dtype;
                 type = currentType;
 
                 if (currentType == DataType.LONG)
@@ -1748,8 +1769,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 if (currentType != DataType.COMPRESSED)
                     readContent(s, currentType, currentType);
             } else if (allocationMode.equals(AllocationMode.MIXED_DATA_TYPES)) {
-                length = s.readLong();
-                type = DataType.valueOf(s.readUTF());
                 switch (type) {
                     case LONG:
                     case DOUBLE:
@@ -1855,6 +1874,19 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case INT:
                 for (long i = 0; i < length(); i++)
                     out.writeInt(getInt(i));
+                break;
+            case SHORT:
+                for (long i = 0; i < length(); i++)
+                    out.writeShort((short) getInt(i));
+                break;
+            case UBYTE:
+            case BYTE:
+                for (long i = 0; i < length(); i++)
+                    out.writeByte((byte) getInt(i));
+                break;
+            case BOOL:
+                for (long i = 0; i < length(); i++)
+                    out.writeByte(getInt(i) == 0 ? (byte) 0 : (byte) 1);
                 break;
             case HALF:
                 for (long i = 0; i < length(); i++)

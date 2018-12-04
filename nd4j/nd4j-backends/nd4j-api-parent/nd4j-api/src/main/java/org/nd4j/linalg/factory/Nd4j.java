@@ -34,6 +34,7 @@ import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.graph.FlatArray;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
@@ -2033,7 +2034,20 @@ public class Nd4j {
     }
 
     /**
-     * Generate a linearly spaced vector
+     * Generate a linearly spaced 1d vector of the default floating point datatype
+     *
+     * @param lower upper bound
+     * @param upper lower bound
+     * @param num   the step size
+     * @return the linearly spaced vector
+     */
+    public static INDArray linspace(double lower, double upper, long num) {
+        return linspace(lower, upper, num, Nd4j.defaultFloatingPointType());
+    }
+
+
+    /**
+     * Generate a linearly spaced 1d vector of the specified datatype
      *
      * @param lower upper bound
      * @param upper lower bound
@@ -2642,22 +2656,22 @@ public class Nd4j {
      * @throws IOException
      */
     public static INDArray read(DataInputStream dis) throws IOException {
-        var shapeInformation = Nd4j.createBufferDetached(new long[1], DataType.LONG);
-        shapeInformation.read(dis);
+        val headerShape = BaseDataBuffer.readHeader(dis);
+
+        var shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle().longValue()}, headerShape.getRight());
+        shapeInformation.read(dis, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getThird());
         val length = Shape.length(shapeInformation);
-        DataType type;
-        DataBuffer data;
+        DataType type = null;
+        DataBuffer data = null;
+
+        val headerData = BaseDataBuffer.readHeader(dis);
         try {
             // current version contains dtype in extras
+            data = CompressedDataBuffer.readUnknown(dis, headerData.getFirst(), headerData.getMiddle(), headerData.getRight());
             type = ArrayOptionsHelper.dataType(shapeInformation.asLong());
-            data = CompressedDataBuffer.readUnknown(dis, length, type);
         } catch (ND4JUnknownDataTypeException e) {
-            //Must be a legacy array, pre dtype changes... read as default floating point type
-            type = Nd4j.defaultFloatingPointType();
-            data = CompressedDataBuffer.readUnknown(dis, length, type);
-
             // manually setting data type
-            long extras = ArrayOptionsHelper.setOptionBit(0L, type);
+            long extras = ArrayOptionsHelper.setOptionBit(0L, headerData.getRight());
             shapeInformation.put(shapeInformation.length() - 3, extras);
         }
 

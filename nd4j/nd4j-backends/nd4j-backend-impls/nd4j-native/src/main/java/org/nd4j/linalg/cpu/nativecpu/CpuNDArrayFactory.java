@@ -625,7 +625,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                 null, null,
                     ret.data().addressPointer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     null, null,
-
                     //new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
                     null, null);
 

@@ -16,9 +16,11 @@
 
 package org.nd4j.linalg.api.buffer;
 
+import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.primitives.Triple;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -91,7 +93,7 @@ public interface DataBuffer extends Serializable {
      */
     boolean sameUnderlyingData(DataBuffer buffer);
 
-    void read(DataInputStream s);
+    void read(DataInputStream s, AllocationMode allocationMode, long length, DataType dataType);
 
     void write(DataOutputStream out) throws IOException;
 
@@ -610,7 +612,7 @@ public interface DataBuffer extends Serializable {
      * Write this buffer to the input stream.
      * @param is the inpus tream to write to
      */
-    void read(InputStream is);
+    void read(InputStream is, AllocationMode allocationMode, long length, DataType dataType);
 
     /**
      * Returns tracking point for Allocator
