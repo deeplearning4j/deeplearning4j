@@ -485,14 +485,23 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 // we intentionally want to set it to 0.0
                 ret = Nd4j.createUninitialized(dtype, new long[] {xT, yT});
             } else {
-                if (op.y() != null) {
-                    val xT = op.x().tensorAlongDimension(0, dimension).lengthLong();
-                    val yT = op.y().lengthLong();
+                //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
+                if(op.x().lengthLong() == op.y().lengthLong()) {
+                    //Pairwise
+                    if (op.x().tensorsAlongDimension(dimension) != op.y().tensorsAlongDimension(dimension)) {
+                        throw new ND4JIllegalStateException("Number of TADs along dimension don't match: (x shape = " +
+                                Arrays.toString(op.x().shape()) + ", y shape = " + Arrays.toString(op.y().shape()) +
+                                ", dimension = " + Arrays.toString(dimension) + ")");
+                    }
+                } else {
+                    //Every X TAD vs. entirety of Y
+                    val xTADSize = op.x().lengthLong() / op.x().tensorsAlongDimension(dimension);
 
-                    if (xT != yT)
-                        throw new ND4JIllegalStateException("Number of TADs along dimension doesn't match");
+                    if (xTADSize != op.y().length()) {
+                        throw new ND4JIllegalStateException("Size of TADs along dimension don't match for pairwise execution:" +
+                                " (x TAD size = " + xTADSize + ", y size = " + op.y().lengthLong());
+                    }
                 }
-
                 // in case of regular accumulation we don't care about array state before op
                 ret = Nd4j.createUninitialized(dtype, retShape);
             }
