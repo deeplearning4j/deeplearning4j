@@ -32,7 +32,7 @@ INDArray = autoclass('org.nd4j.linalg.api.ndarray.INDArray')
 Transforms = autoclass('org.nd4j.linalg.ops.transforms.Transforms')
 NDArrayIndex = autoclass('org.nd4j.linalg.indexing.NDArrayIndex')
 DataBuffer = autoclass('org.nd4j.linalg.api.buffer.DataBuffer')
-DataType = jnius.autoclass('org.nd4j.linalg.api.buffer.DataBuffer$Type')
+DataType = autoclass('org.nd4j.linalg.api.buffer.DataBuffer$Type')
 System = autoclass('java.lang.System')
 Integer = autoclass('java.lang.Integer')
 Float = autoclass('java.lang.Float')
@@ -51,11 +51,17 @@ DataSet = autoclass('org.nd4j.linalg.dataset.DataSet')
 ArrayList = autoclass('java.util.ArrayList')
 
 
-try:
-    KerasModelImport = autoclass('org.deeplearning4j.nn.modelimport.keras.KerasModelImport')
-    ArrayDescriptor = autoclass('org.deeplearning4j.spark.parameterserver.python.ArrayDescriptor')
-    DataSetDescriptor = autoclass('org.deeplearning4j.spark.parameterserver.python.DataSetDescriptor')
-    spark_utils = autoclass('org.deeplearning4j.spark.parameterserver.python.Utils')
-except Exception as e:
-    warnings.warn('Dl4J Core not installed. Keras model import and pyspark interop not available.')
-    KerasModelImport = None
+def KerasModelImport():
+    return autoclass('org.deeplearning4j.nn.modelimport.keras.KerasModelImport')
+
+
+def ArrayDescriptor():
+    return autoclass('org.deeplearning4j.spark.parameterserver.python.ArrayDescriptor')
+
+
+def DataSetDescriptor():
+    return autoclass('org.deeplearning4j.spark.parameterserver.python.DataSetDescriptor')
+
+
+def spark_utils():
+    return autoclass('org.deeplearning4j.spark.parameterserver.python.Utils')
