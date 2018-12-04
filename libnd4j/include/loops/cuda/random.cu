@@ -419,10 +419,6 @@ namespace functions {
             DEBUG_KERNEL(stream, opNum);
         }
 
-
-
-        template class ND4J_EXPORT RandomFunction<float>;
-        template class ND4J_EXPORT RandomFunction<float16>;
-        template class ND4J_EXPORT RandomFunction<double>;
+        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT RandomFunction, , FLOAT_TYPES);
     }
 }

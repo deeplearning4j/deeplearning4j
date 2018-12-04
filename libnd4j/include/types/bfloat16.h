@@ -43,46 +43,13 @@
 #define local_def inline
 #endif
 
-struct bhalf {
-public:
-    unsigned short x;
-    inline unsigned short * getXP() {
-        return &this->x;
-    }
-
-    inline unsigned short getX() const  {
-        return this->x;
-    }
-//    void assign(bhalf const& another) {
-//        x = another.x;
-//    }
-//    void assign(unsigned short internalRep) {
-//       x = internalRep;
-//    }
-};
-
-local_def float cpu_bhalf2float(bhalf h) {
-    unsigned int temp = h.getX() << 16; //((sign << 31) | (exponent << 23) | mantissa);
-
-    return *reinterpret_cast<float*>(&temp);
-}
-
-local_def bhalf cpu_float2bhalf_rn(float f) {
-    bhalf ret;
-
-    unsigned x = *reinterpret_cast<unsigned int*>(&f); // uint32_t should be used 
-    *ret.getXP() = x >> 16;
-
-    return ret;
-}
-
 //namespace nd4j
 //{
   struct bfloat16
   {
   public:
-    bhalf data;
-    /* constexpr */ local_def bfloat16() { *data.getXP() = 0; }
+    int16_t _data;
+    /* constexpr */ local_def bfloat16() { _data = 0; }
 
     template <class T>
     local_def /*explicit*/ bfloat16(const T& rhs) {
@@ -98,17 +65,21 @@ local_def bhalf cpu_float2bhalf_rn(float f) {
 //    }
 
     local_def operator float() const {
-      return cpu_bhalf2float(data);
+      int32_t temp = this->_data << 16; //((sign << 31) | (exponent << 23) | mantissa);
+
+      return *reinterpret_cast<float*>(&temp);
     }
 
-    //    local_def operator double() const { return (float)*this; }
+    local_def explicit operator double() const { return static_cast<double>(static_cast<float>(*this)); }
+    local_def explicit operator unsigned long long() const { return static_cast<unsigned long long>(static_cast<float>(*this)); }
+    local_def explicit operator int16_t() const { return static_cast<int16_t>(static_cast<float>(*this)); }
+    local_def explicit operator uint8_t() const { return static_cast<uint8_t>(static_cast<float>(*this)); }
+    local_def explicit operator int8_t() const { return static_cast<int8_t>(static_cast<float>(*this)); }
+    local_def explicit operator int() const { return static_cast<int>(static_cast<float>(*this)); }
+    local_def explicit operator Nd4jLong() const { return static_cast<Nd4jLong>(static_cast<float>(*this)); }
+    local_def explicit operator bool() const { return this->_data == 0 ? false : true; }
+    local_def explicit operator float16() const { return static_cast<float16>(static_cast<float>(*this)); }
 
-    local_def operator bhalf() const { return data; }
-    local_def operator float16() const { return (float16)((float)*this); }
-/*
-    local_def unsigned short getx() const { return (const unsigned short)data.getX(); }
-    local_def bfloat16& setx(unsigned short x) { *data.getXP() = x; return *this; }
-*/
     template <class T>
     local_def bfloat16& operator=(const T& rhs) { assign(rhs); return *this; }
 
@@ -139,10 +110,10 @@ local_def bhalf cpu_float2bhalf_rn(float f) {
     }
 
     local_def void assign(unsigned short rhs) {
-        *data.getXP() = rhs;
+        assign((float)rhs);
     }
 
-    local_def void assign(float16 const& rhs) {
+    local_def void assign(float16 rhs) {
       assign((float)rhs);
     }
 
@@ -151,31 +122,12 @@ local_def bhalf cpu_float2bhalf_rn(float f) {
     }
 
     local_def void assign(float rhs) {
-
-//  #if defined(DEBUG) && defined (CPU_ONLY)
-//      if (rhs > BFLOAT16_MAX || rhs < -BFLOAT16_MAX) {
-//        LOG(WARNING) << "Overflow: " << rhs;
-//      } else if (rhs != 0.F && rhs < HLF_MIN && rhs > -HLF_MIN) {
-//        LOG(WARNING) << "Underflow: " << rhs;
-//      }
-//  #endif
-      data = cpu_float2bhalf_rn(rhs);
+      auto x = *reinterpret_cast<int32_t*>(&rhs);
+      this->_data = x >> 16;
     }
-
-    local_def void assign(const bhalf& rhs) {
-        *data.getXP() = rhs.getX();
-    }
-
-#ifdef __CUDACC__
-    local_def void assign(const half& rhs) {
-      //assign((uint16_t)rhs);
-      //data.assign(rhs);
-      //data = rhs.data;
-    }
-#endif
 
     local_def void assign(const bfloat16& rhs) {
-      data = rhs.data;
+      _data = rhs._data;
     }
 
     local_def bfloat16& operator+=(bfloat16 rhs) { assign((float)(*this) + (float)rhs); return *this; }
@@ -213,7 +165,7 @@ local_def bhalf cpu_float2bhalf_rn(float f) {
     static const bfloat16 minus_one;
   };
 
-    local_def bool  operator==(const bfloat16& a, const bfloat16& b) { return ((bhalf) a.data).getX() == ((bhalf)b.data).getX(); }
+    local_def bool  operator==(const bfloat16& a, const bfloat16& b) { return (a._data == b._data); }
 
 //    template <class T>
 //    local_def bool  operator==(const bfloat16& a, const T& b) { return (a == (bfloat16) b); }
@@ -539,10 +491,11 @@ local_def bhalf cpu_float2bhalf_rn(float f) {
   local_def bfloat16 /* constexpr */ operator+(const bfloat16& h) { return h; }
 
   local_def bfloat16 operator - (const bfloat16& h) {
-    const bhalf * tmp = &h.data;
-    unsigned short temp = tmp->getX();
+    auto temp = h._data;
     temp ^= 0x8000;
-    return bfloat16(temp);
+    bfloat16 t;
+    t._data = temp;
+    return t;
 }
 
 // WARNING: this implementation only for avoid cyclic references between float16 and bfloat16 types.
@@ -550,11 +503,6 @@ local_def void float16::assign(const bfloat16& rhs) {
   assign((float)rhs);
 }
 
-#ifdef __CUDACC__
-  local_def int isnan(const bfloat16& h)  { return ishnan_(((bhalf)h.data).getX()); }
-
-  local_def int isinf(const bfloat16& h) { return ishinf_(((bhalf)h.data).getX()); }
-#endif
 
 ///  std::ostream& operator << (std::ostream& s, const bfloat16&);
 

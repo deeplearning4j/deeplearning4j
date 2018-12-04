@@ -80,9 +80,7 @@
         (nd4j::DataType::FLOAT32, float)
 
 #define FLOAT_TYPES_2 \
-        (nd4j::DataType::DOUBLE, double)
-
-#define FLOAT_TYPES_3 \
+        (nd4j::DataType::DOUBLE, double), \
         (nd4j::DataType::BFLOAT16, bfloat16)
 
 #define LIBND4J_TYPES_0 \
@@ -110,9 +108,7 @@
         (nd4j::DataType::INT32, int32_t)
 
 #define LIBND4J_TYPES_8 \
-        (nd4j::DataType::INT64, Nd4jLong)
-
-#define LIBND4J_TYPES_9 \
+        (nd4j::DataType::INT64, Nd4jLong) ,\
         (nd4j::DataType::BFLOAT16, bfloat16)
 
 #define INTEGER_TYPES \

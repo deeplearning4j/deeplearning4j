@@ -28,6 +28,22 @@
 
 #ifdef __CUDACC__
 #include <types/float16.h>
+#include <types/bfloat16.h>
+
+union BPAIR {
+        struct {
+            bfloat16 H;
+            bfloat16 L;
+        } B;
+        int W;
+
+        __host__ __device__
+        BPAIR() {};
+
+		__host__ __device__
+		~BPAIR() {};
+};
+
 #define math_def __host__ __device__
 #ifdef CUDA_8
 typedef union {
