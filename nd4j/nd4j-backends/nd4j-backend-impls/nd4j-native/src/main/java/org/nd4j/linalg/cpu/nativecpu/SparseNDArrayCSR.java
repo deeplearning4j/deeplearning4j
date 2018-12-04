@@ -153,6 +153,16 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     }
 
     @Override
+    public boolean any() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean none() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean isS() {
         return false;
     }
