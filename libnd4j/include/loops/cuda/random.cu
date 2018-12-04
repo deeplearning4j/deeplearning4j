@@ -92,14 +92,17 @@ static inline __device__ void randomTripleGeneric(
 DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float, INPUT(Nd4jPointer state, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, double, INPUT(Nd4jPointer state, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float16, INPUT(Nd4jPointer state, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, bfloat16, INPUT(Nd4jPointer state, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
 DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, float, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, double, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, float16, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, bfloat16, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
 DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, float, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, double, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, float16, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, bfloat16, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
 #endif
 
@@ -309,6 +312,20 @@ namespace functions {
         }
 
         template <>
+        _CUDA_H void RandomFunction<bfloat16>::executeCudaSingle(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+
+            auto z = reinterpret_cast<bfloat16*>(vz);
+            auto extraArguments = reinterpret_cast<bfloat16*>(vextraArguments);
+
+            auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+            // this macro builds bunch of IF/ELSE selectors for kernel launch
+            DISPATCH_SIMPLE(randomSingle, bfloat16, PARAMS(stateHost, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+            DEBUG_KERNEL(stream, opNum);
+        }
+
+        template <>
         _CUDA_H void RandomFunction<double>::executeCudaSingle(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
             
             auto z = reinterpret_cast<double*>(vz);
@@ -349,6 +366,21 @@ namespace functions {
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomDouble, float16, PARAMS(stateHost, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+            DEBUG_KERNEL(stream, opNum);
+        }
+
+        template <>
+        _CUDA_H void RandomFunction<bfloat16>::executeCudaDouble(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+
+            auto x = reinterpret_cast<bfloat16*>(vx);
+            auto z = reinterpret_cast<bfloat16*>(vz);
+            auto extraArguments = reinterpret_cast<bfloat16*>(vextraArguments);
+
+            cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+            // this macro builds bunch of IF/ELSE selectors for kernel launch
+            DISPATCH_SIMPLE(randomDouble, bfloat16, PARAMS(stateHost, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         }
@@ -397,6 +429,22 @@ namespace functions {
 
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomTriple, float16, PARAMS(stateHost, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+
+            DEBUG_KERNEL(stream, opNum);
+        }
+
+        template <>
+        _CUDA_H void RandomFunction<bfloat16>::executeCudaTriple(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vy, Nd4jLong *yShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+
+            auto x = reinterpret_cast<bfloat16*>(vx);
+            auto y = reinterpret_cast<bfloat16*>(vy);
+            auto z = reinterpret_cast<bfloat16*>(vz);
+            auto extraArguments = reinterpret_cast<bfloat16*>(vextraArguments);
+
+            auto stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+            // this macro builds bunch of IF/ELSE selectors for kernel launch
+            DISPATCH_SIMPLE(randomTriple, bfloat16, PARAMS(stateHost, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         }
