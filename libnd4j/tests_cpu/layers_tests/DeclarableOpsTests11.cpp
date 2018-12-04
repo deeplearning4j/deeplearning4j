@@ -1391,6 +1391,50 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_1) {
 }
 
 ///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, BFloat16_Test_2) {
+
+    NDArray x = NDArrayFactory::create<float16>('c', {2,3,4});
+    NDArray y = NDArrayFactory::create<bfloat16>('c', {2,3,4});//('c', {2,3,4}, nd4j::DataType::BFLOAT16);
+    NDArray exp = NDArrayFactory::create<float16>('c', {2,3,4});//('c', {2,3,4}, nd4j::DataType::BFLOAT16);
+
+    x.linspace(1);
+    y.linspace(1);
+    exp.linspace(2,2);
+    nd4j::ops::add op;
+    auto results = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto res = results->at(0);
+    res->printIndexedBuffer("BFloat16 sum:");
+    ASSERT_TRUE(res->equalsTo(exp));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, BFloat16_Test_3) {
+
+    NDArray x('c', {2,3,4}, nd4j::DataType::BFLOAT16);
+    NDArray y('c', {2,3,4}, nd4j::DataType::BFLOAT16);
+    NDArray exp('c', {2,3,4}, nd4j::DataType::BFLOAT16);
+
+    x.linspace(1);
+    y.linspace(1);
+    exp.linspace(2,2);
+    nd4j::ops::add op;
+    auto results = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto res = results->at(0);
+    res->printIndexedBuffer("BFloat16 sum:");
+    ASSERT_TRUE(res->equalsTo(exp));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test1) {
     
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
