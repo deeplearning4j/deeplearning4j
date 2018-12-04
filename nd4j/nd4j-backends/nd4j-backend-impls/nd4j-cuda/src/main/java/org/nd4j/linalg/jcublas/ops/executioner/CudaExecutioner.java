@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -33,6 +34,7 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -485,23 +487,26 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 // we intentionally want to set it to 0.0
                 ret = Nd4j.createUninitialized(dtype, new long[] {xT, yT});
             } else {
-                //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
-                if(op.x().lengthLong() == op.y().lengthLong()) {
-                    //Pairwise
-                    if (op.x().tensorsAlongDimension(dimension) != op.y().tensorsAlongDimension(dimension)) {
-                        throw new ND4JIllegalStateException("Number of TADs along dimension don't match: (x shape = " +
-                                Arrays.toString(op.x().shape()) + ", y shape = " + Arrays.toString(op.y().shape()) +
-                                ", dimension = " + Arrays.toString(dimension) + ")");
-                    }
-                } else {
-                    //Every X TAD vs. entirety of Y
-                    val xTADSize = op.x().lengthLong() / op.x().tensorsAlongDimension(dimension);
+                if (op.y() != null) {
+                    //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
+                    if (op.x().lengthLong() == op.y().lengthLong()) {
+                        //Pairwise
+                        if (op.x().tensorsAlongDimension(dimension) != op.y().tensorsAlongDimension(dimension)) {
+                            throw new ND4JIllegalStateException("Number of TADs along dimension don't match: (x shape = " +
+                                    Arrays.toString(op.x().shape()) + ", y shape = " + Arrays.toString(op.y().shape()) +
+                                    ", dimension = " + Arrays.toString(dimension) + ")");
+                        }
+                    } else {
+                        //Every X TAD vs. entirety of Y
+                        val xTADSize = op.x().lengthLong() / op.x().tensorsAlongDimension(dimension);
 
-                    if (xTADSize != op.y().length()) {
-                        throw new ND4JIllegalStateException("Size of TADs along dimension don't match for pairwise execution:" +
-                                " (x TAD size = " + xTADSize + ", y size = " + op.y().lengthLong());
+                        if (xTADSize != op.y().length()) {
+                            throw new ND4JIllegalStateException("Size of TADs along dimension don't match for pairwise execution:" +
+                                    " (x TAD size = " + xTADSize + ", y size = " + op.y().lengthLong());
+                        }
                     }
                 }
+
                 // in case of regular accumulation we don't care about array state before op
                 ret = Nd4j.createUninitialized(dtype, retShape);
             }
@@ -2557,6 +2562,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public ExecutionerType type() {
         return ExecutionerType.CUDA;
+    }
+
+    @Override
+    public String getString(Utf8Buffer buffer, long index) {
+        val addr = ((LongIndexer) buffer.indexer()).get(index);
+        val ptr = new PagedPointer(addr);
+        val str = new Nd4jCuda.utf8string(ptr);
+        return str._buffer().substring(0, str._length());
     }
 }
 

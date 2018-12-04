@@ -21,6 +21,7 @@ import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -201,7 +202,17 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(Collection<String> strings, long[] shape, char order) {
-        return null;
+        val pairShape = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order, DataType.UTF8);
+        val buffer = new Utf8Buffer(strings);
+        val list = new ArrayList<String>(strings);
+
+        for (int e = 0; e < list.size(); e++) {
+            val cstr = list.get(e);
+            val str = new Nd4jCuda.utf8string(cstr, cstr.length());
+            buffer.put(e, str);
+        }
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
     }
 
     @Override

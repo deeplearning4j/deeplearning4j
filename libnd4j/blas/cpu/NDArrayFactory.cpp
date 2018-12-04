@@ -39,7 +39,7 @@ namespace nd4j {
         int8_t *buffer = nullptr;
         ALLOCATE(buffer, workspace, sizeof(utf8string*), int8_t);
         us = reinterpret_cast<utf8string**>(buffer);
-        us[0] = new nd4j::utf8string(const_cast<std::string *>(&str));
+        us[0] = new utf8string(str);
 
         res.setBuffer(buffer);
         res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, workspace));
@@ -57,7 +57,7 @@ namespace nd4j {
         int8_t *buffer = nullptr;
         ALLOCATE(buffer, workspace, sizeof(utf8string*), int8_t);
         us = reinterpret_cast<utf8string**>(buffer);
-        us[0] = new nd4j::utf8string(const_cast<std::string *>(&str));
+        us[0] = new utf8string(str);
 
         res->setBuffer(buffer);
         res->setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, workspace));
@@ -516,7 +516,7 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
 
         auto us = reinterpret_cast<utf8string**>(buffer);
         for (int e = 0; e < res.lengthOf(); e++)
-            us[e] = new nd4j::utf8string(const_cast<std::string *>(&(string[e])));
+            us[e] = new utf8string(string[e]);
 
         res.setBuffer(buffer);
         res.setWorkspace(workspace);
@@ -539,7 +539,7 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
 
         auto us = reinterpret_cast<utf8string**>(buffer);
         for (int e = 0; e < res->lengthOf(); e++)
-            us[e] = new nd4j::utf8string(const_cast<std::string *>(&(string[e])));
+            us[e] = new utf8string(string[e]);
 
         res->setBuffer(buffer);
         res->setWorkspace(workspace);

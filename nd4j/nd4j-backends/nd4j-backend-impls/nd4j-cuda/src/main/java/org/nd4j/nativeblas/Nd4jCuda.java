@@ -293,8 +293,10 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
         private native void allocate(@Cast("char*") String string, int length);
         public utf8string(@Cast("char*") BytePointer string, int length) { super((Pointer)null); allocate(string, length); }
         private native void allocate(@Cast("char*") BytePointer string, int length);
-        public utf8string(@StdString @Cast({"char*", "std::string*"}) BytePointer string) { super((Pointer)null); allocate(string); }
-        private native void allocate(@StdString @Cast({"char*", "std::string*"}) BytePointer string);
+        public utf8string(@StdString BytePointer string) { super((Pointer)null); allocate(string); }
+        private native void allocate(@StdString BytePointer string);
+        public utf8string(@StdString String string) { super((Pointer)null); allocate(string); }
+        private native void allocate(@StdString String string);
         public utf8string(@Const @ByRef utf8string other) { super((Pointer)null); allocate(other); }
         private native void allocate(@Const @ByRef utf8string other);
         public native @ByRef @Name("operator =") utf8string put(@Const @ByRef utf8string other);
