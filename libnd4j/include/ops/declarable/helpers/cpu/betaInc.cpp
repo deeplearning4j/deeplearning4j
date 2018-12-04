@@ -142,7 +142,7 @@ static T gausLegQuad(const T a, const T b, const T x) {
 	}	
 
 	// Gauss-Legendre
-#pragma omp declare reduction (add : double,float,float16 : omp_out += omp_in) initializer(omp_priv = (T)0.)
+#pragma omp declare reduction (add : double,float,float16,bfloat16 : omp_out += omp_in) initializer(omp_priv = (T)0.)
 #pragma omp simd private(t) reduction(add:sum)
 	for (int i = 0; i < 18; ++i) {	
 		t = x + (upLim - x) * (T)abscissas[i];
@@ -214,18 +214,22 @@ NDArray betaInc(const NDArray& a, const NDArray& b, const NDArray& x) {
 
 template float   continFract<float>  (const float   a, const float   b, const float   x);
 template float16 continFract<float16>(const float16 a, const float16 b, const float16 x);
+template bfloat16 continFract<bfloat16>(const bfloat16 a, const bfloat16 b, const bfloat16 x);
 template double  continFract<double> (const double  a, const double  b, const double  x);
 
 template float   gausLegQuad<float>  (const float   a, const float   b, const float   x);
 template float16 gausLegQuad<float16>(const float16 a, const float16 b, const float16 x);
+template bfloat16 gausLegQuad<bfloat16>(const bfloat16 a, const bfloat16 b, const bfloat16 x);
 template double  gausLegQuad<double> (const double  a, const double  b, const double  x);
 
 template float   betaIncTA<float>  (const float   a, const float   b, const float   x);
 template float16 betaIncTA<float16>(const float16 a, const float16 b, const float16 x);
+template bfloat16 betaIncTA<bfloat16>(const bfloat16 a, const bfloat16 b, const bfloat16 x);
 template double  betaIncTA<double> (const double  a, const double  b, const double  x);
 
 template NDArray betaIncT<float>  (const NDArray&   a, const NDArray&   b, const NDArray&  x);
 template NDArray betaIncT<float16>(const NDArray& a, const NDArray& b, const NDArray& x);
+template NDArray betaIncT<bfloat16>(const NDArray& a, const NDArray& b, const NDArray& x);
 template NDArray betaIncT<double> (const NDArray&  a, const NDArray&  b, const NDArray& x);
 
 

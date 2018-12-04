@@ -155,6 +155,11 @@ namespace nd4j {
         }
 
         template <>
+        math_def FORCEINLINE bfloat16 p_exp(bfloat16 val) {
+            return static_cast<bfloat16>(expf((float) val));
+        }
+
+        template <>
         math_def FORCEINLINE double p_exp(double value) {
             return exp(value);
         }
@@ -169,6 +174,11 @@ namespace nd4j {
         template <>
         math_def FORCEINLINE float16 p_pow(float16 value, float16 power) {
             return static_cast<float16>(powf(static_cast<float>(value), static_cast<float>(power)));
+        }
+
+        template <>
+        math_def FORCEINLINE bfloat16 p_pow(bfloat16 value, bfloat16 power) {
+            return static_cast<bfloat16>(powf(static_cast<float>(value), static_cast<float>(power)));
         }
 
         template <>
@@ -190,6 +200,11 @@ namespace nd4j {
         template <>
         math_def FORCEINLINE float16 p_fmod(float16 value, float16 power) {
             return static_cast<float16>(fmodf(static_cast<float>(value), static_cast<float>(power)));
+        }
+
+        template <>
+        math_def FORCEINLINE bfloat16 p_fmod(bfloat16 value, bfloat16 power) {
+            return static_cast<bfloat16>(fmodf(static_cast<float>(value), static_cast<float>(power)));
         }
 
         template <>
@@ -367,6 +382,11 @@ namespace nd4j {
         }
 
         template <>
+        math_def FORCEINLINE bfloat16 p_rint(bfloat16 val) {
+            return static_cast<bfloat16>(rintf((float) val));
+        }
+
+        template <>
         math_def FORCEINLINE double p_rint(double value) {
             return rint(value);
         }
@@ -393,6 +413,11 @@ namespace nd4j {
         }
 
         template <>
+        math_def FORCEINLINE bfloat16 p_cos(bfloat16 val) {
+            return static_cast<bfloat16>(cosf((float) val));
+        }
+
+        template <>
         math_def FORCEINLINE double p_cos(double value) {
             return cos(value);
         }
@@ -411,6 +436,11 @@ namespace nd4j {
 #else
             return static_cast<float16>(sinf((float) val));
 #endif
+        }
+
+        template <>
+        math_def FORCEINLINE bfloat16 p_sin(bfloat16 val) {
+            return static_cast<bfloat16>(sinf((float) val));
         }
 
         template <>
@@ -433,6 +463,10 @@ namespace nd4j {
             return static_cast<float16>(sqrtf((float) val));
 #endif
         }
+        template <>
+        math_def FORCEINLINE bfloat16 p_sqrt(bfloat16 val) {
+            return static_cast<float16>(sqrtf((float) val));
+        }
 
         template <>
         math_def FORCEINLINE double p_sqrt(double value) {
@@ -449,6 +483,11 @@ namespace nd4j {
         template <>
         math_def FORCEINLINE float16 p_tanh(float16 val) {
             return static_cast<float16>(tanhf((float) val));
+        }
+
+        template <>
+        math_def FORCEINLINE bfloat16 p_tanh(bfloat16 val) {
+            return static_cast<bfloat16>(tanhf((float) val));
         }
 
         template <>
@@ -469,6 +508,11 @@ namespace nd4j {
         }
 
         template <>
+        math_def FORCEINLINE bfloat16 p_erf(bfloat16 val) {
+            return static_cast<bfloat16>(erff((float) val));
+        }
+
+        template <>
         math_def FORCEINLINE double p_erf(double value) {
             return erf(value);
         }
@@ -483,6 +527,11 @@ namespace nd4j {
         template <>
         math_def FORCEINLINE float16 p_erfc(float16 val) {
             return static_cast<float16>(erfcf((float) val));
+        }
+
+        template <>
+        math_def FORCEINLINE bfloat16 p_erfc(bfloat16 val) {
+            return static_cast<bfloat16>(erfcf((float) val));
         }
 
         template <>
@@ -503,6 +552,11 @@ namespace nd4j {
         }
 
         template <>
+        math_def FORCEINLINE bfloat16 p_acos(bfloat16 val) {
+            return static_cast<bfloat16>(acosf((float) val));
+        }
+
+        template <>
         math_def FORCEINLINE double p_acos(double value) {
             return acos(value);
         }
@@ -517,6 +571,11 @@ namespace nd4j {
         template <>
         math_def FORCEINLINE float16 p_sinh(float16 val) {
             return static_cast<float16>(sinhf((float) val));
+        }
+
+        template <>
+        math_def FORCEINLINE bfloat16 p_sinh(bfloat16 val) {
+            return static_cast<bfloat16>(sinhf((float) val));
         }
 
         template <>
@@ -537,6 +596,11 @@ namespace nd4j {
         }
 
         template <>
+        math_def FORCEINLINE bfloat16 p_acosh(bfloat16 val) {
+            return static_cast<bfloat16>(acoshf((float) val));
+        }
+
+        template <>
         math_def FORCEINLINE double p_acosh(double value) {
             return acosh(value);
         }
@@ -551,6 +615,11 @@ namespace nd4j {
         template <>
         math_def FORCEINLINE float16 p_cosh(float16 val) {
             return static_cast<float16>(coshf((float) val));
+        }
+
+        template <>
+        math_def FORCEINLINE bfloat16 p_cosh(bfloat16 val) {
+            return static_cast<bfloat16>(coshf((float) val));
         }
 
         template <>
@@ -572,6 +641,11 @@ namespace nd4j {
         }
 
         template <>
+        math_def FORCEINLINE bfloat16 p_asin(bfloat16 val) {
+            return static_cast<bfloat16>(asinf((float) val));
+        }
+
+        template <>
         math_def FORCEINLINE double p_asin(double value) {
             return asin(value);
         }
@@ -589,6 +663,11 @@ namespace nd4j {
         }
 
         template <>
+        math_def FORCEINLINE bfloat16 p_atan(bfloat16 val) {
+            return static_cast<bfloat16>(atanf((float) val));
+        }
+
+        template <>
         math_def FORCEINLINE double p_atan(double value) {
             return atan(value);
         }
@@ -603,6 +682,11 @@ namespace nd4j {
         template <>
         math_def FORCEINLINE float16 p_atanh(float16 val) {
             return static_cast<float16>(atanhf((float) val));
+        }
+
+        template <>
+        math_def FORCEINLINE bfloat16 p_atanh(bfloat16 val) {
+            return static_cast<bfloat16>(atanhf((float) val));
         }
 
         template <>

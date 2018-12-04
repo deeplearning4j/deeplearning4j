@@ -1013,6 +1013,12 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         NativeOpExcutioner::execScalar(nd4j::scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
     }
 
+    void NDArray::assign(const bfloat16& value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::create(value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
     void NDArray::assign(const Nd4jLong value) {
         // just fire scalar
         auto temp = NDArrayFactory::create(value, this->_workspace);

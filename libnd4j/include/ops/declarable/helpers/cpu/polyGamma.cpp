@@ -39,7 +39,7 @@ static FORCEINLINE T getFactorial(const int n) {
 
 	T result = (T)1.f;
 
-#pragma omp declare reduction (dot : double,float,float16 : omp_out *= omp_in) initializer(omp_priv = (T)1.)
+#pragma omp declare reduction (dot : double,float,float16,bfloat16 : omp_out *= omp_in) initializer(omp_priv = (T)1.)
 #pragma omp parallel for reduction(dot : result) schedule(static)
 	for(int i = 2; i <= n; ++i)
 		result *= i;

@@ -33,6 +33,7 @@
 #include <emmintrin.h>
 #endif
 
+struct bfloat16;
 
 #ifdef __CUDACC__
 #include <fp16_conversion.hpp>
@@ -353,6 +354,8 @@ local_def ihalf cpu_float2ihalf_rn(float f)
     local_def void assign(const ihalf& rhs) {
         *data.getXP() = ((ihalf) rhs).getX();
     }
+
+    local_def void assign(const bfloat16& rhs);
 
 #ifdef __CUDACC__
     local_def void assign(const half& rhs) {

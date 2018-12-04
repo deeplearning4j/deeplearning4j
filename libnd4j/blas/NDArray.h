@@ -423,6 +423,7 @@ namespace nd4j {
         void assign(const double value);
         void assign(const float value);
         void assign(const float16 value);
+        void assign(const bfloat16& value);
         void assign(const Nd4jLong value);
         void assign(const int value);
         void assign(const int16_t value);
