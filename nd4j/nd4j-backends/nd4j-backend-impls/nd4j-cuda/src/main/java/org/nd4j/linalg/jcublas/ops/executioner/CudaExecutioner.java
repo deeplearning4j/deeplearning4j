@@ -206,6 +206,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long st = profilingHookIn(op);
         INDArray ret = op.z();
 
+        checkForCompression(op);
         //validateDataType(Nd4j.dataType(), op);
 
         for (int i = 0; i < dimension.length; i++)
