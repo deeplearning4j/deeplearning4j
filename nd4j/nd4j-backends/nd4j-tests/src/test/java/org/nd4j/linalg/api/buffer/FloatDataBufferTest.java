@@ -206,7 +206,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
         DataBuffer clone = assertion.dup();
         val stream = new DataInputStream(new ByteArrayInputStream(bos.toByteArray()));
-        val header = clone.readHeader(stream);
+        val header = BaseDataBuffer.readHeader(stream);
         assertion.read(stream, header.getLeft(), header.getMiddle(), header.getRight());
         assertArrayEquals(assertion.asFloat(), clone.asFloat(), 0.0001f);
     }

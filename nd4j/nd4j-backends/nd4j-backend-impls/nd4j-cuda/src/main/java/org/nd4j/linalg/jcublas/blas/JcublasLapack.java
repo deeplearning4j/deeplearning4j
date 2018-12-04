@@ -423,8 +423,8 @@ public class JcublasLapack extends BaseLapack {
     public void spotrf(byte uplo, int N, INDArray A, INDArray INFO) {
         INDArray a = A;
 
-        if (Nd4j.dataType() != DataType.FLOAT)
-            log.warn("DOUBLE potrf called in FLOAT environment");
+        if (A.dataType() != DataType.FLOAT)
+            log.warn("FLOAT potrf called for " + A.dataType());
 
         if (A.ordering() == 'c')
             a = A.dup('f');
@@ -506,8 +506,8 @@ public class JcublasLapack extends BaseLapack {
     public void dpotrf(byte uplo, int N, INDArray A, INDArray INFO) {
         INDArray a = A;
 
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            log.warn("FLOAT potrf called in DOUBLE environment");
+        if (A.dataType() != DataType.DOUBLE)
+            log.warn("DOUBLE potrf called for " + A.dataType());
 
         if (A.ordering() == 'c')
             a = A.dup('f');
@@ -545,7 +545,7 @@ public class JcublasLapack extends BaseLapack {
 
             int worksize = worksizeBuffer.getInt(0);
             // Now allocate memory for the workspace, the permutation matrix and a return code
-            Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+            Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType(DataType.DOUBLE));
 
             // Do the actual decomp
             stat = cusolverDnDpotrf(solverDn, uplo, N, 

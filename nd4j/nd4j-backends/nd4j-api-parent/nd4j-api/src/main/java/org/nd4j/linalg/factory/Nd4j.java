@@ -34,6 +34,7 @@ import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.graph.FlatArray;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
@@ -2655,8 +2656,7 @@ public class Nd4j {
      * @throws IOException
      */
     public static INDArray read(DataInputStream dis) throws IOException {
-        val tempBuffer = Nd4j.createBuffer(1, false);
-        val headerShape = tempBuffer.readHeader(dis);
+        val headerShape = BaseDataBuffer.readHeader(dis);
 
         var shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle().longValue()}, headerShape.getRight());
         shapeInformation.read(dis, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getThird());
@@ -2664,7 +2664,7 @@ public class Nd4j {
         DataType type = null;
         DataBuffer data = null;
 
-        val headerData = shapeInformation.readHeader(dis);
+        val headerData = BaseDataBuffer.readHeader(dis);
         try {
             // current version contains dtype in extras
             data = CompressedDataBuffer.readUnknown(dis, headerData.getFirst(), headerData.getMiddle(), headerData.getRight());

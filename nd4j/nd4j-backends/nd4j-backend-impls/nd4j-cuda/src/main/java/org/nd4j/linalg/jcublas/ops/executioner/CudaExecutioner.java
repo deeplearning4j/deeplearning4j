@@ -1342,7 +1342,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         // SoftMax, LogSoftMax, SoftMaxDerivative
         if (op.getOpType() == Op.Type.TRANSFORM_STRICT && (op.opNum() >= 0 && op.opNum() <= 2)) {
                 tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), new int[] {0});
-                tadMaxBuffers = tadManager.getTADOnlyShapeInfo(op.x(), new int[] {1});
+                tadMaxBuffers = tadManager.getTADOnlyShapeInfo(op.x().rank() == 1 ? op.x().reshape(1, -1) : op.x(), new int[] {1});
 
                 hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
                 devTadShapeInfo = allocator.getPointer(tadBuffers.getFirst(), context);

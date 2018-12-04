@@ -1692,7 +1692,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void doReadObject(ObjectInputStream s) {
         try {
             s.defaultReadObject();
-            val header = readHeader(s);
+            val header = BaseDataBuffer.readHeader(s);
             read(s, header.getLeft(), header.getMiddle(), header.getRight());
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -1701,7 +1701,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     }
 
-    public Triple<AllocationMode, Long, DataType> readHeader(@NonNull InputStream is)  {
+    public static Triple<AllocationMode, Long, DataType> readHeader(@NonNull InputStream is)  {
         try {
             DataInputStream dis = is instanceof DataInputStream ? (DataInputStream) is : new DataInputStream(is);
             val alloc = AllocationMode.valueOf(dis.readUTF());

@@ -614,8 +614,6 @@ public interface DataBuffer extends Serializable {
      */
     void read(InputStream is, AllocationMode allocationMode, long length, DataType dataType);
 
-    Triple<AllocationMode, Long, DataType> readHeader(InputStream is);
-
     /**
      * Returns tracking point for Allocator
      *

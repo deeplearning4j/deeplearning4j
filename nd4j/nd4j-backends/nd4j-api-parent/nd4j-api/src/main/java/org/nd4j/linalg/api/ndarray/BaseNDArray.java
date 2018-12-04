@@ -31,10 +31,7 @@ import org.nd4j.graph.ByteOrder;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.DataTypeEx;
-import org.nd4j.linalg.api.buffer.Utf8Buffer;
+import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -5988,15 +5985,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     //Custom deserialization for Java serialization
     protected void read(ObjectInputStream s) {
-        val tempBuffer = Nd4j.createBuffer(1, false);
-        val headerShape = tempBuffer.readHeader(s);
+        val headerShape = BaseDataBuffer.readHeader(s);
 
         shapeInformation = Nd4j.createBuffer(new int[Shape.shapeInfoLength(rank())], 0);
         shapeInformation.read(s, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getRight());
 
         setShapeInformation(Pair.create(shapeInformation, shapeInformation.asLong()));
 
-        val headerData = tempBuffer.readHeader(s);
+        val headerData = BaseDataBuffer.readHeader(s);
         data = Nd4j.createBuffer(headerData.getRight(), headerData.getMiddle(), false);
         data().read(s, headerData.getLeft(), headerData.getMiddle(), headerData.getRight());
     }
