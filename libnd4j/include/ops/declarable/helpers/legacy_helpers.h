@@ -51,7 +51,8 @@ namespace helpers {
     void seluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
     void cubeDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
     void reduceNorm1(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void sxeLossWithLogits(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void sigmCrossEntropy(NDArray* logits, NDArray* lablels, NDArray* theOutput);
+    void sigmCrossEntropyGrad(NDArray* logits, NDArray* lablels, NDArray* theOutput);
     void tanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
     void hardTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
     void rationalTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
