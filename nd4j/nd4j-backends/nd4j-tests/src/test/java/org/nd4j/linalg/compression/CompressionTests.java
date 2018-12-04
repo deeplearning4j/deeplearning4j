@@ -205,6 +205,7 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testThresholdCompression1() throws Exception {
         INDArray initial = Nd4j.create(new float[] {0.0f, 0.0f, 1e-3f, -1e-3f, 0.0f, 0.0f});
         INDArray exp_0 = Nd4j.create(DataType.FLOAT, 6);
@@ -215,14 +216,12 @@ public class CompressionTests extends BaseNd4jTest {
 
         INDArray compressed = compressor.compress(initial);
 
-
         log.info("Initial array: {}", Arrays.toString(initial.data().asFloat()));
-
-        assertEquals(exp_0, initial);
 
         INDArray decompressed = compressor.decompress(compressed);
 
         assertEquals(exp_1, decompressed);
+        assertEquals(exp_0, initial);
     }
 
     @Test
