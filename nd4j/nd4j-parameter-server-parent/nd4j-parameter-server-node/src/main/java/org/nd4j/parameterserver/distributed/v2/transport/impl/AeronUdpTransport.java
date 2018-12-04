@@ -30,7 +30,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingIdleStrategy;
-import org.jetbrains.annotations.NotNull;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JSystemProperties;
@@ -38,8 +37,10 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.enums.NodeStatus;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
+import org.nd4j.parameterserver.distributed.v2.exceptions.ND4JNotConnectedException;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
@@ -50,6 +51,7 @@ import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
@@ -153,7 +155,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     // this executor service han
     protected ExecutorService messagesExecutorService = Executors.newFixedThreadPool(SENDER_THREADS + MESSAGE_THREADS + SUBSCRIPTION_THREADS, new ThreadFactory() {
         @Override
-        public Thread newThread(@NotNull Runnable r) {
+        public Thread newThread(@NonNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
             //TODO implement support for multi-GPU masters
@@ -162,6 +164,12 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         }
     });
 
+
+    @Override
+    public void removeConnection(String id) {
+        // TODO: to be implemented
+        throw new UnsupportedOperationException();
+    }
 
     protected void createSubscription() {
         // create subscription
@@ -314,7 +322,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                 try {
                     Thread.sleep(100);
                     if (cnt ++ > 100)
-                        throw new ND4JIllegalStateException("Can't establish connection afet 10 seconds. Terminating...");
+                        throw new ND4JIllegalStateException("Can't establish connection to [" + ipAndPort + "] afet 10 seconds. Terminating...");
                 } catch (InterruptedException e) {
                     //
                 }
@@ -390,8 +398,49 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         return true;
     }
 
+
+    @Override
+    protected boolean isOnline(@NonNull String nodeId) {
+        try {
+            val s = super.isOnline(nodeId);;
+            if (!s)
+                log.info("Node [{}] is offline", nodeId);
+
+            return s;
+        } catch (NoSuchElementException e) {
+            try {
+                aeronLock.lock();
+
+                if (remoteConnections.containsKey(nodeId)) {
+                    val f = remoteConnections.get(nodeId).getPublication().isConnected();
+                    if (!f) {
+                        log.info("Connection [{}] is offline", nodeId);
+                    }
+                    return f;
+                }
+                else
+                    throw new NoSuchElementException("No such connection: [" + nodeId + "]");
+            } finally {
+                aeronLock.unlock();
+            }
+        }
+    }
+
     @Override
     public void sendMessage(@NonNull VoidMessage message, @NonNull String id) {
+        synchronized (mesh) {
+            try {
+                if (!isOnline(id)) {
+                    log.warn("Skipping node [{}]", id);
+                    return;
+                }
+            } catch (NoSuchElementException e) {
+                    // just return on unknown node
+                log.warn("Stepping over node [{}]", id);
+                return;
+            }
+        }
+
         if (message.getOriginatorId() == null)
             message.setOriginatorId(this.id());
 
@@ -408,17 +457,21 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         }
 
         if (message instanceof INDArrayMessage) {
-            try {
-                val splits = splitter.split((INDArrayMessage) message, voidConfiguration.getMaxChunkSize());
+            // we're skipping split if message is small enough
+            val imessage = (INDArrayMessage) message;
+            if (imessage.getPayload().data().length() * Nd4j.sizeOfDataType(imessage.getPayload().dataType()) > voidConfiguration.getMaxChunkSize()) {
+                try {
+                    val splits = splitter.split(imessage, voidConfiguration.getMaxChunkSize());
 
-                for(val m:splits) {
-                    sendMessage(m, id);
+                    for (val m : splits) {
+                        sendMessage(m, id);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
 
-            return;
+                return;
+            }
         }
 
         // serialize out of locks
@@ -469,16 +522,9 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                     }
                     break;
                 case NOT_CONNECTED: {
-                            log.info("NOT_CONNECTED: [{}]", id);
-                            addConnection(id);
-                            try {
-                                // in case of backpressure we're just sleeping for a while, and message out again
-                                Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                            } catch (InterruptedException e) {
-                                //
-                            }
+                            log.warn("NOT_CONNECTED: [{}]", id);
+                            throw new ND4JNotConnectedException("Not connected to [" + id + "]");
                         }
-                        break;
                 case BACK_PRESSURED: {
                     log.info("BACK_PRESSURED: [{}]", id);
                     try {

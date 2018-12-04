@@ -20,6 +20,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.util.ND4JFileUtils;
 import org.nd4j.linalg.util.SerializationUtils;
@@ -71,19 +72,28 @@ public class MessageSplitter {
      * @param message
      * @return
      */
-    public Collection<VoidChunk> split(@NonNull INDArrayMessage message, int maxBytes) throws IOException {
-        if (maxBytes <= 0)
+    public Collection<VoidMessage> split(@NonNull INDArrayMessage message, int maxBytes) throws IOException {
+        if (maxBytes < 1)
             throw new ND4JIllegalStateException("MaxBytes must be > 0");
 
         //val tempFile = ND4JFileUtils.createTempFile("messageSplitter","temp");
-        val result = new ArrayList<VoidChunk>();
+        val result = new ArrayList<VoidMessage>();
+
+        // if array is too small - just send it as is
+        val array = message.getPayload();
+        val originalSize = array.data().length() * Nd4j.sizeOfDataType(array.data().dataType());
+        if (originalSize < maxBytes) {
+            result.add(message);
+            log.info("Sending out original array with size of [{}] bytes", originalSize);
+            return result;
+        }
 
         try (val bos = new ByteArrayOutputStream()) {
             // serializing original message to disc
             SerializationUtils.serialize(message, bos);
 
             val length = bos.size();
-            log.info("Serialized INDArrayMessage size: {} bytes", length);
+            log.info("Serialized INDArrayMessage size: {} bytes; maxChunkSize: {} bytes", length, maxBytes);
 
             int numChunks = (int) (length /  maxBytes + (length % maxBytes > 0 ? 1 : 0));
             try (val bis = new ByteArrayInputStream(bos.toByteArray())) {

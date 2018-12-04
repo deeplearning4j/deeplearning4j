@@ -1,5 +1,6 @@
-from .java_classes import  KerasModelImport
+from .java_classes import KerasModelImport
 from .ndarray import array
+
 
 class KerasModel(object):
     def __init__(self, filepath):
@@ -12,7 +13,6 @@ class KerasModel(object):
             self.model = KerasModelImport.importKerasSequentialModelAndWeights(filepath)
             self.is_sequential = True
 
-
     def __call__(self, input):
         if self.is_sequential:
             if type(input) in [list, tuple]:
@@ -22,7 +22,7 @@ class KerasModel(object):
                     raise ValueError(err)
                 input = input[0]
             input = array(input).array
-            out = self.model.output(input,  False)
+            out = self.model.output(input, False)
             out = array(out)
             return out
         else:

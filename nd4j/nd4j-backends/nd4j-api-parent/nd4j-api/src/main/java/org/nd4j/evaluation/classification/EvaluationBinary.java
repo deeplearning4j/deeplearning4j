@@ -22,9 +22,11 @@ import lombok.NoArgsConstructor;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.EvaluationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastGreaterThan;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
@@ -137,6 +139,11 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
     @Override
     public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray) {
+
+        //Check for NaNs in predictions - without this, evaulation could silently be intepreted as class 0 prediction due to argmax
+        long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(networkPredictions, Conditions.isNan())).getFinalResult().longValue();
+        org.nd4j.base.Preconditions.checkState(count == 0, "Cannot perform evaluation with NaNs present in predictions:" +
+                " %s NaNs present in predictions INDArray", count);
 
         if (countTruePositive != null && countTruePositive.length != labels.size(1)) {
             throw new IllegalStateException("Labels array does not match stored state size. Expected labels array with "

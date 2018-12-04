@@ -106,12 +106,21 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
     private CudnnSubsamplingContext cudnnContext = new CudnnSubsamplingContext();
 
     @Override
+    public void validateDeviceId() {
+        if(deviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            cudnnContext = new CudnnSubsamplingContext();
+            deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        }
+    }
+
+    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides,
                  int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
         if(dilation[0] != 1 || dilation[1] != 1){
             //CuDNN doesn't support dilated subsampling
             return null;
         }
+        validateDeviceId();
 
         //We require the output as one of the arguments for backprop here
         //TODO we could add cache mode support here somehow...
@@ -207,6 +216,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
             //CuDNN doesn't support dilated subsampling
             return null;
         }
+        validateDeviceId();
 
         val miniBatch = input.size(0);
         val inDepth = input.size(1);
@@ -269,5 +279,4 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         //No persistent memory use other than the structs (which are small)
         return Collections.emptyMap();
     }
-
 }

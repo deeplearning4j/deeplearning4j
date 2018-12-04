@@ -45,7 +45,6 @@ import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
 import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
-import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -56,6 +55,7 @@ import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.CrashReportingUtil;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
+import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
@@ -134,6 +134,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     //Workspaces for CUDNN. Pass to LayerWorkspaceMgr for re-use in cudnn helpers
     @Getter
     protected transient Map<String,Pointer> helperWorkspaces = new HashMap<>();
+    protected transient long helperWorkspacesDeviceId = -1;      //Helper memory isn't usually safe to pass between devices
 
 
     /**
@@ -396,6 +397,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         Layer layer = layers[layerIdx];
@@ -417,6 +419,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if (layerWiseConfigurations.getInputPreProcess(layerIdx) != null) {
 
                 // FIXME: int cast
+                validateHelperWorkspaceThreads();
                 outputOfPrevLayer = layerWiseConfigurations.getInputPreProcess(layerIdx).preProcess(outputOfPrevLayer, (int) input.size(0),
                         LayerWorkspaceMgr.noWorkspaces(helperWorkspaces));
             }
@@ -459,7 +462,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         //Get params for MultiLayerNetwork sub layers.
         int idx = param.indexOf('_');
         if (idx == -1)
-            throw new IllegalStateException("Invalid param key: not have layer separator: \"" + param + "\"");
+            throw new IllegalStateException("Invalid param key: does not have layer separator: \"" + param + "\"");
         int layerIdx = Integer.parseInt(param.substring(0, idx));
         String newKey = param.substring(idx + 1);
 
@@ -774,6 +777,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             throw new IllegalStateException("Unable to perform activation; TO is out of layer space");
 
         try {
+            validateHelperWorkspaceThreads();
             LayerWorkspaceMgr mgr = LayerWorkspaceMgr.noWorkspaces(helperWorkspaces);   //TODO
 
             INDArray res = input;
@@ -952,6 +956,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 workspaceMgr.setScopedOutFor(ArrayType.INPUT);
             }
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         List<INDArray> out = new ArrayList<>();
@@ -1040,6 +1045,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "ffToLayerActivationsInWs method requires workspace WS_ALL_LAYERS_ACT to be open");
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         List<INDArray> out = new ArrayList<>();
@@ -1157,6 +1163,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         mgrEven.setHelperWorkspacePointers(helperWorkspaces);
         mgrOdd.setHelperWorkspacePointers(helperWorkspaces);
 
@@ -1558,6 +1565,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .with(ArrayType.UPDATER_WORKING_MEM, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         if (layerWiseConfigurations.isBackprop()) {
@@ -1667,6 +1675,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 mgr.setWorkspace(ArrayType.FF_CACHE, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
             }
         }
+        validateHelperWorkspaceThreads();
         mgr.setHelperWorkspacePointers(helperWorkspaces);
 
         //Calculate activations (which are stored in each layer, and used in backprop)
@@ -1767,6 +1776,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         " to be open when workspaces are used");
             }
         }
+        validateHelperWorkspaceThreads();
         mgrEven.setHelperWorkspacePointers(helperWorkspaces);
         mgrOdd.setHelperWorkspacePointers(helperWorkspaces);
 
@@ -2154,6 +2164,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .with(ArrayType.UPDATER_WORKING_MEM, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         if (layerWiseConfigurations.isBackprop()) {
@@ -2471,6 +2482,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .noWorkspaceFor(ArrayType.INPUT)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         mgr.setHelperWorkspacePointers(helperWorkspaces);
 
         INDArray inputToOutputLayer = outputOfLayerDetached(training, FwdPassType.STANDARD,layers.length-2, data.getFeatures(),
@@ -3221,6 +3233,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return ROC evaluation on the given dataset
      */
     public <T extends ROC> T evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer();
+        if(getLayerWiseConfigurations().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROC.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROC(rocThresholdSteps))[0];
     }
 
@@ -3243,6 +3259,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return Multi-class ROC evaluation on the given dataset
      */
     public <T extends ROCMultiClass> T evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer();
+        if(getLayerWiseConfigurations().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROCMultiClass.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROCMultiClass(rocThresholdSteps))[0];
     }
 
@@ -3434,8 +3454,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (layers == null || !(getOutputLayer() instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
-        if (labelsList == null)
-            labelsList = iterator.getLabels();
+        if (labelsList == null) {
+            try {
+                labelsList = iterator.getLabels();
+            } catch (Throwable t){ }    //Ignore, maybe UnsupportedOperationException etc
+        }
+
+        Layer outputLayer = getOutputLayer();
+        if(getLayerWiseConfigurations().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), Evaluation.class);
+        }
 
         Evaluation e = new org.deeplearning4j.eval.Evaluation(labelsList, topN);
         doEvaluation(iterator, e);
@@ -3816,6 +3844,30 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         // FIXME: int cast
         return (int) ffl.getNIn();
+    }
+
+    /**
+     * Validate and clear the helper workspace pointer(s) from the helperWorkspaces if the calling thread's device is
+     * different to past devices.
+     * This is necessary because CuDNN workspace pointers can't be relocated between devices, and hence we'll cause
+     * a crash if we use the pointer initialized on one device, on another device.
+     */
+    protected void validateHelperWorkspaceThreads(){
+        if(helperWorkspacesDeviceId == -1) {
+            helperWorkspacesDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            if(helperWorkspaces != null){
+                helperWorkspaces.clear();
+            }
+            return;
+        }
+
+        if(helperWorkspacesDeviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            log.info("Clearing helper workspaces - previous device {}, current device {}", helperWorkspacesDeviceId, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+            if(helperWorkspaces != null){
+                helperWorkspaces.clear();
+            }
+            helperWorkspacesDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        }
     }
 
     /**

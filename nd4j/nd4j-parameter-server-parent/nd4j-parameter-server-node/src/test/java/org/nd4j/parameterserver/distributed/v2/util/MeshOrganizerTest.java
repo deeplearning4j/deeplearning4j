@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.parameterserver.distributed.enums.NodeStatus;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 
 import java.io.ByteArrayInputStream;
@@ -325,6 +326,8 @@ public class MeshOrganizerTest {
         for (int e = 0; e < 1000; e++)
             mesh1.addNode(java.util.UUID.randomUUID().toString());
 
+        val lastNode = mesh1.addNode(java.util.UUID.randomUUID().toString());
+        lastNode.status(NodeStatus.OFFLINE);
 
         try(val baos = new ByteArrayOutputStream();) {
             SerializationUtils.serialize(mesh1, baos);
@@ -333,6 +336,40 @@ public class MeshOrganizerTest {
 
                 MeshOrganizer mesh2 = SerializationUtils.deserialize(bais);
                 assertEquals(mesh1, mesh2);
+                assertEquals(mesh1.flatNodes().size(), mesh2.flatNodes().size());
+
+
+                for (val n:mesh2.flatNodes()) {
+                    assertNotNull(n.status());
+                    assertEquals(mesh1.getNodeById(n.getId()).status(), n.status());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testSerialization_2() throws Exception {
+        val mesh1 = new MeshOrganizer(MeshBuildMode.PLAIN);
+
+        for (int e = 0; e < 1000; e++)
+            mesh1.addNode(java.util.UUID.randomUUID().toString());
+
+        val lastNode = mesh1.addNode(java.util.UUID.randomUUID().toString());
+        lastNode.status(NodeStatus.OFFLINE);
+
+        try(val baos = new ByteArrayOutputStream();) {
+            SerializationUtils.serialize(mesh1, baos);
+
+            try(val bais = new ByteArrayInputStream(baos.toByteArray())) {
+
+                MeshOrganizer mesh2 = SerializationUtils.deserialize(bais);
+                assertEquals(mesh1, mesh2);
+                assertEquals(mesh1.flatNodes().size(), mesh2.flatNodes().size());
+
+                for (val n:mesh2.flatNodes()) {
+                    assertNotNull(n.status());
+                    assertEquals(mesh1.getNodeById(n.getId()).status(), n.status());
+                }
             }
         }
     }

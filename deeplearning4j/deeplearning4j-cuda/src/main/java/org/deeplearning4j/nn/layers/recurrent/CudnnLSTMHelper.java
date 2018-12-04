@@ -169,6 +169,21 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
     private boolean initializedDropoutDescriptor = false;
 
+    @Override
+    public void validateDeviceId() {
+        if(deviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            cudnnContext = new CudnnLSTMContext();
+            xDesc = new TensorArray();
+            yDesc = new TensorArray();
+            dxDesc = new TensorArray();
+            dyDesc = new TensorArray();
+            stateSpace = new DataCache();
+            reserveSpace = new DataCache();
+            weightsSpace = new DataCache();
+            deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        }
+    }
+
     private static INDArray toCOrder(INDArray arr) {
         if (arr.isView() || arr.ordering() != 'c' || !Shape.strideDescendingCAscendingF(arr)) {
             arr = arr.dup('c');
@@ -205,6 +220,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                                                      final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
                                                      final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
                                                      final LayerWorkspaceMgr workspaceMgr) {
+        validateDeviceId();
 
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
         val hiddenLayerSize = recurrentWeights.size(0); //i.e., n^L
@@ -376,6 +392,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                     boolean forBackprop, boolean forwards, final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
                     final boolean hasPeepholeConnections,   //True for GravesLSTM, false for LSTM
                     final LayerWorkspaceMgr workspaceMgr) {
+        validateDeviceId();
 
         boolean is2dInput = input.rank() < 3; //Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
         val timeSeriesLength = (is2dInput ? 1 : input.size(2));

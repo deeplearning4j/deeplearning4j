@@ -54,6 +54,7 @@ import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.CrashReportingUtil;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
+import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.EvaluationUtils;
 import org.nd4j.evaluation.IEvaluation;
@@ -116,6 +117,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     //Workspaces for CUDNN. Pass to LayerWorkspaceMgr for re-use in cudnn helpers
     @Getter
     protected transient Map<String,Pointer> helperWorkspaces = new HashMap<>();
+    protected transient long helperWorkspacesDeviceId = -1;      //Helper memory isn't usually safe to pass between devices
 
     private transient final AtomicLong occupiedBy = new AtomicLong(-1);
 
@@ -914,6 +916,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.UPDATER_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         if(!iter.hasNext() && iter.resetSupported())
@@ -1133,6 +1136,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.UPDATER_WORKING_MEM, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         if (configuration.isBackprop()) {
@@ -1349,6 +1353,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.UPDATER_WORKING_MEM, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         boolean tbptt = configuration.getBackpropType() == BackpropType.TruncatedBPTT;
@@ -1838,6 +1843,27 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         return output(iterator)[0];
     }
 
+    /**
+     * Get the activations for the specific layers only
+     * @param layers       Layers to get the specified activations for
+     * @param train        If true: train mode. False: test (inference) mode
+     * @param features     Features array
+     * @param featureMasks Feature masks array. May be null
+     * @return Activations of the selected layers, in the same order as the "layers" arg/list
+     */
+    public INDArray[] output(List<String> layers, boolean train, INDArray[] features, INDArray[] featureMasks){
+        Preconditions.checkState(layers != null && layers.size() > 0, "Layers must not be null: got later names %s", layers);
+        int[] layerNums = new int[layers.size()];
+        for( int i=0; i<layers.size(); i++ ){
+            String n = layers.get(i);
+            Preconditions.checkState(verticesMap.containsKey(n), "Layer with name %s not found in network", n);
+            layerNums[i] = verticesMap.get(n).getVertexIndex();
+        }
+        INDArray[] out = outputOfLayersDetached(train, FwdPassType.STANDARD, layerNums, features, featureMasks, null, true,
+                false, null);
+        return out;
+    }
+
 
     protected void validateArrayWorkspaces(LayerWorkspaceMgr mgr, INDArray array, ArrayType arrayType, String vertexName, boolean isInputVertex, String op){
         try{
@@ -1903,6 +1929,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 workspaceMgr.setNoLeverageOverride(features[0].data().getParentWorkspace().getId());
             }
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         Map<String, INDArray> activations = new HashMap<>();
@@ -2049,6 +2076,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 workspaceMgr.setWorkspace(ArrayType.FF_CACHE, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
             }
         }
+        validateHelperWorkspaceThreads();
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         Map<String, INDArray> activations = new HashMap<>();
@@ -2213,6 +2241,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         WorkspaceMode wsm = (train ? configuration.getTrainingWorkspaceMode() : configuration.getInferenceWorkspaceMode());
         boolean noWS = wsm == WorkspaceMode.NONE;
+        validateHelperWorkspaceThreads();
         LayerWorkspaceMgr allNone = noWS ? LayerWorkspaceMgr.noWorkspaces(helperWorkspaces) : null;
         List<MemoryWorkspace>[] closeAtEndIteraton = (List<MemoryWorkspace>[])new List[topologicalOrder.length];
         MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
@@ -2255,6 +2284,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         allWorkspaceManagers.add(workspaceMgr);
                     }
                 }
+                validateHelperWorkspaceThreads();
                 workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
                 //Is this one of the layers/vertices that we want the output for?
@@ -2502,6 +2532,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
 
         boolean noWS = configuration.getInferenceWorkspaceMode() == WorkspaceMode.NONE;
+        validateHelperWorkspaceThreads();
         LayerWorkspaceMgr allNone = noWS ? LayerWorkspaceMgr.noWorkspaces(helperWorkspaces) : null;
 
         List<LayerWorkspaceMgr> allWorkspaceManagers = new ArrayList<>();
@@ -2565,6 +2596,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         allWorkspaceManagers.add(workspaceMgr);
                     }
                 }
+                validateHelperWorkspaceThreads();
                 workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
                 if (current.isOutputVertex()) {
@@ -2952,6 +2984,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         mgr.setHelperWorkspacePointers(helperWorkspaces);
 
         boolean hasMaskArrays = dataSet.hasMaskArrays();
@@ -3047,6 +3080,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
+        validateHelperWorkspaceThreads();
         mgr.setHelperWorkspacePointers(helperWorkspaces);
 
         boolean hasMaskArrays = dataSet.hasMaskArrays();
@@ -3123,7 +3157,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
             String key = entry.getKey();
             INDArray val = entry.getValue();
-            int idx = key.indexOf('_');
+            int idx = key.lastIndexOf('_');
             if (idx == -1)
                 throw new IllegalStateException("Invalid param key: not have layer separator: \"" + key + "\"");
             String layerName = key.substring(0, idx);
@@ -3280,7 +3314,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     @Override
     public INDArray getParam(String paramName) {
         //        throw new UnsupportedOperationException("Not implemented");
-        int idx = paramName.indexOf('_');
+        int idx = paramName.lastIndexOf('_');
         if (idx == -1)
             throw new IllegalStateException("Invalid param key: not have layer separator: \"" + paramName + "\"");
         String layerName = paramName.substring(0, idx);
@@ -3331,7 +3365,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     @Override
     public void setParam(String key, INDArray val) {
         //        throw new UnsupportedOperationException("Not implemented");
-        int idx = key.indexOf('_');
+        int idx = key.lastIndexOf('_');
         if (idx == -1)
             throw new IllegalStateException("Invalid param key: not have layer separator: \"" + key + "\"");
         String layerName = key.substring(0, idx);
@@ -3816,6 +3850,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (labelsList == null)
             labelsList = iterator.getLabels();
 
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), Evaluation.class);
+        }
+
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.Evaluation(labelsList, topN))[0];
     }
 
@@ -3829,6 +3868,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
      */
     public <T extends Evaluation> T evaluate(MultiDataSetIterator iterator, List<String> labelsList, int topN) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), Evaluation.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.Evaluation(labelsList, topN))[0];
     }
 
@@ -3892,6 +3935,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return ROC evaluation on the given dataset
      */
     public <T extends ROC> T evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROC.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROC(rocThresholdSteps))[0];
     }
 
@@ -3914,6 +3961,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return ROC evaluation on the given dataset
      */
     public <T extends ROC> T evaluateROC(MultiDataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROC.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROC(rocThresholdSteps))[0];
     }
 
@@ -3936,6 +3987,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public <T extends ROCMultiClass> T evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROCMultiClass.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROCMultiClass(rocThresholdSteps))[0];
     }
 
@@ -3947,6 +4002,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public <T extends ROCMultiClass> T evaluateROCMultiClass(MultiDataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROCMultiClass.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROCMultiClass(rocThresholdSteps))[0];
     }
 
@@ -4598,6 +4657,31 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         // FIXME: int cast
         return (int) ffl.getNIn();
+    }
+
+    /**
+     * Validate and clear the helper workspace pointer(s) from the helperWorkspaces if the calling thread's device is
+     * different to past devices.
+     * This is necessary because CuDNN workspace pointers can't be relocated between devices, and hence we'll cause
+     * a crash if we use the pointer initialized on one device, on another device.
+     */
+    protected void validateHelperWorkspaceThreads(){
+//        log.info("Checking helper workspaces - thread {}, previous device {}, current device {}", Thread.currentThread().getId(), helperWorkspacesDeviceId, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        if(helperWorkspacesDeviceId == -1) {
+            helperWorkspacesDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            if(helperWorkspaces != null){
+                helperWorkspaces.clear();
+            }
+            return;
+        }
+
+        if(helperWorkspacesDeviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            log.info("Clearing helper workspaces - thread {}, previous device {}, current device {}", Thread.currentThread(), helperWorkspacesDeviceId, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+            if(helperWorkspaces != null){
+                helperWorkspaces.clear();
+            }
+            helperWorkspacesDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        }
     }
 
     /**

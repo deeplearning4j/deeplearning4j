@@ -128,10 +128,20 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     private CudnnConvolutionContext cudnnContext = new CudnnConvolutionContext();
 
     @Override
+    public void validateDeviceId() {
+        if(deviceId != Nd4j.getAffinityManager().getDeviceForCurrentThread()){
+            log.info("Creating new CudnnConvolutionContext - previous device {}, current device {}", deviceId, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+            cudnnContext = new CudnnConvolutionContext();
+            deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        }
+    }
+
+    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
                     int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
                     AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
                     ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
+        validateDeviceId();
         int code;
 
         val miniBatch = input.size(0);
@@ -343,6 +353,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     @Override
     public INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad,
                               AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
+        validateDeviceId();
         int code;
 
         val miniBatch = input.size(0);

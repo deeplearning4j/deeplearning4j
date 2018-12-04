@@ -17,6 +17,7 @@
 package org.datavec.api.records.writer.impl.misc;
 
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.datavec.api.records.writer.impl.FileRecordWriter;
 import org.datavec.api.split.partition.PartitionMetaData;
 import org.datavec.api.writable.Writable;
@@ -32,6 +33,11 @@ import java.util.List;
 public class MatlabRecordWriter extends FileRecordWriter {
     public MatlabRecordWriter() {}
 
+
+    @Override
+    public boolean supportsBatch() {
+        return false;
+    }
 
     @Override
     public PartitionMetaData write(List<Writable> record) throws IOException {
@@ -54,5 +60,10 @@ public class MatlabRecordWriter extends FileRecordWriter {
 
         return PartitionMetaData.builder().numRecordsUpdated(1).build();
 
+    }
+
+    @Override
+    public PartitionMetaData writeBatch(List<List<Writable>> batch) throws IOException {
+        throw new NotImplementedException("writeBatch is not supported on "+this.getClass().getSimpleName());
     }
 }

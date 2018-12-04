@@ -38,7 +38,6 @@ def _test_ufunc(op, shape1, shape2):
     assert_allclose(c_jp, c_np)
 
 
-
 def _test_ufunc_inplace(op, shape1, shape2):
     a_np = np.random.random(shape1)
     b_np = np.random.random(shape2)

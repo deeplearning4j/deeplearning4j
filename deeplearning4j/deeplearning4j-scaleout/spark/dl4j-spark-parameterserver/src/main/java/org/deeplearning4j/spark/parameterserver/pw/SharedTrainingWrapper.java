@@ -95,6 +95,7 @@ public class SharedTrainingWrapper {
     protected ThreadLocal<BlockingObserver> observer = new ThreadLocal<>();
     protected EncodedGradientsAccumulator accumulator;
     protected Model originalModel;
+    protected int originalModelDeviceAffinity;
 
     protected UpdatesConsumer consumer;
 
@@ -193,6 +194,19 @@ public class SharedTrainingWrapper {
     }
 
     public SharedTrainingResult run(SharedTrainingWorker worker) {
+        try{
+            return runHelper(worker);
+        } finally {
+            //Clear workspaces (if any) to avoid excessive memory use if not using PW and master thread is reused
+            // in a later epoch
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        }
+    }
+
+    protected SharedTrainingResult runHelper(SharedTrainingWorker worker) {
+
+
+
         /*
             first call instantiates pw, messenger etc, and gets in charge here.
          */
@@ -200,6 +214,8 @@ public class SharedTrainingWrapper {
             //Reset past exception encountered in case we're doing correct fit after incorrect...
             exceptionEncountered.set(false);
             exception = null;
+
+            log.info("Thread {} set as master. Device affinity for current thread: {}", Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
             SharedTrainingConfiguration trainingConfiguration = worker.getBroadcastConfiguration().getValue();
             VoidConfiguration voidConfiguration = worker.getBroadcastConfiguration().getValue().getVoidConfiguration();
@@ -230,7 +246,13 @@ public class SharedTrainingWrapper {
 
 
             // now we're attaching VoidParameterServer to GradientsAccumulator, but doing that only once
-            if (wrapper == null) {
+            //But also reinit if device changes for master thread - at least until this is fixed https://github.com/deeplearning4j/deeplearning4j/issues/6795
+            boolean reinitDueToAffinity = originalModelDeviceAffinity != Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            if (wrapper == null ||  reinitDueToAffinity) {
+                if(wrapper != null){
+                    log.info("Reinitializing model and encoding etc due to thread/device affinity difference with initial model:" +
+                            " Existing model device affinity {}, current thread device affinity {}", originalModelDeviceAffinity, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                }
                 log.debug("Starting ParallelWrapper at thread {}", Thread.currentThread().getId());
 
                 model = worker.getInitialModel();
@@ -261,7 +283,13 @@ public class SharedTrainingWrapper {
                 val updateParamsSupplier = new UpdaterParamsConsumer();
 
                 // this accumulator will provide sharing gradients over network, via WiredEncodedHandler. But we create it only once
-                if (accumulator == null) {
+                if (accumulator == null || reinitDueToAffinity) {
+                    if(accumulator == null){
+                        log.info("Creating initial accumulator");
+                    } else {
+                        log.info("Reinitializing accumulator due to affinity change");
+                    }
+
                     /**
                      *  We know, that updates are guaranteed to have MAX size of params / 16. So, here we go.
                      *  I.e. for model with 100m params, that's 400m of floats (or 800m of doubles)
@@ -305,7 +333,9 @@ public class SharedTrainingWrapper {
                     log.debug("Checking for ModelParameterServer existence");
 
                     // we're saving reference to original model
+                    log.info("Saving model in originalModel field...");
                     originalModel = model;
+                    originalModelDeviceAffinity = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
                     // if we're running in spark localhost mode - we don't want double initialization
                     if (!ModelParameterServer.getInstance().isInitialized()) {
@@ -416,7 +446,7 @@ public class SharedTrainingWrapper {
                     accumulator.fallbackToSingleConsumerMode(true);
                     accumulator.touch();
 
-                    // checking if there were updated params received (i.e. if that's failover routine
+                    // checking if there were updated params received (i.e. if that's failover routine)
                     val mParams = modelParamsSupplier.get();
                     if (mParams != null) {
                         log.info("Updating model params to the most recent ones...");

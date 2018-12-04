@@ -80,6 +80,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     private SDVariable(String varName,
                        SameDiff sameDiff,
                        long[] shape,
+                       boolean placeholderOnNullShape,
                        WeightInitScheme weightInitScheme) {
         super(sameDiff,new Object[]{});
         this.varName = varName;
@@ -90,18 +91,18 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             this.weightInitScheme = new ZeroInitScheme('c');
         }
 
-        if(shape == null) {
+        if(shape == null && placeholderOnNullShape) {
             sameDiff.addAsPlaceHolder(varName);
-        }
-
-        else {
+        } else {
             boolean foundPlaceHolder = false;
-            for(int i = 0; i < shape.length; i++) {
-                if(shape[i] < 0) {
-                    sameDiff.addAsPlaceHolder(varName);
-                    sameDiff.setOriginalPlaceHolderShape(varName, shape);
-                    foundPlaceHolder = true;
-                    break;
+            if(shape != null ) {
+                for (int i = 0; i < shape.length; i++) {
+                    if (shape[i] < 0) {
+                        sameDiff.addAsPlaceHolder(varName);
+                        sameDiff.setOriginalPlaceHolderShape(varName, shape);
+                        foundPlaceHolder = true;
+                        break;
+                    }
                 }
             }
 

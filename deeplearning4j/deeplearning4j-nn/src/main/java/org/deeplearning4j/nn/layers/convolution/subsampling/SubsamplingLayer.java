@@ -143,6 +143,11 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
                         layerConf().getPoolingType(), convolutionMode, dilation, workspaceMgr);
             } catch (Exception e){
+                if(e.getMessage().contains("Failed to allocate")){
+                    //This is a memory exception - don't fallback to built-in implementation
+                    throw e;
+                }
+
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
                     log.warn("CuDNN execution failed - falling back on built-in implementation",e);
@@ -151,10 +156,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 }
             }
             if (ret != null) {
-                //Backprop dropout, if present
-                INDArray gradPostDropout = ret.getRight();
-                gradPostDropout = backpropDropOutIfPresent(gradPostDropout);
-                ret.setSecond(gradPostDropout);
                 return ret;
             }
         }
@@ -275,7 +276,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         if (layerConf().getPoolingType() == PoolingType.AVG)
             outEpsilon.divi(ArrayUtil.prod(layerConf().getKernelSize()));
 
-        outEpsilon = backpropDropOutIfPresent(outEpsilon);
         return new Pair<>(retGradient, outEpsilon);
     }
 
@@ -296,9 +296,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
-        if (training && !dropoutApplied && layerConf().getIDropout() != null) {
-            applyDropOutIfNecessary(true, workspaceMgr);
-        }
+        //Normally we would apply dropout first. However, dropout on subsampling layers is not something that users typically expect
+        // consequently, we'll skip it here
 
         //Input validation: expect rank 4 matrix
         if (input.rank() != 4) {

@@ -161,7 +161,7 @@ public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> i
 
     @Override
     public boolean supportsBatch() {
-        return false;
+        return true;
     }
 
     @Override
@@ -176,6 +176,9 @@ public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> i
 
     @Override
     public PartitionMetaData writeBatch(List<List<Writable>> batch) throws IOException {
-        return null;
+        for (List<Writable> record : batch) {
+            write(record);
+        }
+        return PartitionMetaData.builder().numRecordsUpdated(batch.size()).build();
     }
 }

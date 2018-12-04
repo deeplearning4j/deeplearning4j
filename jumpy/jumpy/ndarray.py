@@ -18,6 +18,7 @@
 from .java_classes import *
 import numpy as np
 import ctypes
+import warnings
 
 
 # Java instance initializations
@@ -42,7 +43,7 @@ def set_context_dtype(dtype):
     dtype_ = DataTypeUtil.getDtypeFromContext(dtype)
     DataTypeUtil.setDTypeForContext(dtype_)
     if get_context_dtype() != dtype:
-        raise RuntimeError("Can not set context dtype now. Set it at the beginning of your program.")
+        warnings.warn("Can not set context dtype now. Set it at the beginning of your program.")
 
 
 def get_context_dtype():
@@ -81,8 +82,8 @@ def get_np_dtype(nd4j_dtype):
     Gets the equivalent numpy data type
     for a given nd4j data type.
     # Arguments:
-        nd4j_dtype : Nd4j data type. One of 
-        ['double', 'float', 'half']
+        nd4j_dtype : Nd4j data type. One of
+         ['double', 'float', 'half']
     '''
     mapping = {
         'double': np.float64,
@@ -276,7 +277,7 @@ class ndarray(object):
     def __init__(self, data, dtype=None):
         # we ignore dtype for now
         typ = type(data)
-        if typ is INDArray:
+        if 'nd4j' in typ.__name__:
             # Note that we don't make a copy here
             self.array = data
         elif typ is ndarray:
@@ -307,7 +308,6 @@ class ndarray(object):
     @property
     def ndim(self):
         return len(self.array.shape())
-
 
     def __getitem__(self, key):
         if type(key) is int:
@@ -444,7 +444,7 @@ class ndarray(object):
             x, y = broadcast(self.array, other)
             self.array = Transforms.pow(x, y)
         return self
-    
+
     def __getattr__(self, attr):
         import ops
         f = getattr(ops, attr)

@@ -43,7 +43,6 @@ import org.deeplearning4j.parallelism.factory.DefaultTrainerContext;
 import org.deeplearning4j.parallelism.factory.SymmetricTrainerContext;
 import org.deeplearning4j.parallelism.factory.TrainerContext;
 import org.deeplearning4j.parallelism.trainer.Trainer;
-import org.jetbrains.annotations.NotNull;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -152,7 +151,7 @@ public class ParallelWrapper implements AutoCloseable {
         workerCounter.set(0);
         this.executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(workers, new ThreadFactory() {
             @Override
-            public Thread newThread(@NotNull Runnable r) {
+            public Thread newThread(@NonNull Runnable r) {
                 Thread t = Executors.defaultThreadFactory().newThread(r);
 
                 int cThread = workerCounter.getAndIncrement();

@@ -185,6 +185,13 @@ public abstract class BaseCudnnHelper {
     protected Pointer beta = dataType == CUDNN_DATA_DOUBLE ? new DoublePointer(0.0) : new FloatPointer(0.0f);
     protected SizeTPointer sizeInBytes = new SizeTPointer(1);
 
+    protected int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
+    /**
+     * Validate the current thread's device ID, and recreate the context if required
+     */
+    public abstract void validateDeviceId();
+
     public static int toCudnnDataType(DataBuffer.Type type){
         switch (type){
             case DOUBLE:

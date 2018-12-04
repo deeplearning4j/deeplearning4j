@@ -24,6 +24,7 @@ import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -109,14 +110,17 @@ public class CudaContext {
     }
 
     public void syncSpecialStream() {
-        if (nativeOps.streamSynchronize(specialStream) == 0)
-            throw new ND4JIllegalStateException("CUDA special stream synchronization failed");
+        if (nativeOps.streamSynchronize(specialStream) == 0) {
+            throw new ND4JIllegalStateException("CUDA special stream synchronization failed: thread ID " + Thread.currentThread().getId()
+                    + ", thread name \"" + Thread.currentThread().getName() + "\", thread device affinity: " + Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        }
     }
 
     public void syncOldStream(boolean syncCuBlas) {
         //        ContextHolder.getInstance().setContext();
         if (nativeOps.streamSynchronize(oldStream) == 0)
-            throw new ND4JIllegalStateException("CUDA stream synchronization failed");
+            throw new ND4JIllegalStateException("CUDA stream synchronization failed: thread ID " + Thread.currentThread().getId()
+                    + ", thread name \"" + Thread.currentThread().getName() + "\", thread device affinity: " + Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
         if (syncCuBlas)
             syncCublasStream();
@@ -125,7 +129,8 @@ public class CudaContext {
     public void syncCublasStream() {
         if (cublasStream != null) {
             if (nativeOps.streamSynchronize(cublasStream) == 0)
-                throw new ND4JIllegalStateException("CUDA stream synchronization failed");
+                throw new ND4JIllegalStateException("CUDA stream synchronization failed: thread ID " + Thread.currentThread().getId()
+                        + ", thread name \"" + Thread.currentThread().getName() + "\", thread device affinity: " + Nd4j.getAffinityManager().getDeviceForCurrentThread());
         } else
             throw new IllegalStateException("cuBLAS stream isnt set");
     }
@@ -134,7 +139,8 @@ public class CudaContext {
     public void syncSolverStream() {
         if (solverStream != null) {
             if (nativeOps.streamSynchronize(solverStream) == 0)
-                throw new ND4JIllegalStateException("CUDA stream synchronization failed");
+                throw new ND4JIllegalStateException("CUDA stream synchronization failed: thread ID " + Thread.currentThread().getId()
+                        + ", thread name \"" + Thread.currentThread().getName() + "\", thread device affinity: " + Nd4j.getAffinityManager().getDeviceForCurrentThread());
         } else
             throw new IllegalStateException("cuBLAS stream isnt set");
     }
