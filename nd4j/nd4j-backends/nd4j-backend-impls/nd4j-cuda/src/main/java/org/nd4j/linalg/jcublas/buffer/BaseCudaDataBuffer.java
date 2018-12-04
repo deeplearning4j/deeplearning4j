@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.memory.MemcpyDirection;
@@ -209,21 +210,19 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         set(data, this.length, offset, offset);
     }
 
+    protected void initPointers(long length, DataType dtype, boolean initialize) {
+        initPointers(length, Nd4j.sizeOfDataType(dtype), initialize);
+    }
 
-    public BaseCudaDataBuffer(long length, int elementSize, boolean initialize) {
+    protected void initPointers(long length, int elementSize, boolean initialize) {
         this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
-        initTypeAndSize();
-        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                        new AllocationShape(length, elementSize, dataType()), initialize);
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), initialize);
         this.length = length;
         //allocationPoint.attachBuffer(this);
         this.elementSize =  (byte) elementSize;
         this.trackingPoint = allocationPoint.getObjectId();
         this.offset = 0;
         this.originalOffset = 0;
-
-        //  if (Nd4j.getAffinityManager().getDeviceForCurrentThread() == 0)
-        //log.info("Allocating {} bytes on device_{}", length, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
         switch (dataType()) {
             case DOUBLE:
@@ -265,6 +264,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             default:
                 throw new UnsupportedOperationException();
         }
+    }
+
+    public BaseCudaDataBuffer(long length, int elementSize, boolean initialize) {
+        initTypeAndSize();
+        initPointers(length, elementSize, initialize);
     }
 
     public BaseCudaDataBuffer(long length, int elementSize, boolean initialize, @NonNull MemoryWorkspace workspace) {
@@ -966,6 +970,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void read(InputStream is, AllocationMode allocationMode, long length, DataType dataType) {
+        if (allocationPoint == null) {
+            initPointers(length, dataType, false);
+        }
         super.read(is, allocationMode, length, dataType);
         this.allocationPoint.tickHostWrite();
     }
