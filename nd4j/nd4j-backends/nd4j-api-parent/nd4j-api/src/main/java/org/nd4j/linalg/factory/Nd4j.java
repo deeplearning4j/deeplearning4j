@@ -2667,6 +2667,7 @@ public class Nd4j {
         val headerData = BaseDataBuffer.readHeader(dis);
         try {
             // current version contains dtype in extras
+            data = CompressedDataBuffer.readUnknown(dis, headerData.getFirst(), headerData.getMiddle(), headerData.getRight());
             type = ArrayOptionsHelper.dataType(shapeInformation.asLong());
         } catch (ND4JUnknownDataTypeException e) {
             // manually setting data type
@@ -2675,7 +2676,6 @@ public class Nd4j {
             shapeInformation.put(shapeInformation.length() - 3, extras);
         }
 
-        data = CompressedDataBuffer.readUnknown(dis, headerData.getFirst(), headerData.getMiddle(), type);
 
         return createArrayFromShapeBuffer(data, shapeInformation);
     }

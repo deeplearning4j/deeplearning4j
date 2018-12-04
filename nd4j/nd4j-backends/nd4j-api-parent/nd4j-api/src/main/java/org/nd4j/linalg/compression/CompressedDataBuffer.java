@@ -60,7 +60,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
     @Override
     protected void initTypeAndSize() {
         type = DataType.COMPRESSED;
-        allocationMode = AllocationMode.JAVACPP;
+        allocationMode = AllocationMode.MIXED_DATA_TYPES;
     }
 
     @Override
@@ -68,7 +68,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
         //        logger.info("Writing out CompressedDataBuffer");
         // here we should mimic to usual DataBuffer array
         out.writeUTF(allocationMode.name());
-        out.writeInt((int) compressionDescriptor.getCompressedLength());
+        out.writeLong(compressionDescriptor.getCompressedLength());
         out.writeUTF(DataType.COMPRESSED.name());
         // at this moment we don't care about mimics anymore
         //ByteIndexer indexer = ByteIndexer.create((BytePointer) pointer);
@@ -95,14 +95,13 @@ public class CompressedDataBuffer extends BaseDataBuffer {
      * @return
      */
     public static DataBuffer readUnknown(DataInputStream s, AllocationMode allocMode, long length, DataType type) {
-        DataBuffer buffer = Nd4j.createBuffer(type, length, false);
-        buffer.read(s, allocMode, length, type);
         // if buffer is uncompressed, it'll be valid buffer, so we'll just return it
-        if (buffer.dataType() != DataType.COMPRESSED)
+        if (type != DataType.COMPRESSED) {
+            DataBuffer buffer = Nd4j.createBuffer(type, length, false);
+            buffer.read(s, allocMode, length, type);
             return buffer;
-        else {
+        } else {
             try {
-
                 // if buffer is compressed one, we''ll restore it here
                 String compressionAlgorithm = s.readUTF();
                 long compressedLength = s.readLong();
