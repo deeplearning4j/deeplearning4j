@@ -249,7 +249,7 @@ namespace helpers {
         int numClasses = output->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         int idx = indices->e<int>(0);
-        output->assign((T)1.);
+        output->assign(1.f);
         if (input->isVector()) {
             T val = input->e<T>(0);
             int count = 0;
@@ -567,7 +567,7 @@ namespace helpers {
 
         //std::sort(idxs.begin(), idxs.end());
 
-        output->assign(T(1.));
+        output->assign(1.f);
 
         if (input->isVector()) { // 1D case
 //#pragma omp parallel for schedule(static)

@@ -48,7 +48,7 @@ namespace helpers {
     template <typename T>
     static void _invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
         int n = inputMatrix->rows();
-        invertedMatrix->assign(T(0.0));
+        invertedMatrix->assign(0.f);
 #pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 0; i < n; i++)
             invertedMatrix->p(i, i, 1.0f);
@@ -201,7 +201,7 @@ namespace helpers {
         auto n2 = n * n;
         auto totalCount = output->lengthOf() / n2;
         
-        output->assign((T)0.0); // fill up output tensor with zeros
+        output->assign(0.f); // fill up output tensor with zeros
         auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getWorkspace()); //, block.getWorkspace());
         auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getWorkspace()); //, block.getWorkspace());
         auto permutation = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getWorkspace());
@@ -210,7 +210,7 @@ namespace helpers {
 
         for (int e = 0; e < totalCount; e++) {
             if (e)
-                matrix.assign(0.0f);
+                matrix.assign(0.f);
 
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
                 matrix.p(row++, input->e<T>(k));
@@ -258,7 +258,7 @@ namespace helpers {
         auto n2 = n * n;
         auto totalCount = output->lengthOf() / n2;
         if (!inplace)
-             output->assign((T)0.0); // fill up output tensor with zeros only inplace=false
+             output->assign(0.f); // fill up output tensor with zeros only inplace=false
 
         std::unique_ptr<NDArray> matrix(NDArrayFactory::create_('c', {n, n}, input->dataType())); //, block.getWorkspace());
         std::unique_ptr<NDArray> lowerMatrix(NDArrayFactory::create_('c',{n, n}, input->dataType()));
@@ -270,7 +270,7 @@ namespace helpers {
                 matrix->p(l++, input->e<T>(k));
             }
             //if (e) // from the second loop need to zero matrix
-            lowerMatrix->assign(T(0.f));
+            lowerMatrix->assign(0.f);
 
             for (Nd4jLong col = 0; col < n; col++) {
                 for (Nd4jLong row = 0; row < col; row++) {

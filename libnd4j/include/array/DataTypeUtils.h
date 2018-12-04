@@ -22,6 +22,7 @@
 #define DATATYPEUTILS_H
 
 #include <types/float16.h>
+#include <types/bfloat16.h>
 #include <array/DataType.h>
 #include <graph/generated/array_generated.h>
 #include <op_boilerplate.h>
@@ -91,7 +92,7 @@ namespace nd4j {
     }
 
     FORCEINLINE bool DataTypeUtils::isR(nd4j::DataType dataType) {
-        return dataType == nd4j::DataType::FLOAT32 || dataType == nd4j::DataType::HALF || dataType == nd4j::DataType::DOUBLE;
+        return dataType == nd4j::DataType::FLOAT32 || dataType == nd4j::DataType::BFLOAT16 || dataType == nd4j::DataType::HALF || dataType == nd4j::DataType::DOUBLE;
     }
 
     FORCEINLINE bool DataTypeUtils::isB(nd4j::DataType dataType) {
@@ -209,6 +210,11 @@ FORCEINLINE _CUDA_HD float16 DataTypeUtils::min<float16>() {
 }
 
 template<>
+FORCEINLINE _CUDA_HD bfloat16 DataTypeUtils::min<bfloat16>() {
+    return (bfloat16) 6.1035e-38;
+}
+
+template<>
 FORCEINLINE _CUDA_HD double DataTypeUtils::min<double>() {       
     return 2.2250738585072014e-308;    
 }
@@ -275,6 +281,11 @@ FORCEINLINE _CUDA_HD float16 DataTypeUtils::max<float16>() {
     return static_cast<float16>(65504.f);
 }
 
+template <>
+FORCEINLINE _CUDA_HD bfloat16 DataTypeUtils::max<bfloat16>() {
+    return static_cast<bfloat16>(32737.f);
+}
+
 FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
     switch(dataType) {
         case INT8:
@@ -285,6 +296,8 @@ FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
             return std::string("INT32");
         case INT64:
             return std::string("INT64");
+        case BFLOAT16:
+            return std::string("BFLOAT16");
         case FLOAT32:
             return std::string("FLOAT");
         case DOUBLE:
@@ -311,7 +324,9 @@ FORCEINLINE T DataTypeUtils::eps() {
         else if (std::is_same<T, float>::value)
             return std::numeric_limits<float>::epsilon();
         else if (std::is_same<T, float16>::value)
-            return 0.00097656;    
+            return 0.00097656;
+        else if (std::is_same<T, bfloat16>::value)
+            return 0.097656;
         else
             return 0;
 }
@@ -334,7 +349,8 @@ FORCEINLINE T DataTypeUtils::eps() {
             case nd4j::DataType::FLOAT8:
             case nd4j::DataType::QINT8:
             case nd4j::DataType::BOOL: return (size_t) 1;
-
+            
+            case nd4j::DataType::BFLOAT16:
             case nd4j::DataType::HALF:
             case nd4j::DataType::INT16:
             case nd4j::DataType::QINT16:
@@ -369,6 +385,8 @@ FORCEINLINE T DataTypeUtils::eps() {
             return nd4j::DataType::FLOAT32;
         } else if (std::is_same<T, float16>::value) {
             return nd4j::DataType::HALF;
+        } else if (std::is_same<T, bfloat16>::value) {
+            return nd4j::DataType::BFLOAT16;
         } else if (std::is_same<T, double>::value) {
             return nd4j::DataType::DOUBLE;
         } else if (std::is_same<T, int8_t >::value) {

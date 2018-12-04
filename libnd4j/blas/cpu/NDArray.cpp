@@ -375,6 +375,16 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
         return os.str() ;
     }
 
+    template<>
+    std::string NDArray::toStringValue(bfloat16 value) {
+        std::ostringstream os ;
+
+        //throw the value into the string stream
+        os << (float) value ;
+
+        //convert the string stream into a string and return
+        return os.str() ;
+    }
 
     std::string NDArray::asIndexedString(Nd4jLong limit) {
         std::ostringstream os;
@@ -534,6 +544,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<double (double, double, double)>& func, NDArray* target);
     template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<float (float, float, float)>& func, NDArray* target);
     template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<float16 (float16, float16, float16)>& func, NDArray* target);
+    template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<bfloat16 (bfloat16, bfloat16, bfloat16)>& func, NDArray* target);
     template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<Nd4jLong (Nd4jLong, Nd4jLong, Nd4jLong)>& func, NDArray* target);
     template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<int (int, int, int)>& func, NDArray* target);
     template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<int16_t (int16_t, int16_t, int16_t)>& func, NDArray* target);
@@ -598,6 +609,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<double (double, double)>& func, NDArray* target);
     template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<float (float, float)>& func, NDArray* target);
     template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<float16 (float16, float16)>& func, NDArray* target);
+    template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<bfloat16 (bfloat16, bfloat16)>& func, NDArray* target);
     template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<Nd4jLong (Nd4jLong, Nd4jLong)>& func, NDArray* target);
     template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<int (int, int)>& func, NDArray* target);
     template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<int16_t (int16_t, int16_t)>& func, NDArray* target);
@@ -650,6 +662,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     template void NDArray::applyLambda(const std::function<double(double)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<float(float)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<float16(float16)>& func, NDArray* target);
+    template void NDArray::applyLambda(const std::function<bfloat16(bfloat16)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<Nd4jLong(Nd4jLong)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<int16_t(int16_t)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<int32_t(int32_t)>& func, NDArray* target);
@@ -700,6 +713,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     template void NDArray::applyIndexedLambda(const std::function<double(Nd4jLong, double)>& func, NDArray* target);
     template void NDArray::applyIndexedLambda(const std::function<float(Nd4jLong, float)>& func, NDArray* target);
     template void NDArray::applyIndexedLambda(const std::function<float16(Nd4jLong, float16)>& func, NDArray* target);
+    template void NDArray::applyIndexedLambda(const std::function<bfloat16(Nd4jLong, bfloat16)>& func, NDArray* target);
     template void NDArray::applyIndexedLambda(const std::function<Nd4jLong(Nd4jLong, Nd4jLong)>& func, NDArray* target);
     template void NDArray::applyIndexedLambda(const std::function<int(Nd4jLong, int)>& func, NDArray* target);
     template void NDArray::applyIndexedLambda(const std::function<int16_t(Nd4jLong, int16_t)>& func, NDArray* target);
@@ -762,6 +776,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<double (Nd4jLong, double, double)>& func, NDArray* target);
     template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<float (Nd4jLong, float, float)>& func, NDArray* target);
     template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<float16 (Nd4jLong, float16, float16)>& func, NDArray* target);
+    template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<bfloat16 (Nd4jLong, bfloat16, bfloat16)>& func, NDArray* target);
     template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<Nd4jLong (Nd4jLong, Nd4jLong, Nd4jLong)>& func, NDArray* target);
     template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<int (Nd4jLong, int, int)>& func, NDArray* target);
     template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<int16_t (Nd4jLong, int16_t, int16_t)>& func, NDArray* target);
@@ -915,6 +930,7 @@ NDArray& NDArray::operator=(NDArray&& other) noexcept {
     template NDArray& NDArray::operator=(const double scalar);
     template NDArray& NDArray::operator=(const float scalar);
     template NDArray& NDArray::operator=(const float16 scalar);
+    template NDArray& NDArray::operator=(const bfloat16 scalar);
     template NDArray& NDArray::operator=(const Nd4jLong scalar);
     template NDArray& NDArray::operator=(const int scalar);
     template NDArray& NDArray::operator=(const int8_t scalar);
@@ -1008,6 +1024,12 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
     }
 
     void NDArray::assign(const float16 value) {
+        // just fire scalar
+        auto temp = NDArrayFactory::create(value, this->_workspace);
+        NativeOpExcutioner::execScalar(nd4j::scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
+    }
+
+    void NDArray::assign(const bfloat16& value) {
         // just fire scalar
         auto temp = NDArrayFactory::create(value, this->_workspace);
         NativeOpExcutioner::execScalar(nd4j::scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, temp.buffer(), temp.shapeInfo(), nullptr);
@@ -2202,6 +2224,7 @@ template <> void NDArray::applyScalar(nd4j::scalar::BoolOps op, const NDArray* s
 template void NDArray::applyScalar<double>(nd4j::scalar::BoolOps op, const double scalar, NDArray *target, void *extraParams) const;
 template void NDArray::applyScalar<float>(nd4j::scalar::BoolOps op, const float scalar, NDArray *target, void *extraParams) const;
 template void NDArray::applyScalar<float16>(nd4j::scalar::BoolOps op, const float16 scalar, NDArray *target, void *extraParams) const;
+template void NDArray::applyScalar<bfloat16>(nd4j::scalar::BoolOps op, const bfloat16 scalar, NDArray *target, void *extraParams) const;
 template void NDArray::applyScalar<Nd4jLong>(nd4j::scalar::BoolOps op, const Nd4jLong scalar, NDArray *target, void *extraParams) const;
 template void NDArray::applyScalar<int>(nd4j::scalar::BoolOps op, const int scalar, NDArray *target, void *extraParams) const;
 template void NDArray::applyScalar<int16_t>(nd4j::scalar::BoolOps op, const int16_t scalar, NDArray *target, void *extraParams) const;
@@ -2234,6 +2257,7 @@ template <> void NDArray::applyScalar(nd4j::scalar::Ops op, const NDArray* scala
 template void NDArray::applyScalar(nd4j::scalar::Ops op, const double scalar, NDArray *target, void *extraParams);
 template void NDArray::applyScalar(nd4j::scalar::Ops op, const float scalar, NDArray *target, void *extraParams);
 template void NDArray::applyScalar(nd4j::scalar::Ops op, const float16 scalar, NDArray *target, void *extraParams);
+template void NDArray::applyScalar(nd4j::scalar::Ops op, const bfloat16 scalar, NDArray *target, void *extraParams);
 template void NDArray::applyScalar(nd4j::scalar::Ops op, const Nd4jLong scalar, NDArray *target, void *extraParams);
 template void NDArray::applyScalar(nd4j::scalar::Ops op, const int scalar, NDArray *target, void *extraParams);
 template void NDArray::applyScalar(nd4j::scalar::Ops op, const int16_t scalar, NDArray *target, void *extraParams);
@@ -3368,6 +3392,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template void NDArray::p(const Nd4jLong i, const double value);
     template void NDArray::p(const Nd4jLong i, const float value);
     template void NDArray::p(const Nd4jLong i, const float16 value);
+    template void NDArray::p(const Nd4jLong i, const bfloat16 value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong value);
     template void NDArray::p(const Nd4jLong i, const int value);
     template void NDArray::p(const Nd4jLong i, const int8_t value);
@@ -3420,12 +3445,14 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const double value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const float value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const float16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const bfloat16 value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int8_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const uint8_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const bool value);
+   // template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const utf8string value);
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 3D matrix to position i,j,k
@@ -3443,6 +3470,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const double value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const float value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const float16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const bfloat16 value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int8_t value);
@@ -3464,6 +3492,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const double value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const float value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const float16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const bfloat16 value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const Nd4jLong value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int8_t value);
@@ -3485,6 +3514,7 @@ void NDArray::pIdx(const Nd4jLong* indices, const T value) {
 template void NDArray::pIdx(const Nd4jLong* indices, const double value);
 template void NDArray::pIdx(const Nd4jLong* indices, const float value);
 template void NDArray::pIdx(const Nd4jLong* indices, const float16 value);
+template void NDArray::pIdx(const Nd4jLong* indices, const bfloat16 value);
 template void NDArray::pIdx(const Nd4jLong* indices, const Nd4jLong value);
 template void NDArray::pIdx(const Nd4jLong* indices, const int value);
 template void NDArray::pIdx(const Nd4jLong* indices, const int8_t value);
@@ -3963,6 +3993,7 @@ NDArray NDArray::operator+(const T& scalar) const {
 template NDArray NDArray::operator+(const double&   scalar) const;
 template NDArray NDArray::operator+(const float&    scalar) const;
 template NDArray NDArray::operator+(const float16&  scalar) const;
+template NDArray NDArray::operator+(const bfloat16&  scalar) const;
 template NDArray NDArray::operator+(const Nd4jLong& scalar) const;
 template NDArray NDArray::operator+(const int&      scalar) const;
 template NDArray NDArray::operator+(const int16_t&  scalar) const;
@@ -3985,6 +4016,7 @@ NDArray NDArray::operator-(const T& scalar) const {
 template NDArray NDArray::operator-(const double&   scalar) const;
 template NDArray NDArray::operator-(const float&    scalar) const;
 template NDArray NDArray::operator-(const float16&  scalar) const;
+template NDArray NDArray::operator-(const bfloat16&  scalar) const;
 template NDArray NDArray::operator-(const Nd4jLong& scalar) const;
 template NDArray NDArray::operator-(const int&      scalar) const;
 template NDArray NDArray::operator-(const int16_t&  scalar) const;
@@ -4007,6 +4039,7 @@ NDArray NDArray::operator*(const T& scalar) const {
 template NDArray NDArray::operator*(const double&   scalar) const;
 template NDArray NDArray::operator*(const float&    scalar) const;
 template NDArray NDArray::operator*(const float16&  scalar) const;
+template NDArray NDArray::operator*(const bfloat16&  scalar) const;
 template NDArray NDArray::operator*(const Nd4jLong& scalar) const;
 template NDArray NDArray::operator*(const int&      scalar) const;
 template NDArray NDArray::operator*(const int16_t&  scalar) const;
@@ -4032,6 +4065,7 @@ NDArray NDArray::operator/(const T& scalar) const {
 template NDArray NDArray::operator/(const double&   scalar) const;
 template NDArray NDArray::operator/(const float&    scalar) const;
 template NDArray NDArray::operator/(const float16&  scalar) const;
+template NDArray NDArray::operator/(const bfloat16&  scalar) const;
 template NDArray NDArray::operator/(const Nd4jLong& scalar) const;
 template NDArray NDArray::operator/(const int&      scalar) const;
 template NDArray NDArray::operator/(const int16_t&  scalar) const;
@@ -4043,6 +4077,9 @@ template NDArray NDArray::operator/(const bool&     scalar) const;
 // addition operator scalar + array
 ND4J_EXPORT NDArray operator+(const float16& scalar, const NDArray& arr) {
     return arr + scalar;
+}
+ND4J_EXPORT NDArray operator+(const bfloat16& scalar, const NDArray& arr) {
+     return arr + scalar;
 }
 ND4J_EXPORT NDArray operator+(const float& scalar, const NDArray& arr) {
     return arr + scalar;
@@ -4062,6 +4099,10 @@ ND4J_EXPORT NDArray operator+(const int& scalar, const NDArray& arr) {
 ND4J_EXPORT NDArray operator*(const float16& scalar, const NDArray& arr) {
     return arr * scalar;
 }
+ND4J_EXPORT NDArray operator*(const bfloat16& scalar, const NDArray& arr) {
+    return arr * scalar;
+}
+
 ND4J_EXPORT NDArray operator*(const float& scalar, const NDArray& arr) {
     return arr * scalar;
 }
@@ -4082,6 +4123,17 @@ ND4J_EXPORT NDArray operator-(const float16& scalar, const NDArray & arr) {
 
     auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float16>()), false, arr.getWorkspace());
+    NativeOpExcutioner::execScalar(nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////
+ND4J_EXPORT NDArray operator-(const bfloat16& scalar, const NDArray & arr) {
+    if (arr.isS())
+        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
+
+    auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
+    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<bfloat16>()), false, arr.getWorkspace());
     NativeOpExcutioner::execScalar(nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
     return result;
 }
@@ -4127,6 +4179,18 @@ ND4J_EXPORT NDArray operator-(const int& scalar, const NDArray& arr) {
 }
 
 
+////////////////////////////////////////////////////////////////////////
+ND4J_EXPORT NDArray operator/(const bfloat16& scalar, const NDArray& arr) {
+    if (arr.isS())
+        throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
+    if (arr.isB())
+        throw std::runtime_error("NDArray::operator/: you can't divide scalar by bool array!");
+
+    auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
+    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<bfloat16>()), false, arr.getWorkspace());
+    NativeOpExcutioner::execScalar(nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
+    return result;
+}
 ////////////////////////////////////////////////////////////////////////
 ND4J_EXPORT NDArray operator/(const float16& scalar, const NDArray& arr) {
     if (arr.isS())
@@ -4298,6 +4362,7 @@ void NDArray::operator+=(const T value) {
 template void NDArray::operator+=(const double value);
 template void NDArray::operator+=(const float value);
 template void NDArray::operator+=(const float16 value);
+template void NDArray::operator+=(const bfloat16 value);
 template void NDArray::operator+=(const Nd4jLong value);
 template void NDArray::operator+=(const int value);
 template void NDArray::operator+=(const bool value);
@@ -4313,6 +4378,7 @@ void NDArray::operator-=(const T value) {
 template void NDArray::operator-=(const double value);
 template void NDArray::operator-=(const float value);
 template void NDArray::operator-=(const float16 value);
+template void NDArray::operator-=(const bfloat16 value);
 template void NDArray::operator-=(const Nd4jLong value);
 template void NDArray::operator-=(const int value);
 template void NDArray::operator-=(const bool value);
@@ -4328,6 +4394,7 @@ void NDArray::operator*=(const T scalar) {
 template void NDArray::operator*=(const double scalar);
 template void NDArray::operator*=(const float scalar);
 template void NDArray::operator*=(const float16 scalar);
+template void NDArray::operator*=(const bfloat16 scalar);
 template void NDArray::operator*=(const Nd4jLong scalar);
 template void NDArray::operator*=(const int scalar);
 template void NDArray::operator*=(const int16_t scalar);
@@ -4346,6 +4413,7 @@ void NDArray::operator/=(const T scalar) {
 template void NDArray::operator/=(const double scalar);
 template void NDArray::operator/=(const float scalar);
 template void NDArray::operator/=(const float16 scalar);
+template void NDArray::operator/=(const bfloat16 scalar);
 template void NDArray::operator/=(const Nd4jLong scalar);
 template void NDArray::operator/=(const int scalar);
 template void NDArray::operator/=(const int16_t scalar);
@@ -4586,6 +4654,7 @@ template void NDArray::operator/=(const bool scalar);
     template void NDArray::setValueInDiagMatrix(const double& value, const int diag, const char direction);
     template void NDArray::setValueInDiagMatrix(const float& value, const int diag, const char direction);
     template void NDArray::setValueInDiagMatrix(const float16& value, const int diag, const char direction);
+    template void NDArray::setValueInDiagMatrix(const bfloat16& value, const int diag, const char direction);
     template void NDArray::setValueInDiagMatrix(const Nd4jLong& value, const int diag, const char direction);
     template void NDArray::setValueInDiagMatrix(const int& value, const int diag, const char direction);
     template void NDArray::setValueInDiagMatrix(const int16_t& value, const int diag, const char direction);

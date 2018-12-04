@@ -29,6 +29,7 @@
 #include <platformmath.h>
 
 
+#define BFLOAT16_MAX_VALUE 32737.
 #define HALF_MAX_VALUE 65504.
 #define FLOAT_MAX_VALUE 3.4028235E38
 #define DOUBLE_MAX_VALUE 1.7976931348623157E308
@@ -280,7 +281,10 @@ namespace nd4j {
 			return (float16) fabsf((float) value);
 #endif
 		}
-
+        template<>
+        math_def inline bfloat16 nd4j_abs<bfloat16>(bfloat16 value) {
+		return (bfloat16) fabsf((float) value);
+        }
 		template<>
         math_def inline float nd4j_abs<float>(float value) {
 			return fabsf(value);
@@ -342,6 +346,11 @@ namespace nd4j {
 			return *(value.data.getXP()) == 0x7fffU;
 		}
 
+                template<>
+                math_def inline bool nd4j_isnan<bfloat16>(bfloat16 value) {
+                    return *(value.data.getXP()) == 0x7fffU;
+                }
+
 		template<>
         math_def inline bool nd4j_isnan<float>(float value) {
 			return value != value;
@@ -400,6 +409,11 @@ namespace nd4j {
 		template<>
         math_def inline bool nd4j_isinf<float16>(float16 value) {
 			return value < (float16) -HALF_MAX_VALUE || value > (float16) HALF_MAX_VALUE;
+		}
+
+		template<>
+                math_def inline bool nd4j_isinf<bfloat16>(bfloat16 value) {
+			return value < (bfloat16) -BFLOAT16_MAX_VALUE || value > (bfloat16) BFLOAT16_MAX_VALUE;
 		}
 
 		template<>
