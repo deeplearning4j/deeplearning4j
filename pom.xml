@@ -861,7 +861,7 @@
             </properties>
         </profile>
 
-        <!-- If someone knows a better way to do this, please do let me know! -->
+        <!-- Profiles to set the default javacpp.platform property: If someone knows a better way to do this, please do let me know! -->
         <profile>
             <id>linux</id>
             <activation>
