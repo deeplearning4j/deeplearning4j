@@ -115,6 +115,8 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
         if (!isComplete())
             throw new ND4JIllegalStateException("Message isn't ready for concatenation");
 
+        log.info("Deserializing buffer [{}] of {} bytes", originId, holder.length());
+
         try (val fis = new FileInputStream(holder); val bis = new BufferedInputStream(fis)) {
             return SerializationUtils.deserialize(bis);
         } catch (Exception e) {
