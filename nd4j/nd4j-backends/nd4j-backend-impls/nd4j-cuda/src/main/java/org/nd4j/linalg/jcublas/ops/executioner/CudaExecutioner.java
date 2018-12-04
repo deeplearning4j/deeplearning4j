@@ -436,6 +436,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long st = profilingHookIn(op);
         checkForCompression(op);
 
+        if (dimension == null || dimension.length == 0)
+            dimension = new int[]{Integer.MAX_VALUE};
         //validateDataType(Nd4j.dataType(), op);
 
         if (dimension != null && dimension.length > 1)
