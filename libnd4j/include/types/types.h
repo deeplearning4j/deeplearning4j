@@ -137,340 +137,214 @@
 
 
 #ifndef __ND4J_EXPERIMENTAL__
-
 #define PAIRWISE_TYPES_0 \
-(Nd4jLong, float, Nd4jLong), \
-(uint8_t, double, uint8_t), \
-(float, uint8_t, uint8_t), \
-(float, int, float), \
-(uint8_t, Nd4jLong, Nd4jLong), \
-(uint8_t, Nd4jLong, uint8_t), \
-(float, float, float), \
-(int16_t, Nd4jLong, Nd4jLong), \
-(int, bool, bool), \
-(uint8_t, int16_t, int16_t), \
-(uint8_t, double, double), \
-(double, bool, double), \
-(Nd4jLong, int8_t, Nd4jLong), \
-(double, uint8_t, uint8_t), \
-(int8_t, double, double), \
-(Nd4jLong, bool, bool)
+		(double, double, double), \
+		(double, uint8_t, double), \
+		(double, uint8_t, uint8_t), \
+		(double, float, double), \
+		(double, float, float), \
+		(double, bfloat16, double), \
+		(double, bfloat16, bfloat16), \
+		(double, Nd4jLong, double), \
+		(double, Nd4jLong, Nd4jLong), \
+		(double, int32_t, double), \
+		(double, int32_t, int32_t), \
+		(double, int16_t, double), \
+		(double, int16_t, int16_t), \
+		(double, float16, double), \
+		(double, float16, float16), \
+		(double, bool, double), \
+		(double, bool, bool), \
+		(double, int8_t, double), \
+		(int8_t, double, int8_t), \
+		(int8_t, double, double), \
+		(int8_t, uint8_t, int8_t), \
+		(int8_t, uint8_t, uint8_t), \
+		(int8_t, float, int8_t), \
+		(double, int8_t, int8_t)
 
 #define PAIRWISE_TYPES_1 \
-(int16_t, bool, bool), \
-(int8_t, float, int8_t), \
-(float, bool, float), \
-(float16, int, float16), \
-(int8_t, Nd4jLong, Nd4jLong), \
-(float16, uint8_t, float16), \
-(double, float16, float16), \
-(float, uint8_t, float), \
-(double, int8_t, double) , \
-(Nd4jLong, int, Nd4jLong), \
-(bool, int16_t, bool), \
-(float, float16, float16), \
-(int, float16, int), \
-(double, double, double), \
-(int, Nd4jLong, int), \
-(bool, float, bool)
+		(uint8_t, double, uint8_t), \
+		(uint8_t, double, double), \
+		(uint8_t, uint8_t, uint8_t), \
+		(uint8_t, float, uint8_t), \
+		(uint8_t, float, float), \
+		(uint8_t, bfloat16, uint8_t), \
+		(uint8_t, bfloat16, bfloat16), \
+		(uint8_t, Nd4jLong, uint8_t), \
+		(uint8_t, Nd4jLong, Nd4jLong), \
+		(uint8_t, int32_t, uint8_t), \
+		(uint8_t, int32_t, int32_t), \
+		(uint8_t, int16_t, uint8_t), \
+		(uint8_t, int16_t, int16_t), \
+		(uint8_t, float16, uint8_t), \
+		(uint8_t, float16, float16), \
+		(uint8_t, bool, uint8_t), \
+		(uint8_t, bool, bool), \
+		(uint8_t, int8_t, uint8_t), \
+		(uint8_t, int8_t, int8_t)
 
 #define PAIRWISE_TYPES_2 \
-(int, float, int), \
-(bool, bool, bool), \
-(uint8_t, int16_t, uint8_t), \
-(uint8_t, uint8_t, uint8_t), \
-(float16, int16_t, float16), \
-(int8_t, Nd4jLong, int8_t), \
-(int8_t, int8_t, int8_t), \
-(int8_t, uint8_t, uint8_t), \
-(float, int8_t, float), \
-(Nd4jLong, float16, Nd4jLong), \
-(int8_t, int, int8_t), \
-(bool, Nd4jLong, Nd4jLong), \
-(Nd4jLong, double, Nd4jLong), \
-(bool, float16, float16), \
-(uint8_t, float16, float16)
+		(float, double, float), \
+		(float, double, double), \
+		(float, uint8_t, float), \
+		(float, uint8_t, uint8_t), \
+		(float, float, float), \
+		(float, bfloat16, float), \
+		(float, bfloat16, bfloat16), \
+		(float, Nd4jLong, float), \
+		(float, Nd4jLong, Nd4jLong), \
+		(float, int32_t, float), \
+		(float, int32_t, int32_t), \
+		(float, int16_t, float), \
+		(float, int16_t, int16_t), \
+		(float, float16, float), \
+		(float, float16, float16), \
+		(float, bool, float), \
+		(float, bool, bool), \
+		(float, int8_t, float), \
+		(int8_t, float, float), \
+		(int8_t, bfloat16, int8_t), \
+		(int8_t, bfloat16, bfloat16), \
+		(int8_t, Nd4jLong, int8_t), \
+		(int8_t, Nd4jLong, Nd4jLong), \
+		(float, int8_t, int8_t)
 
 #define PAIRWISE_TYPES_3 \
-(int, int16_t, int), \
-(int, int16_t, int16_t), \
-(int8_t, bool, bool), \
-(int8_t, uint8_t, int8_t), \
-(int, Nd4jLong, Nd4jLong), \
-(bool, int, int), \
-(uint8_t, bool, uint8_t), \
-(double, int16_t, double), \
-(int16_t, float16, int16_t), \
-(double, int16_t, int16_t), \
-(Nd4jLong, double, double), \
-(uint8_t, int8_t, int8_t), \
-(double, float, double), \
-(int16_t, bool, int16_t), \
-(uint8_t, int8_t, uint8_t), \
-(float16, int8_t, int8_t), \
-(double, float, float)
+		(bfloat16, double, bfloat16), \
+		(bfloat16, double, double), \
+		(bfloat16, uint8_t, bfloat16), \
+		(bfloat16, uint8_t, uint8_t), \
+		(bfloat16, float, bfloat16), \
+		(bfloat16, float, float), \
+		(bfloat16, bfloat16, bfloat16), \
+		(bfloat16, Nd4jLong, bfloat16), \
+		(bfloat16, Nd4jLong, Nd4jLong), \
+		(bfloat16, int32_t, bfloat16), \
+		(bfloat16, int32_t, int32_t), \
+		(bfloat16, int16_t, bfloat16), \
+		(bfloat16, int16_t, int16_t), \
+		(bfloat16, float16, bfloat16), \
+		(bfloat16, float16, float16), \
+		(bfloat16, bool, bfloat16), \
+		(bfloat16, bool, bool), \
+		(int8_t, int32_t, int8_t), \
+		(int8_t, int32_t, int32_t), \
+		(int8_t, int16_t, int8_t), \
+		(int8_t, int16_t, int16_t), \
+		(bfloat16, int8_t, bfloat16), \
+		(bfloat16, int8_t, int8_t)
 
 #define PAIRWISE_TYPES_4 \
-(Nd4jLong, int16_t, int16_t), \
-(uint8_t, bool, bool), \
-(uint8_t, float, uint8_t), \
-(int16_t, int8_t, int8_t), \
-(int16_t, int, int16_t), \
-(int16_t, float16, float16), \
-(int16_t, int8_t, int16_t), \
-(float16, float16, float16), \
-(bool, int, bool), \
-(Nd4jLong, int16_t, Nd4jLong), \
-(int16_t, Nd4jLong, int16_t), \
-(bool, uint8_t, uint8_t), \
-(bool, int8_t, bool), \
-(float, int16_t, float), \
-(float, Nd4jLong, float), \
-(int8_t, int, int), \
-(Nd4jLong, int8_t, int8_t)
+		(Nd4jLong, double, Nd4jLong), \
+		(Nd4jLong, double, double), \
+		(Nd4jLong, uint8_t, Nd4jLong), \
+		(Nd4jLong, uint8_t, uint8_t), \
+		(Nd4jLong, float, Nd4jLong), \
+		(Nd4jLong, float, float), \
+		(Nd4jLong, bfloat16, Nd4jLong), \
+		(Nd4jLong, bfloat16, bfloat16), \
+		(Nd4jLong, Nd4jLong, Nd4jLong), \
+		(Nd4jLong, int32_t, Nd4jLong), \
+		(Nd4jLong, int32_t, int32_t), \
+		(Nd4jLong, int16_t, Nd4jLong), \
+		(Nd4jLong, int16_t, int16_t), \
+		(Nd4jLong, float16, Nd4jLong), \
+		(Nd4jLong, float16, float16), \
+		(Nd4jLong, bool, Nd4jLong), \
+		(Nd4jLong, bool, bool), \
+		(Nd4jLong, int8_t, Nd4jLong), \
+		(Nd4jLong, int8_t, int8_t)
 
 #define PAIRWISE_TYPES_5 \
-(int, int8_t, int) , \
-(int, float16, float16), \
-(uint8_t, float, float), \
-(double, Nd4jLong, double), \
-(float16, int16_t, int16_t), \
-(int, int8_t, int8_t), \
-(int16_t, double, double), \
-(int, float, float), \
-(float, double, double), \
-(float16, double, float16), \
-(float16, Nd4jLong, Nd4jLong), \
-(int, int, int), \
-(int, uint8_t, int), \
-(float16, double, double), \
-(int8_t, int16_t, int16_t), \
-(int16_t, int16_t, int16_t), \
-(double, uint8_t, double), \
-(float16, int8_t, float16)
+		(int32_t, double, int32_t), \
+		(int32_t, double, double), \
+		(int32_t, uint8_t, int32_t), \
+		(int32_t, uint8_t, uint8_t), \
+		(int32_t, float, int32_t), \
+		(int32_t, float, float), \
+		(int32_t, bfloat16, int32_t), \
+		(int32_t, bfloat16, bfloat16), \
+		(int32_t, Nd4jLong, int32_t), \
+		(int32_t, Nd4jLong, Nd4jLong), \
+		(int32_t, int32_t, int32_t), \
+		(int32_t, int16_t, int32_t), \
+		(int32_t, int16_t, int16_t), \
+		(int32_t, float16, int32_t), \
+		(int32_t, float16, float16), \
+		(int32_t, bool, int32_t), \
+		(int32_t, bool, bool), \
+		(int32_t, int8_t, int32_t), \
+		(int32_t, int8_t, int8_t)
 
 #define PAIRWISE_TYPES_6 \
-(uint8_t, int, uint8_t) ,\
-(float, int, int), \
-(Nd4jLong, float16, float16), \
-(uint8_t, float16, uint8_t) , \
-(float, float16, float), \
-(int16_t, uint8_t, int16_t), \
-(int16_t, uint8_t, uint8_t), \
-(float, Nd4jLong, Nd4jLong), \
-(float16, uint8_t, uint8_t), \
-(float16, bool, float16), \
-(Nd4jLong, int, int), \
-(int16_t, int, int), \
-(bool, double, double), \
-(int8_t, float, float), \
-(float, bool, bool), \
-(double, Nd4jLong, Nd4jLong), \
-(float, double, float)
+		(int16_t, double, int16_t), \
+		(int16_t, double, double), \
+		(int16_t, uint8_t, int16_t), \
+		(int16_t, uint8_t, uint8_t), \
+		(int16_t, float, int16_t), \
+		(int16_t, float, float), \
+		(int16_t, bfloat16, int16_t), \
+		(int16_t, bfloat16, bfloat16), \
+		(int16_t, Nd4jLong, int16_t), \
+		(int16_t, Nd4jLong, Nd4jLong), \
+		(int16_t, int32_t, int16_t), \
+		(int16_t, int32_t, int32_t), \
+		(int16_t, int16_t, int16_t), \
+		(int16_t, float16, int16_t), \
+		(int16_t, float16, float16), \
+		(int16_t, bool, int16_t), \
+		(int8_t, float16, int8_t), \
+		(int8_t, float16, float16), \
+		(int8_t, bool, int8_t), \
+		(int16_t, bool, bool), \
+		(int16_t, int8_t, int16_t), \
+		(int16_t, int8_t, int8_t)
 
 #define PAIRWISE_TYPES_7 \
-(int8_t, double, int8_t), \
-(Nd4jLong, Nd4jLong, Nd4jLong), \
-(Nd4jLong, uint8_t, Nd4jLong), \
-(int8_t, float16, int8_t), \
-(float16, bool, bool), \
-(bool, float, float), \
-(int, double, int), \
-(int8_t, float16, float16), \
-(bool, double, bool), \
-(bool, int8_t, int8_t), \
-(int16_t, float, int16_t), \
-(bool, int16_t, int16_t), \
-(int8_t, bool, int8_t), \
-(float16, float, float16), \
-(double, int8_t, int8_t), \
-(int, uint8_t, uint8_t), \
-(uint8_t, int, int), \
-(int, bool, int)
+		(float16, double, float16), \
+		(float16, double, double), \
+		(float16, uint8_t, float16), \
+		(float16, uint8_t, uint8_t), \
+		(float16, float, float16), \
+		(float16, float, float), \
+		(float16, bfloat16, float16), \
+		(float16, bfloat16, bfloat16), \
+		(float16, Nd4jLong, float16), \
+		(float16, Nd4jLong, Nd4jLong), \
+		(float16, int32_t, float16), \
+		(float16, int32_t, int32_t), \
+		(float16, int16_t, float16), \
+		(float16, int16_t, int16_t), \
+		(float16, float16, float16), \
+		(float16, bool, float16), \
+		(float16, bool, bool), \
+		(int8_t, bool, bool), \
+		(int8_t, int8_t, int8_t), \
+		(float16, int8_t, float16), \
+		(float16, int8_t, int8_t)
 
 #define PAIRWISE_TYPES_8 \
-(float16, Nd4jLong, float16), \
-(double, int, int), \
-(float16, int, int), \
-(double, bool, bool), \
-(Nd4jLong, uint8_t, uint8_t), \
-(int16_t, double, int16_t), \
-(Nd4jLong, float, float), \
-(bool, Nd4jLong, bool), \
-(float, int8_t, int8_t) ,\
-(int16_t, float, float), \
-(Nd4jLong, bool, Nd4jLong), \
-(float, int16_t, int16_t), \
-(bool, uint8_t, bool), \
-(bool, float16, bool), \
-(int8_t, int16_t, int8_t), \
-(float16, float, float), \
-(int, double, double), \
-(double, int, double), \
-(double, float16, double)
+		(bool, double, bool), \
+		(bool, double, double), \
+		(bool, uint8_t, bool), \
+		(bool, uint8_t, uint8_t), \
+		(bool, float, bool), \
+		(bool, float, float), \
+		(bool, bfloat16, bool), \
+		(bool, bfloat16, bfloat16), \
+		(bool, Nd4jLong, bool), \
+		(bool, Nd4jLong, Nd4jLong), \
+		(bool, int32_t, bool), \
+		(bool, int32_t, int32_t), \
+		(bool, int16_t, bool), \
+		(bool, int16_t, int16_t), \
+		(bool, float16, bool), \
+		(bool, float16, float16), \
+		(bool, bool, bool), \
+		(bool, int8_t, bool), \
+		(bool, int8_t, int8_t)
 
-#define PAIRWISE_TYPES_9 \
-(int16_t, bool, bool), \
-(int8_t, float, int8_t), \
-(float, bool, float), \
-(bfloat16, int, bfloat16), \
-(int8_t, Nd4jLong, Nd4jLong), \
-(bfloat16, uint8_t, bfloat16), \
-(double, bfloat16, bfloat16), \
-(float, uint8_t, float), \
-(double, int8_t, double) , \
-(Nd4jLong, int, Nd4jLong), \
-(bool, int16_t, bool), \
-(float, bfloat16, bfloat16), \
-(int, bfloat16, int), \
-(double, double, double), \
-(int, Nd4jLong, int), \
-(bool, float, bool), \
-(bfloat16, float16, float16), \
-(float16, bfloat16, bfloat16), \
-(bfloat16, bfloat16, bfloat16), \
-(bfloat16, float16, bfloat16), \
-(float16, bfloat16, float16)
-
-#define PAIRWISE_TYPES_10 \
-(bfloat16, Nd4jLong, bfloat16), \
-(double, int, int), \
-(bfloat16, int, int), \
-(double, bool, bool), \
-(Nd4jLong, uint8_t, uint8_t), \
-(int16_t, double, int16_t), \
-(Nd4jLong, float, float), \
-(bool, Nd4jLong, bool), \
-(float, int8_t, int8_t) ,\
-(int16_t, float, float), \
-(Nd4jLong, bool, Nd4jLong), \
-(float, int16_t, int16_t), \
-(bool, uint8_t, bool), \
-(bool, bfloat16, bool), \
-(int8_t, int16_t, int8_t), \
-(bfloat16, float, float), \
-(int, double, double), \
-(double, int, double), \
-(double, bfloat16, double)
-
-#define PAIRWISE_TYPES_11 \
-(int, float, int), \
-(bool, bool, bool), \
-(uint8_t, int16_t, uint8_t), \
-(uint8_t, uint8_t, uint8_t), \
-(bfloat16, int16_t, bfloat16), \
-(int8_t, Nd4jLong, int8_t), \
-(int8_t, int8_t, int8_t), \
-(int8_t, uint8_t, uint8_t), \
-(float, int8_t, float), \
-(Nd4jLong, bfloat16, Nd4jLong), \
-(int8_t, int, int8_t), \
-(bool, Nd4jLong, Nd4jLong), \
-(Nd4jLong, double, Nd4jLong), \
-(bool, bfloat16, bfloat16), \
-(uint8_t, bfloat16, bfloat16)
-
-#define PAIRWISE_TYPES_12 \
-(int, int16_t, int), \
-(int, int16_t, int16_t), \
-(int8_t, bool, bool), \
-(int8_t, uint8_t, int8_t), \
-(int, Nd4jLong, Nd4jLong), \
-(bool, int, int), \
-(uint8_t, bool, uint8_t), \
-(double, int16_t, double), \
-(int16_t, bfloat16, int16_t), \
-(double, int16_t, int16_t), \
-(Nd4jLong, double, double), \
-(uint8_t, int8_t, int8_t), \
-(double, float, double), \
-(int16_t, bool, int16_t), \
-(uint8_t, int8_t, uint8_t), \
-(float16, int8_t, int8_t), \
-(double, float, float)
-
-#define PAIRWISE_TYPES_13 \
-(Nd4jLong, int16_t, int16_t), \
-(uint8_t, bool, bool), \
-(uint8_t, float, uint8_t), \
-(int16_t, int8_t, int8_t), \
-(int16_t, int, int16_t), \
-(int16_t, bfloat16, bfloat16), \
-(int16_t, int8_t, int16_t), \
-(float16, bfloat16, bfloat16), \
-(bool, int, bool), \
-(Nd4jLong, int16_t, Nd4jLong), \
-(int16_t, Nd4jLong, int16_t), \
-(bool, uint8_t, uint8_t), \
-(bool, int8_t, bool), \
-(float, int16_t, float), \
-(float, Nd4jLong, float), \
-(int8_t, int, int), \
-(Nd4jLong, int8_t, int8_t)
-
-#define PAIRWISE_TYPES_14 \
-(int, int8_t, int) , \
-(int, bfloat16, bfloat16), \
-(uint8_t, float, float), \
-(double, Nd4jLong, double), \
-(bfloat16, int16_t, int16_t), \
-(int, int8_t, int8_t), \
-(int16_t, double, double), \
-(int, float, float), \
-(float, double, double), \
-(bfloat16, double, bfloat16), \
-(bfloat16, Nd4jLong, Nd4jLong), \
-(int, int, int), \
-(int, uint8_t, int), \
-(bfloat16, double, double), \
-(int8_t, int16_t, int16_t), \
-(int16_t, int16_t, int16_t), \
-(double, uint8_t, double), \
-(bfloat16, int8_t, bfloat16)
-
-#define PAIRWISE_TYPES_15 \
-(uint8_t, int, uint8_t) ,\
-(float, int, int), \
-(Nd4jLong, bfloat16, bfloat16), \
-(uint8_t, bfloat16, uint8_t) , \
-(float, bfloat16, float), \
-(int16_t, uint8_t, int16_t), \
-(int16_t, uint8_t, uint8_t), \
-(float, Nd4jLong, Nd4jLong), \
-(bfloat16, uint8_t, uint8_t), \
-(bfloat16, bool, bfloat16), \
-(Nd4jLong, int, int), \
-(int16_t, int, int), \
-(bool, double, double), \
-(int8_t, float, float), \
-(float, bool, bool), \
-(double, Nd4jLong, Nd4jLong), \
-(float, double, float)
-
-#define PAIRWISE_TYPES_16 \
-(int8_t, double, int8_t), \
-(Nd4jLong, Nd4jLong, Nd4jLong), \
-(Nd4jLong, uint8_t, Nd4jLong), \
-(int8_t, bfloat16, int8_t), \
-(bfloat16, bool, bool), \
-(bool, float, float), \
-(int, double, int), \
-(int8_t, float16, float16), \
-(bool, double, bool), \
-(bool, int8_t, int8_t), \
-(int16_t, float, int16_t), \
-(bool, int16_t, int16_t), \
-(int8_t, bool, int8_t), \
-(bfloat16, float, bfloat16), \
-(double, int8_t, int8_t), \
-(int, uint8_t, uint8_t), \
-(uint8_t, int, int), \
-(int, bool, int), \
-(bfloat16, float16, float16), \
-(float16, bfloat16, bfloat16), \
-(bfloat16, bfloat16, bfloat16), \
-(bfloat16, float16, bfloat16), \
-(float16, bfloat16, float16)
 
 #else
 

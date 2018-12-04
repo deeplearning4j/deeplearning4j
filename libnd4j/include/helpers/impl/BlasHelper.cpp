@@ -88,6 +88,11 @@ namespace nd4j {
     }
 
     template <>
+    bool BlasHelper::hasGEMV<bfloat16>() {
+        return false;
+    }
+
+    template <>
     bool BlasHelper::hasGEMV<bool>() {
         return false;
     }
@@ -133,6 +138,11 @@ namespace nd4j {
     }
 
     template <>
+    bool BlasHelper::hasGEMM<bfloat16>() {
+        return false;
+    }
+
+    template <>
     bool BlasHelper::hasGEMM<int>() {
         return false;
     }
@@ -174,6 +184,11 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasBatchedGEMM<float16>() {
+        return false;
+    }
+
+    template <>
+    bool BlasHelper::hasBatchedGEMM<bfloat16>() {
         return false;
     }
 
