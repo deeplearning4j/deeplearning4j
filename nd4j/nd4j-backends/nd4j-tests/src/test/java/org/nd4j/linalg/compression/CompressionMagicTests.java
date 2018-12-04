@@ -51,6 +51,7 @@ public class CompressionMagicTests extends BaseNd4jTest {
         assertTrue(compressed.isCompressed());
         compressed.muli(1.0);
 
+        assertFalse(compressed.isCompressed());
         assertEquals(array, compressed);
     }
 

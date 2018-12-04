@@ -576,6 +576,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             Nd4j.getCompressor().decompressi(op.z());
         }
 
+        /*
         if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava())
                 && op.x().data().dataType() != expectedType
                 && op.x().data().dataType() != DataType.COMPRESSED) {
@@ -584,6 +585,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     + (op.y() != null ? ", y.shape=" + Arrays.toString(op.y().shape()) : "")
                     + ", z.shape=" + Arrays.toString(op.z().shape()) + " - op: " + op.getClass().getName());
         }
+        */
 /*
         if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava())
                         && op.z().data().dataType() != expectedType
