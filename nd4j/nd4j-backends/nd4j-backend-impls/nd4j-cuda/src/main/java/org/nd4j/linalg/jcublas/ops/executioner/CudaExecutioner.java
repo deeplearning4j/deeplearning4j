@@ -918,6 +918,26 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             retShape = new long[] {1, 1};
         }
 
+        if (op.y() != null) {
+            //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
+            if (op.x().lengthLong() == op.y().lengthLong()) {
+                //Pairwise
+                if (op.x().tensorsAlongDimension(dimension) != op.y().tensorsAlongDimension(dimension)) {
+                    throw new ND4JIllegalStateException("Number of TADs along dimension don't match: (x shape = " +
+                            Arrays.toString(op.x().shape()) + ", y shape = " + Arrays.toString(op.y().shape()) +
+                            ", dimension = " + Arrays.toString(dimension) + ")");
+                }
+            } else {
+                //Every X TAD vs. entirety of Y
+                val xTADSize = op.x().lengthLong() / op.x().tensorsAlongDimension(dimension);
+
+                if (xTADSize != op.y().length()) {
+                    throw new ND4JIllegalStateException("Size of TADs along dimension don't match for pairwise execution:" +
+                            " (x TAD size = " + xTADSize + ", y size = " + op.y().lengthLong());
+                }
+            }
+        }
+
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape)) {
             if (op.x().isScalar()) {
                 op.setFinalResult(op.x().getDouble(0));

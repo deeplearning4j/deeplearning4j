@@ -237,7 +237,7 @@ public class Nd4jTest extends BaseNd4jTest {
         floatBuffer.position(0);
 
         DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(floatBuffer.asFloatBuffer()),linspace.length(), DataType.FLOAT);
-        assertEquals(Nd4j.createBuffer(new float[]{1,2,3,4}),dataBuffer);
+        assertArrayEquals(new float[]{1,2,3,4}, dataBuffer.asFloat(), 1e-5f);
 
         INDArray convertedFrom = Nd4j.getNDArrayFactory().createFromNpyHeaderPointer(convert);
         assertEquals(linspace,convertedFrom);
