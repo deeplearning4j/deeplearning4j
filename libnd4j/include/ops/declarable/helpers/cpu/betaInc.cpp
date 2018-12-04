@@ -148,7 +148,12 @@ static T gausLegQuad(const T a, const T b, const T x) {
 		t = x + (upLim - x) * (T)abscissas[i];
 		sum += (T)weights[i] * math::nd4j_exp<T,T>(amu * (math::nd4j_log<T,T>(t) - lnrat) + bmu * (math::nd4j_log<T,T>((T)1. - t) - lnratm));
 	}
-	result = sum * (upLim - x) * math::nd4j_exp<T,T>(amu * lnrat - lgamma(a) + bmu * lnratm - lgamma(b) + lgamma(a + b));
+	if (std::is_same<T, double>::value) {
+		result = sum * (upLim - x) * math::nd4j_exp<T,T>(amu * lnrat - lgamma(static_cast<double>(a)) + bmu * lnratm - lgamma(static_cast<double>(b)) + lgamma(static_cast<double>(a + b)));
+	} else {
+		result = sum * (upLim - x) * math::nd4j_exp<T,T>(amu * lnrat - lgamma((float) a) + bmu * lnratm - lgamma((float) b) + lgamma(static_cast<float>(a + b)));
+	}
+
 	
 	if(result > (T)0.)
 		return (T)1. - result;
@@ -179,7 +184,7 @@ static T betaIncTA(T a, T b, T x) {
 	if (a > (T)maxValue && b > (T)maxValue) 
 		return gausLegQuad<T>(a, b, x);	
 
-	T front = math::nd4j_exp<T,T>( lgamma(a + b) - lgamma(a) - lgamma(b) + a * math::nd4j_log<T, T>(x) + b * math::nd4j_log<T, T>((T)1. - x));
+	T front = math::nd4j_exp<T,T>( lgamma(static_cast<double>(a + b)) - lgamma(static_cast<double>(a)) - lgamma(static_cast<double>(b)) + a * math::nd4j_log<T, T>(x) + b * math::nd4j_log<T, T>((T)1. - x));
 	
 	// continued fractions
 	if (x < (a + (T)1.) / (a + b + (T)2.)) 

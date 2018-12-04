@@ -257,12 +257,12 @@ namespace functions {
                 vz.M2 = M2D;
                 vz.M3 = x.M3 + y.M3;
                 vz.M3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
-                vz.M3 += (X) 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
+                vz.M3 += 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
 
                 vz.M4 = x.M4 + y.M4;
                 vz.M4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
-                vz.M4 += (X) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
-                vz.M4 += (X) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
+                vz.M4 += 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
+                vz.M4 += 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
 
                 return vz;
             }

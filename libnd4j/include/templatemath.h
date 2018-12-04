@@ -346,10 +346,10 @@ namespace nd4j {
 			return *(value.data.getXP()) == 0x7fffU;
 		}
 
-                template<>
-                math_def inline bool nd4j_isnan<bfloat16>(bfloat16 value) {
-                    return *(value.data.getXP()) == 0x7fffU;
-                }
+		template<>
+		math_def inline bool nd4j_isnan<bfloat16>(bfloat16 value) {
+			return value._data == 0x7fffU;
+		}
 
 		template<>
         math_def inline bool nd4j_isnan<float>(float value) {
@@ -412,7 +412,7 @@ namespace nd4j {
 		}
 
 		template<>
-                math_def inline bool nd4j_isinf<bfloat16>(bfloat16 value) {
+		math_def inline bool nd4j_isinf<bfloat16>(bfloat16 value) {
 			return value < (bfloat16) -BFLOAT16_MAX_VALUE || value > (bfloat16) BFLOAT16_MAX_VALUE;
 		}
 
@@ -726,24 +726,24 @@ template <>
 inline __device__ bfloat16 nd4j_atomicAdd<bfloat16>(bfloat16* address, bfloat16 val)  {
 	int* address_as_ull = (int*) address;
 
-	long addr = (long) address;
+	long addr = (long)(address);
 	bool misaligned = addr & 0x3;
 
 	if (misaligned)
 		address_as_ull = (int *) (addr - 2);
 
-	PAIR old, assumed, fresh;
+	BPAIR old, assumed, fresh;
 
 	old.W = *address_as_ull;
 	do {
 
 		if (!misaligned) {
-			float16 res = ((float16) old.B.H) + val;
-			fresh.B.H = res.data;
+			bfloat16 res = old.B.H + val;
+			fresh.B.H = res;
 			fresh.B.L = old.B.L;
 		} else {
-			float16 res = ((float16) old.B.L) + val;
-			fresh.B.L = res.data;
+			bfloat16 res = old.B.L + val;
+			fresh.B.L = res;
 			fresh.B.H = old.B.H;
 		}
 

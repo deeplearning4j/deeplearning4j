@@ -56,8 +56,7 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
 
     // multiply E on weights
     E *= *weightsBroad;
-
- 	// process 4 possible reduction modes below
+ 	
 	switch (reductionMode) {
 		case 0: {											// 0 - "none", un-reduced weighted losses with the same shape as labels.
 			output->assign(E);
@@ -75,7 +74,7 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
 				sum = weightsBroad->reduceNumber(reduce::Sum);
 			
 			if (sum.e<double>(0) == 0.)
-				(*output) = 0.;
+				*output = 0.;
 			else 
 				output->assign(E.reduceNumber(reduce::Sum) / sum);
 			break;
@@ -132,7 +131,7 @@ DECLARE_SHAPE_FN(log_loss) {
     else 							// in this case output has the same shape as labels and predictions
     	outShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
 	
-    return SHAPELIST(outShapeInfo);    
+    return SHAPELIST(outShapeInfo);
 }
 
 
