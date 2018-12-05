@@ -155,8 +155,6 @@ public class CudaShortDataBuffer extends BaseCudaDataBuffer {
         return ArrayUtil.toDoubles(getFloatsAt(offset, inc, length));
     }
 
-
-
     @Override
     public void setData(float[] data) {
         throw new UnsupportedOperationException("setData(float) should be implemented first");
@@ -164,10 +162,8 @@ public class CudaShortDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void setData(int[] data) {
-        setData(ArrayUtil.toFloats(data));
+        setData(ArrayUtil.toShorts(data));
     }
-
-
 
     @Override
     public void setData(double[] data) {

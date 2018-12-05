@@ -159,12 +159,12 @@ public class CudaByteDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void setData(float[] data) {
-        throw new UnsupportedOperationException("setData(float) should be implemented first");
+        setData(ArrayUtil.toShorts(data));
     }
 
     @Override
     public void setData(int[] data) {
-        setData(ArrayUtil.toFloats(data));
+        setData(ArrayUtil.toShorts(data));
     }
 
 

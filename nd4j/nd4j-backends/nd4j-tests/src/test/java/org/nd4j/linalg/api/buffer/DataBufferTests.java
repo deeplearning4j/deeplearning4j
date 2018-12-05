@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.buffer;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.junit.Test;
@@ -20,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@Slf4j
 @RunWith(Parameterized.class)
 public class DataBufferTests extends BaseNd4jTest {
 
@@ -164,19 +166,24 @@ public class DataBufferTests extends BaseNd4jTest {
                 break;
             case BOOL:
                 //Bool type uses byte pointers
-                assertTrue(db.pointer() instanceof BytePointer);
-                assertTrue(db.indexer() instanceof ByteIndexer);
+                assertTrue(db.pointer() instanceof BooleanPointer);
+                assertTrue(db.indexer() instanceof BooleanIndexer);
                 break;
         }
     }
 
     protected static void testDBOps(DataBuffer db) {
         for (int i = 0; i < 3; i++) {
-            testGet(db, i, i + 1);
+            if (db.dataType() != DataType.BOOL)
+                testGet(db, i, i + 1);
+            else
+                testGet(db, i, 1);
         }
         testGetRange(db);
         testAsArray(db);
-        testAssign(db);
+
+        if (db.dataType() != DataType.BOOL)
+            testAssign(db);
     }
 
     protected static void testGet(DataBuffer from, int idx, Number exp) {
@@ -187,22 +194,41 @@ public class DataBufferTests extends BaseNd4jTest {
     }
 
     protected static void testGetRange(DataBuffer from) {
-        assertArrayEquals(new double[]{1, 2, 3}, from.getDoublesAt(0, 3), 0.0);
-        assertArrayEquals(new double[]{1, 3}, from.getDoublesAt(0, 2, 2), 0.0);
-        assertArrayEquals(new double[]{2, 3}, from.getDoublesAt(1, 1, 2), 0.0);
-        assertArrayEquals(new float[]{1, 2, 3}, from.getFloatsAt(0, 3), 0.0f);
-        assertArrayEquals(new float[]{1, 3}, from.getFloatsAt(0, 2, 2), 0.0f);
-        assertArrayEquals(new float[]{2, 3}, from.getFloatsAt(1, 1, 3), 0.0f);
-        assertArrayEquals(new int[]{1, 2, 3}, from.getIntsAt(0, 3));
-        assertArrayEquals(new int[]{1, 3}, from.getIntsAt(0, 2, 2));
-        assertArrayEquals(new int[]{2, 3}, from.getIntsAt(1, 1, 3));
+        if (from.dataType() != DataType.BOOL) {
+            assertArrayEquals(new double[]{1, 2, 3}, from.getDoublesAt(0, 3), 0.0);
+            assertArrayEquals(new double[]{1, 3}, from.getDoublesAt(0, 2, 2), 0.0);
+            assertArrayEquals(new double[]{2, 3}, from.getDoublesAt(1, 1, 2), 0.0);
+            assertArrayEquals(new float[]{1, 2, 3}, from.getFloatsAt(0, 3), 0.0f);
+            assertArrayEquals(new float[]{1, 3}, from.getFloatsAt(0, 2, 2), 0.0f);
+            assertArrayEquals(new float[]{2, 3}, from.getFloatsAt(1, 1, 3), 0.0f);
+            assertArrayEquals(new int[]{1, 2, 3}, from.getIntsAt(0, 3));
+            assertArrayEquals(new int[]{1, 3}, from.getIntsAt(0, 2, 2));
+            assertArrayEquals(new int[]{2, 3}, from.getIntsAt(1, 1, 3));
+        } else {
+            assertArrayEquals(new double[]{1, 1, 1}, from.getDoublesAt(0, 3), 0.0);
+            assertArrayEquals(new double[]{1, 1}, from.getDoublesAt(0, 2, 2), 0.0);
+            assertArrayEquals(new double[]{1, 1}, from.getDoublesAt(1, 1, 2), 0.0);
+            assertArrayEquals(new float[]{1, 1, 1}, from.getFloatsAt(0, 3), 0.0f);
+            assertArrayEquals(new float[]{1, 1}, from.getFloatsAt(0, 2, 2), 0.0f);
+            assertArrayEquals(new float[]{1, 1}, from.getFloatsAt(1, 1, 3), 0.0f);
+            assertArrayEquals(new int[]{1, 1, 1}, from.getIntsAt(0, 3));
+            assertArrayEquals(new int[]{1, 1}, from.getIntsAt(0, 2, 2));
+            assertArrayEquals(new int[]{1, 1}, from.getIntsAt(1, 1, 3));
+        }
     }
 
     protected static void testAsArray(DataBuffer db) {
-        assertArrayEquals(new double[]{1, 2, 3}, db.asDouble(), 0.0);
-        assertArrayEquals(new float[]{1, 2, 3}, db.asFloat(), 0.0f);
-        assertArrayEquals(new int[]{1, 2, 3}, db.asInt());
-        assertArrayEquals(new long[]{1, 2, 3}, db.asLong());
+        if (db.dataType() != DataType.BOOL) {
+            assertArrayEquals(new double[]{1, 2, 3}, db.asDouble(), 0.0);
+            assertArrayEquals(new float[]{1, 2, 3}, db.asFloat(), 0.0f);
+            assertArrayEquals(new int[]{1, 2, 3}, db.asInt());
+            assertArrayEquals(new long[]{1, 2, 3}, db.asLong());
+        } else {
+            assertArrayEquals(new double[]{1, 1, 1}, db.asDouble(), 0.0);
+            assertArrayEquals(new float[]{1, 1, 1}, db.asFloat(), 0.0f);
+            assertArrayEquals(new int[]{1, 1, 1}, db.asInt());
+            assertArrayEquals(new long[]{1, 1, 1}, db.asLong());
+        }
     }
 
     protected static void testAssign(DataBuffer db) {
@@ -210,9 +236,11 @@ public class DataBufferTests extends BaseNd4jTest {
         testGet(db, 0, 5.0);
         testGet(db, 2, 5.0);
 
-        db.assign(-3.0f);
-        testGet(db, 0, -3.0);
-        testGet(db, 2, -3.0);
+        if (db.dataType() != DataType.UBYTE) {
+            db.assign(-3.0f);
+            testGet(db, 0, -3.0);
+            testGet(db, 2, -3.0);
+        }
 
         db.assign(new long[]{0, 1, 2}, new float[]{10, 9, 8}, true);
         testGet(db, 0, 10);
@@ -286,6 +314,7 @@ public class DataBufferTests extends BaseNd4jTest {
                         assertFalse(db2.isAttached());
 
                         if(!sourceType.equals("boolean")){
+                            log.info("Testing source [{}]; target: [{}]", sourceType, dt);
                             testDBOps(db1);
                             testDBOps(db2);
                         }

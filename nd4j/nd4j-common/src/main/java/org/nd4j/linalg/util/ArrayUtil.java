@@ -965,6 +965,26 @@ public class ArrayUtil {
         return toDoubles(Ints.concat(ints));
     }
 
+    public static short[] toShorts(int[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) ints[i];
+        return ret;
+    }
+
+    public static short[] toShorts(float[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) ints[i];
+        return ret;
+    }
+
+    public static short[] toShorts(double[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) ints[i];
+        return ret;
+    }
 
     public static float[] toFloats(int[] ints) {
         float[] ret = new float[ints.length];
