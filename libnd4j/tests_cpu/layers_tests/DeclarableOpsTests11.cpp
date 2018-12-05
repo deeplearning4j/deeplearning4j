@@ -1865,3 +1865,68 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test13) {
     delete results;
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, BFloat16_Test_4) {
+
+    NDArray x = NDArrayFactory::create<float>('c', {2,3,4});
+    NDArray y = NDArrayFactory::create<bfloat16>('c', {2,3,4});//('c', {2,3,4}, nd4j::DataType::BFLOAT16);
+    NDArray exp = NDArrayFactory::create<float>('c', {2,3,4});//('c', {2,3,4}, nd4j::DataType::BFLOAT16);
+
+    x.linspace(1);
+    y.linspace(1);
+    exp.linspace(2,2);
+    nd4j::ops::add op;
+    auto results = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto res = results->at(0);
+    res->printIndexedBuffer("BFloat16 sum:");
+    ASSERT_TRUE(res->equalsTo(exp));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, BFloat16_Test_5) {
+
+    NDArray x = NDArrayFactory::create<float>('c', {2,3,4});
+    NDArray y = NDArrayFactory::create<bfloat16>('c', {2,3,4});//('c', {2,3,4}, nd4j::DataType::BFLOAT16);
+    NDArray exp = NDArrayFactory::create<float>('c', {2,3,4});//('c', {2,3,4}, nd4j::DataType::BFLOAT16);
+
+    x.linspace(2, 2);
+    y.linspace(1);
+    exp.linspace(1);
+    nd4j::ops::subtract op;
+    auto results = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto res = results->at(0);
+    res->printIndexedBuffer("BFloat16 subtract:");
+    ASSERT_TRUE(res->equalsTo(exp));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, BFloat16_Test_6) {
+
+    NDArray x = NDArrayFactory::create<bfloat16>('c', {2,3,4});
+    NDArray y = NDArrayFactory::create<double>('c', {2,3,4});//('c', {2,3,4}, nd4j::DataType::BFLOAT16);
+    NDArray exp = NDArrayFactory::create<bfloat16>('c', {2,3,4});//('c', {2,3,4}, nd4j::DataType::BFLOAT16);
+
+    x.linspace(2, 2);
+    y.linspace(1);
+    exp.linspace(1);
+    nd4j::ops::subtract op;
+    auto results = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto res = results->at(0);
+    res->printIndexedBuffer("BFloat16 subtract2:");
+    ASSERT_TRUE(res->equalsTo(exp));
+
+    delete results;
+}

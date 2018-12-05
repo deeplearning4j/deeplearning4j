@@ -348,7 +348,7 @@ namespace nd4j {
 
 		template<>
 		math_def inline bool nd4j_isnan<bfloat16>(bfloat16 value) {
-			return value._data == 0x7fffU;
+			return value == bfloat16::nan(); //0x7fffU;
 		}
 
 		template<>

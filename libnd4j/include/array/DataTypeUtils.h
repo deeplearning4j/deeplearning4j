@@ -211,7 +211,7 @@ FORCEINLINE _CUDA_HD float16 DataTypeUtils::min<float16>() {
 
 template<>
 FORCEINLINE _CUDA_HD bfloat16 DataTypeUtils::min<bfloat16>() {
-    return (bfloat16) 6.1035e-38;
+    return bfloat16::min();
 }
 
 template<>
@@ -283,7 +283,7 @@ FORCEINLINE _CUDA_HD float16 DataTypeUtils::max<float16>() {
 
 template <>
 FORCEINLINE _CUDA_HD bfloat16 DataTypeUtils::max<bfloat16>() {
-    return static_cast<bfloat16>(32737.f);
+    return bfloat16::max();
 }
 
 FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
@@ -326,7 +326,7 @@ FORCEINLINE T DataTypeUtils::eps() {
         else if (std::is_same<T, float16>::value)
             return 0.00097656;
         else if (std::is_same<T, bfloat16>::value)
-            return 0.097656;
+            return bfloat16::eps();
         else
             return 0;
 }

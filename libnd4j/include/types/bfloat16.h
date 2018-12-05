@@ -122,8 +122,17 @@
     }
 
     local_def void assign(float rhs) {
+#ifdef __CUDACC__
+      if(::isnan(rhs)) {
+          _data = bfloat16::nan();
+          return;
+      }
+#endif
       auto x = *reinterpret_cast<int32_t*>(&rhs);
-      this->_data = x >> 16;
+      uint32_t lsb = (x >> 16) & 1;
+      uint32_t rounding_bias = 0x7fff + lsb;
+      x += rounding_bias;
+      this->_data = static_cast<int16_t>(x >> 16);
     }
 
     local_def void assign(const bfloat16& rhs) {
@@ -157,6 +166,34 @@
     local_def std::ostream& operator<<(std::ostream& os) {
         os << static_cast<float>(*this);
         return os;
+    }
+    local_def static bfloat16 min() {
+      bfloat16 res;
+      res._data = 0xFF7F;
+      return res;
+    }
+    local_def static bfloat16 max() {
+      bfloat16 res;
+      res._data = 0x7F7F;
+      return res;
+
+    }
+    local_def static bfloat16 eps() {
+        bfloat16 res;
+        res._data = 0x3C00;
+        return res;
+    }
+
+    local_def static bfloat16 inf() {
+      bfloat16 res;
+      res._data = 0x3C00;
+      return res;
+    }
+
+    local_def static bfloat16 nan() {
+      bfloat16 res;
+      res._data = 0x7FC0;
+      return res;
     }
   };
 
