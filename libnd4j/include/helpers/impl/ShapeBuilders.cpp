@@ -70,6 +70,7 @@ namespace nd4j {
     Nd4jLong* ShapeBuilders::createShapeInfo(const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
         int rank = shapeOnly.size();
 
+        if (rank)
         if(shapeOnly[0] == 0) // scalar case
             rank = 0;
 
