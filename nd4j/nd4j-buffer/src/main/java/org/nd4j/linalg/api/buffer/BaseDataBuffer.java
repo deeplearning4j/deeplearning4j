@@ -1240,16 +1240,27 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public long getLong(long i) {
-        if (dataType() == DataType.FLOAT) {
-            return (long) ((FloatIndexer) indexer).get(offset() + i);
-        } else if (dataType() == DataType.INT) {
-            return (long) ((IntIndexer) indexer).get(offset() + i);
-        } else if (dataType() == DataType.DOUBLE) {
-            return (long) ((DoubleIndexer) indexer).get(offset() + i);
-        } else if (dataType() == DataType.BOOL) {
-            return  ((BooleanIndexer) indexer).get(offset() + i) ? 1 : 0;
-        } else {
-            return ((LongIndexer) indexer).get(offset() + i);
+        switch (dataType()) {
+            case FLOAT:
+                return (long) ((FloatIndexer) indexer).get(offset() + i);
+            case DOUBLE:
+                return (long) ((DoubleIndexer) indexer).get(offset() + i);
+            case HALF:
+                return (long) ((HalfIndexer) indexer).get(offset() + i);
+            case LONG:
+                return ((LongIndexer) indexer).get(offset() + i);
+            case INT:
+                return (long) ((IntIndexer) indexer).get(offset() + i);
+            case SHORT:
+                return (long) ((ShortIndexer) indexer).get(offset() + i);
+            case BYTE:
+                return (long) ((ByteIndexer) indexer).get(offset() + i);
+            case UBYTE:
+                return (long) ((UByteIndexer) indexer).get(offset() + i);
+            case BOOL:
+                return  ((BooleanIndexer) indexer).get(offset() + i) ? 1L : 0L;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
         }
     }
 
@@ -1402,18 +1413,36 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long i, float element) {
-        if (dataType() == DataType.DOUBLE) {
-            ((DoubleIndexer) indexer).put(offset() + i, element);
-        } else if (dataType() == DataType.INT) {
-            ((IntIndexer) indexer).put(offset() + i, (int) element);
-        } else if (dataType() == DataType.LONG) {
-            ((LongIndexer) indexer).put(offset() + i, (long) element);
-        } else if (dataType() == DataType.FLOAT) {
-            ((FloatIndexer) indexer).put(offset() + i, element);
-        } else if (dataType() == DataType.SHORT) {
-            ((ShortIndexer) indexer).put(offset() + i,  (short) element);
-        } else if (dataType() == DataType.BYTE) {
-            ((ShortIndexer) indexer).put(offset() + i, (byte) element);
+        switch (dataType()) {
+            case BOOL:
+                ((BooleanIndexer) indexer).put(offset() + i, element == 0.0 ? false : true);
+                break;
+            case BYTE:
+                ((ByteIndexer) indexer).put(offset() + i, (byte) element);
+                break;
+            case UBYTE:
+                ((UByteIndexer) indexer).put(offset() + i,  (int) element);
+                break;
+            case SHORT:
+                ((ShortIndexer) indexer).put(offset() + i,  (short) element);
+                break;
+            case INT:
+                ((IntIndexer) indexer).put(offset() + i, (int) element);
+                break;
+            case LONG:
+                ((LongIndexer) indexer).put(offset() + i, (long) element);
+                break;
+            case HALF:
+                ((HalfIndexer) indexer).put(offset() + i,  element);
+                break;
+            case FLOAT:
+                ((FloatIndexer) indexer).put(offset() + i, element);
+                break;
+            case DOUBLE:
+                ((DoubleIndexer) indexer).put(offset() + i, element);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported type: " + dataType());
         }
 
         if (i == length) {
