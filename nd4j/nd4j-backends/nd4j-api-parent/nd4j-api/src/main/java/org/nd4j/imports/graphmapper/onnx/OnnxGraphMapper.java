@@ -424,6 +424,11 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         return false;
     }
 
+    @Override
+    public boolean isStringType(OnnxProto3.TypeProto.Tensor tensor) {
+        return tensor.getElemType() == OnnxProto3.TensorProto.DataType.STRING;
+    }
+
 
     /**
      * Convert an onnx type to the proper nd4j type

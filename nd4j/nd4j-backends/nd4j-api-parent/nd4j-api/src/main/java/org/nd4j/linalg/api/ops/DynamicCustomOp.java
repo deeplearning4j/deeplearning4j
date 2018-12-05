@@ -575,8 +575,22 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         if (descriptor == null)
             throw new NoOpNameFoundException("No descriptor found for op name " + opName());
 
-        if (descriptor.getNumInputs() > 0 && numInputArguments() < descriptor.getNumInputs())
-            throw new ND4JIllegalStateException("Op [" + opName() +"] failure for [" + this.getOwnName() + "]: Number of inputs is invalid for execution. Specified [" + numInputArguments() + "] but should be [" + descriptor.getNumInputs()  +"]");
+        if (descriptor.getNumInputs() > 0 && numInputArguments() < descriptor.getNumInputs()) {
+            if(sameDiff == null) {
+                throw new ND4JIllegalStateException("Op [" + opName() + "] failure for [" + this.getOwnName() + "]: Number of inputs is invalid for execution. "
+                        + numInputArguments() + " were provided but " + descriptor.getNumInputs() + " are required for execution");
+            } else {
+                String[] inputNames = sameDiff.getInputsForFunction(this);
+                String[] arrayShapes = new String[inputNames.length];
+                for( int i=0; i<inputNames.length; i++ ){
+                    INDArray arr = sameDiff.getVariable(inputNames[i]).getArr();
+                    arrayShapes[i] = (arr == null ? "<no array present>" : Arrays.toString(arr.shape()));
+                }
+                throw new ND4JIllegalStateException("Op [" + opName() + "] failure for [" + this.getOwnName() + "]: Number of inputs is invalid for execution. "
+                        + numInputArguments() + " were provided but " + descriptor.getNumInputs() + " are required for execution. Input variable names: " + Arrays.toString(inputNames)
+                        + ". Input variable array shapes: " + Arrays.toString(arrayShapes));
+            }
+        }
 
         if (descriptor.getNumOutputs() > 0 && numOutputArguments() < descriptor.getNumOutputs())
             throw new ND4JIllegalStateException("Op [" + opName() +"] failure for [" + this.getOwnName() + "]: Number of outputs is invalid for execution. Specified [" + numOutputArguments() + "] but should be [" + descriptor.getNumOutputs()  +"]");
