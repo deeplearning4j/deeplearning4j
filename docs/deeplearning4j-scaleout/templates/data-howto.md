@@ -26,12 +26,12 @@ Then, when training the network you can call ```SparkDl4jMultiLayer.fit(String p
 
 Spark Data Prepration: How-To Guides
 * [How to prepare a RDD[DataSet] from CSV data for classification or regression](#csv)
+* [How to create a Spark data pipeline for training on images](#images)
 * [How to create a RDD[MultiDataSet] from one or more RDD[List[Writable]]](#multidataset)
 * [How to save a RDD[DataSet] or RDD[MultiDataSet] to network storage and use it for training](#saveloadrdd)
 * [How to prepare data on a single machine for use on a cluster: saving DataSets](#singletocluster)
 * [How to prepare data on a single machine for use on a cluster: map/sequence files](#singletocluster2)
 * [How to load multiple CSVs (one sequence per file) for RNN data pipelines](#csvseq)
-* [How to create an RDD[DataSet] for images](#images)
 * [How to load prepared minibatches in custom format](#customformat)
 
 <br><br>
