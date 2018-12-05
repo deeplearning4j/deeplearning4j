@@ -881,6 +881,34 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         allocator.memcpy(this, data);
     }
 
+    @Override
+    public void assign(long[] indices, float[] data, boolean contiguous, long inc) {
+        if (indices.length != data.length)
+            throw new IllegalArgumentException("Indices and data length must be the same");
+        if (indices.length > length())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
+                    + length() + " where the indices are of length " + data.length);
+
+        // TODO: eventually consider memcpy here
+        for (int i = 0; i < indices.length; i++) {
+            put(indices[i], data[i]);
+        }
+    }
+
+    @Override
+    public void assign(long[] indices, double[] data, boolean contiguous, long inc) {
+
+        if (indices.length != data.length)
+            throw new IllegalArgumentException("Indices and data length must be the same");
+        if (indices.length > length())
+            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
+                    + length() + " where the indices are of length " + data.length);
+
+        // TODO: eventually consider memcpy here
+        for (int i = 0; i < indices.length; i++) {
+            put(indices[i], data[i]);
+        }
+    }
 
 
     /**

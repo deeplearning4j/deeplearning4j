@@ -140,34 +140,6 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    public void assign(long[] indices, float[] data, boolean contiguous, long inc) {
-        if (indices.length != data.length)
-            throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
-
-        if (!contiguous)
-            throw new UnsupportedOperationException("Non contiguous is not supported");
-
-    }
-
-    @Override
-    public void assign(long[] indices, double[] data, boolean contiguous, long inc) {
-        if (indices.length != data.length)
-            throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
-
-        if (!contiguous)
-            throw new UnsupportedOperationException("Non contiguous is not supported");
-
-    }
-
-
-
-    @Override
     protected DataBuffer create(long length) {
         return new CudaIntDataBuffer(length);
     }

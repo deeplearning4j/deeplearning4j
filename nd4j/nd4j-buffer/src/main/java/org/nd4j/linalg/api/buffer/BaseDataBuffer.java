@@ -967,7 +967,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         double[] ret = new double[length];
         for (int i = 0; i < length; i++) {
-            ret[i] = getDouble(i + offset);
+            ret[i] = getDouble(i * inc + offset);
         }
         return ret;
     }
@@ -987,8 +987,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (offset + length > length())
             length -= offset;
         float[] ret = new float[length];
-        for (int i = 0; i < length; i++) {
-            ret[i] = getFloat(i + offset);
+        for (int i = 0; i < length; i ++) {
+            ret[i] = getFloat(i * inc + offset);
         }
         return ret;
     }
@@ -1004,7 +1004,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             length -= offset;
         long[] ret = new long[length];
         for (int i = 0; i < length; i++) {
-            ret[i] = getLong(i + offset);
+            ret[i] = getLong(i * inc + offset);
         }
         return ret;
     }
@@ -1020,7 +1020,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             length -= offset;
         int[] ret = new int[length];
         for (int i = 0; i < length; i++) {
-            ret[i] = getInt(i + offset);
+            ret[i] = getInt(i * inc + offset);
         }
         return ret;
     }
