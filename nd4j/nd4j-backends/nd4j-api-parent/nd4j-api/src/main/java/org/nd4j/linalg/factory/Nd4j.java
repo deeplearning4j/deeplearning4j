@@ -1280,13 +1280,8 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(float[] data, long offset) {
-        DataBuffer ret;
-        if (dataType() == DataType.FLOAT)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (dataType() == DataType.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data)) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data), Nd4j.getMemoryManager().getCurrentWorkspace());
+        val ndata = Arrays.copyOfRange(data, (int) offset, data.length);
+        DataBuffer ret = createTypedBuffer(ndata, DataType.FLOAT, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1298,7 +1293,8 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(double[] data, long offset) {
-        DataBuffer ret = createTypedBuffer(data, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
+        val ndata = Arrays.copyOfRange(data, (int) offset, data.length);
+        DataBuffer ret = createTypedBuffer(ndata, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }

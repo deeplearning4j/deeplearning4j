@@ -209,8 +209,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     public void testOffset() {
         DataBuffer create = Nd4j.createBuffer(new double[] {1, 2, 3, 4}, 2);
         assertEquals(2, create.length());
-        assertEquals(4, create.underlyingLength());
-        assertEquals(2, create.offset());
+        assertEquals(0, create.offset());
         assertEquals(3, create.getDouble(0), 1e-1);
         assertEquals(4, create.getDouble(1), 1e-1);
 
