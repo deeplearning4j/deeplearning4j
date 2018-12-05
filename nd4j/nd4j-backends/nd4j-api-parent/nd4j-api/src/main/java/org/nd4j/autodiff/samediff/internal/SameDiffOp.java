@@ -1,7 +1,9 @@
 package org.nd4j.autodiff.samediff.internal;
 
+import lombok.Data;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 
+@Data
 public class SameDiffOp {
     protected String name;
     protected DifferentialFunction op;	//Actual op (note: should be mutable: i.e., cloneable, no arrays set)

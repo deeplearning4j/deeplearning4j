@@ -138,8 +138,11 @@ import java.util.zip.ZipOutputStream;
 public class SameDiff {
 
     //New fields. Not yet used anywhere
+    @Getter     //TODO use package private instead of public getters??
     private final Map<String,Variable> variables = new HashMap<>();         //TODO concurrent maps required? Or lock?
+    @Getter
     private final Map<String,SameDiffOp> ops = new HashMap<>();
+    @Getter
     private final Map<Long,Session> sessions = new ConcurrentHashMap<>();
 
     private final Map<String,DeviceLocalNDArray> constantArrays = new HashMap<>();

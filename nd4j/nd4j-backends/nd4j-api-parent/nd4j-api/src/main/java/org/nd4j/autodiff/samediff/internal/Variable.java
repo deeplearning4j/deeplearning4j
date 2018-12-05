@@ -1,7 +1,9 @@
 package org.nd4j.autodiff.samediff.internal;
 
+import lombok.Data;
 import org.nd4j.autodiff.samediff.SDVariable;
 
+@Data   //TODO immutable?
 public class Variable {
     protected String name;
     protected SDVariable variable;
