@@ -130,6 +130,20 @@ import java.util.zip.ZipOutputStream;
 @Builder
 @Slf4j
 public class SameDiff {
+
+    //New fields. Not yet used anywhere
+    @Getter     //TODO use package private instead of public getters??
+    private final Map<String,Variable> variables = new HashMap<>();         //TODO concurrent maps required? Or lock?
+    @Getter
+    private final Map<String,SameDiffOp> ops = new HashMap<>();
+    @Getter
+    private final Map<Long,Session> sessions = new ConcurrentHashMap<>();
+
+    private final Map<String,DeviceLocalNDArray> constantArrays = new HashMap<>();
+    private final Map<String,DeviceLocalNDArray> variablesArrays = new HashMap<>();     //TODO does DeviceLocal make sense if mutable?
+
+
+    ///////////////////////////////////////
     @Getter
     private TrainingConfig trainingConfig;                          //Configuration for training. Must be set for training/evaluation, but not for other operations
     @Getter
