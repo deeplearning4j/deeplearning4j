@@ -52,23 +52,19 @@ TEST_F(SwitchTests, SwitchTest1) {
 
     // this is just 2 ops, that are executed sequentially. We don't really care bout them
     auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 2, {1}, {3});
+    auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {3});
 
     // this is our condition op, we'll be using Equals condition, on variables conditionX and conditionY (ids -2 and -3 respectively)
-    auto nodeCondition = new Node(OpType_BOOLEAN, pairwise::And, 119, {-2, -3});
-
     // we're creating this op manually in tests, as always.
     nd4j::ops::eq_scalar eqOp;
-    nodeCondition->setCustomOp(&eqOp);
+    auto nodeCondition = new Node(&eqOp, 119, {-2, -3});
+    //nodeCondition->setOpType(OpType_BOOLEAN);
 
     // now, this is Switch operation. It takes BooleanOperation operation in,
     // and based on evaluation result (true/false) - it'll pass data via :0 or :1 output
     // other idx will be considered disabled, and that graph branch won't be executed
     nd4j::ops::Switch switchOp;
     auto nodeSwitch = new Node(&switchOp, 3, {2, 119}, {4, 5});
-
-//    nodeSwitch->setCustomOp(&switchOp);
-
 
     // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE
     auto nodeZ0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 4, {}, {});

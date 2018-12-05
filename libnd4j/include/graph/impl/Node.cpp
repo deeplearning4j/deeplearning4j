@@ -356,6 +356,10 @@ namespace nd4j {
             this->setContextPrototype(block);
         }
 
+        void nd4j::graph::Node::setOpType(OpType opType) {
+            this->_opType = opType;
+        }
+
         nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
             this->_opType = opType;
             this->_id = id;
