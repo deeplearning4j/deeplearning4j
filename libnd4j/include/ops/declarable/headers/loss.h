@@ -243,6 +243,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_softmax_cross_entropy_loss)
         DECLARE_CUSTOM_OP(softmax_cross_entropy_loss, 3, 1, false, 1, 1);  
+        DECLARE_CUSTOM_OP(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1);  
         #endif
 
 

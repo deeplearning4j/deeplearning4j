@@ -2882,7 +2882,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         if(result->_dataType != DataTypeUtils::pickPairwiseResultType(_shapeInfo, tadArray->_shapeInfo))
             throw std::invalid_argument("NDArray::applyBroadcast method: wrong type of target array !");
         if(!result->isSameShape(this))
-            throw std::invalid_argument("NDArray::applyBroadcast method: this and other arrays must have the same shape !");
+            throw std::invalid_argument("NDArray::applyBroadcast method: this and target arrays must have the same shape !");
 
         std::vector<int> copy(dimensions);
 
