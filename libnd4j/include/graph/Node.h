@@ -189,6 +189,8 @@ namespace nd4j {
             int scopeId();
             std::string* scopeName();
 
+            void setOpType(OpType opType);
+
             // clone Node
             Node* clone();
 

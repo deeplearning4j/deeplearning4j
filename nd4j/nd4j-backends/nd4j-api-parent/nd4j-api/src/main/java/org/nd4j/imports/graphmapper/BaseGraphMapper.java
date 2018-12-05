@@ -188,7 +188,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         for (Map.Entry<String, TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
             DataType dt = dataTypeForTensor(entry.getValue());
             if (dt == DataType.UNKNOWN && !unknownTypeNodeImportable(entry.getValue())) {
-                val var = importState.getSameDiff().var(entry.getKey(), (LongShapeDescriptor) null,new ZeroInitScheme('c'), (long[]) null);
+                val var = importState.getSameDiff().var(entry.getKey(), (LongShapeDescriptor) null, new ZeroInitScheme('c'));
                 //mark as place holder for validating resolution later.
                 if (isPlaceHolder(entry.getValue())) {
                     importState.getSameDiff().addAsPlaceHolder(var.getVarName());

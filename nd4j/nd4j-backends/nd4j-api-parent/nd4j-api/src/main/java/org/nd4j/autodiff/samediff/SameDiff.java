@@ -2232,6 +2232,7 @@ public class SameDiff {
                 .shape(shape != null ? shape.getShape() : null)
                 .weightInitScheme(weightInitScheme)
                 .dataType(shape != null ? shape.dataType() : Nd4j.dataType())
+                .placeholderOnNullShape(false)
                 .varName(name)
                 .build();
 
@@ -9687,7 +9688,7 @@ public class SameDiff {
                     SDVariable var = (i == 0 ? getVariable(baseName) : getVariable(baseName + ":" + i));
                     if (var == null) {
                         //Generate new variable name if one with the specified name doesn't exist
-                        var = var(generateNewVarName(baseName, i), (LongShapeDescriptor) null, new ZeroInitScheme(ordering), false, (long[])null);
+                        var = var(generateNewVarName(baseName, i), new ZeroInitScheme(ordering), false, (long[])null);
                     }
                     var.setOutputIndex(i);
                     var.setCreator(function);
@@ -9711,16 +9712,16 @@ public class SameDiff {
                     ordering = function.args()[0].getArr().ordering();
                 }
                 if (checkGet == null) {
-                    checkGet = var(baseName, (LongShapeDescriptor) null, new ZeroInitScheme(ordering), false, (long[])null);
+                    checkGet = var(baseName, new ZeroInitScheme(ordering), false, (long[])null);
                 } else if (!importedVarName.contains(baseName)) {
                     //need to find a new name
                     String newName = generateNewVarName(baseName, 0);
-                    checkGet = var(newName, (LongShapeDescriptor)  null, new ZeroInitScheme(ordering), false, (long[])null);
+                    checkGet = var(newName, new ZeroInitScheme(ordering), false, (long[])null);
                 }
 
 
                 if (checkGet == null) {
-                    checkGet = var(baseName, (LongShapeDescriptor)  null, new ZeroInitScheme(ordering), false, (long[])null);
+                    checkGet = var(baseName, new ZeroInitScheme(ordering), false, (long[])null);
                 }
 
                 checkGet.setOutputIndex(0);
@@ -9754,7 +9755,7 @@ public class SameDiff {
             SDVariable checkGet = getVariable(baseName);
             if (checkGet == null) {
                 // obviously - there's no such var, just add it
-                checkGet = var(baseName, new ZeroInitScheme(ordering), false, shape);
+                checkGet = var(baseName, new ZeroInitScheme(ordering), false, shape.getShape());
             } else if (shape != null && !shapeAlreadyExistsForVarName(checkGet.getVarName())) {
                 // var exists, let's update its shape
                 putShapeForVarName(checkGet.getVarName(), shape);
@@ -9776,11 +9777,11 @@ public class SameDiff {
                     throw new ND4JIllegalStateException("Converged on already generated variable!");
                 }
 
-                checkGet = var(name, new ZeroInitScheme(ordering), false, shape);
+                checkGet = var(name, new ZeroInitScheme(ordering), false, shape.getShape());
             }
 
             if (checkGet == null) {
-                checkGet = var(baseName + (i > 0 ? ":" + i : ""), new ZeroInitScheme(ordering), false, shape);
+                checkGet = var(baseName + (i > 0 ? ":" + i : ""), new ZeroInitScheme(ordering), false, shape.getShape());
             }
 
             checkGet.setOutputIndex(i);
