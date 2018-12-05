@@ -36,16 +36,16 @@ public class TFGraphTestZooModels {
     public static TemporaryFolder classTestDir = new TemporaryFolder();
 
     public static final String[] IGNORE_REGEXES = {
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6397
-            "deeplab.*",
-
             //https://github.com/deeplearning4j/deeplearning4j/issues/6462
             "inception_v4_2018_04_27",
             "inception_resnet_v2_2018_04_27",
 
-            //New models - ignore until fixes merged
+            //Need control dependencies to be fixed: https://github.com/deeplearning4j/deeplearning4j/issues/6738
+            "deeplabv3_pascal_train_aug_2018_01_04",
+            "deeplab_mobilenetv2_coco_voc_trainval",
+
+            //Need to fix order inference... currently assumes DAG, whereas with loops etc graph has cycles
             "ssd_.*",
-            "resnetv2.*"
     };
 
     @Rule
@@ -154,9 +154,9 @@ public class TFGraphTestZooModels {
 
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
-        if(!modelName.equals("ssd_mobilenet_v1_coco_2018_01_28")){
-            OpValidationSuite.ignoreFailing();
-        }
+//        if(!modelName.equals("ssd_mobilenet_v1_coco_2018_01_28")){
+//            return;
+//        }
         currentTestDir = testDir.newFolder();
 
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
