@@ -273,6 +273,38 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static byte[] toBytes(int[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte) array[i];
+        }
+        return retVal;
+    }
+
+    public static byte[] toBytes(float[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte) array[i];
+        }
+        return retVal;
+    }
+
+    public static byte[] toBytes(double[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte) array[i];
+        }
+        return retVal;
+    }
+
+    public static byte[] toBytes(long[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte) array[i];
+        }
+        return retVal;
+    }
+
     public static int[] toInts(long[] array) {
         int[] retVal = new int[array.length];
 
@@ -963,6 +995,13 @@ public class ArrayUtil {
 
     public static double[] toDoubles(int[][] ints) {
         return toDoubles(Ints.concat(ints));
+    }
+
+    public static short[] toShorts(long[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) ints[i];
+        return ret;
     }
 
     public static short[] toShorts(int[] ints) {
