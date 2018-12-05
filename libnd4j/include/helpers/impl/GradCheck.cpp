@@ -66,9 +66,8 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 
 	NDArray tmpScalar(nd4j::DataType::DOUBLE, inArrsFF[0]->getWorkspace()); // scalar = 0
 	for(int i = 0; i < numInArrsFF; ++i) {							// loop through input array
-		
-		bool isCheckable = whatArrsToCheck[i];
-		if(!whatArrsToCheck.empty() && isCheckable == false)
+
+		if(!whatArrsToCheck.empty() && static_cast<bool>(whatArrsToCheck[i]) == false)
 			continue;
 
 		const Nd4jLong idxStart = static_cast<Nd4jLong>(idxRange[0] * inArrsFF[i]->lengthOf());
