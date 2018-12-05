@@ -17,6 +17,7 @@
 package org.nd4j.linalg;
 
 
+import lombok.val;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -199,6 +200,17 @@ public abstract class BaseNd4jTest {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         Nd4j.getExecutioner().enableDebugMode(false);
         Nd4j.getExecutioner().enableVerboseMode(false);
+
+        //Attempt to keep workspaces isolated between tests
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        val currWS = Nd4j.getMemoryManager().getCurrentWorkspace();
+        Nd4j.getMemoryManager().setCurrentWorkspace(null);
+        if(currWS != null){
+            //Not really safe to continue testing under this situation... other tests will likely fail with obscure
+            // errors that are hard to track back to this
+            log.error("Open workspace leaked from test! Exiting - {}, isOpen = {} - {}", currWS.getId(), currWS.isScopeActive(), currWS);
+            System.exit(1);
+        }
     }
 
 

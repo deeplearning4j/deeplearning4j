@@ -54,6 +54,8 @@ public class DebugModeTests extends BaseNd4jTest {
     @After
     public void turnMeDown() {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.DISABLED);
+        Nd4j.getMemoryManager().setCurrentWorkspace(null);
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
     }
 
     @Override

@@ -153,8 +153,9 @@ public class DataBufferTests extends BaseNd4jTest {
                 assertTrue(db.indexer() instanceof ShortIndexer);
                 break;
             case UBYTE:
-                //TODO POINTER TYPE??
-                throw new UnsupportedOperationException("UBYTE type check not yet implemented");
+                assertTrue(db.pointer() instanceof BytePointer);
+                assertTrue(db.indexer() instanceof UByteIndexer);
+                break;
             case BYTE:
                 assertTrue(db.pointer() instanceof BytePointer);
                 assertTrue(db.indexer() instanceof ByteIndexer);
