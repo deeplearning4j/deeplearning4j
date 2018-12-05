@@ -1072,7 +1072,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val shape = Shape.shape(shapeInfo);
         val stride = Shape.stride(shapeInfo).asLong();
         long offset = offset() + tadInfo.getSecond().getLong(index);
-        INDArray toTad = Nd4j.create(data(), shape, stride, offset);
+        char tadOrder = Shape.getOrder(shape, stride, 1);
+        INDArray toTad = Nd4j.create(data(), shape, stride, offset, tadOrder);
         BaseNDArray baseNDArray = (BaseNDArray) toTad;
 
         //preserve immutability
@@ -1080,9 +1081,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         int ews = baseNDArray.shapeInfoDataBuffer().getInt(baseNDArray.shapeInfoDataBuffer().length() - 2);
 
-        //TAD always calls permute. Permute EWS is always -1. This is not true
-        // for row vector shapes though.
-        if (!Shape.isRowVectorShape(baseNDArray.shapeInfoDataBuffer()))
+        //TAD always calls permute. Permute EWS is always -1. This is not true for vector shapes though.
+        if (!Shape.isVector(baseNDArray.shapeInfoDataBuffer()))
             ews = -1;
 
         // we create new shapeInfo with possibly new ews & order

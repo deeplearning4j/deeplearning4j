@@ -233,6 +233,17 @@ public class OpValidation {
                     i, dfOrig[i].getClass(), dfDe[i].getClass());
         }
 
+        //Check placeholders:
+        Set<String> pcBefore = original.getPlaceHolderVarNames();
+        Set<String> pcAfter = deserialized.getPlaceHolderVarNames();
+        if(pcBefore == null){
+            Preconditions.checkState(pcAfter == null || pcAfter.size() == 0, "%s", pcAfter);
+        } else {
+            Preconditions.checkState(pcAfter != null, "Placeholders after deserialization was null");
+            Preconditions.checkState(pcBefore.equals(pcAfter), "Before: %s, after deserialization: %s", pcBefore, pcAfter);
+        }
+
+
         //Finally: check execution/output
         INDArray[] outOrig = original.execAndEndResults();
         INDArray[] outDe = deserialized.execAndEndResults();

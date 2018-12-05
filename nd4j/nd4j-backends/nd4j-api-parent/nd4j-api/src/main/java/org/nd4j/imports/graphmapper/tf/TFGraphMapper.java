@@ -804,6 +804,20 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         return dt == DataType.DT_BOOL;
     }
 
+    @Override
+    public boolean isStringType(NodeDef tensorProto){
+        DataType dt = null;
+        if(tensorProto.containsAttr("dtype")){
+            dt = tensorProto.getAttrOrThrow("dtype").getType();
+        } else if(tensorProto.containsAttr("T")){
+            dt = tensorProto.getAttrOrThrow("T").getType();
+        } else if(tensorProto.containsAttr("Tidx")){
+            dt = tensorProto.getAttrOrThrow("Tidx").getType();
+        }
+
+        return dt == DataType.DT_STRING || dt == DataType.DT_STRING_REF;
+    }
+
 
     @Override
     public String getAttrValueFromNode(NodeDef nodeDef, String key) {
@@ -993,7 +1007,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         } else if (tfTensor.getDtype() == DataType.DT_INT64) {
             if (tfTensor.getInt64ValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
-                if (tfTensor.getDoubleValCount() < 1)
+                if (tfTensor.getInt64ValCount() < 1)
                     return Nd4j.trueScalar(0.0);
 
                 double val = (double) tfTensor.getInt64Val(0);

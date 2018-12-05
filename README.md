@@ -10,7 +10,10 @@ Welcome to the new monorepo of Deeplearning4j that contains the source code for 
  * https://github.com/deeplearning4j/gym-java-client
  * https://github.com/deeplearning4j/rl4j
  * https://github.com/deeplearning4j/scalnet
+ * https://github.com/deeplearning4j/pydl4j
  * https://github.com/deeplearning4j/jumpy
+ * https://github.com/deeplearning4j/pydatavec
+ 
 
 To build everything, we can use commands like
 ```

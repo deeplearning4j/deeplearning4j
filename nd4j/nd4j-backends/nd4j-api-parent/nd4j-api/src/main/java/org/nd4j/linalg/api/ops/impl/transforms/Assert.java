@@ -40,4 +40,9 @@ public class Assert extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public int numOutputArguments(){
+        return 1;
+    }
 }

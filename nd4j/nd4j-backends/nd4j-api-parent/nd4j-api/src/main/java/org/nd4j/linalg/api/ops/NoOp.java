@@ -56,7 +56,7 @@ public class NoOp extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        System.out.println("");
+
     }
 
     @Override

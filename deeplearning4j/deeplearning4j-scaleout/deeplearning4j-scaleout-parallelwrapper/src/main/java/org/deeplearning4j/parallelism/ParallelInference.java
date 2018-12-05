@@ -228,8 +228,9 @@ public class ParallelInference {
      * @return Output from the network
      */
     public INDArray[] output(INDArray[] input, INDArray[] inputMasks){
-        // basically, depending on model type we either throw stuff to specific model, or wait for batch
+        Nd4j.getExecutioner().commit(); //Commit before passing input to other thread
 
+        // basically, depending on model type we either throw stuff to specific model, or wait for batch
         BasicInferenceObserver observer = new BasicInferenceObserver();
         InferenceObservable observable;
 
@@ -488,6 +489,7 @@ public class ParallelInference {
                                         INDArray[] output = ((ComputationGraph) replicatedModel).output(false, inBatch.getFirst(), inBatch.getSecond());
                                         out.add(output);
                                     } finally {
+                                        Nd4j.getExecutioner().commit();
                                         modelLock.readLock().unlock();
                                     }
 
@@ -509,6 +511,7 @@ public class ParallelInference {
                                         INDArray output = ((MultiLayerNetwork) replicatedModel).output(f, false, fm, null);
                                         out.add(new INDArray[]{output});
                                     } finally {
+                                        Nd4j.getExecutioner().commit();
                                         modelLock.readLock().unlock();
                                     }
                                 }

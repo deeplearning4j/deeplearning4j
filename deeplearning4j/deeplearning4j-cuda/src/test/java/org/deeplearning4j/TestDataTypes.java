@@ -131,7 +131,7 @@ public class TestDataTypes extends BaseDL4JTest {
         INDArray fp16Train = outMapTrain.get(DataType.HALF);
 
         assertTrue(fp64Train.equalsWithEps(fp32Train, 1e-3));
-        assertTrue(fp64Train.equalsWithEps(fp16Train, 1e-3));
+        assertTrue(fp64Train.equalsWithEps(fp16Train, 1e-2));
 
 
     }

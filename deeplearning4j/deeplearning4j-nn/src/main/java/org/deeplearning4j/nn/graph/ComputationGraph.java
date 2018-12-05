@@ -54,6 +54,7 @@ import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.CrashReportingUtil;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
+import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.EvaluationUtils;
 import org.nd4j.evaluation.IEvaluation;
@@ -1829,6 +1830,27 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         return output(iterator)[0];
     }
 
+    /**
+     * Get the activations for the specific layers only
+     * @param layers       Layers to get the specified activations for
+     * @param train        If true: train mode. False: test (inference) mode
+     * @param features     Features array
+     * @param featureMasks Feature masks array. May be null
+     * @return Activations of the selected layers, in the same order as the "layers" arg/list
+     */
+    public INDArray[] output(List<String> layers, boolean train, INDArray[] features, INDArray[] featureMasks){
+        Preconditions.checkState(layers != null && layers.size() > 0, "Layers must not be null: got later names %s", layers);
+        int[] layerNums = new int[layers.size()];
+        for( int i=0; i<layers.size(); i++ ){
+            String n = layers.get(i);
+            Preconditions.checkState(verticesMap.containsKey(n), "Layer with name %s not found in network", n);
+            layerNums[i] = verticesMap.get(n).getVertexIndex();
+        }
+        INDArray[] out = outputOfLayersDetached(train, FwdPassType.STANDARD, layerNums, features, featureMasks, null, true,
+                false, null);
+        return out;
+    }
+
 
     protected void validateArrayWorkspaces(LayerWorkspaceMgr mgr, INDArray array, ArrayType arrayType, String vertexName, boolean isInputVertex, String op){
         try{
@@ -3114,7 +3136,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
             String key = entry.getKey();
             INDArray val = entry.getValue();
-            int idx = key.indexOf('_');
+            int idx = key.lastIndexOf('_');
             if (idx == -1)
                 throw new IllegalStateException("Invalid param key: not have layer separator: \"" + key + "\"");
             String layerName = key.substring(0, idx);
@@ -3271,7 +3293,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     @Override
     public INDArray getParam(String paramName) {
         //        throw new UnsupportedOperationException("Not implemented");
-        int idx = paramName.indexOf('_');
+        int idx = paramName.lastIndexOf('_');
         if (idx == -1)
             throw new IllegalStateException("Invalid param key: not have layer separator: \"" + paramName + "\"");
         String layerName = paramName.substring(0, idx);
@@ -3322,7 +3344,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     @Override
     public void setParam(String key, INDArray val) {
         //        throw new UnsupportedOperationException("Not implemented");
-        int idx = key.indexOf('_');
+        int idx = key.lastIndexOf('_');
         if (idx == -1)
             throw new IllegalStateException("Invalid param key: not have layer separator: \"" + key + "\"");
         String layerName = key.substring(0, idx);
@@ -3807,6 +3829,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (labelsList == null)
             labelsList = iterator.getLabels();
 
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), Evaluation.class);
+        }
+
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.Evaluation(labelsList, topN))[0];
     }
 
@@ -3820,6 +3847,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
      */
     public <T extends Evaluation> T evaluate(MultiDataSetIterator iterator, List<String> labelsList, int topN) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), Evaluation.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.Evaluation(labelsList, topN))[0];
     }
 
@@ -3883,6 +3914,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return ROC evaluation on the given dataset
      */
     public <T extends ROC> T evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROC.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROC(rocThresholdSteps))[0];
     }
 
@@ -3905,6 +3940,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return ROC evaluation on the given dataset
      */
     public <T extends ROC> T evaluateROC(MultiDataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROC.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROC(rocThresholdSteps))[0];
     }
 
@@ -3927,6 +3966,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public <T extends ROCMultiClass> T evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROCMultiClass.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROCMultiClass(rocThresholdSteps))[0];
     }
 
@@ -3938,6 +3981,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public <T extends ROCMultiClass> T evaluateROCMultiClass(MultiDataSetIterator iterator, int rocThresholdSteps) {
+        Layer outputLayer = getOutputLayer(0);
+        if(getConfiguration().isValidateOutputLayerConfig()){
+            OutputLayerUtil.validateOutputLayerForClassifierEvaluation(outputLayer.conf().getLayer(), ROCMultiClass.class);
+        }
         return (T)doEvaluation(iterator, new org.deeplearning4j.eval.ROCMultiClass(rocThresholdSteps))[0];
     }
 

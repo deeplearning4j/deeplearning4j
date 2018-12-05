@@ -20,8 +20,10 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
+import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.nd4j.shade.jackson.core.JsonLocation;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
@@ -32,6 +34,7 @@ import org.nd4j.shade.jackson.databind.node.ArrayNode;
 import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
+import java.util.List;
 
 public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializer<MultiLayerConfiguration> {
 
@@ -96,6 +99,20 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
                         }
                     }
                 }
+            }
+        }
+
+        //After 1.0.0-beta3, batchnorm reparameterized to support both variance and log10stdev
+        //JSON deserialization uses public BatchNormalization() constructor which defaults to log10stdev now
+        // but, as there is no useLogStdev=false property for legacy batchnorm JSON, the 'real' value (useLogStdev=false)
+        // is not set to override the default, unless we do it manually here
+        for(NeuralNetConfiguration nnc : conf.getConfs()){
+            Layer l = nnc.getLayer();
+            if(l instanceof BatchNormalization){
+                BatchNormalization bn = (BatchNormalization)l;
+                List<String> vars = nnc.getVariables();
+                boolean isVariance = vars.contains(BatchNormalizationParamInitializer.GLOBAL_VAR);
+                bn.setUseLogStd(!isVariance);
             }
         }
 

@@ -30,19 +30,19 @@ endif()
 # -fsanitize=address
 # -fsanitize=leak
 if (APPLE)
-    set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
+    set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -D__APPLE_OS__=true")
 elseif(WIN32)
-    set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -Wa,-mbig-obj")
+    set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -Wa,-mbig-obj")
 else()
     if ("${_RELEASE}")
-        set(CMAKE_CXX_FLAGS  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+        set(CMAKE_CXX_FLAGS  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations")
         if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
             set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -mcpu=native")
         else()
             set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
         endif()
     else()
-        set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
+        set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fsanitize=address")
     endif()
 endif()
 
@@ -56,7 +56,7 @@ SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -Wlogical-op-parentheses -Winconsistent-missing-override")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     # using Intel C++
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -fp-model fast")
@@ -65,7 +65,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fmax-errors=2")
 endif()
 
 

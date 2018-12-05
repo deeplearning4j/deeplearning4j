@@ -69,7 +69,8 @@ public class LocalResponseNormalization
     protected static final Logger log =
                     LoggerFactory.getLogger(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization.class);
 
-    LocalResponseNormalizationHelper helper = null;
+    protected LocalResponseNormalizationHelper helper = null;
+    protected int helperCountFail = 0;
 
     public LocalResponseNormalization(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
@@ -139,8 +140,22 @@ public class LocalResponseNormalization
         double beta = layerConf().getBeta();
         int halfN = (int) n / 2;
 
-        if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta, workspaceMgr);
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())){
+            Pair<Gradient, INDArray> ret = null;
+            try {
+                ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta, workspaceMgr);
+            } catch (Throwable t){
+                if(t.getMessage().contains("Failed to allocate")){
+                    //This is a memory exception - don't fallback to built-in implementation
+                    throw t;
+                }
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN LocalResponseNormalization backprop execution failed - falling back on built-in implementation",t);
+                } else {
+                    throw new RuntimeException("Error during LocalResponseNormalization CuDNN helper backprop - isCudnnAllowFallback() is set to false", t);
+                }
+            }
             if (ret != null) {
                 return ret;
             }
@@ -190,8 +205,23 @@ public class LocalResponseNormalization
         double beta = layerConf().getBeta();
         int halfN = (int) n / 2;
 
-        if (helper != null) {
-            INDArray activations = helper.activate(input, training, k, n, alpha, beta, workspaceMgr);
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())){
+            INDArray activations = null;
+            try {
+                activations = helper.activate(input, training, k, n, alpha, beta, workspaceMgr);
+            } catch (Throwable t){
+                if(t.getMessage().contains("Failed to allocate")){
+                    //This is a memory exception - don't fallback to built-in implementation
+                    throw t;
+                }
+
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN LocalResponseNormalization backprop execution failed - falling back on built-in implementation",t);
+                } else {
+                    throw new RuntimeException("Error during LocalRsponseNormalization CuDNN helper backprop - isCudnnAllowFallback() is set to false", t);
+                }
+            }
             if (activations != null) {
                 return new Triple<>(activations, null, null);
             }

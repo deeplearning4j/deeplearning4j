@@ -34,6 +34,7 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.*;
 
 /**
@@ -107,7 +108,35 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
     @Override
     public Layer clone() {
         try {
-            return (Layer) super.clone();
+            Layer ret = (Layer) super.clone();
+            //Let's check for any INDArray fields and dup them (in case cloned layer will be used in different threads on CUDA...
+            // we don't want it being relocated contantly between devices)
+            Class<?> c = getClass();
+            while(c != Object.class){
+                Field[] fields = c.getDeclaredFields();
+                for(Field f : fields){
+                    if(f.getType() == INDArray.class){
+                        f.setAccessible(true);
+                        INDArray toClone;
+                        try{
+                            toClone = (INDArray) f.get(this);
+                        } catch (Exception e){
+                            throw new RuntimeException(e);
+                        }
+                        if(toClone != null){
+                            try {
+                                f.set(this, toClone.dup());
+                            } catch (Exception e){
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    }
+                }
+
+                c = c.getSuperclass();
+            }
+
+            return ret;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
