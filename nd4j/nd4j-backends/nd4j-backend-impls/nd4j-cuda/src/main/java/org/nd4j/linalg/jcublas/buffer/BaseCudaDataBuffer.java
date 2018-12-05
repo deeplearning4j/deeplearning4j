@@ -714,55 +714,95 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      * @param dstOffset
      */
     public void set(float[] data, long length, long srcOffset, long dstOffset) {
-        // TODO: make sure getPointer returns proper pointer
-        //        log.info("Set called");
-        if (dataType() == DataType.DOUBLE) {
-            //Pointer dstPtr = dstOffset > 0 ? new Pointer(allocator.getPointer(this).address()).withByteOffset(dstOffset * 4) : new Pointer(allocator.getPointer(this).address());
-            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toDoubles(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toDoubles(data));
-            DoublePointer pointer = new DoublePointer(ArrayUtil.toDoubles(data));
-            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+        switch (dataType()) {
+            case BOOL: {
+                    val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
 
-            // we're keeping pointer reference for JVM
-            pointer.address();
-        } else if (dataType() == DataType.FLOAT) {
-            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(data).withByteOffset(srcOffset * elementSize) : Pointer.to(data);
-            FloatPointer pointer = new FloatPointer(data);
-            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case BYTE: {
+                    val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            //log.info("Memcpy params: byteLength: ["+(length * elementSize)+"], srcOffset: ["+(srcOffset * elementSize)+"], dstOffset: [" +(dstOffset* elementSize) + "]" );
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
 
-            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case UBYTE: {
+                    for (int e = 0; e < data.length; e++) {
+                        put(e, data[e]);
+                    }
+                }
+                break;
+            case SHORT: {
+                    val pointer = new ShortPointer(ArrayUtil.toShorts(data));
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            // we're keeping pointer reference for JVM
-            pointer.address();
-        } else if (dataType() == DataType.INT) {
-            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toInts(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toInts(data));
-            IntPointer pointer = new IntPointer(ArrayUtil.toInts(data));
-            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
 
-            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case INT: {
+                    val pointer = new IntPointer(ArrayUtil.toInts(data));
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            // we're keeping pointer reference for JVM
-            pointer.address();
-        } else if (dataType() == DataType.LONG) {
-            //Pointer srcPtr = srcOffset > 0 ? Pointer.to(ArrayUtil.toInts(data)).withByteOffset(srcOffset * elementSize) : Pointer.to(ArrayUtil.toInts(data));
-            val pointer = new LongPointer(ArrayUtil.toLongArray(data));
-            val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
 
-            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case LONG: {
+                    val pointer = new LongPointer(ArrayUtil.toLongArray(data));
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            // we're keeping pointer reference for JVM
-            pointer.address();
-        } else if (dataType() == DataType.HALF) {
-            ShortPointer pointer = new ShortPointer(ArrayUtil.toHalfs(data));
-            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
 
-            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case HALF: {
+                    val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            // we're keeping pointer reference for JVM
-            pointer.address();
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case FLOAT: {
+                    val pointer = new FloatPointer(data);
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case DOUBLE: {
+                    DoublePointer pointer = new DoublePointer(ArrayUtil.toDoubles(data));
+                    Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
         }
     }
 
@@ -776,39 +816,95 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      * @param dstOffset
      */
     public void set(double[] data, long length, long srcOffset, long dstOffset) {
-        // TODO: make sure getPointer returns proper pointer
-        if (dataType() == DataType.DOUBLE) {
-            DoublePointer pointer = new DoublePointer(data);
-            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+        switch (dataType()) {
+            case BOOL:  {
+                    val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
 
-            // we're keeping pointer reference for JVM
-            pointer.address();
-        } else if (dataType() == DataType.FLOAT) {
-            FloatPointer pointer = new FloatPointer(ArrayUtil.toFloats(data));
-            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case BYTE: {
+                    val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
 
-            // we're keeping pointer reference for JVM
-            pointer.address();
-        } else if (dataType() == DataType.INT) {
-            IntPointer pointer = new IntPointer(ArrayUtil.toInts(data));
-            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case UBYTE: {
+                    for (int e = 0; e < data.length; e++) {
+                        put(e, data[e]);
+                    }
+                }
+                break;
+            case SHORT: {
+                    val pointer = new ShortPointer(ArrayUtil.toShorts(data));
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
 
-            // we're keeping pointer reference for JVM
-            pointer.address();
-        } else if (dataType() == DataType.HALF) {
-            ShortPointer pointer = new ShortPointer(ArrayUtil.toHalfs(data));
-            Pointer srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case INT: {
+                    val pointer = new IntPointer(ArrayUtil.toInts(data));
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
 
-            allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
 
-            // we're keeping pointer reference for JVM
-            pointer.address();
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case LONG: {
+                    val pointer = new LongPointer(ArrayUtil.toLongs(data));
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case HALF: {
+                    val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case FLOAT: {
+                    val pointer = new FloatPointer(ArrayUtil.toFloats(data));
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            case DOUBLE: {
+                    val pointer = new DoublePointer(data);
+                    val srcPtr = new CudaPointer(pointer.address() + (dstOffset * elementSize));
+
+                    allocator.memcpyAsync(this, srcPtr, length * elementSize, dstOffset * elementSize);
+
+                    // we're keeping pointer reference for JVM
+                    pointer.address();
+                }
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
         }
     }
 

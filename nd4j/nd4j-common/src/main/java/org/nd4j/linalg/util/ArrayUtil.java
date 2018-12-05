@@ -225,6 +225,38 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static long[] toLongs(byte[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = (long) data[i];
+        }
+        return ret;
+    }
+
+    public static long[] toLongs(short[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = (long) data[i];
+        }
+        return ret;
+    }
+
+    public static long[] toLongs(float[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = (long) data[i];
+        }
+        return ret;
+    }
+
+    public static long[] toLongs(double[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = (long) data[i];
+        }
+        return ret;
+    }
+
     public static short[] toHalfs(double[] data) {
         short[] ret = new short[data.length];
         for (int i = 0; i < ret.length; i++) {
