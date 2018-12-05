@@ -26,6 +26,7 @@ Then, when training the network you can call ```SparkDl4jMultiLayer.fit(String p
 
 Spark Data Prepration: How-To Guides
 * [How to prepare a RDD[DataSet] from CSV data for classification or regression](#csv)
+* [How to create a RDD[MultiDataSet] from one or more RDD[List[Writable]]](#multidataset)
 * [How to save a RDD[DataSet] or RDD[MultiDataSet] to network storage and use it for training](#saveloadrdd)
 * [How to prepare data on a single machine for use on a cluster: saving DataSets](#singletocluster)
 * [How to prepare data on a single machine for use on a cluster: map/sequence files](#singletocluster2)
@@ -68,6 +69,66 @@ However, if this dataset was for regression instead, with again 6 total columns,
 int firstLabelColumn = 3;   //First column index for label
 int lastLabelColumn = 5;    //Last column index for label
 JavaRDD<DataSet> rddDataSetRegression = rddWritables.map(new DataVecDataSetFunction(firstColumnLabel, lastColumnLabel, true, null, null));
+```
+
+<br><br>
+
+## <a name="multidataset">How to create a RDD[MultiDataSet] from one or more RDD[List[Writable]]</a>
+
+RecordReaderMultiDataSetIterator (RRMDSI) is the most common way to create MultiDataSet instances for single-machine training data pipelines.
+It is possible to use RRMDSI for Spark data pipelines, where data is coming from one or more of ```RDD<List<Writable>>``` (for 'standard' data) or ```RDD<List<List<Writable>>``` (for sequence data).
+
+**Case 1: Single ```RDD<List<Writable>>``` to ```RDD<MultiDataSet>```**
+
+Consider the following *single node* (non-Spark) data pipeline for a CSV classification task.
+```
+RecordReader recordReader = new CSVRecordReader(numLinesToSkip,delimiter);
+recordReader.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+
+int batchSize = 32;
+int labelColumn = 4;
+int numClasses = 3;
+MultiDataSetIterator iter = new RecordReaderMultiDataSetIterator.Builder(batchSize)
+    .addReader("data", recordReader)
+    .addInput("data", 0, labelColumn-1)
+    .addOutputOneHot("data", labelColumn, numClasses)
+    .build();
+```
+
+The equivalent to the following Spark data pipeline:
+
+```
+JavaRDD<List<Writable>> rdd = sc.textFile(f.getPath()).map(new StringToWritablesFunction(new CSVRecordReader()));
+
+MultiDataSetIterator iter = new RecordReaderMultiDataSetIterator.Builder(batchSize)
+    .addReader("data", new SparkSourceDummyReader(0))		//Note the use of the "SparkSourceDummyReader"
+    .addInput("data", 0, labelColumn-1)
+    .addOutputOneHot("data", labelColumn, numClasses)
+    .build();
+JavaRDD<MultiDataSet> mdsRdd = IteratorUtils.mapRRMDSI(rdd, rrmdsi2);
+```
+
+For Sequence data (```List<List<Writable>>```) you can use SparkSourceDummySeqReader instead.
+
+**Case 2: Multiple ```RDD<List<Writable>>``` or ```RDD<List<List<Writable>>``` to ```RDD<MultiDataSet>```**
+
+For this case, the process is much the same. However, internaly, a join is used.
+
+```
+JavaRDD<List<Writable>> rdd1 = ...
+JavaRDD<List<Writable>> rdd2 = ...
+
+RecordReaderMultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(batchSize)
+    .addReader("rdd1", new SparkSourceDummyReader(0))		//0 = use first rdd in list
+    .addReader("rdd2", new SparkSourceDummyReader(1))		//1 = use second rdd in list
+    .addInput("rdd1", 1, 2)			//
+    .addOutput("rdd2", 1, 2)
+    .build();
+
+List<JavaRDD<List<Writable>>> list = Arrays.asList(rdd1, rdd2);
+int[] keyIdxs = new int[]{0,0};		//Column 0 in rdd1 and rdd2 is the 'key' used for joining
+boolean filterMissing = false;		//If true: filter out any records that don't have matching keys in all RDDs
+JavaRDD<MultiDataSet> mdsRdd = IteratorUtils.mapRRMDSI(list, null, keyIdxs, null, filterMissing, rrmdsi);
 ```
 
 <br><br>
