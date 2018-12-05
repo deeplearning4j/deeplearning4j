@@ -139,6 +139,8 @@ public class DataBufferTests extends BaseNd4jTest {
                 assertTrue(db.indexer() instanceof FloatIndexer);
                 break;
             case HALF:
+                assertTrue(db.pointer() instanceof ShortPointer);
+                assertTrue(db.indexer() instanceof HalfIndexer);
                 break;
             case LONG:
                 assertTrue(db.pointer() instanceof LongPointer);
