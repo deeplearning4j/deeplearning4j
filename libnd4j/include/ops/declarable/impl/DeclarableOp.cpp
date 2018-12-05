@@ -667,7 +667,7 @@ namespace nd4j {
                 block.getIArguments()->emplace_back(static_cast<int>(iArgs.at(e)));
 
             for (int e = 0; e < bArgs.size(); e++)
-                block.getBArguments()->emplace_back(static_cast<int>(bArgs.at(e)));
+                block.getBArguments()->push_back(static_cast<int>(bArgs.at(e)));
 
             Nd4jStatus result = this->execute(&block);
 
@@ -710,7 +710,7 @@ namespace nd4j {
                 block.getIArguments()->emplace_back(iArgs.at(e));
 
             for (int e = 0; e < bArgs.size(); e++)
-                block.getBArguments()->emplace_back(bArgs.at(e));
+                block.getBArguments()->push_back(bArgs.at(e));
 
             Nd4jStatus status = this->execute(&block);
             arrayList->setStatus(status);

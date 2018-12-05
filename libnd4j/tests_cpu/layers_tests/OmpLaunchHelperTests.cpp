@@ -84,7 +84,7 @@ TEST_F(OmpLaunchHelperTests, Test_BetterThreads_3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(OmpLaunchHelperTests, loop_test1) {
     
-    Nd4jLong N = 20010;
+    const Nd4jLong N = 20010;
     Nd4jLong desiredNumThreads = 2;
     int x[N] = {0};
 

@@ -1745,9 +1745,11 @@ TEST_F(HelpersTests1, OpArgsHolder_test2) {
     ASSERT_TRUE(isArrAllocBP1.size() == 0);
 
     const std::vector<bool>& isArrAllocBP2 = holderBP2.getAllocInfo();
-    for(int i = 0; i < holderFF.getNumInArrs(); ++i)
-        ASSERT_TRUE(isArrAllocBP2[i] == true);       
-    ASSERT_TRUE(isArrAllocBP2[holderFF.getNumInArrs()+1] == false);
+    for(int i = 0; i < holderFF.getNumInArrs(); ++i) {
+        ASSERT_TRUE(static_cast<bool>(isArrAllocBP2[i]) == true);       
+    }
+
+    ASSERT_TRUE(static_cast<bool>(isArrAllocBP2[holderFF.getNumInArrs()+1]) == false);
 }
 
 //////////////////////////////////////////////////////////////////////
