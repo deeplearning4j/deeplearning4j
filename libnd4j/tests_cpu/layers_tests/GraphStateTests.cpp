@@ -107,7 +107,9 @@ TEST_F(GraphStateTests, Stateful_Execution_1) {
     auto state = nativeOps.getGraphState(117L);
 
     Nd4jLong scopes[] = {22, 33};
+    //auto status = nativeOps.execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
     auto status = nativeOps.execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
+
     ASSERT_EQ(Status::THROW(), status);
 
     nativeOps.deleteGraphState(state);
