@@ -34,6 +34,9 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.flow.FlowPath;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Session;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
 import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
@@ -95,6 +98,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.DeviceLocal;
+import org.nd4j.linalg.util.DeviceLocalNDArray;
 import org.nd4j.list.compat.TensorList;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.weightinit.WeightInitScheme;
@@ -106,6 +111,7 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -130,6 +136,17 @@ import java.util.zip.ZipOutputStream;
 @Builder
 @Slf4j
 public class SameDiff {
+
+    //New fields. Not yet used anywhere
+    private final Map<String,Variable> variables = new HashMap<>();         //TODO concurrent maps required? Or lock?
+    private final Map<String,SameDiffOp> ops = new HashMap<>();
+    private final Map<Long,Session> sessions = new ConcurrentHashMap<>();
+
+    private final Map<String,DeviceLocalNDArray> constantArrays = new HashMap<>();
+    private final Map<String,DeviceLocalNDArray> variablesArrays = new HashMap<>();     //TODO does DeviceLocal make sense if mutable?
+
+
+    ///////////////////////////////////////
     @Getter
     private TrainingConfig trainingConfig;                          //Configuration for training. Must be set for training/evaluation, but not for other operations
     @Getter
