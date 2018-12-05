@@ -158,11 +158,6 @@
         os << static_cast<float>(*this);
         return os;
     }
-
-    // Utility contants
-    static const bfloat16 zero;
-    static const bfloat16 one;
-    static const bfloat16 minus_one;
   };
 
     local_def bool  operator==(const bfloat16& a, const bfloat16& b) { return (a._data == b._data); }
@@ -462,32 +457,6 @@
     }
 
 
-  //template <class T>
-  //local_def bfloat16 operator+(const bfloat16& a, const T& b) { return bfloat16((float)a + (float)b); }
-
-  //template <class T>
-  //local_def bfloat16 operator+(const T& a, const bfloat16& b) { return bfloat16((float)a + (float)b); }
-
-
-  //template <class T>
-  //local_def bfloat16 operator-(const bfloat16& a, const T& b) { return bfloat16((float)a - (float)b); }
-
-
-//  template <class T>
-//  local_def int operator&(const T& a, const bfloat16& b) { return a & (float)b; }
-
-  //template <class T>
-  //local_def bfloat16 operator*(const bfloat16& a, const T& b) { return bfloat16((float)a * (float)b); }
-
-  //template <class T>
-  //local_def bfloat16 operator*(const T& a, const bfloat16& b) { return bfloat16((float)a * (float)b); }
-
-
-  // this operator is special case, for division by larger types, like int, long long etc
-  //template <class T>
-  //local_def bfloat16 operator/(const bfloat16& a, const T& b) { return bfloat16((float)a / (float)b); }
-
-
   local_def bfloat16 /* constexpr */ operator+(const bfloat16& h) { return h; }
 
   local_def bfloat16 operator - (const bfloat16& h) {
@@ -503,10 +472,6 @@ local_def void float16::assign(const bfloat16& rhs) {
   assign((float)rhs);
 }
 
-
-///  std::ostream& operator << (std::ostream& s, const bfloat16&);
-
-
-//}   // namespace caffe
+//}   // namespace
 
 #endif

@@ -238,6 +238,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         UINT64 = 14,
         QINT8 = 15,
         QINT16 = 16,
+        BFLOAT16 = 17,
         UTF8 = 50,
         ANY = 100,
         AUTO = 200;
@@ -20696,6 +20697,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public sigm_cross_entropy_loss() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+        @Namespace("nd4j::ops") public static class sigm_cross_entropy_loss_grad extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public sigm_cross_entropy_loss_grad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public sigm_cross_entropy_loss_grad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public sigm_cross_entropy_loss_grad position(long position) {
+                return (sigm_cross_entropy_loss_grad)super.position(position);
+            }
+        
+                                                                                    public sigm_cross_entropy_loss_grad() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
