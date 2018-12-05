@@ -216,6 +216,8 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      */
     boolean unknownTypeNodeImportable(TENSOR_TYPE tensor);
 
+    boolean isStringType(TENSOR_TYPE tensor);
+
     /**
      *
      * @param nodeType
