@@ -149,6 +149,7 @@ public class DifferentialFunctionFactory {
                 .shape(iX.getShape())
                 .varName(iName)
                 .sameDiff(sameDiff())
+                .placeholderOnNullShape(false)
                 .build();
     }
 

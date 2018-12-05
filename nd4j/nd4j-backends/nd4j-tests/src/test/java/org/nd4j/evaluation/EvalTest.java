@@ -880,4 +880,19 @@ public class EvalTest extends BaseNd4jTest {
         System.out.println("\n\n\n\n");
         System.out.println(e.stats(false, true));
     }
+
+    @Test
+    public void testEvaluationNaNs(){
+
+        Evaluation e = new Evaluation();
+        INDArray predictions = Nd4j.create(new double[]{0.1, Double.NaN, 0.3}, new long[]{1,3});
+        INDArray labels = Nd4j.create(new double[]{0, 0, 1}, new long[]{1,3});
+
+        try {
+            e.eval(labels, predictions);
+        } catch (IllegalStateException ex){
+            assertTrue(ex.getMessage().contains("NaN"));
+        }
+
+    }
 }

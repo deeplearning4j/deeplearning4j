@@ -17,6 +17,11 @@
 package org.deeplearning4j.text.documentiterator;
 
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -26,17 +31,23 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by fartovii on 09.11.15.
  */
-
+@Slf4j
 @Ignore
 public class FileDocumentIteratorTest {
 
-    private static final Logger log = LoggerFactory.getLogger(FileDocumentIteratorTest.class);
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Before
     public void setUp() throws Exception {
@@ -95,4 +106,40 @@ public class FileDocumentIteratorTest {
 
         assertEquals(48, cnt);
     }
+
+    @Test(timeout = 5000L)
+    public void testEmptyDocument() throws Exception {
+        File f = testDir.newFile();
+        assertTrue(f.exists());
+        assertEquals(0, f.length());
+
+        try {
+            DocumentIterator iter = new FileDocumentIterator(f.getAbsolutePath());
+        } catch (Throwable t){
+            String msg = t.getMessage();
+            assertTrue(msg.contains("empty"));
+        }
+    }
+
+    @Test(timeout = 5000L)
+    public void testEmptyDocument2() throws Exception {
+        File dir = testDir.newFolder();
+        File f1 = new File(dir, "1.txt");
+        FileUtils.writeStringToFile(f1, "line 1\nline2", StandardCharsets.UTF_8);
+        File f2 = new File(dir, "2.txt");
+        f2.createNewFile();
+        File f3 = new File(dir, "3.txt");
+        FileUtils.writeStringToFile(f3, "line 3\nline4", StandardCharsets.UTF_8);
+
+        DocumentIterator iter = new FileDocumentIterator(dir);
+        int count = 0;
+        Set<String> lines = new HashSet<>();
+        while(iter.hasNext()){
+            String next = IOUtils.readLines(iter.nextDocument(), StandardCharsets.UTF_8).get(0);
+            lines.add(next);
+        }
+
+        assertEquals(4, lines.size());
+    }
+
 }

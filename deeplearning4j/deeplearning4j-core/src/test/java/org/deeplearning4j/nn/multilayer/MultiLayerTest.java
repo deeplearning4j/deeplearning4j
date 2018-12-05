@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
@@ -1396,6 +1397,38 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         net.fit(new SingletonMultiDataSetIterator(mds));
         assertEquals(exp, listener.getModelClasses());
+    }
+
+    @Test
+    public void testINDArrayConfigCloning(){
+        //INDArrays in config should be cloned to avoid threading issues
+
+        int mb = 3;
+        int b = 4;
+        int c = 3;
+        int depth = b * (5 + c);
+        int w = 6;
+        int h = 6;
+
+        INDArray bbPrior = Nd4j.rand(b, 2).muliRowVector(Nd4j.create(new double[]{w, h}));
+
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .l2(0.01)
+                .list()
+                .layer(new ConvolutionLayer.Builder().nIn(depth).nOut(depth).kernelSize(1,1).build())
+                .layer(new Yolo2OutputLayer.Builder()
+                        .boundingBoxPriors(bbPrior)
+                        .build())
+                .build();
+
+        MultiLayerConfiguration conf2 = conf.clone();
+
+        INDArray bb1 = ((Yolo2OutputLayer)conf.getConf(1).getLayer()).getBoundingBoxes();
+        INDArray bb2 = ((Yolo2OutputLayer)conf2.getConf(1).getLayer()).getBoundingBoxes();
+        assertFalse(bb1 == bb2);
+
+        assertEquals(bb1, bb2);
     }
 
     @Data

@@ -30,6 +30,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Simple IterationListener that tracks time spend on training per iteration.
@@ -42,8 +47,12 @@ public class PerformanceListener extends BaseTrainingListener implements Seriali
     private transient ThreadLocal<Double> samplesPerSec = new ThreadLocal<>();
     private transient ThreadLocal<Double> batchesPerSec = new ThreadLocal<>();
     private transient ThreadLocal<Long> lastTime = new ThreadLocal<>();
+    private transient ThreadLocal<Map<String,Long>> lastGcCount = new ThreadLocal<>();
+    private transient ThreadLocal<Map<String,Long>> lastGcMs = new ThreadLocal<>();
+    private transient List<GarbageCollectorMXBean> gcBeans = null;
 
     private boolean reportScore;
+    private boolean reportGC;
     private boolean reportSample = true;
     private boolean reportBatch = true;
     private boolean reportIteration = true;
@@ -57,9 +66,14 @@ public class PerformanceListener extends BaseTrainingListener implements Seriali
     }
 
     public PerformanceListener(int frequency, boolean reportScore) {
+        this(frequency, reportScore, false);
+    }
+
+    public PerformanceListener(int frequency, boolean reportScore, boolean reportGC) {
         Preconditions.checkArgument(frequency > 0, "Invalid frequency, must be > 0: Got " + frequency);
         this.frequency = frequency;
         this.reportScore = reportScore;
+        this.reportGC = reportGC;
 
         lastTime.set(System.currentTimeMillis());
     }
@@ -131,6 +145,44 @@ public class PerformanceListener extends BaseTrainingListener implements Seriali
             if (reportScore)
                 builder.append("score: ").append(model.score()).append(";");
 
+            if (reportGC){
+                if(gcBeans == null){
+                    try{
+                        gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
+                    } catch (Throwable t){
+                        log.warn("Error getting garbage collector MX beans. PerformanceListener will not report garbage collection information");
+                        reportGC = false;
+                    }
+                }
+
+                if(reportGC){
+                    boolean reportAny = false;
+                    for(GarbageCollectorMXBean g : gcBeans){
+                        long count = g.getCollectionCount();
+                        long time = g.getCollectionTime();
+                        if(lastGcCount.get() != null && lastGcCount.get().containsKey(g.getName())) {
+                            long countDelta = count - lastGcCount.get().get(g.getName());
+                            long timeDelta = time - lastGcMs.get().get(g.getName());
+                            if(!reportAny){
+                                builder.append(" GC: ");
+                                reportAny = true;
+                            } else {
+                                builder.append(", ");
+                            }
+                            builder.append("[").append(g.getName()).append(": ").append(countDelta).append(" (").append(timeDelta).append("ms)").append("]");
+                        }
+                        if(lastGcCount.get() == null){
+                            lastGcCount.set(new LinkedHashMap<String,Long>());
+                            lastGcMs.set(new LinkedHashMap<String, Long>());
+                        }
+                        lastGcCount.get().put(g.getName(), count);
+                        lastGcMs.get().put(g.getName(), time);
+                    }
+                    if(reportAny){
+                        builder.append(";");
+                    }
+                }
+            }
 
             log.info(builder.toString());
         }
@@ -144,6 +196,8 @@ public class PerformanceListener extends BaseTrainingListener implements Seriali
         samplesPerSec = new ThreadLocal<>();
         batchesPerSec = new ThreadLocal<>();
         lastTime = new ThreadLocal<>();
+        lastGcCount = new ThreadLocal<>();
+        lastGcMs = new ThreadLocal<>();
     }
 
     public static class Builder {
