@@ -41,21 +41,21 @@ TEST_F(SwitchTests, SwitchTest1) {
     auto input = NDArrayFactory::create_<float>('c',{32, 100});
     input->assign(-119.0f);
 
-    auto condtionX = NDArrayFactory::create_<float>('c', {1, 1});
-    condtionX->p(0, 0.0f);
-    auto condtionY = NDArrayFactory::create_<float>('c', {1, 1});
-    condtionY->p(0, 0.0f);
+    auto conditionX = NDArrayFactory::create_<bool>('c', {1, 1});
+    conditionX->p(0, false);
+    auto conditionY = NDArrayFactory::create_<bool>('c', {1, 1});
+    conditionY->p(0, false);
 
     variableSpace->putVariable(-1, input);
-    variableSpace->putVariable(-2, condtionX);
-    variableSpace->putVariable(-3, condtionY);
+    variableSpace->putVariable(-2, conditionX);
+    variableSpace->putVariable(-3, conditionY);
 
     // this is just 2 ops, that are executed sequentially. We don't really care bout them
     auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
     auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 2, {1}, {3});
 
     // this is our condition op, we'll be using Equals condition, on variables conditionX and conditionY (ids -2 and -3 respectively)
-    auto nodeCondition = new Node(OpType_BOOLEAN, pairwise::And, 119, {-2, -3});
+    auto nodeCondition = new Node(OpType_BOOLEAN, pairwise::EqualTo, 119, {-2, -3});
 
     // we're creating this op manually in tests, as always.
     nd4j::ops::eq_scalar eqOp;
@@ -146,16 +146,16 @@ TEST_F(SwitchTests, SwitchTest2) {
     auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
     auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {3});
 
-    auto scopeCondition = new Node(OpType_LOGIC, broadcast::LessThan, 3);
+    auto scopeCondition = new Node(OpType_LOGIC, logic::Scope, 3);
     scopeCondition->setName("scopeCondition");
 
-    auto nodeCondition = new Node(OpType_BOOLEAN, broadcast::LessThan, 119, {-2, -3});
+    auto nodeCondition = new Node(OpType_LOGIC, logic::Scope, 119, {-2, -3});
     nodeCondition->setScopeInfo(3, "scopeCondition");
 
     nd4j::ops::eq_scalar eqOp;
     nodeCondition->setCustomOp(&eqOp);
 
-    auto nodeSwitch = new Node(OpType_LOGIC, broadcast::LogicalAnd, 5, {3, 2});
+    auto nodeSwitch = new Node(OpType_LOGIC, logic::Switch, 5, {3, 2});
 
     nd4j::ops::Switch switchOp;
     nodeSwitch->setCustomOp(&switchOp);
@@ -212,16 +212,16 @@ TEST_F(SwitchTests, SwitchTest3) {
     auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
     auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {3});
 
-    auto scopeCondition = new Node(OpType_LOGIC, broadcast::LessThan, 3);
+    auto scopeCondition = new Node(OpType_LOGIC, logic::Scope, 3);
     scopeCondition->setName("scopeCondition");
 
-    auto nodeCondition = new Node(OpType_BOOLEAN, broadcast::LessThan, 119, {-2, -3});
+    auto nodeCondition = new Node(OpType_LOGIC, logic::Scope, 119, {-2, -3});
     nodeCondition->setScopeInfo(3, "scopeCondition");
 
     nd4j::ops::eq_scalar eqOp;
     nodeCondition->setCustomOp(&eqOp);
 
-    auto nodeSwitch = new Node(OpType_LOGIC, broadcast::LogicalOr, 5, {3, 2});
+    auto nodeSwitch = new Node(OpType_LOGIC, logic::Switch, 5, {3, 2});
 
     nd4j::ops::Switch switchOp;
     nodeSwitch->setCustomOp(&switchOp);

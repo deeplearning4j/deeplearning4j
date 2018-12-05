@@ -297,7 +297,7 @@ namespace nd4j {
             if (node->opType() == OpType_LOGIC) {
                 // nd4j_debug("Adding LogicOp [%i]\n", node->opNum());
                 // SCOPE
-                if (node->opNum() == 10) {
+                if (node->opNum() == logic::Scope) {
                     auto scope = new Scope(node->id(), node->getName() != nullptr ? node->getName()->c_str() : "");
                     _mappedScopes[node->id()] = scope;
                     _scopes.push_back(scope);
@@ -1043,7 +1043,7 @@ namespace nd4j {
                     Node* node = _onion->at(l)->at(n);
 
                     // we're skipping Scopes here
-                    if (node->opType() == OpType_LOGIC && node->opNum() == 10)
+                    if (node->opType() == OpType_LOGIC && node->opNum() == logic::Scope)
                         continue;
 
                     printOutNode(node);
@@ -1113,7 +1113,7 @@ namespace nd4j {
                     //OpDescriptor opDescriptor(numInputs, numOutputs, opNameStr, inplace);
 
                     // we're skipping Scopes here
-                    if (node->opType() == OpType_LOGIC && node->opNum() == 10)
+                    if (node->opType() == OpType_LOGIC && node->opNum() == logic::Scope)
                         continue;
                     if (pOpDescriptor)
                         res.emplace_back(*pOpDescriptor);
