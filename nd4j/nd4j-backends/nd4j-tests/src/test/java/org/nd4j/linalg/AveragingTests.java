@@ -17,6 +17,7 @@
 package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;

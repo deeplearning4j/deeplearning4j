@@ -18,6 +18,7 @@ package org.nd4j.linalg;
 
 
 import lombok.val;
+import org.bytedeco.javacpp.Pointer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -188,7 +189,7 @@ public abstract class BaseNd4jTest {
 
     @After
     public void after() throws Exception {
-        log.info("Ending " + getClass().getName());
+        log.info("Ending {}; Physical bytes after: {}; Max: {}", getClass().getName(), Pointer.physicalBytes(), Pointer.maxPhysicalBytes());
         if (System.getProperties().getProperty("backends") != null
                         && !System.getProperty("backends").contains(backend.getClass().getName()))
             return;
