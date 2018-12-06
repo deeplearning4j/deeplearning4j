@@ -29,20 +29,20 @@ import java.util.List;
  * @author Susan Eraly
  */
 public class KFoldIterator implements DataSetIterator {
-    private DataSet allData;
-    private int k;
-    private int N;
-    private int baseBatchSize;
-    private int numIncrementedBatches;
-    private int kCursor = 0;
-    private DataSet test;
-    private DataSet train;
+    protected DataSet allData;
+    protected int k;
+    protected int N;
+    protected int baseBatchSize;
+    protected int numIncrementedBatches;
+    protected int kCursor = 0;
+    protected DataSet test;
+    protected DataSet train;
     protected DataSetPreProcessor preProcessor;
 
-    /**Create a k-fold cross-validation iterator given the dataset and k=10 train-test splits.
-     * N number of samples are split into k batches. The first (k-1) batches contain (N/k) samples, while the last batch contains (N/k)+(N%k) samples. 
-     * If number of samples (N) in the dataset is not a multiple of k, the last fold will have at most (k-1) more samples.
-     *
+    /**
+     * Create a k-fold cross-validation iterator given the dataset and k=10 train-test splits.
+     * N number of samples are split into k batches. The first (N%k) batches contain (N/k)+1 samples, while the remaining batches contain (N/k) samples. 
+     * In case the number of samples (N) in the dataset is a multiple of k, all batches will contain (N/k) samples.
      * @param k number of folds (optional, defaults to 10)
      * @param allData DataSet to split into k folds
      */
@@ -50,9 +50,10 @@ public class KFoldIterator implements DataSetIterator {
         this(10, allData);
     }
 
-    /**Create an iterator given the dataset with given k train-test splits
-     * If number of samples in the dataset is not a multiple of k, the last fold will have less samples with the rest having the same number of samples.
-     *
+    /**
+     * Create an iterator given the dataset with given k train-test splits
+     * N number of samples are split into k batches. The first (N%k) batches contain (N/k)+1 samples, while the remaining batches contain (N/k) samples. 
+     * In case the number of samples (N) in the dataset is a multiple of k, all batches will contain (N/k) samples.
      * @param k number of folds (optional, defaults to 10)
      * @param allData DataSet to split into k folds
      */
@@ -168,7 +169,7 @@ public class KFoldIterator implements DataSetIterator {
         // no-op
     }
 
-    private void nextFold() {
+    protected void nextFold() {
         int left;
         int right;
         if (kCursor < numIncrementedBatches) {
