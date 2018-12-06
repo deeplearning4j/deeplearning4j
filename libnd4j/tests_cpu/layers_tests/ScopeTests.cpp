@@ -62,8 +62,6 @@ TEST_F(ScopeTests, BasicTests_1) {
 }
 
 TEST_F(ScopeTests, RealTests_1) {
-    Environment::getInstance()->setDebug(true);
-    Environment::getInstance()->setVerbose(true);
     Graph graph;
 
     auto x = NDArrayFactory::create_<float>('c', {2, 2});
@@ -161,5 +159,5 @@ TEST_F(ScopeTests, RealTests_1) {
     auto w = variableSpace->getVariable(12, 0)->getNDArray();
 
     w->printShapeInfo("w shape");
-    ASSERT_NEAR(40.f, w->sumNumber().e<float>(0), 1e-5f);
+    ASSERT_NEAR(12.f, w->sumNumber().e<float>(0), 1e-5f);
 }
