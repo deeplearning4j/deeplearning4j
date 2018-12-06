@@ -62,6 +62,8 @@ TEST_F(ScopeTests, BasicTests_1) {
 }
 
 TEST_F(ScopeTests, RealTests_1) {
+    Environment::getInstance()->setDebug(true);
+    Environment::getInstance()->setVerbose(true);
     Graph graph;
 
     auto x = NDArrayFactory::create_<float>('c', {2, 2});
@@ -101,9 +103,8 @@ TEST_F(ScopeTests, RealTests_1) {
     scopedA0->setScopeInfo(3, "scopeCondition");
 
     // this op compares LT A0 result with variable `scalar` which is 10;
-    auto scopedA1 = new Node(OpType_BOOLEAN, 0, 5, {4, -3});
     nd4j::ops::lt_scalar op;
-    scopedA1->setCustomOp(&op);
+    auto scopedA1 = new Node(&op, 5, {4, -3});
     scopedA1->setScopeInfo(3, "scopeCondition");
 
 
@@ -159,5 +160,6 @@ TEST_F(ScopeTests, RealTests_1) {
 
     auto w = variableSpace->getVariable(12, 0)->getNDArray();
 
+    w->printShapeInfo("w shape");
     ASSERT_NEAR(40.f, w->sumNumber().e<float>(0), 1e-5f);
 }
