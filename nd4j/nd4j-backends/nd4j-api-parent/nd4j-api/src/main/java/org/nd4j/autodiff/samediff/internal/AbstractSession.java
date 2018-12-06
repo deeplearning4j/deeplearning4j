@@ -7,6 +7,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 
 import java.util.*;
 
@@ -215,6 +216,19 @@ public abstract class AbstractSession<T,O> {
         //Check if we can execute this op now...
         if(inputForOps != null){
             for(String opName : inputForOps) {
+                //TODO Merge etc needs to be handled differently!
+
+                if(sameDiff.getFunctionById(opName) instanceof Merge){
+                    //Merge op: available for execution when *any* of its inputs are available. But only mark it for exec once...
+                    String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);
+                    Preconditions.checkState(opOutputs.length == 1, "Expected only 1 output variable for merge op, got %s", opOutputs);
+                    if(!nodeOutputs.containsKey(opName)){
+                        Collections.addAll(availableForExec, opOutputs);
+                        log.info("Marked merge op ({}) as available for execution: input {} is now available", opName, varName);
+                    }
+                    continue;
+                }
+
                 //Can execute this op - and hence get it's output variables - if all inputs (and control deps) are available
                 String[] inputsThisOp = sameDiff.getFunctionById(opName).argNames();
                 boolean allInputsAvailable = true;
