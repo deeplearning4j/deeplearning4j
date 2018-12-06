@@ -27,6 +27,8 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 //        throw new UnsupportedOperationException("Not yet implemented");
         //TODO
         int numOutputs = op.getNumOutputs();
+        if(numOutputs == -1)
+            numOutputs = op.outputVariables().length;
         INDArray[] out = new INDArray[numOutputs];
         for( int i=0; i<numOutputs; i++ ){
             out[i] = Nd4j.scalar(0.0f);
