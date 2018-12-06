@@ -18,10 +18,8 @@ package org.deeplearning4j.plot;
 
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.KnownCrashingTests;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
