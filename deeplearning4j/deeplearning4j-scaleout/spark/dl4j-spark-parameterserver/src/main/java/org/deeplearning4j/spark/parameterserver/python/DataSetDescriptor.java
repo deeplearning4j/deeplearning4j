@@ -1,21 +1,20 @@
 package org.deeplearning4j.spark.parameterserver.python;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
-import java.util.ArrayList;
-import java.util.List;
 
 public class DataSetDescriptor implements java.io.Serializable{
     private ArrayDescriptor features, labels;
     private ArrayDescriptor featuresMask;
     private ArrayDescriptor labelsMask;
-    private transient boolean preProcessed = false;
+    private boolean preProcessed;
 
 
-    public DataSetDescriptor(DataSet ds){
-        features = ArrayDescriptor(ds.getFeatures());
-        labels = ArrayDescriptor(ds.getLabels());
-        featuresMask = ArrayDescriptor(ds.getFeaturesMask());
-        labelsMask = ArrayDescriptor(ds.getLabelsMask());
+    public DataSetDescriptor(DataSet ds)throws Exception{
+        features = new ArrayDescriptor(ds.getFeatures());
+        labels = new ArrayDescriptor(ds.getLabels());
+        featuresMask = new ArrayDescriptor(ds.getFeaturesMaskArray());
+        labelsMask = new ArrayDescriptor(ds.getLabelsMaskArray());
         preProcessed = ds.isPreProcessed();
     }
 
@@ -25,7 +24,9 @@ public class DataSetDescriptor implements java.io.Serializable{
         INDArray featuresMask = this.labels.getArray();
         INDArray labelsMask = this.labelsMask.getArray();
         DataSet ds = new DataSet(features, labels, featuresMask, labelsMask);
-        ds.markAsPreProcessed(preProcessed);
+        if(preProcessed) {
+            ds.markAsPreProcessed();
+        }
         return ds;
     }
 }

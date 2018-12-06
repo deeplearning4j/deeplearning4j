@@ -16,7 +16,7 @@ public class Utils {
         return arrDesc.getArray();
     }
 
-    private static DataSetDescriptor getDataSetDescriptor(DataSet ds){
+    private static DataSetDescriptor getDataSetDescriptor(DataSet ds)throws Exception{
         return new DataSetDescriptor(ds);
     }
     
