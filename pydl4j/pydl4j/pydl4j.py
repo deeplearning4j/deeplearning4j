@@ -36,7 +36,7 @@ _CONFIG_FILE = os.path.join(_MY_DIR, 'config.json')
 
 # Default config
 _CONFIG = {
-    'dl4j_version': '1.0.0-SNAPSHOT',
+    'dl4j_version': '1.0.0-beta3',
     'dl4j_core': True,
     'datavec': True,
     'spark': True,
