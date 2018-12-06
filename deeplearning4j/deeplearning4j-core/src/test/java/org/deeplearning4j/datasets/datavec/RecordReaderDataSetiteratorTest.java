@@ -68,6 +68,11 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 @Slf4j
 public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
+
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 

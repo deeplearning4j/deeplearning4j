@@ -57,27 +57,26 @@ TEST_F(ConditionalTests, BasicTests_1) {
     variableSpace->putVariable(-4, scalar);
 
 
-    auto scopeCondition = new Node(OpType_LOGIC, 10, 1);
+    auto scopeCondition = new Node(OpType_LOGIC, logic::Scope, 1);
     scopeCondition->setName("scopeCondition");
 
-    auto scopeFalse = new Node(OpType_LOGIC, 10, 2);
+    auto scopeFalse = new Node(OpType_LOGIC, logic::Scope, 2);
     scopeFalse->setName("scopeFalse");
 
-    auto scopeTrue = new Node(OpType_LOGIC, 10, 3);
+    auto scopeTrue = new Node(OpType_LOGIC, logic::Scope, 3);
     scopeTrue->setName("scopeTrue");
 
     auto nodeF = new Node(OpType_PAIRWISE, pairwise::Add, 5, {-1, -2});
     nodeF->setScopeInfo(2, "scopeFalse");
 
-    auto nodeT = new Node(OpType_PAIRWISE, pairwise::CopyPws, 6, {-1, -2});
+    auto nodeT = new Node(OpType_PAIRWISE, pairwise::Subtract, 6, {-1, -2});
     nodeT->setScopeInfo(3, "scopeTrue");
 
     auto nodeC0 = new Node(OpType_REDUCE_SAME, reduce::Sum, 7, {-1});
     nodeC0->setScopeInfo(1, "scopeCondition");
 
-    auto nodeC1 = new Node(OpType_BOOLEAN, pairwise::And, 8, {7, -4});
     nd4j::ops::eq_scalar op;
-    nodeC1->setCustomOp(&op);
+    auto nodeC1 = new Node(&op, 8, {7, -4});
     nodeC1->setScopeInfo(1, "scopeCondition");
 
     graph.addNode(scopeCondition);
@@ -92,7 +91,7 @@ TEST_F(ConditionalTests, BasicTests_1) {
     ASSERT_EQ(3, graph.totalNodes());
 
     // now we're adding Condition op, that'll take all of those in
-    auto nodeCondition = new Node(OpType_LOGIC, 20, 10, {1, 2, 3});
+    auto nodeCondition = new Node(OpType_LOGIC, logic::Conditional, 10, {1, 2, 3});
     graph.addNode(nodeCondition);
 
     ASSERT_EQ(4, graph.totalNodes());

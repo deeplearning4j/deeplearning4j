@@ -56,7 +56,10 @@ SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -Wlogical-op-parentheses -Winconsistent-missing-override")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -Wno-logical-op-parentheses -Wno-inconsistent-missing-override -Wno-implicit-conversion-floating-point-to-bool -Wno-delete-non-virtual-dtor")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    message("AppleClang used")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -Wno-logical-op-parentheses -Wno-inconsistent-missing-override -Wno-implicit-conversion-floating-point-to-bool -Wno-delete-non-virtual-dtor")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     # using Intel C++
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -fp-model fast")
