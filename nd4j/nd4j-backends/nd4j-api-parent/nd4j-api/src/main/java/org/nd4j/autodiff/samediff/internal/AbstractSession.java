@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff.internal;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -77,27 +78,35 @@ public abstract class AbstractSession<T,O> {
 
         //Note subgraph initially should include placeholders and constants
         while(!processingQueue.isEmpty()){
-            String s = processingQueue.remove();
-            Variable v = sameDiff.getVariables().get(s);
+            String varName = processingQueue.remove();
+            Variable v = sameDiff.getVariables().get(varName);
 
-            if(!subgraph.contains(v.getName())){
-                String opName = v.getOutputOfOp();
-                SameDiffOp op = sameDiff.getOps().get(opName);
-                int numInputs = op.getInputsToOp() == null ? 0 : op.getInputsToOp().length;
-                if(op.getControlDeps() != null){
-                    numInputs += op.getControlDeps().length;
+//            String opName = v.getOutputOfOp();
+            String opName = (sameDiff.getVariableOutputFunction(varName) == null ? null : sameDiff.getVariableOutputFunction(varName).getOwnName());
+
+            if(!subgraph.contains(varName)){
+//                String opName = v.getOutputOfOp();
+//                SameDiffOp op = sameDiff.getOps().get(opName);
+//                String[] opInputs = op.getInputsToOp();
+//                String[] controlDeps = op.getControlDeps();
+
+                String[] opInputs = opName == null ? null : sameDiff.getInputsForFunction(sameDiff.getFunctionById(opName));
+                String[] controlDeps = null;
+                int numInputs = opInputs == null ? 0 : opInputs.length;
+                if( controlDeps != null){
+                    numInputs += controlDeps.length;
                 }
                 if(numInputs == 0){
-                    availableForExec.add(v.getName());
+                    availableForExec.add(varName);
                 }
             }
 
-            if(v.getOutputOfOp() != null) {
-                String opName = v.getOutputOfOp();
-                SameDiffOp op = sameDiff.getOps().get(opName);
+            if(opName != null) {
+//                SameDiffOp op = sameDiff.getOps().get(opName);
 
                 //To execute op - and hence get this variable: need inputs to that op
-                String[] inputs = op.getInputsToOp();
+//                String[] inputs = op.getInputsToOp();
+                String[] inputs = sameDiff.getInputsForFunction(sameDiff.getFunctionById(opName));
                 for (String s2 : inputs) {
                     if (!subgraph.contains(s2)) {
                         processingQueue.add(s2);
@@ -105,7 +114,8 @@ public abstract class AbstractSession<T,O> {
                 }
 
                 //To execute op - and hence get this variable - we also need control deps
-                String[] opControlDeps = op.getControlDeps();
+//                String[] opControlDeps = op.getControlDeps();
+                String[] opControlDeps = null;
                 if(opControlDeps != null){
                     for(String s2 : opControlDeps){
                         if(!subgraph.contains(s2)){
@@ -135,7 +145,7 @@ public abstract class AbstractSession<T,O> {
         while(out.size() < variables.size()){
             //Get any variable and execute it's corresponding op
             String varToExec = availableForExec.remove();
-            Variable v = sameDiff.getVariables().get(varToExec);
+//            Variable v = sameDiff.getVariables().get(varToExec);
 
             log.debug("Beginning execution step {}: variable {}", (step++), varToExec);
 
@@ -152,30 +162,32 @@ public abstract class AbstractSession<T,O> {
                 continue;
             }
              */
-            else if(v.getOutputOfOp() != null){
+            else if(sameDiff.getVariableOutputFunction(varToExec) != null){
                 //Need to execute op to get this variable... which might have already happened in a previous step for multi-op variables
 
                 if(!nodeOutputs.containsKey(varToExec)){
-                    SameDiffOp op = sameDiff.getOps().get(v.getOutputOfOp());
+//                    SameDiffOp op = sameDiff.getOps().get(v.getOutputOfOp());
+                    String opName = sameDiff.getFunctionOutputFor().get(varToExec).get(0).getOwnName();
 
                     //Execute op
                     //TODO
 
-                    O parameterizedOp = getAndParameterizeOp(op.getName());
+                    O parameterizedOp = getAndParameterizeOp(opName);
                     T[] opOutputValues = getOutputs(parameterizedOp);
 
 
                     //Post execution: work out what is now available for exec
-                    String[] opOutputNames = op.getOutputsOfOp();
+//                    String[] opOutputVarNames = op.getOutputsOfOp();
+                    String[] opOutputVarNames = sameDiff.getFunctionById(opName).outputVariablesNames();
 
-                    Preconditions.checkState(opOutputValues.length == opOutputNames.length);
+                    Preconditions.checkState(opOutputValues.length == opOutputVarNames.length);
 
-                    for( int i=0; i<opOutputNames.length; i++ ){
-                        nodeOutputs.put(opOutputNames[i], opOutputValues[i]);
-                        updateDescendentsForExec(opOutputNames[i], availableForExec);
+                    for( int i=0; i<opOutputVarNames.length; i++ ){
+                        nodeOutputs.put(opOutputVarNames[i], opOutputValues[i]);
+                        updateDescendentsForExec(opOutputVarNames[i], availableForExec);
 
-                        if(variables.contains(opOutputNames[i])){  //Check if required output
-                            out.put(opOutputNames[i], opOutputValues[i]);
+                        if(variables.contains(opOutputVarNames[i])){  //Check if required output
+                            out.put(opOutputVarNames[i], opOutputValues[i]);
                         }
                     }
                 }
@@ -201,25 +213,33 @@ public abstract class AbstractSession<T,O> {
      */
     protected void updateDescendentsForExec(String varName, Queue<String> availableForExec){
         //Find any ops (or variables with control dependencies) that this is required for execution of and check if now available
-        Variable v = sameDiff.getVariables().get(varName);
+//        Variable v = sameDiff.getVariables().get(varName);
+//        String[] inputForOps = v.getInputsForOp();
+
+        List<DifferentialFunction> l = sameDiff.getFunctionsArgsFor().get(varName);
+        String[] inputForOps = l == null ? null : new String[l.size()];
+        if(l != null){
+            for(int i=0; i<inputForOps.length; i++ ){
+                inputForOps[i] = l.get(i).getOwnName();
+            }
+        }
 
         //Check if we can execute this op now...
-        if(v.getInputsForOp() != null){
-            String[] ops = v.getInputsForOp();
-
-            for(String s : ops) {
-                SameDiffOp o = sameDiff.getOps().get(s);
+        if(inputForOps != null){
+            for(String opName : inputForOps) {
+//                SameDiffOp o = sameDiff.getOps().get(opName);
                 //Can execute this op - and hence get it's output variables - if all inputs (and control deps) are available
-                String[] inputs = o.getInputsToOp();
+//                String[] inputsThisOp = o.getInputsToOp();
+                String[] inputsThisOp = sameDiff.getFunctionById(opName).argNames();
                 boolean allInputsAvailable = true;
-                for(String in : inputs){
+                for(String in : inputsThisOp){
                     if(!nodeOutputs.containsKey(in)) {
                         allInputsAvailable = false;
                         break;
                     }
                 }
 
-                String[] opControlDeps = o.getControlDeps();
+                String[] opControlDeps = null;  //o.getControlDeps();
                 if(opControlDeps != null && allInputsAvailable){
                     for(String cd : opControlDeps){
                         if(!nodeOutputs.containsKey(cd)) {
@@ -229,14 +249,15 @@ public abstract class AbstractSession<T,O> {
                     }
                 }
 
-                if(allInputsAvailable && o.getOutputsOfOp() != null){
+                String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);
+                if(allInputsAvailable && opOutputs != null){
                     //Op can be executed -> variables as output are available for exec
                     //TODO what about variable control depes?
 
-                    Collections.addAll(availableForExec, o.getOutputsOfOp());
-                    if(log.isTraceEnabled()){
-                        log.trace("Marked variables as available for execution: {}", Arrays.toString(o.getOutputsOfOp()));
-                    }
+                    Collections.addAll(availableForExec, opOutputs);
+//                    if(log.isTraceEnabled()){
+                        log.info("Marked variables as available for execution: {}", Arrays.toString(opOutputs));
+//                    }
                 }
             }
         }

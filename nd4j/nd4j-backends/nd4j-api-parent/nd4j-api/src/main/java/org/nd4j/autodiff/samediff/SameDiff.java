@@ -147,7 +147,7 @@ public class SameDiff {
     private final Map<Long,InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
 
     private final Map<String,DeviceLocalNDArray> constantArrays = new HashMap<>();
-    private final Map<String,DeviceLocalNDArray> variablesArrays = new HashMap<>();     //TODO does DeviceLocal make sense if mutable?
+    private final Map<String,DeviceLocalNDArray> variablesArrays = new HashMap<>();     //TODO issues with DeviceLocal +  mutable / changed during training?
 
 
     ///////////////////////////////////////
@@ -165,6 +165,7 @@ public class SameDiff {
     @Deprecated //TO BE REMOVED - to SameDiffOp
     private Map<String, String[]> incomingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as inputs to that function
     @Deprecated //TO BE REMOVED - to SameDiffOp
+    @Getter
     private Map<String, String[]> outgoingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as outputs from that function
     private Map<String, int[]> permuteOrder;
     private boolean shouldBootStrap = true;
@@ -193,8 +194,10 @@ public class SameDiff {
 
     //individual index for variable names
     @Deprecated //TO BE REMOVED - to Variable
+    @Getter
     private Map<String, List<DifferentialFunction>> functionsArgsFor;   //Key: SDVariable name. Value: all DifferentialFunctions it is an input to
     @Deprecated //TO BE REMOVED - to Variable
+    @Getter
     private Map<String, List<DifferentialFunction>> functionOutputFor;  //Key: SDVariable name. Value: DifferentialFunctions this variable is an output for (TODO: Why is this a list? Isn't it *always* length 1?)
 
     private Map<String, TensorList> lists = new HashMap<>();    // Key - node name; Value - TensorList
@@ -332,6 +335,7 @@ public class SameDiff {
     public void updateVariableName(String varName, String withName) {
         SDVariable oldVarNameRef = getVariable(varName);
         variableMap.remove(oldVarNameRef.getVarName());
+        variables.remove(oldVarNameRef.getVarName());
         val oldVarName = varName;
         oldVarNameRef.setVarName(withName);
         variableMap.put(withName, oldVarNameRef);
@@ -429,7 +433,7 @@ public class SameDiff {
             functionOutputFor.put(withName, funcs);
         }
 
-        variableMap.remove(oldVarName);
+//        variableMap.remove(oldVarName);
 
 
     }
@@ -543,7 +547,7 @@ public class SameDiff {
      * @param id the id of the function
      * @return the function for the given id if it exists
      */
-    public DifferentialFunction getFunctionById(String id) {
+    public DifferentialFunction getFunctionById(@NonNull String id) {
         if (!functionInstancesById.containsKey(id)) {
             throw new ND4JIllegalStateException("No function with id " + id + " found!");
         }
@@ -2193,24 +2197,12 @@ public class SameDiff {
     /**
      * Create a variable with a place holder
      * @param name the name of the variable
-     * @param weightInitScheme the weight init scheme to use
      * @param shape the shape of the variable if any
      * @return
      */
-    public SDVariable placeHolder(String name,WeightInitScheme weightInitScheme,long...shape) {
-        SDVariable ret = var(name,weightInitScheme,shape);
-        addAsPlaceHolder(name);
-        return ret;
-    }
-
-
-    /**
-     * Create a variable with a place holder
-     * @param name the name of the variable
-     * @param shape the shape of the variable if any
-     * @return
-     */
-    public SDVariable placeHolder(String name,long...shape) {
+    public SDVariable placeHolder(String name, org.nd4j.linalg.api.buffer.DataType dataType, long...shape) {
+        //TODO actually use/store datatype for placeholder
+        //TODO always add cast op after placeholder - this allows user to use any array type whilst giving is consistent shape inference
         SDVariable ret = var(name,new ZeroInitScheme(),shape);
         addAsPlaceHolder(name);
         return ret;
@@ -10427,6 +10419,7 @@ public class SameDiff {
      *
      * @param varName the vertex id to add
      */
+    @Deprecated //TO BE REMOVED from public API. User should not be able to create variable then 'set as placeholder' later
     public void addAsPlaceHolder(String varName) {
         placeHolderVarNames.add(varName);
         if (getVariable(varName) != null && getVariable(varName).getShape() != null) {
@@ -10442,6 +10435,7 @@ public class SameDiff {
      *
      * @param varName Variable name
      */
+    @Deprecated //TO BE REMOVED from public API. User should not be able to change placeholder status after created
     public void removeAsPlaceholder(String varName) {
         placeHolderVarNames.remove(varName);
         placeHolderOriginalShapes.remove(varName);

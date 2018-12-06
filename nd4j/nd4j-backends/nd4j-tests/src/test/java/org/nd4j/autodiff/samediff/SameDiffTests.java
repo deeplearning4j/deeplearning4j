@@ -228,8 +228,8 @@ public class SameDiffTests {
         SameDiff sameDiff = SameDiff.create();
         INDArray x = Nd4j.scalar(1.0);
         INDArray y = Nd4j.scalar(2.0);
-        SDVariable xVar = sameDiff.placeHolder("x",1,1);
-        SDVariable yVar = sameDiff.placeHolder("y",1,1);
+        SDVariable xVar = sameDiff.placeHolder("x",DataType.DOUBLE, 1,1);
+        SDVariable yVar = sameDiff.placeHolder("y",DataType.DOUBLE, 1,1);
         SDVariable output = xVar.add(yVar);
         INDArray[] eval = sameDiff.eval(new INDArray[]{x, y});
         assertEquals(1,eval.length);
