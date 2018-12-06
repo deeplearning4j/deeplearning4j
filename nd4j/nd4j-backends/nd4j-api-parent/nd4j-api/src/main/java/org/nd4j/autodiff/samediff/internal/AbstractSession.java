@@ -6,6 +6,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
 
@@ -36,6 +37,9 @@ public abstract class AbstractSession<T,O> {
      * @return
      */
     public abstract O getAndParameterizeOp(String opName);
+
+    //TODO we might not need this method eventually...
+    public abstract void preprocessPlaceholderValues(Map<String,T> placeholderValues);
 
     /**
      * @param variables       Name of the variables we want the arrays/activations for
@@ -68,7 +72,6 @@ public abstract class AbstractSession<T,O> {
          */
 
         //Step 0: validation - that variables exist, placeholders have arrays, etc
-
 
         //Step 1: determine subgraph structure we actually need to execute
         Queue<String> processingQueue = new LinkedList<>(variables);
@@ -126,6 +129,9 @@ public abstract class AbstractSession<T,O> {
         We stop computation once all the required outputs are available. At this point, subgraph may NOT be empty - for example,
         switch ops may cause entire branches of the graph to be skipped.
          */
+
+        //TODO we'll not do this in the future, but it's necessary for execution for now...
+        preprocessPlaceholderValues(placeholderValues);
 
         Map<String,T> out = new HashMap<>();
         int step = 0;
