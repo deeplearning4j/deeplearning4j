@@ -2253,7 +2253,7 @@ public class SameDiff {
      */
     public SDVariable var(String name, long... shape) {
         Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
-        return var(name, shape, new ZeroInitScheme());
+        return var(name, new ZeroInitScheme(), shape);
     }
 
     public SDVariable var(String name, LongShapeDescriptor shapeDesc) {
@@ -2270,8 +2270,8 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable var(String name, int... shape) {
-        Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
-        return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
+        Preconditions.checkNotNull(shape, "Invalid shape: shape may not be null");
+        return var(name, new ZeroInitScheme(), ArrayUtil.toLongArray(shape));
     }
 
 
