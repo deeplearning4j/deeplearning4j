@@ -19,13 +19,13 @@ from ..java_classes import ArrayList
 from ..java_classes import ArrayDescriptor as getArrayDescriptor
 from ..java_classes import DataSetDescriptor as getDataSetDescriptor
 from ..java_classes import DataType
-from ..java_classes import spark_utils as get_spark_utls
+from ..java_classes import spark_utils as get_spark_utils
 from ..java_classes import DataSet
 from ..ndarray import array
 
 ArrayDescriptor = None
 DataSetDescriptor = None
-spark_utlis = None
+spark_utils = None
 
 
 
@@ -41,9 +41,9 @@ def java2pyRDD(java_rdd, py_sc):
 
     pyspark.RDD instance
     '''
-    global spark_utlis
-    if spark_utlis is None:
-        spark_utlis = get_spark_utls()
+    global spark_utils
+    if spark_utils is None:
+        spark_utils = get_spark_utils()
     desc_rdd = spark_utils.getArrayDescriptorRDD(java_rdd)
     descriptors = desc_rdd.collect()
     num_descriptors = descriptors.size()
@@ -68,9 +68,11 @@ def py2javaRDD(py_rdd, java_sc):
 
     JavaRDD<INDArray> instance
     '''
-    global ArrayDescriptor
+    global ArrayDescriptor, spark_utils
     if ArrayDescriptor is None:
         ArrayDescriptor = getArrayDescriptor()
+    if spark_utils is None:
+        spark_utils = get_spark_utils()
     def np2desc(nparray):
         address = nparray.__array_interface__['data'][0]
         shape = nparray.shape
