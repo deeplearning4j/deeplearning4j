@@ -357,16 +357,16 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 
             switch (i){
                 case 0:
-                    assertEquals(Nd4j.create(new double[]{0,10,20,30}, new int[]{4,1}), f2d);
-                    assertEquals(Nd4j.create(new double[][]{{1,2}, {11,12}, {21,22}, {31,32}}), l2d);
+                    assertEquals(Nd4j.create(new double[]{0,10,20,30}, new int[]{4,1}).castTo(DataType.FLOAT), f2d);
+                    assertEquals(Nd4j.create(new double[][]{{1,2}, {11,12}, {21,22}, {31,32}}).castTo(DataType.FLOAT), l2d);
                     break;
                 case 1:
-                    assertEquals(Nd4j.create(new double[]{100,110,120,130}, new int[]{4,1}), f2d);
-                    assertEquals(Nd4j.create(new double[][]{{101,102}, {111,112}, {121,122}, {131,132}}), l2d);
+                    assertEquals(Nd4j.create(new double[]{100,110,120,130}, new int[]{4,1}).castTo(DataType.FLOAT), f2d);
+                    assertEquals(Nd4j.create(new double[][]{{101,102}, {111,112}, {121,122}, {131,132}}).castTo(DataType.FLOAT), l2d);
                     break;
                 case 2:
-                    assertEquals(Nd4j.create(new double[]{200,210,220,230}, new int[]{4,1}), f2d);
-                    assertEquals(Nd4j.create(new double[][]{{201,202}, {211,212}, {221,222}, {231,232}}), l2d);
+                    assertEquals(Nd4j.create(new double[]{200,210,220,230}, new int[]{4,1}).castTo(DataType.FLOAT), f2d);
+                    assertEquals(Nd4j.create(new double[][]{{201,202}, {211,212}, {221,222}, {231,232}}).castTo(DataType.FLOAT), l2d);
                     break;
                 default:
                     throw new RuntimeException();
@@ -1057,8 +1057,8 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
                         new RecordReaderDataSetIterator(rr, batchSize, labelIndexFrom, labelIndexTo, regression);
 
         DataSet ds = rrdsi.next();
-        INDArray expFeatures = Nd4j.create(new double[][] {{0, 1}, {2, 3}, {4, 5}});
-        INDArray expLabels = Nd4j.create(new double[][] {{1.1, 2.1, 3.1}, {4.1, 5.1, 6.1}, {7.1, 8.1, 9.1}});
+        INDArray expFeatures = Nd4j.create(new float[][] {{0, 1}, {2, 3}, {4, 5}});
+        INDArray expLabels = Nd4j.create(new float[][] {{1.1f, 2.1f, 3.1f}, {4.1f, 5.1f, 6.1f}, {7.1f, 8.1f, 9.1f}});
 
         assertEquals(expFeatures, ds.getFeatures());
         assertEquals(expLabels, ds.getLabels());
@@ -1204,8 +1204,8 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 1, 5, 3);
 
         DataSet ds = iter.next();
-        INDArray expF = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
-        INDArray expL = Nd4j.create(new double[] {0, 1, 0});
+        INDArray expF = Nd4j.create(new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
+        INDArray expL = Nd4j.create(new float[] {0, 1, 0});
 
         assertEquals(expF, ds.getFeatures());
         assertEquals(expL, ds.getLabels());
@@ -1222,7 +1222,7 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 1);
 
         DataSet ds = iter.next();
-        INDArray expF = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        INDArray expF = Nd4j.create(new float[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
 
         assertEquals(expF, ds.getFeatures());
     }
@@ -1233,11 +1233,11 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         //Idea: input vector is like [f,f,f,f,l,l,f,f] or similar - i.e., label writables aren't start/end
 
         List<Writable> l = Arrays.<Writable>asList(new DoubleWritable(1),
-                        new NDArrayWritable(Nd4j.create(new double[] {2, 3, 4}, new long[]{1,3})), new DoubleWritable(5),
-                        new NDArrayWritable(Nd4j.create(new double[] {6, 7, 8}, new long[]{1,3})));
+                        new NDArrayWritable(Nd4j.create(new float[] {2, 3, 4}, new long[]{1,3})), new DoubleWritable(5),
+                        new NDArrayWritable(Nd4j.create(new float[] {6, 7, 8}, new long[]{1,3})));
 
-        INDArray expF = Nd4j.create(new double[] {1, 6, 7, 8}, new long[]{1,4});
-        INDArray expL = Nd4j.create(new double[] {2, 3, 4, 5}, new long[]{1,4});
+        INDArray expF = Nd4j.create(new float[] {1, 6, 7, 8}, new long[]{1,4});
+        INDArray expL = Nd4j.create(new float[] {2, 3, 4, 5}, new long[]{1,4});
 
         RecordReader rr = new CollectionRecordReader(Collections.singletonList(l));
 
