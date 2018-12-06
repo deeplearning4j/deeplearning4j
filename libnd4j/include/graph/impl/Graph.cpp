@@ -322,7 +322,7 @@ namespace nd4j {
             _variableSpace->putVariable(node->id(), nodeState);
 
             // here we're filling our blocks with future variables
-            if (node->opType() == OpType_LOGIC && node->opNum() == 0) {
+            if (node->opType() == OpType_LOGIC && node->opNum() == logic::While) {
                 // filling while
                 int inputs = node->input()->size();
                 for (int e = 0; e < inputs - 2; e++){
@@ -468,7 +468,11 @@ namespace nd4j {
                         node->setLayer(nLayer);
                         injectNode(node);
 
-                        nd4j_logger("Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
+                        if (node->output()->size() > 0) {
+                            nd4j_logger("Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
+                        } else {
+                            nd4j_logger("Node_%i mapped to layer_%i; Output: none;\n", node->id(), node->getLayer());
+                        }
 
                         return;
                     }
