@@ -33,6 +33,7 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Nesterovs;
@@ -56,6 +57,10 @@ import static org.junit.Assert.*;
  */
 public class RegressionTest071 extends BaseDL4JTest {
 
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
     @Test
     public void regressionTestMLP1() throws Exception {
 
