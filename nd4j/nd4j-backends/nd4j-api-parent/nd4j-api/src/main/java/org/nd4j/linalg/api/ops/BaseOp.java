@@ -493,4 +493,10 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         result = 31 * result + (extraArgz != null ? extraArgz.hashCode() : 0);
         return result;
     }
+
+    @Override
+    public int getNumOutputs(){
+        //Always 1 for legacy/base ops
+        return 1;
+    }
 }
