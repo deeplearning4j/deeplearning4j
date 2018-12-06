@@ -36,7 +36,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
     @Override
     public DifferentialFunction getAndParameterizeOp(String opName) {
-        //TODO actually set inputs etc
+        //TODO actually set inputs etc. This is just placeholder for testing order etc
         return sameDiff.getFunctionById(opName);
     }
 

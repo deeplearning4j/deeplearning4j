@@ -496,7 +496,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         return result;
     }
 
-
     protected void defineDimensions(int... dimensions){
         if (dimensions != null && dimensions.length > 0) {
             dimensions = Shape.normalizeAxis(x.rank(), dimensions);
@@ -530,5 +529,11 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             return new Integer(z.getInt(0));
 
         throw new ND4JIllegalStateException("???");
+    }
+
+    @Override
+    public int getNumOutputs(){
+        //Always 1 for legacy/base ops
+        return 1;
     }
 }
