@@ -31,36 +31,40 @@ import java.util.List;
 public class KFoldIterator implements DataSetIterator {
     private DataSet allData;
     private int k;
-    private int batch;
-    private int lastBatch;
+    private int N;
+    private int baseBatchSize;
+    private int numIncrementedBatches;
     private int kCursor = 0;
     private DataSet test;
     private DataSet train;
     protected DataSetPreProcessor preProcessor;
 
+    /**Create a k-fold cross-validation iterator given the dataset and k=10 train-test splits.
+     * N number of samples are split into k batches. The first (k-1) batches contain (N/k) samples, while the last batch contains (N/k)+(N%k) samples. 
+     * If number of samples (N) in the dataset is not a multiple of k, the last fold will have at most (k-1) more samples.
+     *
+     * @param k number of folds (optional, defaults to 10)
+     * @param allData DataSet to split into k folds
+     */
     public KFoldIterator(DataSet allData) {
         this(10, allData);
     }
 
-    /**Create an iterator given the dataset and a value of k (optional, defaults to 10)
+    /**Create an iterator given the dataset with given k train-test splits
      * If number of samples in the dataset is not a multiple of k, the last fold will have less samples with the rest having the same number of samples.
      *
      * @param k number of folds (optional, defaults to 10)
      * @param allData DataSet to split into k folds
      */
-
     public KFoldIterator(int k, DataSet allData) {
-        this.k = k;
-        this.allData = allData.copy();
-        if (k <= 1)
+        if (k <= 1) {
             throw new IllegalArgumentException();
-        if (allData.numExamples() % k != 0) {
-            this.batch = (int)Math.ceil(allData.numExamples() / (double)k);
-            this.lastBatch = allData.numExamples() - (k-1) * this.batch;
-        } else {
-            this.batch = allData.numExamples() / k;
-            this.lastBatch = allData.numExamples() / k;
         }
+        this.k = k;
+        this.N = allData.numExamples();
+        this.baseBatchSize = N / k;
+        this.numIncrementedBatches = N % k;
+        this.allData = allData.copy();
     }
 
     @Override
@@ -167,12 +171,12 @@ public class KFoldIterator implements DataSetIterator {
     private void nextFold() {
         int left;
         int right;
-        if (kCursor == k - 1) {
-            left = totalExamples() - lastBatch;
-            right = totalExamples();
+        if (kCursor < numIncrementedBatches) {
+            left = kCursor * (baseBatchSize + 1);
+            right = left + (baseBatchSize + 1);
         } else {
-            left = kCursor * batch;
-            right = left + batch;
+            left = rem * (baseBatchSize + 1) + (kCursor - numIncrementedBatches) * baseBatchSize;
+            right = left + rem;
         }
 
         List<DataSet> kMinusOneFoldList = new ArrayList<DataSet>();
