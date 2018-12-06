@@ -128,7 +128,7 @@ namespace simdOps {
 				pW = (int)extraParams[5];
 				dH = (int)extraParams[6];			//Dilation, height dimension
 				dW = (int)extraParams[7];			//Dilation, width dimension
-				yj = (int)extraParams[9];
+				poolingMode = (int)extraParams[9];
 				extraParam0 = extraParams[10];
 
 				batchSize = shape::sizeAt(xShapeBuffer, 0);
