@@ -1,38 +1,53 @@
 package org.nd4j.autodiff.samediff.internal;
 
-import com.google.common.collect.Iterables;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ *
+ * @param <T> Node output type - for example, INDArray, shape, etc depending on what we're calculating
+ * @param <O> Op type
+ */
 @Slf4j
-public class Session {
+public abstract class AbstractSession<T,O> {
 
     protected final SameDiff sameDiff;
-    protected final Map<String, INDArray> arrays = new HashMap<>();      //INDArrays for ARRAY type SDVariables only
+    protected final Map<String, T> nodeOutputs = new HashMap<>();      //INDArrays for ARRAY type SDVariables only
 
-    public Session(@NonNull SameDiff sameDiff) {
+    public AbstractSession(@NonNull SameDiff sameDiff) {
         this.sameDiff = sameDiff;
     }
+
+    /**
+     * Execute the op - calculate INDArrays, or shape info, etc
+     * @param op
+     * @return
+     */
+    public abstract T[] getOutputs(O op);
+
+    /**
+     * Get the parameterized op to execute - for example, the op/DifferentialFunction with all inputs set
+     * @param op
+     * @return
+     */
+    public abstract O getAndParameterizeOp(String opName);
 
     /**
      * @param variables       Name of the variables we want the arrays/activations for
      * @param outputWorkspace May be null. If null: returned arrays will be detached. If non-null: arrays will be in the specified workspace
      * @return The specified variable values, optionally in the specified workspace
      */
-    public Map<String, INDArray> output(@NonNull List<String> variables, Map<String, INDArray> placeholderValues, MemoryWorkspace outputWorkspace) {
+    //TODO CHANGE SIGNATURE TO USE OPERANDS CLASS OR SIMILAR
+    public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues, MemoryWorkspace outputWorkspace) {
         Preconditions.checkState(!variables.isEmpty(), "Variables to perform forward pass for must not be empty");
         Preconditions.checkState(sameDiff.getPlaceHolderVarNames() == null || sameDiff.getPlaceHolderVarNames().isEmpty()
                         || (placeholderValues != null && placeholderValues.size() == sameDiff.getPlaceHolderVarNames().size() &&
-                        placeholderValues.keySet().containsAll(sameDiff.getPlaceHolderVarNames()),
+                        placeholderValues.keySet().containsAll(sameDiff.getPlaceHolderVarNames())),
                 "Invalid placeholders: SameDiff instance has placeholders %s, got placeholders %s", sameDiff.getPlaceHolderVarNames(),
                 (placeholderValues == null ? null : placeholderValues.keySet()));
 
@@ -102,7 +117,7 @@ public class Session {
         }
 
 
-        //Step 3: execute in any order, until we have all required arrays
+        //Step 3: execute in any order, until we have all required nodeOutputs
         /*
         Idea for execution is simple: we have subgraph of variables, which is whatever is left to execute.
         We look for leaf elements in subgraph - these are variables with either no inputs (placeholders/constants), or
@@ -115,7 +130,7 @@ public class Session {
         switch ops may cause entire branches of the graph to be skipped.
          */
 
-        Map<String,INDArray> out = new HashMap<>();
+        Map<String,T> out = new HashMap<>();
         int step = 0;
         while(out.size() < variables.size()){
             //Get any variable and execute it's corresponding op
@@ -125,7 +140,7 @@ public class Session {
             log.debug("Beginning execution step {}: variable {}", (step++), varToExec);
 
             if(sameDiff.isPlaceHolder(varToExec) ){
-                arrays.put(varToExec, placeholderValues.get(varToExec));
+                nodeOutputs.put(varToExec, placeholderValues.get(varToExec));
                 updateDescendentsForExec(varToExec, availableForExec);
                 if(variables.contains(varToExec)){  //Check if required output
                     out.put(varToExec, placeholderValues.get(varToExec));
@@ -140,24 +155,27 @@ public class Session {
             else if(v.getOutputOfOp() != null){
                 //Need to execute op to get this variable... which might have already happened in a previous step for multi-op variables
 
-                if(!arrays.containsKey(varToExec)){
+                if(!nodeOutputs.containsKey(varToExec)){
                     SameDiffOp op = sameDiff.getOps().get(v.getOutputOfOp());
 
                     //Execute op
                     //TODO
 
-
+                    O parameterizedOp = getAndParameterizeOp(op.getName());
+                    T[] opOutputValues = getOutputs(parameterizedOp);
 
 
                     //Post execution: work out what is now available for exec
-                    String[] opOutputs = op.getOutputsOfOp();
-                    INDArray[] opOutputArrays = null;   //TODO
-                    for( int i=0; i<opOutputs.length; i++ ){
-                        arrays.put(opOutputs[i], opOutputArrays[i]);
-                        updateDescendentsForExec(opOutputs[i], availableForExec);
+                    String[] opOutputNames = op.getOutputsOfOp();
 
-                        if(variables.contains(opOutputs[i])){  //Check if required output
-                            out.put(opOutputs[i], opOutputArrays[i]);
+                    Preconditions.checkState(opOutputValues.length == opOutputNames.length);
+
+                    for( int i=0; i<opOutputNames.length; i++ ){
+                        nodeOutputs.put(opOutputNames[i], opOutputValues[i]);
+                        updateDescendentsForExec(opOutputNames[i], availableForExec);
+
+                        if(variables.contains(opOutputNames[i])){  //Check if required output
+                            out.put(opOutputNames[i], opOutputValues[i]);
                         }
                     }
                 }
@@ -167,7 +185,7 @@ public class Session {
         }
 
 
-        //TODO under what circumstances should we clear the arrays map?
+        //TODO under what circumstances should we clear the nodeOutputs map?
         //TODO when should we close the workspace? (Might want to leave it open if we expect to re-use)
 
         return out;
@@ -195,7 +213,7 @@ public class Session {
                 String[] inputs = o.getInputsToOp();
                 boolean allInputsAvailable = true;
                 for(String in : inputs){
-                    if(!arrays.containsKey(in)) {
+                    if(!nodeOutputs.containsKey(in)) {
                         allInputsAvailable = false;
                         break;
                     }
@@ -204,7 +222,7 @@ public class Session {
                 String[] opControlDeps = o.getControlDeps();
                 if(opControlDeps != null && allInputsAvailable){
                     for(String cd : opControlDeps){
-                        if(!arrays.containsKey(cd)) {
+                        if(!nodeOutputs.containsKey(cd)) {
                             allInputsAvailable = false;
                             break;
                         }
