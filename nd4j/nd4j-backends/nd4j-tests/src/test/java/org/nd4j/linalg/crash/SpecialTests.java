@@ -445,6 +445,30 @@ public class SpecialTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testConcat2(){
+        //Nd4j.getExecutioner().enableDebugMode(true);
+        //Nd4j.getExecutioner().enableVerboseMode(true);
+        int n = 784;  //OK for 10, 100, 500
+        //Fails for 784, 783, 750, 720, 701, 700
+
+        INDArray[] arrs = new INDArray[n];
+        for( int i=0; i<n; i++ ){
+            INDArray a = Nd4j.create(DataType.DOUBLE, 10,1).assign(i);      //Also fails for FLOAT
+            arrs[i] = a;
+        }
+
+        Nd4j.getExecutioner().commit();
+        INDArray out = null;
+        for (int e = 0; e < 10; e++) {
+            log.info("Iteration: [{}]", e);
+            out = Nd4j.concat(1, arrs);
+        }
+        Nd4j.getExecutioner().commit();
+        System.out.println(out);
+    }
+
+
     @Override
     public char ordering() {
         return 'c';

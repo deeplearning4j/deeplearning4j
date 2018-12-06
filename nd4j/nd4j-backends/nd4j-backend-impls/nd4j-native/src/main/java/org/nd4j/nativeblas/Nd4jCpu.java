@@ -20759,6 +20759,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }  
+        @Namespace("nd4j::ops") public static class softmax_cross_entropy_loss_grad extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public softmax_cross_entropy_loss_grad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public softmax_cross_entropy_loss_grad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public softmax_cross_entropy_loss_grad position(long position) {
+                return (softmax_cross_entropy_loss_grad)super.position(position);
+            }
+        
+                                                                                    public softmax_cross_entropy_loss_grad() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }  
 //         #endif
 
 
