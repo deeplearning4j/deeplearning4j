@@ -1445,9 +1445,14 @@ void NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
         checkCudaErrors(cudaStreamSynchronize(*stream));
         cudaFree(maskedAllocPointer);
     } else {
-        dim3 launchDims(512, 1024, 16384);
+        dim3 launchDims(512, 512, 16384);
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
     }
+
+    cudaStreamSynchronize(*stream);
+    cudaMemcpyAsync(hZ, dZ, shape::length(hZShapeInfo) * DataTypeUtils::sizeOf(zType), cudaMemcpyDeviceToHost, *stream);
+    cudaStreamSynchronize(*stream);
+    BUILD_SINGLE_SELECTOR(zType, shape::printArray, (hZ, shape::length(hZShapeInfo), "Z on host"), FLOAT_TYPES);
 }
 
 

@@ -527,12 +527,12 @@ namespace nd4j {
 
 		template <typename X, typename Z>
         math_def inline Z nd4j_ceil(X val) {
-            return p_ceil<X>(val);
+            return static_cast<Z>(p_ceil<X>(val));
 		}
 
         template <typename X, typename Z>
         math_def inline Z nd4j_round(X val) {
-            return p_round<X>(val);
+            return static_cast<Z>(p_round<X>(val));
         }
 
         template <typename X, typename Z>
@@ -587,12 +587,12 @@ namespace nd4j {
 
 		template<typename X, typename Z>
         math_def inline Z nd4j_floor(X val) {
-            return p_floor<X>(val);
+            return static_cast<Z>(p_floor<X>(val));
 		}
 
 		template<typename X, typename Z>
         math_def inline Z nd4j_log(X val) {
-            return p_log<X>(val);
+            return static_cast<Z>(p_log<X>(val));
 		}
 
 		/**

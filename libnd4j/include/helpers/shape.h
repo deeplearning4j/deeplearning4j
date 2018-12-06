@@ -3562,7 +3562,8 @@ template <typename T>
     }
 
     template <typename T>
-    INLINEDEF _CUDA_HD void printArray(T *arr,int length, const char * message) {
+    INLINEDEF _CUDA_HD void printArray(void *varr,int length, const char * message) {
+        auto arr = reinterpret_cast<T*>(varr);
         if (message != nullptr)
             printf("%s: [", message);
         else

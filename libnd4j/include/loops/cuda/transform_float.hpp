@@ -67,10 +67,10 @@ namespace functions {
 											int *allocationPointer, void *vreductionPointer, 
 											Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
-        	auto dy = static_cast<X*>(vdy);
-		    auto z = static_cast<Z*>(vresult);
-		    auto params = static_cast<Z*>(vparams);
-		    auto reductionPointer = static_cast<Z*>(vreductionPointer);
+        	auto dy = reinterpret_cast<X*>(vdy);
+		    auto z = reinterpret_cast<Z*>(vresult);
+		    auto params = reinterpret_cast<Z*>(vparams);
+		    auto reductionPointer = reinterpret_cast<Z*>(vreductionPointer);
 
 		    if(OpType::requiresSpecial) {
 			    OpType::execSpecialCuda(dy,shapeInfo,z,zShapeInfo,params, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
@@ -135,10 +135,10 @@ namespace functions {
 								Nd4jLong zEws,
 								int *allocationPointer, void *vreductionPointer) {
 
-        	auto dy = static_cast<X*>(vdy);
-		    auto z = static_cast<Z*>(vresult);
-		    auto params = static_cast<Z*>(vparams);
-		    auto reductionPointer = static_cast<Z*>(vreductionPointer);
+        	auto dy = reinterpret_cast<X*>(vdy);
+		    auto z = reinterpret_cast<Z*>(vresult);
+		    auto params = reinterpret_cast<Z*>(vparams);
+		    auto reductionPointer = reinterpret_cast<Z*>(vreductionPointer);
 
             int totalThreads = gridDim.x * blockDim.x;
 		    Nd4jLong i = blockIdx.x * blockDim.x + threadIdx.x;
