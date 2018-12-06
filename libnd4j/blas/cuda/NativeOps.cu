@@ -150,8 +150,8 @@ extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension,
 
     ArrayOptions::setDataType(specialPointer, dataType);
 
-    printf("special[0]: [%lld]\n", (long long) specialPointer[0]);
-    shape::printShapeInfoLinear("prepareShapeBuffer", specialPointer);
+    //printf("special[0]: [%lld]\n", (long long) specialPointer[0]);
+    //shape::printShapeInfoLinear("prepareShapeBuffer", specialPointer);
 }
 
 
@@ -160,7 +160,7 @@ extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension,
 void CUDART_CB syncCallback(cudaStream_t stream, cudaError_t status, void *data){
     SyncInfo *sync = reinterpret_cast<SyncInfo *>(data);
 
-    printf("Finished stream: [%i], kernel call: [%i]\n", sync->streamId, sync->callId);
+    //printf("Finished stream: [%i], kernel call: [%i]\n", sync->streamId, sync->callId);
 }
 
 // this method just does type conversion in fancy way
