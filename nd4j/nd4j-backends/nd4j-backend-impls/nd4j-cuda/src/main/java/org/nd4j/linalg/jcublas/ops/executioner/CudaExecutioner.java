@@ -1457,7 +1457,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 case TRANSFORM_FLOAT:
                     nativeOps.execTransformFloat(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
-                           null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
+                           op.z().data().addressPointer(), (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
                             extraArgs);
                     break;
                 case TRANSFORM_BOOL:
@@ -2372,7 +2372,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             nativeOps.execTransformFloat(xShapeHost, 23,
                     null, (LongPointer) hxShape, x, (LongPointer) xShape,
-                    null, (LongPointer) hzShape, z, (LongPointer) zShape,
+                    zArr.data().addressPointer(), (LongPointer) hzShape, z, (LongPointer) zShape,
                     extraArgs);
 
             // AtomicAllocator.getInstance().getAllocationPoint(zArr).tickDeviceWrite();
