@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff.internal;
 
 import com.google.common.collect.Iterables;
 import lombok.NonNull;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
@@ -54,34 +55,45 @@ public class Session {
 
         //Step 1: determine subgraph structure
         Queue<String> processingQueue = new LinkedList<>(variables);
-        Map<String, AtomicInteger> subgraph = new HashMap<>();       //Key: variable name. Value: number of missing inputs - TODO more useful representation?
+        Set<String> subgraph = new HashSet<>();     //Contains variables we *might* need to execute in process of getting outputs we want
+        Queue<String> availableForExec = new LinkedList<>();
+
         //Note subgraph initially should include placeholders and constants?
         while(!processingQueue.isEmpty()){
             String s = processingQueue.remove();
             Variable v = sameDiff.getVariables().get(s);
 
-            if(!subgraph.containsKey(v.getName())){
+            if(!subgraph.contains(v.getName())){
                 String opName = v.getOutputOfOp();
                 SameDiffOp op = sameDiff.getOps().get(opName);
                 int numInputs = op.getInputsToOp() == null ? 0 : op.getInputsToOp().length;
-                subgraph.put(v.getName(), new AtomicInteger(numInputs));
-            }
-
-            //To execute op, need all that inputs -> v depends on op inputs
-            SameDiffOp op = sameDiff.getOps().get(v.getOutputOfOp());
-            String[] inputs = op.getInputsToOp();
-            for(String s2 : inputs){
-                if(!subgraph.containsKey(s2) ){     // && !placeholder || placeholder with control deps
-                    processingQueue.add(s2);
+                if(op.getControlDeps() != null){
+                    numInputs += op.getControlDeps().length;
+                }
+                if(numInputs == 0){
+                    availableForExec.add(v.getName());
                 }
             }
 
-            //Variables can have control dependencies (TODO TF uses Constant nodes for this; we might consider doing the same instead of allowing variable control inputs?)
-            String[] controlDeps = v.getControlDeps();
-            if(controlDeps != null ){
-                for(String cd : controlDeps) {
-                    if (!subgraph.containsKey(cd)) {    // && !placeholder || placeholder with control deps
-                        processingQueue.add(cd);
+            if(v.getOutputOfOp() != null) {
+                String opName = v.getOutputOfOp();
+                SameDiffOp op = sameDiff.getOps().get(opName);
+
+                //To execute op - and hence get this variable: need inputs to that op
+                String[] inputs = op.getInputsToOp();
+                for (String s2 : inputs) {
+                    if (!subgraph.contains(s2)) {
+                        processingQueue.add(s2);
+                    }
+                }
+
+                //To execute op - and hence get this variable - we also need control deps
+                String[] opControlDeps = op.getControlDeps();
+                if(opControlDeps != null){
+                    for(String s2 : opControlDeps){
+                        if(!subgraph.contains(s2)){
+                            processingQueue.add(s2);
+                        }
                     }
                 }
             }
@@ -89,33 +101,86 @@ public class Session {
 
 
         //Step 3: execute in any order, until we have all required arrays
-        while(subgraph.size() > 0){
-            //Get any variable and execute it's corresponding op
-            String toExecute = Iterables.getFirst(leaves, null);       //TODO anything more efficient without object creation?
+        /*
+        Idea for execution is simple: we have subgraph of variables, which is whatever is left to execute.
+        We look for leaf elements in subgraph - these are variables with either no inputs (placeholders/constants), or
+        variables where all inputs required to calculate are available.
 
+        After finding leaf, we execute associated op (for non placeholders/constants). Then, we remove the newly computed
+        variable from the subgraph, exposing one or more new leaves to be executed in the next steps.
 
-            //Post execution: update the graph structure
-            Variable v = sameDiff.getVariables().get(toExecute);
-            String[] inputsTo = v.getInputsForOp();
-        }
+        We stop computation once all the required outputs are available. At this point, subgraph may NOT be empty - for example,
+        switch ops may cause entire branches of the graph to be skipped.
+         */
 
-
-        //Return
         Map<String,INDArray> out = new HashMap<>();
-        for(String s : variables){
-            if(sameDiff.isPlaceHolder(s)){
+        while(out.size() < variables.size()){
+            //Get any variable and execute it's corresponding op
+            String varToExec = availableForExec.remove();
+            Variable v = sameDiff.getVariables().get(varToExec);
 
-            } else if( false /*sameDiff.isConstant(s)*/){
-
-            } else {
-                out.put(s, arrays.get(s));
+            if(sameDiff.isPlaceHolder(varToExec) ){
+                arrays.put(varToExec, placeholderValues.get(varToExec));
+                updateDescendentsForExec(varToExec);
             }
+            /*
+            else if( isConstant ){
+
+                continue;
+            }
+             */
+            else if(v.getOutputOfOp() != null){
+                //Need to execute op to get this variable... which might have already happened in a previous step for multi-op variables
+
+                if(!arrays.containsKey(varToExec)){
+                    SameDiffOp op = sameDiff.getOps().get(v.getOutputOfOp());
+
+                    //Execute op
+                    //TODO
+
+                    //Post execution: work out what is now available for exec
+                    String[] opOutputs = op.getOutputsOfOp();
+                    for(String s : opOutputs){
+                        updateDescendentsForExec(s);
+                    }
+                }
+
+
+            }
+
+
+
+            String[] opOutputVars = op.getOutputsOfOp();            //All of these variables are now available
+            for(String var : opOutputVars){
+                Variable v2 = sameDiff.getVariables().get(var);
+                String[] inputsFor = v2.getInputsForOp();           //This variable is input to other ops
+
+            }
+
+
         }
+
 
         //TODO under what circumstances should we clear the arrays map?
-        //TODO when should we close the workspace? (Might want to leave it open
+        //TODO when should we close the workspace? (Might want to leave it open if we expect to re-use)
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        return out;
+    }
+
+
+    protected void updateDescendentsForExec(String varName){
+
+        //Find any ops (or variables with control dependencies) that this is required for execution of and check if now available
+        Variable v = sameDiff.getVariables().get(varName);
+        if(v.getInputsForOp() != null){
+            String[] ops = v.getInputsForOp();
+
+            for(String s : ops) {
+                SameDiffOp o = sameDiff.getOps().get(s);
+                //Can execute this op - and hence get it's output variables - if all inputs are available
+
+            }
+        }
     }
 
 
