@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.LegacyPooling2D;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Broadcast;
@@ -465,6 +466,36 @@ public class SpecialTests extends BaseNd4jTest {
             out = Nd4j.concat(1, arrs);
         }
         Nd4j.getExecutioner().commit();
+        System.out.println(out);
+    }
+
+
+    @Test
+    public void legacyPooling2dTest_double(){
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray in = Nd4j.rand(DataType.DOUBLE, new int[]{1,1,3,3});
+        INDArray out = Nd4j.create(DataType.DOUBLE, 1,1,2,2);
+
+        val op = new LegacyPooling2D(in, 2, 2, 1, 1, 0, 0, 1, 1, true, LegacyPooling2D.Pooling2DType.MAX, 0.0, out);
+        Nd4j.getExecutioner().exec(op);
+        Nd4j.getExecutioner().commit();
+        System.out.println(in);
+        System.out.println(out);
+    }
+
+
+    @Test
+    public void legacyPooling2dTes_float(){
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray in = Nd4j.rand(DataType.FLOAT, new int[]{1,1,3,3});
+        INDArray out = Nd4j.create(DataType.FLOAT, 1,1,2,2);
+
+        val op = new LegacyPooling2D(in, 2, 2, 1, 1, 0, 0, 1, 1, true, LegacyPooling2D.Pooling2DType.MAX, 0.0, out);
+        Nd4j.getExecutioner().exec(op);
+        Nd4j.getExecutioner().commit();
+        System.out.println(in);
         System.out.println(out);
     }
 

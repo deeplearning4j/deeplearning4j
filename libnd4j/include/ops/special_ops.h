@@ -180,30 +180,30 @@ namespace simdOps {
 //    			const int hEO = hend;
 
     			if(hstart < 0){
-                    int f = (int)nd4j::math::nd4j_ceil<T,Nd4jLong>((T) -hstart / (T)dH);
+                    int f = nd4j::math::nd4j_ceil<Z,int>((Z) -hstart / (Z)dH);
                     hstart += f * dH;
                 }
                 if(wstart < 0){
-                    int f = (int)nd4j::math::nd4j_ceil<T,Nd4jLong>((T) -wstart / (T) dW);
+                    int f = nd4j::math::nd4j_ceil<Z,int>((Z) -wstart / (Z) dW);
                     wstart += f * dW;
                 }
                 if(hend > inH){
-                    int f = (int)nd4j::math::nd4j_ceil<T,Nd4jLong>((T) (hend-inH) / (T) dH);
+                    int f = nd4j::math::nd4j_ceil<Z,int>((Z) (hend-inH) / (Z) dH);
                     hend -= f * dH;
                 }
                 if(wend > inW){
-                    int f = (int)nd4j::math::nd4j_ceil<T,Nd4jLong>((T) (wend-inW) / (T) dW);
+                    int f = nd4j::math::nd4j_ceil<Z,int>((Z) (wend-inW) / (Z) dW);
                     wend -= f * dW;
                 }
-    			int pool_size = (int)(nd4j::math::nd4j_ceil<double,T>((double) (hend-hstart) / (double) dH) * (int) nd4j::math::nd4j_ceil<double,T>((double) (wend-wstart) / (double) dW));	//Accounts for dilation
+    			int pool_size = nd4j::math::nd4j_ceil<double,int>((double) (hend-hstart) / (double) dH) * nd4j::math::nd4j_ceil<double,int>((double) (wend-wstart) / (double) dW);	//Accounts for dilation
 
-    			T sum = poolingMode == 0 ? -nd4j::DataTypeUtils::max<T>() : static_cast<T>(0.f);
+    			Z sum = poolingMode == 0 ? -nd4j::DataTypeUtils::max<Z>() : static_cast<Z>(0.f);
 
     			T *input_slice = dx + (n * strideB + c * strideC);
     			if (poolingMode == 0) {
     			    for (int h = hstart; h < hend; h += dH) {
       				    for (int w = wstart; w < wend; w += dW) {
-        				    T v = input_slice[h * strideY + w * strideX];
+        				    Z v = static_cast<Z>(input_slice[h * strideY + w * strideX]);
         				    if (v > sum)
         				        sum = v;
       				    }
@@ -211,18 +211,18 @@ namespace simdOps {
     			} else if (poolingMode == 1) {
     			    for (int h = hstart; h < hend; h += dH) {
       				    for (int w = wstart; w < wend; w += dW) {
-        				    sum += input_slice[h * strideY + w * strideX];
+        				    sum += static_cast<Z>(input_slice[h * strideY + w * strideX]);
       				    }
     			    }
     			} else if (poolingMode == 2) {
     			    for (int h = hstart; h < hend; h += dH) {
       				    for (int w = wstart; w < wend; w += dW) {
-        				    sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(input_slice[h * strideY + w * strideX]), extraParam0);
+        				    sum += nd4j::math::nd4j_pow<Z,Z,Z>(static_cast<Z>(nd4j::math::nd4j_abs<T>(input_slice[h * strideY + w * strideX])), extraParam0);
       				    }
     			    }
     			}
 
-				T res;
+				Z res;
 
     			if (poolingMode == 0) {
                     res = sum;
@@ -231,9 +231,9 @@ namespace simdOps {
     			    if ((int) extraParam0 == 1)     //Case 1: include padding
 					    divide_factor = kH * kW;
 
-    			    res = sum / divide_factor;
+    			    res = sum / static_cast<Z>(divide_factor);
     			} else if (poolingMode == 2) {
-                    res = nd4j::math::nd4j_pow<T,T,T>(sum, (T) 1.0f / extraParam0);
+                    res = nd4j::math::nd4j_pow<Z,Z,Z>(sum, (Z) 1.0f / extraParam0);
     			}
 
 
