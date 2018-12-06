@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff.internal;
 
 import com.google.common.collect.Iterables;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -12,6 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
 public class Session {
 
     protected final SameDiff sameDiff;
@@ -53,12 +55,12 @@ public class Session {
         //Step 0: validation - that variables exist, placeholders have arrays, etc
 
 
-        //Step 1: determine subgraph structure
+        //Step 1: determine subgraph structure we actually need to execute
         Queue<String> processingQueue = new LinkedList<>(variables);
         Set<String> subgraph = new HashSet<>();     //Contains variables we *might* need to execute in process of getting outputs we want
         Queue<String> availableForExec = new LinkedList<>();
 
-        //Note subgraph initially should include placeholders and constants?
+        //Note subgraph initially should include placeholders and constants
         while(!processingQueue.isEmpty()){
             String s = processingQueue.remove();
             Variable v = sameDiff.getVariables().get(s);
@@ -114,14 +116,20 @@ public class Session {
          */
 
         Map<String,INDArray> out = new HashMap<>();
+        int step = 0;
         while(out.size() < variables.size()){
             //Get any variable and execute it's corresponding op
             String varToExec = availableForExec.remove();
             Variable v = sameDiff.getVariables().get(varToExec);
 
+            log.debug("Beginning execution step {}: variable {}", (step++), varToExec);
+
             if(sameDiff.isPlaceHolder(varToExec) ){
                 arrays.put(varToExec, placeholderValues.get(varToExec));
-                updateDescendentsForExec(varToExec);
+                updateDescendentsForExec(varToExec, availableForExec);
+                if(variables.contains(varToExec)){  //Check if required output
+                    out.put(varToExec, placeholderValues.get(varToExec));
+                }
             }
             /*
             else if( isConstant ){
@@ -138,26 +146,24 @@ public class Session {
                     //Execute op
                     //TODO
 
+
+
+
                     //Post execution: work out what is now available for exec
                     String[] opOutputs = op.getOutputsOfOp();
-                    for(String s : opOutputs){
-                        updateDescendentsForExec(s);
+                    INDArray[] opOutputArrays = null;   //TODO
+                    for( int i=0; i<opOutputs.length; i++ ){
+                        arrays.put(opOutputs[i], opOutputArrays[i]);
+                        updateDescendentsForExec(opOutputs[i], availableForExec);
+
+                        if(variables.contains(opOutputs[i])){  //Check if required output
+                            out.put(opOutputs[i], opOutputArrays[i]);
+                        }
                     }
                 }
-
-
             }
 
-
-
-            String[] opOutputVars = op.getOutputsOfOp();            //All of these variables are now available
-            for(String var : opOutputVars){
-                Variable v2 = sameDiff.getVariables().get(var);
-                String[] inputsFor = v2.getInputsForOp();           //This variable is input to other ops
-
-            }
-
-
+            //TODO check for invalid graph structure
         }
 
 
@@ -168,17 +174,52 @@ public class Session {
     }
 
 
-    protected void updateDescendentsForExec(String varName){
-
+    /**
+     * This method should be called for a variable once it's array is ready for use.
+     * For example, post op execution, etc
+     *
+     * @param varName          Name of the variable
+     * @param availableForExec Any other variables that are now available for execution
+     */
+    protected void updateDescendentsForExec(String varName, Queue<String> availableForExec){
         //Find any ops (or variables with control dependencies) that this is required for execution of and check if now available
         Variable v = sameDiff.getVariables().get(varName);
+
+        //Check if we can execute this op now...
         if(v.getInputsForOp() != null){
             String[] ops = v.getInputsForOp();
 
             for(String s : ops) {
                 SameDiffOp o = sameDiff.getOps().get(s);
-                //Can execute this op - and hence get it's output variables - if all inputs are available
+                //Can execute this op - and hence get it's output variables - if all inputs (and control deps) are available
+                String[] inputs = o.getInputsToOp();
+                boolean allInputsAvailable = true;
+                for(String in : inputs){
+                    if(!arrays.containsKey(in)) {
+                        allInputsAvailable = false;
+                        break;
+                    }
+                }
 
+                String[] opControlDeps = o.getControlDeps();
+                if(opControlDeps != null && allInputsAvailable){
+                    for(String cd : opControlDeps){
+                        if(!arrays.containsKey(cd)) {
+                            allInputsAvailable = false;
+                            break;
+                        }
+                    }
+                }
+
+                if(allInputsAvailable && o.getOutputsOfOp() != null){
+                    //Op can be executed -> variables as output are available for exec
+                    //TODO what about variable control depes?
+
+                    Collections.addAll(availableForExec, o.getOutputsOfOp());
+                    if(log.isTraceEnabled()){
+                        log.trace("Marked variables as available for execution: {}", Arrays.toString(o.getOutputsOfOp()));
+                    }
+                }
             }
         }
     }
