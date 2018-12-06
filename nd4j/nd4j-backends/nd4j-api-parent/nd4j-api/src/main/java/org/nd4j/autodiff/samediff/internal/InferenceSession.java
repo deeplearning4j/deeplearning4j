@@ -10,6 +10,7 @@ import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,12 +24,20 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
     @Override
     public INDArray[] getOutputs(DifferentialFunction op) {
-        throw new UnsupportedOperationException("Not yet implemented");
+//        throw new UnsupportedOperationException("Not yet implemented");
+        //TODO
+        int numOutputs = op.getNumOutputs();
+        INDArray[] out = new INDArray[numOutputs];
+        for( int i=0; i<numOutputs; i++ ){
+            out[i] = Nd4j.scalar(0.0f);
+        }
+        return out;
     }
 
     @Override
     public DifferentialFunction getAndParameterizeOp(String opName) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        //TODO actually set inputs etc
+        return sameDiff.getFunctionById(opName);
     }
 
 
