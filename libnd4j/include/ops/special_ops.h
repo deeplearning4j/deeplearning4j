@@ -76,30 +76,30 @@ namespace simdOps {
 		* Based on:  https://github.com/pjreddie/darknet/blob/master/src/im2col_kernels.cu
 		*/
 
-		static inline __device__ void execSpecialCuda(
-			             T *dx, Nd4jLong *xShapeBuffer,
-			             Z *result, Nd4jLong *zShapeBuffer,
-			             Z *extraParams, 
+	static inline __device__ void execSpecialCuda(
+                         T *dx, Nd4jLong *xShapeBuffer,
+                         Z *result, Nd4jLong *zShapeBuffer,
+                         Z *extraParams, 
                          int *allocationPointer, Z *reductionPointer, 
                          Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
-			__shared__ int kH;
-			__shared__ int kW;
-			__shared__ int sH;
-			__shared__ int sW;
-			__shared__ int pH;
-			__shared__ int pW;
-			__shared__ int dH;
-			__shared__ int dW;
-			__shared__ int poolingMode;
-			__shared__ Z extraParam0;
+            __shared__ int kH;
+            __shared__ int kW;
+            __shared__ int sH;
+            __shared__ int sW;
+            __shared__ int pH;
+            __shared__ int pW;
+            __shared__ int dH;
+            __shared__ int dW;
+            __shared__ int poolingMode;
+            __shared__ Z extraParam0;
 
-			__shared__ int batchSize;
-			__shared__ int inChannels;
-			__shared__ int outH;
-			__shared__ int outW;
-			__shared__ int inH;
-			__shared__ int inW;
+            __shared__ int batchSize;
+            __shared__ int inChannels;
+            __shared__ int outH;
+            __shared__ int outW;
+            __shared__ int inH;
+            __shared__ int inW;
 
             //__shared__ int *strideIn;
             //__shared__ int *strideOut;
@@ -108,7 +108,7 @@ namespace simdOps {
             __shared__ int strideY;
             __shared__ int strideX;
 
-			__shared__ int strideOB;
+            __shared__ int strideOB;
             __shared__ int strideOC;
             __shared__ int strideOY;
             __shared__ int strideOX;
@@ -116,139 +116,139 @@ namespace simdOps {
             __shared__ int length;
             __shared__ int kHEff;
             __shared__ int kWEff;
-			__shared__ bool fOrder;
-		
+            __shared__ bool fOrder;
+        
 
-			if (threadIdx.x == 0) {
-				kH = (int)extraParams[0];
-				kW = (int)extraParams[1];
-				sH = (int)extraParams[2];
-				sW = (int)extraParams[3];
-				pH = (int)extraParams[4];
-				pW = (int)extraParams[5];
-				dH = (int)extraParams[6];			//Dilation, height dimension
-				dW = (int)extraParams[7];			//Dilation, width dimension
-				poolingMode = (int)extraParams[9];
-				extraParam0 = extraParams[10];
+            if (threadIdx.x == 0) {
+                kH = (int)extraParams[0];
+                kW = (int)extraParams[1];
+                sH = (int)extraParams[2];
+                sW = (int)extraParams[3];
+                pH = (int)extraParams[4];
+                pW = (int)extraParams[5];
+                dH = (int)extraParams[6];           //Dilation, height dimension
+                dW = (int)extraParams[7];           //Dilation, width dimension
+                poolingMode = (int)extraParams[9];
+                extraParam0 = extraParams[10];
 
-				batchSize = shape::sizeAt(xShapeBuffer, 0);
-				inChannels = shape::sizeAt(xShapeBuffer, 1);
-				outH = shape::sizeAt(zShapeBuffer, 2);
-				outW = shape::sizeAt(zShapeBuffer, 3);
-				inH = shape::sizeAt(xShapeBuffer, 2);
-				inW = shape::sizeAt(xShapeBuffer, 3);
+                batchSize = shape::sizeAt(xShapeBuffer, 0);
+                inChannels = shape::sizeAt(xShapeBuffer, 1);
+                outH = shape::sizeAt(zShapeBuffer, 2);
+                outW = shape::sizeAt(zShapeBuffer, 3);
+                inH = shape::sizeAt(xShapeBuffer, 2);
+                inW = shape::sizeAt(xShapeBuffer, 3);
 
-            	strideB = shape::stride(xShapeBuffer)[0];
-            	strideC = shape::stride(xShapeBuffer)[1];
-            	strideY = shape::stride(xShapeBuffer)[2];
-            	strideX = shape::stride(xShapeBuffer)[3];
+                strideB = shape::stride(xShapeBuffer)[0];
+                strideC = shape::stride(xShapeBuffer)[1];
+                strideY = shape::stride(xShapeBuffer)[2];
+                strideX = shape::stride(xShapeBuffer)[3];
 
-				strideOB = shape::stride(zShapeBuffer)[0];
-            	strideOC = shape::stride(zShapeBuffer)[1];
-            	strideOY = shape::stride(zShapeBuffer)[2];
-            	strideOX = shape::stride(zShapeBuffer)[3];
+                strideOB = shape::stride(zShapeBuffer)[0];
+                strideOC = shape::stride(zShapeBuffer)[1];
+                strideOY = shape::stride(zShapeBuffer)[2];
+                strideOX = shape::stride(zShapeBuffer)[3];
 
-            	length = shape::length(zShapeBuffer);
+                length = shape::length(zShapeBuffer);
 
-				//Replace kernel H/W with *effective* kernel H/W accounting for dilatyon
-				kHEff = kH + (kH-1)*(dH-1);
-				kWEff = kW + (kW-1)*(dW-1);
+                //Replace kernel H/W with *effective* kernel H/W accounting for dilatyon
+                kHEff = kH + (kH-1)*(dH-1);
+                kWEff = kW + (kW-1)*(dW-1);
 
-				fOrder = shape::order(zShapeBuffer) == 'f';
+                fOrder = shape::order(zShapeBuffer) == 'f';
 /*
-				if (blockIdx.x == 0) {
-					printf("kH: %i; kW: %i; sH: %i; sW: %i; pH: %i; pW: %i; dH: %i; dW: %i; poolingMode: %i; extraParam0: %f;\n", kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, (float) extraParam0);
-					printf("batchSize: %i; inChannels: %i; outH: %i; outW: %i; inH: %i; inW: %i; strideB: %i; strideC: %i; strideY: %i; strideX: %i;\n", batchSize, inChannels, outH, outW, inH, inW, strideB, strideC, strideY, strideX);
-				}
+                if (blockIdx.x == 0) {
+                    printf("kH: %i; kW: %i; sH: %i; sW: %i; pH: %i; pW: %i; dH: %i; dW: %i; poolingMode: %i; extraParam0: %f;\n", kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, (float) extraParam0);
+                    printf("batchSize: %i; inChannels: %i; outH: %i; outW: %i; inH: %i; inW: %i; strideB: %i; strideC: %i; strideY: %i; strideX: %i;\n", batchSize, inChannels, outH, outW, inH, inW, strideB, strideC, strideY, strideX);
+                }
 */
             }
             __syncthreads();
 
-			int tid = blockIdx.x * gridDim.x + threadIdx.x;
+            int tid = blockIdx.x * gridDim.x + threadIdx.x;
 
             for (int index = tid; index < length; index += blockDim.x * gridDim.x) {
-				const int pw = index % outW;
-    			const int ph = (index / outW) % outH;
-    			const int c = (index / outW / outH) % inChannels;
-    			const int n = index / outW / outH / inChannels;
-    			int hstart = sH * ph - pH;
-    			int wstart = sW * pw - pW;
-    			int hend = hstart + kHEff;
-    			int wend = wstart + kWEff;
+                const int pw = index % outW;
+                const int ph = (index / outW) % outH;
+                const int c = (index / outW / outH) % inChannels;
+                const int n = index / outW / outH / inChannels;
+                int hstart = sH * ph - pH;
+                int wstart = sW * pw - pW;
+                int hend = hstart + kHEff;
+                int wend = wstart + kWEff;
 
-//    			const int hSO = hstart;
-//    			const int hEO = hend;
+//              const int hSO = hstart;
+//              const int hEO = hend;
 
-    			if(hstart < 0){
-                    int f = nd4j::math::nd4j_ceil<Z,int>((Z) -hstart / (Z)dH);
+                if(hstart < 0){
+                    int f = (int)nd4j::math::nd4j_ceil<T,T>((T) -hstart / (T)dH);
                     hstart += f * dH;
                 }
                 if(wstart < 0){
-                    int f = nd4j::math::nd4j_ceil<Z,int>((Z) -wstart / (Z) dW);
+                    int f = (int)nd4j::math::nd4j_ceil<T,T>((T) -wstart / (T) dW);
                     wstart += f * dW;
                 }
                 if(hend > inH){
-                    int f = nd4j::math::nd4j_ceil<Z,int>((Z) (hend-inH) / (Z) dH);
+                    int f = (int)nd4j::math::nd4j_ceil<T,T>((T) (hend-inH) / (T) dH);
                     hend -= f * dH;
                 }
                 if(wend > inW){
-                    int f = nd4j::math::nd4j_ceil<Z,int>((Z) (wend-inW) / (Z) dW);
+                    int f = (int)nd4j::math::nd4j_ceil<T,T>((T) (wend-inW) / (T) dW);
                     wend -= f * dW;
                 }
-    			int pool_size = nd4j::math::nd4j_ceil<double,int>((double) (hend-hstart) / (double) dH) * nd4j::math::nd4j_ceil<double,int>((double) (wend-wstart) / (double) dW);	//Accounts for dilation
+                int pool_size = (int)(nd4j::math::nd4j_ceil<double,T>((double) (hend-hstart) / (double) dH) * (int) nd4j::math::nd4j_ceil<double,T>((double) (wend-wstart) / (double) dW)); //Accounts for dilation
 
-    			Z sum = poolingMode == 0 ? -nd4j::DataTypeUtils::max<Z>() : static_cast<Z>(0.f);
+                T sum = poolingMode == 0 ? -nd4j::DataTypeUtils::max<T>() : static_cast<T>(0.f);
 
-    			T *input_slice = dx + (n * strideB + c * strideC);
-    			if (poolingMode == 0) {
-    			    for (int h = hstart; h < hend; h += dH) {
-      				    for (int w = wstart; w < wend; w += dW) {
-        				    Z v = static_cast<Z>(input_slice[h * strideY + w * strideX]);
-        				    if (v > sum)
-        				        sum = v;
-      				    }
-    			    }
-    			} else if (poolingMode == 1) {
-    			    for (int h = hstart; h < hend; h += dH) {
-      				    for (int w = wstart; w < wend; w += dW) {
-        				    sum += static_cast<Z>(input_slice[h * strideY + w * strideX]);
-      				    }
-    			    }
-    			} else if (poolingMode == 2) {
-    			    for (int h = hstart; h < hend; h += dH) {
-      				    for (int w = wstart; w < wend; w += dW) {
-        				    sum += nd4j::math::nd4j_pow<Z,Z,Z>(static_cast<Z>(nd4j::math::nd4j_abs<T>(input_slice[h * strideY + w * strideX])), extraParam0);
-      				    }
-    			    }
-    			}
+                T *input_slice = dx + (n * strideB + c * strideC);
+                if (poolingMode == 0) {
+                    for (int h = hstart; h < hend; h += dH) {
+                        for (int w = wstart; w < wend; w += dW) {
+                            T v = input_slice[h * strideY + w * strideX];
+                            if (v > sum)
+                                sum = v;
+                        }
+                    }
+                } else if (poolingMode == 1) {
+                    for (int h = hstart; h < hend; h += dH) {
+                        for (int w = wstart; w < wend; w += dW) {
+                            sum += input_slice[h * strideY + w * strideX];
+                        }
+                    }
+                } else if (poolingMode == 2) {
+                    for (int h = hstart; h < hend; h += dH) {
+                        for (int w = wstart; w < wend; w += dW) {
+                            sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(input_slice[h * strideY + w * strideX]), extraParam0);
+                        }
+                    }
+                }
 
-				Z res;
+                T res;
 
-    			if (poolingMode == 0) {
+                if (poolingMode == 0) {
                     res = sum;
-    			} else if (poolingMode == 1) {
-    			    int divide_factor = pool_size;  //Case 0: exclude padding
-    			    if ((int) extraParam0 == 1)     //Case 1: include padding
-					    divide_factor = kH * kW;
+                } else if (poolingMode == 1) {
+                    int divide_factor = pool_size;  //Case 0: exclude padding
+                    if ((int) extraParam0 == 1)     //Case 1: include padding
+                        divide_factor = kH * kW;
 
-    			    res = sum / static_cast<Z>(divide_factor);
-    			} else if (poolingMode == 2) {
-                    res = nd4j::math::nd4j_pow<Z,Z,Z>(sum, (Z) 1.0f / extraParam0);
-    			}
+                    res = sum / divide_factor;
+                } else if (poolingMode == 2) {
+                    res = nd4j::math::nd4j_pow<T,T,T>(sum, (T) 1.0f / extraParam0);
+                }
 
 
-				if (!fOrder) {
-					result[index] = res;
+                if (!fOrder) {
+                    result[index] = res;
                 } else {
-					result[n * strideOB + c * strideOC + pw * strideOX + ph * strideOY] = res;
+                    result[n * strideOB + c * strideOC + pw * strideOX + ph * strideOY] = res;
                 }
 /*
                 if (index >= 0 && index < 400000) {
-    			    printf("index: %i; hstart: %i; hend: %i; wstart: %i; wend: %i; ph: %i; pw: %i; hstart_orig: %i; hend_orig: %i;\n", index, hstart, hend, wstart, wend, ph, pw, hSO, hEO);
-    			}
+                    printf("index: %i; hstart: %i; hend: %i; wstart: %i; wend: %i; ph: %i; pw: %i; hstart_orig: %i; hend_orig: %i;\n", index, hstart, hend, wstart, wend, ph, pw, hSO, hEO);
+                }
 */
             }
-		}
+        }
 #endif
 
 
