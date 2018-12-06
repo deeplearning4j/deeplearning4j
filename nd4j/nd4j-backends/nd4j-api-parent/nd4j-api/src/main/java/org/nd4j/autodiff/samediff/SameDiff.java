@@ -34,6 +34,10 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.flow.FlowPath;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.autodiff.samediff.internal.ShapeSession;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
 import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
@@ -95,6 +99,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.DeviceLocalNDArray;
 import org.nd4j.list.compat.TensorList;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.weightinit.WeightInitScheme;
@@ -137,7 +142,9 @@ public class SameDiff {
     @Getter
     private final Map<String,SameDiffOp> ops = new HashMap<>();
     @Getter
-    private final Map<Long,Session> sessions = new ConcurrentHashMap<>();
+    private final Map<Long,ShapeSession> shapes = new ConcurrentHashMap<>();
+    @Getter
+    private final Map<Long,InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
 
     private final Map<String,DeviceLocalNDArray> constantArrays = new HashMap<>();
     private final Map<String,DeviceLocalNDArray> variablesArrays = new HashMap<>();     //TODO does DeviceLocal make sense if mutable?
@@ -155,11 +162,15 @@ public class SameDiff {
     @Getter
     private Map<String,GradientUpdater> updaterMap;                 //GradientUpdater instance for each trainable parameter
 
+    @Deprecated //TO BE REMOVED - to SameDiffOp
     private Map<String, String[]> incomingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as inputs to that function
+    @Deprecated //TO BE REMOVED - to SameDiffOp
     private Map<String, String[]> outgoingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as outputs from that function
     private Map<String, int[]> permuteOrder;
     private boolean shouldBootStrap = true;
+    @Deprecated //TO BE REMOVED - to Variable?
     private Set<String> importedVarName;
+    @Deprecated //TO BE REMOVED - to Variable?
     @Getter @Setter
     private Set<String> importedConstants;
     //map a function's instance id to a base name, used for propagating variable names
@@ -167,24 +178,33 @@ public class SameDiff {
     private Map<String, String> baseNameForFunctionInstanceId;
 
     private DifferentialFunctionFactory functionFactory;
+    @Deprecated //TO BE REMOVED - to Variable
     private Map<String, SDVariable> variableMap;                    //Key: SDVariable name. Value: SDVariable
+    @Deprecated //TO BE REMOVED - to ShapeSession
     private Map<String, long[]> variableNameToShape;                //Key: SDVariable name. Value: shape for that variable
     //gradient information
+    @Deprecated //TO BE REMOVED - to Variable
     private Map<String, SDVariable> gradients;                      //Key:
+    @Deprecated //TO BE REMOVED - to Variable
     private Map<String, SDVariable> forwardVarForGrad;
 
+    @Deprecated //TO BE REMOVED - to InferenceSession
     private Map<String, INDArray> variableNameToArr;                //Key: name of SDVariable. Value: Array for that variable
 
     //individual index for variable names
+    @Deprecated //TO BE REMOVED - to Variable
     private Map<String, List<DifferentialFunction>> functionsArgsFor;   //Key: SDVariable name. Value: all DifferentialFunctions it is an input to
+    @Deprecated //TO BE REMOVED - to Variable
     private Map<String, List<DifferentialFunction>> functionOutputFor;  //Key: SDVariable name. Value: DifferentialFunctions this variable is an output for (TODO: Why is this a list? Isn't it *always* length 1?)
 
     private Map<String, TensorList> lists = new HashMap<>();    // Key - node name; Value - TensorList
 
     // this entity holds runtime information for Switch/Merge/NextIteration etc stuff
+    @Deprecated //TO BE REMOVED - move to InferenceSession
     private transient ThreadLocal<FlowPath> localFlowPath = new ThreadLocal<FlowPath>();
 
     // here we save String -> Integer conversion to variables
+    @Deprecated //TO BE REMOVED - to Variable
     private transient Map<String, Integer> reverseMap = null;
 
     // counter for auto-naming variables
@@ -217,11 +237,13 @@ public class SameDiff {
      */
     private Map<String, Map<String, Object>> propertiesForFunction;
 
-
+    @Deprecated //TO BE REMOVED ??
     private Map<String, List<String[]>> placeHolderMap;
+    @Deprecated //TO BE REMOVED - to Variable
     private Map<String, long[]> placeHolderOriginalShapes;
     @Getter
     private Set<String> placeHolderVarNames;
+    @Deprecated //TO BE REMOVED - to InferenceSession
     private MemoryWorkspace workspace;
     private Map<String, SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
     private Map<String, SameDiff> sameDiffFunctionInstances;
@@ -926,6 +948,7 @@ public class SameDiff {
      * @param y  the second input
      * @return the result variable
      */
+    @Deprecated //TO BE REMOVED - should not be part of public API
     public SDVariable invoke(Op op, SDVariable x, SDVariable y) {
         if (!opMethods.containsKey(op.opName())) {
             throw new ND4JIllegalStateException("Illegal method opName " + op.opName());
@@ -965,6 +988,7 @@ public class SameDiff {
      * @return Bytes for all of the arrays in the graph for the current variable shapes
      */
     public long memoryForGraph() {
+        //TODO FIX ME
         return numElements() * DataTypeUtil.lengthForDtype(Nd4j.dataType());
     }
 
@@ -1421,6 +1445,7 @@ public class SameDiff {
      * @param inputs the inputs to evaluate
      * @return
      */
+    @Deprecated //TO BE REMOVED - need better API + way of specifying what to return. "Final" ops are usually scores, not predictions that users care about
     public INDArray[] eval(Map<String, INDArray> inputs) {
         SameDiff execPipeline = dup();
         for(Map.Entry<String,INDArray> entry : inputs.entrySet()) {
@@ -1449,6 +1474,7 @@ public class SameDiff {
      * @param inputs the input arrays
      * @return
      */
+    @Deprecated //TO BE REMOVED - need better API + way of specifying what to return. "Final" ops are usually scores, not predictions that users care about
     public INDArray[] eval(INDArray[] inputs) {
         List<String> inputVariables = inputs();
         if(inputVariables.isEmpty()) {
@@ -1500,7 +1526,7 @@ public class SameDiff {
         return ret;
     }
 
-
+    @Deprecated //TO BE REMOVED - move to InferenceSession
     private void initWorkspace() {
         workspace = Nd4j.getWorkspaceManager().createNewWorkspace(
                 WorkspaceConfiguration.builder()
@@ -1578,7 +1604,8 @@ public class SameDiff {
         fit(iter, numEpochs, true);
     }
 
-    protected void fit(MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount){
+    //Synchronized for thread safety
+    protected synchronized void fit(MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount){
         Preconditions.checkNotNull(iter, "Iterator must not be null");
         Preconditions.checkState(numEpochs > 0, "Number of training epochs must be a positive number. Got: %s", numEpochs);
         Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
@@ -9836,6 +9863,7 @@ public class SameDiff {
      * @param ops Ops to execute
      * @return Output (or first output) of the final op in the list, after execution
      */
+    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
     public INDArray execAndEndResult(List<DifferentialFunction> ops) {
         List<DifferentialFunction> exec = exec(ops);
         Op op = (Op) exec.get(exec.size() - 1);
@@ -9851,6 +9879,7 @@ public class SameDiff {
      *
      * @return The output of the final operation in the graph after execution
      */
+    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
     public INDArray execAndEndResult() {
         List<DifferentialFunction> exec = exec().getRight();
         val finalOp = exec.get(exec.size() - 1);
@@ -9868,6 +9897,7 @@ public class SameDiff {
      *
      * @return The outputs of the final operation in the graph, after execution
      */
+    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
     public INDArray[] execAndEndResults() {
         List<DifferentialFunction> exec = exec().getRight();
         val finalOp = exec.get(exec.size() - 1);
@@ -9887,6 +9917,7 @@ public class SameDiff {
      *
      * @return The output of the final operation in the graph
      */
+    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
     public INDArray execAndEndResult(int outputIndex) {
         List<DifferentialFunction> exec = exec().getRight();
         val output = exec.get(exec.size() - 1).outputVariables()[outputIndex];
@@ -9933,6 +9964,7 @@ public class SameDiff {
      * @param ops the list of already created ops
      * @return the passes in list
      */
+    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return\
     public List<DifferentialFunction> exec(List<DifferentialFunction> ops) {
         for (int i = 0; i < ops.size(); i++) {
             Op op = (Op) ops.get(i);
@@ -10071,6 +10103,7 @@ public class SameDiff {
      * @param functionName the name of the SameDiff function instance to invoke
      * @return Output of the final variable after execution
      */
+    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
     public INDArray execAndEndResult(String functionName) {
         return sameDiffFunctionInstances.get(functionName).execAndEndResult();
     }
@@ -10082,6 +10115,7 @@ public class SameDiff {
      * @param functionName the name of the SameDiff function instance to invoke
      * @return
      */
+    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec(String functionName) {
         Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> ret;
         if (debugMode) {
@@ -10103,6 +10137,7 @@ public class SameDiff {
      * @param cachedOps    the cached operations
      * @return
      */
+    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
     public List<DifferentialFunction> exec(String functionName, List<DifferentialFunction> cachedOps) {
         return sameDiffFunctionInstances.get(functionName).exec(cachedOps);
     }
@@ -10117,6 +10152,7 @@ public class SameDiff {
      *
      * @return Result of execution
      */
+    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards() {
         if (getFunction("grad") == null) {
             createGradFunction();
@@ -10300,6 +10336,7 @@ public class SameDiff {
      *
      * @return
      */
+    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
     public INDArray execBackwardAndEndResult() {
         List<DifferentialFunction> backwards = execBackwards().getRight();
         DifferentialFunction df = backwards.get(backwards.size() - 1);
@@ -10318,6 +10355,7 @@ public class SameDiff {
      *
      * @return
      */
+    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
     public INDArray execWithPlaceHolderAndEndResult(Map<String, INDArray> inputs) {
         resolveVariablesWith(inputs);
         return execAndEndResult();
@@ -10556,6 +10594,7 @@ public class SameDiff {
      *
      * @return
      */
+    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execWithPlaceHolder(Map<String, INDArray> inputs) {
         resolveVariablesWith(inputs);
         return exec();
@@ -10689,6 +10728,7 @@ public class SameDiff {
      * {@link SDVariable#getArr()}<br>
      * @return Execution results
      */
+    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return\
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec() {
 
         /*
@@ -11424,6 +11464,7 @@ public class SameDiff {
      * @param dataFormat the data format to permute
      * @return the permuted indices
      */
+    @Deprecated //TODO MOVE TO UTILITY METHOD - or delete entirely
     public static int[] permuteDataFormatForSameDiff(String dataFormat, boolean weights) {
         val dl4jFormat = "NCHW";
         dataFormat = dataFormat.toUpperCase();
@@ -12277,7 +12318,7 @@ public class SameDiff {
     }
 
 
-
+    @Deprecated //TODO MOVE TO UTILITY CLASS
     public static org.nd4j.linalg.api.buffer.DataType getDataTypeFromByte(byte val) {
         if (val == DataType.FLOAT)
             return org.nd4j.linalg.api.buffer.DataType.FLOAT;
@@ -12307,6 +12348,7 @@ public class SameDiff {
      * @param type
      * @return
      */
+    @Deprecated //TODO MOVE TO UTILITY CLASS
     public static byte getDataTypeAsByte(org.nd4j.linalg.api.buffer.DataType type) {
         switch (type) {
             case FLOAT:
@@ -12340,6 +12382,7 @@ public class SameDiff {
      * @param type Byte representing the op type
      * @return Op type
      */
+    @Deprecated //TODO MOVE TO UTILITY CLASS
     public static Op.Type getTypeFromByte(byte type) {
         switch (type) {
             case OpType.SCALAR:
@@ -12397,6 +12440,7 @@ public class SameDiff {
      * @param type type to convert
      * @return Byte representing the op type
      */
+    @Deprecated //TODO MOVE TO UTILITY CLASS
     public static byte getFlatOpType(Op.Type type) {
         switch (type) {
             case SCALAR:
@@ -12457,6 +12501,7 @@ public class SameDiff {
      * This method generally shouldn't be used by users (i.e., isn't necessary).
      * It is useful for situations such as graph import
      */
+    @Deprecated //will be redundant once we move to dynamic execution order in Session classes
     public void validateExecutionOrder(){
         //First: check order. SameDiff.exec() iterates over functionInstancesById (a linked hash map)
         Set<String> seen = new HashSet<>();
