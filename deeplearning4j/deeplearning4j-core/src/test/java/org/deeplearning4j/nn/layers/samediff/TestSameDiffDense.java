@@ -18,7 +18,6 @@ package org.deeplearning4j.nn.layers.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.KnownCrashingTests;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
@@ -45,7 +44,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.Map;
 
 import static org.junit.Assert.*;
-import static org.junit.Assume.assumeTrue;
 
 @Slf4j
 public class TestSameDiffDense extends BaseDL4JTest {
