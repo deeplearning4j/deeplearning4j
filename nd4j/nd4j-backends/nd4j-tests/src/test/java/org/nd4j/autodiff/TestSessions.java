@@ -35,11 +35,6 @@ public class TestSessions {
         INDArray x = Nd4j.linspace(1, 12, 12).castTo(DataType.FLOAT).reshape(3,4);
         INDArray y = Nd4j.linspace(0.1, 0.4, 4).castTo(DataType.FLOAT).reshape(1,4);
 
-        //TODO REMOVE THIS - only for testing until InferenceSession actually implements full op execution...
-        ph1.setArray(x);
-        ph2.setArray(y);
-        sd.execAndEndResult();
-
         INDArray outExp = x.addRowVector(y);
 
         Map<String,INDArray> m = new HashMap<>();
@@ -58,7 +53,6 @@ public class TestSessions {
         //So far: trivial test to check execution order
 
         SameDiff sd = SameDiff.create();
-
         SDVariable ph1 = sd.placeHolder("x", DataType.FLOAT, 3,3);
         SDVariable ph2 = sd.placeHolder("y", DataType.FLOAT, 3,3);
 
@@ -69,17 +63,11 @@ public class TestSessions {
 
         //To get array d - need to execute: a, b, d - NOT the sub op (c)
 
-
         //NOTE: normally sessions are internal and completely hidden from users
 
         InferenceSession is = new InferenceSession(sd);
-
         INDArray x = Nd4j.linspace(1, 9, 9).castTo(DataType.FLOAT).reshape(3,3);
         INDArray y = Nd4j.linspace(0.0, 0.9, 9).castTo(DataType.FLOAT).reshape(3,3);
-
-        //TODO REMOVE THIS
-        ph1.setArray(x);
-        ph2.setArray(y);
 
         INDArray aExp = x.add(y);
         INDArray bExp = x.mmul(y);
@@ -94,6 +82,28 @@ public class TestSessions {
 
         assertEquals(1, outMap.size());
         assertEquals(dExp, outMap.get("d"));
+    }
+
+    @Test
+    public void testMergeSimple(){
+        //This isn't really a sensible graph, as merge op behaviour is undefined when multiple inputs are available...
+
+        SameDiff sd = SameDiff.create();
+        SDVariable ph1 = sd.placeHolder("x", DataType.FLOAT, 3,3);
+        SDVariable ph2 = sd.placeHolder("y", DataType.FLOAT, 3,3);
+
+        SDVariable merge = sd.f().merge(ph1, ph2);
+
+        SDVariable outVar = sd.identity(merge);
+
+        INDArray x = Nd4j.linspace(1, 9, 9).castTo(DataType.FLOAT).reshape(3,3);
+        INDArray y = Nd4j.linspace(0.0, 0.9, 9).castTo(DataType.FLOAT).reshape(3,3);
+        ph1.setArray(x);
+        ph2.setArray(y);
+
+        INDArray out = sd.execAndEndResult();
+        System.out.println(out);
+
     }
 
 }

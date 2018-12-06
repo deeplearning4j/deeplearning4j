@@ -27,6 +27,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.NoOp;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.reduce.*;
@@ -2064,26 +2065,9 @@ public class DifferentialFunctionFactory {
         return new ScatterUpdate(sameDiff(), ref, indices, updates).outputVariable();
     }
 
-    /**
-     * @param func
-     * @return
-     */
-    public long getInputLength(SDVariable func) {
-        validateDifferentialFunctionsameDiff(func);
-        long[] inputShape = func.arg().getShape();
-        return ArrayUtil.prodLong(inputShape);
-    }
 
-    public long getReductionLength(DifferentialFunction func) {
-        val inputShape = func.arg().getShape();
-        if (Shape.isWholeArray(inputShape, func.getDimensions())) {
-            return ArrayUtil.prod(inputShape);
-        }
-        int prod = 1;
-        for (int i : func.getDimensions()) {
-            prod *= inputShape[i];
-        }
-        return prod;
+    public SDVariable merge(SDVariable... inputs){
+        return new Merge(sameDiff(), inputs).outputVariable();
     }
 
 
@@ -2125,9 +2109,7 @@ public class DifferentialFunctionFactory {
 
 
     public String toString() {
-        return "DifferentialFunctionFactory{" +
-                "methodNames=" + methodNames +
-                '}';
+        return "DifferentialFunctionFactory{methodNames=" + methodNames + "}";
     }
 
 

@@ -4,6 +4,8 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
+import java.util.Map;
+
 public class ShapeSession extends AbstractSession<LongShapeDescriptor, DifferentialFunction> {
 
     public ShapeSession(SameDiff sameDiff) {
@@ -17,6 +19,11 @@ public class ShapeSession extends AbstractSession<LongShapeDescriptor, Different
 
     @Override
     public DifferentialFunction getAndParameterizeOp(String opName) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public void preprocessPlaceholderValues(Map<String, LongShapeDescriptor> placeholderValues) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

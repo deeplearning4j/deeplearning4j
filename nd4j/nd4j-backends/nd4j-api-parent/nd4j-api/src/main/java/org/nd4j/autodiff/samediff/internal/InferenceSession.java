@@ -34,28 +34,21 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     @Override
     public INDArray[] getOutputs(DifferentialFunction op) {
 
-        if(op instanceof CustomOp){
+        if(op instanceof If){
+            If i = (If)op;
+
+            throw new UnsupportedOperationException("Execution not yet implemented for: " + op.getClass().getName());
+        } else if(op instanceof CustomOp){
             CustomOp c = (CustomOp)op;
             Nd4j.getExecutioner().exec(c);
             return c.outputArguments();
-        } else if(op instanceof Op){
-            Op o = (Op)op;
+        } else if(op instanceof Op) {
+            Op o = (Op) op;
             Nd4j.getExecutioner().exec(o);
             return new INDArray[]{o.z()};
         } else {
             throw new UnsupportedOperationException("Execution not yet implemented for: " + op.getClass().getName());
         }
-
-
-//        //TODO
-//        int numOutputs = op.getNumOutputs();
-//        if(numOutputs == -1)
-//            numOutputs = op.outputVariables().length;
-//        INDArray[] out = new INDArray[numOutputs];
-//        for( int i=0; i<numOutputs; i++ ){
-//            out[i] = Nd4j.scalar(0.0f);
-//        }
-//        return out;
     }
 
     @Override

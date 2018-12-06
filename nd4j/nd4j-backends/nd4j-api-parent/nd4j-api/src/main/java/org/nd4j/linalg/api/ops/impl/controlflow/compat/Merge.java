@@ -29,6 +29,15 @@ import java.util.List;
 import java.util.Map;
 
 public class Merge extends BaseCompatOp {
+
+    public Merge(SameDiff sd, SDVariable[] inputs){
+        super(sd, inputs);
+    }
+
+    public Merge(){
+        
+    }
+
     @Override
     public String opName() {
         return "merge";
@@ -71,5 +80,10 @@ public class Merge extends BaseCompatOp {
     @Override
     public int getNumOutputs(){
         return 1;
+    }
+
+    @Override
+    public void populateInputsAndOutputsFromSameDiff(){
+        //No op
     }
 }
