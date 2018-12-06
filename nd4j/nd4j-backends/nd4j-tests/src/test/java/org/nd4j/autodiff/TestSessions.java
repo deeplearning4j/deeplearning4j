@@ -77,10 +77,9 @@ public class TestSessions {
         INDArray x = Nd4j.linspace(1, 9, 9).castTo(DataType.FLOAT).reshape(3,3);
         INDArray y = Nd4j.linspace(0.0, 0.9, 9).castTo(DataType.FLOAT).reshape(3,3);
 
-        //TODO REMOVE THIS - only for testing until InferenceSession actually implements full op execution...
+        //TODO REMOVE THIS
         ph1.setArray(x);
         ph2.setArray(y);
-        sd.execAndEndResult();
 
         INDArray aExp = x.add(y);
         INDArray bExp = x.mmul(y);
