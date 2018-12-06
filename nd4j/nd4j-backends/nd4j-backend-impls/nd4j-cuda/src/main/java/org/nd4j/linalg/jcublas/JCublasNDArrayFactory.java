@@ -1647,7 +1647,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace) {
-        return create(dataType, shape, Nd4j.getStrides(shape, order), ordering, workspace);
+        return create(dataType, shape, Nd4j.getStrides(shape, ordering), ordering, workspace);
     }
 
     @Override
