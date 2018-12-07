@@ -346,6 +346,46 @@ TEST_F(DeclarableOpsTests10, WhereNP_SGO_Test_4) {
     delete res;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, CosineDistance_SGO_Test_1) {
+    auto labels = NDArrayFactory::create<double>('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});
+    //auto expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
+    auto predictions = NDArrayFactory::create<double>('c', {2, 3}, {-0.3, -0.2, -0.1, 0, 0.1, 0.2});
+    auto weights = NDArrayFactory::create<double>('c', {2, 1}, {0., 1.});
+    auto exp = NDArrayFactory::create<double>(0.6);
+
+    nd4j::ops::cosine_distance_loss op;
+    auto res = op.execute({&predictions, &weights, &labels}, {}, {3, 1});
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    auto resA = res->at(0);
+    resA->printIndexedBuffer("Result");
+    resA->printShapeInfo("Shape");
+    ASSERT_TRUE(exp.equalsTo(resA));
+    //ASSERT_TRUE(exp.isSameShape(resA));
+//    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, CosineDistance_SGO_Test_2) {
+    auto labels = NDArrayFactory::create<double>('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});
+    //auto expIdx({0., 1., 0., 2., 0., 3., 4., 1., 4., 1.});
+    auto predictions = NDArrayFactory::create<double>('c', {2, 3}, {-0.3, -0.2, -0.1, 0, 0.1, 0.2});
+    auto weights = NDArrayFactory::create<double>('c', {2, 1}, {0., 1.});
+    auto exp = NDArrayFactory::create<double>(0.6);
+
+    nd4j::ops::cosine_distance_loss op;
+    auto res = op.execute({&predictions, &weights, &labels}, {}, {2, 1});
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
+    auto resA = res->at(0);
+    resA->printIndexedBuffer("Result");
+    resA->printShapeInfo("Shape");
+    ASSERT_TRUE(exp.equalsTo(resA));
+    //ASSERT_TRUE(exp.isSameShape(resA));
+//    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+    delete res;
+}
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, svd_test11) {
 
