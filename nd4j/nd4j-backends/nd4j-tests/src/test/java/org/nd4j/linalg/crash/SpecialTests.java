@@ -26,7 +26,9 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.LegacyPooling2D;
 import org.nd4j.linalg.dataset.DataSet;
@@ -43,8 +45,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.junit.Assert.*;
-import static org.nd4j.linalg.indexing.NDArrayIndex.all;
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
+import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
  * @author raver119@gmail.com
@@ -530,6 +531,53 @@ public class SpecialTests extends BaseNd4jTest {
         System.out.println(out);
     }
 
+    @Test
+    public void testYoloStyle(){
+        WorkspaceConfiguration WS_ALL_LAYERS_ACT_CONFIG = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(0.05)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policySpill(SpillPolicy.REALLOCATE)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .build();
+
+
+
+        for( int i=0; i<10; i++ ){
+            try(val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, "ws")){
+                System.out.println("STARTING: " + i);
+
+                INDArray objectPresentMask = Nd4j.create(DataType.BOOL, 1,4,4);
+
+                long[] shape = {1,3,2,4,4};
+                INDArray noIntMask1 = Nd4j.createUninitialized(DataType.BOOL, shape, 'c');
+                INDArray noIntMask2 = Nd4j.createUninitialized(DataType.BOOL, shape, 'c');
+
+                noIntMask1 = Transforms.or(noIntMask1.get(all(), all(), point(0), all(), all()), noIntMask1.get(all(), all(), point(1), all(), all()) );    //Shape: [mb, b, H, W]. Values 1 if no intersection
+                noIntMask2 = Transforms.or(noIntMask2.get(all(), all(), point(0), all(), all()), noIntMask2.get(all(), all(), point(1), all(), all()) );
+                INDArray noIntMask = Transforms.or(noIntMask1, noIntMask2 );
+
+                Nd4j.getExecutioner().commit();
+
+                INDArray intMask = Transforms.not(noIntMask); //Values 0 if no intersection
+                Nd4j.getExecutioner().commit();
+
+                Broadcast.mul(intMask, objectPresentMask, intMask, 0, 2, 3);
+                Nd4j.getExecutioner().commit();
+                System.out.println("DONE: " + i);
+            }
+        }
+    }
+
+    @Test
+    public void testBroadcastMul_bool() {
+        val mask = Nd4j.create(DataType.BOOL, 1, 3, 4, 4);
+        val object = Nd4j.create(DataType.BOOL, 1, 4, 4);
+
+        Broadcast.mul(mask, object, mask, 0, 2, 3);
+        Nd4j.getExecutioner().commit();
+    }
 
     @Override
     public char ordering() {
