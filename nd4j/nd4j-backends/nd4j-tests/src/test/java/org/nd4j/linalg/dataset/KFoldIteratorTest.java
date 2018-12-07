@@ -82,7 +82,9 @@ public class KFoldIteratorTest extends BaseNd4jTest {
 
     @Test
     public void checkFolds() {
-        KBatchRandomDataSet randomDS = new KBatchRandomDataSet(new int[] {2, 3}, new int[] {3, 3, 3, 2});
+    	// Expected batch sizes: 3+3+3+2 = 11 total examples 
+    	int[] batchSizesExp = new int[] {3, 3, 3, 2};
+        KBatchRandomDataSet randomDS = new KBatchRandomDataSet(new int[] {2, 3}, batchSizesExp);
         DataSet allData = randomDS.getAllBatches();
         KFoldIterator kiter = new KFoldIterator(4, allData);
         int i = 0;
@@ -95,8 +97,10 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             INDArray lExp = randomDS.getBatchButK(i, false);
             assertEquals(lExp, now.getLabels());
 
-            assertEquals(test.getFeatures(), randomDS.getBatchK(i, true));
-            assertEquals(test.getLabels(), randomDS.getBatchK(i, false));
+            assertEquals(randomDS.getBatchK(i, true), test.getFeatures());
+            assertEquals(randomDS.getBatchK(i, false), test.getLabels());
+            
+            assertEquals(batchSizesExp[i], test.getLabels().length());
             i++;
         }
         assertEquals(i, 4);
@@ -113,7 +117,9 @@ public class KFoldIteratorTest extends BaseNd4jTest {
 
     @Test
     public void checkCornerCase() {
-        KBatchRandomDataSet randomDS = new KBatchRandomDataSet(new int[] {2, 3}, new int[] {2, 1});
+    	// Expected batch sizes: 2+1 = 3 total examples 
+    	int[] batchSizesExp = new int[] {2, 1};
+        KBatchRandomDataSet randomDS = new KBatchRandomDataSet(new int[] {2, 3}, batchSizesExp);
         DataSet allData = randomDS.getAllBatches();
         KFoldIterator kiter = new KFoldIterator(2, allData);
         int i = 0;
@@ -124,8 +130,10 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             assertEquals(now.getFeatures(), randomDS.getBatchButK(i, true));
             assertEquals(now.getLabels(), randomDS.getBatchButK(i, false));
 
-            assertEquals(test.getFeatures(), randomDS.getBatchK(i, true));
-            assertEquals(test.getLabels(), randomDS.getBatchK(i, false));
+            assertEquals(randomDS.getBatchK(i, true), test.getFeatures());
+            assertEquals(randomDS.getBatchK(i, false), test.getLabels());
+            
+            assertEquals(batchSizesExp[i], test.getLabels().length());
             i++;
         }
         assertEquals(i, 2);

@@ -30,11 +30,13 @@ import java.util.List;
  * @author Tamas Fenyvesi - modified KFoldIterator following the scikit-learn implementation (December 2018)
  */
 public class KFoldIterator implements DataSetIterator {
-    protected DataSet allData;
+	
+	private static final long serialVersionUID = 6130298603412865817L;
+	
+	protected DataSet allData;
     protected int k;
     protected int N;
-    protected int baseBatchSize;
-    protected int numIncrementedBatches;
+    protected int[] intervalBoundaries;
     protected int kCursor = 0;
     protected DataSet test;
     protected DataSet train;
@@ -66,17 +68,17 @@ public class KFoldIterator implements DataSetIterator {
         this.N = allData.numExamples();
         this.allData = allData.copy();
         
-        // generate index range boundaries
-        this.baseBatchSize = N / k;
-        this.numIncrementedBatches = N % k;
+        // generate index interval boundaries of test folds
+        int baseBatchSize = N / k;
+        int numIncrementedBatches = N % k;
 
-        this.testIndexRanges = new int[k+1];
-        testIndexRanges[0] = 0;
+        this.intervalBoundaries = new int[k+1];
+        intervalBoundaries[0] = 0;
         for (int i = 1; i <= k; i++) {
         	if (i <= numIncrementedBatches) {
-                testIndexRanges[i] = testIndexRanges[i-1] + (baseBatchSize + 1);
+                intervalBoundaries[i] = intervalBoundaries[i-1] + (baseBatchSize + 1);
             } else {
-            	testIndexRanges[i] = testIndexRanges[i-1] + baseBatchSize;
+            	intervalBoundaries[i] = intervalBoundaries[i-1] + baseBatchSize;
             }
         }
         
@@ -139,11 +141,7 @@ public class KFoldIterator implements DataSetIterator {
      */
     @Override
     public int batch() {
-    	if (kCursor < numIncrementedBatches) {
-    		return baseBatchSize + 1;
-    	} else {
-    		return baseBatchSize;
-    	}
+    	return intervalBoundaries[kCursor+1] - intervalBoundaries[kCursor];
     }
 
     @Override
@@ -178,8 +176,8 @@ public class KFoldIterator implements DataSetIterator {
     }
 
     protected void nextFold() {
-        int left = testIndexRanges[kCursor];
-        int right = testIndexRanges[kCursor + 1];
+        int left = intervalBoundaries[kCursor];
+        int right = intervalBoundaries[kCursor + 1];
 
         List<DataSet> kMinusOneFoldList = new ArrayList<DataSet>();
         if (right < totalExamples()) {
