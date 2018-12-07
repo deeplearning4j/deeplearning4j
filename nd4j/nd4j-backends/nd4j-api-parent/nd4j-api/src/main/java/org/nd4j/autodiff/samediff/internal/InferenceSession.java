@@ -18,6 +18,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -34,10 +35,30 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     @Override
     public INDArray[] getOutputs(DifferentialFunction op) {
 
-        if(op instanceof If){
-            If i = (If)op;
+        if(op instanceof Identity) {
+            Identity i = (Identity)op;
+            String[] argNames = i.argNames();
+            Preconditions.checkState(argNames.length == 1, "Expected only 1 arg name in identity op, got %s", argNames);
+            return new INDArray[]{nodeOutputs.get(argNames[0])};
+        } else if(op instanceof If) {
+            If i = (If) op;
+            String[] argNames = i.argNames();       //Order should be: [boolean], true, false
+
 
             throw new UnsupportedOperationException("Execution not yet implemented for: " + op.getClass().getName());
+        } else if(op instanceof Merge){
+            //Merge avairable for forward pass when any of its inputs are available. When multiple are available, behaviour
+            // is undefined
+            Merge m = (Merge)op;
+            String[] in = sameDiff.getInputsForFunction(op);
+            for(String s : in){
+                if(nodeOutputs.containsKey(s)){
+                    log.info("Returning input \"{}\" for merge node \"{}\"", m.getOwnName(), s);
+                    return new INDArray[]{nodeOutputs.get(s)};
+                }
+            }
+            throw new IllegalStateException("Merge node " + m.getOwnName() + " has no available inputs (all inputs: " + Arrays.toString(in) +
+                    ") - should not be executed at this point");
         } else if(op instanceof CustomOp){
             CustomOp c = (CustomOp)op;
             Nd4j.getExecutioner().exec(c);

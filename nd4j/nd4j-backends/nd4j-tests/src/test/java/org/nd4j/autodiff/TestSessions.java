@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestSessions {
 
@@ -98,12 +99,24 @@ public class TestSessions {
 
         INDArray x = Nd4j.linspace(1, 9, 9).castTo(DataType.FLOAT).reshape(3,3);
         INDArray y = Nd4j.linspace(0.0, 0.9, 9).castTo(DataType.FLOAT).reshape(3,3);
-        ph1.setArray(x);
-        ph2.setArray(y);
+//        ph1.setArray(x);
+//        ph2.setArray(y);
+//        INDArray out = sd.execAndEndResult();
+//        System.out.println(out);
 
-        INDArray out = sd.execAndEndResult();
-        System.out.println(out);
 
+        Map<String,INDArray> m = new HashMap<>();
+        m.put("x", x);
+        m.put("y", y);
+
+        System.out.println("----------------------------------");
+        InferenceSession is = new InferenceSession(sd);
+//        String outName = merge.getVarName();
+        String outName = outVar.getVarName();
+        Map<String,INDArray> outMap = is.output(Collections.singletonList(outName), m, null);
+
+        assertEquals(1, outMap.size());
+        INDArray out = outMap.get(outName);
+        assertTrue(x.equals(out) || y.equals(out));
     }
-
 }
