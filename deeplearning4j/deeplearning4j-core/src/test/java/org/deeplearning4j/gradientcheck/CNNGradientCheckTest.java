@@ -115,7 +115,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                 + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
                                 + ", doLearningFirst= " + doLearningFirst + " (before=" + scoreBefore
                                 + ", scoreAfter=" + scoreAfter + ")";
-                        assertTrue(msg, scoreAfter < 0.8 * scoreBefore);
+                        assertTrue(msg, scoreAfter < 0.9 * scoreBefore);
                     }
 
                     if (PRINT_RESULTS) {

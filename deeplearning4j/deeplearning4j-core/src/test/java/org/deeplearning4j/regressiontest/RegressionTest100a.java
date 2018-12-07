@@ -252,7 +252,7 @@ public class RegressionTest100a extends BaseDL4JTest {
 
         INDArray outAct = net.outputSingle(in);
 
-        assertEquals(outExp, outAct);
+        assertEquals(outExp, outAct.castTo(outExp.dataType()));
     }
 
 
