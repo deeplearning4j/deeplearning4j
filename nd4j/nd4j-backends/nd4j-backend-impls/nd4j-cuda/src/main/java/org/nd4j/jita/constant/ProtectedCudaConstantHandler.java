@@ -124,6 +124,8 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(dataBuffer);
 
         long requiredMemoryBytes = AllocationUtils.getRequiredMemory(point.getShape());
+        val originalBytes = requiredMemoryBytes;
+        requiredMemoryBytes += requiredMemoryBytes % 8;
         //logger.info("shape: " + point.getShape());
         // and release device memory :)
 
@@ -196,7 +198,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             val profD = PerformanceTracker.getInstance().helperStartTransaction();
 
             if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(),
-                            requiredMemoryBytes, 1, context.getSpecialStream()) == 0) {
+                    originalBytes, 1, context.getSpecialStream()) == 0) {
                 throw new ND4JIllegalStateException("memcpyAsync failed");
             }
             flowController.commitTransfer(context.getSpecialStream());
@@ -215,7 +217,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
 
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer(), requiredMemoryBytes, 1,
+        NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer(), originalBytes, 1,
                         context.getSpecialStream());
         flowController.commitTransfer(context.getSpecialStream());
 
