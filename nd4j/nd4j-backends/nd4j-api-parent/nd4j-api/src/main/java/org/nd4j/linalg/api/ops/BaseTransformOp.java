@@ -21,6 +21,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -176,7 +177,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         super(x, y, z, n);
         if (y != null)
             LinAlgExceptions.assertSameLength(x, y, z);
-        else
+        else if (z != null)
             LinAlgExceptions.assertSameLength(x, z);
 
     }
@@ -185,33 +186,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         super(x);
     }
 
-    @Override
-    public Type opType() {
-        if(sameDiff == null)
-            return Type.TRANSFORM;  //TODO we can't determine if it's transform or pairwise using this method until initialized with args
-        if(args() == null || args().length == 1)
-            return Type.TRANSFORM;
-        else if(args().length == 2)
-            return Type.PAIRWISE;
-
-        else throw new ND4JIllegalStateException("Illegal number of args (can only be 1 or 2)");
-    }
-
-
-
-    @Override
-    public List<long[]> calculateOutputShape() {
-        List<long[]> ret = new ArrayList<>(1);
-        if(arg() == null)
-            throw new ND4JIllegalStateException("No arg found for op!");
-
-        val arr = sameDiff.getArrForVarName(arg().getVarName());
-        if(arr == null)
-            return Collections.emptyList();
-        ret.add(arr.shape());
-        this.n = arr.length();
-        return ret;
-    }
+    public abstract List<LongShapeDescriptor> calculateOutputShape();
 
 
     @Override

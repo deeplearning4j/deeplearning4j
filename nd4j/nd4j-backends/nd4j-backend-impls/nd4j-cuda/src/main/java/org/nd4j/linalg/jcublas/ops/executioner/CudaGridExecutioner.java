@@ -20,6 +20,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.val;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -30,11 +32,9 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
-import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.meta.InvertedPredicateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PostulateMetaOp;
 import org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp;
-import org.nd4j.linalg.api.ops.impl.meta.ReduceMetaOp;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.rng.Random;
@@ -44,7 +44,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.aggregates.AggregateDescriptor;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.nativeblas.LongPointerWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +58,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class CudaGridExecutioner extends CudaExecutioner implements GridExecutioner {
     protected enum MetaType {
         NOT_APPLICABLE,
@@ -122,8 +122,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         if (op instanceof GradientOp) {
             commit();
             op.exec();
-        } else if (op instanceof Accumulation) {
-            exec((Accumulation) op, new int[] {Integer.MAX_VALUE});
+        } else if (op instanceof ReduceOp) {
+            exec((ReduceOp) op, new int[] {Integer.MAX_VALUE});
         } else if (op instanceof IndexAccumulation) {
             exec((IndexAccumulation) op, new int[] {Integer.MAX_VALUE});
         } else if (op instanceof ScalarOp || op instanceof TransformOp) {
@@ -248,8 +248,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 flushQueue();
 
             super.naiveExec(acc, dimensions);
-        } else if (op instanceof Accumulation) {
-            Accumulation acc = (Accumulation) op;
+        } else if (op instanceof ReduceOp) {
+            ReduceOp acc = (ReduceOp) op;
             if (flush)
                 flushQueue();
 
@@ -369,7 +369,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                         "or set the following system property: set \"opexec\" to org.nd4j.linalg.jcublas.ops.executioner.CudaExecutioner", t);
             }
         } else {
-            //&& Nd4j.dataType() != DataBuffer.Type.HALF
+            //&& Nd4j.dataType() != DataType.HALF
             if ((op instanceof TransformOp && op.y() != null && onCurrentDeviceXYZ(op))) {
                 enqueueOp(new OpDescriptor(op, dimension));
             } else {
@@ -436,7 +436,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                     */
 
                     return isMatchingZX(last.getOp(), op) ? MetaType.PREDICATE : MetaType.NOT_APPLICABLE;
-                } else if (last.getOp() instanceof Accumulation) {
+                } else if (last.getOp() instanceof ReduceOp) {
                     /*
                     InvertedMetaOp, aka Postulate logic
                     
@@ -525,7 +525,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         }
 
         if (dimensions != null && dimensions.length > 0) {
-            DataBuffer dimensionBuffer = Nd4j.getConstantHandler().getConstantBuffer(dimensions);
+            DataBuffer dimensionBuffer = Nd4j.getConstantHandler().getConstantBuffer(dimensions, DataType.INT);
             pointers.setDimensions(allocator.getPointer(dimensionBuffer, context));
             pointers.setDimensionsLength(dimensions.length);
         }
@@ -619,7 +619,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         }
     }
 
-    protected void buildZ(Accumulation op, int... dimension) {
+    protected void buildZ(ReduceOp op, int... dimension) {
         Arrays.sort(dimension);
 
         for (int i = 0; i < dimension.length; i++) {
@@ -652,8 +652,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         INDArray ret = null;
         if (op.z() == null || op.z() == op.x()) {
             if (op.isComplexAccumulation()) {
-                val xT = op.x().tensorssAlongDimension(dimension);
-                val yT = op.y().tensorssAlongDimension(dimension);
+                val xT = op.x().tensorsAlongDimension(dimension);
+                val yT = op.y().tensorsAlongDimension(dimension);
 
                 ret = Nd4j.create(xT, yT);
             } else {
@@ -670,14 +670,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             if (op.z().lengthLong() != ArrayUtil.prodLong(retShape))
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
 
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                op.z().assign(op.zeroDouble());
-            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
-                op.z().assign(op.zeroFloat());
-            } else if (op.x().data().dataType() == DataBuffer.Type.HALF) {
-                op.z().assign(op.zeroHalf());
-            }
-
             ret = op.z();
         }
     }
@@ -692,7 +684,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     }
 
     @Override
-    public INDArray exec(Accumulation op, int... dimension) {
+    public INDArray exec(ReduceOp op, int... dimension) {
 
 
         // we should check, if this op returns scalar or not
@@ -777,6 +769,12 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
     @Override
     public void exec(MetaOp op) {
+        //
+    }
+
+    /*
+    @Override
+    public void exec(MetaOp op) {
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
@@ -810,13 +808,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         //logger.info("FirstOp: {}, SecondOp: {}", op.getFirstOp().getClass().getSimpleName(), op.getSecondOp().getClass().getSimpleName());
 
-        /*
-            TODO: launch can be either strided, or shapeInfo-based, it doesn't really matters for us.
-            We just need to pass all pointers.
-        
-            TODO: obviously, execMetaPredicateElementwiseFloat should be renamed to execMetaPredicateStridedFloat
-         */
-
         // FIXME: this is bad hack, reconsider this one
         GridPointers yGrid = first;
 
@@ -826,7 +817,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
 
         if (op instanceof PredicateMetaOp || op instanceof InvertedPredicateMetaOp) {
-            if (first.getDtype() == DataBuffer.Type.FLOAT) {
+            if (first.getDtype() == DataType.FLOAT) {
                 if (yGrid.getYOrder() == yGrid.getXOrder() && yGrid.getXStride() >= 1 && yGrid.getYStride() >= 1) {
                     nativeOps.execMetaPredicateStridedFloat(extras, first.getType().ordinal(), first.getOpNum(),
                             second.getType().ordinal(), second.getOpNum(), first.getXLength(),
@@ -845,7 +836,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                             (FloatPointer) first.getExtraArgs(), (FloatPointer) second.getExtraArgs(),
                             (float) scalarA, (float) scalarB);
                 }
-            } else if (first.getDtype() == DataBuffer.Type.DOUBLE) {
+            } else if (first.getDtype() == DataType.DOUBLE) {
                 if (yGrid.getYOrder() == yGrid.getXOrder() && yGrid.getXStride() >= 1 && yGrid.getYStride() >= 1) {
                     nativeOps.execMetaPredicateStridedDouble(extras, first.getType().ordinal(), first.getOpNum(),
                             second.getType().ordinal(), second.getOpNum(), first.getXLength(),
@@ -885,7 +876,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 }
             }
         } else if (op instanceof ReduceMetaOp) {
-            if (first.getDtype() == DataBuffer.Type.FLOAT) {
+            if (first.getDtype() == DataType.FLOAT) {
 
                 nativeOps.execMetaPredicateReduceFloat(extras, first.getType().ordinal(), first.getOpNum(),
                         second.getType().ordinal(), second.getOpNum(), (FloatPointer) first.getX(),
@@ -901,6 +892,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         AtomicAllocator.getInstance().getFlowController().registerAction(context, first.getOpZ(), first.getOpY());
         //        AtomicAllocator.getInstance().getFlowController().registerAction(context, second.getOpX(), second.getOpY(), second.getOpZ());
     }
+    */
 
     @Override
     public void exec(GridOp op) {

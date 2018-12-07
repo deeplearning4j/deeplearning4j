@@ -63,10 +63,4 @@ public abstract class NoParamLayer extends Layer {
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException(getClass().getSimpleName() + " does not contain parameters");
     }
-
-    @Override
-    public boolean isPretrain() {
-        return false;
-    }
-
 }

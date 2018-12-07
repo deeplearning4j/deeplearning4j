@@ -26,8 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    void confusionFunctor(NDArray<T>* labels, NDArray<T>* predictions, NDArray<T>* weights, NDArray<T>* output);
+    void confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output);
 
 }
 }

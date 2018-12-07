@@ -17,12 +17,14 @@
 package org.deeplearning4j.util;
 
 import org.deeplearning4j.nn.conf.layers.PoolingType;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
-import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -61,7 +63,12 @@ public class MaskedReductionUtil {
         switch (poolingType) {
             case MAX:
                 //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
-                INDArray negInfMask = Transforms.not(mask);
+                INDArray negInfMask;
+                if(mask.dataType() == DataType.BOOL){
+                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatingPointType());
+                } else {
+                    negInfMask = mask.rsub(1.0);
+                }
                 BooleanIndexing.replaceWhere(negInfMask, Double.NEGATIVE_INFINITY, Conditions.equals(1.0));
 
                 INDArray withInf = Nd4j.createUninitialized(toReduce.shape());
@@ -115,7 +122,12 @@ public class MaskedReductionUtil {
         switch (poolingType) {
             case MAX:
                 //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
-                INDArray negInfMask = Transforms.not(mask);
+                INDArray negInfMask;
+                if(mask.dataType() == DataType.BOOL){
+                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatingPointType());
+                } else {
+                    negInfMask = mask.rsub(1.0);
+                }
                 BooleanIndexing.replaceWhere(negInfMask, Double.NEGATIVE_INFINITY, Conditions.equals(1.0));
 
                 INDArray withInf = Nd4j.createUninitialized(input.shape());
@@ -200,7 +212,12 @@ public class MaskedReductionUtil {
         switch (poolingType) {
             case MAX:
                 //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
-                INDArray negInfMask = Transforms.not(mask);
+                INDArray negInfMask;
+                if(mask.dataType() == DataType.BOOL){
+                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatingPointType());
+                } else {
+                    negInfMask = mask.rsub(1.0);
+                }
                 BooleanIndexing.replaceWhere(negInfMask, Double.NEGATIVE_INFINITY, Conditions.equals(1.0));
 
                 INDArray withInf = Nd4j.createUninitialized(toReduce.shape());
@@ -261,7 +278,12 @@ public class MaskedReductionUtil {
         switch (poolingType) {
             case MAX:
                 //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
-                INDArray negInfMask = Transforms.not(mask);
+                INDArray negInfMask;
+                if(mask.dataType() == DataType.BOOL){
+                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatingPointType());
+                } else {
+                    negInfMask = mask.rsub(1.0);
+                }
                 BooleanIndexing.replaceWhere(negInfMask, Double.NEGATIVE_INFINITY, Conditions.equals(1.0));
 
                 INDArray withInf = Nd4j.createUninitialized(input.shape());

@@ -34,8 +34,7 @@ namespace nd4j {
          *
          * @tparam T
          */
-        template <typename T>
-        class Scope {
+        class ND4J_EXPORT Scope {
         protected:
             // Graph-unique IDs for Scope instances
             int _id;
@@ -43,7 +42,7 @@ namespace nd4j {
 
             // list of nodes to run, always sequential
             // Graph takes care of topo sort
-            std::vector<Node<T> *> _nodes;
+            std::vector<Node*> _nodes;
         public:
             // attach GiG here, with shared namespace?
             // or just rebuilt graph leaf?
@@ -60,7 +59,7 @@ namespace nd4j {
              *
              * PLEASE NOTE: We assume that ops are being added ORDERED
              */
-            void push_back(Node<T>* node);
+            void push_back(Node* node);
 
             /**
              * This method returns list of ops stored earlier, ready for execution
@@ -68,7 +67,7 @@ namespace nd4j {
              * PLEASE NOTE: If the scope is conditional - last op in list should be BooleanOp
              * @return
              */
-            std::vector<Node<T>*> * nodes();
+            std::vector<Node*> * nodes();
 
             /**
              * This function returns number of nodes in this scope
@@ -93,10 +92,7 @@ namespace nd4j {
             /**
              * This method returns clone of this Scope
              */
-            Scope<T>* clone();
-
-            template <typename N>
-            Scope<N>* asT();
+            Scope* clone();
 
             /**
              * This method removes all Nodes from this scope

@@ -18,6 +18,7 @@ package org.nd4j.linalg.workspace;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -251,8 +252,13 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
 
     @Override
     public INDArray create(@NonNull T arrayType, @NonNull long... shape) {
+        return create(arrayType, Nd4j.dataType(), shape);
+    }
+
+    @Override
+    public INDArray create(@NonNull T arrayType, @NonNull DataType dataType, @NonNull long... shape) {
         enforceExistsAndActive(arrayType);
-        return create(arrayType, shape, Nd4j.order());
+        return create(arrayType, dataType, shape, Nd4j.order());
     }
 
     @Override
@@ -265,9 +271,14 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
 
     @Override
     public INDArray create(@NonNull T arrayType, @NonNull long[] shape, @NonNull char order) {
+        return create(arrayType, Nd4j.dataType(), shape, order);
+    }
+
+    @Override
+    public INDArray create(@NonNull T arrayType, @NonNull DataType dataType, @NonNull long[] shape, @NonNull char order) {
         enforceExistsAndActive(arrayType);
         try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
-            return Nd4j.create(shape, order);
+            return Nd4j.create(dataType, shape, order);
         }
     }
 
@@ -282,6 +293,11 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     }
 
     @Override
+    public INDArray createUninitialized(T arrayType, DataType dataType, long... shape){
+        return createUninitialized(arrayType, dataType, shape, Nd4j.order());
+    }
+
+    @Override
     public INDArray createUninitialized(@NonNull T arrayType, @NonNull int[] shape, char order) {
         enforceExistsAndActive(arrayType);
         try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
@@ -291,9 +307,14 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
 
     @Override
     public INDArray createUninitialized(@NonNull T arrayType, @NonNull long[] shape, char order) {
+        return createUninitialized(arrayType, Nd4j.dataType(), shape, order);
+    }
+
+    @Override
+    public INDArray createUninitialized(@NonNull T arrayType, @NonNull DataType dataType, @NonNull long[] shape, char order) {
         enforceExistsAndActive(arrayType);
         try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
-            return Nd4j.createUninitialized(shape, order);
+            return Nd4j.createUninitialized(dataType, shape, order);
         }
     }
 
@@ -308,6 +329,23 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     @Override
     public INDArray dup(@NonNull T arrayType, @NonNull INDArray toDup){
         return dup(arrayType, toDup, toDup.ordering());
+    }
+
+    @Override
+    public INDArray castTo(@NonNull T arrayType, @NonNull DataType dataType, @NonNull INDArray toCast, boolean dupIfCorrectType){
+        if(toCast.dataType() == dataType){
+            if(!dupIfCorrectType){
+                //Check if we can avoid duping... if not in workspace, or already in correct workspace
+                if(!toCast.isAttached() || toCast.data().getParentWorkspace().getId().equals(workspaceNames.get(arrayType))){
+                    return toCast;
+                }
+            }
+            return dup(arrayType, toCast);
+        } else {
+            try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
+                return toCast.castTo(dataType);
+            }
+        }
     }
 
 

@@ -21,26 +21,22 @@
 #include <ops/declarable/LegacyReduceOp.h>
 #include <helpers/TAD.h>
 #include <helpers/ShapeUtils.h>
-
+#ifdef LEGACY_REDUCE_SAME_ONLY
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        LegacyReduceOp<T>::LegacyReduceOp() : LegacyOp<T>::LegacyOp(1) {
+        LegacyReduceOp::LegacyReduceOp() : LegacyOp::LegacyOp(1) {
             //
         }
 
-        template <typename T>
-        LegacyReduceOp<T>::LegacyReduceOp(int opNum) : LegacyOp<T>::LegacyOp(1, opNum) {
+        LegacyReduceOp::LegacyReduceOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
             //this->_opNum = opNum;
         }
 
-        template <typename T>
-        LegacyOp<T>* LegacyReduceOp<T>::clone() {
+        LegacyOp* LegacyReduceOp::clone() {
             return new LegacyReduceOp(this->_opNum);
         }
 
-        template <typename T>
-        Nd4jStatus LegacyReduceOp<T>::validateAndExecute(Context<T> &block) {
+        Nd4jStatus LegacyReduceOp::validateAndExecute(Context &block) {
             auto x = INPUT_VARIABLE(0);
 
 
@@ -58,8 +54,7 @@ namespace nd4j {
                 if ((block.getIArguments()->size() == 0) ||
                     (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                     // scalar
-                    T res = NativeOpExcutioner<T>::execReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data());
-                    z->putScalar(0, res);
+                    NativeOpExcutioner::execReduceFloatScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
                 } else {
                     // TAD
                     std::vector<int> dims(*block.getIArguments());
@@ -76,7 +71,7 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExcutioner<T>::execReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }
 
                 STORE_RESULT(*z);
@@ -90,7 +85,7 @@ namespace nd4j {
                 std::vector<int> axis(indices->lengthOf());
                 for (int e = 0; e < indices->lengthOf(); e++) {
                     // lol otherwise we segfault on macOS
-                    int f = (int) indices->getScalar(e);
+                    int f = indices->e<int>(e);
                     axis[e] = f >= 0 ? f : f += x->rankOf();
                 }
 
@@ -104,8 +99,7 @@ namespace nd4j {
                     //x->printIndexedBuffer("x");
 
                     // scalar
-                    T res = NativeOpExcutioner<T>::execReduceScalar(opNum, b, s, e);
-                    z->putScalar(0, res);
+                    NativeOpExcutioner::execReduceFloatScalar(opNum, b, s, e, z->buffer(), z->shapeInfo());
                 } else {
                     // TAD
                     if (indices->lengthOf() > 1)
@@ -117,10 +111,10 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    auto newShape = ShapeUtils<T>::evalReduceShapeInfo(x->ordering(), axis, x);
-                    auto z = new NDArray<T>(newShape, x->getWorkspace());
+                    auto newShape = ShapeUtils::evalReduceShapeInfo(x->ordering(), axis, *x);
+                    auto z = new NDArray(newShape, x->getWorkspace());
 
-                    NativeOpExcutioner<T>::execReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
 
                     RELEASE(newShape, x->getWorkspace());
 
@@ -148,8 +142,7 @@ namespace nd4j {
         *   For all reductions rules are simple: either you return scalar, or you return reduced NDArray.
         *   It solely depends on input shape, and requested dimensions
         */
-        template <typename T>
-        ShapeList *LegacyReduceOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
+        ShapeList *LegacyReduceOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;
@@ -171,29 +164,27 @@ namespace nd4j {
                     newShape[5] = 0;
                     newShape[6] = 1;
                     newShape[7] = 99;
+                    ArrayOptions::setDataType(newShape, block.dataType() == DataType::BOOL?block.dataType():ArrayOptions::dataType(inShape));
                 } else {
                     ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
                     newShape[0] = 0;
                     newShape[1] = 0;
                     newShape[2] = 1;
                     newShape[3] = 99;
+                    ArrayOptions::setDataType(newShape, block.dataType() == DataType::BOOL?block.dataType():ArrayOptions::dataType(inShape));
                 }
             } else {
                 // in this case we're building proper shape for reduction
-                auto array = new NDArray<T>(nullptr, inShape, block.getWorkspace());
+                auto array = new NDArray(nullptr, inShape, block.getWorkspace());
                 array->triggerAllocationFlag(false, false);
 
-                newShape = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inShape), *block.getIArguments(), *array, false, false, block.workspace());
+                newShape = ShapeUtils::evalReduceShapeInfo(shape::order(inShape), *block.getIArguments(), *array, false, false, block.workspace());
 
                 delete array;
             }
 
             return SHAPELIST(newShape);
         }
-
-
-        template class ND4J_EXPORT LegacyReduceOp<float>;
-        template class ND4J_EXPORT LegacyReduceOp<float16>;
-        template class ND4J_EXPORT LegacyReduceOp<double>;
     }
 }
+#endif

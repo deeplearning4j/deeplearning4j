@@ -31,17 +31,18 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isScalar(), 0, "Size output should be scalar");
 
-            output->putScalar(0, (T) input->lengthOf());
+            output->assign(input->lengthOf());
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(size) {
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
+            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.workspace()));
+        }
 
-            shape::shapeScalar(newShape);
-
-            return SHAPELIST(newShape);
+        DECLARE_TYPES(size) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_INTS});
         }
     }
 }

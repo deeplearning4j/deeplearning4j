@@ -22,6 +22,7 @@ import org.datavec.api.writable.Writable;
 
 import org.datavec.local.transforms.misc.WritablesToNDArrayFunction;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -34,15 +35,17 @@ public class TestWritablesToNDArrayFunction {
 
     @Test
     public void testWritablesToNDArrayAllScalars() throws Exception {
+        Nd4j.setDataType(DataType.FLOAT);
         List<Writable> l = new ArrayList<>();
         for (int i = 0; i < 5; i++)
             l.add(new IntWritable(i));
-        INDArray expected = Nd4j.arange(5);
+        INDArray expected = Nd4j.arange(5f).castTo(DataType.FLOAT).reshape(1, 5);
         assertEquals(expected, new WritablesToNDArrayFunction().apply(l));
     }
 
     @Test
     public void testWritablesToNDArrayMixed() throws Exception {
+        Nd4j.setDataType(DataType.FLOAT);
         List<Writable> l = new ArrayList<>();
         l.add(new IntWritable(0));
         l.add(new IntWritable(1));
@@ -53,7 +56,7 @@ public class TestWritablesToNDArrayFunction {
         l.add(new NDArrayWritable(arr));
         l.add(new IntWritable(9));
 
-        INDArray expected = Nd4j.arange(10);
+        INDArray expected = Nd4j.arange(10).castTo(DataType.FLOAT).reshape(1, 10);
         assertEquals(expected, new WritablesToNDArrayFunction().apply(l));
     }
 }

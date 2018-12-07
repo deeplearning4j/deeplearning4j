@@ -49,7 +49,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "losses/absdiff_rank2"
+            "reduce_any/rank0"
 
     };
 

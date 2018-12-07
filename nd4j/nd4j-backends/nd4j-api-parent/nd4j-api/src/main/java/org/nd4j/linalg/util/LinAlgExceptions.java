@@ -45,7 +45,7 @@ public class LinAlgExceptions {
     public static void assertSameLength(INDArray x, INDArray y, INDArray z) {
         val lengthX = x.length();
         val lengthY = y.length();
-        val lengthZ = z.length();
+        val lengthZ = z != null ? z.length() : x.length();
 
         if (lengthX != lengthY && lengthX != lengthZ && lengthX != 1 && lengthY != 1 && lengthZ != 1)
             throw new IllegalStateException("Mis matched lengths: [" + lengthX + "] != [" + lengthY + "] != [" + lengthZ + "] - " +

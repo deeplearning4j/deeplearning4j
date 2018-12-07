@@ -166,7 +166,6 @@ public class VGG16 extends ZooModel {
                                 .nOut(numClasses).activation(Activation.SOFTMAX) // radial basis function required
                                 .build(), "19")
                         .setOutputs("20")
-                        .backprop(true).pretrain(false)
                         .setInputTypes(InputType.convolutionalFlat(inputShape[2], inputShape[1], inputShape[0]))
                         .build();
 

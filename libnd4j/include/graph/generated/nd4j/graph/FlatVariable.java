@@ -19,37 +19,41 @@ public final class FlatVariable extends Table {
   public String name() { int o = __offset(6); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer nameAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
   public ByteBuffer nameInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
-  public long shape(int j) { int o = __offset(8); return o != 0 ? bb.getLong(__vector(o) + j * 8) : 0; }
-  public int shapeLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(8, 8); }
-  public ByteBuffer shapeInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 8, 8); }
+  public byte dtype() { int o = __offset(8); return o != 0 ? bb.get(o + bb_pos) : 0; }
+  public long shape(int j) { int o = __offset(10); return o != 0 ? bb.getLong(__vector(o) + j * 8) : 0; }
+  public int shapeLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
+  public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(10, 8); }
+  public ByteBuffer shapeInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 10, 8); }
   public FlatArray ndarray() { return ndarray(new FlatArray()); }
-  public FlatArray ndarray(FlatArray obj) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public int device() { int o = __offset(12); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
+  public FlatArray ndarray(FlatArray obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public int device() { int o = __offset(14); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
 
   public static int createFlatVariable(FlatBufferBuilder builder,
       int idOffset,
       int nameOffset,
+      byte dtype,
       int shapeOffset,
       int ndarrayOffset,
       int device) {
-    builder.startObject(5);
+    builder.startObject(6);
     FlatVariable.addDevice(builder, device);
     FlatVariable.addNdarray(builder, ndarrayOffset);
     FlatVariable.addShape(builder, shapeOffset);
     FlatVariable.addName(builder, nameOffset);
     FlatVariable.addId(builder, idOffset);
+    FlatVariable.addDtype(builder, dtype);
     return FlatVariable.endFlatVariable(builder);
   }
 
-  public static void startFlatVariable(FlatBufferBuilder builder) { builder.startObject(5); }
+  public static void startFlatVariable(FlatBufferBuilder builder) { builder.startObject(6); }
   public static void addId(FlatBufferBuilder builder, int idOffset) { builder.addOffset(0, idOffset, 0); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(1, nameOffset, 0); }
-  public static void addShape(FlatBufferBuilder builder, int shapeOffset) { builder.addOffset(2, shapeOffset, 0); }
+  public static void addDtype(FlatBufferBuilder builder, byte dtype) { builder.addByte(2, dtype, 0); }
+  public static void addShape(FlatBufferBuilder builder, int shapeOffset) { builder.addOffset(3, shapeOffset, 0); }
   public static int createShapeVector(FlatBufferBuilder builder, long[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addLong(data[i]); return builder.endVector(); }
   public static void startShapeVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
-  public static void addNdarray(FlatBufferBuilder builder, int ndarrayOffset) { builder.addOffset(3, ndarrayOffset, 0); }
-  public static void addDevice(FlatBufferBuilder builder, int device) { builder.addInt(4, device, 0); }
+  public static void addNdarray(FlatBufferBuilder builder, int ndarrayOffset) { builder.addOffset(4, ndarrayOffset, 0); }
+  public static void addDevice(FlatBufferBuilder builder, int device) { builder.addInt(5, device, 0); }
   public static int endFlatVariable(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

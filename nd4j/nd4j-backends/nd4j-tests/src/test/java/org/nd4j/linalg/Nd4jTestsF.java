@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -40,7 +41,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class Nd4jTestsF extends BaseNd4jTest {
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public Nd4jTestsF(Nd4jBackend backend) {
         super(backend);
@@ -81,7 +82,7 @@ public class Nd4jTestsF extends BaseNd4jTest {
 
     @Test
     public void testSlice_1() {
-        val arr = Nd4j.linspace(1,4, 4).reshape(2, 2, 1);
+        val arr = Nd4j.linspace(1,4, 4, DataType.DOUBLE).reshape(2, 2, 1);
         val exp0 = Nd4j.create(new double[]{1, 3}, new int[] {2, 1});
         val exp1 = Nd4j.create(new double[]{2, 4}, new int[] {2, 1});
 

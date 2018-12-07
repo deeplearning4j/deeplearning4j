@@ -23,6 +23,7 @@ import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.Trainable;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -74,8 +75,21 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
 
     protected abstract void fit(MultiDataSet mds);
 
+    protected abstract void pretrain(DataSet ds);
+
+    protected abstract void pretrain(MultiDataSet mds);
+
     @Override
     public EarlyStoppingResult<T> fit() {
+        return fit(false);
+    }
+
+    @Override
+    public EarlyStoppingResult<T> pretrain(){
+        return fit(true);
+    }
+
+    protected EarlyStoppingResult<T> fit(boolean pretrain){
         esConfig.validate();
         log.info("Starting early stopping training");
         if (esConfig.getScoreCalculator() == null)
@@ -116,10 +130,18 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
             triggerEpochListeners(true, model, epochCount);
             while (iterator.hasNext()) {
                 try {
-                    if (train != null) {
-                        fit((DataSet) iterator.next());
-                    } else
-                        fit(trainMulti.next());
+                    if(pretrain){
+                        if(train != null){
+                            pretrain((DataSet)iterator.next());
+                        } else {
+                            pretrain(trainMulti.next());
+                        }
+                    } else {
+                        if (train != null) {
+                            fit((DataSet) iterator.next());
+                        } else
+                            fit(trainMulti.next());
+                    }
                 } catch (Exception e) {
                     log.warn("Early stopping training terminated due to exception at epoch {}, iteration {}",
                             epochCount, iterCount, e);
@@ -135,7 +157,16 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 }
 
                 //Check per-iteration termination conditions
-                lastScore = model.score();
+                if(pretrain){
+                    //TODO support for non-first-layer pretraining
+                    if(model instanceof MultiLayerNetwork){
+                        lastScore = (((MultiLayerNetwork) model).getLayer(0)).score();
+                    } else {
+                        lastScore = (((ComputationGraph) model).getLayer(0)).score();
+                    }
+                } else {
+                    lastScore = model.score();
+                }
                 for (IterationTerminationCondition c : esConfig.getIterationTerminationConditions()) {
                     if (c.terminate(lastScore)) {
                         terminate = true;

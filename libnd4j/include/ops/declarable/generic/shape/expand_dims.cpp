@@ -30,15 +30,14 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
 
             if (input->isScalar()) {
-                output->assign(input->getScalar(0));
-                return ND4J_STATUS_OK;
+                output->assign(input);
+                return Status::OK();
             }
 
-            auto axis = block.numI() > 0 ? INT_ARG(0) : static_cast<int>(INPUT_VARIABLE(1)->getScalar(0));
+            Nd4jLong axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<int>(0);
 
             if (axis < 0)
                 axis += input->rankOf() + 1;
-
 
             REQUIRE_TRUE(axis >= 0 && axis <= input->rankOf()+1, 0, "ExpandDims: axis should be in range of 0...%i in this case, but got %i instead", input->rankOf() + 1, axis);
 
@@ -55,7 +54,13 @@ namespace nd4j {
 
             STORE_RESULT(output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
+        }
+
+        DECLARE_TYPES(expand_dims) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
         }
 
         DECLARE_SHAPE_FN(expand_dims) {
@@ -67,7 +72,7 @@ namespace nd4j {
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
 
                 Nd4jLong x = 1;
-                shape::shapeBuffer(1, &x, newShape);
+                shape::shapeBuffer(1, ArrayOptions::dataType(inShape), &x, newShape);
                 return SHAPELIST(newShape);
             }
 
@@ -76,14 +81,14 @@ namespace nd4j {
                 Nd4jLong* newShape;
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), Nd4jLong);
 
-                shape::shapeBuffer(2, shape::shapeOf(inShape), newShape);
+                shape::shapeBuffer(2, ArrayOptions::dataType(inShape), shape::shapeOf(inShape), newShape);
                 return SHAPELIST(newShape);
             }
 
             auto x_rank = shape::rank(inShape);
             char order = shape::order(inShape);
 
-            auto axis = block.numI() > 0 ? INT_ARG(0) : static_cast<int>(INPUT_VARIABLE(1)->getScalar(0));
+            Nd4jLong axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<int>(0);
 
             if (axis < 0)
                 axis += x_rank + 1;
@@ -98,9 +103,9 @@ namespace nd4j {
             shape.insert(shape.begin() + axis, 1);
 
             if (order == 'c')
-                shape::shapeBuffer(x_rank+1, shape.data(), newShape);
+                shape::shapeBuffer(x_rank+1, ArrayOptions::dataType(inShape), shape.data(), newShape);
             else
-                shape::shapeBufferFortran(x_rank+1, shape.data(), newShape);
+                shape::shapeBufferFortran(x_rank+1, ArrayOptions::dataType(inShape), shape.data(), newShape);
 
 
             return SHAPELIST(newShape);

@@ -32,7 +32,7 @@ import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
+import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
@@ -184,15 +184,6 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         assertEquals(modelWeights, modelWeights2);
     }
 
-    @Test
-    public void testPretrain() {
-        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
-
-        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, false);
-
-        assertNotEquals(model.conf().isPretrain(), model2.conf().isPretrain());
-    }
-
 
     private static NeuralNetConfiguration getConfig(int nIn, int nOut, WeightInit weightInit, boolean pretrain) {
         DenseLayer layer = new DenseLayer.Builder().nIn(nIn).nOut(nOut).weightInit(weightInit).dist(new NormalDistribution(1, 1))
@@ -201,7 +192,6 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer)
                         .build();
-        conf.setPretrain(pretrain);
         return conf;
     }
 
@@ -263,8 +253,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
         String confActivation = "leakyrelu";
         Object[] confExtra = {myAlpha};
-        INDArray outMine = Nd4j.getExecutioner().execAndReturn(
-                        Nd4j.getOpFactory().createTransform(confActivation, leakyVector.dup(), confExtra));
+        INDArray outMine = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(leakyVector.dup(), myAlpha));
         System.out.println("======================");
         System.out.println("Exec and Return: Leaky Relu transformation with a value via getOpFactory");
         System.out.println("======================");
@@ -316,10 +305,6 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
                 .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(42).layer(layer).build();
-
-        assertFalse(conf.isPretrain());
-        conf.setPretrain(pretrain);
-        assertTrue(conf.isPretrain());
     }
 
 }

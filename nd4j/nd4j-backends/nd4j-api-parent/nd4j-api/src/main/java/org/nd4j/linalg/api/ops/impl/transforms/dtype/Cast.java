@@ -29,7 +29,10 @@ import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
 import org.nd4j.imports.descriptors.properties.adapters.IntArrayIntIndexAdpater;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -44,18 +47,37 @@ import java.util.*;
  * @author raver119@gmail.com
  */
 public class Cast extends BaseDynamicTransformOp {
-    private DataBuffer.Type typeDst;
+    private DataType typeDst;
 
     public Cast() {
         //
     }
 
-    public Cast(SameDiff sameDiff, SDVariable arg, @NonNull DataBuffer.Type dst) {
+    public Cast(SameDiff sameDiff, SDVariable arg, @NonNull DataType dst) {
         super(sameDiff, new SDVariable[] {arg}, false);
 
         this.typeDst = dst;
         addArgs();
     }
+
+/*
+    @Override
+    public void setValueFor(Field target, Object value) {
+        if(value == null) {
+            throw new ND4JIllegalStateException("Unable to set field " + target + " using null value!");
+        }
+
+        // FIXME!
+        if (!(value instanceof DataType))
+            return;
+
+        try {
+            target.set(this, (DataType) value);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+    */
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
@@ -101,9 +123,22 @@ public class Cast extends BaseDynamicTransformOp {
     }
 
     @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        if (arg() != null && (arg().getArr() != null || arg().getShape() != null)) {
+            if (arg().getArr() != null) {
+                return Collections.singletonList(LongShapeDescriptor.fromShape(arg().getArr().shape(), DataType.fromInt(iArguments.get(0).intValue())));
+            } else {
+                return Collections.singletonList(LongShapeDescriptor.fromShape(arg().getShape(), DataType.fromInt(iArguments.get(0).intValue())));
+            }
+        }
+
+        return Collections.emptyList();
+    }
+
+    @Override
     public void setValueFor(Field target, Object value) {
         //This is a hack around a property mapping issue - TF datatype DT_DOUBLE return attribute.getType() of DT_DOUBLE which doesn't make sense
-        if(value == null || value instanceof String || value instanceof DataBuffer.Type){
+        if(value == null || value instanceof String || value instanceof DataType){
             super.setValueFor(target, value);
         }
     }

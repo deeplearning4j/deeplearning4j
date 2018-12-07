@@ -17,6 +17,7 @@
 package org.nd4j.linalg.memory.abstracts;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
@@ -78,7 +79,7 @@ public class DummyWorkspace implements MemoryWorkspace {
      * @return
      */
     @Override
-    public PagedPointer alloc(long requiredMemory, DataBuffer.Type dataType, boolean initialize) {
+    public PagedPointer alloc(long requiredMemory, DataType dataType, boolean initialize) {
         throw new UnsupportedOperationException("DummyWorkspace shouldn't be used for allocation");
     }
 
@@ -92,7 +93,7 @@ public class DummyWorkspace implements MemoryWorkspace {
      * @return
      */
     @Override
-    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type dataType, boolean initialize) {
+    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataType dataType, boolean initialize) {
         throw new UnsupportedOperationException("DummyWorkspace shouldn't be used for allocation");
     }
 

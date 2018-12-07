@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.buffer.factory;
 
+import lombok.NonNull;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -60,15 +61,25 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer create(DataBuffer underlyingBuffer, long offset, long length) {
-        if (underlyingBuffer.dataType() == DataBuffer.Type.DOUBLE) {
+        if (underlyingBuffer.dataType() == DataType.DOUBLE) {
             return new DoubleBuffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataBuffer.Type.FLOAT) {
+        } else if (underlyingBuffer.dataType() == DataType.FLOAT) {
             return new FloatBuffer(underlyingBuffer, length, offset);
 
-        } else if (underlyingBuffer.dataType() == DataBuffer.Type.INT) {
+        } else if (underlyingBuffer.dataType() == DataType.INT) {
             return new IntBuffer(underlyingBuffer, length, offset);
-        } else if (underlyingBuffer.dataType() == DataBuffer.Type.LONG) {
+        } else if (underlyingBuffer.dataType() == DataType.LONG) {
             return new LongBuffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.BOOL) {
+            return new BoolBuffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.SHORT) {
+            return new Int16Buffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.BYTE) {
+            return new Int8Buffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.UBYTE) {
+            return new UInt8Buffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.HALF) {
+            return new HalfBuffer(underlyingBuffer, length, offset);
         }
         return null;
     }
@@ -259,6 +270,60 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createFloat(long length, boolean initialize, MemoryWorkspace workspace) {
         return new FloatBuffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer create(@NonNull DataType dataType, long length, boolean initialize) {
+        switch (dataType) {
+            case DOUBLE:
+                return new DoubleBuffer(length, initialize);
+            case FLOAT:
+                return new FloatBuffer(length, initialize);
+            case HALF:
+                return new HalfBuffer(length, initialize);
+            case LONG:
+                return new LongBuffer(length, initialize);
+            case INT:
+                return new IntBuffer(length, initialize);
+            case SHORT:
+                return new Int16Buffer(length, initialize);
+            case UBYTE:
+                return new UInt8Buffer(length, initialize);
+            case BYTE:
+                return new Int8Buffer(length, initialize);
+            case BOOL:
+                return new BoolBuffer(length, initialize);
+            default:
+                throw new IllegalStateException("Unknown datatype used: [" + dataType + "]");
+
+        }
+
+    }
+
+    @Override
+    public DataBuffer create(DataType dataType, long length, boolean initialize, MemoryWorkspace workspace) {
+        switch (dataType) {
+            case DOUBLE:
+                return new DoubleBuffer(length, initialize, workspace);
+            case FLOAT:
+                return new FloatBuffer(length, initialize, workspace);
+            case HALF:
+                return new HalfBuffer(length, initialize, workspace);
+            case LONG:
+                return new LongBuffer(length, initialize, workspace);
+            case INT:
+                return new IntBuffer(length, initialize, workspace);
+            case SHORT:
+                return new Int16Buffer(length, initialize, workspace);
+            case UBYTE:
+                return new UInt8Buffer(length, initialize, workspace);
+            case BYTE:
+                return new Int8Buffer(length, initialize, workspace);
+            case BOOL:
+                return new BoolBuffer(length, initialize, workspace);
+            default:
+                throw new IllegalStateException("Unknown datatype used: [" + dataType + "]");
+        }
     }
 
     @Override
@@ -520,7 +585,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      * opType and length.
      */
     @Override
-    public DataBuffer create(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer) {
+    public DataBuffer create(Pointer pointer, DataType type, long length, @NonNull Indexer indexer) {
         switch (type) {
             case INT:
                 return new IntBuffer(pointer, indexer, length);

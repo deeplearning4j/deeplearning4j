@@ -51,11 +51,23 @@ namespace ops {
         auto conv = ArrayUtils::toLongVector(*block.getIArguments());
 
         if (shape::order(in) == 'c')
-            shape::shapeBuffer(block.numI(), conv.data(), newShape);
+            shape::shapeBuffer(block.numI(), block.dataType(), conv.data(), newShape);
         else
-            shape::shapeBufferFortran(block.numI(), conv.data(), newShape);
+            shape::shapeBufferFortran(block.numI(),block.dataType(),  conv.data(), newShape);
 
         return SHAPELIST(newShape);
+    }
+
+    DECLARE_TYPES(tile_to_shape) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
+    DECLARE_TYPES(tile_to_shape_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
 
@@ -65,12 +77,11 @@ namespace ops {
 
         auto gradX = OUTPUT_VARIABLE(0);
 
-        auto axisX = ShapeUtils<T>::evalBroadcastBackwardAxis(input->shapeInfo(), epsNext->shapeInfo());
-
+        auto axisX = ShapeUtils::evalBroadcastBackwardAxis(input->shapeInfo(), epsNext->shapeInfo());
+        // FIX ME: reduceAlongDims should have a signature with result pass to to avoid assigning twice
         if (!axisX.empty()) {
-            auto sum = epsNext->template reduceAlongDimension<simdOps::Sum<T>>(axisX);
-            gradX->assign(sum);
-            delete sum;
+            auto tempRes = epsNext->reduceAlongDims(reduce::Sum, axisX);
+            gradX->assign(tempRes);
         } else
             gradX->assign(epsNext);
 

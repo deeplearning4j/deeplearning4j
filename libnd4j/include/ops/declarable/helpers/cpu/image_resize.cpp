@@ -69,21 +69,27 @@ namespace helpers {
         return top + (bottom - top) * yVal;
     }
 
-    template <typename T>
-    static void resizeImage(NDArray<T> const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
+    static void resizeImage(NDArray const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
                      Nd4jLong outWidth, Nd4jLong channels,
                      std::vector<BilinearInterpolationData> const& xs,
                      std::vector<BilinearInterpolationData> const& ys,
-                     NDArray<T>* output) {
+                     NDArray* output);
+
+    template <typename T>
+    static void resizeImage_(NDArray const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
+                     Nd4jLong outWidth, Nd4jLong channels,
+                     std::vector<BilinearInterpolationData> const& xs,
+                     std::vector<BilinearInterpolationData> const& ys,
+                     NDArray* output) {
 
         Nd4jLong inRowSize = inWidth * channels;
         Nd4jLong inBatchNumValues = inHeight * inRowSize;
         Nd4jLong outRowSize = outWidth * channels;
 
-        T const* input_b_ptr = images->getBuffer(); // this works only with 'c' direction
+        T const* input_b_ptr = reinterpret_cast<T const*>(images->getBuffer()); // this works only with 'c' direction
         BilinearInterpolationData const* xs_ = xs.data();
 
-        T* output_y_ptr = output->buffer();
+        T* output_y_ptr = reinterpret_cast<T*>(output->buffer());
         for (Nd4jLong b = 0; b < batchSize; ++b) {
             for (Nd4jLong y = 0; y < outHeight; ++y) {
                 const T *ys_input_lower_ptr = input_b_ptr + ys[y].bottomIndex * inRowSize;
@@ -109,26 +115,8 @@ namespace helpers {
         }
     }
 
-    template void resizeImage(NDArray<float> const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
-                            Nd4jLong outWidth, Nd4jLong channels,
-                            std::vector<BilinearInterpolationData> const& xs,
-                            std::vector<BilinearInterpolationData> const& ys,
-                            NDArray<float>* output);
-
-    template void resizeImage(NDArray<float16> const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
-                     Nd4jLong outWidth, Nd4jLong channels,
-                     std::vector<BilinearInterpolationData> const& xs,
-                     std::vector<BilinearInterpolationData> const& ys,
-                     NDArray<float16>* output);
-
-    template void resizeImage(NDArray<double> const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
-                     Nd4jLong outWidth, Nd4jLong channels,
-                     std::vector<BilinearInterpolationData> const& xs,
-                     std::vector<BilinearInterpolationData> const& ys,
-                     NDArray<double>* output);
-
     template <typename T>
-    int resizeBilinearFunctor(NDArray<T> const* images, int width, int height, bool center, NDArray<T>* output) {
+    static int resizeBilinearFunctor_(NDArray const* images, int width, int height, bool center, NDArray* output) {
         const Nd4jLong batchSize = images->sizeAt(0);
         const Nd4jLong inHeight  = images->sizeAt(1);
         const Nd4jLong inWidth   = images->sizeAt(2);
@@ -169,12 +157,9 @@ namespace helpers {
         resizeImage(images, batchSize, inHeight, inWidth, outHeight,  outWidth, channels, xs, ys, output);
         return ND4J_STATUS_OK;
     }
-    template int resizeBilinearFunctor(NDArray<float> const* image, int width, int height, bool center, NDArray<float>* output);
-    template int resizeBilinearFunctor(NDArray<float16> const* image, int width, int height, bool center, NDArray<float16>* output);
-    template int resizeBilinearFunctor(NDArray<double> const* image, int width, int height, bool center, NDArray<double>* output);
 
     template <typename T>
-    int resizeNeighborFunctor(NDArray<T> const* images, int width, int height, bool center, NDArray<T>* output) {
+    int resizeNeighborFunctor_(NDArray const* images, int width, int height, bool center, NDArray* output) {
         const Nd4jLong batchSize = images->sizeAt(0);
         const Nd4jLong inHeight  = images->sizeAt(1);
         const Nd4jLong inWidth   = images->sizeAt(2);
@@ -204,7 +189,7 @@ namespace helpers {
             for (int x = 0; x < outWidth; ++x) {
               Nd4jLong inX = std::min((center) ? static_cast<Nd4jLong>(roundf(x * widthScale)) : static_cast<Nd4jLong>(floorf(x * widthScale)), inWidth - 1);
               for (Nd4jLong e = 0; e < channels; e++)
-                  (*output)(b, y, x, e) = (*images)(b, inY, inX, e);
+                  output->p(b, y, x, e, images->e<T>(b, inY, inX, e));
 //              std::copy_n(&input(b, in_y, in_x, 0), channels, &output(b, y, x, 0));
             }
           }
@@ -212,9 +197,29 @@ namespace helpers {
 
         return ND4J_STATUS_OK;
     }
-    template int resizeNeighborFunctor(NDArray<float> const* image, int width, int height, bool center, NDArray<float>* output);
-    template int resizeNeighborFunctor(NDArray<float16> const* image, int width, int height, bool center, NDArray<float16>* output);
-    template int resizeNeighborFunctor(NDArray<double> const* image, int width, int height, bool center, NDArray<double>* output);
+    void resizeImage(NDArray const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
+                     Nd4jLong outWidth, Nd4jLong channels,
+                     std::vector<BilinearInterpolationData> const& xs,
+                     std::vector<BilinearInterpolationData> const& ys,
+                     NDArray* output) {
+        BUILD_SINGLE_SELECTOR(images->dataType(), resizeImage_, (images, batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs, ys, output), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void resizeImage_,(NDArray const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
+                     Nd4jLong outWidth, Nd4jLong channels,
+                     std::vector<BilinearInterpolationData> const& xs,
+                     std::vector<BilinearInterpolationData> const& ys,
+                     NDArray* output), LIBND4J_TYPES);
+
+    int resizeBilinearFunctor(NDArray const* images, int width, int height, bool center, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(images->dataType(), return resizeBilinearFunctor_, (images, width, height, center, output), LIBND4J_TYPES);
+    }
+    BUILD_SINGLE_TEMPLATE(template int resizeBilinearFunctor_, (NDArray const* images, int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
+
+    int resizeNeighborFunctor(NDArray const* images, int width, int height, bool center, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_, (images, width, height, center, output), LIBND4J_TYPES);
+    }
+    BUILD_SINGLE_TEMPLATE(template int resizeNeighborFunctor_, (NDArray const* images, int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
 
 }
 }

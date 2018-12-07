@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.buffer;
 
+import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
@@ -53,7 +54,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class FloatDataBufferTest extends BaseNd4jTest {
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public FloatDataBufferTest(Nd4jBackend backend) {
         super(backend);
@@ -62,7 +63,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
     @Before
     public void before() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        DataTypeUtil.setDTypeForContext(DataType.FLOAT);
         System.out.println("DATATYPE HERE: " + Nd4j.dataType());
     }
 
@@ -76,7 +77,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     public void testPointerCreation() {
         FloatPointer floatPointer = new FloatPointer(1, 2, 3, 4);
         Indexer indexer = FloatIndexer.create(floatPointer);
-        DataBuffer buffer = Nd4j.createBuffer(floatPointer, DataBuffer.Type.FLOAT, 4, indexer);
+        DataBuffer buffer = Nd4j.createBuffer(floatPointer, DataType.FLOAT, 4, indexer);
         DataBuffer other = Nd4j.createBuffer(new float[] {1, 2, 3, 4});
         assertArrayEquals(other.asFloat(), buffer.asFloat(), 0.001f);
     }
@@ -122,10 +123,11 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
     @Test
     public void testToNio() {
-        DataBuffer buff = Nd4j.createBuffer(new double[] {1, 2, 3, 4});
+        DataBuffer buff = Nd4j.createTypedBuffer(new double[] {1, 2, 3, 4}, DataType.FLOAT);
         assertEquals(4, buff.length());
         if (buff.allocationMode() == DataBuffer.AllocationMode.HEAP)
             return;
+
         ByteBuffer nio = buff.asNio();
         assertEquals(16, nio.capacity());
 
@@ -203,7 +205,9 @@ public class FloatDataBufferTest extends BaseNd4jTest {
         assertion.write(dos);
 
         DataBuffer clone = assertion.dup();
-        assertion.read(new DataInputStream(new ByteArrayInputStream(bos.toByteArray())));
+        val stream = new DataInputStream(new ByteArrayInputStream(bos.toByteArray()));
+        val header = BaseDataBuffer.readHeader(stream);
+        assertion.read(stream, header.getLeft(), header.getMiddle(), header.getRight());
         assertArrayEquals(assertion.asFloat(), clone.asFloat(), 0.0001f);
     }
 
@@ -211,8 +215,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     public void testOffset() {
         DataBuffer create = Nd4j.createBuffer(new float[] {1, 2, 3, 4}, 2);
         assertEquals(2, create.length());
-        assertEquals(4, create.underlyingLength());
-        assertEquals(2, create.offset());
+        assertEquals(0, create.offset());
         assertEquals(3, create.getDouble(0), 1e-1);
         assertEquals(4, create.getDouble(1), 1e-1);
 

@@ -29,13 +29,20 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
 
-            if (x->getScalar(0) != y->getScalar(0))
+            if (x->e<float>(0) != y->e<float>(0))
                 return ND4J_STATUS_TRUE;
             else
                 return ND4J_STATUS_FALSE;
         }
         DECLARE_SYN(NotEquals, neq_scalar);
         DECLARE_SYN(notequals, neq_scalar);
+
+        DECLARE_TYPES(neq_scalar) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::BOOL);
+        }
     }
 }
 

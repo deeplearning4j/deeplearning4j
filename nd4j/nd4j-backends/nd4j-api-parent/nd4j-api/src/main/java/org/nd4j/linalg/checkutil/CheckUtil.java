@@ -16,9 +16,11 @@
 
 package org.nd4j.linalg.checkutil;
 
+import lombok.val;
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
@@ -279,9 +281,9 @@ public class CheckUtil {
         return out;
     }
 
-    public static INDArray convertFromApacheMatrix(RealMatrix matrix) {
-        int[] shape = new int[] {matrix.getRowDimension(), matrix.getColumnDimension()};
-        INDArray out = Nd4j.create(shape);
+    public static INDArray convertFromApacheMatrix(RealMatrix matrix, DataType dataType) {
+        val shape = new long[] {matrix.getRowDimension(), matrix.getColumnDimension()};
+        INDArray out = Nd4j.create(dataType, shape);
         for (int i = 0; i < shape[0]; i++) {
             for (int j = 0; j < shape[1]; j++) {
                 double value = matrix.getEntry(i, j);
@@ -333,7 +335,7 @@ public class CheckUtil {
     }
 
     public static void printMatrixFullPrecision(INDArray matrix) {
-        boolean floatType = (matrix.data().dataType() == DataBuffer.Type.FLOAT);
+        boolean floatType = (matrix.data().dataType() == DataType.FLOAT);
         printNDArrayHeader(matrix);
         long[] shape = matrix.shape();
         for (int i = 0; i < shape[0]; i++) {

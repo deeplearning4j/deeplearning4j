@@ -16,18 +16,22 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+@Slf4j
 public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
 
     public BaseDynamicTransformOp() {}
@@ -42,14 +46,15 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
         val args = args();
         if(args.length < 2) {
             if(args[0] == null || args[0].getShape() == null) {
                 return Collections.emptyList();
             }
+            val dtypeX = args[0].getArr() != null ? args[0].getArr().dataType() : args[0].dataType();
 
-            return Arrays.asList(args[0].getShape());
+            return Collections.singletonList(LongShapeDescriptor.fromShape(args[0].getShape(), dtypeX));
         }
 
         val firstArgShape = args[0].getShape();
@@ -62,13 +67,24 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
             return Collections.emptyList();
         }
 
-        if(Arrays.equals(firstArgShape, secondArgShape)){
-            return Collections.singletonList(firstArgShape);
-        }
-        //Handle broadcast shape: [1,4]+[3,1] = [3,4]
-        Shape.assertBroadcastable(firstArgShape, secondArgShape, this.getClass());
-        val outShape = Shape.broadcastOutputShape(firstArgShape, secondArgShape);
+        // detecting datatype based on both args
+        val dtypeX = args[0].getArr() != null ? args[0].getArr().dataType() : args[0].dataType();
+        val dtypeY = args[1].getArr() != null ? args[1].getArr().dataType() : args[1].dataType();
 
-        return Collections.singletonList(outShape);
+        val dtypeZ = Shape.pickPairwiseDataType(dtypeX, dtypeY);
+
+        if(Arrays.equals(firstArgShape, secondArgShape)){
+            try {
+                return Collections.singletonList(LongShapeDescriptor.fromShape(firstArgShape, dtypeZ));
+            } catch (Throwable e) {
+                throw new RuntimeException("calculateOutputShape() failed for [" + this.opName() + "]", e);
+            }
+        } else {
+            //Handle broadcast shape: [1,4]+[3,1] = [3,4]
+            Shape.assertBroadcastable(firstArgShape, secondArgShape, this.getClass());
+            val outShape = Shape.broadcastOutputShape(firstArgShape, secondArgShape);
+
+            return Collections.singletonList(LongShapeDescriptor.fromShape(outShape, dtypeZ));
+        }
     }
 }

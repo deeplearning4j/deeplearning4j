@@ -40,14 +40,20 @@ namespace nd4j {
          */
         CONFIGURABLE_OP_IMPL(scatter_update, 2, 1, true, 0, -1) {
             
-            NDArray<T> *operand = INPUT_VARIABLE(0);
-            NDArray<T> *updates = INPUT_VARIABLE(1);
+            auto operand = INPUT_VARIABLE(0);
+            auto updates = INPUT_VARIABLE(1);
             
             helpers::scatterUpdate(*operand, *updates, block.getIArguments());
             
             return Status::OK();
         }
         DECLARE_SYN(scatterupdate, scatter_update);
+
+        DECLARE_TYPES(scatter_update) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
     }
 }
 

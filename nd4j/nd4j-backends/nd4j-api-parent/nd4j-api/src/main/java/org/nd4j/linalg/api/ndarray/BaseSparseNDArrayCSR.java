@@ -20,6 +20,7 @@ import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LongUtils;
 
 import java.util.ArrayList;
@@ -56,7 +57,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
         checkArgument(data.length == columnsPointers.length);
         checkArgument(pointerB.length == pointerE.length);
         // TODO
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, Nd4j.dataType()));
         init(shape);
         int valuesSpace = (int) (data.length * THRESHOLD_MEMORY_ALLOCATION);
         this.values = Nd4j.getDataBufferFactory().createDouble(valuesSpace);
@@ -79,7 +80,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
 
     public BaseSparseNDArrayCSR(DataBuffer data, int[] columnsPointers, int[] pointerB, int[] pointerE, long[] shape) {
         checkArgument(pointerB.length == pointerE.length);
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, Nd4j.dataType()));
         init(shape);
         this.values = data;
         this.columnsPointers = Nd4j.getDataBufferFactory().createInt(data.length());

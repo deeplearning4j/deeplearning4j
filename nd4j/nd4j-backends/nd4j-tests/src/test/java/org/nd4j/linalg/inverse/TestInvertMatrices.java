@@ -21,6 +21,7 @@ import org.apache.commons.math3.linear.LUDecomposition;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.SingularMatrixException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -63,7 +64,7 @@ public class TestInvertMatrices extends BaseNd4jTest {
     @Test
     public void testInverseComparison() {
 
-        List<Pair<INDArray, String>> list = NDArrayCreationUtil.getAllTestMatricesWithShape(10, 10, 12345);
+        List<Pair<INDArray, String>> list = NDArrayCreationUtil.getAllTestMatricesWithShape(10, 10, 12345, DataType.DOUBLE);
 
         for (Pair<INDArray, String> p : list) {
             INDArray orig = p.getFirst();
@@ -72,7 +73,7 @@ public class TestInvertMatrices extends BaseNd4jTest {
             RealMatrix rm = CheckUtil.convertToApacheMatrix(orig);
             RealMatrix rmInverse = new LUDecomposition(rm).getSolver().getInverse();
 
-            INDArray expected = CheckUtil.convertFromApacheMatrix(rmInverse);
+            INDArray expected = CheckUtil.convertFromApacheMatrix(rmInverse, orig.dataType());
             assertTrue(p.getSecond(), CheckUtil.checkEntries(expected, inverse, 1e-3, 1e-4));
         }
     }

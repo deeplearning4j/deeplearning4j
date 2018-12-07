@@ -18,6 +18,35 @@
 #include <vector>
 #include <pointercast.h>
 #include "../NativeOpExcutioner.h"
+#include <types/types.h>
+
+#include <pairwise_bool.h>
+#include <broadcasting_bool.h>
+#include <scalar_bool.h>
+
+#include <loops/transform_float.h>
+#include <loops/transform_bool.h>
+#include <loops/transform_any.h>
+#include <loops/transform_same.h>
+#include <loops/transform_strict.h>
+
+#include <loops/reduce_float.h>
+#include <loops/reduce_same.h>
+#include <loops/reduce_bool.h>
+#include <loops/reduce_long.h>
+
+#include <loops/broadcasting.h>
+#include <loops/indexreduce.h>
+#include <loops/pairwise_transform.h>
+#include <loops/reduce_float.h>
+#include <loops/reduce3.h>
+#include <loops/summarystatsreduce.h>
+#include <loops/transform_same.h>
+#include <loops/scalar.h>
+#include <loops/random.h>
+#include <pointercast.h>
+
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -30,9 +59,11 @@
 * @param result
 * @param resultShapeInfo
 */
-template<typename T>
-T NativeOpExcutioner<T>::execIndexReduceScalar(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams) {
-    return functions::indexreduce::IndexReduce<T>::execScalar(opNum, x,xShapeInfo,extraParams);
+void NativeOpExcutioner::execIndexReduceScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto z = reinterpret_cast<Nd4jLong*>(vz);
+
+    BUILD_SINGLE_SELECTOR(xType, z[0] = functions::indexreduce::IndexReduce, ::execScalar(opNum, x,xShapeInfo,extraParams), LIBND4J_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -47,9 +78,21 @@ T NativeOpExcutioner<T>::execIndexReduceScalar(int opNum, T *x, Nd4jLong *xShape
  * @param dimension
  * @param dimensionLength
  */
-template<typename T>
-void NativeOpExcutioner<T>::execIndexReduce(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-    functions::indexreduce::IndexReduce<T>::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffsets);
+
+void NativeOpExcutioner::execIndexReduce(int opNum,
+        void *x,
+        Nd4jLong *xShapeInfo,
+        void *extraParams,
+        Nd4jLong *result,
+        Nd4jLong *resultShapeInfoBuffer,
+        int *dimension,
+        int dimensionLength,
+        Nd4jLong *tadShapeInfo,
+        Nd4jLong *tadOffsets) {
+
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -65,10 +108,27 @@ void NativeOpExcutioner<T>::execIndexReduce(int opNum, T *x, Nd4jLong *xShapeInf
  * @param dimension
  * @param dimensionLength
  */
-template<typename T>
-void NativeOpExcutioner<T>::execBroadcast(int opNum, T *x, Nd4jLong *xShapeInfo, T *y, Nd4jLong *yShapeInfo, T *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-    functions::broadcast::Broadcast<T>::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
+
+void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+#ifndef __ND4J_EXPERIMENTAL__
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
+#else
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
+#endif
 }
+
+void NativeOpExcutioner::execBroadcastBool(int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 /**
@@ -83,46 +143,27 @@ void NativeOpExcutioner<T>::execBroadcast(int opNum, T *x, Nd4jLong *xShapeInfo,
 * @param extraParams
 * @param n
 */
-template<typename T>
-void NativeOpExcutioner<T>::execPairwiseTransform(int opNum, T *dx, Nd4jLong xStride, T *y, Nd4jLong yStride, T *result, Nd4jLong resultStride, T *extraParams, Nd4jLong n) {
-    functions::pairwise_transforms::PairWiseTransform<T>::exec(opNum, dx, xStride, y, yStride, result, resultStride, extraParams, n);
+void NativeOpExcutioner::execPairwiseTransform(int opNum, void *dx, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+#ifndef __ND4J_EXPERIMENTAL__
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform, ::exec(opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
+#else
+    doesnBUILD_SINGLE_SELECTOR_THRICE(xType, functions::pairwise_transforms::PairWiseTransform, ::exec(opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams), LIBND4J_TYPES);
+#endif
 }
 
-////////////////////////////////////////////////////////////////////////
-/**
-*
-* @param opNum
-* @param dx
-* @param xStride
-* @param y
-* @param yStride
-* @param result
-* @param resultStride
-* @param extraParams
-* @param n
-*/
-template<typename T>
-void NativeOpExcutioner<T>::execPairwiseTransform(int opNum, T *dx, Nd4jLong *xShapeInfo, T *y, Nd4jLong *yShapeInfo, T *result, Nd4jLong *resultShapeInfo, T *extraParams) {
-    functions::pairwise_transforms::PairWiseTransform<T>::exec(opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams);
+void NativeOpExcutioner::execPairwiseBoolTransform(int opNum, void *dx, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::pairwise_transforms::PairWiseBoolTransform, ::exec(opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams), LIBND4J_TYPES, BOOL_TYPES);
 }
 
-////////////////////////////////////////////////////////////////////////
-/**
-*
-* @param opNum
-* @param dx
-* @param xStride
-* @param y
-* @param yStride
-* @param result
-* @param resultStride
-* @param extraParams
-* @param n
-*/
-template<typename T>
-void NativeOpExcutioner<T>::execPairwiseTransform(int opNum, T *dx, Nd4jLong *xShapeInfo, T *y, Nd4jLong *yShapeInfo, T *result, Nd4jLong *resultShapeInfo, T *extraParams, Nd4jLong *xIndexes, Nd4jLong *yIndexes, Nd4jLong *resultIndexes) {
-    functions::pairwise_transforms::PairWiseTransform<T>::exec(opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams, xIndexes, yIndexes, resultIndexes);
-}
+
 
 ////////////////////////////////////////////////////////////////////////
 /**
@@ -134,13 +175,32 @@ void NativeOpExcutioner<T>::execPairwiseTransform(int opNum, T *dx, Nd4jLong *xS
 * @param result
 * @param resultShapeInfo
 */
-template<typename T>
-void NativeOpExcutioner<T>::execReduce(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-    // for LogSumExp reduction we need to have max stored in result
-    if (opNum == 19)
-        functions::reduce::ReduceFunction<T>::exec(3, x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets);
+void NativeOpExcutioner::execReduceFloat(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
-    functions::reduce::ReduceFunction<T>::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
+}
+
+void NativeOpExcutioner::execReduceSame(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
+}
+
+void NativeOpExcutioner::execReduceBool(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES, BOOL_TYPES);
+}
+
+void NativeOpExcutioner::execReduceLong(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::exec(opNum, x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES, LONG_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -152,15 +212,33 @@ void NativeOpExcutioner<T>::execReduce(int opNum, T *x, Nd4jLong *xShapeInfo, T 
  * @param extraParams
  * @return
  */
-template<typename T>
-T NativeOpExcutioner<T>::execReduceScalar(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams) {
-    if (opNum == 19) {
-        T max = functions::reduce::ReduceFunction<T>::execScalar(3, x, xShapeInfo, extraParams);
-        return functions::reduce::ReduceFunction<T>::execScalar(opNum, x, xShapeInfo, &max);
-    }
+void NativeOpExcutioner::execReduceFloatScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
 
-    return functions::reduce::ReduceFunction<T>::execScalar(opNum, x, xShapeInfo, extraParams);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execScalar(opNum, x, xShapeInfo, extraParams, z, zShapeInfo), LIBND4J_TYPES, FLOAT_TYPES);
 }
+
+void NativeOpExcutioner::execReduceSameScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execScalar(opNum, x, xShapeInfo, extraParams, z, zShapeInfo), LIBND4J_TYPES);
+}
+
+void NativeOpExcutioner::execReduceBoolScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execScalar(opNum, x, xShapeInfo, extraParams, z, zShapeInfo), LIBND4J_TYPES, BOOL_TYPES);
+}
+
+void NativeOpExcutioner::execReduceLongScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execScalar(opNum, x, xShapeInfo, extraParams, z, zShapeInfo), LIBND4J_TYPES, LONG_TYPES);
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 /**
@@ -176,9 +254,12 @@ T NativeOpExcutioner<T>::execReduceScalar(int opNum, T *x, Nd4jLong *xShapeInfo,
  * @param dimension
  * @param dimensionLength
  */
-template<typename T>
-T NativeOpExcutioner<T>::execReduce3Scalar(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParamsVals, T *y, Nd4jLong *yShapeInfo) {
-    return functions::reduce3::Reduce3<T>::execScalar(opNum, x, xShapeInfo, extraParamsVals, y,yShapeInfo);
+void NativeOpExcutioner::execReduce3Scalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParamsVals, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
+
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execScalar(opNum, x, xShapeInfo, extraParamsVals, y, yShapeInfo, z, zShapeInfo), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -193,39 +274,30 @@ T NativeOpExcutioner<T>::execReduce3Scalar(int opNum, T *x, Nd4jLong *xShapeInfo
 * @param result
 * @param resultShapeInfo
 */
-template<typename T>
-void NativeOpExcutioner<T>::execReduce3(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParamsVals, T *y, Nd4jLong *yShapeInfo, T *result, Nd4jLong *resultShapeInfo) {
-    functions::reduce3::Reduce3<T>::exec(opNum, x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfo, nullptr, 1);
+void NativeOpExcutioner::execReduce3(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParamsVals, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(opNum, x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfo, nullptr, 1), LIBND4J_TYPES, FLOAT_TYPES);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
-template<typename T>
-void NativeOpExcutioner<T>::execReduce3All(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParamsVals, T *y, Nd4jLong *yShapeInfo, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets, Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets) {
-    functions::reduce3::Reduce3<T>::execAll(opNum, x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+void NativeOpExcutioner::execReduce3All(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParamsVals, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets, Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfoBuffer);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execAll(opNum, x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
-template<typename T>
-void NativeOpExcutioner<T>::execReduce3TAD(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParamsVals, T *y, Nd4jLong *yShapeInfo, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-    functions::reduce3::Reduce3<T>::exec(opNum, x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffsets);
+void NativeOpExcutioner::execReduce3TAD(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParamsVals, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfoBuffer);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(opNum, x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
-////////////////////////////////////////////////////////////////////////
-/**
-*
-* @param opNum
-* @param x
-* @param xStride
-* @param result
-* @param resultStride
-* @param scalar
-* @param extraParams
-* @param n
-*/
-template<typename T>
-void NativeOpExcutioner<T>::execScalar(int opNum, T *x, Nd4jLong xStride, T *result, Nd4jLong resultStride, T scalar, T *extraParams, Nd4jLong n) {
-    functions::scalar::ScalarTransform<T>::transform(opNum, x, xStride, result, resultStride, scalar, extraParams, n);
-}
 
 ////////////////////////////////////////////////////////////////////////
 /**
@@ -239,32 +311,65 @@ void NativeOpExcutioner<T>::execScalar(int opNum, T *x, Nd4jLong xStride, T *res
 * @param extraParams
 * @param n
 */
-template<typename T>
-void NativeOpExcutioner<T>::execScalar(int opNum, T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams) {
-    functions::scalar::ScalarTransform<T>::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams);
+void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *scalar, Nd4jLong *scalarShapeInfo, void *extraParams) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(scalarShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+#ifndef __ND4J_EXPERIMENTAL__
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
+#else
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), LIBND4J_TYPES);
+#endif
 }
+
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, void *scalars, Nd4jLong *scalarShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(scalarShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
+
+#ifndef __ND4J_EXPERIMENTAL__
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
+#else
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
+#endif
+}
+
+void NativeOpExcutioner::execScalarBool(int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *scalar, Nd4jLong *scalarShapeInfo, void *extraParams) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), LIBND4J_TYPES, BOOL_TYPES);
+}
+
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExcutioner::execScalarBool(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, void *scalars, Nd4jLong *scalarShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(scalarShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 /**
 *
 * @param opNum
 * @param x
-* @param xStride
-* @param result
-* @param resultStride
-* @param scalar
+* @param xShapeInfo
 * @param extraParams
-* @param n
+* @param result
+* @param resultShapeInfo
 */
-template<typename T>
-void  NativeOpExcutioner<T>::execScalar(int opNum, T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams, Nd4jLong *xIndexes, Nd4jLong *resultIndexes) {
-    functions::scalar::ScalarTransform<T>::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams, xIndexes, resultIndexes);
-}
+void NativeOpExcutioner::execSummaryStats(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, bool biasCorrected) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
-////////////////////////////////////////////////////////////////////////
-template<typename T>
-void NativeOpExcutioner<T>::execScalar(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *z, Nd4jLong *zShapeInfo, T *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-    functions::scalar::ScalarTransform<T>::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::exec(opNum, biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfo, nullptr, 1), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -277,24 +382,11 @@ void NativeOpExcutioner<T>::execScalar(int opNum, T *x, Nd4jLong *xShapeInfo, T 
 * @param result
 * @param resultShapeInfo
 */
-template<typename T>
-void NativeOpExcutioner<T>::execSummaryStats(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfo, bool biasCorrected) {
-    functions::summarystats::SummaryStatsReduce<T>::exec(opNum, biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfo, nullptr, 1);
-}
+void NativeOpExcutioner::execSummaryStatsScalar(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, bool biasCorrected) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
-////////////////////////////////////////////////////////////////////////
-/**
-*
-* @param opNum
-* @param x
-* @param xShapeInfo
-* @param extraParams
-* @param result
-* @param resultShapeInfo
-*/
-template<typename T>
-T NativeOpExcutioner<T>::execSummaryStatsScalar(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, bool biasCorrected) {
-    return functions::summarystats::SummaryStatsReduce<T>::execScalar(opNum, biasCorrected, x, xShapeInfo, extraParams);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::execScalar(opNum, biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfo), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -309,10 +401,13 @@ T NativeOpExcutioner<T>::execSummaryStatsScalar(int opNum, T *x, Nd4jLong *xShap
 * @param dimension
 * @param dimensionLength
 */
-template<typename T>
-void NativeOpExcutioner<T>::execSummaryStats(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, bool biasCorrected) {
-    functions::summarystats::SummaryStatsReduce<T>::exec(opNum, biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength);
+void NativeOpExcutioner::execSummaryStats(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, bool biasCorrected) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfoBuffer);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::exec(opNum, biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), LIBND4J_TYPES, FLOAT_TYPES);
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 /**
@@ -325,79 +420,68 @@ void NativeOpExcutioner<T>::execSummaryStats(int opNum, T *x, Nd4jLong *xShapeIn
 * @param extraParams
 * @param n
 */
-template<typename T>
-void NativeOpExcutioner<T>::execTransform(int opNum, T *dx, Nd4jLong xStride, T *result, Nd4jLong resultStride, T *extraParams, Nd4jLong n) {
-    functions::transform::Transform<T>::exec(opNum, dx, xStride, result, resultStride, extraParams, n);
+void NativeOpExcutioner::execTransformFloat(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
+}
+
+void NativeOpExcutioner::execTransformBool(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool, ::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), LIBND4J_TYPES, BOOL_TYPES);
+}
+
+void NativeOpExcutioner::execTransformAny(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), LIBND4J_TYPES, LIBND4J_TYPES);
+}
+
+void NativeOpExcutioner::execTransformSame(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame, ::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
+}
+
+void NativeOpExcutioner::execTransformStrict(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
-/**
-*
-* @param opNum
-* @param dx
-* @param xStride
-* @param result
-* @param resultStride
-* @param extraParams
-* @param n
-*/
-template<typename T>
-void NativeOpExcutioner<T>::execTransform(int opNum, T *dx, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-    functions::transform::Transform<T>::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+void NativeOpExcutioner::execRandom(int opNum, Nd4jPointer state, void *z, Nd4jLong *zShapeInfo, void *extraArguments) {
+    auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
+
+    BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::execTransform(opNum, state, z, zShapeInfo, extraArguments), FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
-/**
-*
-* @param opNum
-* @param dx
-* @param xStride
-* @param result
-* @param resultStride
-* @param extraParams
-* @param n
-*/
-template<typename T>
-void NativeOpExcutioner<T>::execTransform(int opNum, T *dx, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T *extraParams, Nd4jLong *xIndexes, Nd4jLong *resultIndexes, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-//    functions::transform::Transform<T>::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, xIndexes, resultIndexes, tadShapeInfo, tadOffsets);
-}
+void NativeOpExcutioner::execRandom(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraArguments) {
+    auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
 
-
-////////////////////////////////////////////////////////////////////////
-template<typename T>
-void NativeOpExcutioner<T>::execAggregate(int opNum, T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
-    functions::aggregate::AggregatedFunction<T>::exec(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
+    BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::execTransform(opNum, state, x, xShapeInfo, z, zShapeInfo, extraArguments), FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
-template<typename T>
-void NativeOpExcutioner<T>::execRandom(int opNum, Nd4jPointer state, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
-    functions::random::RandomFunction<T>::execTransform(opNum, state, z, zShapeBuffer, extraArguments);
+void NativeOpExcutioner::execRandom(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments) {
+    auto xType = nd4j::ArrayOptions::dataType(zShapeBuffer);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::execTransform(opNum, state, x, xShapeInfo, y, yShapeBuffer, z, zShapeBuffer, extraArguments), FLOAT_TYPES);
 }
 
-////////////////////////////////////////////////////////////////////////
-template<typename T>
-void NativeOpExcutioner<T>::execRandom(int opNum, Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
-    functions::random::RandomFunction<T>::execTransform(opNum, state, x, xShapeBuffer, z, zShapeBuffer, extraArguments);
+void NativeOpExcutioner::execReduce3(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParamsVals, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
+    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(resultShapeInfoBuffer);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(opNum, x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength), LIBND4J_TYPES, FLOAT_TYPES);
 }
-
-////////////////////////////////////////////////////////////////////////
-template<typename T>
-void NativeOpExcutioner<T>::execRandom(int opNum, Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
-    functions::random::RandomFunction<T>::execTransform(opNum, state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
-}
-
-template<typename T>
-void NativeOpExcutioner<T>::execReduce3(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParamsVals, T *y, Nd4jLong *yShapeInfo, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
-    functions::reduce3::Reduce3<T>::exec(opNum, x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength);
-}
-
-
-template class ND4J_EXPORT NativeOpExcutioner<float16>;
-template class ND4J_EXPORT NativeOpExcutioner<float>;
-template class ND4J_EXPORT NativeOpExcutioner<double>;
-
-
 
 
 

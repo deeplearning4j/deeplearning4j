@@ -143,7 +143,7 @@ public class IntBuffer extends BaseDataBuffer {
     @Override
     protected void initTypeAndSize() {
         elementSize = 4;
-        type = Type.INT;
+        type = DataType.INT;
     }
 
 

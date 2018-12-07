@@ -28,23 +28,23 @@ namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(resize_bilinear, 1, 1, false, 0, -2) {
 
-            NDArray<T>* image = INPUT_VARIABLE(0);
-            NDArray<T>* output = OUTPUT_VARIABLE(0);
+            NDArray* image = INPUT_VARIABLE(0);
+            NDArray* output = OUTPUT_VARIABLE(0);
             int width;
             int height;
             bool center = false; // - default value
             if (block.width() > 1) {
                 auto newImageSize = INPUT_VARIABLE(1);
-                REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_linear: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
-                REQUIRE_TRUE(block.numI() <= 1, 0, "resize_linear: Resize params already given by the second param. Int params are expensive.");
-                width = int(newImageSize->getScalar(0));
-                height = int(newImageSize->getScalar(1));
+                REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_bilinear: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
+                REQUIRE_TRUE(block.numI() <= 1, 0, "resize_bilinear: Resize params already given by the second param. Int params are expensive.");
+                width = newImageSize->e<int>(0);
+                height = newImageSize->e<int>(1);
                 if (block.numI() == 1) {
                     center = 0 != INT_ARG(0);
                 }
             }
             else {
-                REQUIRE_TRUE(block.numI() <= 3, 0, "resize_linear: Neither resize width nor height are provided.");
+                REQUIRE_TRUE(block.numI() <= 3, 0, "resize_bilinear: Neither resize width nor height are provided.");
                 width = INT_ARG(0);
                 height = INT_ARG(1);
                 if (block.numI() == 3)
@@ -64,13 +64,13 @@ namespace nd4j {
             int height;
             if (block.width() > 1) {
                 auto newImageSize = INPUT_VARIABLE(1);
-                REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_linear: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
-                REQUIRE_TRUE(block.numI() <= 1, 0, "resize_linear: Resize params already given by the second param. Int params are expensive.");
-                width = int(newImageSize->getScalar(0));
-                height = int(newImageSize->getScalar(1));
+                REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_bilinear: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
+                REQUIRE_TRUE(block.numI() <= 1, 0, "resize_bilinear: Resize params already given by the second param. Int params are expensive.");
+                width = newImageSize->e<int>(0);
+                height = newImageSize->e<int>(1);
             }
             else {
-                REQUIRE_TRUE(block.numI() <= 3, 0, "resize_linear: Neither resize width nor height are provided.");
+                REQUIRE_TRUE(block.numI() <= 3, 0, "resize_bilinear: Neither resize width nor height are provided.");
                 width = INT_ARG(0);
                 height = INT_ARG(1);
             }
@@ -81,10 +81,15 @@ namespace nd4j {
             outputShape[2] = width;
             outputShape[3] = height;
             outputShape[4] = in[4];
-            shape::updateStrides(outputShape, shape::order(in));
+            ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
             shapeList->push_back(outputShape); 
             return shapeList;
+        }
+        DECLARE_TYPES(resize_bilinear) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
     }

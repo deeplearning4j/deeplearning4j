@@ -21,8 +21,6 @@ import lombok.Getter;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 

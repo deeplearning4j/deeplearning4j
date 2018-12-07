@@ -28,7 +28,9 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
@@ -184,9 +186,9 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         //map the names of the nodes while accumulating the vertex ids for each variable
         Map<String,Boolean> stringNodes = new HashMap<>();      //Key: name of string variable. Value: if it's a constant
         for (Map.Entry<String, TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
-            DataBuffer.Type dt = dataTypeForTensor(entry.getValue());
-            if (dt == DataBuffer.Type.UNKNOWN && !unknownTypeNodeImportable(entry.getValue())) {
-                val var = importState.getSameDiff().var(entry.getKey(), new ZeroInitScheme('c'), (long[])null);
+            DataType dt = dataTypeForTensor(entry.getValue());
+            if (dt == DataType.UNKNOWN && !unknownTypeNodeImportable(entry.getValue())) {
+                val var = importState.getSameDiff().var(entry.getKey(), (LongShapeDescriptor) null, new ZeroInitScheme('c'));
                 //mark as place holder for validating resolution later.
                 if (isPlaceHolder(entry.getValue())) {
                     importState.getSameDiff().addAsPlaceHolder(var.getVarName());
@@ -223,8 +225,8 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                     }
                     diff.getImportedConstants().add(entry.getKey());
                 }
-            } else if (getShapeFromTensor(entry.getValue()) == null) {
-                val var = importState.getSameDiff().var(entry.getKey(), null, new ZeroInitScheme('c'));
+            }else if(getShapeFromTensor(entry.getValue()) == null) {
+                val var = importState.getSameDiff().var(entry.getKey(), (LongShapeDescriptor) null,new ZeroInitScheme('c'));
                 //mark as place holder for validating resolution later.
 
                 //note that this vertex id can still be a place holder
@@ -319,7 +321,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
     @Override
     public boolean validTensorDataType(TENSOR_TYPE tensorType) {
-        return dataTypeForTensor(tensorType) != DataBuffer.Type.UNKNOWN;
+        return dataTypeForTensor(tensorType) != DataType.UNKNOWN;
     }
 
     public void validateGraphStructure(SameDiff sameDiff){

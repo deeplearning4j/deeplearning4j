@@ -24,11 +24,13 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.function.Function;
@@ -295,7 +297,7 @@ public class RandomOpValidation extends BaseOpValidation {
 //        OpTestCase tc = new OpTestCase(new DistributionUniform(arr, Nd4j.createUninitialized(new long[]{100}), 0, 1));
         OpTestCase tc = new OpTestCase(new RandomBernoulli(arr, Nd4j.createUninitialized(new long[]{100}), 0.5));
 
-        tc.expectedOutput(0, new long[]{100}, in -> {
+        tc.expectedOutput(0, LongShapeDescriptor.fromShape(new long[]{100}, DataType.DOUBLE), in -> {
             double min = in.minNumber().doubleValue();
             double max = in.maxNumber().doubleValue();
             double mean = in.meanNumber().doubleValue();

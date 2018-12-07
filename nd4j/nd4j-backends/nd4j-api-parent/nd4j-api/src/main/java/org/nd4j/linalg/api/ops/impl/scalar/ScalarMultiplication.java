@@ -88,6 +88,6 @@ public class ScalarMultiplication extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        return Collections.singletonList(i_v1.get(0).mul(scalarValue.doubleValue()));
+        return Collections.singletonList(i_v1.get(0).mul(scalarValue.getDouble(0)));
     }
 }

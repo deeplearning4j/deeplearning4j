@@ -26,14 +26,11 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    void reduceNorm1BP(NDArray<T>* input, NDArray<T>* epsilon, NDArray<T>* tempNorm, NDArray<T>* output, std::vector<int> const& axes);
+    void reduceNorm1BP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes);
 
-    template <typename T>
-    void reduceNorm2BP(NDArray<T>* input, NDArray<T>* epsilon, NDArray<T>* tempNorm, NDArray<T>* output, std::vector<int> const& axes);
+    void reduceNorm2BP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes);
 
-    template <typename T>
-    void reduceSquareNormBP(NDArray<T>* input, NDArray<T>* epsilon, NDArray<T>* tempNorm, NDArray<T>* output, std::vector<int> const& axes);
+    void reduceSquareNormBP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes);
 
 }
 }

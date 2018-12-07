@@ -17,12 +17,14 @@
 package org.nd4j.linalg.api.ops.executioner;
 
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
-import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.cache.TADManager;
 
 import java.util.List;
@@ -121,7 +123,7 @@ public interface OpExecutioner {
      * @param op the operation to execute
      * @return the accumulated result
      */
-    Accumulation execAndReturn(Accumulation op);
+    ReduceOp execAndReturn(ReduceOp op);
 
     /**
      * Execute and return the result from an accumulation
@@ -129,7 +131,7 @@ public interface OpExecutioner {
      * @param op the operation to execute
      * @return the accumulated result
      */
-    Accumulation execAndReturn(Variance op, boolean biasCorrected);
+    ReduceOp execAndReturn(Variance op, boolean biasCorrected);
 
     /**Execute and return the result from an index accumulation
      * @param op the index accumulation operation to execute
@@ -161,12 +163,12 @@ public interface OpExecutioner {
 
 
     /**
-     * Execute an accumulation along one or more dimensions
-     * @param accumulation the accumulation
+     * Execute an reduceOp along one or more dimensions
+     * @param reduceOp the reduceOp
      * @param dimension the dimension
-     * @return the accumulation op
+     * @return the reduceOp op
      */
-    INDArray exec(Accumulation accumulation, int... dimension);
+    INDArray exec(ReduceOp reduceOp, int... dimension);
 
     /**
      * Execute an broadcast along one or more dimensions
@@ -382,7 +384,7 @@ public interface OpExecutioner {
      */
     void exec(CustomOp op);
 
-    List<long[]> calculateOutputShape(CustomOp op);
+    List<LongShapeDescriptor> calculateOutputShape(CustomOp op);
 
     /**
      * Equivalent to calli
@@ -421,4 +423,11 @@ public interface OpExecutioner {
      */
     void setTadThreshold(int threshold);
 
+    /**
+     * This method extracts String from Utf8Buffer
+     * @param buffer
+     * @param index
+     * @return
+     */
+    String getString(Utf8Buffer buffer, long index);;
 }

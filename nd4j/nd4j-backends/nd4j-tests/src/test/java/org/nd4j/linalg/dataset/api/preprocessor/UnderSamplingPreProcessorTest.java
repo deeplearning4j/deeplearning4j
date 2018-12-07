@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.dataset.DataSet;
@@ -30,7 +31,6 @@ import org.nd4j.linalg.dataset.api.preprocessor.classimbalance.UnderSamplingByMa
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -68,7 +68,9 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
                             new UnderSamplingByMaskingPreProcessor(someTargets[i], shortSeq / 2);
             dToPreProcess = d.copy();
             preProcessor.preProcess(dToPreProcess);
-            assertEquals(Nd4j.zeros(dToPreProcess.getLabelsMaskArray().shape()), dToPreProcess.getLabelsMaskArray());
+            INDArray exp = Nd4j.zeros(dToPreProcess.getLabelsMaskArray().shape());
+            INDArray lm = dToPreProcess.getLabelsMaskArray();
+            assertEquals(exp, lm);
 
             //change default and check distribution which should be 1-targetMinorityDist
             preProcessor.donotMaskAllMajorityWindows();
@@ -100,7 +102,7 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
             preProcessor.preProcess(dToPreProcess);
             INDArray percentagesNow = dToPreProcess.getLabelsMaskArray().sum(1).div(shortSeq);
             assertTrue(Nd4j.valueArrayOf(percentagesNow.shape(), 1 - someTargets[i]).equalsWithEps(percentagesNow,
-                            tolerancePerc));
+                    tolerancePerc));
         }
     }
 
@@ -309,7 +311,7 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
         Will return as a one-hot vector if twoClass = true
      */
     public static DataSet makeDataSetSameL(int batchSize, int timesteps, float[] minorityDist, boolean twoClass) {
-        INDArray features = Nd4j.rand(1, batchSize * timesteps * 2).reshape(batchSize, 2, timesteps);
+        INDArray features = Nd4j.rand(batchSize, 2, timesteps);
         INDArray labels;
         if (twoClass) {
             labels = Nd4j.zeros(new int[] {batchSize, 2, timesteps});
@@ -322,7 +324,7 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
                 l = labels.get(NDArrayIndex.point(i), NDArrayIndex.point(1), NDArrayIndex.all());
                 Nd4j.getExecutioner().exec(new BernoulliDistribution(l, minorityDist[i]));
                 INDArray lOther = labels.get(NDArrayIndex.point(i), NDArrayIndex.point(0), NDArrayIndex.all());
-                lOther.assign(Transforms.not(l.dup()));
+                lOther.assign(l.rsub(1.0));
             } else {
                 l = labels.get(NDArrayIndex.point(i), NDArrayIndex.point(0), NDArrayIndex.all());
                 Nd4j.getExecutioner().exec(new BernoulliDistribution(l, minorityDist[i]));

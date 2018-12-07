@@ -19,6 +19,9 @@ package org.nd4j.linalg.cpu.nativecpu;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCOO;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.SparseFormat;
@@ -70,6 +73,21 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
+    public INDArray create(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray createUninitialized(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
     public INDArray createSparseCOO(double[] values, long[][] indices, long[] shape) {
         return new SparseNDArrayCOO(values, indices, shape);
     }
@@ -108,6 +126,71 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
     @Override
     public INDArray create(double[] data, long[] shape, long[] stride, long offset) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(double[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(float[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(long[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(int[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(short[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(byte[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(boolean[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(double[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(long[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(int[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(short[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(byte[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(boolean[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }
 
@@ -152,6 +235,11 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
+    public INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering, DataType dataType) {
+        return null;
+    }
+
+    @Override
     public INDArray create(List<INDArray> list, long[] shape, char ordering) {
         return null;
     }
@@ -163,6 +251,16 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
     @Override
     public INDArray trueScalar(Number value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray create(float[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(float[] data, long[] shape, long[] stride, char order, DataType dataType) {
         throw new UnsupportedOperationException();
     }
 
@@ -368,27 +466,27 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst) {
+    public INDArray convertDataEx(DataTypeEx typeSrc, INDArray source, DataTypeEx typeDst) {
         return null;
     }
 
     @Override
-    public DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst) {
+    public DataBuffer convertDataEx(DataTypeEx typeSrc, DataBuffer source, DataTypeEx typeDst) {
         return null;
     }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target) {
+    public void convertDataEx(DataTypeEx typeSrc, DataBuffer source, DataTypeEx typeDst, DataBuffer target) {
 
     }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length) {
+    public void convertDataEx(DataTypeEx typeSrc, Pointer source, DataTypeEx typeDst, Pointer target, long length) {
 
     }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer) {
+    public void convertDataEx(DataTypeEx typeSrc, Pointer source, DataTypeEx typeDst, DataBuffer buffer) {
 
     }
 
@@ -432,13 +530,11 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
         if (x.isScalar())
             return x;
 
-        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().sortFloat(null, (FloatPointer) x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(), descending);
-        } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().sortDouble(null, (DoublePointer) x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(), descending);
-        } else {
-            throw new UnsupportedOperationException("Unknown dataype " + x.data().dataType());
-        }
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sort(null,
+                x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
+                null, null,
+                descending);
+
         return x;
     }
 
@@ -450,27 +546,16 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
         Arrays.sort(dimension);
         Pair<DataBuffer, DataBuffer> tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, dimension);
 
-        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().sortTadFloat(null,
-                    (FloatPointer) x.data().addressPointer(),
-                    (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortTad(null,
+                    x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
+                    null, null,
                     new IntPointer(dimension),
                     dimension.length,
                     (LongPointer) tadBuffers.getFirst().addressPointer(),
                     new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
                     descending);
-        } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().sortTadDouble(null,
-                    (DoublePointer) x.data().addressPointer(),
-                    (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
-                    new IntPointer(dimension),
-                    dimension.length,
-                    (LongPointer) tadBuffers.getFirst().addressPointer(),
-                    new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
-                    descending);
-        } else {
-            throw new UnsupportedOperationException("Unknown datatype " + x.data().dataType());
-        }
+
 
         return x;
     }
@@ -486,16 +571,9 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
         DataBuffer idx = array.getIndices();
         long length = val.length();
         int rank = array.underlyingRank();
-        switch(val.dataType()){
-            case FLOAT:
-                NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (LongPointer) idx.addressPointer(), (FloatPointer) val.addressPointer(), length, rank);
-                break;
-            case DOUBLE:
-                NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesDouble(null, (LongPointer) idx.addressPointer(), (DoublePointer) val.addressPointer(), length, rank);
-                break;
-            default:
-                throw new UnsupportedOperationException("Unknown datatype " + x.data().dataType());
-        }
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(), val.addressPointer(), length, rank);
+
 
         return array;
     }
@@ -522,7 +600,12 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
 
     @Override
-    public INDArray empty(DataBuffer.Type type) {
+    public INDArray empty(DataType type) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray create(Collection<String> strings, long[] shape, char order) {
         throw new UnsupportedOperationException();
     }
 }

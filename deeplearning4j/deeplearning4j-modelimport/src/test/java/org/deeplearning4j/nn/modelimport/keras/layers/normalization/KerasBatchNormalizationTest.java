@@ -90,8 +90,8 @@ public class KerasBatchNormalizationTest {
 
     private Map<String, INDArray> weightsWithoutGamma() {
         Map<String, INDArray> weights = new HashMap<>();
-        weights.put(conf2.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE(), Nd4j.ones(1));
-        weights.put(conf2.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN(), Nd4j.ones(1));
+        weights.put(conf2.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE(), Nd4j.ones(1L));
+        weights.put(conf2.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN(), Nd4j.ones(1L));
         weights.put(PARAM_NAME_BETA, Nd4j.ones(1));
         return weights;
     }

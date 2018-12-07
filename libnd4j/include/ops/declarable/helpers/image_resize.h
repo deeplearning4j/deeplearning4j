@@ -26,10 +26,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    int resizeBilinearFunctor(NDArray<T> const* image, int width, int height, bool center, NDArray<T>* output);
-    template <typename T>
-    int resizeNeighborFunctor(NDArray<T> const* image, int width, int height, bool center, NDArray<T>* output);
+    int resizeBilinearFunctor(NDArray const* image, int width, int height, bool center, NDArray* output);
+    int resizeNeighborFunctor(NDArray const* image, int width, int height, bool center, NDArray* output);
 }
 }
 }

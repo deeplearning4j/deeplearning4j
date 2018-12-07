@@ -56,8 +56,9 @@ import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROCBinary;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Sin;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.Sin;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -79,6 +80,11 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @Override
+    public DataType getDataType(){
+        return DataType.DOUBLE;
+    }
 
     @Test
     public void testEarlyStoppingIris() {
@@ -608,7 +614,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .list()
                     .layer(new AutoEncoder.Builder().nIn(784).nOut(32).build())
-                    .pretrain(true).backprop(false)
+
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -634,7 +640,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                             .build();
 
             EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, iter);
-            EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+            EarlyStoppingResult<MultiLayerNetwork> result = trainer.pretrain();
 
             assertNotNull(result.getBestModel());
             assertTrue(result.getBestModelScore() > 0.0);
@@ -655,7 +661,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                             .encoderLayerSizes(64)
                             .decoderLayerSizes(64)
                             .build())
-                    .pretrain(true).backprop(false)
+
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -681,7 +687,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                             .build();
 
             EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, iter);
-            EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+            EarlyStoppingResult<MultiLayerNetwork> result = trainer.pretrain();
 
             assertNotNull(result.getBestModel());
             assertTrue(result.getBestModelScore() > 0.0);
@@ -701,7 +707,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                             .decoderLayerSizes(64)
                             .reconstructionDistribution(new BernoulliReconstructionDistribution(Activation.SIGMOID))
                             .build())
-                    .pretrain(true).backprop(false)
+
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -727,7 +733,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                             .build();
 
             EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, iter);
-            EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+            EarlyStoppingResult<MultiLayerNetwork> result = trainer.pretrain();
 
             assertNotNull(result.getBestModel());
             assertTrue(result.getBestModelScore() > 0.0);

@@ -22,6 +22,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class TestSerializationFloatToDouble extends BaseNd4jTest {
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public TestSerializationFloatToDouble(Nd4jBackend backend) {
         super(backend);
@@ -57,7 +58,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
         //WRITE OUT A FLOAT ARRAY
         //Hack before setting datatype - fix already in r119_various branch
         Nd4j.create(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        DataTypeUtil.setDTypeForContext(DataType.FLOAT);
         INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr.subi(50.0123456); //assures positive and negative numbers with decimal points
 
@@ -69,7 +70,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
 
         //SET DATA TYPE TO DOUBLE and initialize another array with the same contents
         //Nd4j.create(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         System.out.println("The data opType is " + Nd4j.dataType());
         INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr1.subi(50.0123456);
@@ -87,7 +88,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
     public void testSerializationFullArrayJava() throws Exception {
         int length = 100;
         Nd4j.create(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        DataTypeUtil.setDTypeForContext(DataType.FLOAT);
         INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr.subi(50.0123456); //assures positive and negative numbers with decimal points
 
@@ -99,7 +100,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
 
         //SET DATA TYPE TO DOUBLE and initialize another array with the same contents
         //Nd4j.create(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         System.out.println("The data opType is " + Nd4j.dataType());
         INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         arr1.subi(50.0123456);
@@ -116,7 +117,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
     public void testSerializationOnViewsNd4jWriteRead() throws Exception {
         int length = 100;
         Nd4j.create(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        DataTypeUtil.setDTypeForContext(DataType.FLOAT);
         INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         INDArray sub = arr.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
 
@@ -128,7 +129,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
 
         //SET DATA TYPE TO DOUBLE and initialize another array with the same contents
         //Nd4j.create(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         System.out.println("The data opType is " + Nd4j.dataType());
         INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         INDArray sub1 = arr1.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
@@ -146,7 +147,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
     public void testSerializationOnViewsJava() throws Exception {
         int length = 100;
         Nd4j.create(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        DataTypeUtil.setDTypeForContext(DataType.FLOAT);
         INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
 
         INDArray sub = arr.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
@@ -156,7 +157,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
             oos.writeObject(sub);
         }
         byte[] bytes = baos.toByteArray();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         System.out.println("The data opType is " + Nd4j.dataType());
         INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
         INDArray sub1 = arr1.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));

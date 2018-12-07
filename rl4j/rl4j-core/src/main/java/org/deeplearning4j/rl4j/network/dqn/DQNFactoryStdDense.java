@@ -69,7 +69,7 @@ public class DQNFactoryStdDense implements DQNFactory {
                         .nIn(conf.getNumHiddenNodes()).nOut(numOutputs).build());
 
 
-        MultiLayerConfiguration mlnconf = confB.pretrain(false).backprop(true).build();
+        MultiLayerConfiguration mlnconf = confB.build();
         MultiLayerNetwork model = new MultiLayerNetwork(mlnconf);
         model.init();
         if (conf.getListeners() != null) {

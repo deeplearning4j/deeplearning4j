@@ -834,8 +834,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     private void pretrainHelper(MultiDataSetIterator iter, int numEpochs){
-        if (!configuration.isPretrain())
-            return;
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -938,9 +936,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
 
                 Layer layer = toTrain.getLayer();
-                layer.getConfig().setPretrain(true);
                 layer.fit(layer.input(), workspaceMgr);
-                layer.getConfig().setPretrain(false);
             }
         }
     }
@@ -1136,23 +1132,18 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
-        if (configuration.isBackprop()) {
-            if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays, workspaceMgr);
-            } else {
-                if (solver == null) {
-                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
-                    }
-                }
-
-                //TODO: cache workspace
-                solver.optimize(workspaceMgr);
-
-            }
+        if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
+            doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays, workspaceMgr);
         } else {
-            throw new IllegalStateException("Network configuration is set to backprop(false). Use the pretrain" +
-                    " and pretrainLayer methods to perform training for unsupervised layerwise training of neural networks");
+            if (solver == null) {
+                try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                }
+            }
+
+            //TODO: cache workspace
+            solver.optimize(workspaceMgr);
+
         }
 
         if (featureMaskArrays != null || labelMaskArrays != null) {

@@ -21,8 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -144,24 +147,24 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+        if (Nd4j.dataType() == DataType.DOUBLE) {
             this.extraArgs = new Object[] {zeroDouble()};
-        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+        } else if (Nd4j.dataType() == DataType.FLOAT) {
             this.extraArgs = new Object[] {zeroFloat()};
-        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+        } else if (Nd4j.dataType() == DataType.HALF) {
             this.extraArgs = new Object[] {zeroHalf()};
         }
     }
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
         if(arg().getShape() == null)
             return Collections.emptyList();
 
-        List<long[]> ret = new ArrayList<>(1);
-        val reducedShape = Shape.getReducedShape(arg().getShape(),dimensions, keepDims, newFormat);
-        ret.add(reducedShape);
+        List<LongShapeDescriptor> ret = new ArrayList<>(1);
+        val reducedShape = Shape.getReducedShape(arg().getShape(), dimensions, keepDims, newFormat);
+        ret.add(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
         return ret;
     }
 
@@ -182,4 +185,13 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     }
 
 
+    @Override
+    public boolean validateDataTypes() {
+
+        if (z() != null)
+            Preconditions.checkArgument(z().dataType() == DataType.LONG, "IndexReduce operations require LONG output: " +
+                    "got result array of type %s for op %s", z.dataType(), getClass());
+
+        return true;
+    }
 }

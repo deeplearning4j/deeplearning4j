@@ -16,10 +16,12 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -72,6 +74,10 @@ public class Shape extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+
+        val output_type = nodeDef.getAttrOrThrow("out_type").getType().getNumber();
+        val dtype = DataTypeAdapter.dtypeConv(output_type);
+        iArguments.add((long) SameDiff.getDataTypeAsByte(dtype));
     }
 
     @Override

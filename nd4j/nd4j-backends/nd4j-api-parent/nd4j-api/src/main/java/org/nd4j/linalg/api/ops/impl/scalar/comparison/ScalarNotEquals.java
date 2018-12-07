@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.scalar.comparison;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseScalarBoolOp;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.Arrays;
@@ -30,12 +31,12 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class ScalarNotEquals extends BaseScalarOp {
+public class ScalarNotEquals extends BaseScalarBoolOp {
     public ScalarNotEquals() {
     }
 
-    public ScalarNotEquals(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarNotEquals(INDArray x, INDArray z, long n, Number num) {
+        super(x, null, z, n, num);
     }
 
     public ScalarNotEquals(INDArray x, Number num) {
@@ -61,7 +62,7 @@ public class ScalarNotEquals extends BaseScalarOp {
 
     @Override
     public int opNum() {
-        return 11;
+        return 6;
     }
 
     @Override

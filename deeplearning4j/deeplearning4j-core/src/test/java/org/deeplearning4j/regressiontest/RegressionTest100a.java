@@ -32,6 +32,7 @@ import org.deeplearning4j.regressiontest.customlayer100a.CustomLayer;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.impl.*;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -45,6 +46,11 @@ import java.io.FileInputStream;
 import static org.junit.Assert.*;
 
 public class RegressionTest100a extends BaseDL4JTest {
+
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
 
     @Test
     public void testCustomLayer() throws Exception {
@@ -246,7 +252,7 @@ public class RegressionTest100a extends BaseDL4JTest {
 
         INDArray outAct = net.outputSingle(in);
 
-        assertEquals(outExp, outAct);
+        assertEquals(outExp, outAct.castTo(outExp.dataType()));
     }
 
 

@@ -33,12 +33,13 @@ import java.util.Scanner;
  */
 @Properties(target = "org.nd4j.nativeblas.Nd4jCpu",
                 value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
+                                              "array/DataType.h",
+                                              "types/utf8string.h",
                                               "NativeOps.h",
                                               "memory/ExternalWorkspace.h",
                                               "memory/Workspace.h",
                                               "indexing/NDIndex.h",
                                               "indexing/IndicesList.h",
-                                              "array/DataType.h",
                                               "graph/VariableType.h",
                                               "graph/ArgumentsList.h",
                                               "types/pair.h",
@@ -46,6 +47,7 @@ import java.util.Scanner;
                                               "array/NDArrayList.h",
                                               "array/ResultSet.h",
                                               "types/pair.h",
+                                              "graph/RandomGenerator.h",
                                               "graph/Variable.h",
                                               "graph/VariablesSet.h",
                                               "graph/FlowPath.h",
@@ -62,7 +64,10 @@ import java.util.Scanner;
                                               "helpers/shape.h",
                                               "helpers/OpArgsHolder.h",
                                               "array/ShapeList.h",
+                                              "type_boilerplate.h",
                                               "op_boilerplate.h",
+                                              //"enum_boilerplate.h",
+                                              //"op_enums.h",
                                               "ops/InputType.h",
                                               "ops/declarable/OpDescriptor.h",
                                               "ops/declarable/BroadcastableOp.h",                                              
@@ -149,6 +154,8 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                         .put(new Info("Nd4jStatus").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer",
                                         "int[]"))
                         .put(new Info("float16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
+                                        "short[]"))
+                        .put(new Info("bfloat16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
                                         "short[]"));
 
         infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN").define(false))
@@ -160,12 +167,12 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
                .put(new Info("std::vector<std::vector<int> >").pointerTypes("IntVectorVector").define())
                .put(new Info("std::vector<std::vector<Nd4jLong> >").pointerTypes("LongVectorVector").define())
-               .put(new Info("std::vector<nd4j::NDArray<float>*>").pointerTypes("FloatNDArrayVector").define())
-               .put(new Info("std::vector<nd4j::NDArray<float16>*>").pointerTypes("HalfNDArrayVector").define())
-               .put(new Info("std::vector<nd4j::NDArray<double>*>").pointerTypes("DoubleNDArrayVector").define())
+               .put(new Info("std::vector<nd4j::NDArray*>").pointerTypes("NDArrayVector").define())
                .put(new Info("nd4j::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
+               .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
                .put(new Info("nd4j::IndicesList").purify());
 
+        /*
         String classTemplates[] = {
                 "nd4j::NDArray",
                 "nd4j::NDArrayList",
@@ -191,6 +198,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                    .put(new Info(t + "<float16>").pointerTypes("Half" + s))
                    .put(new Info(t + "<double>").pointerTypes("Double" + s));
         }
+        */
 
         // pick up custom operations automatically from CustomOperations.h and headers in libnd4j
         String separator = properties.getProperty("platform.path.separator");
@@ -230,6 +238,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
             }
         }
         logger.info("Ops found in CustomOperations.h and headers: " + opTemplates);
+        /*
         String floatOps = "", halfOps = "", doubleOps = "";
         for (String t : opTemplates) {
             String s = "nd4j::ops::" + t;
@@ -239,12 +248,13 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
             floatOps  += "\n        float_" + t + ".class,";
             halfOps   += "\n        half_" + t + ".class,";
             doubleOps += "\n        double_" + t + ".class,";
+
         }
         infoMap.put(new Info().javaText("\n"
                                       + "    Class[] floatOps = {" + floatOps + "};" + "\n"
                                       + "    Class[] halfOps = {" + halfOps + "};" + "\n"
                                       + "    Class[] doubleOps = {" + doubleOps + "};"));
-
+        */
         infoMap.put(new Info("nd4j::ops::OpRegistrator::updateMSVC").skip());
     }
 }

@@ -18,7 +18,7 @@ package org.nd4j.linalg.api.ops.impl.meta;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.ReduceOp;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
@@ -40,11 +40,11 @@ public class PostulateMetaOp extends BaseMetaOp {
         super(x, y);
     }
 
-    public PostulateMetaOp(ScalarOp opA, Accumulation opB) {
+    public PostulateMetaOp(ScalarOp opA, ReduceOp opB) {
         super(opA, opB);
     }
 
-    public PostulateMetaOp(TransformOp opA, Accumulation opB) {
+    public PostulateMetaOp(TransformOp opA, ReduceOp opB) {
         super(opA, opB);
     }
 

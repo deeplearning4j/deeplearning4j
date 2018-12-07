@@ -34,7 +34,13 @@ namespace nd4j {
 
             STORE_RESULT(output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
+        }
+
+        DECLARE_TYPES(to_double) {
+            getOpDescriptor()
+            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedOutputTypes(nd4j::DataType::DOUBLE);
         }
     }
 }

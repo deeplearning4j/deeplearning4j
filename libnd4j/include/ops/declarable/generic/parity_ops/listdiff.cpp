@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_listdiff)
 
 #include <ops/declarable/headers/parity_ops.h>
+#include <ops/declarable/helpers/listdiff.h>
 
 // this op will probably never become GPU-compatible
 namespace nd4j {
@@ -29,67 +30,42 @@ namespace nd4j {
         CUSTOM_OP_IMPL(listdiff, 2, 2, false, 0, 0) {
             auto values = INPUT_VARIABLE(0);
             auto keep = INPUT_VARIABLE(1);
-
-            std::vector<T> saved;
-            std::vector<T> indices;
+            auto output1 = OUTPUT_VARIABLE(0);
+            auto output2 = OUTPUT_VARIABLE(1);
 
             REQUIRE_TRUE(values->rankOf() == 1, 0, "ListDiff: rank of values should be 1D, but got %iD instead", values->rankOf());
             REQUIRE_TRUE(keep->rankOf() == 1, 0, "ListDiff: rank of keep should be 1D, but got %iD instead", keep->rankOf());
+            REQUIRE_TRUE(keep->dataType() == values->dataType(), 0, "ListDiff: both inputs must have same data type");
 
-            for (Nd4jLong e = 0; e < values->lengthOf(); e++) {
-                T v = values->getScalar(e);
-                T extras[] = {v, (T) 0.0f, (T) 10.0f};
-                auto idx = keep->template indexReduceNumber<simdOps::FirstIndex<T>>(extras);
-                if (idx < 0) {
-                    saved.emplace_back(v);
-                    indices.emplace_back(static_cast<T>(e));
-                }
-            }
-
-            // FIXME: we need 0-size NDArrays
-            if (saved.size() == 0) {
-                REQUIRE_TRUE(false, 0, "ListDiff: search returned no results");
-            } else {
-                auto z0 = OUTPUT_VARIABLE(0); //new NDArray<T>('c', {(int) saved.size()});
-                auto z1 = OUTPUT_VARIABLE(1); //new NDArray<T>('c', {(int) saved.size()});
-
-
-                REQUIRE_TRUE(z0->lengthOf() == saved.size(), 0, "ListDiff: output/actual size mismatch");
-                REQUIRE_TRUE(z1->lengthOf() == saved.size(), 0, "ListDiff: output/actual size mismatch");
-
-                memcpy(z0->buffer(), saved.data(), saved.size() * sizeof(T));
-                memcpy(z1->buffer(), indices.data(), indices.size() * sizeof(T));
-
-                //OVERWRITE_2_RESULTS(z0, z1);
-                STORE_2_RESULTS(z0, z1);
-            }
-
-            return Status::OK();
+            return helpers::listDiffFunctor(values, keep, output1, output2);
         };
 
         DECLARE_SHAPE_FN(listdiff) {
             auto values = INPUT_VARIABLE(0);
             auto keep = INPUT_VARIABLE(1);
 
-            int saved = 0;
-
             REQUIRE_TRUE(values->rankOf() == 1, 0, "ListDiff: rank of values should be 1D, but got %iD instead", values->rankOf());
             REQUIRE_TRUE(keep->rankOf() == 1, 0, "ListDiff: rank of keep should be 1D, but got %iD instead", keep->rankOf());
+            auto v = values->dataType();
+            auto k = keep->dataType();
+            REQUIRE_TRUE(k == v, 0, "ListDiff: both inputs must have same data type");
 
-            for (int e = 0; e < values->lengthOf(); e++) {
-                T v = values->getScalar(e);
-                T extras[] = {v, (T) 0.0f, (T) 10.0f};
-                auto idx = keep->template indexReduceNumber<simdOps::FirstIndex<T>>(extras);
-                if (idx < 0)
-                    saved++;
-            }
+            auto saved = helpers::listDiffCount(values, keep);
 
             REQUIRE_TRUE(saved > 0, 0, "ListDiff: no matches found");
 
-            auto shapeX = ShapeUtils<T>::createVectorShapeInfo(saved, block.workspace());
-            auto shapeY = ShapeUtils<T>::createVectorShapeInfo(saved, block.workspace());
+            auto shapeX = ShapeBuilders::createVectorShapeInfo(values->dataType(), saved, block.workspace());
+//            auto shapeY = ShapeBuilders::createVectorShapeInfo(keep->dataType(), saved, block.workspace());
+            auto shapeY = ShapeBuilders::createVectorShapeInfo(DataType::INT64, saved, block.workspace());
 
             return SHAPELIST(shapeX, shapeY);
+        }
+
+        DECLARE_TYPES(listdiff) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+                    ->setAllowedOutputTypes(0, DataType::INHERIT)
+                    ->setAllowedOutputTypes(1, {ALL_INTS});
         }
     }
 }

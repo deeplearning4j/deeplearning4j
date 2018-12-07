@@ -22,12 +22,18 @@ import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarSet;
-import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.same.OldIdentity;
+import org.nd4j.linalg.api.ops.impl.scalar.RectifedLinear;
+import org.nd4j.linalg.api.ops.impl.scalar.Step;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Cube;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
 
 /**
  * This enum is the factory for the activation function.
@@ -161,7 +167,7 @@ public enum Activation {
      * @param dup If true: duplicate the array before applying the transform. If false: don't duplicate
      * @return The transform op (execute using {@code Nd4j.getExecutioner().exec(op)}
      */
-    public TransformOp asTransform(INDArray in, boolean dup) {
+    public Op asTransform(INDArray in, boolean dup) {
         if (dup) {
             in = in.dup();
         }
