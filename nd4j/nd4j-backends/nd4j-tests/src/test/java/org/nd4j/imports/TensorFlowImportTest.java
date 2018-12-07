@@ -1148,6 +1148,8 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     public void testControlDependencies1() throws Exception {
         SameDiff sd = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/cond/cond_true/frozen_model.pb").getInputStream());
 
+
+
         /*
         Control dependencies:
         variables:
@@ -1160,9 +1162,9 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         Map<String,List<String>> varCDs = sd.getVariableControlDependencies();
         assertEquals(4, varCDs.size());
 
-        assertEquals(varCDs.get("cond/LinSpace/start"), Arrays.asList("cond/switch_t"));
-        assertEquals(varCDs.get("cond/LinSpace/stop"), Arrays.asList("cond/switch_t"));
-        assertEquals(varCDs.get("cond/LinSpace/num"), Arrays.asList("cond/switch_t"));
-        assertEquals(varCDs.get("cond/ones"), Arrays.asList("cond/switch_y"));
+        assertEquals(varCDs.get("cond/LinSpace/start"), Collections.singletonList("cond/switch_t"));
+        assertEquals(varCDs.get("cond/LinSpace/stop"), Collections.singletonList("cond/switch_t"));
+        assertEquals(varCDs.get("cond/LinSpace/num"), Collections.singletonList("cond/switch_t"));
+        assertEquals(varCDs.get("cond/ones"), Collections.singletonList("cond/switch_f"));
     }
 }

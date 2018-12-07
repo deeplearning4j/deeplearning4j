@@ -119,4 +119,44 @@ public class TestSessions {
         INDArray out = outMap.get(outName);
         assertTrue(x.equals(out) || y.equals(out));
     }
+
+
+    @Test
+    public void testSwitchSimple(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 3,3);
+        SDVariable b = sd.placeHolder("b", DataType.BOOL);
+
+        SDVariable[] switchOut = sd.f().switchOp(x, b); //Order: false then true
+        SDVariable falsePlusOne = switchOut[0].add(1);
+        SDVariable truePlusTen = switchOut[1].add(10.0);
+
+        SDVariable merge = sd.f().merge(falsePlusOne, truePlusTen);
+
+        INDArray xArr = Nd4j.create(DataType.FLOAT, 3,3);
+        INDArray bArr = Nd4j.scalar(true);
+
+        INDArray expTrue = xArr.add(10.0);
+        INDArray expFalse = xArr.add(1.0);
+
+        Map<String,INDArray> m = new HashMap<>();
+        m.put("x", xArr);
+        m.put("b", bArr);
+
+        InferenceSession is = new InferenceSession(sd);
+        String n = merge.getVarName();
+
+        Map<String,INDArray> outMap = is.output(Collections.singletonList(n), m, null);
+        assertEquals(1, outMap.size());
+        assertEquals(expTrue, outMap.get(n));
+
+
+        //Check false case:
+        bArr.assign(0);
+        is = new InferenceSession(sd);
+        outMap = is.output(Collections.singletonList(n), m, null);
+        assertEquals(1, outMap.size());
+        assertEquals(expFalse, outMap.get(n));
+    }
 }

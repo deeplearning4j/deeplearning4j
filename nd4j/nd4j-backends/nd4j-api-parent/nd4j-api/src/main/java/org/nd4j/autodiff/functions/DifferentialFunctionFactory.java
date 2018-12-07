@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.NoOp;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.reduce.*;
@@ -2066,6 +2067,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable merge(SDVariable... inputs){
         return new Merge(sameDiff(), inputs).outputVariable();
+    }
+
+    public SDVariable[] switchOp(SDVariable input, SDVariable predicate){
+        return new Switch(sameDiff(), input, predicate).outputVariables();
     }
 
 

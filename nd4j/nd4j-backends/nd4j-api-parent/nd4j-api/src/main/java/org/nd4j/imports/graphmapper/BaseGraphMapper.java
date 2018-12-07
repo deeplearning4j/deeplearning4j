@@ -264,7 +264,12 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                     //Not a placeholder, but SameDiff.var(String, shape=null, ZeroInitScheme()) above marked it as such due to null shape
                     importState.getSameDiff().removeAsPlaceholder(var.getVarName());
                 }
+            }
 
+            NODE_TYPE node = (NODE_TYPE) entry.getValue();      //TODO this only works for TF
+            List<String> controlDependencies = getControlDependencies(node);
+            if(controlDependencies != null){
+                diff.getVariableControlDependencies().put(entry.getKey(), controlDependencies);
             }
 
         }

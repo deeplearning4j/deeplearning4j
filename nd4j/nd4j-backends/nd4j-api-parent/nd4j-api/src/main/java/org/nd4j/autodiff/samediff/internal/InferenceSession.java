@@ -36,10 +36,15 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     public INDArray[] getOutputs(DifferentialFunction op) {
 
         if(op instanceof Identity) {
-            Identity i = (Identity)op;
+            Identity i = (Identity) op;
             String[] argNames = i.argNames();
             Preconditions.checkState(argNames.length == 1, "Expected only 1 arg name in identity op, got %s", argNames);
             return new INDArray[]{nodeOutputs.get(argNames[0])};
+
+        } else if(op instanceof Switch){
+            Switch s = (Switch)op;
+            String[] argNames = s.argNames();       //Order: boolean array,
+
         } else if(op instanceof If) {
             If i = (If) op;
             String[] argNames = i.argNames();       //Order should be: [boolean], true, false

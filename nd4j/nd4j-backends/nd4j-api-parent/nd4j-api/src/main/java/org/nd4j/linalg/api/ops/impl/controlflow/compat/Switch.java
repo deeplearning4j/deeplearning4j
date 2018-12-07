@@ -30,7 +30,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Switch op forwards input to one of two outputs based on the value of a predicate
+ */
 public class Switch extends BaseCompatOp {
+
+    public Switch(SameDiff sameDiff, SDVariable input, SDVariable predicate){
+        super(sameDiff, new SDVariable[]{input, predicate});
+    }
+
+    public Switch(){ }
+
     @Override
     public String opName() {
         return "switch";
