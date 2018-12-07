@@ -1,5 +1,7 @@
 package org.nd4j.autodiff.samediff.internal;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -19,8 +21,24 @@ import java.util.*;
 @Slf4j
 public abstract class AbstractSession<T,O> {
 
+    //All execution happens in a frame... this is the name of the main/outer frame
+    protected static final String OUTER_FRAME = "main";
+
+    /*
+    VarId: identifies a variable in a specific frame and frame iteration
+    Used for 2 places: (a) to identify variables that are available for execution
+    (b) to store results
+     */
+    @Data
+    @AllArgsConstructor
+    protected static class VarId {
+        private String variable;
+        private String frame;
+        private int iteration;
+    }
+
     protected final SameDiff sameDiff;
-    protected final Map<String, T> nodeOutputs = new HashMap<>();      //INDArrays for ARRAY type SDVariables only
+    protected final Map<VarId, T> nodeOutputs = new HashMap<>();
 
     public AbstractSession(@NonNull SameDiff sameDiff) {
         this.sameDiff = sameDiff;
@@ -41,6 +59,18 @@ public abstract class AbstractSession<T,O> {
 
     //TODO we might not need this method eventually...
     public abstract void preprocessPlaceholderValues(Map<String,T> placeholderValues);
+
+    public T get(String variable, String frame, int iteration){
+        //TODO eventually we'll cache and reuse VarId objects here to avoid garbage generation on lookup etc
+        VarId varId = newVarId(variable, frame, iteration);
+        return nodeOutputs.get(vid);
+    }
+
+    public VarId newVarId(String variable, String frame, int iteration){
+        //TODO eventually we'll cache and reuse VarId objects here to avoid garbage generation on lookup
+        return new VarId(variable, frame, iteration);
+    }
+
 
     /**
      * @param variables       Name of the variables we want the arrays/activations for
@@ -81,7 +111,7 @@ public abstract class AbstractSession<T,O> {
         //Step 1: determine subgraph structure we actually need to execute
         Queue<String> processingQueue = new LinkedList<>(variables);
         Set<String> subgraph = new HashSet<>();     //Contains variables we *might* need to execute in process of getting outputs we want
-        Queue<String> availableForExec = new LinkedList<>();
+        Queue<VarId> availableForExec = new LinkedList<>();
 
         //Note subgraph initially should include placeholders and constants
         while(!processingQueue.isEmpty()){
@@ -96,8 +126,9 @@ public abstract class AbstractSession<T,O> {
                     numInputs += controlDeps.length;
                 }
                 if(numInputs == 0){
-                    availableForExec.add(varName);
+                    availableForExec.add(newVarId(varName, OUTER_FRAME, 0));
                 }
+                subgraph.add(varName);
             }
 
             if(opName != null) {
@@ -109,7 +140,7 @@ public abstract class AbstractSession<T,O> {
                     }
                 }
 
-                //To execute op - and hence get this variable - we also need control deps
+                //TODO To execute op - and hence get this variable - we also need control deps
                 String[] opControlDeps = null;
                 if(opControlDeps != null){
                     for(String s2 : opControlDeps){
@@ -141,32 +172,35 @@ public abstract class AbstractSession<T,O> {
         Map<String,T> out = new HashMap<>();
         int step = 0;
         while(out.size() < variables.size()){
+
             Preconditions.checkState(availableForExec.size() > 0, "No variables are available for execution");
 
             //Get any variable and execute it's corresponding op
-            String varToExec = availableForExec.remove();
+            VarId varToExec = availableForExec.remove();
             if(nodeOutputs.containsKey(varToExec))
                 continue;   //Already processed this one?
 
             log.debug("Beginning execution step {}: variable {}", (step++), varToExec);
 
-            if(sameDiff.isPlaceHolder(varToExec) ){
-                nodeOutputs.put(varToExec, placeholderValues.get(varToExec));
+            if(sameDiff.isPlaceHolder(varToExec.getVariable()) ){
+                nodeOutputs.put(varToExec, placeholderValues.get(varToExec.getVariable()));
                 updateDescendentsForExec(varToExec, availableForExec);
-                if(variables.contains(varToExec)){  //Check if required output
-                    out.put(varToExec, placeholderValues.get(varToExec));
+                if(variables.contains(varToExec.getVariable())){  //Check if required output
+                    out.put(varToExec.getVariable(), placeholderValues.get(varToExec.getVariable()));
                 }
-            }
-            /*
-            else if( isConstant ){
+            } else if( sameDiff.getImportedConstants().contains(varToExec.getVariable()) ){
+                //TODO let's remove the "importad constants" field, just have constants
+                //TODO let's add an 'isConstant(String)'?
 
-                continue;
-            }
-             */
-            else if(sameDiff.getVariableOutputFunction(varToExec) != null){
+                nodeOutputs.put(varToExec, placeholderValues.get(varToExec.getVariable()));
+                updateDescendentsForExec(varToExec, availableForExec);
+                if(variables.contains(varToExec.getVariable())){  //Check if required output
+                    out.put(varToExec.getVariable(), placeholderValues.get(varToExec.getVariable()));
+                }
+            } else if(sameDiff.getVariableOutputFunction(varToExec.getVariable()) != null){
                 //Need to execute op to get this variable... which might have already happened in a previous step for multi-op variables
                 if(!nodeOutputs.containsKey(varToExec)){
-                    String opName = sameDiff.getFunctionOutputFor().get(varToExec).get(0).getOwnName();
+                    String opName = sameDiff.getFunctionOutputFor().get(varToExec.getVariable()).get(0).getOwnName();
 
                     //Execute op
                     //TODO
@@ -181,8 +215,14 @@ public abstract class AbstractSession<T,O> {
                     Preconditions.checkState(opOutputValues.length == opOutputVarNames.length);
 
                     for( int i=0; i<opOutputVarNames.length; i++ ){
-                        nodeOutputs.put(opOutputVarNames[i], opOutputValues[i]);
-                        updateDescendentsForExec(opOutputVarNames[i], availableForExec);
+                        if(opOutputValues[i] == null){
+                            //Skip - for switch op. Maybe better way to implement this?
+                            continue;
+                        }
+
+                        VarId vid = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration());      //In same frame as input
+                        nodeOutputs.put(vid, opOutputValues[i]);
+                        updateDescendentsForExec(vid, availableForExec);
 
                         if(variables.contains(opOutputVarNames[i])){  //Check if required output
                             out.put(opOutputVarNames[i], opOutputValues[i]);
@@ -222,8 +262,6 @@ public abstract class AbstractSession<T,O> {
         //Check if we can execute this op now...
         if(inputForOps != null){
             for(String opName : inputForOps) {
-                //TODO Merge etc needs to be handled differently!
-
                 if(sameDiff.getFunctionById(opName) instanceof Merge){
                     //Merge op: available for execution when *any* of its inputs are available. But only mark it for exec once...
                     String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);

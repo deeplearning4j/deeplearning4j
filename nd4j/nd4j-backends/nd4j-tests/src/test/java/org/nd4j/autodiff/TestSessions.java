@@ -3,11 +3,17 @@ package org.nd4j.autodiff;
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SameDiffConditional;
+import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.io.ClassPathResource;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -129,8 +135,8 @@ public class TestSessions {
         SDVariable b = sd.placeHolder("b", DataType.BOOL);
 
         SDVariable[] switchOut = sd.f().switchOp(x, b); //Order: false then true
-        SDVariable falsePlusOne = switchOut[0].add(1);
-        SDVariable truePlusTen = switchOut[1].add(10.0);
+        SDVariable falsePlusOne = switchOut[0].add("addFalseBranch", 1);
+        SDVariable truePlusTen = switchOut[1].add("addTrueBranch", 10.0);
 
         SDVariable merge = sd.f().merge(falsePlusOne, truePlusTen);
 
@@ -147,16 +153,46 @@ public class TestSessions {
         InferenceSession is = new InferenceSession(sd);
         String n = merge.getVarName();
 
+        System.out.println("----------------------------------");
         Map<String,INDArray> outMap = is.output(Collections.singletonList(n), m, null);
         assertEquals(1, outMap.size());
         assertEquals(expTrue, outMap.get(n));
 
 
+        System.out.println("----------------------------------");
         //Check false case:
         bArr.assign(0);
         is = new InferenceSession(sd);
         outMap = is.output(Collections.singletonList(n), m, null);
         assertEquals(1, outMap.size());
         assertEquals(expFalse, outMap.get(n));
+    }
+
+    @Test(timeout = 50000L)
+    public void testSwitchWhile() throws Exception{
+
+        File f = new ClassPathResource("tf_graphs/examples/while1/iter_1/frozen_model.pb").getFile();
+        SameDiff sd = TFGraphMapper.getInstance().importGraph(f);
+
+        System.out.println(sd.summary());
+
+        System.out.println("----------------------------------");
+        //This particular test/graph doesn't use placeholders
+        InferenceSession is = new InferenceSession(sd);
+        String n = "while/Exit";
+        String n2 = "while/Exit_1";
+
+        Map<String,INDArray> m = is.output(Arrays.asList(n, n2), Collections.emptyMap(), null);
+        assertEquals(2, m.size());
+
+        //Expected outputs: 3, 3
+        //Loop is while(i<j){ i--;} with initial values i=0, j=3
+
+        INDArray exp1and2 = Nd4j.valueArrayOf(new long[0], 3, DataType.DOUBLE);
+
+        assertEquals(exp1and2, m.get(n));
+        assertEquals(exp1and2, m.get(n2));
+
+
     }
 }

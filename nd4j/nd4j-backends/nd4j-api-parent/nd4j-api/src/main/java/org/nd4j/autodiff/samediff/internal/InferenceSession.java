@@ -9,6 +9,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
@@ -43,8 +44,14 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
         } else if(op instanceof Switch){
             Switch s = (Switch)op;
-            String[] argNames = s.argNames();       //Order: boolean array,
-
+            String[] argNames = s.argNames();       //Order: input, boolean array
+            INDArray predicate = this.nodeOutputs.get(argNames[1]);
+            Preconditions.checkState(predicate.isScalar() && predicate.dataType() == DataType.BOOL, "Expected boolean predicate: got %ndSInfo", predicate);
+            if(predicate.getDouble(0) == 0.0){
+                return new INDArray[]{this.nodeOutputs.get(argNames[0]), null};
+            } else {
+                return new INDArray[]{null, this.nodeOutputs.get(argNames[0])};
+            }
         } else if(op instanceof If) {
             If i = (If) op;
             String[] argNames = i.argNames();       //Order should be: [boolean], true, false

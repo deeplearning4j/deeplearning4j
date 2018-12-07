@@ -320,7 +320,13 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
 
         //We aren't guaranteed to have ops imported in the order that they can be executed, so check + fix that
-        diff.validateExecutionOrder();
+        try {
+            diff.validateExecutionOrder();
+        } catch (Throwable t){
+            //NOTE: this execution order thing will go away soon, as we'll be moving to dynamic execution order
+            //Also it fails for loops ATM as it assumes a DAG :(
+            log.warn("Failed to validate graph execution order", t);
+        }
 
 
 
