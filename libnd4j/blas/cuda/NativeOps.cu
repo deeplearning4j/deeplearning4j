@@ -1191,7 +1191,7 @@ void NativeOps::execTransformBool(Nd4jPointer *extraPointers,int opNum,
 								  void *dZ, Nd4jLong *dZShapeInfo,
 								  void *extraParams) {
 	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-	dim3 launchDims(512, 1024, 16384);
+	dim3 launchDims(512, 512, 16384);
 
 	auto xRank = shape::rank(hXShapeInfo);
 	auto zRank = shape::rank(hZShapeInfo);
@@ -1272,7 +1272,7 @@ void NativeOps::execTransformAny(Nd4jPointer *extraPointers,int opNum,
             }
             break;
         default: {
-            dim3 launchDims(512, 1024, 16384);
+            dim3 launchDims(512, 512, 16384);
 
             BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
         }
@@ -1287,7 +1287,7 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
                                   void *dZ, Nd4jLong *dZShapeInfo,
                                   void *extraParams) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
-    dim3 launchDims(512, 1024, 16384);
+    dim3 launchDims(512, 512, 16384);
 
     auto xRank = shape::rank(hXShapeInfo);
     auto zRank = shape::rank(hZShapeInfo);
@@ -1448,11 +1448,6 @@ void NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
         dim3 launchDims(512, 512, 16384);
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
     }
-
-    cudaStreamSynchronize(*stream);
-    cudaMemcpyAsync(hZ, dZ, shape::length(hZShapeInfo) * DataTypeUtils::sizeOf(zType), cudaMemcpyDeviceToHost, *stream);
-    cudaStreamSynchronize(*stream);
-    BUILD_SINGLE_SELECTOR(zType, shape::printArray, (hZ, shape::length(hZShapeInfo), "Z on host"), FLOAT_TYPES);
 }
 
 
