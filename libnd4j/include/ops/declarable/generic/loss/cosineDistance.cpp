@@ -33,6 +33,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
   	auto predictions = INPUT_VARIABLE(0);
     auto weights 	= INPUT_VARIABLE(1);
     auto labels     	= INPUT_VARIABLE(2);
+    //auto axis = INPUT(3);
     auto output      = OUTPUT_VARIABLE(0);
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
@@ -63,6 +64,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 	}
 
 	auto ts = NDArrayFactory::create(1.f, block.getWorkspace());
+
 	NDArray weightedLosses = ts - ((*predictions) * (*labels)).reduceAlongDims(reduce::Sum, {dim}, true);
 
  	// multiply weightedLosses on weights
@@ -94,19 +96,24 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of weightedLosses array divided by number of non-zero weights
 			Nd4jLong numOfNonZeroWeights = 0;
-			if(weights->isScalar()) {
-				if(weights->e<double>(0) != 0.)
-					numOfNonZeroWeights = weightedLosses.lengthOf();
-			}
-			else {
-				numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<Nd4jLong>(0);
-			}
+            //output->assign(weightedLosses.reduceNumber(reduce::Mean);
+			//if(weights->isScalar()) {
+			//	if(weights->e<double>(0) != 0.)
+			//		numOfNonZeroWeights = weightedLosses.lengthOf();
+			//}
+			//else {
+			if (!weights->isScalar())
+			    numOfNonZeroWeights = weightedLosses.reduceNumber(reduce::CountNonZero).e<Nd4jLong>(0);
+			else if (weights->e<float>(0) != 0)
+			    numOfNonZeroWeights = 1;
 
-			if (numOfNonZeroWeights == 0)
-				output->assign(0.);
-			else 
-				output->assign(weightedLosses.reduceNumber(reduce::Sum) / numOfNonZeroWeights);
-			break;
+			//if (numOfNonZeroWeights == 0)
+			//	output->assign(0.);
+			//else
+			if (numOfNonZeroWeights > 0)
+			    output->assign(weightedLosses.reduceNumber(reduce::Sum) / (double)numOfNonZeroWeights);
+            //else
+			//break;
 		}
 	}
 
@@ -141,19 +148,13 @@ DECLARE_SHAPE_FN(cosine_distance_loss) {
  	// evaluate output shapeInfo
     Nd4jLong* outShapeInfo = nullptr;
     if(INT_ARG(0) != 0) {			// in this case output is scalar
-    	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2) /*rank=2*/, Nd4jLong);
-    	outShapeInfo[0] = 2;
-    	outShapeInfo[1] = outShapeInfo[2] = outShapeInfo[3] = outShapeInfo[4] = 1;
-    	outShapeInfo[5] = 0;
-    	outShapeInfo[6] = 1;
-    	outShapeInfo[7] = 99;
+        outShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(predictionsShapeInfo), block.getWorkspace());
     }
     else {							// in this case output has the same shape as labels reduced  by dim axis    	
     	std::vector<int> dimensions = {dim};
-    	outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(labelsShapeInfo), dimensions, labelsShapeInfo, true, false, block.getWorkspace());
+    	outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(predictionsShapeInfo), dimensions, predictionsShapeInfo, true, false, block.getWorkspace());
     }
-    ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(predictionsShapeInfo));
-    return SHAPELIST(outShapeInfo);    
+    return SHAPELIST(outShapeInfo);
 
 }
 
