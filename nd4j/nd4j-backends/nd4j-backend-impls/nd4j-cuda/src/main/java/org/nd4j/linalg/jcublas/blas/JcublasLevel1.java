@@ -20,6 +20,7 @@ import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
@@ -105,8 +106,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected float sdot(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataType.FLOAT)
-            logger.warn("FLOAT dot called");
+        Preconditions.checkArgument(X.dataType() == DataType.FLOAT, "Float dtype expected");
 
         DataTypeValidation.assertSameDataType(X, Y);
 
@@ -148,8 +148,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected double ddot(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            logger.warn("DOUBLE dot called");
+        Preconditions.checkArgument(X.dataType() == DataType.DOUBLE, "Double dtype expected");
 
         Nd4j.getExecutioner().push();
 
@@ -181,8 +180,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected float snrm2(long N, INDArray X, int incX) {
-        if (Nd4j.dataType() != DataType.FLOAT)
-            logger.warn("FLOAT nrm2 called");
+        Preconditions.checkArgument(X.dataType() == DataType.FLOAT, "Float dtype expected");
 
         Nd4j.getExecutioner().push();
 
@@ -266,8 +264,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected double dnrm2(long N, INDArray X, int incX) {
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            logger.warn("DOUBLE nrm2 called");
+        Preconditions.checkArgument(X.dataType() == DataType.DOUBLE, "Double dtype expected");
 
         Nd4j.getExecutioner().push();
 
@@ -329,8 +326,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int isamax(long N, INDArray X, int incX) {
-        if (Nd4j.dataType() != DataType.FLOAT)
-            logger.warn("FLOAT iamax called");
+        Preconditions.checkArgument(X.dataType() == DataType.FLOAT, "Float dtype expected");
 
         Nd4j.getExecutioner().push();
 
@@ -360,8 +356,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int idamax(long N, INDArray X, int incX) {
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            logger.warn("DOUBLE imax called");
+        Preconditions.checkArgument(X.dataType() == DataType.DOUBLE, "Double dtype expected");
 
         Nd4j.getExecutioner().push();
 
@@ -392,8 +387,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void sswap(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataType.FLOAT)
-            logger.warn("FLOAT swap called");
+        Preconditions.checkArgument(X.dataType() == DataType.FLOAT, "Float dtype expected");
 
         Nd4j.getExecutioner().push();
 
@@ -416,8 +410,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void scopy(long N, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataType.FLOAT)
-            logger.warn("FLOAT copy called");
+        Preconditions.checkArgument(X.dataType() == DataType.FLOAT, "Float dtype expected");
 
         Nd4j.getExecutioner().push();
 
@@ -446,8 +439,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void saxpy(long N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataType.FLOAT)
-            logger.warn("FLOAT axpy called");
+        //Preconditions.checkArgument(X.dataType() == DataType.FLOAT, "Float dtype expected");
 
         //        CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
         Nd4j.getExecutioner().exec(new Axpy(X, Y, alpha, N));
@@ -575,9 +567,6 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void daxpy(long N, double alpha, INDArray X, int incX, INDArray Y, int incY) {
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            logger.warn("DOUBLE axpy called");
-
         //CudaContext ctx = allocator.getFlowController().prepareAction(Y, X);
 
 
@@ -660,8 +649,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void sscal(long N, float alpha, INDArray X, int incX) {
-        if (Nd4j.dataType() != DataType.FLOAT)
-            logger.warn("FLOAT scal called");
+        Preconditions.checkArgument(X.dataType() == DataType.FLOAT, "Float dtype expected");
 
         Nd4j.getExecutioner().push();
 
@@ -684,8 +672,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dscal(long N, double alpha, INDArray X, int incX) {
-        if (Nd4j.dataType() != DataType.DOUBLE)
-            logger.warn("DOUBLE scal called");
+        Preconditions.checkArgument(X.dataType() == DataType.DOUBLE, "Double dtype expected");
 
         Nd4j.getExecutioner().push();
 

@@ -560,7 +560,7 @@ namespace simdOps {
 
 		op_def static Z op(X d1, Y d2, Z *params) {
 			auto alpha = params[0];
-			return alpha * static_cast<Z>(d1+ d2);
+			return alpha * static_cast<Z>(d1) + static_cast<Z>(d2);
 		}
 
 		op_def static Z op(X d1) {
