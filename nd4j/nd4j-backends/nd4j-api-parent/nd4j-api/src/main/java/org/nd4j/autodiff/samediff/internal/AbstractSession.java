@@ -73,6 +73,10 @@ public abstract class AbstractSession<T,O> {
          */
 
         //Step 0: validation - that variables exist, placeholders have arrays, etc
+        for(String s : variables){
+            Preconditions.checkState(sameDiff.variableMap().containsKey(s), "Requested output variable %s does not exist in SameDiff instance", s);
+        }
+
 
         //Step 1: determine subgraph structure we actually need to execute
         Queue<String> processingQueue = new LinkedList<>(variables);
@@ -137,6 +141,8 @@ public abstract class AbstractSession<T,O> {
         Map<String,T> out = new HashMap<>();
         int step = 0;
         while(out.size() < variables.size()){
+            Preconditions.checkState(availableForExec.size() > 0, "No variables are available for execution");
+
             //Get any variable and execute it's corresponding op
             String varToExec = availableForExec.remove();
             if(nodeOutputs.containsKey(varToExec))

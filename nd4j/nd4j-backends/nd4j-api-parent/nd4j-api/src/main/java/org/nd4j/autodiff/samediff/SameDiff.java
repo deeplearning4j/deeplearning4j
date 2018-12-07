@@ -149,7 +149,11 @@ public class SameDiff {
     private final Map<String,DeviceLocalNDArray> constantArrays = new HashMap<>();
     private final Map<String,DeviceLocalNDArray> variablesArrays = new HashMap<>();     //TODO issues with DeviceLocal +  mutable / changed during training?
 
-
+    //TODO these will eventually be merged into Variable class field
+    @Getter
+    private final Map<String,List<String>> opControlDependencies = new HashMap<>();     //Key: op name. Value: control dependencies
+    @Getter
+    private final Map<String,List<String>> variableControlDependencies = new HashMap<>();
     ///////////////////////////////////////
     @Getter
     private TrainingConfig trainingConfig;                          //Configuration for training. Must be set for training/evaluation, but not for other operations

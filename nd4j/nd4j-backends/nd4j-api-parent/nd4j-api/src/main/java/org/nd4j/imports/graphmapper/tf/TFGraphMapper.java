@@ -392,6 +392,10 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         return ret;
     }
 
+    public boolean isControlDependency(String name){
+        return name.startsWith("^");
+    }
+
 
 
     @Override
@@ -519,7 +523,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 newInstance.setOwnName(tfNode.getName());
 
                 for(int i = 0; i < tfNode.getInputCount(); i++) {
-                    val name = getNodeName(tfNode.getInput(i));
+                    String inName = tfNode.getInput(i);
+                    boolean controlDep = isControlDependency(inName);
+                    String name = getNodeName(inName);
                     args[i] = diff.getVariable(name);
                     if(args[i] == null) {
                         args[i] = diff.var(name, (LongShapeDescriptor) null,new ZeroInitScheme('f'));
