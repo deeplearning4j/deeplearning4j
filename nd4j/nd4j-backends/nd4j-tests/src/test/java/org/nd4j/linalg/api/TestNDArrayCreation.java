@@ -23,6 +23,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -47,10 +48,15 @@ public class TestNDArrayCreation extends BaseNd4jTest {
 
     @Test
     public void testBufferCreation() {
-        DataBuffer dataBuffer = Nd4j.createBuffer(new double[] {1, 2});
+        DataBuffer dataBuffer = Nd4j.createBuffer(new float[] {1, 2});
         Pointer pointer = dataBuffer.pointer();
         FloatPointer floatPointer = new FloatPointer(pointer);
-        DataBuffer dataBuffer1 = Nd4j.createBuffer(floatPointer, 2);
+        DataBuffer dataBuffer1 = Nd4j.createBuffer(floatPointer, 2, DataType.FLOAT);
+
+        assertEquals(2, dataBuffer.length());
+        assertEquals(1.0, dataBuffer.getDouble(0), 1e-1);
+        assertEquals(2.0, dataBuffer.getDouble(1), 1e-1);
+
         assertEquals(2, dataBuffer1.length());
         assertEquals(1.0, dataBuffer1.getDouble(0), 1e-1);
         assertEquals(2.0, dataBuffer1.getDouble(1), 1e-1);

@@ -21,8 +21,44 @@
 #ifndef LIBND4J_PLAY_H
 #define LIBND4J_PLAY_H
 
-#include "op_boilerplate.h"
-#include <loops/legacy_ops.h>
+#include <type_boilerplate.h>
+
+#define DATA_TYPES \
+        (DATA_FLOAT, float) ,\
+        (DATA_DOUBLE, double)
+
+#define Y_TYPES \
+        (DATA_INT8, int8_t) ,\
+        (DATA_INT16, int16_t) 
+
+#define Z_TYPES \
+        (DATA_UINT8, uint8_t) ,\
+        (DATA_UINT16, uint16_t)
+
+#define PWT_LIST \
+    (float, long, float),\
+    (float, long, long)        
+
+
+BUILD_SINGLE_SELECTOR_THRICE(xType, template class functionName, , DATA_TYPES);
+
+//BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES);
+
+//BUILD_SINGLE_UNCHAINED_TEMPLATE(functionName , (signature), Y_TYPES);
+
+//BUILD_TRIPLE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES, Z_TYPES)
+
+
+//BUILD_TRIPLE_TEMPLATE(functionName, (signature), DATA_TYPES, Y_TYPES, Z_TYPES)
+
+//BUILD_ENUMERATION(DATA_TYPES)
+
+//BUILD_SINGLE_SELECTOR(xType, functions::IndexReduce, ::op(a, b, c, d, e), DATA_TYPES)
+//BUILD_DOUBLE_SELECTOR(xType, yType, functions::IndexReduce, ::op(a, b, c, d, e), DATA_TYPES, DATA_TYPES)
+
+//BUILD_SINGLE_TEMPLATE(template class Alpha, (signature), DATA_TYPES);
+
+//BUILD_DOUBLE_TEMPLATE(template class Alpha, (signature) , DATA_TYPES, DATA_TYPES);
 
 /*
 #define SCALAR_OPS \
@@ -36,10 +72,7 @@
 //        (2, nd4j::layers::Pooling2DLayer) ,\
 //        (3, nd4j::layers::LSTMLayer)
 
-#define DATA_TYPES \
-        (0, float) ,\
-        (1, double) ,\
-        (2, float16)
+
 */
 /*
 #define PAIRWISE_TRANSFORM_OPS \
@@ -75,7 +108,7 @@ EXECUTE_NOE((x, y, extras), OPS_A(PAIRWISE_TRANSFORM_OPS))
 */
 
 
-EXECUTE_NOE((x, extras), OPS_A(SCALAR_OPS))
+//EXECUTE_NOE((x, extras), OPS_A(SCALAR_OPS))
 
 //BUILD_CALL_1(template void nd4j::NDArray<float16>::applyTransform, float16, (NDArray<float16>* a, float16* b), TRANSFORM_OPS)
 

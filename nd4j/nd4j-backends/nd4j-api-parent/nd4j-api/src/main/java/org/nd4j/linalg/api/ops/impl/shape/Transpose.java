@@ -23,8 +23,10 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
@@ -119,7 +121,7 @@ public class Transpose extends DynamicCustomOp {
         INDArray arr = sameDiff.getArrForVarName(arg().getVarName());
         if (arr == null) {
             val arrVar = sameDiff.getVariable(arg().getVarName());
-            arr = arrVar.getWeightInitScheme().create(arrVar.getShape());
+            arr = arrVar.getWeightInitScheme().create(arrVar.dataType(), arrVar.getShape());
             sameDiff.putArrayForVarName(arg().getVarName(), arr);
         }
 
@@ -148,17 +150,20 @@ public class Transpose extends DynamicCustomOp {
     }
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        if (args().length > 1){
-            return super.calculateOutputShape();
-        }
-        if (permuteDims == null && arg() != null && arg().getShape() != null) {
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        if (args().length > 1) {
+            if (args()[0].getArr() != null && args()[1].getArr() != null) {
+                return super.calculateOutputShape();
+            }
+        } else  if (permuteDims == null && arg() != null && arg().getShape() != null) {
             this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0, arg().getShape().length));
             val permutedShape = ArrayUtil.permute(arg().getShape(), permuteDims);
-            return Arrays.asList(permutedShape);
+            return Arrays.asList(LongShapeDescriptor.fromShape(permutedShape, larg().dataType()));
         } else if (permuteDims != null && arg() != null && arg().getShape() != null) {
             val permutedShape = ArrayUtil.permute(arg().getShape(), permuteDims);
-            return Arrays.asList(permutedShape);
+            SDVariable lArg = larg();
+            DataType lArgType = lArg.dataType();
+            return Arrays.asList(LongShapeDescriptor.fromShape(permutedShape, lArgType));
         }
 
         return Collections.emptyList();

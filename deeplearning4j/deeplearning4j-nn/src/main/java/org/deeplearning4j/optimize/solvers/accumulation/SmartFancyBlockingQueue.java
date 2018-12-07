@@ -22,6 +22,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -66,7 +67,7 @@ public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
     protected INDArray smartDecompress(INDArray encoded, INDArray target) {
         INDArray result = target == null ? Nd4j.create(paramsShape, paramsOrder) : target;
 
-        if (encoded.isCompressed() || encoded.data().dataType() == DataBuffer.Type.INT) {
+        if (encoded.isCompressed() || encoded.data().dataType() == DataType.INT) {
             int encoding = encoded.data().getInt(3);
             if (encoding == ThresholdCompression.FLEXIBLE_ENCODING) {
                 Nd4j.getExecutioner().thresholdDecode(encoded, result);

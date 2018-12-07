@@ -35,7 +35,7 @@ namespace nd4j {
             } else if (block.width() > 0) {
                 auto input = INPUT_VARIABLE(0);
                 REQUIRE_TRUE(input->isScalar(),0 ,"SetSeed: Seed operand should be scalar");
-                seed = (Nd4jLong) input->getScalar(0);
+                seed = input->e<Nd4jLong>(0);
             } else {
                 REQUIRE_TRUE(false, 0, "SetSeed: either IArg or scalr input should be provided");
             }
@@ -44,23 +44,19 @@ namespace nd4j {
             NativeOps nativeOps;
             nativeOps.refreshBuffer(nullptr, seed, (Nd4jPointer) rng);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(set_seed) {
-            Nd4jLong *newshape;
-            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-
-            newshape[0] = 2;
-            newshape[1] = 1;
-            newshape[2] = 1;
-            newshape[3] = 1;
-            newshape[4] = 1;
-            newshape[5] = 0;
-            newshape[6] = 1;
-            newshape[7] = 99;
+            auto newshape = ShapeBuilders::createScalarShapeInfo(block.dataType(), block.workspace());
 
             return SHAPELIST(newshape);
+        }
+
+        DECLARE_TYPES(set_seed) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes({ALL_INTS})
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }
 }

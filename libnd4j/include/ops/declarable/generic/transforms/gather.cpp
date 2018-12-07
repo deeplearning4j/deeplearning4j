@@ -62,6 +62,12 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
     return Status::OK();
 }
 
+DECLARE_TYPES(gather) {
+	getOpDescriptor()->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS});
+	getOpDescriptor()->setAllowedInputTypes(1, {ALL_INTS});
+	getOpDescriptor()->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS});
+}
+
 
 DECLARE_SHAPE_FN(gather) {
 
@@ -72,7 +78,7 @@ DECLARE_SHAPE_FN(gather) {
 	int axis = 0;
 
 	if (block.width() > 2) {
-		axis = static_cast<int>(INPUT_VARIABLE(2)->getScalar(0));
+		axis = INPUT_VARIABLE(2)->e<int>(0);
 	} else
 		axis = block.numI() > 0 ? block.getIArguments()->at(0) : 0;
 
@@ -109,7 +115,7 @@ DECLARE_SHAPE_FN(gather) {
     	for(int i = axis+1; i < inputRank; ++i)
     		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
 	
-    	shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));    
+//    	shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
 	} else if (block.numI() > 1) {
 		int indicesRank = block.numI() == 2 ? 0 : 1;
 
@@ -127,12 +133,11 @@ DECLARE_SHAPE_FN(gather) {
 
 		for(int i = axis+1; i < inputRank; ++i)
     		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
-
-		shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));    
 	}
     else
         REQUIRE_TRUE(false, 0, "GATHER op: indices should be provided either as additional input array or as IntArguments !");
 
+	ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
     return SHAPELIST(outputShapeInfo);
 

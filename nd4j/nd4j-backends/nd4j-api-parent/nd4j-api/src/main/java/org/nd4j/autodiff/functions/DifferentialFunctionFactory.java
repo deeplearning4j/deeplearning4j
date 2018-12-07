@@ -27,16 +27,28 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.NoOp;
-import org.nd4j.linalg.api.ops.impl.accum.*;
-import org.nd4j.linalg.api.ops.impl.accum.Max;
-import org.nd4j.linalg.api.ops.impl.accum.Min;
-import org.nd4j.linalg.api.ops.impl.accum.bp.*;
-import org.nd4j.linalg.api.ops.impl.accum.distances.*;
+import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
+import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
+import org.nd4j.linalg.api.ops.impl.reduce.*;
+import org.nd4j.linalg.api.ops.impl.reduce.custom.*;
+import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
+import org.nd4j.linalg.api.ops.impl.reduce.same.*;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.*;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.reduce.same.AMax;
+import org.nd4j.linalg.api.ops.impl.reduce.same.AMin;
+import org.nd4j.linalg.api.ops.impl.reduce.same.Max;
+import org.nd4j.linalg.api.ops.impl.reduce.same.Min;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAddGrad;
 import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
+import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.api.ops.impl.loss.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
@@ -46,14 +58,29 @@ import org.nd4j.linalg.api.ops.impl.shape.Stack;
 import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
+import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
+import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.*;
+import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.*;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.*;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.same.*;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.*;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SwishDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.*;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
@@ -588,7 +615,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable max(SDVariable first, SDVariable second) {
-        return new org.nd4j.linalg.api.ops.impl.transforms.comparison.Max(sameDiff(), first, second)
+        return new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(sameDiff(), first, second)
                 .outputVariable();
     }
 
@@ -606,7 +633,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable min(SDVariable first, SDVariable second) {
-        return new org.nd4j.linalg.api.ops.impl.transforms.comparison.Min(sameDiff(), first, second)
+        return new org.nd4j.linalg.api.ops.impl.transforms.custom.Min(sameDiff(), first, second)
                 .outputVariable();
     }
 

@@ -21,13 +21,14 @@
 #define __RANDOM_CROP_HELPERS__
 #include <op_boilerplate.h>
 #include <NDArray.h>
+#include <helpers/helper_random.h>
+#include <graph/Context.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    int randomCropFunctor(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* shape, NDArray<T>* output, int seed);
+    int randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output, int seed);
 
 }
 }

@@ -115,7 +115,7 @@ public class TestPlayUI {
                                         .pzxActivationFunction(Activation.IDENTITY)
                                         .reconstructionDistribution(new GaussianReconstructionDistribution())
                                         .activation(Activation.LEAKYRELU).build())
-                        .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build()).pretrain(true)
+                        .layer(2, new OutputLayer.Builder().nIn(3).nOut(3).build())
                         .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

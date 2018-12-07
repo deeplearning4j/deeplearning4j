@@ -46,7 +46,11 @@
     <developers>
         <developer>
             <id>turambar</id>
-            <name>Dave kale</name>
+            <name>Dave Kale</name>
+        </developer>
+        <developer>
+            <id>maxpumperla</id>
+            <name>Max Pumperla</name>
         </developer>
     </developers>
 

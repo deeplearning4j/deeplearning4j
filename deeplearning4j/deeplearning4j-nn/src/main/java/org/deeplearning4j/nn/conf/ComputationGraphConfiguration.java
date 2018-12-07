@@ -87,9 +87,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * List of network outputs, by name
      */
     protected List<String> networkOutputs;
-
-    protected boolean pretrain = false;
-    protected boolean backprop = true;
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
@@ -257,8 +254,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.networkInputs = new ArrayList<>(this.networkInputs);
         conf.networkOutputs = new ArrayList<>(this.networkOutputs);
 
-        conf.pretrain = pretrain;
-        conf.backprop = backprop;
         conf.backpropType = backpropType;
         conf.tbpttFwdLength = tbpttFwdLength;
         conf.tbpttBackLength = tbpttBackLength;
@@ -603,11 +598,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected List<String> networkInputs = new ArrayList<>();
         protected List<InputType> networkInputTypes = new ArrayList<>();
         protected List<String> networkOutputs = new ArrayList<>();
-
-        @Deprecated
-        protected boolean pretrain = false;
-        @Deprecated
-        protected boolean backprop = true;
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = DEFAULT_TBPTT_LENGTH;
         protected int tbpttBackLength = DEFAULT_TBPTT_LENGTH;
@@ -633,9 +623,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             this.networkInputs = clonedConf.getNetworkInputs();
             this.networkOutputs = clonedConf.getNetworkOutputs();
-
-            this.pretrain = clonedConf.isPretrain();
-            this.backprop = clonedConf.isBackprop();
             this.backpropType = clonedConf.getBackpropType();
             this.tbpttFwdLength = clonedConf.getTbpttFwdLength();
             this.tbpttBackLength = clonedConf.getTbpttBackLength();
@@ -653,32 +640,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder inputPreProcessor(String layer, InputPreProcessor processor) {
             inputPreProcessors.put(layer, processor);
-            return this;
-        }
-
-        /**
-         * Whether to do back prop (standard supervised learning) or not
-         *
-         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.graph.ComputationGraph#fit(MultiDataSet)} when training for backprop.
-         *
-         * @param backprop whether to do back prop or not
-         */
-        @Deprecated
-        public GraphBuilder backprop(boolean backprop) {
-            this.backprop = backprop;
-            return this;
-        }
-
-        /**
-         * Whether to do layerwise pre training or not
-         *
-         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.graph.ComputationGraph#pretrain(MultiDataSetIterator)} when training for layerwise pretraining.
-         *
-         * @param pretrain whether to do pre train or not
-         */
-        @Deprecated
-        public GraphBuilder pretrain(boolean pretrain) {
-            this.pretrain = pretrain;
             return this;
         }
 
@@ -1023,8 +984,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             }
 
             ComputationGraphConfiguration conf = new ComputationGraphConfiguration();
-            conf.backprop = backprop;
-            conf.pretrain = pretrain;
             conf.backpropType = backpropType;
             conf.tbpttBackLength = tbpttBackLength;
             conf.tbpttFwdLength = tbpttFwdLength;
@@ -1040,7 +999,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.validateOutputLayerConfig = validateOutputConfig;
 
             conf.defaultConfiguration = globalConfiguration.build();
-            conf.getDefaultConfiguration().setPretrain(pretrain);
             conf.setLegacyBatchScaledL2(globalConfiguration.isLegacyBatchScaledL2());
 
             //Add preprocessors that were defined separately to the Layers to which they belong
@@ -1061,8 +1019,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 if (gv.getValue() instanceof LayerVertex) {
                     LayerVertex lv = (LayerVertex) gv.getValue();
                     Layer l = lv.getLayerConf().getLayer();
-                    if (l instanceof BasePretrainNetwork)
-                        lv.getLayerConf().setPretrain(pretrain);
                 }
                 if (gv.getValue() instanceof SameDiffVertex)
                     ((SameDiffVertex) gv.getValue()).applyGlobalConfig(globalConfiguration);

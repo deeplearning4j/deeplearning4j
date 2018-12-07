@@ -18,6 +18,8 @@ package org.nd4j.linalg.jcublas.compression;
 
 import org.bytedeco.javacpp.IntPointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
@@ -66,7 +68,7 @@ public class CudaFlexibleThreshold extends CudaThreshold {
 
     @Override
     public DataBuffer compress(DataBuffer buffer) {
-        INDArray temp = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(new int[]{1, (int) buffer.length()}));
+        INDArray temp = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{1, buffer.length()}, buffer.dataType()));
         double max = temp.amaxNumber().doubleValue();
 
         int cntAbs = temp.scan(Conditions.absGreaterThanOrEqual(max - (max * threshold))).intValue();
@@ -90,7 +92,7 @@ public class CudaFlexibleThreshold extends CudaThreshold {
 
         CompressedDataBuffer cbuff = new CompressedDataBuffer(pointer, descriptor);
 
-        Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer.addressPointer(), DataBuffer.TypeEx.FTHRESHOLD, pointer, buffer.length());
+        Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer.addressPointer(), DataTypeEx.FTHRESHOLD, pointer, buffer.length());
 
         Nd4j.getAffinityManager().tagLocation(buffer, AffinityManager.Location.HOST);
 

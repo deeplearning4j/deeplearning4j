@@ -44,24 +44,24 @@ namespace ops {
         }
 
         auto numPartition = INT_ARG(0);
-        std::vector<NDArray<T> *> outputList(numPartition);
+        std::vector<NDArray *> outputList(numPartition);
         for (int o = 0; o < numPartition; ++o) {
             outputList[o] = OUTPUT_VARIABLE(o);
         }
         helpers::dynamicPartitionFunctor(input, indices, outputList);
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 
     DECLARE_SHAPE_FN(dynamic_partition) {
         auto numPartition = INT_ARG(0);
-        NDArray<T> *indices = INPUT_VARIABLE(1);
+        auto indices = INPUT_VARIABLE(1);
         std::vector<int> partitionSizes(numPartition, 0);
         auto in = inputShape->at(0);
         auto idx = inputShape->at(1);
         for (int i = 0; i < numPartition; i++) {
             for (int e = 0; e < indices->lengthOf(); ++e)
-                if ((*indices)(e) == T(i))
+                if (indices->e<Nd4jLong>(e) == i)
                     partitionSizes[i]++;
         }
 
@@ -77,11 +77,23 @@ namespace ops {
                 newShape[i + 1] = shape::sizeAt(in, outRank + i - 1);
 
             shape::updateStrides(newShape, shape::order(in));
-
+            ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
             shapes->push_back(newShape);
         }
 
         return shapes;
+    }
+
+    DECLARE_TYPES(dynamic_partition) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
+    }
+
+    DECLARE_TYPES(dynamic_partition_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
     }
 
     CUSTOM_OP_IMPL(dynamic_partition_bp, 3, 2, false, 0, 1) {
@@ -90,8 +102,8 @@ namespace ops {
         //auto gradOut = ;
         auto numPartition = INT_ARG(0);
 
-        std::vector<NDArray<T> *> outputList(2); // only for output
-        std::vector<NDArray<T> *> gradOutList(numPartition);
+        std::vector<NDArray*> outputList(2); // only for output
+        std::vector<NDArray*> gradOutList(numPartition);
         for (Nd4jLong e = 0; e < numPartition; e++) {
             gradOutList[e] = INPUT_VARIABLE(e + 2);
         }
@@ -105,7 +117,7 @@ namespace ops {
 
     DECLARE_SHAPE_FN(dynamic_partition_bp) {
         auto numPartition = INT_ARG(0);
-        NDArray<T> *indices = INPUT_VARIABLE(1);
+        auto indices = INPUT_VARIABLE(1);
         std::vector<int> partitionSizes(numPartition, 0);
 
         auto shapes = SHAPELIST();

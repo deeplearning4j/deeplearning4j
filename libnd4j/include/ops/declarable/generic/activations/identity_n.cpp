@@ -33,7 +33,7 @@ namespace nd4j {
                     auto x = INPUT_VARIABLE(i);
                     auto z = OUTPUT_VARIABLE(i);
 
-                    x->template applyTransform<simdOps::Identity<T>>(z, nullptr);
+                    x->applyTransform(transform::Identity, z, nullptr);
                 }
             }
 
@@ -49,6 +49,13 @@ namespace nd4j {
             }
             return shapes;
         }
+
+        DECLARE_TYPES(identity_n) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
+        }
+
     }
 }
 

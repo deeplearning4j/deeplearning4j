@@ -415,7 +415,7 @@ public class VariationalAutoencoder implements Layer {
 
                 INDArray actInput;
                 if (i == 0) {
-                    actInput = input;
+                    actInput = input.castTo(dLdW.dataType());
                 } else {
                     actInput = fwd.encoderActivations[i - 1];
                 }
@@ -759,7 +759,7 @@ public class VariationalAutoencoder implements Layer {
 
         INDArray[] encoderPreOuts = new INDArray[encoderLayerSizes.length];
         INDArray[] encoderActivations = new INDArray[encoderLayerSizes.length];
-        INDArray current = input;
+        INDArray current = input.castTo(getParam("e0" + WEIGHT_KEY_SUFFIX).dataType());
         for (int i = 0; i < nEncoderLayers; i++) {
             String wKey = "e" + i + WEIGHT_KEY_SUFFIX;
             String bKey = "e" + i + BIAS_KEY_SUFFIX;

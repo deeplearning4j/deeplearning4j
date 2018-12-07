@@ -143,6 +143,13 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_is_numeric_tensor)
         DECLARE_BOOLEAN_OP(is_numeric_tensor, 1, true);
         #endif
+
+        /**
+         *
+         */
+        #if NOT_EXCLUDED(OP_boolean_not)
+        DECLARE_OP(boolean_not, 1, 1, true);
+        #endif
     }
 }
 

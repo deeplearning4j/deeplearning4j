@@ -60,9 +60,9 @@ namespace nd4j {
             auto alpha = INPUT_VARIABLE(0);
             auto beta = INPUT_VARIABLE(1);
 
-            std::vector<NDArray<T>*> vA(batchSize);
-            std::vector<NDArray<T>*> vB(batchSize);
-            std::vector<NDArray<T>*> vC(batchSize);
+            std::vector<NDArray*> vA(batchSize);
+            std::vector<NDArray*> vB(batchSize);
+            std::vector<NDArray*> vC(batchSize);
 
             for(int e = 0; e < batchSize; e++) {
                 vA[e] = INPUT_VARIABLE(e+2);
@@ -80,9 +80,9 @@ namespace nd4j {
 
             REQUIRE_TRUE(vA.size() == vB.size() && vA.size() == vC.size() && vA.size() == batchSize, 0, "BatchedGemm: mismatched numbers of A, B, C for unknown reason");
             
-            nd4j::ops::helpers::_bgemm<T>(vA, vB, vC, alpha, beta, transA, transB, M, N, K, ldA, ldB, ldC);
+            nd4j::ops::helpers::_bgemm(vA, vB, vC, alpha, beta, transA, transB, M, N, K, ldA, ldB, ldC);
             
-            return ND4J_STATUS_OK;
+            return Status::OK();
         };
 
 
@@ -122,12 +122,19 @@ namespace nd4j {
                 Nd4jLong *newShape;
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 
-                shape::shapeBufferFortran(2, shape.data(), newShape);
+                shape::shapeBufferFortran(2, block.dataType(), shape.data(), newShape);
 
                 shapeList->push_back(newShape);
             }
 
             return shapeList;
+        }
+
+        DECLARE_TYPES(batched_gemm) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes({ALL_FLOATS})
+//                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }
 }

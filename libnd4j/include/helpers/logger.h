@@ -27,6 +27,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <dll.h>
+#include <op_boilerplate.h>
+#include <pointercast.h>
 
 #ifndef __CUDA_ARCH__
 

@@ -933,7 +933,8 @@ public class TransferLearning {
                         continue; //some layers have no params
                     if (editedVertices.contains(layerName))
                         continue; //keep the changed params
-                    layer.setParams(origGraph.getLayer(layerName).params().dup()); //copy over origGraph params
+                    INDArray origParams = origGraph.getLayer(layerName).params();
+                    layer.setParams(origParams.dup()); //copy over origGraph params
                 }
             } else {
                 newGraph.setParams(origGraph.params());

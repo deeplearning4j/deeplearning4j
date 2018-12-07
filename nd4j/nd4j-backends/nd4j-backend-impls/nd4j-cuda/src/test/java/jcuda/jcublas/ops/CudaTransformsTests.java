@@ -459,7 +459,7 @@ public class CudaTransformsTests {
 
     @Test
     public void testIsMaxEqualValues(){
-        //Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        //Nd4j.dtype = DataType.DOUBLE;
         //Assumption here: should only have a 1 for *first* maximum value, if multiple values are exactly equal
 
 

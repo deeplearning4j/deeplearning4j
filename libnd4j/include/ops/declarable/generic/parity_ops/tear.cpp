@@ -41,12 +41,13 @@ namespace nd4j {
                 auto outE = OUTPUT_VARIABLE(e);
                 outE->assign(tads->at(e));
 
+                // just for debugging purposes
                 this->storeResult(block, e, *outE);
             }
 
             delete tads;
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(tear) {
             auto inShape = inputShape->at(0);
@@ -63,13 +64,19 @@ namespace nd4j {
                 Nd4jLong *newShape;
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(tad.tadOnlyShapeInfo), Nd4jLong);
                 if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(shape::rank(tad.tadOnlyShapeInfo), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
+                    shape::shapeBuffer(shape::rank(tad.tadOnlyShapeInfo), block.dataType(), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
                 else
-                    shape::shapeBufferFortran(shape::rank(tad.tadOnlyShapeInfo), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
+                    shape::shapeBufferFortran(shape::rank(tad.tadOnlyShapeInfo), block.dataType(), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
                 result->push_back(newShape);
             }
 
             return result;
+        }
+
+        DECLARE_TYPES(tear) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
         }
     }
 }

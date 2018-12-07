@@ -44,7 +44,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.Map;
 
 import static org.junit.Assert.*;
-import static org.junit.Assume.assumeTrue;
 
 @Slf4j
 public class TestSameDiffDense extends BaseDL4JTest {
@@ -57,9 +56,6 @@ public class TestSameDiffDense extends BaseDL4JTest {
 
     @Test
     public void testSameDiffDenseBasic() {
-        //Only run test for CPU backend for now:
-        assumeTrue("CPU".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend")));
-
         int nIn = 3;
         int nOut = 4;
 
@@ -83,9 +79,6 @@ public class TestSameDiffDense extends BaseDL4JTest {
 
     @Test
     public void testSameDiffDenseForward() {
-        //Only run test for CPU backend for now:
-        assumeTrue("CPU".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend")));
-
         for (int minibatch : new int[]{5, 1}) {
             int nIn = 3;
             int nOut = 4;
@@ -149,9 +142,6 @@ public class TestSameDiffDense extends BaseDL4JTest {
 
     @Test
     public void testSameDiffDenseForwardMultiLayer() {
-        //Only run test for CPU backend for now:
-        assumeTrue("CPU".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend")));
-
         for (int minibatch : new int[]{5, 1}) {
             int nIn = 3;
             int nOut = 4;
@@ -237,7 +227,6 @@ public class TestSameDiffDense extends BaseDL4JTest {
 
     @Test
     public void testSameDiffDenseBackward() {
-
         int nIn = 3;
         int nOut = 4;
 

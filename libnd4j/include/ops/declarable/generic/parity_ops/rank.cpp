@@ -31,17 +31,19 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
-            output->putScalar(0, (T) input->rankOf());
+            output->assign(static_cast<Nd4jLong>(input->rankOf()));
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SHAPE_FN(rank) {
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
+            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT32, block.workspace()));
+        }
 
-            shape::shapeScalar(newShape);
 
-            return SHAPELIST(newShape);
+        DECLARE_TYPES(rank) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_INTS});
         }
     }
 }

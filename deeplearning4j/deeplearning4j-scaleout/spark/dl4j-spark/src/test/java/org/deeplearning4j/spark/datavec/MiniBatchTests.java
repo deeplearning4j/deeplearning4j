@@ -55,6 +55,8 @@ public class MiniBatchTests extends BaseSparkTest {
         count = points.count();
         assertEquals(300, count);
 
+        List<DataSet> collect = points.collect();
+
         points = points.repartition(1);
         JavaRDD<DataSet> miniBatches = new RDDMiniBatches(10, points).miniBatchesJava();
         count = miniBatches.count();

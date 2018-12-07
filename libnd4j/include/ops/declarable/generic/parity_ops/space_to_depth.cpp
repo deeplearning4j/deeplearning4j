@@ -27,6 +27,13 @@
 
 namespace nd4j {
 namespace ops {
+
+    DECLARE_TYPES(space_to_depth) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
+
     CUSTOM_OP_IMPL(space_to_depth, 1, 1, false, 0, 2) {
         int block_size = INT_ARG(0);
         bool isNHWC = INT_ARG(1) == 1;
@@ -46,7 +53,7 @@ namespace ops {
 
         helpers::_spaceTodepth(input, output, block_size, isNHWC);        
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
     
 
@@ -71,7 +78,9 @@ namespace ops {
             shape = {{bS, oH, oW, oD }};
         else 
             shape = {{bS, oD, oH, oW }};
-        shape::shapeBuffer(4, shape.data(), newShape);
+        shape::shapeBuffer(4, block.dataType(), shape.data(), newShape);
+        // TF DOC: A Tensor. Has the same type as input.
+        ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
 
         return SHAPELIST(newShape);
     }

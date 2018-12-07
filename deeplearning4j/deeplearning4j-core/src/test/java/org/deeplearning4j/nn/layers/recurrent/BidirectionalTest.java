@@ -653,7 +653,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                         .activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "RNN")
                 .setOutputs("OUT")
-                .pretrain(true)
+
                 ;
 
         ComputationGraph net = new ComputationGraph(builder.build());

@@ -37,6 +37,7 @@ import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
@@ -131,7 +132,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         log.info(graph.asFlatPrint());
         val result = graph.execAndEndResult();
 
-        val exp = Nd4j.trueVector(new double[]{2.0, 2.0, 2.0});
+        val exp = Nd4j.trueVector(new long[]{2, 2, 2});
 
         assertEquals(exp, result);
     }
@@ -498,7 +499,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     @Test
     @Ignore
     public void testIntermediateTensorArrayLoop1() throws Exception {
-        val input = Nd4j.linspace(1, 10, 10).reshape(5, 2);
+        val input = Nd4j.linspace(1, 10, 10, DataType.FLOAT).reshape(5, 2);
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array_loop.pb.txt").getInputStream());
         tg.updateVariable("input_matrix",input);
         assertNotNull(tg);
@@ -592,8 +593,9 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         //log.info("nodeSum inputs length: {}; inputPaired length: {}",nodeSum.inputLength(), nodeSum.inputPairedLength());
 
-        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim.fb"));
-        val executioner = new NativeGraphExecutioner();
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim.fb"));
+
+        /*val executioner = new NativeGraphExecutioner();
 
         val exp = Nd4j.create(3, 1).assign(3);
 
@@ -602,6 +604,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertNotNull(results);
         assertEquals(1, results.length);
         assertEquals(exp, results[0]);
+        */
     }
 
     @Test
@@ -709,8 +712,8 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         SameDiff graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/bias_add/frozen_model.pb").getInputStream());
         assertNotNull(graph);
 
-        INDArray input = Nd4j.linspace(1,40,40).reshape(10,4);
-        INDArray expectedOutput = Nd4j.linspace(1,40,40).reshape(10,4).addRowVector(Nd4j.linspace(1,4,4));
+        INDArray input = Nd4j.linspace(1,40,40, DataType.FLOAT).reshape(10,4);
+        INDArray expectedOutput = Nd4j.linspace(1,40,40, DataType.FLOAT).reshape(10,4).addRowVector(Nd4j.linspace(1,4,4, DataType.FLOAT));
         INDArray actual =  graph.execWithPlaceHolderAndEndResult(Collections.singletonMap("input",input));
         assertEquals(input,graph.getVariable("input").getArr());
         assertArrayEquals(input.shape(),graph.getShapeForVarName(graph.getVariable("input").getVarName()));
@@ -761,7 +764,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         val input = Nd4j.create(2, 2).assign(-1);
         tg.associateArrayWithVariable(input, tg.getVariable("input_0"));
-        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
 
         //log.info("{}", tg.asFlatPrint());
         val array = tg.execAndEndResult();
@@ -953,7 +956,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    //@Ignore
     public void testCrash_119_simpleif_0() throws Exception {
         Nd4j.create(1);
 
@@ -966,7 +969,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         tg.associateArrayWithVariable(input0, tg.getVariable("input_0"));
         tg.associateArrayWithVariable(input1, tg.getVariable("input_1"));
 
-        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
     }
 
     @Test
@@ -1000,18 +1003,19 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     }
 
     @Test
-    @Ignore
+    //@Ignore
     public void testCrash_119_reduce_dim_false() throws Exception {
         Nd4j.create(1);
 
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream());
         assertNotNull(tg);
 
+
         tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim_false.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
     }
 
     @Test
-    @Ignore
+    //@Ignore
     public void testCrash_119_reduce_dim_true() throws Exception {
         Nd4j.create(1);
 
@@ -1078,7 +1082,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertNotNull(tg);
 
 
-        val input_matrix = Nd4j.linspace(1, 10, 10).reshape(5, 2);
+        val input_matrix = Nd4j.linspace(1, 10, 10, DataType.FLOAT).reshape(5, 2);
         tg.associateArrayWithVariable(input_matrix, "input_matrix");
 
 
@@ -1089,6 +1093,43 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         val exp = Nd4j.create(new float[] {3,6,  9,12,  15,18,  21,24,  27,30}, new int[]{5, 2});
 
         assertEquals(exp, array);
+    }
+
+    @Test
+    public void testLossImport_1() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/losses/log_loss_rank2_axis1_SUM_OVER_BATCH_SIZE/frozen_model.pb").getInputStream());
+
+        tg.execAndEndResult();
+    }
+
+    @Test
+    public void testG_1() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/g_08/frozen_model.pb").getInputStream());
+
+        val g = tg.asFlatBuffers();
+    }
+
+    @Test
+    public void testBoolImport_1() throws Exception {
+        Nd4j.create(1);
+        for (int e = 0; e < 1000; e++){
+            val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/reduce_any/rank0/frozen_model.pb").getInputStream());
+
+            val result = tg.execAndEndResult();
+
+            val str = result.toString();
+            log.info("Result: {}", str);
+        }
+    }
+
+    @Test
+    public void testLogical_1() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/transforms/logicalxor_3,4_3,4/frozen_model.pb").getInputStream());
+
+        tg.execAndEndResult();
     }
 
     @Test

@@ -18,11 +18,12 @@ package org.nd4j.linalg.factory;
 
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.AMax;
-import org.nd4j.linalg.api.ops.impl.accum.AMin;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.*;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
+import org.nd4j.linalg.api.ops.impl.transforms.same.AMax;
+import org.nd4j.linalg.api.ops.impl.transforms.same.AMin;
 
 import java.util.Arrays;
 
@@ -222,7 +223,7 @@ public class Broadcast {
     public static INDArray amax(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new AMax(x,y,z,x.length())).z();
+            return Nd4j.getExecutioner().execAndReturn(new AMax(x,y,z,x.length()));
         }
 
         return Nd4j.getExecutioner().execAndReturn(new BroadcastAMax(x,y,z,dimensions));
@@ -234,7 +235,7 @@ public class Broadcast {
     public static INDArray amin(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new AMin(x,y,z,x.length())).z();
+            return Nd4j.getExecutioner().execAndReturn(new AMin(x,y,z,x.length()));
         }
 
         return Nd4j.getExecutioner().execAndReturn(new BroadcastAMin(x,y,z,dimensions));

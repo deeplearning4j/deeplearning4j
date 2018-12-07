@@ -29,8 +29,9 @@ namespace nd4j {
         CUSTOM_OP_IMPL(onehot, 1, 1, false, -2, -2) {
             auto input = INPUT_VARIABLE(0);
 
-            T on(1.0f); // T_ARG(0);
-            T off(0.0f); //T_ARG(1);
+            // FIXME: double?
+            double on(1.0f); // T_ARG(0);
+            double off(0.0f); //T_ARG(1);
 
             auto depth = -1; //INT_ARG(0);
             auto axis = -1; //INT_ARG(1);
@@ -41,17 +42,17 @@ namespace nd4j {
             if (block.numI() > 1) {
                 depth = INT_ARG(1);
             } else if (block.width() > 1) {
-                depth = static_cast<int>(INPUT_VARIABLE(1)->getScalar(0));
+                depth = INPUT_VARIABLE(1)->e<int>(0);
             }
 
             REQUIRE_TRUE(depth > 0, 0, "OneHot: depth must be positive value");
 
 
             if (block.width() > 2) {
-                on = INPUT_VARIABLE(2)->getScalar(0);
+                on = INPUT_VARIABLE(2)->e<double>(0);
 
                 if (block.width() > 3)
-                    off = INPUT_VARIABLE(3)->getScalar(0);
+                    off = INPUT_VARIABLE(3)->e<double>(0);
             } else if (block.numT() > 0) {
                 on = T_ARG(0);
 
@@ -64,29 +65,29 @@ namespace nd4j {
             if (axis < 0)
                 axis = output->rankOf() + axis;
 
-            auto vec = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
+            auto vec = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {axis});
             auto tads = output->allTensorsAlongDimension({axis});
             for (int e = 0; e < tads->size(); e++) {
                 auto tad = tads->at(e);
                 tad->assign(off);
 
-                int idx = (int) input->getScalar(e);
+                int idx = input->e<int>(e);
                 if (idx < 0 || idx >= tad->lengthOf())
                     continue;
 
-                tad->putIndexedScalar(idx, on);
+                tad->p(idx, on);
             }
 
             delete tads;
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(onehot) {
             auto inShape = inputShape->at(0);
 
             int depth = -1;
-            int axis = -1;
+            Nd4jLong axis = -1;
 
             if (block.numI() > 0)
                 axis = INT_ARG(0);
@@ -94,7 +95,7 @@ namespace nd4j {
              if (block.numI() > 1) {
                 depth = INT_ARG(1);
             } else if (block.width() > 1) {
-                depth = static_cast<int>(INPUT_VARIABLE(1)->getScalar(0));
+                depth = INPUT_VARIABLE(1)->e<int>(0);
             }
 
             REQUIRE_TRUE(depth > 0, 0, "OneHot: depth must be positive value");
@@ -109,8 +110,8 @@ namespace nd4j {
                 ALLOCATE(shape, block.getWorkspace(), rank, Nd4jLong);
                 memcpy(shape, shape::shapeOf(inShape), rank * sizeof(Nd4jLong));
 
-                ShapeUtils<T>::insertDimension(rank, shape, axis, depth);
-                shape::shapeBuffer(rank, shape, newShape);
+                ShapeUtils::insertDimension(rank, shape, axis, depth);
+                shape::shapeBuffer(rank, block.dataType(), shape, newShape);
 
                 RELEASE(shape, block.getWorkspace());
             } else {
@@ -124,10 +125,16 @@ namespace nd4j {
                     shape.push_back(shape::shapeOf(inShape)[e]);
 
                 shape.insert(shape.begin() + axis, depth);
-                shape::shapeBuffer(rank+1, shape.data(), newShape);
+                shape::shapeBuffer(rank+1, block.dataType(),  shape.data(), newShape);
             }
 
             return SHAPELIST(newShape);
+        }
+
+        DECLARE_TYPES(onehot) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
         }
     }
 }

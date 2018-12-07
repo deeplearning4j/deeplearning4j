@@ -4,8 +4,7 @@ from .ndarray import array
 
 class KerasModel(object):
     def __init__(self, filepath):
-        if KerasModelImport is None:
-            raise ImportError('DL4J Core not installed.')
+        KerasModelImport = KerasModelImport()
         try:
             self.model = KerasModelImport.importKerasModelAndWeights(filepath)
             self.is_sequential = False

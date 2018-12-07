@@ -23,8 +23,7 @@
 
 namespace nd4j {
     namespace graph {
-        template<typename T>
-        GraphProfile *GraphProfilingHelper<T>::profile(Graph<T> *graph, int iterations) {
+        GraphProfile *GraphProfilingHelper::profile(Graph *graph, int iterations) {
 
             // saving original workspace
             auto varSpace = graph->getVariableSpace()->clone();
@@ -39,7 +38,7 @@ namespace nd4j {
                 auto _vs = varSpace->clone();
                 //_vs->workspace()->expandTo(100000);
                 _vs->setFlowPath(&fp);
-                GraphExecutioner<T>::execute(graph, _vs);
+                GraphExecutioner::execute(graph, _vs);
 
                 delete _vs;
             }
@@ -53,7 +52,7 @@ namespace nd4j {
                 auto _vs = varSpace->clone();
                 //_vs->workspace()->expandTo(100000);
                 _vs->setFlowPath(&fp);
-                GraphExecutioner<T>::execute(graph, _vs);
+                GraphExecutioner::execute(graph, _vs);
 
                 auto p = fp.profile();
                 if (e == 0)
@@ -68,10 +67,5 @@ namespace nd4j {
 
             return profile;
         }
-
-
-        template class GraphProfilingHelper<float>;
-        template class GraphProfilingHelper<float16>;
-        template class GraphProfilingHelper<double>;
     }
 }

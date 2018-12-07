@@ -26,29 +26,43 @@
 namespace nd4j {
     namespace ops {
         OP_IMPL(identity, 1, 1, true) {
-            NDArray<T> *first = INPUT_VARIABLE(0);
+            auto first = INPUT_VARIABLE(0);
             auto z = this->getZ(block);
 
             // just for lulz
-            first->template applyTransform<simdOps::Identity<T>>(z, nullptr);
+            first->applyTransform(nd4j::transform::Identity, z, nullptr);
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(linear, identity);
 
+        DECLARE_TYPES(identity) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setSameMode(true);
+        }
+
 
         OP_IMPL(identity_bp, 2, 1, true) {
-            NDArray<T> *first = INPUT_VARIABLE(0);
+            auto first = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
             z->assign(epsilon);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(LinearGrad, identity_bp);
+
+
+        DECLARE_TYPES(identity_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+        }
     }
 }
 

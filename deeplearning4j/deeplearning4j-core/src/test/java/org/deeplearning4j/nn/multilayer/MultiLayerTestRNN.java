@@ -37,6 +37,7 @@ import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -90,7 +91,10 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         //Want forget gate biases to be initialized to > 0. See parameter initializer for details
         INDArray forgetGateBiases =
                         biases.get(NDArrayIndex.point(0), NDArrayIndex.interval(nHiddenUnits, 2 * nHiddenUnits));
-        assertEquals(nHiddenUnits, (int) forgetGateBiases.gt(0).sum(Integer.MAX_VALUE).getDouble(0));
+        INDArray gt = forgetGateBiases.gt(0);
+        INDArray gtSum = gt.castTo(DataType.INT).sum(Integer.MAX_VALUE);
+        int count = gtSum.getInt(0);
+        assertEquals(nHiddenUnits, count);
 
         val nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
         assertTrue(nParams == layer.numParams());
@@ -134,7 +138,10 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
             //Want forget gate biases to be initialized to > 0. See parameter initializer for details
             INDArray forgetGateBiases = biases.get(NDArrayIndex.point(0),
                             NDArrayIndex.interval(nHiddenUnits[i], 2 * nHiddenUnits[i]));
-            assertEquals(nHiddenUnits[i], (int) forgetGateBiases.gt(0).sum(Integer.MAX_VALUE).getDouble(0));
+            INDArray gt = forgetGateBiases.gt(0).castTo(DataType.INT);
+            INDArray gtSum = gt.sum(Integer.MAX_VALUE);
+            double count = gtSum.getDouble(0);
+            assertEquals(nHiddenUnits[i], (int)count);
 
             val nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
             assertTrue(nParams == layer.numParams());
@@ -462,7 +469,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         Pair<Gradient, Double> tbpttPair = mlnTBPTT.gradientAndScore();
 
         assertEquals(mlnPair.getFirst().gradientForVariable(), tbpttPair.getFirst().gradientForVariable());
-        assertEquals(mlnPair.getSecond(), tbpttPair.getSecond());
+        assertEquals(mlnPair.getSecond(), tbpttPair.getSecond(), 1e-8);
 
         //Check states: expect stateMap to be empty but tBpttStateMap to not be
         Map<String, INDArray> l0StateMLN = mln.rnnGetPreviousState(0);

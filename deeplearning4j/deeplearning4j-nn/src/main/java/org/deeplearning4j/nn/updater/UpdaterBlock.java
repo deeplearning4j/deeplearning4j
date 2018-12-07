@@ -101,12 +101,10 @@ public class UpdaterBlock {
         return vs.getLayer().getConfig().isPretrainParam(vs.getParamName());
     }
 
-    public boolean skipDueToPretrainConfig() {
+    public boolean skipDueToPretrainConfig( boolean isLayerUpdater) {
         if (!isPretrainUpdaterBlock())
             return false;
-        ParamState vs = layersAndVariablesInBlock.get(0);
-        boolean pretrain = vs.getLayer().getConfig().isPretrain(); //Skip if not pretrain
-        return !pretrain;
+        return !isLayerUpdater;
     }
 
     public GradientUpdater getGradientUpdater() {

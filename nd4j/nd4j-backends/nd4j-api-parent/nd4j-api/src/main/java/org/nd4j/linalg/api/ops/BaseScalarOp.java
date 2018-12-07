@@ -20,10 +20,14 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,22 +38,27 @@ import java.util.List;
 @Slf4j
 public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
-    public BaseScalarOp() {}
+    public BaseScalarOp() {
+        this.scalarValue = Nd4j.scalar(0.f);
+    }
 
     public BaseScalarOp(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n);
-        this.scalarValue = num;
+        this.scalarValue = Nd4j.scalar(num);
 
         init(x, y, z, n);
     }
 
     public BaseScalarOp(INDArray x, Number num) {
         super(x);
-        this.scalarValue = num;
+        this.scalarValue = Nd4j.scalar(num);
         init(x, y, z, n);
 
     }
-
+    public BaseScalarOp(INDArray x, INDArray z, Number set) {
+        super(x, null, z, x.length());
+        this.scalarValue= Nd4j.scalar(set);
+    }
 
 
 
@@ -68,7 +77,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                         boolean inPlace,
                         Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
-        this.scalarValue = scalar;
+        this.scalarValue = Nd4j.scalar(scalar);
         if (i_v != null) {
             this.xVertexId = i_v.getVarName();
             sameDiff.addArgsFor(new String[]{xVertexId},this);
@@ -117,9 +126,18 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        List<long[]> ret = new ArrayList<>(1);
-        ret.add(arg().getShape());
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        val ret = new ArrayList<LongShapeDescriptor>(1);
+
+        val s = arg().getShape();
+
+        if (s == null)
+            return Collections.emptyList();
+
+        val aT = arg().dataType();
+        val sT = scalarValue.dataType();
+
+        ret.add(LongShapeDescriptor.fromShape(s, Shape.pickPairwiseDataType(aT, sT)));
         return ret;
     }
 
@@ -130,16 +148,15 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     @Override
     public void setScalar(Number scalar) {
-        this.scalarValue = scalar;
+        this.scalarValue = Nd4j.scalar(scalar);
     }
 
     @Override
-    public Number scalar() {
-        if(scalarValue == null && y() != null && y().isScalar())
-            return y().getDouble(0);
+    public INDArray scalar() {
+        if(y() != null && y().isScalar())
+            return y();
         return scalarValue;
     }
-
 
     @Override
     public int[] getDimension() {
@@ -149,6 +166,25 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     @Override
     public void setDimension(int... dimension) {
         this.dimensions = dimension;
+    }
+
+    @Override
+    public boolean validateDataTypes() {
+        if (y() != null) {
+            if (y().isR() || x().isR())
+                Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point:" +
+                        " x.dataType=%s, y.dataType=%s, z.dataType=%s, op=%s", x.dataType(), y.dataType(), z.dataType(), getClass().getName());
+        } else if (x().isR())
+            Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point:" +
+                    " x.dataType=%s, z.dataType=%s, op=%s", x.dataType(), z.dataType(), getClass().getName());
+
+
+        return true;
+    }
+
+    @Override
+    public Type getOpType() {
+        return Type.SCALAR;
     }
 
 }

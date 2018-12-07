@@ -123,11 +123,6 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
             graphBuilder.addVertex(gv.getVertexName(), gv.getGraphVertex(), gv.getInputs());
         }
 
-
-        if (backprop != null)
-            graphBuilder.backprop(backprop.getValue(values));
-        if (pretrain != null)
-            graphBuilder.pretrain(pretrain.getValue(values));
         if (backpropType != null)
             graphBuilder.backpropType(backpropType.getValue(values));
         if (tbpttFwdLength != null)

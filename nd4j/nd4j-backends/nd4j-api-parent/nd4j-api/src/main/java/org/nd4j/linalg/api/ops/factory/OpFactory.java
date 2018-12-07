@@ -49,16 +49,16 @@ public interface OpFactory {
     LossFunction createLossFunction(String name, INDArray x, INDArray y);
 
     /**
-     * Accumulation operation
+     * ReduceOp operation
      *
      * @param name the opName of the function to create
      * @param x    the input to the function
      * @return the operation
      */
-    Accumulation createAccum(String name, INDArray x);
+    ReduceOp createAccum(String name, INDArray x);
 
     /**
-     * Accumulation operation
+     * ReduceOp operation
      *
      * @param name the opName of the function
      * @param x    the input
@@ -66,7 +66,7 @@ public interface OpFactory {
      * @param z    the output
      * @return the operation
      */
-    Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z);
+    ReduceOp createAccum(String name, INDArray x, INDArray y, INDArray z);
 
     /**
      *
@@ -77,7 +77,7 @@ public interface OpFactory {
      * @param extraArgs
      * @return
      */
-    Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs);
+    ReduceOp createAccum(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs);
 
     /**
      * @param name
@@ -85,7 +85,7 @@ public interface OpFactory {
      * @param y
      * @return
      */
-    Accumulation createAccum(String name, INDArray x, INDArray y);
+    ReduceOp createAccum(String name, INDArray x, INDArray y);
 
     /**
      *
@@ -121,7 +121,7 @@ public interface OpFactory {
      * @param y
      * @return
      */
-    TransformOp createTransform(String name, INDArray x, INDArray y);
+    Op createTransform(String name, INDArray x, INDArray y);
 
 
     /**
@@ -129,7 +129,7 @@ public interface OpFactory {
      * @param x
      * @return
      */
-    TransformOp createTransform(String name, INDArray x);
+    Op createTransform(String name, INDArray x);
 
     /**
      * @param name
@@ -137,7 +137,7 @@ public interface OpFactory {
      * @param extraArgs
      * @return
      */
-    TransformOp createTransform(String name, INDArray x, Object[] extraArgs);
+    Op createTransform(String name, INDArray x, Object[] extraArgs);
 
     /**
      * @param name
@@ -146,7 +146,7 @@ public interface OpFactory {
      * @param z
      * @return
      */
-    TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z);
+    Op createTransform(String name, INDArray x, INDArray y, INDArray z);
 
 
     /**
@@ -157,7 +157,7 @@ public interface OpFactory {
      * @return-m 'add more scalar ops' -a
      * git push or
      */
-    TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs);
+    Op createTransform(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs);
 
 
 

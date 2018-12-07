@@ -21,7 +21,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Cube;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Cube;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;

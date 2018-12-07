@@ -28,15 +28,14 @@
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        class ND4J_EXPORT BroadcastableOp : public DeclarableCustomOp<T>{
+        class ND4J_EXPORT BroadcastableOp : public DeclarableCustomOp{
         protected:
-            virtual Nd4jStatus validateAndExecute(Context<T> &block) = 0;
+            virtual Nd4jStatus validateAndExecute(Context& block) = 0;
         public:
             BroadcastableOp(const char *name, int numTArgs, int numIArgs);
             ~BroadcastableOp();
 
-            ShapeList *calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) override;
+            ShapeList *calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context& block) override;
         };
     }
 }

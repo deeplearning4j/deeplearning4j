@@ -212,6 +212,7 @@ public class TestInstantiation extends BaseDL4JTest {
         //Test initialization of NON-PRETRAINED models
         ZooModel model = ResNet50.builder().numClasses(1000).build(); //num labels doesn't matter since we're getting pretrained imagenet
 
+        log.info("Testing {}", model.getClass().getSimpleName());
         ComputationGraph initializedModel = model.init();
         INDArray f = Nd4j.rand(new int[] {1, 3, 224, 224});
         INDArray[] result = initializedModel.output(f);
@@ -233,6 +234,7 @@ public class TestInstantiation extends BaseDL4JTest {
 
 
         model = VGG19.builder().numClasses(1000).build();
+        log.info("Testing {}", model.getClass().getSimpleName());
         initializedModel = model.init();
         result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
         assertArrayEquals(result[0].shape(), new long[] {1, 1000});
@@ -243,6 +245,7 @@ public class TestInstantiation extends BaseDL4JTest {
 
         model = Darknet19.builder().numClasses(1000).build(); //num labels doesn't matter since we're getting pretrained imagenet
 
+        log.info("Testing {}", model.getClass().getSimpleName());
         initializedModel = model.init();
         result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 224, 224}));
         assertArrayEquals(result[0].shape(), new long[] {1, 1000});
@@ -251,6 +254,7 @@ public class TestInstantiation extends BaseDL4JTest {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
 
+        log.info("Testing {}", model.getClass().getSimpleName());
         model = Darknet19.builder().numClasses(1000).build();
         model.setInputShape(new int[][] {{3, 448, 448}});
 
@@ -281,6 +285,7 @@ public class TestInstantiation extends BaseDL4JTest {
         System.gc();
 
         model = Xception.builder().numClasses(1000).build();
+        log.info("Testing {}", model.getClass().getSimpleName());
         initializedModel = model.init();
         result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 299, 299}));
         assertArrayEquals(result[0].shape(), new long[] {1, 1000});
@@ -290,6 +295,7 @@ public class TestInstantiation extends BaseDL4JTest {
         System.gc();
 
         model = SqueezeNet.builder().numClasses(1000).build();
+        log.info("Testing {}", model.getClass().getSimpleName());
         initializedModel = model.init();
         log.info(initializedModel.summary());
         result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 227, 227}));

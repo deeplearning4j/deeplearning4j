@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -39,7 +40,7 @@ public class RowVectorOpsC extends BaseNd4jTest {
 
     @Test
     public void testAddi() {
-        INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray arr = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         arr.addiRowVector(Nd4j.create(new double[] {1, 2}));
         INDArray assertion = Nd4j.create(new double[][] {{2, 4}, {4, 6}});
         assertEquals(assertion, arr);

@@ -255,7 +255,6 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(gruCell_bp, 6, 5, false, 0, 0);
         #endif
 
-
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation "LSTM time sequences" with peep hole connections:

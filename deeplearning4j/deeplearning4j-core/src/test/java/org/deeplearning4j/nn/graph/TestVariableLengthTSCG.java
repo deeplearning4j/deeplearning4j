@@ -146,13 +146,14 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
 
         int[] miniBatchSizes = {1, 2, 5};
         int nIn = 2;
-        Random r = new Random(12345);
+        Random r = new Random(1234);
 
         for (int nExamples : miniBatchSizes) {
             Nd4j.getRandom().setSeed(12345);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .weightInit(new NormalDistribution(0,2))
                             .updater(new Sgd(0.1)).seed(12345).graphBuilder().addInputs("in")
                             .addLayer("0", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
                                             "in")
@@ -206,7 +207,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
             Map<String, INDArray> activations2 = net.feedForward();
 
             //Scores should differ here: masking the input, not the output. Therefore 4 vs. 5 time step outputs
-            assertNotEquals(score1, score2, 0.01);
+            assertNotEquals(score1, score2, 0.001);
 
             Map<String, INDArray> g1map = g1.gradientForVariable();
             Map<String, INDArray> g2map = g2.gradientForVariable();

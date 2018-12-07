@@ -22,8 +22,8 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
-import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.reduce.distances.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.reduce.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.transforms.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
@@ -194,7 +194,7 @@ public class CudaExecutionerTest {
     @Test
     public void testNd4jDup() {
     /* set the dType */
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
 
     /* create NDArray from a double[][] */
         int cnt = 0;
@@ -211,7 +211,7 @@ public class CudaExecutionerTest {
         System.out.println("A: " + testNDArray.getRow(0));
 
     /* set the dType again! */
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
 
     /* print the first row */
         System.out.println("B: " + testNDArray.getRow(0));

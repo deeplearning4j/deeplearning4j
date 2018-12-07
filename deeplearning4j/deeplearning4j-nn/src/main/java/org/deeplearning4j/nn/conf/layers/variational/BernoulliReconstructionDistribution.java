@@ -22,6 +22,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationHardSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldLessThan;
 import org.nd4j.linalg.factory.Nd4j;
@@ -139,10 +140,10 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
         //Can simply randomly sample by looking where values are < p...
         //i.e., sample = 1 if randNum < p, 0 otherwise
 
-        INDArray out = Nd4j.createUninitialized(p.shape());
+        INDArray out = Nd4j.createUninitialized(DataType.BOOL, p.shape());
 
         Nd4j.getExecutioner().execAndReturn(new OldLessThan(rand, p, out, p.length()));
-        return out;
+        return out.castTo(DataType.FLOAT);
     }
 
     @Override

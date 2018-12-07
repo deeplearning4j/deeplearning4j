@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -62,7 +63,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-9;
 
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @Test
@@ -177,7 +178,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         int depth = 2;
         int hw = 5;
         int nOut = 3;
-        INDArray input = Nd4j.rand(new int[] {minibatch, depth, hw, hw});
+        INDArray input = Nd4j.rand(new int[] {minibatch, depth, hw, hw}).muli(5).subi(2.5);
         INDArray labels = Nd4j.zeros(minibatch, nOut);
         Random r = new Random(12345);
         for (int i = 0; i < minibatch; i++) {

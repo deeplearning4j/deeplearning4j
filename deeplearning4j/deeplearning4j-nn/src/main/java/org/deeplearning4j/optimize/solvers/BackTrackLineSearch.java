@@ -25,6 +25,7 @@ import org.deeplearning4j.optimize.api.LineOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.nd4j.linalg.api.blas.Level1;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
@@ -221,9 +222,8 @@ public class BackTrackLineSearch implements LineOptimizer {
             // check for convergence on delta x
             if ((step < stepMin) || Nd4j.getExecutioner()
                             .execAndReturn(new Eps(parameters, candidateParameters,
-                                            Shape.toOffsetZeroCopy(candidateParameters, 'f'),
-                                            candidateParameters.length()))
-                            .sum(Integer.MAX_VALUE).getDouble(0) == candidateParameters.length()) {
+                                            Nd4j.createUninitialized(DataType.BOOL, candidateParameters.shape(), candidateParameters.ordering()),
+                                            candidateParameters.length())).castTo(DataType.FLOAT).sumNumber().longValue() == candidateParameters.length()) {
                 score = setScoreFor(parameters, workspaceMgr);
                 log.debug("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using original params. Score = {}",
                                 stepMin, score);

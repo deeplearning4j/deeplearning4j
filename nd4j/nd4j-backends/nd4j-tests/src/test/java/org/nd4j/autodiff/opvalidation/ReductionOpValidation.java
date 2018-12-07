@@ -30,14 +30,15 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.reduce.*;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.accum.*;
-import org.nd4j.linalg.api.ops.impl.accum.distances.*;
+import org.nd4j.linalg.api.ops.impl.reduce.floating.AMean;
+import org.nd4j.linalg.api.ops.impl.reduce.same.ASum;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
+import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -69,11 +70,11 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testStdevDEBUG() throws Exception {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
 
         List<String> errors = new ArrayList<>();
 
-        for (Pair<INDArray, String> p : NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345)) {
+        for (Pair<INDArray, String> p : NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345, DataType.DOUBLE)) {
             for (boolean biasCorrected : new boolean[]{false, true}) {
                 SameDiff sd = SameDiff.create();
                 SDVariable var = sd.var("in", p.getFirst());
@@ -107,10 +108,10 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testStdevDEBUG2() {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
         List<String> errors = new ArrayList<>();
 
-        Pair<INDArray, String> p = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345).get(0);
+        Pair<INDArray, String> p = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345, DataType.DOUBLE).get(0);
 
         for (boolean biasCorrected : new boolean[]{false, true}) {
             SameDiff sd = SameDiff.create();
@@ -136,7 +137,7 @@ public class ReductionOpValidation extends BaseOpValidation {
     public void testStdev() {
         List<String> errors = new ArrayList<>();
 
-        for (Pair<INDArray, String> p : NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345)) {
+        for (Pair<INDArray, String> p : NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345, DataType.DOUBLE)) {
             for (boolean biasCorrected : new boolean[]{false, true}) {
                 SameDiff sd = SameDiff.create();
                 SDVariable var = sd.var("in", p.getFirst());
@@ -327,7 +328,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 case 16:
                     loss = sd.entropy("loss", input);
                     name = "entropy";
-                    inputArr = Nd4j.linspace(0.01, 0.99, length).reshape('c', minibatch, nOut);
+                    inputArr = Nd4j.linspace(0.01, 0.99, length, DataType.DOUBLE).reshape('c', minibatch, nOut);
                     tc.expected("loss", inputArr.mul(Transforms.log(inputArr, true)).sum(Integer.MAX_VALUE).negi());
                     break;
                 case 17:

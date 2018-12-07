@@ -28,41 +28,48 @@ namespace nd4j {
         
         CUSTOM_OP_IMPL(fill, 1, 1, false, -2, 0) {
             auto shapeArray = INPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
 
             auto w = block.width();
+            auto i = block.numI();
             auto t = block.numT();
 
-            REQUIRE_TRUE( w > 1 || t > 0, 0, "Fill: either additional variable should exist, or scalar value should be present");
-            
-            T scalar = w == 1 ? T_ARG(0) : INPUT_VARIABLE(1)->getScalar(0);
+            REQUIRE_TRUE( w > 1 || t > 0 || i > 0, 0, "Fill: either additional variable should exist, or scalar value should be present");
+            if (w > 1) {
+                output->assign(INPUT_VARIABLE(1));
+            } else {
+                if (t > 0) {
+                    output->assign(T_ARG(0));
+                } else if (i > 0) {
+                    output->assign(INT_ARG(0));
+                }
+            }
 
-            std::vector<Nd4jLong> shape((int) shapeArray->lengthOf());
+            STORE_RESULT(output);
 
-            for (int e = 0; e < shapeArray->lengthOf(); e++)
-                shape[e] = static_cast<Nd4jLong>((*shapeArray)(e));
-
-            auto result = NDArray<T>::valueOf(shape, scalar, 'c');
-
-            OUTPUT_VARIABLE(0)->assign(result);
-            STORE_RESULT(result);
-
-
-            return ND4J_STATUS_OK;
+            return Status::OK();
         };
 
+        DECLARE_TYPES(fill) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, {ALL_INTS})
+                    ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})
+                    ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+        }
         
         DECLARE_SHAPE_FN(fill) {
 
             auto shapeArray = INPUT_VARIABLE(0);
-            const int len = shapeArray->lengthOf();
+            auto val = INPUT_VARIABLE(1);
+            const int len = (int) shapeArray->lengthOf();
             Nd4jLong *newShape = nullptr;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(len), Nd4jLong);            
 
             newShape[0] = len;
             for (int e = 0; e < shapeArray->lengthOf(); e++)
-                newShape[e+1] = static_cast<Nd4jLong>((*shapeArray)(e));
+                newShape[e+1] = shapeArray->e<Nd4jLong>(e);
             
-            shape::updateStrides(newShape, 'c');
+            ShapeUtils::updateStridesAndType(newShape, val->dataType(), 'c');
 
             return SHAPELIST(newShape);
         };

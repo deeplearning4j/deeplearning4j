@@ -97,7 +97,7 @@ public class ActorCriticFactoryCompGraphStdConv implements ActorCriticFactoryCom
             confB.setInputTypes(InputType.convolutional(shapeInputs[1], shapeInputs[2], shapeInputs[0]));
         }
 
-        ComputationGraphConfiguration cgconf = confB.pretrain(false).backprop(true).build();
+        ComputationGraphConfiguration cgconf = confB.build();
         ComputationGraph model = new ComputationGraph(cgconf);
         model.init();
         if (conf.getListeners() != null) {
