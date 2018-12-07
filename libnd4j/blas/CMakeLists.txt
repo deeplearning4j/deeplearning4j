@@ -137,7 +137,7 @@ if(CUDA_BLAS)
             list(APPEND CUDA_NVCC_FLAGS -D__ND4J_EXPERIMENTAL__=true)
         endif()
         if (CMAKE_BUILD_TYPE STREQUAL "Release")
-            if(CUDA_VERSION VERSION_GREATER "9.0") # cuda 10
+            if(CUDA_VERSION VERSION_GREATER "9.2") # cuda 10
                 if ("${COMPUTE}" STREQUAL "all")
                     if (APPLE)
                         list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 -w --cudart=static -O3 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62)
