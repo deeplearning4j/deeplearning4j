@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.blas;
 
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -56,6 +57,16 @@ public class Level1Test extends BaseNd4jTest {
         Nd4j.getBlasWrapper().level1().axpy(row.length(), 1.0, row, row);
         assertEquals(getFailureMessage(), Nd4j.create(new double[] {4, 8}), row);
 
+    }
+
+    @Test
+    public void testAxpy2() {
+        val rowX = Nd4j.create(new double[]{1, 2, 3, 4});
+        val rowY = Nd4j.create(new double[]{1, 2, 3, 4});
+        val exp = Nd4j.create(new double[]{3, 6, 9, 12});
+
+        val z = Nd4j.getBlasWrapper().axpy(2.0, rowX, rowY);
+        assertEquals(exp, z);
     }
 
     @Override
