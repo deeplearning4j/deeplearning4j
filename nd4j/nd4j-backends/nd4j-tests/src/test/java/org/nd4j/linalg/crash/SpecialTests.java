@@ -31,11 +31,13 @@ import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.LegacyPooling2D;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
@@ -612,6 +614,14 @@ public class SpecialTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testMatchCondition(){
+        INDArray x = Nd4j.valueArrayOf(new long[]{10,10}, 2.0, DataType.DOUBLE);
+        val op = new MatchCondition(x, Conditions.equals(2));
+        INDArray z = Nd4j.getExecutioner().exec(op).z();
+        int count = z.getInt(0);
+        assertEquals(100, count);
+    }
 
     @Test
     public void testBroadcastMul_bool() {

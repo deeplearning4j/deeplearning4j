@@ -954,7 +954,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val ret = Nd4j.createUninitialized(dataType, retShape);
         op.setZ(ret);
 
-        val eb = op.extraArgsDataBuff(op.z().dataType() == DataType.BOOL ? op.x().dataType() : op.z().dataType());
+        val eb = op.extraArgsDataBuff(op.z().dataType() == DataType.BOOL || op.getOpType() == Op.Type.REDUCE_LONG ? op.x().dataType() : op.z().dataType());
         Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(eb, context) : null;
 
         val hostXShapeInfo = op.x() == null ? null : AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer());
