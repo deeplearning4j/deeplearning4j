@@ -1430,6 +1430,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             if (op.x().length() != op.y().length() || op.x().length() != op.z().length())
                 throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform");
 
+            ///log.info("X: {}; Y: {}; Z: {}; E: {};", x.address(), y.address(), z.address(), extraArgs != null ? extraArgs.address() : null);
+
             switch (op.getOpType()) {
                 case TRANSFORM_BOOL:
                 case PAIRWISE_BOOL:

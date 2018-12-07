@@ -125,7 +125,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 
         if (requiredMemory % 8 != 0)
-            requiredMemory += requiredMemory % 8;
+            requiredMemory += 8 - (requiredMemory % 8);
 
         if (!isUsed.get()) {
             if (disabledCounter.incrementAndGet() % 10 == 0)
@@ -143,11 +143,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
 
         }
-
-
-        long div = requiredMemory % 8;
-        if (div!= 0)
-            requiredMemory += div;
 
         boolean trimmer = (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && requiredMemory + cycleAllocations.get() > initialBlockSize.get() && initialBlockSize.get() > 0 && kind == MemoryKind.DEVICE) || trimmedMode.get();
 

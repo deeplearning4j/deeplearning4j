@@ -125,7 +125,12 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         long requiredMemoryBytes = AllocationUtils.getRequiredMemory(point.getShape());
         val originalBytes = requiredMemoryBytes;
-        requiredMemoryBytes += requiredMemoryBytes % 8;
+        requiredMemoryBytes += 8 - (requiredMemoryBytes % 8);
+
+        val div = requiredMemoryBytes / 4;
+        if (div % 2 != 0)
+            requiredMemoryBytes += 4;
+
         //logger.info("shape: " + point.getShape());
         // and release device memory :)
 
@@ -140,8 +145,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
             val profD = PerformanceTracker.getInstance().helperStartTransaction();
 
-            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(),
-                            requiredMemoryBytes, 1, context.getSpecialStream()) == 0) {
+            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(), originalBytes, 1, context.getSpecialStream()) == 0) {
                 throw new ND4JIllegalStateException("memcpyAsync failed");
             }
             flowController.commitTransfer(context.getSpecialStream());
@@ -160,6 +164,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         long bytes = requiredMemoryBytes;
         // hack for misalignment avoidance for 16bit data opType
+        /*
         if (dataBuffer.dataType() == DataType.UBYTE || dataBuffer.dataType() == DataType.BYTE || dataBuffer.dataType() == DataType.BOOL) {
             if (bytes % 4 != 0) {
                 bytes += bytes % 4;
@@ -168,7 +173,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             if (bytes % 4 != 0) {
                 bytes += 2;
             }
-        } else if (Nd4j.dataType() == DataType.DOUBLE || dataBuffer.dataType() == DataType.LONG) {
+        } else if (dataBuffer.dataType() == DataType.DOUBLE || dataBuffer.dataType() == DataType.LONG) {
             // for double data opType, we must be assured, that all DOUBLE pointers are starting from even addresses, to avoid banks spills
             long div = bytes / 4;
             if (div % 2 != 0)
@@ -185,6 +190,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
                     break;
             }
         }
+        */
 
         currentOffset = constantOffsets.get(deviceId).getAndAdd(bytes);
 

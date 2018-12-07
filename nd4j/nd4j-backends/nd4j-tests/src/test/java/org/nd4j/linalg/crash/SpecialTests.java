@@ -571,6 +571,49 @@ public class SpecialTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testYoloS(){
+        //Nd4j.getExecutioner().enableDebugMode(true);
+        //Nd4j.getExecutioner().enableVerboseMode(true);
+        //Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
+
+        WorkspaceConfiguration WS_ALL_LAYERS_ACT_CONFIG = WorkspaceConfiguration.builder()
+                .initialSize(10 * 1024 * 1024)
+                .overallocationLimit(0.05)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policySpill(SpillPolicy.REALLOCATE)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .build();
+
+
+        INDArray labels = Nd4j.create(DataType.DOUBLE, 1,7,5,7);
+
+        for( int i=0; i<10; i++ ){
+            try(val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, "ws")){
+                System.out.println("STARTING: " + i);
+
+                val nhw = new long[]{1, 5, 7};
+
+                val size1 = labels.size(1);
+                INDArray classLabels = labels.get(all(), interval(4,size1), all(), all());   //Shape: [minibatch, nClasses, H, W]
+                INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(DataType.DOUBLE, nhw, 'c'), 1).castTo(DataType.BOOL); //Shape: [minibatch, H, W]
+
+                INDArray labelTLXY = labels.get(all(), interval(0,2), all(), all());
+                INDArray labelBRXY = labels.get(all(), interval(2,4), all(), all());
+
+                Nd4j.getExecutioner().commit();
+
+                INDArray labelCenterXY = labelTLXY.add(labelBRXY);
+                val m = labelCenterXY.muli(0.5);  //In terms of grid units
+                INDArray labelsCenterXYInGridBox = labelCenterXY.dup(labelCenterXY.ordering());         //[mb, 2, H, W]
+                Nd4j.getExecutioner().commit();
+                System.out.println("DONE: " + i);
+            }
+        }
+    }
+
+
+    @Test
     public void testBroadcastMul_bool() {
         val mask = Nd4j.create(DataType.BOOL, 1, 3, 4, 4);
         val object = Nd4j.create(DataType.BOOL, 1, 4, 4);

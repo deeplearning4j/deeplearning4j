@@ -470,6 +470,8 @@ public class AtomicAllocator implements Allocator {
             val pair = new PointersPair();
 
             val ptrDev = workspace.alloc(reqMem, MemoryKind.DEVICE, requiredMemory.getDataType(), initialize);
+            //val addr = ptrDev.address();
+            //log.info("Allocated device pointer: {}; Divider: {}; ReqMem: {}; ReqMem divider: {};", addr, addr % 8, reqMem, reqMem % 8);
             val ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType(), initialize);
 
             pair.setHostPointer(ptrHost);
