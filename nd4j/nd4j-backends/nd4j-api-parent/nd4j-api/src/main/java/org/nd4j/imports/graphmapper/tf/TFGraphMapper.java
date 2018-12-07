@@ -851,6 +851,24 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
     @Override
+    public List<String> getControlDependencies(NodeDef node){
+        int numInputs = node.getInputCount();
+        if(numInputs == 0)
+            return null;
+
+        List<String> out = null;
+        for( int i=0; i<numInputs; i++ ){
+            String in = node.getInput(i);
+            if(isControlDependency(in)){
+                if(out == null)
+                    out = new ArrayList<>();
+                out.add(getNodeName(in));       //Remove "^" prefix
+            }
+        }
+        return out;
+    }
+
+    @Override
     public  INDArray getNDArrayFromTensor(String tensorName, NodeDef node, GraphDef graph) {
         //placeholder of some kind
         if(!node.getAttrMap().containsKey("value")) {

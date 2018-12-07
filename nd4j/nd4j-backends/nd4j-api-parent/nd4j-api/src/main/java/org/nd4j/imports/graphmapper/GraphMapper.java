@@ -112,6 +112,14 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
     boolean isPlaceHolderNode(TENSOR_TYPE node);
 
     /**
+     * Get the list of control dependencies for the current node (or null if none exist)
+     *
+     * @param node Node to get the control dependencies (if any) for
+     * @return
+     */
+    List<String> getControlDependencies(NODE_TYPE node);
+
+    /**
      * Dump a binary proto file representation as a
      * plain string in to the target text file
      * @param inputFile

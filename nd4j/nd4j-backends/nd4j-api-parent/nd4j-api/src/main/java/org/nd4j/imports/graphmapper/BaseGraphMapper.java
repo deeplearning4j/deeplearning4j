@@ -210,6 +210,12 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                     diff.getImportedConstants().add(entry.getKey());
                 }
 
+                NODE_TYPE node = (NODE_TYPE) entry.getValue();      //TODO this only works for TF
+                List<String> controlDependencies = getControlDependencies(node);
+                if(controlDependencies != null){
+                    diff.getVariableControlDependencies().put(entry.getKey(), controlDependencies);
+                }
+
                 continue;
             }
 

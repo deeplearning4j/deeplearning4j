@@ -277,6 +277,11 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
+    public List<String> getControlDependencies(OnnxProto3.NodeProto node) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
     public void dumpBinaryProtoAsText(File inputFile, File outputFile) {
         try {
             OnnxProto3.ModelProto graphDef = OnnxProto3.ModelProto.parseFrom(new BufferedInputStream(new FileInputStream(inputFile)));

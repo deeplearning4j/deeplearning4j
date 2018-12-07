@@ -53,10 +53,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -1144,5 +1141,28 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     @Test(expected = ND4JIllegalStateException.class)
     public void testNonFrozenGraph1() throws Exception {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/unfrozen_simple_ae.pb").getInputStream());
+    }
+
+
+    @Test
+    public void testControlDependencies1() throws Exception {
+        SameDiff sd = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/cond/cond_true/frozen_model.pb").getInputStream());
+
+        /*
+        Control dependencies:
+        variables:
+            - cond/LinSpace/start - depends on cond/switch_t
+            - cond/LinSpace/stop - depends on cond/switch_t
+            - cond/LinSpace/num - depends on cond/switch_t
+            - cond/ones - depends on cond/switch_f
+         */
+
+        Map<String,List<String>> varCDs = sd.getVariableControlDependencies();
+        assertEquals(4, varCDs.size());
+
+        assertEquals(varCDs.get("cond/LinSpace/start"), Arrays.asList("cond/switch_t"));
+        assertEquals(varCDs.get("cond/LinSpace/stop"), Arrays.asList("cond/switch_t"));
+        assertEquals(varCDs.get("cond/LinSpace/num"), Arrays.asList("cond/switch_t"));
+        assertEquals(varCDs.get("cond/ones"), Arrays.asList("cond/switch_y"));
     }
 }
