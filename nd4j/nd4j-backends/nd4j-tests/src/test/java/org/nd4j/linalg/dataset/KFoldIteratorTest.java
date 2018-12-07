@@ -39,133 +39,134 @@ public class KFoldIteratorTest extends BaseNd4jTest {
 
     @Test
     public void checkFolds() {
-        RandomDataSet randomDS = new RandomDataSet(new int[] {2, 3}, new int[] {3, 3, 3, 2});
-        DataSet allData = randomDS.getAllFolds();
+        KBatchRandomDataSet randomDS = new KBatchRandomDataSet(new int[] {2, 3}, new int[] {3, 3, 3, 2});
+        DataSet allData = randomDS.getAllBatches();
         KFoldIterator kiter = new KFoldIterator(4, allData);
         int i = 0;
         while (kiter.hasNext()) {
             DataSet now = kiter.next();
             DataSet test = kiter.testFold();
 
-            INDArray fExp = randomDS.getFoldbutk(i, true);
+            INDArray fExp = randomDS.getBatchButK(i, true);
             assertEquals(fExp, now.getFeatures());
-            INDArray lExp = randomDS.getFoldbutk(i, false);
+            INDArray lExp = randomDS.getBatchButK(i, false);
             assertEquals(lExp, now.getLabels());
 
-            assertEquals(test.getFeatures(), randomDS.getfoldK(i, true));
-            assertEquals(test.getLabels(), randomDS.getfoldK(i, false));
+            assertEquals(test.getFeatures(), randomDS.getBatchK(i, true));
+            assertEquals(test.getLabels(), randomDS.getBatchK(i, false));
             i++;
-            System.out.println("Fold " + i + " passed");
         }
         assertEquals(i, 4);
     }
 
-    /*
-    //this will throw illegal argument exception
-    @Test
-    public void checkCornerCaseA() {
-        randomDataSet randomDS = new randomDataSet(new int[] {2,3},new int []{3});
-        DataSet allData = randomDS.getAllFolds();
-        KFoldIterator kiter = new KFoldIterator(1,allData);
-        int i = 0;
-        while (kiter.hasNext()) {
-            DataSet now = kiter.next();
-            DataSet test = kiter.testFold();
-    
-            assertEquals(now.getFeatures(),randomDS.getFoldbutk(i,true));
-            assertEquals(now.getLabels(),randomDS.getFoldbutk(i,false));
-    
-            assertEquals(test.getFeatures(),randomDS.getfoldK(i,true));
-            assertEquals(test.getLabels(),randomDS.getfoldK(i,false));
-            i++;
-            System.out.println("Fold "+i+" passed");
-        }
-        assertEquals(i,1);
+    @Test(expected = IllegalArgumentException.class)
+    public void checkCornerCaseException() {
+        DataSet allData = new DataSet(Nd4j.linspace(1,3,3).transpose(), Nd4j.linspace(1,3,3).transpose());
+        int k = 1;
+        //this will throw illegal argument exception
+        KFoldIterator kiter = new KFoldIterator(k, allData);
     }
-    */
 
     @Test
-    public void checkCornerCaseA() {
-        RandomDataSet randomDS = new RandomDataSet(new int[] {2, 3}, new int[] {2, 1});
-        DataSet allData = randomDS.getAllFolds();
+    public void checkCornerCase() {
+        KBatchRandomDataSet randomDS = new KBatchRandomDataSet(new int[] {2, 3}, new int[] {2, 1});
+        DataSet allData = randomDS.getAllBatches();
         KFoldIterator kiter = new KFoldIterator(2, allData);
         int i = 0;
         while (kiter.hasNext()) {
             DataSet now = kiter.next();
             DataSet test = kiter.testFold();
 
-            assertEquals(now.getFeatures(), randomDS.getFoldbutk(i, true));
-            assertEquals(now.getLabels(), randomDS.getFoldbutk(i, false));
+            assertEquals(now.getFeatures(), randomDS.getBatchButK(i, true));
+            assertEquals(now.getLabels(), randomDS.getBatchButK(i, false));
 
-            assertEquals(test.getFeatures(), randomDS.getfoldK(i, true));
-            assertEquals(test.getLabels(), randomDS.getfoldK(i, false));
+            assertEquals(test.getFeatures(), randomDS.getBatchK(i, true));
+            assertEquals(test.getLabels(), randomDS.getBatchK(i, false));
             i++;
             System.out.println("Fold " + i + " passed");
         }
         assertEquals(i, 2);
     }
 
-    public class RandomDataSet {
+    /*
+     * Dataset built from given sized batches of random data
+     */
+    public class KBatchRandomDataSet {
         //only one label
         private int[] dataShape;
         private int dataRank;
         private int dataElementCount;
-        private int[] ks;
-        private DataSet allFolds;
+        private int[] batchSizes;
+        private DataSet allBatches;
         private INDArray allFeatures;
         private INDArray allLabels;
-        private INDArray[] kfoldFeats;
-        private INDArray[] kfoldLabels;
+        private INDArray[] kBatchFeats;
+        private INDArray[] kBatchLabels;
 
-        public RandomDataSet(int[] dataShape, int[] ks) {
+        /**
+         * Creates a dataset built from given sized batches of random data, with given shape of features and 1D labels
+         * @param dataShape shape of features
+         * @param batchSizes sizes of consecutive batches
+         */
+        public KBatchRandomDataSet(int[] dataShape, int[] batchSizes) {
             this.dataShape = dataShape;
             this.dataRank = this.dataShape.length;
-            this.ks = ks;
+            this.batchSizes = batchSizes;
             this.dataElementCount = 1;
-            int[] eachFoldSize = new int[dataRank + 1];
-            eachFoldSize[0] = 0;
-            kfoldFeats = new INDArray[ks.length];
-            kfoldLabels = new INDArray[ks.length];
+            int[] eachBatchSize = new int[dataRank + 1];
+            eachBatchSize[0] = 0;
+            kBatchFeats = new INDArray[batchSizes.length];
+            kBatchLabels = new INDArray[batchSizes.length];
             for (int i = 0; i < dataRank; i++) {
                 this.dataElementCount *= dataShape[i];
-                eachFoldSize[i + 1] = dataShape[i];
+                eachBatchSize[i + 1] = dataShape[i];
             }
-            for (int i = 0; i < ks.length; i++) {
-                eachFoldSize[0] = ks[i];
-                INDArray currentFoldF = Nd4j.rand(eachFoldSize);
-                INDArray currentFoldL = Nd4j.rand(ks[i], 1);
-                kfoldFeats[i] = currentFoldF;
-                kfoldLabels[i] = currentFoldL;
+            for (int i = 0; i < batchSizes.length; i++) {
+                eachBatchSize[0] = batchSizes[i];
+                INDArray currentBatchF = Nd4j.rand(eachBatchSize);
+                INDArray currentBatchL = Nd4j.rand(batchSizes[i], 1);
+                kBatchFeats[i] = currentBatchF;
+                kBatchLabels[i] = currentBatchL;
                 if (i == 0) {
-                    allFeatures = currentFoldF.dup();
-                    allLabels = currentFoldL.dup();
+                    allFeatures = currentBatchF.dup();
+                    allLabels = currentBatchL.dup();
                 } else {
-                    allFeatures = Nd4j.vstack(allFeatures, currentFoldF).dup();
-                    allLabels = Nd4j.vstack(allLabels, currentFoldL).dup();
+                    allFeatures = Nd4j.vstack(allFeatures, currentBatchF).dup();
+                    allLabels = Nd4j.vstack(allLabels, currentBatchL).dup();
                 }
             }
-            allFolds = new DataSet(allFeatures, allLabels.reshape(allFeatures.size(0), 1));
+            allBatches = new DataSet(allFeatures, allLabels.reshape(allFeatures.size(0), 1));
         }
 
-        public DataSet getAllFolds() {
-            return allFolds;
+        public DataSet getAllBatches() {
+            return allBatches;
         }
 
-        public INDArray getfoldK(int k, boolean feat) {
-            return feat ? kfoldFeats[k] : kfoldLabels[k];
+        /**
+         * Get features or labels for batch k
+         * @param k index of batch
+         * @param feat true if we want to get features, false if we want to get labels
+         */
+        public INDArray getBatchK(int k, boolean feat) {
+            return feat ? kBatchFeats[k] : kBatchLabels[k];
         }
 
-        public INDArray getFoldbutk(int k, boolean feat) {
+        /**
+         * Get features or labels for all batches except for k
+         * @param k index of excluded batch
+         * @param feat true if we want to get features, false if we want to get labels
+         */
+        public INDArray getBatchButK(int k, boolean feat) {
             INDArray iFold = null;
             boolean notInit = true;
-            for (int i = 0; i < ks.length; i++) {
+            for (int i = 0; i < batchSizes.length; i++) {
                 if (i == k)
                     continue;
                 if (notInit) {
-                    iFold = getfoldK(i, feat);
+                    iFold = getBatchK(i, feat);
                     notInit = false;
                 } else {
-                    iFold = Nd4j.vstack(iFold, getfoldK(i, feat)).dup();
+                    iFold = Nd4j.vstack(iFold, getBatchK(i, feat)).dup();
                 }
             }
             return iFold;
@@ -182,7 +183,6 @@ public class KFoldIteratorTest extends BaseNd4jTest {
         int count = 0;
         while(iter.hasNext()){
             DataSet fold = iter.next();
-//            System.out.println(fold);
             INDArray testFold;
             int countTrain;
             if(count < 9){

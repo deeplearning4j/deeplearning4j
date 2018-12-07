@@ -27,6 +27,7 @@ import java.util.List;
  * DataSet is duplicated in memory once
  * call .next() to get the k-1 folds to train on and call .testfold() to get the corresponding kth fold for testing
  * @author Susan Eraly
+ * @author Tamas Fenyvesi - modified KFoldIterator following the scikit-learn implementation (December 2018)
  */
 public class KFoldIterator implements DataSetIterator {
     protected DataSet allData;
