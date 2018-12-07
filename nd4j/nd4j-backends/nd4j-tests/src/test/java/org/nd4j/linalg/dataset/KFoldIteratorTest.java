@@ -140,36 +140,6 @@ public class KFoldIteratorTest extends BaseNd4jTest {
     }
 
     
-    @Test
-    public void test5974(){
-        DataSet ds = new DataSet(Nd4j.linspace(1,99,99).transpose(), Nd4j.linspace(1,99,99).transpose());
-
-        KFoldIterator iter = new KFoldIterator(10, ds);
-
-        int count = 0;
-        while(iter.hasNext()){
-            DataSet fold = iter.next();
-            INDArray testFold;
-            int countTrain;
-            if(count < 9){
-                //Folds 0 to 8: should have 10 examples for test
-                testFold = Nd4j.linspace(10*count+1, 10*count+10, 10).transpose();
-                countTrain = 99 - 10;
-            } else {
-                //Fold 9 should have 9 examples for test
-                testFold = Nd4j.linspace(10*count+1, 10*count+9, 9).transpose();
-                countTrain = 99-9;
-            }
-            String s = String.valueOf(count);
-            DataSet test = iter.testFold();
-            assertEquals(s, testFold, test.getFeatures());
-            assertEquals(s, testFold, test.getLabels());
-            assertEquals(s, countTrain, fold.getFeatures().length());
-            assertEquals(s, countTrain, fold.getLabels().length());
-            count++;
-        }
-    }
-    
     /**
      * Dataset built from given sized batches of random data
      * @author susaneraly created RandomDataSet
@@ -252,6 +222,37 @@ public class KFoldIteratorTest extends BaseNd4jTest {
                 }
             }
             return batches;
+        }
+    }
+    
+    
+    @Test
+    public void test5974(){
+        DataSet ds = new DataSet(Nd4j.linspace(1,99,99).transpose(), Nd4j.linspace(1,99,99).transpose());
+
+        KFoldIterator iter = new KFoldIterator(10, ds);
+
+        int count = 0;
+        while(iter.hasNext()){
+            DataSet fold = iter.next();
+            INDArray testFold;
+            int countTrain;
+            if(count < 9){
+                //Folds 0 to 8: should have 10 examples for test
+                testFold = Nd4j.linspace(10*count+1, 10*count+10, 10).transpose();
+                countTrain = 99 - 10;
+            } else {
+                //Fold 9 should have 9 examples for test
+                testFold = Nd4j.linspace(10*count+1, 10*count+9, 9).transpose();
+                countTrain = 99-9;
+            }
+            String s = String.valueOf(count);
+            DataSet test = iter.testFold();
+            assertEquals(s, testFold, test.getFeatures());
+            assertEquals(s, testFold, test.getLabels());
+            assertEquals(s, countTrain, fold.getFeatures().length());
+            assertEquals(s, countTrain, fold.getLabels().length());
+            count++;
         }
     }
 
