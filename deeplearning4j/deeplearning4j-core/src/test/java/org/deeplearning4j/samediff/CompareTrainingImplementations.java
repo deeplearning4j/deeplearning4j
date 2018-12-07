@@ -17,6 +17,7 @@
 package org.deeplearning4j.samediff;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -29,7 +30,6 @@ import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
-import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.activations.Activation;
@@ -42,20 +42,15 @@ import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.weightinit.impl.XavierInitScheme;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @Slf4j
-public class CompareTrainingImplementations {
+public class CompareTrainingImplementations extends BaseDL4JTest {
 
     @Test
     public void testCompareMlpTrainingIris(){
-
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         NormalizerStandardize std = new NormalizerStandardize();
         std.fit(iter);

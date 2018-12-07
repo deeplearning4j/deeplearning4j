@@ -41,9 +41,9 @@ public class LapackTest extends BaseNd4jTest {
     public void testQRSquare() {
         INDArray A = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
         A = A.reshape('c', 3, 3);
-        INDArray O = Nd4j.create(A.shape());
+        INDArray O = Nd4j.create(A.dataType(), A.shape());
         Nd4j.copy(A, O);
-        INDArray R = Nd4j.create(A.columns(), A.columns());
+        INDArray R = Nd4j.create(A.dataType(), A.columns(), A.columns());
 
         Nd4j.getBlasWrapper().lapack().geqrf(A, R);
 
@@ -59,10 +59,10 @@ public class LapackTest extends BaseNd4jTest {
     public void testQRRect() {
         INDArray A = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
         A = A.reshape('f', 4, 3);
-        INDArray O = Nd4j.create(A.shape());
+        INDArray O = Nd4j.create(A.dataType(), A.shape());
         Nd4j.copy(A, O);
 
-        INDArray R = Nd4j.create(A.columns(), A.columns());
+        INDArray R = Nd4j.create(A.dataType(), A.columns(), A.columns());
         Nd4j.getBlasWrapper().lapack().geqrf(A, R);
 
         A.mmuli(R);
@@ -77,7 +77,7 @@ public class LapackTest extends BaseNd4jTest {
     public void testCholeskyL() {
         INDArray A = Nd4j.create(new double[] {2, -1, 1, -1, 2, -1, 1, -1, 2,});
         A = A.reshape('c', 3, 3);
-        INDArray O = Nd4j.create(A.shape());
+        INDArray O = Nd4j.create(A.dataType(), A.shape());
         Nd4j.copy(A, O);
 
         Nd4j.getBlasWrapper().lapack().potrf(A, true);

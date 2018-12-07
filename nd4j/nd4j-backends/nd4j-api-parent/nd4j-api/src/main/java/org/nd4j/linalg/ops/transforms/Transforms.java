@@ -17,21 +17,32 @@
 package org.nd4j.linalg.ops.transforms;
 
 import lombok.NonNull;
+import lombok.val;
 import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
-import org.nd4j.linalg.api.ops.impl.accum.distances.*;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
-import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.OldAtan2Op;
+import org.nd4j.linalg.api.ops.impl.reduce3.*;
+import org.nd4j.linalg.api.ops.impl.scalar.*;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNot;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.BooleanNot;
+import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldAtan2Op;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.PowPairwise;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
+import org.nd4j.linalg.api.ops.impl.transforms.same.*;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Stabilize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.inverse.InvertMatrix;
 
@@ -158,7 +169,7 @@ public class Transforms {
         double length = toScale.norm2Number().doubleValue();
 
         if (length > 0) {
-            if (toScale.data().dataType() == (DataBuffer.Type.FLOAT))
+            if (toScale.data().dataType() == (DataType.FLOAT))
                 return Nd4j.getBlasWrapper().scal(1.0f / (float) length, toScale);
             else
                 return Nd4j.getBlasWrapper().scal(1.0 / length, toScale);
@@ -592,7 +603,7 @@ public class Transforms {
      */
     public static INDArray pow(INDArray ndArray, INDArray power, boolean dup) {
         INDArray result = (dup ? Nd4j.create(ndArray.shape(), ndArray.ordering()) : ndArray);
-        return exec(new Pow(ndArray, power, result, ndArray.length(), 0));
+        return exec(new PowPairwise(ndArray, power, result, ndArray.length()));
     }
 
     /**
@@ -714,7 +725,7 @@ public class Transforms {
     }
 
     public static INDArray eps(INDArray ndArray) {
-        return eps(ndArray, true);
+        return exec(new Eps(ndArray));
     }
 
     /**
@@ -747,7 +758,7 @@ public class Transforms {
      * @return
      */
     public static INDArray lessThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return exec(dup ? new OldLessThanOrEqual(first, ndArray, Nd4j.createUninitialized(first.shape()), first.length()) : new OldLessThanOrEqual(first, ndArray, first, first.length()));
+        return exec(new OldLessThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering()), first.length()));
 
     }
 
@@ -759,19 +770,7 @@ public class Transforms {
      * @return
      */
     public static INDArray greaterThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return exec(dup ? new OldGreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(first.shape()), first.length()) : new OldGreaterThanOrEqual(first, ndArray, first, first.length()));
-
-    }
-
-
-    /**
-     * Eps function
-     *
-     * @param ndArray
-     * @return
-     */
-    public static INDArray eps(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Eps(ndArray.dup()) : new Eps(ndArray));
+        return exec(new OldGreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering()), first.length()));
 
     }
 
@@ -830,10 +829,11 @@ public class Transforms {
      * @return
      */
     public static INDArray max(INDArray first, INDArray second, boolean dup) {
+        INDArray result = first;
         if (dup) {
-            first = first.dup();
+            result = Nd4j.createUninitialized(first.dataType(), first.shape(), first.ordering());
         }
-        return exec(new OldMax(second, first, first, first.length()));
+        return exec(new OldMax(first, second, result, first.length()));
     }
 
     /**
@@ -856,7 +856,7 @@ public class Transforms {
      * @return
      */
     public static INDArray min(INDArray ndArray, double k, boolean dup) {
-        return exec(dup ? new ScalarMin(ndArray.dup(), k) : new ScalarMin(ndArray, k));
+        return exec(dup ? new ScalarMin(ndArray, null, Nd4j.createUninitialized(ndArray.dataType(), ndArray.shape(), ndArray.ordering()), ndArray.length(), k) : new ScalarMin(ndArray, k));
     }
 
     /**
@@ -957,6 +957,19 @@ public class Transforms {
         return exec(dup ? new OldIdentity(ndArray, ndArray.dup()) : new OldIdentity(ndArray));
     }
 
+    public static INDArray isMax(INDArray input, DataType dataType) {
+        return isMax(input, Nd4j.createUninitialized(dataType, input.shape(), input.ordering()));
+    }
+
+
+    public static INDArray isMax(INDArray input) {
+        return isMax(input, input);
+    }
+
+    public static INDArray isMax(INDArray input, INDArray output) {
+        return Nd4j.getExecutioner().execAndReturn(new IsMax(input, output));
+    }
+
 
     /**
      * Pow function
@@ -1040,26 +1053,30 @@ public class Transforms {
     }
 
     public static INDArray and(INDArray x, INDArray y) {
-        INDArray z = Nd4j.createUninitialized(x.shape(), x.ordering());
+        INDArray z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
         Nd4j.getExecutioner().exec(new And(x, y, z, 0.0));
         return z;
     }
 
     public static INDArray or(INDArray x, INDArray y) {
-        INDArray z = Nd4j.createUninitialized(x.shape(), x.ordering());
+        INDArray z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
         Nd4j.getExecutioner().exec(new Or(x, y, z, 0.0));
         return z;
     }
 
     public static INDArray xor(INDArray x, INDArray y) {
-        INDArray z = Nd4j.createUninitialized(x.shape(), x.ordering());
+        INDArray z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
         Nd4j.getExecutioner().exec(new Xor(x, y, z, 0.0));
         return z;
     }
 
     public static INDArray not(INDArray x) {
-        INDArray z = Nd4j.createUninitialized(x.shape(), x.ordering());
-        Nd4j.getExecutioner().exec(new Not(x, z, 0.0));
+        val z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
+        if (x.isB()) {
+            Nd4j.getExecutioner().exec(new BooleanNot(x, z, x.length()));
+        } else {
+            Nd4j.getExecutioner().exec(new ScalarNot(x, z, x.length(), 0.0f));
+        }
         return z;
     }
 

@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
@@ -113,8 +114,8 @@ public class LayerOpValidation extends BaseOpValidation {
         for (boolean rank1Bias : new boolean[]{false, true}) {
 
             SameDiff sameDiff = SameDiff.create();
-            INDArray input = Nd4j.linspace(1, 8, 8).reshape(new long[]{2, 4});
-            INDArray b = Nd4j.linspace(1, 4, 4).reshape(rank1Bias ? new long[]{4} : new long[]{1, 4}).divi(4);
+            INDArray input = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(new long[]{2, 4});
+            INDArray b = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(rank1Bias ? new long[]{4} : new long[]{1, 4}).divi(4);
 
             SDVariable sdInput = sameDiff.var("input", input);
             SDVariable sdBias = sameDiff.var("bias", b);
@@ -382,7 +383,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .config(conf)
                 .build();
 
-        List<long[]> outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
+        val outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
 
         assertEquals(1, outSizes.size());
 
@@ -392,7 +393,7 @@ public class LayerOpValidation extends BaseOpValidation {
         long[] exp = new long[]{1, outH, outW, 3};    //NHWC
 
         assertEquals(1, outSizes.size());
-        assertArrayEquals(exp, outSizes.get(0));
+        assertArrayEquals(exp, outSizes.get(0).getShape());
 
         INDArray grad = Nd4j.create(exp);
 
@@ -403,10 +404,10 @@ public class LayerOpValidation extends BaseOpValidation {
                 .config(conf)
                 .build();
 
-        List<long[]> outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
+        val outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
         assertEquals(1, outSizesBP.size());
 
-        assertArrayEquals(inSize, outSizesBP.get(0));
+        assertArrayEquals(inSize, outSizesBP.get(0).getShape());
     }
 
 
@@ -428,7 +429,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .config(conf)
                 .build();
 
-        List<long[]> outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
+        val outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
         assertEquals(1, outSizes.size());
 
         //NO SAME: out = (in - k + 2*p)/s + 1;
@@ -437,7 +438,7 @@ public class LayerOpValidation extends BaseOpValidation {
         long[] exp = new long[]{1, outH, outW, 3};    //NHWC
 
         assertEquals(1, outSizes.size());
-        assertArrayEquals(exp, outSizes.get(0));
+        assertArrayEquals(exp, outSizes.get(0).getShape());
 
         INDArray grad = Nd4j.create(exp);
 
@@ -448,9 +449,9 @@ public class LayerOpValidation extends BaseOpValidation {
                 .config(conf)
                 .build();
 
-        List<long[]> outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
+        val outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
         assertEquals(1, outSizesBP.size());
-        assertArrayEquals(inSize, outSizesBP.get(0));
+        assertArrayEquals(inSize, outSizesBP.get(0).getShape());
 
         Nd4j.getExecutioner().exec(avg2dDeriv);
     }

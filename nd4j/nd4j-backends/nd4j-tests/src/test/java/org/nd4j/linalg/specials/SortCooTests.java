@@ -18,6 +18,7 @@ package org.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.LongPointer;
 import org.junit.After;
@@ -27,6 +28,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -43,7 +45,7 @@ import java.util.stream.LongStream;
 @RunWith(Parameterized.class)
 public class SortCooTests extends BaseNd4jTest {
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public SortCooTests(Nd4jBackend backend) {
         super(backend);
@@ -52,7 +54,7 @@ public class SortCooTests extends BaseNd4jTest {
 
     @Before
     public void setUp() {
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
     }
 
     @After
@@ -86,8 +88,8 @@ public class SortCooTests extends BaseNd4jTest {
 
         log.info("Old indices: {}", Arrays.toString(idx.asInt()));
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (LongPointer) idx.addressPointer(),
-                        (FloatPointer) val.addressPointer(), 4, 3);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
+                        (DoublePointer) val.addressPointer(), 4, 3);
 
 
         log.info("New indices: {}", Arrays.toString(idx.asInt()));
@@ -118,8 +120,8 @@ public class SortCooTests extends BaseNd4jTest {
         DataBuffer idx = Nd4j.getDataBufferFactory().createLong(indices);
         DataBuffer val = Nd4j.createBuffer(values);
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (LongPointer) idx.addressPointer(),
-                        (FloatPointer) val.addressPointer(), 3, 3);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
+                        (DoublePointer) val.addressPointer(), 3, 3);
 
         assertArrayEquals(expIndices, idx.asInt());
         assertArrayEquals(expValues, val.asDouble(), 1e-5);
@@ -155,8 +157,8 @@ public class SortCooTests extends BaseNd4jTest {
         DataBuffer valueBuffer = Nd4j.createBuffer(values);
         INDArray indMatrix = Nd4j.create(indiceBuffer).reshape(new long[]{nnz, shape.length});
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (LongPointer) indiceBuffer.addressPointer(),
-                (FloatPointer) valueBuffer.addressPointer(), nnz, 3);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) indiceBuffer.addressPointer(),
+                (DoublePointer) valueBuffer.addressPointer(), nnz, 3);
 
         for (long i = 1; i < nnz; ++i){
             for(long j = 0; j < shape.length; ++j){
@@ -272,8 +274,8 @@ public class SortCooTests extends BaseNd4jTest {
         DataBuffer idx = Nd4j.getDataBufferFactory().createLong(indices);
         DataBuffer val = Nd4j.createBuffer(values);
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (LongPointer) idx.addressPointer(),
-                (FloatPointer) val.addressPointer(), 40, 3);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
+                (DoublePointer) val.addressPointer(), 40, 3);
 
         // just check the indices. sortSparseCooIndicesSort1 and sortSparseCooIndicesSort2 checks that
         // indices and values are both swapped. This test just makes sure index sort works for larger arrays.

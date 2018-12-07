@@ -50,6 +50,12 @@ namespace ops {
 
         return ND4J_STATUS_OK;
     }
+
+    DECLARE_TYPES(depth_to_space) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setSameMode(true);
+    }
     
 
     DECLARE_SHAPE_FN(depth_to_space) {
@@ -74,7 +80,8 @@ namespace ops {
         else 
             shape = {{bS, oD, oH, oW }};
 
-        shape::shapeBuffer(4, shape.data(), newShape);
+        shape::shapeBuffer(4, block.dataType(), shape.data(), newShape);
+        ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
 
         return SHAPELIST(newShape);
     }

@@ -27,7 +27,7 @@
 namespace nd4j {
 namespace ops {
     CUSTOM_OP_IMPL(split, 1, -1, false, 0, 1) {
-        NDArray<T> *input = nullptr;
+        NDArray *input = nullptr;
         int num_splits = INT_ARG(0);
 
         // axis is 0 by default
@@ -41,10 +41,10 @@ namespace ops {
 
             if (a->isScalar()) {
                 // axis goes first
-                axis = a->getScalar(0);
+                axis = a->e<int>(0);
                 input = b;
             } else if (b->isScalar()) {
-                axis = b->getScalar(0);
+                axis = b->e<int>(0);
                 input = a;
             }
         }
@@ -80,30 +80,40 @@ namespace ops {
 
 
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
+    }
+
+    DECLARE_TYPES(split) {
+        getOpDescriptor()
+                ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+                ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
     }
 
     DECLARE_SHAPE_FN(split) {
         int num_splits = INT_ARG(0);
         Nd4jLong *input = nullptr;
+        nd4j::DataType dataType;
 
         // axis is 0 by default
         int axis = 0;
 
-        if (inputShape->size() == 1)
+        if (inputShape->size() == 1) {
             input = inputShape->at(0);
-        else {
+            dataType = ArrayOptions::dataType(input);
+        } else {
             auto shape0 = inputShape->at(0);
             auto shape1 = inputShape->at(1);
 
             if (shape::isScalar(shape0)) {
                 input = shape1;
                 auto _a = INPUT_VARIABLE(0);
-                axis = _a->getScalar(0);
+                axis = _a->e<int>(0);
+                dataType = ArrayOptions::dataType(shape1);
             } else if (shape::isScalar(shape1)) {
                 input = shape0;
                 auto _a = INPUT_VARIABLE(1);
-                axis = _a->getScalar(0);
+                axis = _a->e<int>(0);
+                dataType = ArrayOptions::dataType(shape0);
             }
         }
 
@@ -128,10 +138,9 @@ namespace ops {
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), Nd4jLong);
 
             if (shape::order(input) == 'c')
-                shape::shapeBuffer(shape.size(), shape.data(), newShape);
+                shape::shapeBuffer(shape.size(), dataType, shape.data(), newShape);
             else
-                shape::shapeBufferFortran(shape.size(), shape.data(), newShape);
-
+                shape::shapeBufferFortran(shape.size(), dataType, shape.data(), newShape);
             shapes->push_back(newShape);
         }
 

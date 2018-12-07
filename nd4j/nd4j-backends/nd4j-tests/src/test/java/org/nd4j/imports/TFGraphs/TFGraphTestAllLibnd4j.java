@@ -17,6 +17,7 @@
 package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -24,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -119,13 +121,13 @@ public class TFGraphTestAllLibnd4j {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
 
     @Before
     public void setup(){
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
     }
 
     @After
@@ -136,8 +138,16 @@ public class TFGraphTestAllLibnd4j {
 
     @Parameterized.Parameters(name="{2}")
     public static Collection<Object[]> data() throws IOException {
-        File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
-        return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
+        val localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
+
+        // if this variable isn't set - we're using dl4j-tests-resources
+        if (localPath == null) {
+            File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+            return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
+        } else {
+            File baseDir = new File(localPath);
+            return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
+        }
     }
 
     public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws IOException {
@@ -147,9 +157,11 @@ public class TFGraphTestAllLibnd4j {
         this.localTestDir = localTestDir;
     }
 
-    @Test(timeout = 25000L)
+    @Test//(timeout = 25000L)
     public void test() throws Exception {
         Nd4j.create(1);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         if (SKIP_SET.contains(modelName)) {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;

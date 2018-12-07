@@ -21,11 +21,12 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.impl.accum.StandardDeviation;
-import org.nd4j.linalg.api.ops.impl.accum.Variance;
-import org.nd4j.linalg.api.ops.impl.transforms.Pow;
-import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
-import org.nd4j.linalg.api.ops.impl.transforms.Step;
+import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
+import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
+import org.nd4j.linalg.api.ops.impl.scalar.Pow;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
+import org.nd4j.linalg.api.ops.impl.scalar.RectifedLinear;
+import org.nd4j.linalg.api.ops.impl.scalar.Step;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
 
 import java.lang.reflect.Constructor;
@@ -85,24 +86,24 @@ public class DefaultOpFactory implements OpFactory {
     }
 
     @Override
-    public Accumulation createAccum(String name, INDArray x) {
+    public ReduceOp createAccum(String name, INDArray x) {
         return createAccum(name,x,null,x,null);
     }
 
     @Override
-    public Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z) {
+    public ReduceOp createAccum(String name, INDArray x, INDArray y, INDArray z) {
         return createAccum(name,x,y,z,null);
     }
 
 
     @Override
-    public Accumulation createAccum(String name,
-                                    INDArray x,
-                                    INDArray y,
-                                    INDArray z,
-                                    Object[] extraArgs) {
+    public ReduceOp createAccum(String name,
+                                INDArray x,
+                                INDArray y,
+                                INDArray z,
+                                Object[] extraArgs) {
 
-        Accumulation ret = null;
+        ReduceOp ret = null;
 
         switch (name) {
             case "mmul":
@@ -114,7 +115,7 @@ public class DefaultOpFactory implements OpFactory {
                 break;
             default:
                 try {
-                    ret = (Accumulation)  DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getConstructor(INDArray.class, INDArray.class, INDArray.class, long.class).newInstance(x, y, z, x.length());
+                    ret = (ReduceOp)  DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getConstructor(INDArray.class, INDArray.class, INDArray.class, long.class).newInstance(x, y, z, x.length());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -185,7 +186,7 @@ public class DefaultOpFactory implements OpFactory {
 
 
     @Override
-    public Accumulation createAccum(String name, INDArray x, INDArray y) {
+    public ReduceOp createAccum(String name, INDArray x, INDArray y) {
         return createAccum(name,x,y,x,null);
     }
 
@@ -236,24 +237,24 @@ public class DefaultOpFactory implements OpFactory {
     }
 
     @Override
-    public TransformOp createTransform(String name, INDArray x, INDArray y) {
+    public Op createTransform(String name, INDArray x, INDArray y) {
         return createTransform(name,x,y,x,null);
 
     }
 
     @Override
-    public TransformOp createTransform(String name, INDArray x) {
+    public Op createTransform(String name, INDArray x) {
         return createTransform(name,x,null,x,null);
     }
 
     @Override
-    public TransformOp createTransform(String name, INDArray x, Object[] extraArgs) {
+    public Op createTransform(String name, INDArray x, Object[] extraArgs) {
         return createTransform(name,x,null,x,extraArgs);
     }
 
 
     @Override
-    public TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z) {
+    public Op createTransform(String name, INDArray x, INDArray y, INDArray z) {
         return createTransform(name,x,y,z,null);
     }
 
@@ -266,25 +267,25 @@ public class DefaultOpFactory implements OpFactory {
      * @return
      */
     @Override
-    public TransformOp createTransform(String name,
+    public Op createTransform(String name,
                                        INDArray x,
                                        INDArray y,
                                        INDArray z,
                                        Object[] extraArgs) {
-        TransformOp op = null;
+        Op op = null;
 
         switch (name) {
             case "_softmaxderivative":
-                op = new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative(x, z);
+                op = new org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative(x, z);
                 break;
             case "set":
-                op = new org.nd4j.linalg.api.ops.impl.transforms.Set(x,y,z,z.length());
+                op = new Set(x,y,z,z.length());
                 break;
             case "relu":
                 op = new RectifedLinear(x, z, x.length(),extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);
                 break;
             case "step":
-                op = new Step(x,y,z,x.length(),extraArgs == null || extraArgs[0] == null  ? 0.0 : (double) extraArgs[0]);
+                op = new Step(x, z,x.length(),extraArgs == null || extraArgs[0] == null  ? 0.0 : (double) extraArgs[0]);
                 break;
             case "pow":
                 op = new Pow(x, z, (double) extraArgs[0]);
@@ -304,7 +305,7 @@ public class DefaultOpFactory implements OpFactory {
 
         switch (opName) {
             case "set":
-                op = new org.nd4j.linalg.api.ops.impl.transforms.Set(x,y,z,z.length());
+                op = new org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set(x,y,z,z.length());
                 break;
             case "relu":
                 op = new RectifedLinear(x, z, x.length(),extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);
@@ -397,7 +398,7 @@ public class DefaultOpFactory implements OpFactory {
                 op = new TimesOneMinus(x, z);
                 break;
             case "softmaxderivative":
-                op = new org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative(x, z);
+                op = new org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative(x, z);
                 break;
             case "softmax":
                 op = new SoftMax(x, z);

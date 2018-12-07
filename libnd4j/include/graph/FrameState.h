@@ -23,10 +23,11 @@
 
 #include <string>
 #include <pointercast.h>
+#include <dll.h>
 
 namespace nd4j {
     namespace graph {
-        class FrameState {
+        class ND4J_EXPORT FrameState {
         private:
             std::string _name;
             Nd4jLong _id = 0;

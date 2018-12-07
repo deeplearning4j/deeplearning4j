@@ -29,11 +29,16 @@ namespace nd4j {
         OP_IMPL(Assert, 1, 1, false) {
             auto x = INPUT_VARIABLE(0);
 
-            if (x->getScalar(0) == (T) 0.0f) {
+            if (x->e<float>(0) == 0.0f) {
                 nd4j_printf("Assertion failed for node [%i]\n", block.getNodeId());
             }
 
             return Status::OK();
+        }
+        DECLARE_TYPES(Assert) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(DataType::ANY)
+                    ->setSameMode(true);
         }
     }
 }

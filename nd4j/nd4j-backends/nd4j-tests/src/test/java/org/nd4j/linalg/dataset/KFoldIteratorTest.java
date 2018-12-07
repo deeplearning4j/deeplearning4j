@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.KFoldIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -231,7 +232,7 @@ public class KFoldIteratorTest extends BaseNd4jTest {
     
     @Test
     public void test5974(){
-        DataSet ds = new DataSet(Nd4j.linspace(1,99,99).transpose(), Nd4j.linspace(1,99,99).transpose());
+        DataSet ds = new DataSet(Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(1, -1).transpose(), Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(1, -1).transpose());
 
         KFoldIterator iter = new KFoldIterator(10, ds);
 
@@ -242,11 +243,11 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             int countTrain;
             if(count < 9){
                 //Folds 0 to 8: should have 10 examples for test
-                testFold = Nd4j.linspace(10*count+1, 10*count+10, 10).transpose();
+                testFold = Nd4j.linspace(10*count+1, 10*count+10, 10, DataType.DOUBLE).reshape(1, -1).transpose();
                 countTrain = 99 - 10;
             } else {
                 //Fold 9 should have 9 examples for test
-                testFold = Nd4j.linspace(10*count+1, 10*count+9, 9).transpose();
+                testFold = Nd4j.linspace(10*count+1, 10*count+9, 9, DataType.DOUBLE).reshape(1, -1).transpose();
                 countTrain = 99-9;
             }
             String s = String.valueOf(count);

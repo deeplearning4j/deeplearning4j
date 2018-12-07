@@ -24,6 +24,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <numeric>
 #include <iostream>
+#include <ops/declarable/helpers/losses.h>
 
 namespace nd4j {
 namespace ops  {
@@ -31,67 +32,67 @@ namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
-
-  	NDArray<T>* predictions = INPUT_VARIABLE(0);
-    NDArray<T>* weights     = INPUT_VARIABLE(1);
-    NDArray<T>* labels      = INPUT_VARIABLE(2);
-    NDArray<T>* output      = OUTPUT_VARIABLE(0);
+  	auto predictions = INPUT_VARIABLE(0);
+    auto weights     = INPUT_VARIABLE(1);
+    auto labels      = INPUT_VARIABLE(2);
+    auto output      = OUTPUT_VARIABLE(0);
 
 	// input validation    
-    REQUIRE_TRUE(labels->isSameShape(predictions), 0, "MEAN_PAIRWSSQERR_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils<T>::shapeAsString(labels).c_str(), ShapeUtils<T>::shapeAsString(predictions).c_str());
+    REQUIRE_TRUE(labels->isSameShape(predictions), 0, "MEAN_PAIRWSSQERR_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(labels).c_str(), ShapeUtils::shapeAsString(predictions).c_str());
     // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
 	REQUIRE_TRUE(!(!weights->isScalar() && weights->rankOf() != labels->rankOf()), 0, "MEAN_PAIRWSSQERR_LOSS OP: weights array must have the same rank as labels array, but got %i and %i correspondingly!", weights->rankOf(), labels->rankOf());
     // check whether broadcast operation is possible for weights array
     if(!weights->isScalar())
     	for (int i = 0; i < weights->rankOf(); ++i)
-           	REQUIRE_TRUE(!(weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1), 0, "MEAN_PAIRWSSQERR_LOSS OP: shape of weights array %s is not broadcastable to labels array shape %s !", ShapeUtils<T>::shapeAsString(weights).c_str(), ShapeUtils<T>::shapeAsString(labels).c_str());
+           	REQUIRE_TRUE(!(weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1), 0, "MEAN_PAIRWSSQERR_LOSS OP: shape of weights array %s is not broadcastable to labels array shape %s !", ShapeUtils::shapeAsString(weights).c_str(), ShapeUtils::shapeAsString(labels).c_str());
 
 	// perform weights broadcasting/tile to labels if needed	
-	NDArray<T>* weightsBroad = weights;	
+	auto weightsBroad = weights;
 	if(!weights->isScalar() && !weights->isSameShape(predictions)) {
 		// evaluate repeat dimensions for tile operation
 		std::vector<Nd4jLong> reps;
 		for(int i = 0; i < labels->rankOf(); ++i)
 			reps.emplace_back(labels->shapeOf()[i] / weights->shapeOf()[i]);
-		weightsBroad = new NDArray<T>(weights->tile(reps));
+		weightsBroad = new NDArray(weights->tile(reps));
 	}	
 	
-	NDArray<T> diffs = *predictions - *labels;
+	auto diffs = *predictions - *labels;
 	std::vector<int> reductionIdx(diffs.rankOf()-1);
 	std::iota(reductionIdx.begin(), reductionIdx.end(), 1);
-	NDArray<T> sumSqrsDiffPerBatch = (diffs*diffs).template reduceAlongDims<simdOps::Sum<T>>(reductionIdx, true);
+	auto sumSqrsDiffPerBatch = (diffs*diffs).reduceAlongDims(reduce::Sum, reductionIdx, true);
 
-	NDArray<T> numOfNonZeroWeights(sumSqrsDiffPerBatch.getShapeInfo(), block.getWorkspace());
+	NDArray numOfNonZeroWeights(sumSqrsDiffPerBatch.getShapeInfo(), block.getWorkspace());
 	if(weights->isScalar()) {
-		if((*weights)(0.) != (T)0.)
-			numOfNonZeroWeights.assign((T)(labels->lengthOf()/labels->sizeAt(0)));
+		if((*weights).e<double>(0) != 0.)
+			numOfNonZeroWeights.assign((labels->lengthOf()/labels->sizeAt(0)));
 	}
 	else {
-		int sizeAtRestDims =  weightsBroad->lengthOf()/weightsBroad->sizeAt(0);
+		Nd4jLong sizeAtRestDims =  weightsBroad->lengthOf()/weightsBroad->sizeAt(0);
+		helpers::reduceZeroCountWeights(weightsBroad, sizeAtRestDims, numOfNonZeroWeights);
+		/*
 		for(int i = 0; i < numOfNonZeroWeights.lengthOf(); ++i)
 			for(int j = 0; j < sizeAtRestDims; ++j)
 				if((*weightsBroad)(i*sizeAtRestDims + j) != (T)0.)
 					++numOfNonZeroWeights(i);
+					*/
+		//throw std::runtime_error("Not implemented yet");
 	}
 	
-	sumSqrsDiffPerBatch.template applyPairwiseTransform<simdOps::SafeDivide<T>>(&numOfNonZeroWeights, nullptr);	
+	sumSqrsDiffPerBatch.applyPairwiseTransform(pairwise::SafeDivide, numOfNonZeroWeights, nullptr);
 
-	NDArray<T> sumDiff = diffs.template reduceAlongDims<simdOps::Sum<T>>(reductionIdx, true);	
-	NDArray<T> nonZerosSquared = numOfNonZeroWeights*numOfNonZeroWeights;	
-	(sumDiff*sumDiff).template applyPairwiseTransform<simdOps::SafeDivide<T>>(&nonZerosSquared, &sumDiff, nullptr);		
+	auto sumDiff = diffs.reduceAlongDims(reduce::Sum, reductionIdx, true);
+	auto nonZerosSquared = numOfNonZeroWeights*numOfNonZeroWeights;
+	(sumDiff*sumDiff).applyPairwiseTransform(pairwise::SafeDivide, &nonZerosSquared, &sumDiff, nullptr);
 	
-	NDArray<T> weightedLosses = (sumSqrsDiffPerBatch - sumDiff)*(T)2.;
+	auto weightedLosses = (sumSqrsDiffPerBatch - sumDiff) * 2.;
 
     // multiply weightedLosses on weights
- 	if(weights->isScalar())
- 		weightedLosses *= (*weights)(0.);
- 	else
- 		weightedLosses *= (*weights); 	
+    weightedLosses *= (*weights);
  		
-	if(numOfNonZeroWeights.template reduceNumber<simdOps::Sum<T>>() == (T)0.)
-		(*output)(0.) = (T)0.;
+	if(numOfNonZeroWeights.reduceNumber(reduce::Sum).e<float>(0) == 0.f)
+		(*output) = 0.f;
 	else
-		(*output)(0.) = weightedLosses.template reduceNumber<simdOps::Sum<T>>();
+		(*output) = weightedLosses.reduceNumber(reduce::Sum);
 
 
     STORE_RESULT(*output);
@@ -99,8 +100,14 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
     if(weightsBroad != weights)
     	delete weightsBroad;
 	
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
+
+		DECLARE_TYPES(mean_pairwssqerr_loss) {
+			getOpDescriptor()
+					->setAllowedInputTypes(nd4j::DataType::ANY)
+					->setAllowedOutputTypes({ALL_FLOATS});
+		}
 
 
 DECLARE_SHAPE_FN(mean_pairwssqerr_loss) {
@@ -109,7 +116,7 @@ DECLARE_SHAPE_FN(mean_pairwssqerr_loss) {
     auto labelsShapeInfo 	  = inputShape->at(2);
 
     // labels and predictions must have the same shapes
-    REQUIRE_TRUE(shape::shapeEquals(labelsShapeInfo, predictionsShapeInfo), 0, "MEAN_PAIRWSSQERR_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils<T>::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(predictionsShapeInfo).c_str());
+    REQUIRE_TRUE(shape::shapeEquals(labelsShapeInfo, predictionsShapeInfo), 0, "MEAN_PAIRWSSQERR_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils::shapeAsString(predictionsShapeInfo).c_str());
 
     Nd4jLong* outShapeInfo = nullptr;
     // output is scalar
@@ -119,6 +126,7 @@ DECLARE_SHAPE_FN(mean_pairwssqerr_loss) {
     outShapeInfo[5] = 0;
     outShapeInfo[6] = 1;
     outShapeInfo[7] = 99;
+	ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(predictionsShapeInfo));
 
     return SHAPELIST(outShapeInfo);    
 

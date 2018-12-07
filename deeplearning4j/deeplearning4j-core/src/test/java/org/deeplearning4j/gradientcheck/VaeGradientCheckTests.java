@@ -30,6 +30,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -56,7 +57,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @Test
@@ -185,7 +186,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                             .reconstructionDistribution(
                                     new GaussianReconstructionDistribution(pxzAfn))
                             .activation(afn).build())
-                    .pretrain(true).backprop(false).build();
+                    .build();
 
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
@@ -275,7 +276,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                                             reconstructionDistributions[i])
                                     .activation(Activation.TANH)
                                     .build())
-                    .pretrain(true).backprop(false).build();
+                    .build();
 
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
@@ -318,7 +319,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                                     new GaussianReconstructionDistribution(Activation.TANH))
                             .numSamples(numSamples).activation(Activation.TANH)
                             .build())
-                    .pretrain(true).backprop(false).build();
+                    .build();
 
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();

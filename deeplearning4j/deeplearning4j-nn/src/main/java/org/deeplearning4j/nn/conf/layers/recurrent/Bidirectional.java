@@ -190,11 +190,6 @@ public class Bidirectional extends Layer {
     }
 
     @Override
-    public boolean isPretrain() {
-        return fwd.isPretrain();
-    }
-
-    @Override
     public double getL1ByParam(String paramName) {
         //Strip forward/backward prefix from param name
         return fwd.getL1ByParam(paramName.substring(1));

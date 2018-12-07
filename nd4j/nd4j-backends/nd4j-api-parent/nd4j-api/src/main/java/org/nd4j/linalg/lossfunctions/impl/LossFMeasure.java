@@ -29,7 +29,6 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -116,7 +115,7 @@ public class LossFMeasure extends DifferentialFunction implements ILossFunction 
         INDArray pClass1;
         if (n == 1) {
             isPositiveLabel = labels;
-            isNegativeLabel = Transforms.not(isPositiveLabel);
+            isNegativeLabel = isPositiveLabel.rsub(1.0);
             pClass0 = output.rsub(1.0);
             pClass1 = output;
         } else {

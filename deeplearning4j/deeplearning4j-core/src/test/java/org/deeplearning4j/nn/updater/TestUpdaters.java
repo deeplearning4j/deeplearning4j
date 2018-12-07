@@ -68,7 +68,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
     @Before
     public void beforeDo() {
-        gradients = Nd4j.ones(nIn * nOut + nOut);
+        gradients = Nd4j.ones(1, nIn * nOut + nOut);
         weightGradient = gradients.get(point(0), interval(0, nIn * nOut));
         biasGradient = gradients.get(point(0), interval(nIn * nOut, nIn * nOut + nOut));
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
@@ -725,7 +725,7 @@ public class TestUpdaters extends BaseDL4JTest {
     @Test
     public void testPretrain() {
 
-        gradients = Nd4j.ones(nIn * nOut + nOut + nIn);
+        gradients = Nd4j.ones(1, nIn * nOut + nOut + nIn);
         weightGradient = gradients.get(point(0), interval(0, nIn * nOut));
         biasGradient = gradients.get(point(0), interval(nIn * nOut, nIn * nOut + nOut));
         INDArray vbiasGradient = gradients.get(point(0),
@@ -746,7 +746,6 @@ public class TestUpdaters extends BaseDL4JTest {
                                         .activation(Activation.IDENTITY).nIn(nIn).nOut(nOut).build())
                         .build();
         long numParams = conf.getLayer().initializer().numParams(conf);
-        conf.setPretrain(true);
         INDArray params = Nd4j.create(1, numParams);
         BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
@@ -772,7 +771,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
 
         //Test with pretrain == false
-        gradients = Nd4j.ones(nIn * nOut + nOut + nIn);
+        gradients = Nd4j.ones(1, nIn * nOut + nOut + nIn);
         weightGradient = gradients.get(point(0), interval(0, nIn * nOut));
         biasGradient = gradients.get(point(0), interval(nIn * nOut, nIn * nOut + nOut));
         vbiasGradient = gradients.get(point(0),
@@ -792,26 +791,10 @@ public class TestUpdaters extends BaseDL4JTest {
         gradientCopyPreUpdate.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbg);
         gradientCopyPreUpdate.setFlattenedGradient(g);
 
-        conf.setPretrain(false);
         params = Nd4j.create(1, numParams);
         layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         updater = UpdaterCreator.getUpdater(layer);
-
-        updater.update(layer, gradient, -1, 0, 1, LayerWorkspaceMgr.noWorkspaces());
-
-        for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
-            //            System.out.println(entry.getKey());
-            val = entry.getValue();
-            if (!entry.getKey().equals("vb")) {
-                gradExpected = val.mul(lr);
-            } else {
-                //With pretrain == false, we shouldn't be updating the pretrain params (vb)
-                gradExpected = val;
-            }
-            //            System.out.println(gradExpected + "\t" + gradient.getGradientFor(entry.getKey()));
-            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
-        }
         assertEquals(lr, ((Sgd)layer.layerConf().getIUpdater()).getLearningRate(), 1e-4);
     }
 

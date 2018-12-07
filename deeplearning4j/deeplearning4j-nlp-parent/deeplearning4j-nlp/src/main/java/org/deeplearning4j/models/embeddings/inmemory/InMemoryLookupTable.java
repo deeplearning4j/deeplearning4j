@@ -28,6 +28,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -398,18 +399,18 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
                                                     alpha)
                                     : (label - expTable[(int) ((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))])
                                                     * alpha;
-                if (syn0.data().dataType() == DataBuffer.Type.DOUBLE)
+                if (syn0.data().dataType() == DataType.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g, syn1Neg.slice(target), neu1e);
                 else
                     Nd4j.getBlasWrapper().axpy((float) g, syn1Neg.slice(target), neu1e);
 
-                if (syn0.data().dataType() == DataBuffer.Type.DOUBLE)
+                if (syn0.data().dataType() == DataType.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g, l1, syn1Neg.slice(target));
                 else
                     Nd4j.getBlasWrapper().axpy((float) g, l1, syn1Neg.slice(target));
             }
 
-        if (syn0.data().dataType() == DataBuffer.Type.DOUBLE)
+        if (syn0.data().dataType() == DataType.DOUBLE)
             Nd4j.getBlasWrapper().axpy(1.0, neu1e, l1);
 
         else

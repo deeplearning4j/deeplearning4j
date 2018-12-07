@@ -39,10 +39,13 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.BiFunction;
 import org.nd4j.linalg.function.Function;
@@ -53,6 +56,7 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -76,6 +80,7 @@ import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
  */
 @Slf4j
 public class TFGraphTestAllHelper {
+    public static final String resourceFolderVar = "DL4J_TEST_RESOURCES";
 
     public enum ExecuteWith {
         SAMEDIFF, LIBND4J, JUST_PRINT
@@ -102,7 +107,7 @@ public class TFGraphTestAllHelper {
 
     @Before
     public void setup(){
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
     }
 
     @After
@@ -175,6 +180,11 @@ public class TFGraphTestAllHelper {
                     long[] sTf = tfPred.shape();
                     long[] sNd4j = nd4jPred.shape();
                     assertArrayEquals("Shapes are not equal: " + Arrays.toString(sTf) + " vs " + Arrays.toString(sNd4j), sTf, sNd4j);
+
+                    // TODO: once we add more dtypes files - this should be removed
+                    if (tfPred.dataType() != nd4jPred.dataType())
+                        nd4jPred = nd4jPred.castTo(tfPred.dataType());
+
                     boolean eq = tfPred.equals(nd4jPred);
                     if(!eq){
                         NDArrayStrings s = new NDArrayStrings();
@@ -412,6 +422,9 @@ public class TFGraphTestAllHelper {
         Map<String, INDArray> varMap = new HashMap<>();
         String modelDir = base_dir + "/" + modelName;
 
+        // key is variable name, value is data type
+        val dtypes = new HashMap<String, DataType>();
+
         List<Pair<Resource,Resource>> resources = new ArrayList<>();
         if(recursive){
             String nameRegex = pattern.replace("**.",".*\\.") + "\\.shape";
@@ -419,12 +432,25 @@ public class TFGraphTestAllHelper {
 //            baseDir.mkdirs();
 //            baseDir.deleteOnExit();
 //            new ClassPathResource(modelDir).copyDirectory(baseDir);
-            File baseDir = new File(localTestDir, "extracted/" + modelName);
+
+            // checking out, if local folder declared
+            String localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
+            if(localPath != null && (!localPath.contains("src/main/resources") && !localPath.contains("src\\main\\resources"))){
+                localPath = FilenameUtils.concat(localPath, "src/main/resources");
+            }
+
+            // baseDir will differ, depending on run mode
+            File baseDir = localPath == null ? new File(localTestDir, "extracted/" + modelName) : new File(localPath, base_dir + "/" + modelName);
             String[] arr = baseDir.list();
+
             if(!baseDir.exists() || arr == null || arr.length == 0){
-                baseDir.mkdirs();
-                baseDir.deleteOnExit();
-                new ClassPathResource(modelDir).copyDirectory(baseDir);
+                // we're skipping extraction if we're using local copy of dl4j-tests-resources
+                if (localPath == null) {
+                    baseDir.mkdirs();
+                    baseDir.deleteOnExit();
+                    new ClassPathResource(modelDir).copyDirectory(baseDir);
+                } else
+                    throw new IllegalStateException("local directory declared but doesn't exist: " + localPath);
             }
 
             LinkedList<File> queue = new LinkedList<>();
@@ -442,6 +468,45 @@ public class TFGraphTestAllHelper {
                             if(filename.matches(nameRegex)){
                                 File csvFile = new File(f.getAbsolutePath().replace(".shape",".csv"));
                                 resources.add(new Pair<>(new FileSystemResource(f), new FileSystemResource(csvFile)));
+                            } else if (filename.equals("dtypes")) {
+                                List<String> stringList;
+
+                                try (val is = new BufferedInputStream(new FileInputStream(f))) {
+                                    stringList = IOUtils.readLines(is, StandardCharsets.UTF_8);
+
+                                    for (val s:stringList) {
+                                        val split = s.split("\\ ");
+
+                                        val okey = split[0].replaceAll("____", "/");;
+                                        // adopt / in names
+                                        val key = modelDir + "/" + okey;
+
+                                        // parse type directly
+                                        val value = ArrayOptionsHelper.dataType(split[1]);
+
+                                        // adding key directly
+                                        //if (dtypes.containsKey(key))
+                                        //    throw new ND4JIllegalStateException("Specified key already exist: [" + key + "]");
+                                        //else
+
+                                        dtypes.put(key, value);
+
+                                        // adding zero output duplicate (if it doesn't exist)
+                                        if (key.endsWith(".0")) {
+                                            val nkey = key.replaceAll("\\.0$","");
+                                            if (!dtypes.containsKey(nkey)) {
+                                                dtypes.put(nkey, value);
+                                            }
+                                        } else if (key.endsWith(":0")) {
+                                            val nkey = key.replaceAll(":0$","");
+                                            if (!dtypes.containsKey(nkey)) {
+                                                dtypes.put(nkey, value);
+                                            }
+                                        }
+                                    }
+                                } catch (FileNotFoundException e) {
+                                    stringList = new ArrayList<>();
+                                }
                             }
                         }
                     }
@@ -459,9 +524,18 @@ public class TFGraphTestAllHelper {
 
         }
 
-
         val dtype = Nd4j.dataType();
         for (int i = 0; i < resources.size(); i++) {
+            URI u = resources.get(i).getFirst().getURI();
+            String varName = u.toString();
+            int idx = varName.indexOf(modelName);
+            varName = varName.substring(idx + modelName.length()+1);    //+1 for "/"
+            varName = varName.replaceAll("____","/");
+            varName = varName.replaceAll(".placeholder.shape","");
+            varName = varName.replaceAll(".prediction.shape","");
+            varName = varName.replaceAll(".prediction_inbw.shape","");
+
+            val type = dtypes.get(modelDir + "/" + varName);
 
             List<String> lines; //= FileUtils.readLines(new ClassPathResource(varPath).getFile(), Charset.forName("UTF-8"));
             try(InputStream is = new BufferedInputStream(resources.get(i).getFirst().getInputStream())){
@@ -483,7 +557,10 @@ public class TFGraphTestAllHelper {
                     varContents = Nd4j.readNumpy(is, ",").data().asFloat();
                 }
                 Preconditions.checkState(varContents.length == 1, "Expected length 1 content for scalar shape; got length %s", varContents.length);
-                varValue = Nd4j.trueScalar(varContents[0]);
+                if (type == null)
+                    varValue = Nd4j.trueScalar(varContents[0]);
+                else
+                    varValue = Nd4j.scalar(type, varContents[0]);
             } else {
                 int[] varShape = new int[filtered.size()];
                 for( int j=0; j<filtered.size(); j++ ){
@@ -500,6 +577,7 @@ public class TFGraphTestAllHelper {
 //                        log.info("Finished reading: {} ms", end - start);
                     }
                     //= FileUtils.readFileToString(new ClassPathResource(varPath.replace(".shape", ".csv")).getFile(), Charset.forName("UTF-8"));
+
                     if (content.isEmpty()) {
                         if (varShape.length == 1 && varShape[0] == 0) {
                             varValue = Nd4j.empty();
@@ -509,15 +587,25 @@ public class TFGraphTestAllHelper {
                     } else {
                         content = content.replaceAll("False", "0");
                         content = content.replaceAll("True", "1");
-                        float[] varContents = Nd4j.readNumpy(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), ",").data().asFloat();
+                        val varContents = Nd4j.readNumpy(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), ",").data().asDouble();
+
                         if (varShape.length == 1) {
                             if (varShape[0] == 0) {
-                                varValue = Nd4j.trueScalar(varContents[0]);
+                                if (type == null)
+                                    varValue = Nd4j.trueScalar(varContents[0]);
+                                else
+                                    varValue = Nd4j.scalar(type, varContents[0]);
                             } else {
-                                varValue = Nd4j.trueVector(varContents);
+                                if (type == null)
+                                    varValue = Nd4j.trueVector(varContents);
+                                else
+                                    varValue = Nd4j.create(varContents, new long[]{varContents.length}, type);
                             }
                         } else {
-                            varValue = Nd4j.create(varContents, varShape);
+                            if (type == null)
+                                varValue = Nd4j.create(varContents, varShape);
+                            else
+                                varValue = Nd4j.create(varContents, ArrayUtil.toLongArray(varShape), type);
                         }
                     }
                 } catch (NumberFormatException e) {
@@ -526,14 +614,6 @@ public class TFGraphTestAllHelper {
                 }
             }
 
-            URI u = resources.get(i).getFirst().getURI();
-            String varName = u.toString();
-            int idx = varName.indexOf(modelName);
-            varName = varName.substring(idx + modelName.length()+1);    //+1 for "/"
-            varName = varName.replaceAll("____","/");
-            varName = varName.replaceAll(".placeholder.shape","");
-            varName = varName.replaceAll(".prediction.shape","");
-            varName = varName.replaceAll(".prediction_inbw.shape","");
             varMap.put(varName, varValue);
         }
         return varMap;

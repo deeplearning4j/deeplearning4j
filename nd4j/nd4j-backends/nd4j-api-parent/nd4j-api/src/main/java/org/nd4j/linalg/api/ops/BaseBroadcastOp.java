@@ -18,10 +18,13 @@ package org.nd4j.linalg.api.ops;
 
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -163,12 +166,12 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
      *
      * @return
      */
-    public List<long[]> calculateOutputShape() {
-        List<long[]> ret = new ArrayList<>();
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        List<LongShapeDescriptor> ret = new ArrayList<>();
         if (larg().getShape() != null && rarg().getShape() != null)
-            ret.add(Shape.broadcastOutputShape(larg().getShape(), rarg().getShape()));
+            ret.add(LongShapeDescriptor.fromShape(Shape.broadcastOutputShape(larg().getShape(), rarg().getShape()), Shape.pickPairwiseDataType(larg().dataType(), rarg().dataType())));
         else if(larg().getShape() != null)
-            ret.add(larg().getShape());
+            ret.add(LongShapeDescriptor.fromShape(larg().getShape(), larg().dataType()));
 
         return ret;
     }
@@ -198,5 +201,31 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
 
+    }
+
+    @Override
+    public boolean validateDataTypes() {
+
+        val op = opNum();
+
+        if (y() != null && z() != null)
+            Preconditions.checkArgument(y().dataType() == z().dataType() || x().dataType() == z().dataType(),
+                    "Op.Z type must be either Op.X or Op.Y: x.dataType=%s, y.dataType=%s, z.dataType=%s, op=%s",
+                    x.dataType(), y.dataType(), z.dataType(), getClass().getName());
+
+        if (y() != null) {
+            if (op != 1 && (y().isR() || x().isR()))
+                Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point: x.dataType=%s, y.dataType=%s, z.dataType=%s, op=%s",
+                        x.dataType(), y.dataType(), z.dataType(), getClass().getName());
+        } else if (x().isR())
+            Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point: x.dataType=%s, z.dataType=%s, op=%s",
+                    x.dataType(), z.dataType(), getClass().getName());
+
+        return true;
+    }
+
+    @Override
+    public Type getOpType() {
+        return Type.BROADCAST;
     }
 }

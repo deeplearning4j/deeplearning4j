@@ -23,6 +23,7 @@
 
 #include <vector>
 #include <shape.h>
+#include <dll.h>
 
 namespace nd4j {
     class ND4J_EXPORT ShapeList {

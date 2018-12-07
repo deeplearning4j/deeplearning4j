@@ -108,7 +108,7 @@ namespace aggregateOps {
             T *B = arguments[1];
             T *C = arguments[2];
 
-            nd4j::blas::GEMM<T>::op(convertOrder(Order), convertTranspose(TransA), convertTranspose(TransB),M,N,K,(T) alpha,A,lda,B,ldb,(T) beta,C,ldc);
+            nd4j::blas::GEMM<T, T, T>::op(convertOrder(Order), convertTranspose(TransA), convertTranspose(TransB),M,N,K,(T) alpha,A,lda,B,ldb,(T) beta,C,ldc);
         }
 #else
         aggregate_def void executeAggregate(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {

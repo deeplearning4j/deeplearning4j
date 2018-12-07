@@ -22,13 +22,14 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.transforms.MatchConditionTransform;
-import org.nd4j.linalg.api.ops.impl.transforms.Or;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldSubOp;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldSubOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.primitives.Pair;
@@ -156,7 +157,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 return new Pair<>(null, out_product);
             case Max:
                 INDArray[] outMax = new INDArray[nInForwardPass];
-                INDArray maxIndices = workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, epsilon.shape(), epsilon.ordering());
+                INDArray maxIndices = workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, DataType.INT, epsilon.shape(), epsilon.ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemaxindex")
                         .addInputs(inputs)
                         .addOutputs(maxIndices)
@@ -165,11 +166,11 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 Nd4j.getExecutioner().exec(op);
                 for (int i = 0; i < nInForwardPass; i++) {
                     //gradient is epsilon where the max index is the same as i and zero elsewhere
-                    outMax[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, maxIndices);
+                    outMax[i] = workspaceMgr.create(ArrayType.BP_WORKING_MEM, DataType.BOOL, maxIndices.shape());    //workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, maxIndices);
                     //generate a mask with 1s and 0s in the right places and muli with epsilon
-                    MatchConditionTransform nd4jop = new MatchConditionTransform(outMax[i], outMax[i], Conditions.equals(i));
+                    MatchConditionTransform nd4jop = new MatchConditionTransform(maxIndices, outMax[i], Conditions.equals(i));
                     Nd4j.getExecutioner().exec(nd4jop);
-                    outMax[i].muli(epsilon);
+                    outMax[i] = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, outMax[i].castTo(Nd4j.defaultFloatingPointType())).muli(epsilon);
                 }
                 return new Pair<>(null, outMax);
             default:

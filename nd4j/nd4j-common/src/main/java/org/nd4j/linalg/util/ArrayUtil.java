@@ -225,6 +225,38 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static long[] toLongs(byte[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = (long) data[i];
+        }
+        return ret;
+    }
+
+    public static long[] toLongs(short[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = (long) data[i];
+        }
+        return ret;
+    }
+
+    public static long[] toLongs(float[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = (long) data[i];
+        }
+        return ret;
+    }
+
+    public static long[] toLongs(double[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = (long) data[i];
+        }
+        return ret;
+    }
+
     public static short[] toHalfs(double[] data) {
         short[] ret = new short[data.length];
         for (int i = 0; i < ret.length; i++) {
@@ -271,6 +303,38 @@ public class ArrayUtil {
         for (int i = 0; i < ret.length; i++)
             ret[i] = (int) data[i];
         return ret;
+    }
+
+    public static byte[] toBytes(int[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte) array[i];
+        }
+        return retVal;
+    }
+
+    public static byte[] toBytes(float[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte) array[i];
+        }
+        return retVal;
+    }
+
+    public static byte[] toBytes(double[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte) array[i];
+        }
+        return retVal;
+    }
+
+    public static byte[] toBytes(long[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte) array[i];
+        }
+        return retVal;
     }
 
     public static int[] toInts(long[] array) {
@@ -965,6 +1029,33 @@ public class ArrayUtil {
         return toDoubles(Ints.concat(ints));
     }
 
+    public static short[] toShorts(long[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) ints[i];
+        return ret;
+    }
+
+    public static short[] toShorts(int[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) ints[i];
+        return ret;
+    }
+
+    public static short[] toShorts(float[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) ints[i];
+        return ret;
+    }
+
+    public static short[] toShorts(double[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) ints[i];
+        return ret;
+    }
 
     public static float[] toFloats(int[] ints) {
         float[] ret = new float[ints.length];
@@ -1352,6 +1443,14 @@ public class ArrayUtil {
         long[] ret = new long[intArray.length];
         for (int i = 0; i < intArray.length; i++) {
             ret[i] = intArray[i];
+        }
+        return ret;
+    }
+
+    public static long[] toLongArray(float[] array) {
+        val ret = new long[array.length];
+        for (int i = 0; i < array.length; i++) {
+            ret[i] = (long) array[i];
         }
         return ret;
     }
@@ -1996,6 +2095,17 @@ public class ArrayUtil {
                 ret[count++] = arr[i][j];
         return ret;
     }
+
+    /*
+    public static boolean[] flatten(boolean[][] arr) {
+        boolean[] ret = new boolean[arr.length * arr[0].length];
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[i].length; j++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
+    */
 
     public static long[] flatten(long[][] arr) {
         if(arr.length == 0 || arr[0].length == 0 )

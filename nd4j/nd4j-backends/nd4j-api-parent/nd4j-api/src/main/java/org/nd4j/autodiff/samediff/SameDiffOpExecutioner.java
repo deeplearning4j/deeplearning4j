@@ -19,13 +19,15 @@ package org.nd4j.autodiff.samediff;
 import lombok.Getter;
 import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
@@ -141,8 +143,8 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @return the accumulated result
      */
     @Override
-    public Accumulation execAndReturn(Accumulation op) {
-        return (Accumulation) processOp(op).z();
+    public ReduceOp execAndReturn(ReduceOp op) {
+        return (ReduceOp) processOp(op).z();
     }
 
     /**
@@ -153,8 +155,8 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @return the accumulated result
      */
     @Override
-    public Accumulation execAndReturn(Variance op, boolean biasCorrected) {
-        return (Accumulation) processOp(op);
+    public ReduceOp execAndReturn(Variance op, boolean biasCorrected) {
+        return (ReduceOp) processOp(op);
     }
 
     /**
@@ -211,15 +213,15 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     }
 
     /**
-     * Execute an accumulation along one or more dimensions
+     * Execute an reduceOp along one or more dimensions
      *
-     * @param accumulation the accumulation
+     * @param reduceOp the reduceOp
      * @param dimension    the dimension
-     * @return the accumulation op
+     * @return the reduceOp op
      */
     @Override
-    public INDArray exec(Accumulation accumulation, int... dimension) {
-        return processOp(accumulation).z();
+    public INDArray exec(ReduceOp reduceOp, int... dimension) {
+        return processOp(reduceOp).z();
     }
 
     /**
@@ -514,7 +516,7 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     }
 
     @Override
-    public List<long[]> calculateOutputShape(CustomOp op) {
+    public List<LongShapeDescriptor> calculateOutputShape(CustomOp op) {
         return backendExecutioner.calculateOutputShape(op);
     }
 
@@ -589,5 +591,10 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     @Override
     public boolean isDebug() {
         return backendExecutioner.isDebug();
+    }
+
+    @Override
+    public String getString(Utf8Buffer buffer, long index) {
+        return backendExecutioner.getString(buffer, index);
     }
 }

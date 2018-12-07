@@ -24,7 +24,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.random.impl.AlphaDropOut;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -137,7 +137,8 @@ public class AlphaDropout implements IDropout {
         Nd4j.getExecutioner().exec(new BernoulliDistribution(mask, pValue));
 
         //a * (x * d + alphaPrime * (1-d)) + b
-        INDArray aPOneMinusD = Transforms.not(mask).muli(alphaPrime);
+        INDArray inverseMask = mask.rsub(1.0);
+        INDArray aPOneMinusD = inverseMask.muli(alphaPrime);
         Nd4j.getExecutioner().exec(new OldMulOp(inputActivations, mask, output));   //out = x * d
         output.addi(aPOneMinusD).muli(a).addi(b);
 

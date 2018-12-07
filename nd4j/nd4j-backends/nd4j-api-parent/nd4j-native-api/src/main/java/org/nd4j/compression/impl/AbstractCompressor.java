@@ -17,14 +17,18 @@
 package org.nd4j.compression.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * @author raver119@gmail.com
@@ -75,41 +79,45 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
             return;
 
         array.markAsCompressed(false);
-        array.setData(decompress(array.data()));
+        array.setData(decompress(array.data(), ((CompressedDataBuffer)array.data()).getCompressionDescriptor().getOriginalDataType()));
     }
 
     @Override
     public INDArray decompress(INDArray array) {
-        DataBuffer buffer = decompress(array.data());
-        DataBuffer shapeInfo = array.shapeInfoDataBuffer();
+        if (!array.isCompressed())
+            return array;
+
+        val descriptor = ((CompressedDataBuffer)array.data()).getCompressionDescriptor();
+        val buffer = decompress(array.data(), descriptor.getOriginalDataType());
+        val shapeInfo = array.shapeInfoDataBuffer();
         INDArray rest = Nd4j.createArrayFromShapeBuffer(buffer, shapeInfo);
 
         return rest;
     }
 
-    public abstract DataBuffer decompress(DataBuffer buffer);
+    public abstract DataBuffer decompress(DataBuffer buffer, DataType dataType);
 
     public abstract DataBuffer compress(DataBuffer buffer);
 
-    protected static DataBuffer.TypeEx convertType(DataBuffer.Type type) {
-        if (type == DataBuffer.Type.HALF) {
-            return DataBuffer.TypeEx.FLOAT16;
-        } else if (type == DataBuffer.Type.FLOAT) {
-            return DataBuffer.TypeEx.FLOAT;
-        } else if (type == DataBuffer.Type.DOUBLE) {
-            return DataBuffer.TypeEx.DOUBLE;
+    protected static DataTypeEx convertType(DataType type) {
+        if (type == DataType.HALF) {
+            return DataTypeEx.FLOAT16;
+        } else if (type == DataType.FLOAT) {
+            return DataTypeEx.FLOAT;
+        } else if (type == DataType.DOUBLE) {
+            return DataTypeEx.DOUBLE;
         } else
             throw new IllegalStateException("Unknown dataType: [" + type + "]");
     }
 
-    protected DataBuffer.TypeEx getGlobalTypeEx() {
-        DataBuffer.Type type = Nd4j.dataType();
+    protected DataTypeEx getGlobalTypeEx() {
+        DataType type = Nd4j.dataType();
 
         return convertType(type);
     }
 
-    public static DataBuffer.TypeEx getBufferTypeEx(DataBuffer buffer) {
-        DataBuffer.Type type = buffer.dataType();
+    public static DataTypeEx getBufferTypeEx(DataBuffer buffer) {
+        DataType type = buffer.dataType();
 
         return convertType(type);
     }
@@ -150,8 +158,8 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
     public INDArray compress(float[] data, int[] shape, char order) {
         FloatPointer pointer = new FloatPointer(data);
 
-        DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order).getFirst();
-        DataBuffer buffer = compressPointer(DataBuffer.TypeEx.FLOAT, pointer, data.length, 4);
+        DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), order, DataType.FLOAT).getFirst();
+        DataBuffer buffer = compressPointer(DataTypeEx.FLOAT, pointer, data.length, 4);
 
         return Nd4j.createArrayFromShapeBuffer(buffer, shapeInfo);
     }
@@ -168,12 +176,12 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
     public INDArray compress(double[] data, int[] shape, char order) {
         DoublePointer pointer = new DoublePointer(data);
 
-        DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order).getFirst();
-        DataBuffer buffer = compressPointer(DataBuffer.TypeEx.DOUBLE, pointer, data.length, 8);
+        DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), order, DataType.DOUBLE).getFirst();
+        DataBuffer buffer = compressPointer(DataTypeEx.DOUBLE, pointer, data.length, 8);
 
         return Nd4j.createArrayFromShapeBuffer(buffer, shapeInfo);
     }
 
-    protected abstract CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length,
+    protected abstract CompressedDataBuffer compressPointer(DataTypeEx srcType, Pointer srcPointer, int length,
                     int elementSize);
 }

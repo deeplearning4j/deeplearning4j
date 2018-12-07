@@ -19,8 +19,8 @@ package org.nd4j.autodiff.validation;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -30,15 +30,17 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.DefaultOpConverter;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.accum.All;
-import org.nd4j.linalg.api.ops.impl.accum.Any;
-import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
-import org.nd4j.linalg.api.ops.impl.accum.NormalizeMoments;
-import org.nd4j.linalg.api.ops.impl.accum.bp.*;
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.*;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
+import org.nd4j.linalg.api.ops.impl.reduce3.EqualsWithEps;
+import org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.grid.FreeGridOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
+import org.nd4j.linalg.api.ops.impl.scalar.PowDerivative;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarRemainder;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
@@ -49,17 +51,23 @@ import org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
-import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.*;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.InvertPermutation;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.Histogram;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryMinimalRelativeError;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SwishDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.TanDerivative;
 import org.nd4j.linalg.api.ops.persistence.RestoreV2;
 import org.nd4j.linalg.api.ops.persistence.SaveV2;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.impl.*;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.primitives.Pair;
@@ -266,7 +274,7 @@ public class OpValidation {
         collectCoverageInformation(testCase);
 
         //Check shape function:
-        List<long[]> outShapes;
+        List<LongShapeDescriptor> outShapes;
         try {
             outShapes = Nd4j.getExecutioner().calculateOutputShape(testCase.op());
         } catch (Throwable t) {
@@ -279,11 +287,10 @@ public class OpValidation {
         }
 
         for (int i = 0; i < outShapes.size(); i++) {
-            long[] act = outShapes.get(i);
-            long[] exp = testCase.expShapes().get(i);
-            if (!Arrays.equals(exp, act)) {
-                return "Shape function check failed for output " + i + ": expected shape " + Arrays.toString(exp) +
-                        ", actual shape " + Arrays.toString(act);
+            val act = outShapes.get(i);
+            val exp = testCase.expShapes().get(i);
+            if (!Objects.equals(exp, act)) {
+                return "Shape function check failed for output " + i + ": expected shape " + exp + ", actual shape " + act;
             }
         }
 
@@ -733,16 +740,16 @@ public class OpValidation {
                 Relu6Derivative.class,
                 SELUDerivative.class,
                 SigmoidDerivative.class,
-                org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative.class,
+                org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative.class,
                 SoftMaxDerivative.class,
-                org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative.class,
+                org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative.class,
                 SoftSignDerivative.class,
                 TanhDerivative.class,
                 LogSigmoidDerivative.class,
                 SwishDerivative.class,
                 TanDerivative.class,
                 TanhDerivative.class,
-                org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative.class,
+                org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative.class,
                 PowDerivative.class,
 
                 BiasAddGrad.class,
@@ -809,8 +816,6 @@ public class OpValidation {
                 IMin.class,
                 LastIndex.class,
                 //Exclude Random ops
-                LegacyDropOut.class,
-                LegacyDropOutInverted.class,
                 RandomStandardNormal.class,
                 DistributionUniform.class,
                 AlphaDropOut.class,

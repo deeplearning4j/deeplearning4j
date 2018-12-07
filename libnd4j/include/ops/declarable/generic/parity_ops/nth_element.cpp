@@ -25,20 +25,20 @@ namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(nth_element, 2, 1, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
-            int n = (int)INPUT_VARIABLE(1)->getScalar(0);
+            auto n = INPUT_VARIABLE(1);
             bool reverse = false;
             if (block.getIArguments()->size() > 0)
                 reverse = (bool)INT_ARG(0);
 
             auto output = OUTPUT_VARIABLE(0);
             Nd4jLong lastDim = input->sizeAt(-1);
-            REQUIRE_TRUE(n < lastDim && n > 0, 0, "nth_element: n should be positive and less than last dimension size, but %i was given.", lastDim);
+            REQUIRE_TRUE(n->e<Nd4jLong>(0) < lastDim && n->e<Nd4jLong>(0) > 0, 0, "nth_element: n should be positive and less than last dimension size, but %i was given.", lastDim);
             REQUIRE_TRUE(input->rankOf() > 0, 0, "nth_element: The rank of input array should be at least 1, but %i is given", input->rankOf());            //
             if (output->lengthOf() == input->lengthOf())
                 output->assign(input);
             else {
                 if (reverse)
-                    n = lastDim - n - 1;
+                    (*n) = lastDim - n->e<Nd4jLong>(0) - 1;
                 helpers::nthElementFunctor(input, n, output);
             }
             return ND4J_STATUS_OK;
@@ -55,16 +55,22 @@ namespace nd4j {
                 for (Nd4jLong e = 0; e < outRank; e++)
                 outputShape[e + 1] = in[e + 1];
 
-                shape::updateStrides(outputShape, shape::order(in));
+                ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
             }
             else if (outRank == 1) {
-                outputShape = ShapeUtils<T>::createVectorShapeInfo(shape::sizeAt(in, 0), block.workspace());
+                outputShape = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(in), shape::sizeAt(in, 0), block.workspace());
             }
             else {
                 //outputShape = shape::createScalarShapeInfo();
-                outputShape = ShapeUtils<T>::createScalarShapeInfo(block.workspace());
+                outputShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(in), block.workspace());
             }
             return SHAPELIST(outputShape);
         }
+        DECLARE_TYPES(nth_element) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
+        }
+
     }
 }

@@ -41,7 +41,13 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(size_at) {
-            return SHAPELIST(ShapeUtils<T>::createScalarShapeInfo(block.getWorkspace()));
+            return SHAPELIST(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64, block.getWorkspace()));
+        }
+
+        DECLARE_TYPES(size_at) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(DataType::INT64);
         }
     }
 }

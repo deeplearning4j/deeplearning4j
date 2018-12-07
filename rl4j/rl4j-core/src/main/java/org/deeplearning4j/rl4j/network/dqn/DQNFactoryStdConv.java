@@ -68,7 +68,7 @@ public class DQNFactoryStdConv implements DQNFactory {
                         .build());
 
         confB.setInputType(InputType.convolutional(shapeInputs[1], shapeInputs[2], shapeInputs[0]));
-        MultiLayerConfiguration mlnconf = confB.pretrain(false).backprop(true).build();
+        MultiLayerConfiguration mlnconf = confB.build();
         MultiLayerNetwork model = new MultiLayerNetwork(mlnconf);
         model.init();
         if (conf.getListeners() != null) {

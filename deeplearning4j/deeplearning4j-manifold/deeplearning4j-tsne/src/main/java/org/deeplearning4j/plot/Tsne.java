@@ -149,9 +149,9 @@ public class Tsne {
                 momentum = finalMomentum;
             }
 
-            gains = gains.add(.2).muli(dY.cond(Conditions.greaterThan(0)).neqi(iY.cond(Conditions.greaterThan(0))))
+            gains = gains.add(.2).muli(dY.cond(Conditions.greaterThan(0)).neq(iY.cond(Conditions.greaterThan(0))))
                             .addi(gains.mul(0.8).muli(dY.cond(Conditions.greaterThan(0))
-                                            .eqi(iY.cond(Conditions.greaterThan(0)))));
+                                            .eq(iY.cond(Conditions.greaterThan(0)))));
 
 
             BooleanIndexing.applyWhere(gains, Conditions.lessThan(minGain), new Value(minGain));

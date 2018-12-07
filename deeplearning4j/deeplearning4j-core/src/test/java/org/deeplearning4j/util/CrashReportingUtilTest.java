@@ -35,6 +35,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -49,6 +50,11 @@ public class CrashReportingUtilTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
 
     @After
     public void after(){

@@ -26,10 +26,12 @@ import org.nd4j.autodiff.samediff.SameDiffConditional;
 import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.AttrValue;
@@ -207,6 +209,11 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public boolean[] bArgs() {
+        return new boolean[0];
+    }
+
+    @Override
     public void addIArgument(int... arg) {
 
     }
@@ -217,8 +224,18 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public void addBArgument(boolean... arg) {
+
+    }
+
+    @Override
     public void removeIArgument(Integer arg) {
 
+    }
+
+    @Override
+    public Boolean getBArgument(int index) {
+        return null;
     }
 
     @Override
@@ -248,6 +265,11 @@ public class If extends DifferentialFunction implements CustomOp {
 
     @Override
     public int numTArguments() {
+        return 0;
+    }
+
+    @Override
+    public int numBArguments() {
         return 0;
     }
 
@@ -352,8 +374,8 @@ public class If extends DifferentialFunction implements CustomOp {
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        return Arrays.asList(new long[]{1,1});
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        return Arrays.asList(LongShapeDescriptor.fromShape(new long[0], DataType.BOOL));
     }
 
     @Override

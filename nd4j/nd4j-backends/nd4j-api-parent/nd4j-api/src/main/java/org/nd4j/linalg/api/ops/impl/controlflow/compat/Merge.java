@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -39,9 +40,9 @@ public class Merge extends BaseCompatOp {
     }
 
     @Override
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
         if(arg().getArr() != null) {
-            return Collections.singletonList(arg().getShape());
+            return Collections.singletonList(arg().getShapeDescriptor());
         }
         else
             return Collections.emptyList();

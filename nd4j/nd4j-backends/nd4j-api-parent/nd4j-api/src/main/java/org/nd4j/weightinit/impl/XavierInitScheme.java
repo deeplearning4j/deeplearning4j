@@ -18,6 +18,7 @@ package org.nd4j.weightinit.impl;
 
 import lombok.Builder;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.BaseWeightInitScheme;
@@ -42,8 +43,8 @@ public class XavierInitScheme extends BaseWeightInitScheme {
 
 
     @Override
-    public INDArray doCreate(long[] shape, INDArray paramsView) {
-        return Nd4j.randn(order(), shape).muli(FastMath.sqrt(2.0 / (fanIn + fanOut)));
+    public INDArray doCreate(DataType dataType, long[] shape, INDArray paramsView) {
+        return Nd4j.randn(dataType, order(), shape).muli(FastMath.sqrt(2.0 / (fanIn + fanOut)));
     }
 
 

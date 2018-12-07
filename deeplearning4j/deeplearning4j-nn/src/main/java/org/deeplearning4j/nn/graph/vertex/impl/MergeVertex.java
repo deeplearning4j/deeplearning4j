@@ -23,9 +23,10 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Or;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
@@ -192,10 +193,15 @@ public class MergeVertex extends BaseGraphVertex {
         if (maskArrays.length == 1) {
             return new Pair<>(maskArrays[0], currentMaskState);
         } else {
-            INDArray ret = maskArrays[0].dup(maskArrays[0].ordering());
-            Nd4j.getExecutioner().exec(new Or(maskArrays[0], maskArrays[1], ret));
+            INDArray ret;
+            if(maskArrays[0].dataType() == DataType.BOOL){
+                ret = maskArrays[0].dup(maskArrays[0].ordering());
+            } else {
+                ret = maskArrays[0].castTo(DataType.BOOL);
+            }
+            Nd4j.getExecutioner().exec(new Or(ret, maskArrays[1].castTo(DataType.BOOL), ret));
             for (int i = 2; i < maskArrays.length; i++) {
-                Nd4j.getExecutioner().exec(new Or(maskArrays[i], ret, ret));
+                Nd4j.getExecutioner().exec(new Or(maskArrays[i].castTo(DataType.BOOL), ret, ret));
             }
             return new Pair<>(ret, currentMaskState);
         }

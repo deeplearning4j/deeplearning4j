@@ -59,6 +59,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
@@ -122,6 +123,12 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         Nd4j.getExecutioner().setProfilingMode(origMode);
     }
 
+    /**
+     * Override this to set the datatype of the tests defined in the child class
+     */
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
 
     @Test
     public void testFeedForwardToLayer() {
@@ -601,7 +608,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                         .dist(new UniformDistribution(0, 1))
                                         .activation(Activation.SOFTMAX).build(),
                                 "layer0", "layer2")
-                        .setOutputs("out").pretrain(true).backprop(false).build();
+                        .setOutputs("out").build();
 
 
         ComputationGraph net = new ComputationGraph(conf);
@@ -1072,7 +1079,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraph cg = new ComputationGraph(c);
         cg.init();
 
-        cg.setInputs(Nd4j.ones(5));
+        cg.setInputs(Nd4j.ones(1, 5));
 
         Map<String, INDArray> layersOnly = cg.feedForward(true, false, false);
         Map<String, INDArray> alsoVertices = cg.feedForward(true, false, true);
@@ -1445,14 +1452,14 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     @Test
     public void scaleVertexGraphTest() {
         final double scaleFactor = 2;
-        final double[] inputArr = new double[]{-2, -1, 0, 1, 2};//IntStream.rangeClosed(-2, 2).mapToDouble(i -> i).toArray();
-        final double[] expected = new double[inputArr.length];  //DoubleStream.of(inputArr).map(i -> i * scaleFactor).toArray();
+        final float[] inputArr = new float[]{-2, -1, 0, 1, 2};//IntStream.rangeClosed(-2, 2).mapToDouble(i -> i).toArray();
+        final float[] expected = new float[inputArr.length];  //DoubleStream.of(inputArr).map(i -> i * scaleFactor).toArray();
         for( int i=0; i<expected.length; i++ ){
-            expected[i] = inputArr[i] * scaleFactor;
+            expected[i] = (float) (inputArr[i] * scaleFactor);
         }
 
         final INDArray input = getInputArray4d(inputArr); // Replacing this line with the line below is enough to make test pass
-        //final INDArray input = Nd4j.create(new double[][]{inputArr});
+        //final INDArray input = Nd4j.create(new float[][]{inputArr});
 
         final String inputName = "input";
         final String outputName = "output";
@@ -1482,8 +1489,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         assertEquals("Incorrect output", Nd4j.create(expected), graph.outputSingle(input));
     }
 
-    private static INDArray getInputArray4d(double[] inputArr) {
-        final INDArray input = Nd4j.create(1, 1, inputArr.length, 1);
+    private static INDArray getInputArray4d(float[] inputArr) {
+        final INDArray input = Nd4j.create(DataType.FLOAT, 1, 1, inputArr.length, 1);
         for (int i = 0; i < input.length(); i++) {
             input.putScalar(new int[]{0, 0, i, 0}, inputArr[i]);
         }
@@ -1665,7 +1672,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                         .nIn(10).nOut(10).encoderLayerSizes(10).decoderLayerSizes(10).build(), "in")
                 .layer("1", new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "0")
                 .setOutputs("1")
-                .pretrain(true)
+
                 .build();
 
         ComputationGraph net = new ComputationGraph(conf);
