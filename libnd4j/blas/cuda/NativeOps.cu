@@ -1982,7 +1982,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
         }
     }
 
-	if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hShapePointers[0])) {
+	if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hZShapeInfo)) {
 		isHstack = true;
 		for (int i = 0; i < numArrays; i++) {
 			if (!shape::isVector(hShapePointers[i]) || shape::elementWiseStride(hShapePointers[i]) <= 0) {
@@ -2022,7 +2022,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
         auto devZTadShape = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 		auto devZOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
 		
-		dim3 launchDims(128, 128, 16384);
+		dim3 launchDims(128, 128, 8192);
 		auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 		BUILD_SINGLE_SELECTOR(zType, concatKernelGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(ddata[0]), reinterpret_cast<Nd4jPointer *>(dinputShapeInfo[0]), dZ, dZShapeInfo,  reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]), devZTadShape, devZOffsets), LIBND4J_TYPES);
 	}

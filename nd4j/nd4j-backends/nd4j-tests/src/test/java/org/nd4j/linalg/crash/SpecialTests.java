@@ -447,6 +447,19 @@ public class SpecialTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testConcatAgain(){
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        INDArray[] toConcat = new INDArray[3];
+        for( int i=0; i<toConcat.length; i++ ) {
+            toConcat[i] = Nd4j.valueArrayOf(new long[]{10, 1}, i).castTo(DataType.FLOAT);
+        }
+
+        INDArray out = Nd4j.concat(1, toConcat);
+        System.out.println(out);
+    }
+
+    @Test
     public void testConcat2(){
         //Nd4j.getExecutioner().enableDebugMode(true);
         //Nd4j.getExecutioner().enableVerboseMode(true);
@@ -461,8 +474,10 @@ public class SpecialTests extends BaseNd4jTest {
 
         Nd4j.getExecutioner().commit();
         INDArray out = null;
-        for (int e = 0; e < 10; e++) {
-            log.info("Iteration: [{}]", e);
+        for (int e = 0; e < 100; e++) {
+            if (e % 10 == 0)
+                log.info("Iteration: [{}]", e);
+
             out = Nd4j.concat(1, arrs);
         }
         Nd4j.getExecutioner().commit();
