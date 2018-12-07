@@ -64,9 +64,22 @@ public class KFoldIterator implements DataSetIterator {
         }
         this.k = k;
         this.N = allData.numExamples();
+        this.allData = allData.copy();
+        
+        // generate index range boundaries
         this.baseBatchSize = N / k;
         this.numIncrementedBatches = N % k;
-        this.allData = allData.copy();
+
+        this.testIndexRanges = new int[k+1];
+        testIndexRanges[0] = 0;
+        for (int i = 1; i <= k; i++) {
+        	if (i <= numIncrementedBatches) {
+                testIndexRanges[i] = testIndexRanges[i-1] + (baseBatchSize + 1);
+            } else {
+            	testIndexRanges[i] = testIndexRanges[i-1] + baseBatchSize;
+            }
+        }
+        
     }
 
     @Override
@@ -80,8 +93,7 @@ public class KFoldIterator implements DataSetIterator {
      * @return total number of examples in the dataset including all k folds
      */
     public int totalExamples() {
-        // FIXME: int cast
-        return (int) allData.getLabels().size(0);
+        return N;
     }
 
     @Override
@@ -120,23 +132,18 @@ public class KFoldIterator implements DataSetIterator {
 
 
     /**
-     * The number of examples in every fold, except the last if totalexamples % k !=0
+     * The number of examples in every fold is (N / k), 
+     * except when (N % k) > 0, when the first (N % k) folds contain (N / k) + 1 examples  
      *
      * @return examples in a fold
      */
     @Override
     public int batch() {
-        return batch;
-    }
-
-    /**
-     * The number of examples in the last fold
-     * if totalexamples % k == 0 same as the number of examples in every other fold
-     *
-     * @return examples in the last fold
-     */
-    public int lastBatch() {
-        return lastBatch;
+    	if (kCursor < numIncrementedBatches) {
+    		return baseBatchSize + 1;
+    	} else {
+    		return baseBatchSize;
+    	}
     }
 
     @Override
@@ -171,15 +178,8 @@ public class KFoldIterator implements DataSetIterator {
     }
 
     protected void nextFold() {
-        int left;
-        int right;
-        if (kCursor < numIncrementedBatches) {
-            left = kCursor * (baseBatchSize + 1);
-            right = left + (baseBatchSize + 1);
-        } else {
-            left = rem * (baseBatchSize + 1) + (kCursor - numIncrementedBatches) * baseBatchSize;
-            right = left + rem;
-        }
+        int left = testIndexRanges[kCursor];
+        int right = testIndexRanges[kCursor + 1];
 
         List<DataSet> kMinusOneFoldList = new ArrayList<DataSet>();
         if (right < totalExamples()) {

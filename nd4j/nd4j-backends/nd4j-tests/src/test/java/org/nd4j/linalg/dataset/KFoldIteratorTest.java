@@ -37,6 +37,49 @@ public class KFoldIteratorTest extends BaseNd4jTest {
         super(backend);
     }
 
+    
+	/**
+	 * Try every possible k number of folds from 2 to the number of examples, 
+	 * and check that every example will be exactly once in the test set,
+	 * and the sum of the number of test examples in all folds equals to the number of examples.
+	 */
+	@Test
+	public void checkTestFoldContent() {
+
+		final int numExamples = 42;
+		final int numFeatures = 3;
+		INDArray features = Nd4j.rand(new int[] {numExamples, numFeatures});
+		
+		double[] labelValues = new double[numExamples];
+		for (int i = 0; i < numExamples; i++) {
+			labelValues[i] = i;
+		}
+		INDArray labels = Nd4j.create(labelValues).transpose();
+		
+		DataSet dataSet = new DataSet(features, labels);
+		
+		for (int k = 2; k <= numExamples; k++) {
+			KFoldIterator kFoldIterator = new KFoldIterator(k, dataSet);
+			HashSet<Double> testLabels = new HashSet<Double>();
+			for (int i = 0; i < k; i++) {
+				kFoldIterator.next();
+				DataSet testFold = kFoldIterator.testFold();
+				for (DataSet testExample : testFold) {
+					/**
+					 * Check that the current example has not been in the test set before
+					 */
+					INDArray testedLabel = testExample.getLabels();
+					assertTrue(testLabels.add(testedLabel.getDouble(0)));
+				}
+			}
+			/**
+			 * Check that the sum of the number of test examples in all folds equals to the number of examples
+			 */
+			assertEquals(numExamples, testLabels.size());
+		}
+	}
+	
+
     @Test
     public void checkFolds() {
         KBatchRandomDataSet randomDS = new KBatchRandomDataSet(new int[] {2, 3}, new int[] {3, 3, 3, 2});
@@ -58,13 +101,14 @@ public class KFoldIteratorTest extends BaseNd4jTest {
         }
         assertEquals(i, 4);
     }
+    
 
     @Test(expected = IllegalArgumentException.class)
     public void checkCornerCaseException() {
         DataSet allData = new DataSet(Nd4j.linspace(1,3,3).transpose(), Nd4j.linspace(1,3,3).transpose());
         int k = 1;
         //this will throw illegal argument exception
-        KFoldIterator kiter = new KFoldIterator(k, allData);
+        new KFoldIterator(k, allData);
     }
 
     @Test
@@ -83,19 +127,51 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             assertEquals(test.getFeatures(), randomDS.getBatchK(i, true));
             assertEquals(test.getLabels(), randomDS.getBatchK(i, false));
             i++;
-            System.out.println("Fold " + i + " passed");
         }
         assertEquals(i, 2);
     }
 
-    /*
+    
+    @Test
+    public void test5974(){
+        DataSet ds = new DataSet(Nd4j.linspace(1,99,99).transpose(), Nd4j.linspace(1,99,99).transpose());
+
+        KFoldIterator iter = new KFoldIterator(10, ds);
+
+        int count = 0;
+        while(iter.hasNext()){
+            DataSet fold = iter.next();
+            INDArray testFold;
+            int countTrain;
+            if(count < 9){
+                //Folds 0 to 8: should have 10 examples for test
+                testFold = Nd4j.linspace(10*count+1, 10*count+10, 10).transpose();
+                countTrain = 99 - 10;
+            } else {
+                //Fold 9 should have 9 examples for test
+                testFold = Nd4j.linspace(10*count+1, 10*count+9, 9).transpose();
+                countTrain = 99-9;
+            }
+            String s = String.valueOf(count);
+            DataSet test = iter.testFold();
+            assertEquals(s, testFold, test.getFeatures());
+            assertEquals(s, testFold, test.getLabels());
+            assertEquals(s, countTrain, fold.getFeatures().length());
+            assertEquals(s, countTrain, fold.getLabels().length());
+            count++;
+        }
+    }
+    
+    /**
      * Dataset built from given sized batches of random data
+     * @author susaneraly created RandomDataSet
+     * @author Tamas Fenyvesi renamed RandomDataSet to KBatchRandomDataSet (December 2018)
+     *
      */
     public class KBatchRandomDataSet {
         //only one label
         private int[] dataShape;
         private int dataRank;
-        private int dataElementCount;
         private int[] batchSizes;
         private DataSet allBatches;
         private INDArray allFeatures;
@@ -112,13 +188,11 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             this.dataShape = dataShape;
             this.dataRank = this.dataShape.length;
             this.batchSizes = batchSizes;
-            this.dataElementCount = 1;
             int[] eachBatchSize = new int[dataRank + 1];
             eachBatchSize[0] = 0;
             kBatchFeats = new INDArray[batchSizes.length];
             kBatchLabels = new INDArray[batchSizes.length];
             for (int i = 0; i < dataRank; i++) {
-                this.dataElementCount *= dataShape[i];
                 eachBatchSize[i + 1] = dataShape[i];
             }
             for (int i = 0; i < batchSizes.length; i++) {
@@ -157,50 +231,19 @@ public class KFoldIteratorTest extends BaseNd4jTest {
          * @param feat true if we want to get features, false if we want to get labels
          */
         public INDArray getBatchButK(int k, boolean feat) {
-            INDArray iFold = null;
+            INDArray batches = null;
             boolean notInit = true;
             for (int i = 0; i < batchSizes.length; i++) {
                 if (i == k)
                     continue;
                 if (notInit) {
-                    iFold = getBatchK(i, feat);
+                    batches = getBatchK(i, feat);
                     notInit = false;
                 } else {
-                    iFold = Nd4j.vstack(iFold, getBatchK(i, feat)).dup();
+                    batches = Nd4j.vstack(batches, getBatchK(i, feat)).dup();
                 }
             }
-            return iFold;
-        }
-    }
-
-
-    @Test
-    public void test5974(){
-        DataSet ds = new DataSet(Nd4j.linspace(1,99,99).transpose(), Nd4j.linspace(1,99,99).transpose());
-
-        KFoldIterator iter = new KFoldIterator(10, ds);
-
-        int count = 0;
-        while(iter.hasNext()){
-            DataSet fold = iter.next();
-            INDArray testFold;
-            int countTrain;
-            if(count < 9){
-                //Folds 0 to 8: should have 10 examples for test
-                testFold = Nd4j.linspace(10*count+1, 10*count+10, 10).transpose();
-                countTrain = 99 - 10;
-            } else {
-                //Fold 9 should have 9 examples for test
-                testFold = Nd4j.linspace(10*count+1, 10*count+9, 9).transpose();
-                countTrain = 99-9;
-            }
-            String s = String.valueOf(count);
-            DataSet test = iter.testFold();
-            assertEquals(s, testFold, test.getFeatures());
-            assertEquals(s, testFold, test.getLabels());
-            assertEquals(s, countTrain, fold.getFeatures().length());
-            assertEquals(s, countTrain, fold.getLabels().length());
-            count++;
+            return batches;
         }
     }
 
