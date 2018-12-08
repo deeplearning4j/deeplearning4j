@@ -2695,6 +2695,8 @@ namespace simdOps {
 		op_def static Z op(X d1, Y d2) {
 			auto z1 = static_cast<Z>(d1);
 			auto z2 = static_cast<Z>(d2);
+
+#ifdef __CUDA_ARCH__
 			auto az1 = nd4j::math::nd4j_abs<Z>(z1);
 			auto az2 = nd4j::math::nd4j_abs<Z>(z2);
 
@@ -2703,6 +2705,23 @@ namespace simdOps {
 			} else {
 				return z2;
 			}
+#else
+			if (std::is_same<Z, bool>::value) {
+				if (z1 || z2)
+					return true;
+				else
+					return false;
+			} else {
+				auto az1 = nd4j::math::nd4j_abs<Z>(z1);
+				auto az2 = nd4j::math::nd4j_abs<Z>(z2);
+
+				if (az1 > az2) {
+					return z1;
+				} else {
+					return z2;
+				}
+			}
+#endif
 		}
 	};
 
@@ -2716,6 +2735,8 @@ namespace simdOps {
 
 		op_def static Z op(X d1, Y d2) {
             auto z1 = static_cast<Z>(d1);
+			return z1;
+			/*
 			auto z2 = static_cast<Z>(d2);
 			auto az1 = nd4j::math::nd4j_abs<Z>(z1);
 			auto az2 = nd4j::math::nd4j_abs<Z>(z2);
@@ -2725,6 +2746,7 @@ namespace simdOps {
 			} else {
 				return z2;
 			}
+			*/
 		}
 	};
 
