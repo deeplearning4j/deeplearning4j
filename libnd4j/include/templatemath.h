@@ -311,6 +311,11 @@ namespace nd4j {
 		}
 
 		template<>
+		math_def inline unsigned char nd4j_abs<unsigned char>(unsigned char value) {
+			return value;
+		}
+
+		template<>
 		math_def inline uint8_t nd4j_abs<uint8_t>(uint8_t value) {
 			return value;
 		}
