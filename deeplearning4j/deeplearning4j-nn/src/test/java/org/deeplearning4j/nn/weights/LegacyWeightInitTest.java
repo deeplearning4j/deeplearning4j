@@ -1,22 +1,18 @@
 package org.deeplearning4j.nn.weights;
 
 import org.deeplearning4j.nn.conf.distribution.*;
-import org.deeplearning4j.nn.conf.serde.JsonMappers;
-import org.junit.*;
-import org.nd4j.linalg.activations.impl.ActivationCube;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.RandomFactory;
-import org.nd4j.shade.jackson.core.JsonProcessingException;
 
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+
 
 /**
  * Test that {@link WeightInit} is compatible with the corresponding classes which implement {@link IWeightInit}. Mocks
@@ -107,11 +103,11 @@ public class LegacyWeightInitTest {
     /**
      * Assumes RandomFactory will only call no-args constructor while this test runs
      */
-    public static class FixedSeedRandomFactory extends RandomFactory {
+    private static class FixedSeedRandomFactory extends RandomFactory {
         private final RandomFactory factory;
 
 
-        public FixedSeedRandomFactory(RandomFactory factory) {
+        private FixedSeedRandomFactory(RandomFactory factory) {
             super(factory.getRandom().getClass());
             this.factory = factory;
         }
