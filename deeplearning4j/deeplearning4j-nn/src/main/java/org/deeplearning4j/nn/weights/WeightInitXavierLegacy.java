@@ -12,7 +12,8 @@ import org.nd4j.linalg.factory.Nd4j;
 public class WeightInitXavierLegacy implements IWeightInit {
 
     @Override
-    public void init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
+    public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
         Nd4j.randn(paramView).divi(FastMath.sqrt(shape[0] + shape[1]));
+        return paramView.reshape(order, shape);
     }
 }

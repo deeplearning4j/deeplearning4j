@@ -12,8 +12,9 @@ public class WeightInitUniform implements IWeightInit {
 
 
     @Override
-    public void init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
+    public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
         double a = 1.0 / Math.sqrt(fanIn);
         Nd4j.rand(paramView, Nd4j.getDistributions().createUniform(-a, a));
+        return paramView.reshape(order, shape);
     }
 }

@@ -13,7 +13,7 @@ import java.util.Arrays;
 public class WeightInitIdentity implements IWeightInit {
 
     @Override
-    public void init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
+    public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
         if(shape.length != 2 || shape[0] != shape[1]){
             throw new IllegalStateException("Cannot use IDENTITY init with parameters of shape "
                     + Arrays.toString(shape) + ": weights must be a square matrix for identity");
@@ -26,5 +26,6 @@ public class WeightInitIdentity implements IWeightInit {
         }
         INDArray flat = Nd4j.toFlattened(order, ret);
         paramView.assign(flat);
+        return paramView.reshape(order, shape);
     }
 }

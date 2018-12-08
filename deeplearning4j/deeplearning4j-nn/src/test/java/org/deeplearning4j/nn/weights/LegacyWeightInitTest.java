@@ -11,6 +11,7 @@ import org.nd4j.linalg.factory.RandomFactory;
 
 import java.util.Arrays;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 
@@ -45,15 +46,17 @@ public class LegacyWeightInitTest {
         final long fanIn = shape[0];
         final long fanOut = shape[1];
 
-        final INDArray expected = Nd4j.create(fanIn * fanOut);
-        final INDArray actual = expected.dup();
+        final INDArray inLegacy = Nd4j.create(fanIn * fanOut);
+        final INDArray inTest = inLegacy.dup();
         for (WeightInit legacyWi : WeightInit.values()) {
             if (legacyWi != WeightInit.DISTRIBUTION) {
                 Nd4j.getRandom().setSeed(SEED);
-                WeightInitUtil.initWeights(fanIn, fanOut, shape, legacyWi, null, expected);
+                final INDArray expected = WeightInitUtil.initWeights(fanIn, fanOut, shape, legacyWi, null, inLegacy);
 
                 Nd4j.getRandom().setSeed(SEED);
-                legacyWi.getWeightInitFunction(null).init(fanIn, fanOut, shape, WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER, actual);
+                final INDArray actual = legacyWi.getWeightInitFunction(null)
+                        .init(fanIn, fanOut, shape, WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER, inTest);
+                assertArrayEquals("Incorrect shape!", shape, actual.shape());
 
                 assertEquals("Incorrect weight initialization for " + legacyWi + "!", expected, actual);
             }
@@ -69,8 +72,8 @@ public class LegacyWeightInitTest {
         final long fanIn = shape[0];
         final long fanOut = shape[1];
 
-        final INDArray expected = Nd4j.create(fanIn * fanOut);
-        final INDArray actual = expected.dup();
+        final INDArray inLegacy = Nd4j.create(fanIn * fanOut);
+        final INDArray inTest = inLegacy.dup();
 
         for (Distribution dist: Arrays.asList(
                 new LogNormalDistribution(12.3, 4.56),
@@ -82,20 +85,22 @@ public class LegacyWeightInitTest {
                 new ConstantDistribution(666))) {
 
             Nd4j.getRandom().setSeed(SEED);
-            WeightInitUtil.initWeights(
+            final INDArray expected = WeightInitUtil.initWeights(
                     fanIn,
                     fanOut,
                     shape,
                     WeightInit.DISTRIBUTION,
                     Distributions.createDistribution(dist),
-                    expected);
+                    inLegacy);
 
-            new WeightInitDistribution(dist).init(
+            final INDArray actual = new WeightInitDistribution(dist).init(
                     fanIn,
                     fanOut,
                     shape,
                     WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER,
-                    actual);
+                    inTest);
+            assertArrayEquals("Incorrect shape!", shape, actual.shape());
+
             assertEquals("Incorrect weight initialization for " + dist.getClass().getSimpleName() + "!", expected, actual);
         }
     }

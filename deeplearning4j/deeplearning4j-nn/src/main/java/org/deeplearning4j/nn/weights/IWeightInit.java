@@ -19,5 +19,5 @@ public interface IWeightInit {
      * @param order Order of array, e.g. Fortran ('f') or C ('c')
      * @param paramView View of parameters to initialize (and reshape)
      */
-    void init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView);
+    INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView);
 }
