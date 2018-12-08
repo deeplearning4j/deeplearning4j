@@ -24,8 +24,8 @@ import java.util.List;
 
 /**
  * Splits a dataset (represented as a single DataSet object) into k folds.
- * DataSet is duplicated in memory once
- * call .next() to get the k-1 folds to train on and call .testfold() to get the corresponding kth fold for testing
+ * DataSet is duplicated in memory once.
+ * Call .next() to get the k-1 folds to train on and then call .testfold() to get the corresponding kth fold for testing
  * @author Susan Eraly
  * @author Tamas Fenyvesi - modified KFoldIterator following the scikit-learn implementation (December 2018)
  */
@@ -55,7 +55,7 @@ public class KFoldIterator implements DataSetIterator {
 
     /**
      * Create an iterator given the dataset with given k train-test splits
-     * N number of samples are split into k batches. The first (N%k) batches contain (N/k)+1 samples, while the remaining batches contain (N/k) samples. 
+     * N number of samples are split into k batches. The first (N%k) batches contain (N/k)+1 samples, while the remaining batches contain (N/k) samples.
      * In case the number of samples (N) in the dataset is a multiple of k, all batches will contain (N/k) samples.
      * @param k number of folds (optional, defaults to 10)
      * @param allData DataSet to split into k folds
@@ -66,7 +66,7 @@ public class KFoldIterator implements DataSetIterator {
         }
         this.k = k;
         this.N = allData.numExamples();
-        this.allData = allData.copy();
+        this.allData = allData;
         
         // generate index interval boundaries of test folds
         int baseBatchSize = N / k;
