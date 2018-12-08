@@ -9,7 +9,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 
 import java.util.*;
 
@@ -24,21 +24,9 @@ public abstract class AbstractSession<T,O> {
     //All execution happens in a frame... this is the name of the main/outer frame
     protected static final String OUTER_FRAME = "main";
 
-    /*
-    VarId: identifies a variable in a specific frame and frame iteration
-    Used for 2 places: (a) to identify variables that are available for execution
-    (b) to store results
-     */
-    @Data
-    @AllArgsConstructor
-    protected static class VarId {
-        private String variable;
-        private String frame;
-        private int iteration;
-    }
-
     protected final SameDiff sameDiff;
     protected final Map<VarId, T> nodeOutputs = new HashMap<>();
+    //protected final Map<String,String> frameParents = new HashMap<>();  //Key: frame name. Value: parent frame for that frame
 
     public AbstractSession(@NonNull SameDiff sameDiff) {
         this.sameDiff = sameDiff;
@@ -49,13 +37,15 @@ public abstract class AbstractSession<T,O> {
      * @param op
      * @return
      */
-    public abstract T[] getOutputs(O op, VarId anOutput);
+    public abstract T[] getOutputs(O op, VarId anOutput, Set<VarId> inputs, Set<String> constAndPhInputs);
+
+    public abstract T getConstant(VarId varId);
 
     /**
      * Get the parameterized op to execute - for example, the op/DifferentialFunction with all inputs set
      * @return
      */
-    public abstract O getAndParameterizeOp(String opName, VarId anOutput);
+    public abstract O getAndParameterizeOp(String opName, VarId anOutput, Set<VarId> inputs, Set<String> constAndPhInputs);
 
     //TODO we might not need this method eventually...
     public abstract void preprocessPlaceholderValues(Map<String,T> placeholderValues);
@@ -116,6 +106,8 @@ public abstract class AbstractSession<T,O> {
         Queue<String> processingQueue = new LinkedList<>(variables);
         Set<String> subgraph = new HashSet<>();     //Contains variables we *might* need to execute in process of getting outputs we want
         Queue<VarId> availableForExec = new LinkedList<>();
+        Map<VarId,Set<VarId>> execInputs = new HashMap<>();         //Keys: variable (in specific frame/iteration). Values: inputs to that node (inc. frame and iteration), unordered - needed for execution of op giving variable
+        Map<String,Set<String>> execConstInputs = new HashMap<>();  //Keys: variable (any/all frame/iteration). Values: constant or placeholder needed for execution of op giving variable placeholder
 
         //Note subgraph initially should include placeholders and constants
         while(!processingQueue.isEmpty()){
@@ -130,7 +122,9 @@ public abstract class AbstractSession<T,O> {
                     numInputs += controlDeps.length;
                 }
                 if(numInputs == 0){
-                    availableForExec.add(newVarId(varName, OUTER_FRAME, 0));
+                    VarId vid = newVarId(varName, OUTER_FRAME, 0);
+                    availableForExec.add(vid);
+                    execInputs.put(vid, new HashSet<VarId>());
                 }
                 subgraph.add(varName);
             }
@@ -181,6 +175,8 @@ public abstract class AbstractSession<T,O> {
 
             //Get any variable and execute it's corresponding op
             VarId varToExec = availableForExec.remove();
+            Set<VarId> inputsToVar = execInputs.get(varToExec);     //Set of variables (specific frame/iteration) needed to execute op giving this variable (in specific frame/iteration)
+            Set<String> constPhForVar = execConstInputs.get(varToExec.getVariable());   //Set of constance and placeholders needed to execute op giving this variable (in any/all frames/iterations)
             if(nodeOutputs.containsKey(varToExec))
                 continue;   //Already processed this one?
 
@@ -188,7 +184,7 @@ public abstract class AbstractSession<T,O> {
 
             if(sameDiff.isPlaceHolder(varToExec.getVariable()) ){
                 nodeOutputs.put(varToExec, placeholderValues.get(varToExec.getVariable()));
-                updateDescendentsForExec(varToExec, availableForExec);
+                updateDescendentsForExec(varToExec, availableForExec, execInputs, execConstInputs);
                 if(variables.contains(varToExec.getVariable())){  //Check if required output
                     out.put(varToExec.getVariable(), placeholderValues.get(varToExec.getVariable()));
                 }
@@ -196,8 +192,10 @@ public abstract class AbstractSession<T,O> {
                 //TODO let's remove the "importad constants" field, just have constants
                 //TODO let's add an 'isConstant(String)'?
 
-                nodeOutputs.put(varToExec, placeholderValues.get(varToExec.getVariable()));
-                updateDescendentsForExec(varToExec, availableForExec);
+                T phArr = getConstant(varToExec);
+                Preconditions.checkNotNull(phArr, "Encountered null placeholder array for constant: %s", varToExec);
+                nodeOutputs.put(varToExec, phArr);
+                updateDescendentsForExec(varToExec, availableForExec, execInputs, execConstInputs);
                 if(variables.contains(varToExec.getVariable())){  //Check if required output
                     out.put(varToExec.getVariable(), placeholderValues.get(varToExec.getVariable()));
                 }
@@ -207,10 +205,8 @@ public abstract class AbstractSession<T,O> {
                     String opName = sameDiff.getFunctionOutputFor().get(varToExec.getVariable()).get(0).getOwnName();
 
                     //Execute op
-                    //TODO
-
-                    O parameterizedOp = getAndParameterizeOp(opName, varToExec);
-                    T[] opOutputValues = getOutputs(parameterizedOp, varToExec);
+                    O parameterizedOp = getAndParameterizeOp(opName, varToExec, inputsToVar, constPhForVar);
+                    T[] opOutputValues = getOutputs(parameterizedOp, varToExec, inputsToVar, constPhForVar);
 
 
                     //Post execution: work out what is now available for exec
@@ -224,9 +220,26 @@ public abstract class AbstractSession<T,O> {
                             continue;
                         }
 
-                        VarId vid = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration());      //In same frame as input
+                        VarId vid;
+                        if(parameterizedOp instanceof Enter) {
+                            //Enter op: new (specified) frame, iteration 0
+                            String frame = ((Enter) parameterizedOp).getFrameName();
+                            vid = newVarId(opOutputVarNames[i], frame, varToExec.getIteration());
+                        } else if(parameterizedOp instanceof Exit) {
+                            throw new UnsupportedOperationException("Not yet implemented: Exit op");
+                        } else if(parameterizedOp instanceof NextIteration) {
+                            //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
+                            vid = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration() + 1);
+                        } else if(parameterizedOp instanceof LoopCond){
+                            //LoopCond just forwards input to output?
+                            vid = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration());
+                        } else {
+                            //Standard ops - same frame as input
+                            vid = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration());
+                        }
+
                         nodeOutputs.put(vid, opOutputValues[i]);
-                        updateDescendentsForExec(vid, availableForExec);
+                        updateDescendentsForExec(vid, availableForExec, execInputs, execConstInputs);
 
                         if(variables.contains(opOutputVarNames[i])){  //Check if required output
                             out.put(opOutputVarNames[i], opOutputValues[i]);
@@ -250,11 +263,14 @@ public abstract class AbstractSession<T,O> {
      * This method should be called for a variable once it's array is ready for use.
      * For example, post op execution, etc
      *
-     * @param varName          Name of the variable
+     * @param executedVar      Variable that was just executed
      * @param availableForExec Any other variables that are now available for execution
+     * @param execInputs       Map - keys: variable ID (name, frame, iteration). Values: the set of (non-constant) inputs required for executing the key node
+     * @param execConstInputs  Map - keys: variable name. Values: name of the **CONSTANTS OR PLACEHOLDERS** (only) that the specified variable needs to exec
      */
-    protected void updateDescendentsForExec(VarId varId, Queue<VarId> availableForExec){
-        String varName = varId.getVariable();
+    protected void updateDescendentsForExec(VarId executedVar, Queue<VarId> availableForExec, Map<VarId,Set<VarId>> execInputs,
+                                            Map<String,Set<String>> execConstInputs){
+        String varName = executedVar.getVariable();
         //Find any ops (or variables with control dependencies) that this is required for execution of and check if now available for exec
         List<DifferentialFunction> l = sameDiff.getFunctionsArgsFor().get(varName);
         String[] inputForOps = l == null ? null : new String[l.size()];
@@ -264,27 +280,105 @@ public abstract class AbstractSession<T,O> {
             }
         }
 
-        //Check if we can execute this op now...
+        boolean isConstOrPhInput = sameDiff.isPlaceHolder(executedVar.getVariable()) || sameDiff.getImportedConstants().contains(executedVar.getVariable());
+
+        //After a variable becomes available, we should look at the ops this is an input to, and check if we can execute this op now...
         if(inputForOps != null){
             for(String opName : inputForOps) {
+
+
+
                 if(sameDiff.getFunctionById(opName) instanceof Merge){
                     //Merge op: available for execution when *any* of its inputs are available. But only mark it for exec once...
                     String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);
                     Preconditions.checkState(opOutputs.length == 1, "Expected only 1 output variable for merge op, got %s", opOutputs);
-                    VarId vid = newVarId(opOutputs[0], varId.getFrame(), varId.getIteration());
-                    if(!nodeOutputs.containsKey(vid)){
-                        availableForExec.add(vid);
-                        log.info("Marked merge op ({}) as available for execution: input {} is now available", opName, vid);
+                    VarId outVarId = newVarId(opOutputs[0], executedVar.getFrame(), executedVar.getIteration());
+                    if(!nodeOutputs.containsKey(outVarId)){
+                        availableForExec.add(outVarId);
+                        log.info("Marked merge op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
                     }
+
+
+//                    if(isConstOrPhInput) {
+//                        //Mark that outVar needs to use placeholder/constant (same regardless of frame/iter)
+//                        if(!execConstInputs.containsKey(opOutputs[0]))
+//                            execConstInputs.put(opOutputs[0], new HashSet<String>());
+//                        execConstInputs.get(opOutputs[0]).add(executedVar.getVariable());
+//                    } else {
+//                        //Mark that outVar needs this specific executedVar (i.e., specific frame/iteration)
+//                        if (!execInputs.containsKey(outVarId))
+//                            execInputs.put(outVarId, new HashSet<VarId>());
+//                        execInputs.get(outVarId).add(executedVar);
+//                    }
+                    //Mark that we need the specified input to calculate this output
+                    addToExecInputs(isConstOrPhInput, outVarId, executedVar, execInputs, execConstInputs);
                     continue;
+                } else if(sameDiff.getFunctionById(opName) instanceof Enter){
+                    //Enter node: available for exec when any of its inputs are available for exec
+                    // Note input feeds from one frame to another
+                    String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);
+                    Preconditions.checkState(opOutputs.length == 1, "Expected only 1 output variable for enter op, got %s", opOutputs);
+                    Enter e = (Enter)sameDiff.getFunctionById(opName);
+                    VarId outVarId = newVarId(opOutputs[0], e.getFrameName(), 0);
+                    if(!nodeOutputs.containsKey(outVarId)){
+                        availableForExec.add(outVarId);
+                        log.info("Marked enter op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
+                    }
+
+//                    //Mark that outVar needs this specific executedVar
+//                    if(!execInputs.containsKey(outVarId))
+//                        execInputs.put(outVarId, new HashSet<VarId>());
+//                    execInputs.get(outVarId).add(executedVar);
+
+                    //Mark that we need the specified input to calculate this output
+                    addToExecInputs(isConstOrPhInput, outVarId, executedVar, execInputs, execConstInputs);
+                    continue;
+                } else if(sameDiff.getFunctionById(opName) instanceof Exit){
+                    throw new UnsupportedOperationException("Not yet implemented: Exit op");
+                } else if(sameDiff.getFunctionById(opName) instanceof NextIteration){
+                    //NextIteration is available for execution when its single input is available
+                    //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
+                    String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);
+                    Preconditions.checkState(opOutputs.length == 1, "Expected exactly 1 output for NextIteration op: got %s", opOutputs);
+                    VarId outVarId = newVarId(opOutputs[0], executedVar.getFrame(), executedVar.getIteration()+1);
+
+                    if(!nodeOutputs.containsKey(outVarId)){
+                        availableForExec.add(outVarId);
+                        log.info("Marked NextIteration op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
+                    }
+
+//                    //Mark that NextIteration outVar nneeds this specific executedVar
+//                    if(!execInputs.containsKey(outVarId))
+//                        execInputs.put(outVarId, new HashSet<VarId>());
+//                    execInputs.get(outVarId).add(executedVar);
+
+                    //Mark that we need the specified input to calculate this output
+                    addToExecInputs(isConstOrPhInput, outVarId, executedVar, execInputs, execConstInputs);
+                    continue;
+                } else if(sameDiff.getFunctionById(opName) instanceof LoopCond) {
+                    //LoopCond: just forwards input to output - so basically handle it the same as other ops here
+                    //i.e., intentionally no continue here...
                 }
+
 
                 //Can execute this op - and hence get it's output variables - if all inputs (and control deps) are available
                 String[] inputsThisOp = sameDiff.getFunctionById(opName).argNames();
                 boolean allInputsAvailable = true;
                 if(inputsThisOp != null) {
                     for (String in : inputsThisOp) {
-                        VarId vid = newVarId(in, varId.getFrame(), varId.getIteration());
+                        //The input (for normal ops - not Enter/Exit/NextITeration) have the same frame and iteration number as the just executed var
+                        //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame
+                        //Exception 2 to this: placeholders. As above
+                        //TODO Add SameDiff.isConstant(String) method... or SDVariable.isConstant() (or both)
+                        VarId vid;
+                        if(sameDiff.getImportedConstants().contains(in) || sameDiff.isPlaceHolder(in)){
+                            //Constant
+                             vid = newVarId(in, OUTER_FRAME, 0);
+                        } else {
+                            //Normal (non-constant)
+                             vid = newVarId(in, executedVar.getFrame(), executedVar.getIteration());
+                        }
+
                         if (!nodeOutputs.containsKey(vid)) {
                             allInputsAvailable = false;
                             break;
@@ -295,7 +389,7 @@ public abstract class AbstractSession<T,O> {
                 String[] opControlDeps = null;
                 if(opControlDeps != null && allInputsAvailable){
                     for(String cd : opControlDeps){
-                        VarId vcd = newVarId(cd, varId.getFrame(), varId.getIteration());
+                        VarId vcd = newVarId(cd, executedVar.getFrame(), executedVar.getIteration());
                         if(!nodeOutputs.containsKey(vcd)) {
                             allInputsAvailable = false;
                             break;
@@ -304,24 +398,84 @@ public abstract class AbstractSession<T,O> {
                 }
 
                 String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);
-                if(allInputsAvailable && opOutputs != null){
-                    //Op can be executed -> variables as output are available for exec
-                    //TODO what about variable control depes?
+                if(opOutputs != null){
 
-                    for(String s : opOutputs) {
-                        //TODO enter/exit/nextIteration need to be handled differently...
+                    for(String s : opOutputs){
+//                        VarId outVarId = newVarId(s, executedVar);                 //If not Enter/Exit/NextIteration, then frame and iteration is same as input
+                        //The input (for normal ops - not Enter/Exit/NextITeration) have the same frame and iteration number as the just executed var
+                        //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame
+                        //Exception 2 to this: placeholders. As above
+                        //TODO Add SameDiff.isConstant(String) method... or SDVariable.isConstant() (or both)
+                        VarId outVarId;
+                        if(sameDiff.getImportedConstants().contains(s) || sameDiff.isPlaceHolder(s)){
+                            //Constant
+                            outVarId = newVarId(s, OUTER_FRAME, 0);
+                        } else {
+                            //Normal (non-constant)
+                            outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
+                        }
+//                        //Mark that outVar needs this specific executedVar
+//                        if(!execInputs.containsKey(outVarId))
+//                            execInputs.put(outVarId, new HashSet<VarId>());
+//                        execInputs.get(outVarId).add(executedVar);
 
-                        VarId vid = newVarId(s, varId.getFrame(), varId.getIteration());
-                        availableForExec.add(vid);
-                        log.info("Marked variable as available for execution: {} - output of op {} ({}) with op inputs {}", vid, opName,
-                                sameDiff.getFunctionById(opName).getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
+                        //Mark that we need the specified input to calculate this output
+                        addToExecInputs(isConstOrPhInput, outVarId, executedVar, execInputs, execConstInputs);
                     }
+
+                    if(allInputsAvailable) {
+                        //Op can be executed -> variables as output are available for exec
+                        //TODO what about variable control depes?
+
+                        for (String s : opOutputs) {
+
+                            VarId vid = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
+                            availableForExec.add(vid);
+                            log.info("Marked variable as available for execution: {} - output of op {} ({}) with op inputs {}", vid, opName,
+                                    sameDiff.getFunctionById(opName).getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
+                        }
 //                    log.info("Marked variables as available for execution: {} - output of op {} ({}) with op inputs {}", Arrays.toString(opOutputs), opName,
 //                            sameDiff.getFunctionById(opName).getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
+                    }
                 }
+
             }
         }
     }
 
+
+    protected void addToExecInputs(boolean isConstOrPh, VarId forVariable, VarId inputVar, Map<VarId,Set<VarId>> execInputs,
+                                   Map<String,Set<String>> execConstInputs){
+        if(isConstOrPh) {
+            //Mark that outVar needs to use placeholder/constant (same regardless of frame/iter)
+            if(!execConstInputs.containsKey(forVariable.getVariable()))
+                execConstInputs.put(forVariable.getVariable(), new HashSet<String>());
+            execConstInputs.get(forVariable.getVariable()).add(inputVar.getVariable());
+        } else {
+            //Mark that outVar needs this specific executedVar (i.e., specific frame/iteration)
+            if (!execInputs.containsKey(forVariable))
+                execInputs.put(forVariable, new HashSet<VarId>());
+            execInputs.get(forVariable).add(inputVar);
+        }
+    }
+
+
+    /*
+    VarId: identifies a variable in a specific frame and frame iteration
+    Used for 2 places: (a) to identify variables that are available for execution
+    (b) to store results
+     */
+    @Data
+    @AllArgsConstructor
+    protected static class VarId {
+        private String variable;
+        private String frame;
+        private int iteration;
+
+        @Override
+        public String toString() {
+            return "VarId(\"" + variable + "\",\"" + frame + "\"," + iteration + ")";
+        }
+    }
 
 }
