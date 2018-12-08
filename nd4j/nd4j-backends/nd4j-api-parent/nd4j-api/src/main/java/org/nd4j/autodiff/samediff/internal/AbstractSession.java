@@ -49,13 +49,13 @@ public abstract class AbstractSession<T,O> {
      * @param op
      * @return
      */
-    public abstract T[] getOutputs(O op);
+    public abstract T[] getOutputs(O op, VarId anOutput);
 
     /**
      * Get the parameterized op to execute - for example, the op/DifferentialFunction with all inputs set
      * @return
      */
-    public abstract O getAndParameterizeOp(String opName);
+    public abstract O getAndParameterizeOp(String opName, VarId anOutput);
 
     //TODO we might not need this method eventually...
     public abstract void preprocessPlaceholderValues(Map<String,T> placeholderValues);
@@ -63,12 +63,16 @@ public abstract class AbstractSession<T,O> {
     public T get(String variable, String frame, int iteration){
         //TODO eventually we'll cache and reuse VarId objects here to avoid garbage generation on lookup etc
         VarId varId = newVarId(variable, frame, iteration);
-        return nodeOutputs.get(vid);
+        return nodeOutputs.get(varId);
     }
 
     public VarId newVarId(String variable, String frame, int iteration){
         //TODO eventually we'll cache and reuse VarId objects here to avoid garbage generation on lookup
         return new VarId(variable, frame, iteration);
+    }
+
+    public VarId newVarId(String variable, VarId frameIteration){
+        return newVarId(variable, frameIteration.getFrame(), frameIteration.getIteration());
     }
 
 
@@ -188,7 +192,7 @@ public abstract class AbstractSession<T,O> {
                 if(variables.contains(varToExec.getVariable())){  //Check if required output
                     out.put(varToExec.getVariable(), placeholderValues.get(varToExec.getVariable()));
                 }
-            } else if( sameDiff.getImportedConstants().contains(varToExec.getVariable()) ){
+            } else if( sameDiff.getImportedConstants() != null && sameDiff.getImportedConstants().contains(varToExec.getVariable()) ){
                 //TODO let's remove the "importad constants" field, just have constants
                 //TODO let's add an 'isConstant(String)'?
 
@@ -205,8 +209,8 @@ public abstract class AbstractSession<T,O> {
                     //Execute op
                     //TODO
 
-                    O parameterizedOp = getAndParameterizeOp(opName);
-                    T[] opOutputValues = getOutputs(parameterizedOp);
+                    O parameterizedOp = getAndParameterizeOp(opName, varToExec);
+                    T[] opOutputValues = getOutputs(parameterizedOp, varToExec);
 
 
                     //Post execution: work out what is now available for exec
@@ -249,7 +253,8 @@ public abstract class AbstractSession<T,O> {
      * @param varName          Name of the variable
      * @param availableForExec Any other variables that are now available for execution
      */
-    protected void updateDescendentsForExec(String varName, Queue<String> availableForExec){
+    protected void updateDescendentsForExec(VarId varId, Queue<VarId> availableForExec){
+        String varName = varId.getVariable();
         //Find any ops (or variables with control dependencies) that this is required for execution of and check if now available for exec
         List<DifferentialFunction> l = sameDiff.getFunctionsArgsFor().get(varName);
         String[] inputForOps = l == null ? null : new String[l.size()];
@@ -266,9 +271,10 @@ public abstract class AbstractSession<T,O> {
                     //Merge op: available for execution when *any* of its inputs are available. But only mark it for exec once...
                     String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);
                     Preconditions.checkState(opOutputs.length == 1, "Expected only 1 output variable for merge op, got %s", opOutputs);
-                    if(!nodeOutputs.containsKey(opName)){
-                        Collections.addAll(availableForExec, opOutputs);
-                        log.info("Marked merge op ({}) as available for execution: input {} is now available", opName, varName);
+                    VarId vid = newVarId(opOutputs[0], varId.getFrame(), varId.getIteration());
+                    if(!nodeOutputs.containsKey(vid)){
+                        availableForExec.add(vid);
+                        log.info("Marked merge op ({}) as available for execution: input {} is now available", opName, vid);
                     }
                     continue;
                 }
@@ -278,7 +284,8 @@ public abstract class AbstractSession<T,O> {
                 boolean allInputsAvailable = true;
                 if(inputsThisOp != null) {
                     for (String in : inputsThisOp) {
-                        if (!nodeOutputs.containsKey(in)) {
+                        VarId vid = newVarId(in, varId.getFrame(), varId.getIteration());
+                        if (!nodeOutputs.containsKey(vid)) {
                             allInputsAvailable = false;
                             break;
                         }
@@ -288,7 +295,8 @@ public abstract class AbstractSession<T,O> {
                 String[] opControlDeps = null;
                 if(opControlDeps != null && allInputsAvailable){
                     for(String cd : opControlDeps){
-                        if(!nodeOutputs.containsKey(cd)) {
+                        VarId vcd = newVarId(cd, varId.getFrame(), varId.getIteration());
+                        if(!nodeOutputs.containsKey(vcd)) {
                             allInputsAvailable = false;
                             break;
                         }
@@ -300,9 +308,16 @@ public abstract class AbstractSession<T,O> {
                     //Op can be executed -> variables as output are available for exec
                     //TODO what about variable control depes?
 
-                    Collections.addAll(availableForExec, opOutputs);
-                    log.info("Marked variables as available for execution: {} - output of op {} ({}) with op inputs {}", Arrays.toString(opOutputs), opName,
-                            sameDiff.getFunctionById(opName).getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
+                    for(String s : opOutputs) {
+                        //TODO enter/exit/nextIteration need to be handled differently...
+
+                        VarId vid = newVarId(s, varId.getFrame(), varId.getIteration());
+                        availableForExec.add(vid);
+                        log.info("Marked variable as available for execution: {} - output of op {} ({}) with op inputs {}", vid, opName,
+                                sameDiff.getFunctionById(opName).getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
+                    }
+//                    log.info("Marked variables as available for execution: {} - output of op {} ({}) with op inputs {}", Arrays.toString(opOutputs), opName,
+//                            sameDiff.getFunctionById(opName).getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
                 }
             }
         }

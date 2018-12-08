@@ -34,23 +34,26 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     }
 
     @Override
-    public INDArray[] getOutputs(DifferentialFunction op) {
+    public INDArray[] getOutputs(DifferentialFunction op, VarId anOutput) {
 
         if(op instanceof Identity) {
             Identity i = (Identity) op;
             String[] argNames = i.argNames();
             Preconditions.checkState(argNames.length == 1, "Expected only 1 arg name in identity op, got %s", argNames);
-            return new INDArray[]{nodeOutputs.get(argNames[0])};
+            VarId vid = newVarId(argNames[0], anOutput);
+            return new INDArray[]{nodeOutputs.get(vid)};
 
         } else if(op instanceof Switch){
             Switch s = (Switch)op;
             String[] argNames = s.argNames();       //Order: input, boolean array
-            INDArray predicate = this.nodeOutputs.get(argNames[1]);
+            VarId vidPredicate = newVarId(argNames[1], anOutput);
+            INDArray predicate = this.nodeOutputs.get(vidPredicate);
             Preconditions.checkState(predicate.isScalar() && predicate.dataType() == DataType.BOOL, "Expected boolean predicate: got %ndSInfo", predicate);
+            VarId vid = newVarId(argNames[0], anOutput);
             if(predicate.getDouble(0) == 0.0){
-                return new INDArray[]{this.nodeOutputs.get(argNames[0]), null};
+                return new INDArray[]{this.nodeOutputs.get(vid), null};
             } else {
-                return new INDArray[]{null, this.nodeOutputs.get(argNames[0])};
+                return new INDArray[]{null, this.nodeOutputs.get(vid)};
             }
         } else if(op instanceof If) {
             If i = (If) op;
@@ -64,9 +67,10 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             Merge m = (Merge)op;
             String[] in = sameDiff.getInputsForFunction(op);
             for(String s : in){
-                if(nodeOutputs.containsKey(s)){
+                VarId vid = newVarId(s, anOutput);
+                if(nodeOutputs.containsKey(vid)){
                     log.info("Returning input \"{}\" for merge node \"{}\"", m.getOwnName(), s);
-                    return new INDArray[]{nodeOutputs.get(s)};
+                    return new INDArray[]{nodeOutputs.get(vid)};
                 }
             }
             throw new IllegalStateException("Merge node " + m.getOwnName() + " has no available inputs (all inputs: " + Arrays.toString(in) +
@@ -85,7 +89,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     }
 
     @Override
-    public DifferentialFunction getAndParameterizeOp(String opName) {
+    public DifferentialFunction getAndParameterizeOp(String opName, VarId anOutput) {
 
         DifferentialFunction df = sameDiff.getFunctionById(opName);
 

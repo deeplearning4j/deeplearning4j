@@ -13,12 +13,12 @@ public class ShapeSession extends AbstractSession<LongShapeDescriptor, Different
     }
 
     @Override
-    public LongShapeDescriptor[] getOutputs(DifferentialFunction op) {
+    public LongShapeDescriptor[] getOutputs(DifferentialFunction op, VarId anOutput) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
-    public DifferentialFunction getAndParameterizeOp(String opName) {
+    public DifferentialFunction getAndParameterizeOp(String opName, VarId anOutput) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
