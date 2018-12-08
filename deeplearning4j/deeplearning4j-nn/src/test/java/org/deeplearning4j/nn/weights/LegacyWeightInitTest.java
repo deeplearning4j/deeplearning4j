@@ -43,7 +43,7 @@ public class LegacyWeightInitTest {
      */
     @Test
     public void initParams() {
-        final long[] shape = {5, 6};
+        final long[] shape = {5, 5}; // To make identity happy
         final long fanIn = shape[0];
         final long fanOut = shape[1];
 

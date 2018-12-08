@@ -10,9 +10,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class WeightInitDistribution implements IWeightInit {
 
 
-
     @Override
     public void init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
-        paramView.assign(value);
+
     }
 }
