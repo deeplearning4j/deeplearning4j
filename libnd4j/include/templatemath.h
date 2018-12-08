@@ -513,10 +513,19 @@ namespace nd4j {
 			else return nd4j_abs<Nd4jLong>(val1);
 		}
 
+		template<>
+		math_def inline bool nd4j_max(bool val1, bool val2) {
+			return (val1 || val2) ? true : false;
+		}
 
 		template<typename T>
 		math_def inline T nd4j_max(T val1, T val2) {
 			return val1 > val2 ? val1 : val2;
+		}
+
+		template<>
+		math_def inline bool nd4j_min(bool val1, bool val2) {
+			return (val1 && val2) ? true : false;
 		}
 
 		template<typename T>
