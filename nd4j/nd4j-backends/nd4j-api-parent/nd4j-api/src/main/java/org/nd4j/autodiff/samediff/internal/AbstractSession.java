@@ -280,7 +280,8 @@ public abstract class AbstractSession<T,O> {
             }
         }
 
-        boolean isConstOrPhInput = sameDiff.isPlaceHolder(executedVar.getVariable()) || sameDiff.getImportedConstants().contains(executedVar.getVariable());
+        boolean isConstOrPhInput = sameDiff.isPlaceHolder(executedVar.getVariable()) ||
+                (sameDiff.getImportedConstants() != null && sameDiff.getImportedConstants().contains(executedVar.getVariable()));
 
         //After a variable becomes available, we should look at the ops this is an input to, and check if we can execute this op now...
         if(inputForOps != null){
@@ -371,7 +372,7 @@ public abstract class AbstractSession<T,O> {
                         //Exception 2 to this: placeholders. As above
                         //TODO Add SameDiff.isConstant(String) method... or SDVariable.isConstant() (or both)
                         VarId vid;
-                        if(sameDiff.getImportedConstants().contains(in) || sameDiff.isPlaceHolder(in)){
+                        if((sameDiff.getImportedConstants() != null && sameDiff.getImportedConstants().contains(in)) || sameDiff.isPlaceHolder(in)){
                             //Constant
                              vid = newVarId(in, OUTER_FRAME, 0);
                         } else {
@@ -407,7 +408,7 @@ public abstract class AbstractSession<T,O> {
                         //Exception 2 to this: placeholders. As above
                         //TODO Add SameDiff.isConstant(String) method... or SDVariable.isConstant() (or both)
                         VarId outVarId;
-                        if(sameDiff.getImportedConstants().contains(s) || sameDiff.isPlaceHolder(s)){
+                        if((sameDiff.getImportedConstants() != null && sameDiff.getImportedConstants().contains(s)) || sameDiff.isPlaceHolder(s)){
                             //Constant
                             outVarId = newVarId(s, OUTER_FRAME, 0);
                         } else {

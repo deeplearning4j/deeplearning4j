@@ -35,6 +35,8 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     @Override
     public INDArray[] getOutputs(DifferentialFunction op, VarId anOutput, Set<VarId> opInputs, Set<String> constAndPhInputs) {
 
+        int totalInputs = (opInputs == null ? 0 : opInputs.size()) + (constAndPhInputs == null ? 0 : constAndPhInputs.size());
+
         if(op instanceof Identity ) {
             Identity i = (Identity) op;
             String[] argNames = i.argNames();
@@ -60,16 +62,24 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             String frame = e.getFrameName();
             String[] input = e.argNames();
             Preconditions.checkState(input.length == 1, "Expected only 1 arg name for enter op: got %s", input);
-            Preconditions.checkState(opInputs.size() == 1, "Expected exactly 1 op input, got %s", opInputs);
-            VarId inputVarId = opInputs.iterator().next();
+            Preconditions.checkState(totalInputs == 1, "Expected exactly 1 op input, got %s+%s", opInputs, constAndPhInputs);
+
+            VarId inputVarId;
+            if(opInputs == null || opInputs.size() == 0){
+                //Constant or placeholder
+                inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0);
+            } else {
+                inputVarId = opInputs.iterator().next();
+            }
             INDArray enterInput = this.nodeOutputs.get(inputVarId);
+
             Preconditions.checkNotNull(enterInput, "Could not get enter op input: output variable %s", anOutput);
             return new INDArray[]{enterInput};
         } else if(op instanceof Exit) {
             throw new UnsupportedOperationException("Not yet implemented");
         } else if(op instanceof NextIteration){
             //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
-            Preconditions.checkState(opInputs.size() == 1, "Expected exactly 1 op input for NextIteration: got %s", opInputs);
+            Preconditions.checkState(totalInputs == 1, "Expected exactly 1 op input for NextIteration: got %s+%s", opInputs, constAndPhInputs);
             VarId in = opInputs.iterator().next();
             Preconditions.checkState(anOutput.getFrame().equals(in.getFrame()), "Expected same frame for NextIteration input vs. output:" +
                     " got input %s, output %s", in, anOutput);
