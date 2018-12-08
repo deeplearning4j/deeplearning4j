@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.weights;
 
+import org.deeplearning4j.nn.conf.distribution.*;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.junit.*;
 import org.nd4j.linalg.activations.impl.ActivationCube;
@@ -12,6 +13,7 @@ import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -35,7 +37,7 @@ public class LegacyWeightInitTest {
 
     @After
     public void resetRandomFactory() {
-       Nd4j.randomFactory = prevFactory;
+        Nd4j.randomFactory = prevFactory;
     }
 
     /**
@@ -49,8 +51,8 @@ public class LegacyWeightInitTest {
 
         final INDArray expected = Nd4j.create(fanIn * fanOut);
         final INDArray actual = expected.dup();
-        for(WeightInit legacyWi: WeightInit.values()) {
-            if(legacyWi != WeightInit.DISTRIBUTION) {
+        for (WeightInit legacyWi : WeightInit.values()) {
+            if (legacyWi != WeightInit.DISTRIBUTION) {
                 Nd4j.getRandom().setSeed(SEED);
                 WeightInitUtil.initWeights(fanIn, fanOut, shape, legacyWi, null, expected);
 
@@ -60,8 +62,46 @@ public class LegacyWeightInitTest {
                 assertEquals("Incorrect weight initialization for " + legacyWi + "!", expected, actual);
             }
         }
-        // TODO: All distributions!
+    }
 
+    /**
+     * Test that param init is identical to legacy implementation
+     */
+    @Test
+    public void initParamsFromDistribution() {
+        final long[] shape = {3, 7}; // To make identity happy
+        final long fanIn = shape[0];
+        final long fanOut = shape[1];
+
+        final INDArray expected = Nd4j.create(fanIn * fanOut);
+        final INDArray actual = expected.dup();
+
+        for (Distribution dist: Arrays.asList(
+                new LogNormalDistribution(12.3, 4.56),
+                new BinomialDistribution(3, 0.3),
+                new NormalDistribution(0.666, 0.333),
+                new UniformDistribution(-1.23, 4.56),
+                new OrthogonalDistribution(3.45),
+                new TruncatedNormalDistribution(0.456, 0.123),
+                new ConstantDistribution(666))) {
+
+            Nd4j.getRandom().setSeed(SEED);
+            WeightInitUtil.initWeights(
+                    fanIn,
+                    fanOut,
+                    shape,
+                    WeightInit.DISTRIBUTION,
+                    Distributions.createDistribution(dist),
+                    expected);
+
+            new WeightInitDistribution(dist).init(
+                    fanIn,
+                    fanOut,
+                    shape,
+                    WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER,
+                    actual);
+            assertEquals("Incorrect weight initialization for " + dist.getClass().getSimpleName() + "!", expected, actual);
+        }
     }
 
     /**

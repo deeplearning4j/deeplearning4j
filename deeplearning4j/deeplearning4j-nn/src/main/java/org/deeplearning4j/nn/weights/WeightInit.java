@@ -17,13 +17,7 @@
 package org.deeplearning4j.nn.weights;
 
 import com.google.common.base.CaseFormat;
-import com.sun.xml.internal.bind.v2.TODO;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
-
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Weight initialization scheme
@@ -91,7 +85,7 @@ public enum WeightInit {
             case ONES:
                 return new WeightInitConstant(1.0);
             case DISTRIBUTION:
-                return new WeightInitDistribution();
+                return new WeightInitDistribution(distribution);
             case SIGMOID_UNIFORM:
                 return new WeightInitSigmoidUniform();
             case LECUN_NORMAL: //Fall through: these 3 are equivalent
