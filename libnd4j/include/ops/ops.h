@@ -2689,11 +2689,13 @@ namespace simdOps {
 	class AMaxPairwise {
 	public:
 		op_def static Z op(X d1, Y d2, Z *params) {
-			return nd4j::math::nd4j_abs<Z>((Z) d1) > nd4j::math::nd4j_abs<Z>((Z) d2) ? (Z) d1 : (Z) d2;
+			op(d1, d2);
 		}
 
 		op_def static Z op(X d1, Y d2) {
-            return nd4j::math::nd4j_abs<Z>((Z) d1) > nd4j::math::nd4j_abs<Z>((Z) d2) ? (Z) d1 : (Z) d2;
+            auto z1 = static_cast<Z>(d1);
+			auto z2 = static_cast<Z>(d2);
+			return nd4j::math::nd4j_abs<Z>(z1) > nd4j::math::nd4j_abs<Z>(z2) ? z1 : z2;
 		}
 	};
 
@@ -2702,11 +2704,13 @@ namespace simdOps {
 	class AMinPairwise {
 	public:
 		op_def static Z op(X d1, Y d2, Z *params) {
-            return nd4j::math::nd4j_abs<Z>((Z) d1) < nd4j::math::nd4j_abs<Z>((Z) d2) ? (Z) d1 : (Z) d2;
+            op(d1, d2);
 		}
 
 		op_def static Z op(X d1, Y d2) {
-            return nd4j::math::nd4j_abs<Z>((Z) d1) < nd4j::math::nd4j_abs<Z>((Z) d2) ? (Z) d1 : (Z) d2;
+            auto z1 = static_cast<Z>(d1);
+			auto z2 = static_cast<Z>(d2);
+			return nd4j::math::nd4j_abs<Z>(z1) < nd4j::math::nd4j_abs<Z>(z2) ? z1 : z2;
 		}
 	};
 
