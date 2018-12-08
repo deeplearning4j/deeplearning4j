@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.nn.weights;
 
-import com.google.common.base.CaseFormat;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 
 /**
@@ -123,17 +122,6 @@ public enum WeightInit {
 
             default:
                 throw new UnsupportedOperationException("Unknown or not supported weight initialization function: " + this);
-        }
-    }
-
-    public static void main(String[] args) {
-        for (WeightInit wi : WeightInit.values()) {
-
-            final String className = "WeightInit" + CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, wi.name());
-            final String caseStatement = "   case " + wi.name() +":\n" +
-                    "                return new "+className +"();";
-            System.out.println(caseStatement);
-
         }
     }
 }
