@@ -15,13 +15,13 @@
  ******************************************************************************/
 
 //
-// Created by raver on 9/28/2018.
+//  @author Yurii Shyrma (iuriish@yahoo.com), created on 10.11.2018
 //
 
-#include "../reduce3.hpp"
+#include "../transform_float.hpp"
 
-namespace functions {
-    namespace reduce3 {
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Reduce3, , LIBND4J_TYPES_1, FLOAT_TYPES);
-    }
+namespace functions           {
+namespace transform {
+	BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformFloat, , LIBND4J_TYPES_9, FLOAT_TYPES);
+}
 }
