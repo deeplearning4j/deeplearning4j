@@ -4,6 +4,7 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.impl.OrthogonalDistribution;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * : Sample weights from a provided distribution<br>
@@ -14,7 +15,7 @@ public class WeightInitDistribution implements IWeightInit {
 
     private final Distribution distribution;
 
-    public WeightInitDistribution(Distribution distribution) {
+    public WeightInitDistribution(@JsonProperty("distribution") Distribution distribution) {
         this.distribution = distribution;
     }
 

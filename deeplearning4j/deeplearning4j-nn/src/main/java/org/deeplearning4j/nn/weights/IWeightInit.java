@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.weights;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 /**
@@ -9,6 +10,8 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
  * @author Christian Skarby
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE,
+        setterVisibility = JsonAutoDetect.Visibility.NONE)
 public interface IWeightInit {
 
     /**
