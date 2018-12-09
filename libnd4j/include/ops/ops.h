@@ -2689,7 +2689,7 @@ namespace simdOps {
 	class AMaxPairwise {
 	public:
 		op_def static Z op(X d1, Y d2, Z *params) {
-			op(d1, d2);
+			return op(d1, d2);
 		}
 
 		op_def static Z op(X d1, Y d2) {
@@ -2705,7 +2705,7 @@ namespace simdOps {
 	class AMinPairwise {
 	public:
 		op_def static Z op(X d1, Y d2, Z *params) {
-            op(d1, d2);
+            return op(d1, d2);
 		}
 
 		op_def static Z op(X d1, Y d2) {
