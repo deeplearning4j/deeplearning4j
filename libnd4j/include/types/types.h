@@ -112,7 +112,7 @@
 #define LIBND4J_TYPES_8 \
         (nd4j::DataType::INT64, Nd4jLong)
 
-#define LIBND4J_TYPES_9 \	
+#define LIBND4J_TYPES_9 \
         (nd4j::DataType::BFLOAT16, bfloat16)
 
 #define INTEGER_TYPES \
