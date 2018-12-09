@@ -358,11 +358,9 @@ TEST_F(DeclarableOpsTests10, CosineDistance_SGO_Test_1) {
     auto res = op.execute({&predictions, &weights, &labels}, {}, {3, 1});
     ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
     auto resA = res->at(0);
-    resA->printIndexedBuffer("Result");
-    resA->printShapeInfo("Shape");
+
     ASSERT_TRUE(exp.equalsTo(resA));
-    //ASSERT_TRUE(exp.isSameShape(resA));
-//    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+
     delete res;
 }
 
@@ -376,13 +374,11 @@ TEST_F(DeclarableOpsTests10, CosineDistance_SGO_Test_2) {
 
     nd4j::ops::cosine_distance_loss op;
     auto res = op.execute({&predictions, &weights, &labels}, {}, {2, 1});
-    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
-    auto resA = res->at(0);
-    resA->printIndexedBuffer("Result");
-    resA->printShapeInfo("Shape");
+    ASSERT_TRUE(res->status() == ND4J_STATUS_OK);    
+    auto resA = res->at(0);    
+    
     ASSERT_TRUE(exp.equalsTo(resA));
-    //ASSERT_TRUE(exp.isSameShape(resA));
-//    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
+
     delete res;
 }
 
