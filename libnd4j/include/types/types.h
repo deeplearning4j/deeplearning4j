@@ -339,7 +339,7 @@
 		(bool, uint8_t, uint8_t), \
 		(bool, float, bool), \
 		(bool, float, float), \
-		(bool, bfloat16, bool), \
+		(bool, bfloat16, bool)
 
 #define PAIRWISE_TYPES_17 \
 		(bool, bfloat16, bfloat16), \
