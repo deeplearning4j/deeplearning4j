@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.weights;
 
+import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -7,6 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Christian Skarby
  */
+@EqualsAndHashCode
 public class WeightInitConstant implements IWeightInit {
 
     private final double value;

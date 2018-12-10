@@ -308,13 +308,13 @@ public class MultiLayerTest extends BaseDL4JTest {
                 new NeuralNetConfiguration.Builder().seed(12345L)
                         .list().layer(0,
                         new DenseLayer.Builder().nIn(4).nOut(3)
-                                .weightInit(WeightInit.DISTRIBUTION)
+
                                 .dist(new NormalDistribution(0,1))
                                 .build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                 LossFunctions.LossFunction.MCXENT)
                                 .activation(Activation.SOFTMAX).nIn(3).nOut(3)
-                                .weightInit(WeightInit.DISTRIBUTION)
+
                                 .dist(new NormalDistribution(0, 1)).build())
                         .build();
         return conf;
@@ -341,15 +341,15 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .updater(new Sgd(1e-3))
                         .list().layer(
                         0, new DenseLayer.Builder().nIn(nIn).nOut(600)
-                                .weightInit(WeightInit.DISTRIBUTION)
+
                                 .dist(new NormalDistribution(0,1e-5))
                                 .build())
                         .layer(1, new DenseLayer.Builder()
-                                .nIn(600).nOut(250).weightInit(WeightInit.DISTRIBUTION)
+                                .nIn(600).nOut(250)
                                 .dist(new NormalDistribution(0, 1e-5))
                                 .build())
                         .layer(2, new DenseLayer.Builder()
-                                .nIn(250).nOut(100).weightInit(WeightInit.DISTRIBUTION)
+                                .nIn(250).nOut(100)
                                 .dist(new NormalDistribution(0, 1e-5))
                                 .build())
                         .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(

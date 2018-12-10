@@ -4,6 +4,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
+import java.io.Serializable;
+
 /**
  * Interface for weight initialization.
  *
@@ -12,7 +14,10 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE,
         setterVisibility = JsonAutoDetect.Visibility.NONE)
-public interface IWeightInit {
+public interface IWeightInit extends Serializable {
+
+    // Use this in a default method when java 8 support is added
+    char DEFAULT_WEIGHT_INIT_ORDER = WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER;
 
     /**
      * Initialize parameters in the given view

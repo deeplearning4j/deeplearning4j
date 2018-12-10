@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.weights;
 
+import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -9,6 +10,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author Adam Gibson
  */
+@EqualsAndHashCode
 public class WeightInitXavier implements IWeightInit {
 
     @Override

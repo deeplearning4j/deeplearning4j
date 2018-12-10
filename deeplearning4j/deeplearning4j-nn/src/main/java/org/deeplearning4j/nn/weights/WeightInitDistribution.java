@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.weights;
 
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -11,6 +12,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author Adam Gibson
  */
+@EqualsAndHashCode
 public class WeightInitDistribution implements IWeightInit {
 
     private final Distribution distribution;

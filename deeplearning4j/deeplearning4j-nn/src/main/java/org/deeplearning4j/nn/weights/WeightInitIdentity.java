@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.weights;
 
+import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -10,6 +11,7 @@ import java.util.Arrays;
  *
  * @author Adam Gibson
  */
+@EqualsAndHashCode
 public class WeightInitIdentity implements IWeightInit {
 
     @Override

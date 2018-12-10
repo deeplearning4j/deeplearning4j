@@ -19,12 +19,10 @@ package org.deeplearning4j.nn.params;
 import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -171,22 +169,21 @@ public class DefaultParamInitializer implements ParamInitializer {
                         (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
 
         if (initializeParameters) {
-            Distribution dist = Distributions.createDistribution(layerConf.getDist());
-            return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), layerConf.getWeightInit(), dist,
+            return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), layerConf.getWeightInitFn(),
                             weightParamView, true);
         } else {
-            return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), null, null, weightParamView, false);
+            return createWeightMatrix(layerConf.getNIn(), layerConf.getNOut(), null, weightParamView, false);
         }
     }
 
-    protected INDArray createWeightMatrix(long nIn, long nOut, WeightInit weightInit, Distribution dist,
-                    INDArray weightParamView, boolean initializeParameters) {
+    protected INDArray createWeightMatrix(long nIn, long nOut, IWeightInit weightInit,
+                                          INDArray weightParamView, boolean initializeParameters) {
         val shape = new long[] {nIn, nOut};
 
         if (initializeParameters) {
-            INDArray ret = WeightInitUtil.initWeights(nIn, //Fan in
+            INDArray ret = weightInit.init(nIn, //Fan in
                             nOut, //Fan out
-                            shape, weightInit, dist, weightParamView);
+                            shape, IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, weightParamView);
             return ret;
         } else {
             return WeightInitUtil.reshapeWeights(shape, weightParamView);

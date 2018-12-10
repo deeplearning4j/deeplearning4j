@@ -15,8 +15,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 
 /**
@@ -176,6 +175,27 @@ public class LegacyWeightInitTest {
             assertArrayEquals("Incorrect shape for " + dist.getClass().getSimpleName() + "!", shape, actual.shape());
 
             assertEquals("Incorrect weight initialization for " + dist.getClass().getSimpleName() + "!", expected, actual);
+        }
+    }
+
+    /**
+     * Test equals and hashcode implementation. Redundant as one can trust Lombok on this??
+     */
+    @Test
+    public void equalsAndHashCode() {
+        WeightInit lastInit = WeightInit.values()[WeightInit.values().length-1];
+        for (WeightInit legacyWi : WeightInit.values()) {
+            assertEquals("Shall be equal!", legacyWi.getWeightInitFunction(null), legacyWi.getWeightInitFunction(null));
+            assertNotEquals("Shall not be equal!", lastInit.getWeightInitFunction(null), legacyWi.getWeightInitFunction(null));
+            if(legacyWi != WeightInit.NORMAL && legacyWi != WeightInit.LECUN_NORMAL) {
+                lastInit = legacyWi;
+            }
+        }
+        Distribution lastDist = distributions.get(distributions.size() - 1);
+        for(Distribution distribution: distributions) {
+            assertEquals("Shall be equal!", new WeightInitDistribution(distribution), new WeightInitDistribution(distribution.clone()));
+            assertNotEquals("Shall not be equal!", new WeightInitDistribution(lastDist), new WeightInitDistribution(distribution));
+            lastDist = distribution;
         }
     }
 

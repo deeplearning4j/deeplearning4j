@@ -50,7 +50,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerTest;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.AfterClass;
@@ -577,7 +576,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                         .l2(2e-4).graphBuilder().addInputs("in")
                         .addLayer("layer0",
                                 new VariationalAutoencoder.Builder().nIn(4).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                         .dist(new UniformDistribution(0,
                                                 1))
                                         .activation(Activation.TANH)
@@ -586,7 +585,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 "in")
                         .addLayer("layer1",
                                 new VariationalAutoencoder.Builder().nIn(4).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                         .dist(new UniformDistribution(0,
                                                 1))
                                         .activation(Activation.TANH)
@@ -595,7 +594,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 "in")
                         .addLayer("layer2",
                                 new VariationalAutoencoder.Builder().nIn(3).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                         .dist(new UniformDistribution(0,
                                                 1))
                                         .activation(Activation.TANH)
@@ -604,7 +603,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 "layer1")
                         .addLayer("out", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(3 + 3).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                         .dist(new UniformDistribution(0, 1))
                                         .activation(Activation.SOFTMAX).build(),
                                 "layer0", "layer2")

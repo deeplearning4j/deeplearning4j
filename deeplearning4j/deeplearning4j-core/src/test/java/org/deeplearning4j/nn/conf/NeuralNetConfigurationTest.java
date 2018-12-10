@@ -20,12 +20,15 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.*;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
@@ -38,7 +41,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 
 /**
  * Created by agibsonccc on 11/27/14.
@@ -70,7 +74,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
     @Test
     public void testJson() {
-        NeuralNetConfiguration conf = getConfig(1, 1, WeightInit.XAVIER, true);
+        NeuralNetConfiguration conf = getConfig(1, 1, new WeightInitXavier(), true);
         String json = conf.toJson();
         NeuralNetConfiguration read = NeuralNetConfiguration.fromJson(json);
 
@@ -80,7 +84,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
     @Test
     public void testYaml() {
-        NeuralNetConfiguration conf = getConfig(1, 1, WeightInit.XAVIER, true);
+        NeuralNetConfiguration conf = getConfig(1, 1, new WeightInitXavier(), true);
         String json = conf.toYaml();
         NeuralNetConfiguration read = NeuralNetConfiguration.fromYaml(json);
 
@@ -89,7 +93,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
     @Test
     public void testClone() {
-        NeuralNetConfiguration conf = getConfig(1, 1, WeightInit.UNIFORM, true);
+        NeuralNetConfiguration conf = getConfig(1, 1, new WeightInitUniform(), true);
         BaseLayer bl = (BaseLayer) conf.getLayer();
         conf.setStepFunction(new DefaultStepFunction());
 
@@ -98,7 +102,6 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         assertEquals(conf, conf2);
         assertNotSame(conf, conf2);
         assertNotSame(conf.getLayer(), conf2.getLayer());
-        assertNotSame(bl.getDist(), ((BaseLayer) conf2.getLayer()).getDist());
         assertNotSame(conf.getStepFunction(), conf2.getStepFunction());
     }
 
@@ -133,11 +136,11 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
     public void testSetSeedSize() {
         Nd4j.getRandom().setSeed(123);
 
-        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
+        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), new WeightInitXavier(), true);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
         Nd4j.getRandom().setSeed(123);
 
-        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
+        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), new WeightInitXavier(), true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
         assertEquals(modelWeights, modelWeights2);
     }
@@ -147,11 +150,11 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
     public void testSetSeedNormalized() {
         Nd4j.getRandom().setSeed(123);
 
-        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
+        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), new WeightInitXavier(), true);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
         Nd4j.getRandom().setSeed(123);
 
-        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
+        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), new WeightInitXavier(), true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
         assertEquals(modelWeights, modelWeights2);
     }
@@ -160,11 +163,11 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
     public void testSetSeedXavier() {
         Nd4j.getRandom().setSeed(123);
 
-        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
+        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), new WeightInitUniform(), true);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
         Nd4j.getRandom().setSeed(123);
 
-        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
+        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), new WeightInitUniform(), true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
         assertEquals(modelWeights, modelWeights2);
@@ -174,19 +177,21 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
     public void testSetSeedDistribution() {
         Nd4j.getRandom().setSeed(123);
 
-        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.DISTRIBUTION, true);
+        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(),
+                new WeightInitDistribution(new NormalDistribution(1, 1)), true);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
         Nd4j.getRandom().setSeed(123);
 
-        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.DISTRIBUTION, true);
+        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(),
+                new WeightInitDistribution(new NormalDistribution(1, 1)), true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
         assertEquals(modelWeights, modelWeights2);
     }
 
 
-    private static NeuralNetConfiguration getConfig(int nIn, int nOut, WeightInit weightInit, boolean pretrain) {
-        DenseLayer layer = new DenseLayer.Builder().nIn(nIn).nOut(nOut).weightInit(weightInit).dist(new NormalDistribution(1, 1))
+    private static NeuralNetConfiguration getConfig(int nIn, int nOut, IWeightInit weightInit, boolean pretrain) {
+        DenseLayer layer = new DenseLayer.Builder().nIn(nIn).nOut(nOut).weightInit(weightInit)
                         .activation(Activation.TANH).build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -195,7 +200,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         return conf;
     }
 
-    private static Layer getLayer(int nIn, int nOut, WeightInit weightInit, boolean preTrain) {
+    private static Layer getLayer(int nIn, int nOut, IWeightInit weightInit, boolean preTrain) {
         NeuralNetConfiguration conf = getConfig(nIn, nOut, weightInit, preTrain);
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);

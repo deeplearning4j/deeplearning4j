@@ -33,13 +33,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
-import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
-import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
@@ -47,7 +42,6 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
-import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -55,9 +49,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.Random;
 
 import static org.deeplearning4j.gradientcheck.GradientCheckUtil.checkGradients;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author Alex Black 14 Aug 2015
@@ -84,7 +76,6 @@ public class GradientCheckTests extends BaseDL4JTest {
                 .list()
                 .layer(0,
                         new DenseLayer.Builder().nIn(4).nOut(3)
-                                .weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new NormalDistribution(0, 1))
                                 .activation(Activation.TANH)
                                 .build())
@@ -174,12 +165,10 @@ public class GradientCheckTests extends BaseDL4JTest {
                                     .seed(12345L)
                                     .list().layer(0,
                                                     new DenseLayer.Builder().nIn(4).nOut(3)
-                                                                    .weightInit(WeightInit.DISTRIBUTION)
                                                                     .dist(new NormalDistribution(0, 1))
                                                                     .activation(afn)
                                                                     .build())
                                     .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nIn(3).nOut(3)
-                                                    .weightInit(WeightInit.DISTRIBUTION)
                                                     .dist(new NormalDistribution(0, 1)).build())
                                     .build();
 
@@ -266,13 +255,11 @@ public class GradientCheckTests extends BaseDL4JTest {
                                                         .seed(12345L)
                                                         .list().layer(0,
                                                                         new DenseLayer.Builder().nIn(4).nOut(3)
-                                                                                        .weightInit(WeightInit.DISTRIBUTION)
                                                                                         .dist(new NormalDistribution(0,
                                                                                                         1))
                                                                                         .updater(new NoOp())
                                                                                         .activation(afn).build())
                                                         .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp())
                                                                         .activation(outputActivation).build())
@@ -335,7 +322,6 @@ public class GradientCheckTests extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.1)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
                 .list().layer(new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
-                                .dist(new NormalDistribution(0, 1))
                                 .updater(new NoOp()).build())
                 .layer(new PReLULayer.Builder().inputShape(3).sharedAxes(1).updater(new NoOp()).build())
                 .layer(new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
@@ -374,12 +360,11 @@ public class GradientCheckTests extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
                         .list().layer(0,
                                         new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
-                                                        .dist(new NormalDistribution(0, 1))
                                                         .updater(new NoOp()).activation(
                                                                         Activation.TANH)
                                                         .build())
                         .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
-                                        .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+                                        .weightInit(WeightInit.XAVIER)
                                         .updater(new NoOp()).activation(Activation.SOFTMAX).build())
                         .build();
 
@@ -441,7 +426,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                                                         .updater(new NoOp())
                                                         .l2(l2).l1(l1)
                                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                                                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                                                        .seed(12345L)
                                                         .dist(new NormalDistribution(0, 1))
                                                         .list().layer(0,
                                                                         new AutoEncoder.Builder().nIn(4).nOut(3)
@@ -676,13 +661,11 @@ public class GradientCheckTests extends BaseDL4JTest {
                                         .legacyBatchScaledL2(false)
                                         .list().layer(0,
                                         new DenseLayer.Builder().nIn(4).nOut(3)
-                                                .weightInit(WeightInit.DISTRIBUTION)
                                                 .dist(new NormalDistribution(0,
                                                         1))
                                                 .updater(new NoOp())
                                                 .activation(afn).build())
                                         .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
-                                                .weightInit(WeightInit.DISTRIBUTION)
                                                 .dist(new NormalDistribution(0, 1))
                                                 .updater(new NoOp())
                                                 .activation(outputActivation).build())
@@ -696,13 +679,11 @@ public class GradientCheckTests extends BaseDL4JTest {
                                         .legacyBatchScaledL2(true)
                                         .list().layer(0,
                                         new DenseLayer.Builder().nIn(4).nOut(3)
-                                                .weightInit(WeightInit.DISTRIBUTION)
                                                 .dist(new NormalDistribution(0,
                                                         1))
                                                 .updater(new NoOp())
                                                 .activation(afn).build())
                                         .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
-                                                .weightInit(WeightInit.DISTRIBUTION)
                                                 .dist(new NormalDistribution(0, 1))
                                                 .updater(new NoOp())
                                                 .activation(outputActivation).build())
