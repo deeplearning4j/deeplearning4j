@@ -30,13 +30,13 @@
 using namespace simdOps;
 
 #define LOCAL_TRANSFORM_FLOAT_OPS \
-        (1, Exp), \
-        (2, Log)
+        (23, Exp), \
+        (24, Log)
 
 namespace functions {
     namespace transform {
         template <typename X, typename Z>
-        class TransformFloatInplace {
+        class TransformStrictInplace {
         public:
             static FORCEINLINE _CUDA_D void transformCudaLegacy(int opNum, void *dy, Nd4jLong *shapeInfo, void *params, void *result, Nd4jLong *zShapeInfo, int *allocationPointer, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
@@ -46,7 +46,7 @@ namespace functions {
 
         template<typename X, typename Z>
         template <typename OpType>
-        FORCEINLINE _CUDA_D void TransformFloatInplace<X,Z>::transformCuda(
+        FORCEINLINE _CUDA_D void TransformStrictInplace<X,Z>::transformCuda(
                 void *vdy,
                 Nd4jLong *shapeInfo,
                 void *vparams,
@@ -80,7 +80,7 @@ namespace functions {
         };
 
         template<typename X, typename Y>
-        FORCEINLINE _CUDA_D void TransformFloatInplace<X,Y>::transformCudaLegacy(
+        FORCEINLINE _CUDA_D void TransformStrictInplace<X,Y>::transformCudaLegacy(
                 int opNum,
                 void *dy,
                 Nd4jLong *shapeInfo,
