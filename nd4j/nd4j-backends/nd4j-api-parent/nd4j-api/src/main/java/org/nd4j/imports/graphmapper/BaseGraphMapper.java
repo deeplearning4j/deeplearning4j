@@ -296,24 +296,28 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         }
 
         //Build functionOutputFor - i.e., map from SDVariable -> functions it's an output for (should only ever be 1)
+        //Also build outgoingArgsReverse: map from DifferentialFunction name to SDVariable names that are outputs
         Map<String,List<DifferentialFunction>> fnOutputsFor = new LinkedHashMap<>();
         for(DifferentialFunction df : diff.getFunctionInstancesById().values()){
-            String[] fnOutputs = df.outputVariablesNames();
-            for(String s : fnOutputs){
-                if(!fnOutputsFor.containsKey(s)){
-                    fnOutputsFor.put(s, new ArrayList<DifferentialFunction>());
-                }
-                fnOutputsFor.get(s).add(df);
-            }
+//            SDVariable[] vars = df.outputVariables();
+//            String[] fnOutputs = df.outputVariablesNames();       //This does a ninja output INDArray allocation...
+////            String[] fnOutputs = diff.getOutputsForFunction(df);
+//            for(String s : fnOutputs){
+//                if(!fnOutputsFor.containsKey(s)){
+//                    fnOutputsFor.put(s, new ArrayList<DifferentialFunction>());
+//                }
+//                fnOutputsFor.get(s).add(df);
+//            }
+            initOutputVariables(diff, df);
         }
-        //Set using reflection, we don't want a public getter that users can break the internal state with
-        try {
-            Field f = SameDiff.class.getDeclaredField("functionOutputFor");
-            f.setAccessible(true);
-            f.set(diff, fnOutputsFor);
-        } catch (Exception e){
-            throw new RuntimeException(e);
-        }
+//        //Set using reflection, we don't want a public getter that users can break the internal state with
+//        try {
+//            Field f = SameDiff.class.getDeclaredField("functionOutputFor");
+//            f.setAccessible(true);
+//            f.set(diff, fnOutputsFor);
+//        } catch (Exception e){
+//            throw new RuntimeException(e);
+//        }
 
         //Validate the graph structure
         validateGraphStructure(diff);
@@ -333,6 +337,28 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         return diff;
     }
 
+    protected void initOutputVariables(SameDiff sd, DifferentialFunction df){
+        String[] outNames = sd.getOutputsForFunction(df);
+        SDVariable[] outVars;
+        if(outNames == null){
+            outVars = sd.generateOutputVariableForOp(df, df.getOwnName() != null ? df.getOwnName() : df.opName());
+            outNames = new String[outVars.length];
+            for( int i=0; i<outVars.length; i++ ){
+                outNames[i] = outVars[i].getVarName();
+            }
+            sd.getOutgoingArgsReverse().put(df.getOwnName(), outNames);
+        } else {
+            outVars = df.outputVariables();
+        }
+
+        Map<String,List<DifferentialFunction>> fnOutputsFor = sd.getFunctionOutputFor();
+        for(String s : outNames) {
+            if (!fnOutputsFor.containsKey(s)) {
+                fnOutputsFor.put(s, new ArrayList<DifferentialFunction>());
+            }
+            fnOutputsFor.get(s).add(df);
+        }
+    }
 
 
 

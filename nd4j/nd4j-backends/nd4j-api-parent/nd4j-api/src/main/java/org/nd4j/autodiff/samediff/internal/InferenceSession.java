@@ -164,6 +164,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             return df;
         }
 
+        //Infer the args based on the inputs (variable + frame + iteration)
         String[] argNames = df.argNames();
         int numArgs = (argNames == null ? 0 : argNames.length);
         int numNonConstIns = (opInputs == null ? 0 : opInputs.size());
@@ -191,27 +192,25 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             }
         }
 
+        //Set the ops
         if(df instanceof CustomOp){
             DynamicCustomOp customOp = (DynamicCustomOp) df;
-            try {
-                customOp.populateInputsAndOutputsFromSameDiff();
-            } catch (Throwable t) {
-                throw new RuntimeException("Error populating inputs and outputs for function \"" + df.getOwnName()
-                        + "\" of type " + df.getClass().getName(), t);
-            }
-
-            //TODO we'll remove populateInputsAndOutputsFromSameDiff call soon, and populate directly here
-
             //TODO why doesn't CustomOp have a setInputs(INDArray[])?
             if(args != null) {
-                for (int i = 0; i < args.length; i++) {
-                    customOp.setInputArgument(i, args[i]);
+                customOp.setInputArguments(args);
+            }
+
+            List<LongShapeDescriptor> outShape = customOp.calculateOutputShape();
+            for( int i=0; i<outShape.size(); i++ ){
+                INDArray currOutput = (customOp.numOutputArguments() <= i ? null : customOp.getOutputArgument(i));
+                LongShapeDescriptor reqShape = outShape.get(i);
+                if(currOutput == null || currOutput.shapeDescriptor().equals(reqShape)){
+                    customOp.setOutputArgument(i, Nd4j.create(reqShape, false));
                 }
             }
+
         } else if(df instanceof Op){
             Op op = (Op) df;
-            // ops in differential function might have stale NDArrays used. we should renew them
-            //TODO let's remove this getArr usage here, and populate directly
             if(args != null && args.length > 0){
                 op.setX(args[0]);
                 if (args.length == 2)
@@ -230,26 +229,21 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
                             op.getClass().getSimpleName(), Arrays.toString(z.shape()), outputShape.get(0).toString());
                 }
-                //Get output variable:
-                String outputName = sameDiff.getOutgoingArgsReverse().get(opName)[0];
-                SDVariable outputVar = sameDiff.getVariable(outputName);
-
-                z = outputVar.storeAndAllocateNewArray();       //TODO this shouldn't be done - or stored - in the SameDiff instance
+                z = Nd4j.create(outputShape.get(0), false);
                 op.setZ(z);
             }
         }
 
-        //TODO actually set inputs etc. This is just placeholder for testing order etc
         return sameDiff.getFunctionById(opName);
     }
 
     @Override
     public void preprocessPlaceholderValues(Map<String, INDArray> placeholderValues) {
-        //TODO eventually placeholders will NOT be stored in SameDiff itself. But we'll set them for now until that is changed
-
-        for(Map.Entry<String,INDArray> placeholder : placeholderValues.entrySet() ){
-            //TODO let's add a "getPlaceholder(String)" method...
-            sameDiff.getVariable(placeholder.getKey()).setArray(placeholder.getValue());
-        }
+//        //TODO eventually placeholders will NOT be stored in SameDiff itself. But we'll set them for now until that is changed
+//
+//        for(Map.Entry<String,INDArray> placeholder : placeholderValues.entrySet() ){
+//            //TODO let's add a "getPlaceholder(String)" method...
+//            sameDiff.getVariable(placeholder.getKey()).setArray(placeholder.getValue());
+//        }
     }
 }

@@ -187,7 +187,8 @@ public abstract class AbstractSession<T, O> {
                 String[] opOutputVarNames = sameDiff.getFunctionById(opName).outputVariablesNames();
 
                 Preconditions.checkState(opOutputValues.length == opOutputVarNames.length, "Unexpected number of outputs from executed op %s:" +
-                        " got %s outputs when %s outputs were expected (%s)", parameterizedOp.getClass().getSimpleName(), opOutputValues, opOutputVarNames.length, opOutputVarNames);
+                        " got %s outputs when %s outputs were expected (%s)", parameterizedOp.getClass().getSimpleName(), opOutputValues.length,
+                        opOutputVarNames.length, opOutputVarNames);
 
                 for (int i = 0; i < opOutputVarNames.length; i++) {
                     if (opOutputValues[i] == null && parameterizedOp instanceof Switch) {
