@@ -33,7 +33,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     }
 
     @Override
-    public INDArray[] getOutputs(DifferentialFunction op, VarId anOutput, Set<VarId> opInputs, Set<String> constAndPhInputs) {
+    public INDArray[] getOutputs(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<String> constAndPhInputs) {
 
         int totalInputs = (opInputs == null ? 0 : opInputs.size()) + (constAndPhInputs == null ? 0 : constAndPhInputs.size());
 
@@ -41,16 +41,16 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             Identity i = (Identity) op;
             String[] argNames = i.argNames();
             Preconditions.checkState(argNames.length == 1, "Expected only 1 arg name in identity op, got %s", argNames);
-            VarId vid = newVarId(argNames[0], anOutput);
+            VarId vid = newVarId(argNames[0], outputFrameIter);
             return new INDArray[]{nodeOutputs.get(vid)};
 
         } else if(op instanceof Switch) {
             Switch s = (Switch) op;
             String[] argNames = s.argNames();       //Order: input, boolean array
-            VarId vidPredicate = newVarId(argNames[1], anOutput);
+            VarId vidPredicate = newVarId(argNames[1], outputFrameIter);
             INDArray predicate = this.nodeOutputs.get(vidPredicate);
             Preconditions.checkState(predicate.isScalar() && predicate.dataType() == DataType.BOOL, "Expected boolean predicate: got %ndSInfo", predicate);
-            VarId vid = newVarId(argNames[0], anOutput);
+            VarId vid = newVarId(argNames[0], outputFrameIter);
             if (predicate.getDouble(0) == 0.0) {
                 return new INDArray[]{this.nodeOutputs.get(vid), null};
             } else {
@@ -73,7 +73,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             }
             INDArray enterInput = this.nodeOutputs.get(inputVarId);
 
-            Preconditions.checkNotNull(enterInput, "Could not get enter op input: output variable %s", anOutput);
+            Preconditions.checkNotNull(enterInput, "Could not get enter op input: output variable %s - %s", e.outputVariablesNames(), outputFrameIter);
             return new INDArray[]{enterInput};
         } else if(op instanceof Exit) {
             //Exit node forwards input to parent frame
@@ -91,10 +91,10 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
             Preconditions.checkState(totalInputs == 1, "Expected exactly 1 op input for NextIteration: got %s+%s", opInputs, constAndPhInputs);
             VarId in = opInputs.iterator().next();
-            Preconditions.checkState(anOutput.getFrame().equals(in.getFrame()), "Expected same frame for NextIteration input vs. output:" +
-                    " got input %s, output %s", in, anOutput);
-            Preconditions.checkState(anOutput.getIteration() == in.getIteration()+1, "Expected output iteration for NextIteration output to" +
-                    " be 1 larger than the input iteration. Input: %s, output %s", in, anOutput);
+            Preconditions.checkState(outputFrameIter.getFrame().equals(in.getFrame()), "Expected same frame for NextIteration input vs. output:" +
+                    " got input %s, output %s", in, outputFrameIter);
+            Preconditions.checkState(outputFrameIter.getIteration() == in.getIteration()+1, "Expected output iteration for NextIteration output to" +
+                    " be 1 larger than the input iteration. Input: %s, output %s", in, outputFrameIter);
 
             INDArray inArr = this.nodeOutputs.get(in);
             return new INDArray[]{inArr};
@@ -110,7 +110,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             Merge m = (Merge) op;
             String[] in = sameDiff.getInputsForFunction(op);
             for (String s : in) {
-                VarId vid = newVarId(s, anOutput);
+                VarId vid = newVarId(s, outputFrameIter);
                 if (nodeOutputs.containsKey(vid)) {
                     log.info("Returning input \"{}\" for merge node \"{}\"", m.getOwnName(), s);
                     return new INDArray[]{nodeOutputs.get(vid)};
@@ -123,7 +123,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             LoopCond lc = (LoopCond) op;
             String[] argNames = lc.argNames();
             Preconditions.checkState(argNames.length == 1, "Expected only 1 arg name in LoopCond op, got %s", argNames);
-            VarId vid = newVarId(argNames[0], anOutput);
+            VarId vid = newVarId(argNames[0], outputFrameIter);
             INDArray arr = nodeOutputs.get(vid);
             Preconditions.checkNotNull(arr, "Input to LoopCond op must not be null");
             Preconditions.checkState(arr.isScalar() && arr.dataType() == DataType.BOOL, "LoopCond input must be a scalar boolean, got %ndShape");
@@ -142,8 +142,11 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     }
 
     @Override
-    public INDArray getConstant(VarId varId) {
-        return sameDiff.getArrForVarName(varId.getVariable());
+    public INDArray getConstant(String variableName) {
+        //TODO Proper constant checks
+        Preconditions.checkState(sameDiff.getImportedConstants() != null && sameDiff.getImportedConstants().contains(variableName),
+                "Variable %s is not a constant", variableName);
+        return sameDiff.getArrForVarName(variableName);
     }
 
     @Override
@@ -198,19 +201,6 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             }
 
             //TODO we'll remove populateInputsAndOutputsFromSameDiff call soon, and populate directly here
-//            String[] argNames = customOp.argNames();
-//            Preconditions.checkState((argNames == null && opInputs.size() == 0) || (argNames != null && argNames.length == opInputs.size()),
-//                    "Different number of arg names as op inputs: %s vs. %s", argNames, opInputs);
-//            if(argNames != null && argNames.length > 0) {
-//                //INDArray[] newInputs = new INDArray[argNames.length];
-//                for (VarId vid : opInputs) {
-//                    int idx = ArrayUtils.indexOf(argNames, vid.getVariable());
-//                    Preconditions.checkState(idx >= 0, "Variable %s not found in arg names: %s", vid.getVariable(), argNames);
-//                    //newInputs[idx] = this.nodeOutputs.get(vid);
-//
-//                    customOp.setInputArgument(idx, this.nodeOutputs.get(vid));
-//                }
-//            }
 
             //TODO why doesn't CustomOp have a setInputs(INDArray[])?
             if(args != null) {
@@ -220,18 +210,8 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             }
         } else if(df instanceof Op){
             Op op = (Op) df;
-            String outVarName = ((BaseOp) op).outputVariable().getVarName();
-
-//            SDVariable[] inputs = sameDiff.getInputVariablesForFunction(df);
-//
-//            // ops in differential function might have stale NDArrays used. we should renew them
-//            //TODO let's remove this getArr usage here, and populate directly
-//            if(inputs != null && inputs.length > 0) {
-//                op.setX(inputs[0].getArr());
-//                if (inputs.length == 2)
-//                    op.setY(inputs[1].getArr());
-//            }
-
+            // ops in differential function might have stale NDArrays used. we should renew them
+            //TODO let's remove this getArr usage here, and populate directly
             if(args != null && args.length > 0){
                 op.setX(args[0]);
                 if (args.length == 2)
@@ -272,6 +252,4 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             sameDiff.getVariable(placeholder.getKey()).setArray(placeholder.getValue());
         }
     }
-
-
 }

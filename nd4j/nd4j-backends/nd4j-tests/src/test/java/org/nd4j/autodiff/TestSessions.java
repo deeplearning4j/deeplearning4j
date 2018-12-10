@@ -50,7 +50,7 @@ public class TestSessions {
         m.put("x", x);
         m.put("y", y);
 
-        Map<String,INDArray> outMap = is.output(Collections.singletonList("out"), m, null);
+        Map<String,INDArray> outMap = is.output(Collections.singletonList("out"), m);
 
         assertEquals(1, outMap.size());
         assertEquals(outExp, outMap.get("out"));
@@ -87,7 +87,7 @@ public class TestSessions {
         m.put("y", y);
 
         System.out.println("----------------------------------");
-        Map<String,INDArray> outMap = is.output(Collections.singletonList("d"), m, null);
+        Map<String,INDArray> outMap = is.output(Collections.singletonList("d"), m);
 
         assertEquals(1, outMap.size());
         assertEquals(dExp, outMap.get("d"));
@@ -121,7 +121,7 @@ public class TestSessions {
         InferenceSession is = new InferenceSession(sd);
 //        String outName = merge.getVarName();
         String outName = outVar.getVarName();
-        Map<String,INDArray> outMap = is.output(Collections.singletonList(outName), m, null);
+        Map<String,INDArray> outMap = is.output(Collections.singletonList(outName), m);
 
         assertEquals(1, outMap.size());
         INDArray out = outMap.get(outName);
@@ -156,7 +156,7 @@ public class TestSessions {
         String n = merge.getVarName();
 
         System.out.println("----------------------------------");
-        Map<String,INDArray> outMap = is.output(Collections.singletonList(n), m, null);
+        Map<String,INDArray> outMap = is.output(Collections.singletonList(n), m);
         assertEquals(1, outMap.size());
         assertEquals(expTrue, outMap.get(n));
 
@@ -165,7 +165,7 @@ public class TestSessions {
         //Check false case:
         bArr.assign(0);
         is = new InferenceSession(sd);
-        outMap = is.output(Collections.singletonList(n), m, null);
+        outMap = is.output(Collections.singletonList(n), m);
         assertEquals(1, outMap.size());
         assertEquals(expFalse, outMap.get(n));
     }
@@ -196,7 +196,7 @@ public class TestSessions {
             String n = "while/Exit";
             String n2 = "while/Exit_1";
 
-            Map<String, INDArray> m = is.output(Arrays.asList(n, n2), Collections.emptyMap(), null);
+            Map<String, INDArray> m = is.output(Arrays.asList(n, n2), Collections.emptyMap());
             assertEquals(2, m.size());
 
             INDArray exp = Nd4j.scalar((double)numIter);
