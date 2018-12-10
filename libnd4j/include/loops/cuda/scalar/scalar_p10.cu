@@ -18,10 +18,14 @@
 // Created by raver on 9/28/2018.
 //
 
-#include "../scalar.hpp"
+#ifdef __EXPERIMENTAL__
+
+#ifndef "../scalar.hpp"
 
 namespace functions {
     namespace scalar {
         BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_10);
     }
 }
+
+#endif

@@ -18,6 +18,8 @@
 // Created by raver on 9/28/2018.
 //
 
+#ifndef __EXPERIMENTAL__
+
 #include "../scalar.hpp"
 
 namespace functions {
@@ -25,3 +27,5 @@ namespace functions {
         BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_12);
     }
 }
+
+#endif
