@@ -2194,5 +2194,65 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test8) {
 
 
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_pairwssqerr_loss_test9) {
+    
+    NDArray labels('c', {4}, {1,2,3,4});
+    NDArray predictions('c', {4}, {-0.1, 0.25, -0.5, 1.5});
+    NDArray weights('c', {4}, nd4j::DataType::DOUBLE);
+                                                
+    weights.assign(0.5);    
+ 
+    nd4j::ops::mean_pairwssqerr_loss op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {});
 
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR(result->e<double>(0), 0.0, 1e-5);    
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_pairwssqerr_loss_test10) {
+    
+    NDArray labels('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});    
+    NDArray predictions('c', {2, 3}, {-0.3, -0.2, -0.1, 0, 0.1, 0.2});
+    NDArray weights('c', {2, 1}, {0., 1.});    
+
+    nd4j::ops::mean_pairwssqerr_loss op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR(result->e<double>(0), 4.2866659, 1e-5);    
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, mean_pairwssqerr_loss_test11) {
+    
+    NDArray labels('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});    
+    NDArray predictions('c', {2, 3}, {-0.3, -0.2, -0.1, 0, 0.1, 0.2});
+    NDArray weights('c', {0}, {1.});    
+
+    nd4j::ops::mean_pairwssqerr_loss op;
+    auto results = op.execute({&predictions, &weights, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);            
+
+    ASSERT_TRUE(result->isScalar());    
+    ASSERT_NEAR(result->e<double>(0), 5.9066658, 1e-5);    
+
+    delete results;
+}
 
