@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff.internal;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -25,8 +26,10 @@ public abstract class AbstractSession<T,O> {
     protected static final String OUTER_FRAME = "main";
 
     protected final SameDiff sameDiff;
+    @Getter
     protected final Map<VarId, T> nodeOutputs = new HashMap<>();
     //Map for exit ops. Values added on enter ops. Key: frame name (for enter/exit nodes). Value: parent frame name + iteration
+    @Getter
     protected final Map<String,FrameIter> frameParents = new HashMap<>();
 
 
@@ -236,7 +239,8 @@ public abstract class AbstractSession<T,O> {
                             vid = new VarId(opOutputVarNames[i], parentFrame.getFrame(), parentFrame.getIteration());
                         } else if(parameterizedOp instanceof NextIteration) {
                             //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
-                            vid = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration() + 1);
+                            //Note that varToExec has already had its iteration number incremented by 1 (relative to its input) in updateDescendentsForExec
+                            vid = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration());
                         } else if(parameterizedOp instanceof LoopCond){
                             //LoopCond just forwards input to output?
                             vid = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration());
@@ -321,6 +325,9 @@ public abstract class AbstractSession<T,O> {
                         log.info("Marked enter op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
                     }
 
+                    //Also record the parent frame: we'll need this when we get to the corresponding exit ops
+                    frameParents.put(e.getFrameName(), executedVar.toFrameIter());
+
                     //Mark that we need the specified input to calculate this output
                     addToExecInputs(isConstOrPhInput, outVarId, executedVar, execInputs, execConstInputs);
                     continue;
@@ -333,8 +340,6 @@ public abstract class AbstractSession<T,O> {
                     VarId outputVarId = new VarId(opOutputs[0], parentFrame.getFrame(), parentFrame.getIteration());
 
                     addToExecInputs(isConstOrPhInput, outputVarId, executedVar, execInputs, execConstInputs);
-
-                    throw new UnsupportedOperationException("Not yet implemented: Exit op");
                 } else if(sameDiff.getFunctionById(opName) instanceof NextIteration){
                     //NextIteration is available for execution when its single input is available
                     //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
@@ -455,7 +460,7 @@ public abstract class AbstractSession<T,O> {
      */
     @Data
     @AllArgsConstructor
-    protected static class VarId {
+    public static class VarId {
         private String variable;
         private String frame;
         private int iteration;
@@ -464,6 +469,10 @@ public abstract class AbstractSession<T,O> {
         public String toString() {
             return "VarId(\"" + variable + "\",\"" + frame + "\"," + iteration + ")";
         }
+
+        public FrameIter toFrameIter(){
+            return new FrameIter(frame, iteration);
+        }
     }
 
     /*
@@ -471,7 +480,7 @@ public abstract class AbstractSession<T,O> {
      */
     @Data
     @AllArgsConstructor
-    protected static class FrameIter {
+    public static class FrameIter {
         private String frame;
         private int iteration;
     }

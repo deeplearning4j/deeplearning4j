@@ -5,6 +5,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SameDiffConditional;
 import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
+import org.nd4j.autodiff.samediff.internal.AbstractSession;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -20,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TestSessions {
@@ -171,28 +173,58 @@ public class TestSessions {
     @Test(timeout = 50000L)
     public void testSwitchWhile() throws Exception{
 
-        File f = new ClassPathResource("tf_graphs/examples/while1/iter_1/frozen_model.pb").getFile();
-        SameDiff sd = TFGraphMapper.getInstance().importGraph(f);
+        /*
+        Test case:
+        i=0, j=numIter
+        while(i<j){
+            i++
+        }
+        return (i,j)
 
-        System.out.println(sd.summary());
+        Therefore, expected output for 2 nodes is (numIter, numIter)
+         */
 
-        System.out.println("----------------------------------");
-        //This particular test/graph doesn't use placeholders
-        InferenceSession is = new InferenceSession(sd);
-        String n = "while/Exit";
-        String n2 = "while/Exit_1";
+        for( int numIter : new int[]{1,3}) {
+            File f = new ClassPathResource("tf_graphs/examples/while1/iter_" + numIter + "/frozen_model.pb").getFile();
+            SameDiff sd = TFGraphMapper.getInstance().importGraph(f);
 
-        Map<String,INDArray> m = is.output(Arrays.asList(n, n2), Collections.emptyMap(), null);
-        assertEquals(2, m.size());
+            System.out.println(sd.summary());
 
-        //Expected outputs: 3, 3
-        //Loop is while(i<j){ i--;} with initial values i=0, j=3
+            System.out.println("----------------------------------");
+            //This particular test/graph doesn't use placeholders
+            InferenceSession is = new InferenceSession(sd);
+            String n = "while/Exit";
+            String n2 = "while/Exit_1";
 
-        INDArray exp1and2 = Nd4j.valueArrayOf(new long[0], 3, DataType.DOUBLE);
+            Map<String, INDArray> m = is.output(Arrays.asList(n, n2), Collections.emptyMap(), null);
+            assertEquals(2, m.size());
 
-        assertEquals(exp1and2, m.get(n));
-        assertEquals(exp1and2, m.get(n2));
+            INDArray exp = Nd4j.scalar((double)numIter);
 
+            assertEquals(exp, m.get(n));
+            assertEquals(exp, m.get(n2));
+
+            Map<String,AbstractSession.FrameIter> frameParents = is.getFrameParents();
+            Map<AbstractSession.VarId,INDArray> outputs = is.getNodeOutputs();
+            //Some sanity checks on the internal state:
+            //Check 1: "while/Less" should be executed numIter+1 times... i.e., numIter times through the loop, plus once to exit
+            for( int i=0; i<numIter+1; i++ ){
+                AbstractSession.VarId expVarId = new AbstractSession.VarId("while/Less","while/while_context", i);
+                INDArray expLessVal = Nd4j.scalar(i != numIter);
+                assertTrue(outputs.containsKey(expVarId));
+                //assertEquals(expLessVal, outputs.get(expVarId));      //TODO can't test this due to in-place modifications of output arrays
+            }
+            AbstractSession.VarId expVarId = new AbstractSession.VarId("while/Less","while/while_context", numIter+1);
+//            assertFalse(outputs.containsKey(expVarId));               //TODO can't test this due to in-place modifications of output arrays
+
+            //Check 2: Add should be executed numIter times...
+            for( int i=0; i<numIter; i++ ){
+                expVarId = new AbstractSession.VarId("while/add","while/while_context", i);
+                INDArray expAddVal = Nd4j.scalar(i);
+                assertTrue(outputs.containsKey(expVarId));
+                //assertEquals(expAddVal, outputs.get(expVarId));      //TODO can't test this due to in-place modifications of output arrays
+            }
+        }
 
     }
 }
