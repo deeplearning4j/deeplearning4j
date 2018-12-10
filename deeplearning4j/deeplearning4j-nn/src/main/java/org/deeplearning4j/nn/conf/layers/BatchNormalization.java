@@ -112,7 +112,7 @@ public class BatchNormalization extends FeedForwardLayer {
                                             + getLayerName() + "\"");
         }
 
-        //Can handle CNN, flat CNN or FF input formats only
+        //Can handle CNN, flat CNN, CNN3D or FF input formats only
         switch (inputType.getType()) {
             case FF:
             case CNN:
