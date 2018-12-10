@@ -4,7 +4,6 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -22,7 +21,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -150,7 +148,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     }
 
     @Override
-    public DifferentialFunction getAndParameterizeOp(String opName, Set<VarId> opInputs, Set<String> constAndPhInputs) {
+    public DifferentialFunction getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<String> constAndPhInputs) {
 
         DifferentialFunction df = sameDiff.getFunctionById(opName);
 
@@ -192,10 +190,14 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             }
         }
 
-        //Set the ops
+        //Set the op inputs and output arguments
+        //Note that when we are in a loop (and non-first iteration), we want to allocate new arrays even if shapes are
+        // ok: this is because we need the values in past iterations for backprop (potentially)
+        //TODO let's find a way to use in-place modification for loops where possible to reduce memory requirements
+        boolean isLoop = !frameIter.getFrame().equals(OUTER_FRAME) && frameIter.getIteration() > 0;
+
         if(df instanceof CustomOp){
             DynamicCustomOp customOp = (DynamicCustomOp) df;
-            //TODO why doesn't CustomOp have a setInputs(INDArray[])?
             if(args != null) {
                 customOp.setInputArguments(args);
             }
@@ -204,7 +206,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             for( int i=0; i<outShape.size(); i++ ){
                 INDArray currOutput = (customOp.numOutputArguments() <= i ? null : customOp.getOutputArgument(i));
                 LongShapeDescriptor reqShape = outShape.get(i);
-                if(currOutput == null || currOutput.shapeDescriptor().equals(reqShape)){
+                if(currOutput == null || currOutput.shapeDescriptor().equals(reqShape) || isLoop){
                     customOp.setOutputArgument(i, Nd4j.create(reqShape, false));
                 }
             }
@@ -224,7 +226,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
             INDArray z = op.z();
             Preconditions.checkNotNull(z, "Could not get output array for op: %s", op.getClass());
-            if(!outputShape.get(0).equals(z.shapeDescriptor())){
+            if(!outputShape.get(0).equals(z.shapeDescriptor()) || isLoop){
                 if(log.isTraceEnabled()){
                     log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
                             op.getClass().getSimpleName(), Arrays.toString(z.shape()), outputShape.get(0).toString());
@@ -235,15 +237,5 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         }
 
         return sameDiff.getFunctionById(opName);
-    }
-
-    @Override
-    public void preprocessPlaceholderValues(Map<String, INDArray> placeholderValues) {
-//        //TODO eventually placeholders will NOT be stored in SameDiff itself. But we'll set them for now until that is changed
-//
-//        for(Map.Entry<String,INDArray> placeholder : placeholderValues.entrySet() ){
-//            //TODO let's add a "getPlaceholder(String)" method...
-//            sameDiff.getVariable(placeholder.getKey()).setArray(placeholder.getValue());
-//        }
     }
 }

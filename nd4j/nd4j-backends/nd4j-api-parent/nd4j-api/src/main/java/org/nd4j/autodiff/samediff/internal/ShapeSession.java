@@ -14,17 +14,12 @@ public class ShapeSession extends AbstractSession<LongShapeDescriptor, Different
     }
 
     @Override
-    public DifferentialFunction getAndParameterizeOp(String opName, Set<VarId> opInputs, Set<String> constAndPhInputs) {
+    public DifferentialFunction getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<String> constAndPhInputs) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
     public LongShapeDescriptor[] getOutputs(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> inputs, Set<String> constAndPhInputs) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public void preprocessPlaceholderValues(Map<String, LongShapeDescriptor> placeholderValues) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

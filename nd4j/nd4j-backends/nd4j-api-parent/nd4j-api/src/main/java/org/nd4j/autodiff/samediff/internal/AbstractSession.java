@@ -136,9 +136,6 @@ public abstract class AbstractSession<T, O> {
         switch ops may cause entire branches of the graph to be skipped.
          */
 
-        //TODO we'll probably not do this 'preprocessPlaceholderValues' in the future, but it's necessary for execution for now...
-        preprocessPlaceholderValues(placeholderValues);
-
         Map<String, T> out = new HashMap<>();
         int step = 0;
         while (out.size() < variables.size()) {
@@ -179,15 +176,16 @@ public abstract class AbstractSession<T, O> {
                 String opName = sameDiff.getFunctionOutputFor().get(varToExec.getVariable()).get(0).getOwnName();
 
                 //Execute op
-                O parameterizedOp = getAndParameterizeOp(opName, inputsToVar, constPhForVar);
-                T[] opOutputValues = getOutputs(parameterizedOp, varToExec.toFrameIter(), inputsToVar, constPhForVar);
+                FrameIter frameIter = varToExec.toFrameIter();
+                O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, constPhForVar);
+                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, constPhForVar);
 
 
                 //Post execution: work out what is now available for exec
                 String[] opOutputVarNames = sameDiff.getFunctionById(opName).outputVariablesNames();
 
                 Preconditions.checkState(opOutputValues.length == opOutputVarNames.length, "Unexpected number of outputs from executed op %s:" +
-                        " got %s outputs when %s outputs were expected (%s)", parameterizedOp.getClass().getSimpleName(), opOutputValues.length,
+                                " got %s outputs when %s outputs were expected (%s)", parameterizedOp.getClass().getSimpleName(), opOutputValues.length,
                         opOutputVarNames.length, opOutputVarNames);
 
                 for (int i = 0; i < opOutputVarNames.length; i++) {
@@ -285,14 +283,11 @@ public abstract class AbstractSession<T, O> {
         }
     }
 
-    //TODO we might not need this method eventually...
-    public abstract void preprocessPlaceholderValues(Map<String, T> placeholderValues);
-
     /**
      * This method should be called for a variable once it's array is ready for use.
      * For example, post op execution, etc
      *
-     * @param executedVar      Variable that was just executed
+     * @param executedVar Variable that was just executed
      */
     protected void updateDescendentsForExec(VarId executedVar) {
         String varName = executedVar.getVariable();
@@ -439,7 +434,7 @@ public abstract class AbstractSession<T, O> {
                         //TODO what about variable control depes?
 
                         for (String s : opOutputs) {
-                            if(!subgraph.contains(s))
+                            if (!subgraph.contains(s))
                                 continue;       //Don't need this variable to calculate requested outputs - so don't mark as available for execution
                             VarId vid = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
                             availableForExec.add(vid);
@@ -464,9 +459,13 @@ public abstract class AbstractSession<T, O> {
     /**
      * Get the parameterized op to execute - for example, the op/DifferentialFunction with all inputs set
      *
+     * @param opName           Name of the op
+     * @param frameIter        The frame and iteration of the op outputs
+     * @param inputs           The inputs to the op (excluding constants/placeholders) - for the specific frame + iteration
+     * @param constAndPhInputs The constant and placeholder inputs - used for all frames/iterations
      * @return The parameterized op
      */
-    public abstract O getAndParameterizeOp(String opName, Set<VarId> inputs, Set<String> constAndPhInputs);
+    public abstract O getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> inputs, Set<String> constAndPhInputs);
 
     /**
      * Execute the op - calculate INDArrays, or shape info, etc
@@ -486,12 +485,12 @@ public abstract class AbstractSession<T, O> {
      * <p>
      * This method is basically used to store information we need to parameterize ops for execution later
      *
-     * @param isConstOrPh     If true: inputVar is either a constant or a placeholder
-     * @param inputVar        Input variable (i.e., the X in (X, ...) -> op -> (forVariable,...))
-     * @param forVariable     Output variable (i.e., the Y in (inputVar, ...) -> op -> (Y,...))
+     * @param isConstOrPh If true: inputVar is either a constant or a placeholder
+     * @param inputVar    Input variable (i.e., the X in (X, ...) -> op -> (forVariable,...))
+     * @param forVariable Output variable (i.e., the Y in (inputVar, ...) -> op -> (Y,...))
      */
     protected void addToExecInputs(boolean isConstOrPh, VarId inputVar, VarId forVariable) {
-        if(!subgraph.contains(forVariable.getVariable()))
+        if (!subgraph.contains(forVariable.getVariable()))
             return;     //Not needed to calculate requested outputs, so no need to record it's inputs
 
         if (isConstOrPh) {

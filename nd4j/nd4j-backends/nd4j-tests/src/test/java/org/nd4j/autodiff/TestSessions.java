@@ -170,7 +170,7 @@ public class TestSessions {
         assertEquals(expFalse, outMap.get(n));
     }
 
-    @Test(timeout = 50000L)
+    @Test(timeout = 60000L)
     public void testSwitchWhile() throws Exception{
 
         /*
@@ -212,17 +212,17 @@ public class TestSessions {
                 AbstractSession.VarId expVarId = new AbstractSession.VarId("while/Less","while/while_context", i);
                 INDArray expLessVal = Nd4j.scalar(i != numIter);
                 assertTrue(outputs.containsKey(expVarId));
-                //assertEquals(expLessVal, outputs.get(expVarId));      //TODO can't test this due to in-place modifications of output arrays
+                assertEquals(expLessVal, outputs.get(expVarId));
             }
             AbstractSession.VarId expVarId = new AbstractSession.VarId("while/Less","while/while_context", numIter+1);
-//            assertFalse(outputs.containsKey(expVarId));               //TODO can't test this due to in-place modifications of output arrays
+            assertFalse(outputs.containsKey(expVarId));
 
             //Check 2: Add should be executed numIter times...
             for( int i=0; i<numIter; i++ ){
                 expVarId = new AbstractSession.VarId("while/add","while/while_context", i);
-                INDArray expAddVal = Nd4j.scalar(i);
+                INDArray expAddVal = Nd4j.scalar(i+1);  //Starts at 0, so post exec it's 1 higher than iter number
                 assertTrue(outputs.containsKey(expVarId));
-                //assertEquals(expAddVal, outputs.get(expVarId));      //TODO can't test this due to in-place modifications of output arrays
+                assertEquals(expAddVal, outputs.get(expVarId));
             }
         }
 
