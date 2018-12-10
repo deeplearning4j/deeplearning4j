@@ -29,13 +29,13 @@
 
 using namespace simdOps;
 
-#define LOCAL_TRANSFORM_FLOAT_OPS \
+#define LOCAL_TRANSFORM_STRICT_OPS \
         (23, Exp), \
         (24, Log)
 
 namespace functions {
     namespace transform {
-        template <typename X, typename Z>
+        template <typename X>
         class TransformStrictInplace {
         public:
             static FORCEINLINE _CUDA_D void transformCudaLegacy(int opNum, void *dy, Nd4jLong *shapeInfo, void *params, void *result, Nd4jLong *zShapeInfo, int *allocationPointer, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
@@ -44,9 +44,9 @@ namespace functions {
             static FORCEINLINE _CUDA_D void transformCuda(void *vdy, Nd4jLong *shapeInfo, void *vparams, void *vresult, Nd4jLong *zShapeInfo, int *allocationPointer, void *vreductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
         };
 
-        template<typename X, typename Z>
+        template<typename X>
         template <typename OpType>
-        FORCEINLINE _CUDA_D void TransformStrictInplace<X,Z>::transformCuda(
+        FORCEINLINE _CUDA_D void TransformStrictInplace<X>::transformCuda(
                 void *vdy,
                 Nd4jLong *shapeInfo,
                 void *vparams,
@@ -55,9 +55,9 @@ namespace functions {
                 int *allocationPointer, void *vreductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
             auto dy = static_cast<X*>(vdy);
-            auto result = static_cast<Z*>(vresult);
-            auto params = static_cast<Z*>(vparams);
-            auto reductionPointer = static_cast<Z*>(vreductionPointer);
+            auto result = static_cast<X*>(vresult);
+            auto params = static_cast<X*>(vparams);
+            auto reductionPointer = static_cast<X*>(vreductionPointer);
 
             auto xOrder = shape::order(shapeInfo);
             auto zOrder = shape::order(zShapeInfo);
@@ -77,10 +77,10 @@ namespace functions {
                 auto zOffset2 = shape::getIndexOffset(i, zShapeInfo, length);
                 result[zOffset2] = OpType::op(dy[xOffset2], params);
             }
-        };
+        }
 
-        template<typename X, typename Y>
-        FORCEINLINE _CUDA_D void TransformStrictInplace<X,Y>::transformCudaLegacy(
+        template<typename X>
+        FORCEINLINE _CUDA_D void TransformStrictInplace<X>::transformCudaLegacy(
                 int opNum,
                 void *dy,
                 Nd4jLong *shapeInfo,
@@ -91,10 +91,10 @@ namespace functions {
                 void *reductionPointer,
                 Nd4jLong *tadShapeInfo,
                 Nd4jLong *tadOffsets) {
-            DISPATCH_BY_OPNUM_TT(transformCuda, PARAMS(dy, shapeInfo, params, result, zShapeInfo, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), LOCAL_TRANSFORM_FLOAT_OPS);
+            DISPATCH_BY_OPNUM_T(transformCuda, PARAMS(dy, shapeInfo, params, result, zShapeInfo, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), LOCAL_TRANSFORM_STRICT_OPS);
         }
     }
 }
 
-#undef LOCAL_TRANSFORM_FLOAT_OPS
+#undef LOCAL_TRANSFORM_STRICT_OPS
 #endif //DEV_TESTS_TRANSFORM_FLOAT_INPLACE_H
