@@ -83,6 +83,7 @@ namespace functions {
 		        auto xEws = shape::elementWiseStride(shapeInfo);
     		    auto zEws = shape::elementWiseStride(zShapeInfo);
 	    	    auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+				int totalThreads = gridDim.x * blockDim.x;
 
                 __shared__ Nd4jLong length;
 		        if(threadIdx.x == 0)
@@ -90,13 +91,17 @@ namespace functions {
 		        __syncthreads();
 
 		        if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
-			        transformCuda<OpType>(
-				    	length,
-				    	dy,
-				    	xEws,
-				    	params,
-				    	z,
-				    	zEws, allocationPointer, reductionPointer);
+					if(xEws == 1 && zEws == 1) {
+						/* equal, positive, non-unit increments. */
+						for (int i = tid; i < length; i += totalThreads) {
+							z[i] = OpType::op(dy[i], params);
+						}
+					}
+					else {
+						for (int i = tid; i < length; i += totalThreads) {
+							z[i * zEws] = OpType::op(dy[i * xEws], params);
+						}
+					}
 		        }
 		        else {			        
 			
@@ -123,39 +128,6 @@ namespace functions {
 						                Nd4jLong *tadOffsets) {
             DISPATCH_BY_OPNUM_TT(transformCuda, PARAMS(dy, shapeInfo, params, z, zShapeInfo, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), TRANSFORM_FLOAT_OPS);
         }
-
-        template<typename X, typename Z>
-        template <typename OpType>
-	    __device__ void TransformFloat<X,Z>::transformCuda(
-								Nd4jLong n,
-								void *vdy,
-								Nd4jLong incy,
-								void *vparams,
-								void *vresult,
-								Nd4jLong zEws,
-								int *allocationPointer, void *vreductionPointer) {
-
-        	auto dy = reinterpret_cast<X*>(vdy);
-		    auto z = reinterpret_cast<Z*>(vresult);
-		    auto params = reinterpret_cast<Z*>(vparams);
-		    auto reductionPointer = reinterpret_cast<Z*>(vreductionPointer);
-
-            int totalThreads = gridDim.x * blockDim.x;
-		    Nd4jLong i = blockIdx.x * blockDim.x + threadIdx.x;
-
-    		if(incy == 1 && zEws == 1) {
-	    		/* equal, positive, non-unit increments. */
-			    for (; i < n; i += totalThreads) {
-				    z[i] = OpType::op(dy[i], params);
-			    }
-		    }
-		    else {
-			    for (; i < n; i += totalThreads) {
-				    z[i * zEws] = OpType::op(dy[i * incy], params);
-			    }
-		    }
-	    }
-
 
 		template<typename X, typename Z>
 		template <typename OpType>
