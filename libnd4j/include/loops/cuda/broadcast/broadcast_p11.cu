@@ -18,7 +18,7 @@
 // Created by raver119 on 23/09/18.
 //
 
-#ifndef __EXPERIMENTAL__
+#ifndef __ND4J_EXPERIMENTAL__
 
 #include "../broadcasting.hpp"
 

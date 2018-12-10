@@ -18,7 +18,7 @@
 //  @author Yurii Shyrma (iuriish@yahoo.com), created on 10.11.2018
 //
 
-#ifndef __EXPERIMENTAL__
+#ifndef __ND4J_EXPERIMENTAL__
 
 #include "../pairwise.hpp"
 

@@ -18,7 +18,7 @@
 // Created by raver on 9/28/2018.
 //
 
-#ifndef __EXPERIMENTAL__
+#ifndef __ND4J_EXPERIMENTAL__
 
 #include "../scalar.hpp"
 

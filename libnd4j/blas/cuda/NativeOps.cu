@@ -110,7 +110,7 @@ int blockLimit = 128;
 int maxThreads = 512;
 bool allowedP2P = false;
 bool supportedP2P = false;
-#ifdef __EXPERIMENTAL__
+#ifdef __ND4J_EXPERIMENTAL__
 bool experimentalSupport = true;
 #else
 bool experimentalSupport = false;
