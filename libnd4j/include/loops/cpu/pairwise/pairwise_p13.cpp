@@ -18,6 +18,8 @@
 // Created by raver119 on 23/09/18.
 //
 
+#ifndef __ND4J_EXPERIMENTAL__
+
 #include "../pairwise.hpp"
 
 namespace functions {
@@ -25,3 +27,5 @@ namespace functions {
         BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT PairWiseTransform, , PAIRWISE_TYPES_13);
     }
 }
+
+#endif
