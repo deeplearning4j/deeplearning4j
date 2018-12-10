@@ -129,6 +129,7 @@ def _from_numpy(np_array):
     pointer = native_ops.pointerForAddress(pointer_address)
     size = np_array.size
     jdtype = _dtype_py2j(np_array.dtype)
+    '''
     mapping = {
         DOUBLE: DoublePointer,
         FLOAT: FloatPointer,
@@ -139,7 +140,8 @@ def _from_numpy(np_array):
         BOOL: BoolPointer
         }
     pc = mapping[jdtype]
-    pointer = pc(pointer)
+    #pointer = pc(pointer)
+    '''
     buff = Nd4j.createBuffer(pointer, size, jdtype)
     assert buff.address() == pointer_address
     _refs.append(buff)
@@ -227,6 +229,12 @@ def broadcast_like(y, x):
 
 
 def broadcast(x, y):
+    print(x)
+    print(y)
+    print(x.dataType().toString())
+    print(y.dataType().toString())
+    assert isinstance(x, INDArray)
+    assert isinstance(y, INDArray)
     xs = x.shape()
     ys = y.shape()
     if xs == ys:
@@ -267,9 +275,10 @@ def broadcast(x, y):
     if rep_x:
         x = Nd4j.tile(x, *xt)
     if rep_y:
-        print(y.dataType().toString(), get_context_dtype())
-        print(y.shape())
-        y = Nd4j.tile(y, *yt)
+        try:
+            y = Nd4j.tile(y, *yt)
+        except:
+            y = Nd4j.tile(y, *yt)
     return x, y
 
 
