@@ -984,26 +984,26 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Cosine {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_cos<X,Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_cos<X,X>(d1);
 		}
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Exp {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_exp<X, Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_exp<X, X>(d1);
 		}
 	};
 
@@ -1020,17 +1020,17 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class HardTanh {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
+		op_def static X op(X d1, X *params) {
 			if (d1 < static_cast<X>(-1))
-				return static_cast<Z>(-1);
+				return static_cast<X>(-1);
 			else if (d1 > static_cast<X>(1))
-				return static_cast<Z>(1);
+				return static_cast<X>(1);
 			else
 				return d1;
 
@@ -1050,25 +1050,25 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Log {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_log<X, Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_log<X, X>(d1);
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Log1p {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_log<X, Z>(1 + d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_log<X, X>(1 + d1);
 		}
 	};
 
@@ -1094,15 +1094,15 @@ namespace simdOps {
         }
     };
 
-    template <typename X, typename Z>
+    template <typename X>
     class StabilizeX {
     public:
-        no_op_exec_special
-        no_op_exec_special_cuda
+        no_op_exec_special_same
+        no_op_exec_special_same_cuda
 
-        op_def static Z op(X d1, Z *params) {
+        op_def static X op(X d1, X *params) {
             if (d1 <= static_cast<X>(0))
-            	return nd4j::DataTypeUtils::min<Z>();
+            	return nd4j::DataTypeUtils::min<X>();
             else return d1;
         }
     };
@@ -1130,26 +1130,26 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Erf {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_erf<X,Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_erf<X,X>(d1);
 		}
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Erfc {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_erfc<X,Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_erfc<X,X>(d1);
 		}
 	};
 
@@ -1336,14 +1336,14 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Expm1 {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_exp<X, Z>(d1) - static_cast<Z>(1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_exp<X, X>(d1) - static_cast<X>(1);
 		}
 	};
 
@@ -1508,14 +1508,14 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Swish {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return static_cast<Z>(d1) * nd4j::math::nd4j_sigmoid<X,Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return d1 * nd4j::math::nd4j_sigmoid<X,X>(d1);
 		}
 	};
 
@@ -1533,14 +1533,14 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class LogSigmoid {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_log<Z, Z>(nd4j::math::nd4j_sigmoid<X, Z>(d1));
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_log<X, X>(nd4j::math::nd4j_sigmoid<X, X>(d1));
 		}
 	};
 
@@ -1556,14 +1556,14 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Sigmoid {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_sigmoid<X, Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_sigmoid<X, X>(d1);
 		}
 	};
 
@@ -1579,13 +1579,13 @@ namespace simdOps {
 	};
 
 
-    template <typename X, typename Z>
+    template <typename X>
     class HardSigmoid {
     public:
-        no_op_exec_special
-        no_op_exec_special_cuda
+        no_op_exec_special_same
+        no_op_exec_special_same_cuda
 
-        op_def static Z op(X d1, Z *params) {
+        op_def static X op(X d1, X *params) {
             return nd4j::math::nd4j_min<X>(static_cast<X>(1), nd4j::math::nd4j_max<X>(static_cast<X>(0), (static_cast<X>(0.2f)) * d1 + static_cast<X>(0.5f)));
         }
     };
@@ -1605,35 +1605,35 @@ namespace simdOps {
 	/**
 	* Scale to be between a min and max
 	*/
-	template <typename X, typename Z>
+	template <typename X>
 	class SetRange {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
+		op_def static X op(X d1, X *params) {
 			auto min = params[0];
 			auto max = params[1];
-			if (static_cast<Z>(d1) >= min && static_cast<Z>(d1) <= max)
-				return static_cast<Z>(d1);
-			if (min == static_cast<Z>(0) && max == static_cast<Z>(1)) {
-				auto val = static_cast<Z>(1) / (static_cast<Z>(1) + nd4j::math::nd4j_exp<X, Z>(-d1));
-				return (nd4j::math::nd4j_floor<Z,Z>(val * (max - min)) + min);
+			if (static_cast<X>(d1) >= min && static_cast<X>(d1) <= max)
+				return d1;
+			if (min == static_cast<X>(0) && max == static_cast<X>(1)) {
+				auto val = static_cast<X>(1) / (static_cast<X>(1) + nd4j::math::nd4j_exp<X, X>(-d1));
+				return (nd4j::math::nd4j_floor<X,X>(val * (max - min)) + min);
 			}
 
-			return (nd4j::math::nd4j_floor<Z,Z>(static_cast<Z>(d1) * (max - min)) + min);
+			return (nd4j::math::nd4j_floor<X,X>(d1 * (max - min)) + min);
 		}
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Sin {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_sin<X,Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_sin<X,X>(d1);
 		}
 	};
 
@@ -1670,26 +1670,26 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Rint {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_rint<X,Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_rint<X,X>(d1);
 		}
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class SoftPlus {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::softplus<X, Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::softplus<X, X>(d1);
 		}
 	};
 
@@ -1718,18 +1718,18 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class RationalTanh {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
+		op_def static X op(X d1, X *params) {
 			// keep 2/3 as runtime variable, to match precision
-			auto dis = (static_cast<Z>(2) / static_cast<Z>(3)) * static_cast<Z>(d1);
+			auto dis = (static_cast<X>(2) / static_cast<X>(3)) * d1;
 
-			auto tanh = nd4j::math::nd4j_sgn<Z,Z>(dis) * (static_cast<Z>(1) - (static_cast<Z>(1) / (static_cast<Z>(1) + static_cast<Z>(nd4j::math::nd4j_abs<Z>(dis)) + nd4j::math::nd4j_pow<Z, Z, Z>(dis, static_cast<Z>(2)) + static_cast<Z>(1.41645f) * nd4j::math::nd4j_pow<Z, Z, Z>(dis, static_cast<Z>(4)) )));
-			return static_cast<Z>(1.7159f) * tanh;
+			auto tanh = nd4j::math::nd4j_sgn<X,X>(dis) * (static_cast<X>(1) - (static_cast<X>(1) / (static_cast<X>(1) + static_cast<X>(nd4j::math::nd4j_abs<X>(dis)) + nd4j::math::nd4j_pow<X, X, X>(dis, static_cast<X>(2)) + static_cast<X>(1.41645f) * nd4j::math::nd4j_pow<X, X, X>(dis, static_cast<X>(4)) )));
+			return static_cast<X>(1.7159f) * tanh;
 		}
 	};
 
@@ -1750,25 +1750,25 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Tanh {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_tanh<X, Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_tanh<X, X>(d1);
 		}
 	};
 
-    template <typename X, typename Z>
+    template <typename X>
     class RectifiedTanh {
     public:
-        no_op_exec_special
-        no_op_exec_special_cuda
+        no_op_exec_special_same
+        no_op_exec_special_same_cuda
 
-        op_def static Z op(X d1, Z *params) {
-            return nd4j::math::nd4j_max<Z>(static_cast<Z>(0), nd4j::math::nd4j_tanh<X,Z>(d1));
+        op_def static X op(X d1, X *params) {
+            return nd4j::math::nd4j_max<X>(static_cast<X>(0), nd4j::math::nd4j_tanh<X,X>(d1));
         }
     };
 
@@ -1783,14 +1783,14 @@ namespace simdOps {
         }
     };
 
-	template <typename X, typename Z>
+	template <typename X>
 	class ATanh {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_atanh<X,Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_atanh<X,X>(d1);
 		}
 	};
 
@@ -1828,25 +1828,25 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X>
 	class ACos {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_acos<X, Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_acos<X, X>(d1);
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X>
 	class ASinh {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_asinh<X, Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_asinh<X, X>(d1);
 		}
 	};
 
@@ -1861,14 +1861,14 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X>
 	class ACosh {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_acosh<X, Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_acosh<X, X>(d1);
 		}
 	};
 
@@ -1899,14 +1899,14 @@ namespace simdOps {
 
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class SoftSign {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_softsign<X,Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_softsign<X, X>(d1);
 		}
 	};
 
@@ -2055,14 +2055,14 @@ namespace simdOps {
         }
     };
 
-	template <typename X, typename Z>
+	template <typename X>
 	class ELU {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_elu<X,Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_elu<X,X>(d1);
 		}
 	};
 
@@ -2123,14 +2123,14 @@ namespace simdOps {
 		}
 	};
 
-    template <typename X, typename Z>
+    template <typename X>
     class SELU {
     public:
-        no_op_exec_special
-        no_op_exec_special_cuda
+        no_op_exec_special_same
+        no_op_exec_special_same_cuda
 
-        op_def static Z op(X d1, Z *params) {
-            return d1 > static_cast<X>(0.0f) ? static_cast<Z>(SELU_LAMBDA) * static_cast<Z>(d1) : static_cast<Z>(SELU_LAMBDA) * (static_cast<Z>(SELU_ALPHA) * nd4j::math::nd4j_exp<X, Z>(d1) - static_cast<Z>(SELU_ALPHA));
+        op_def static X op(X d1, X *params) {
+            return d1 > static_cast<X>(0.0f) ? static_cast<X>(SELU_LAMBDA) * static_cast<X>(d1) : static_cast<X>(SELU_LAMBDA) * (static_cast<X>(SELU_ALPHA) * nd4j::math::nd4j_exp<X, X>(d1) - static_cast<X>(SELU_ALPHA));
         }
     };
 
@@ -2160,25 +2160,25 @@ namespace simdOps {
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class ASin {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_asin<X,Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_asin<X,X>(d1);
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Sinh {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_sinh<X,Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_sinh<X,X>(d1);
 		}
 	};
 
@@ -2193,26 +2193,26 @@ namespace simdOps {
 		}
 	};
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Cosh {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_cosh<X,Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_cosh<X,X>(d1);
 		}
 	};
 
 
-	template <typename X, typename Z>
+	template <typename X>
 	class Tan {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_tan<X,Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_tan<X,X>(d1);
 		}
 	};
 
@@ -2227,14 +2227,14 @@ namespace simdOps {
         }
     };
 
-	template <typename X, typename Z>
+	template <typename X>
 	class ATan {
 	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
 
-		op_def static Z op(X d1, Z *params) {
-			return nd4j::math::nd4j_atan<X, Z>(d1);
+		op_def static X op(X d1, X *params) {
+			return nd4j::math::nd4j_atan<X, X>(d1);
 		}
 	};
 
