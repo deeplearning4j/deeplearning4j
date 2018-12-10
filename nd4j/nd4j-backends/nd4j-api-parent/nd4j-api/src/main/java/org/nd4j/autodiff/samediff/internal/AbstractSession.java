@@ -26,7 +26,10 @@ public abstract class AbstractSession<T,O> {
 
     protected final SameDiff sameDiff;
     protected final Map<VarId, T> nodeOutputs = new HashMap<>();
-    //protected final Map<String,String> frameParents = new HashMap<>();  //Key: frame name. Value: parent frame for that frame
+    //Map for exit ops. Values added on enter ops. Key: frame name (for enter/exit nodes). Value: parent frame name + iteration
+    protected final Map<String,FrameIter> frameParents = new HashMap<>();
+
+
 
     public AbstractSession(@NonNull SameDiff sameDiff) {
         this.sameDiff = sameDiff;
@@ -226,7 +229,11 @@ public abstract class AbstractSession<T,O> {
                             String frame = ((Enter) parameterizedOp).getFrameName();
                             vid = newVarId(opOutputVarNames[i], frame, varToExec.getIteration());
                         } else if(parameterizedOp instanceof Exit) {
-                            throw new UnsupportedOperationException("Not yet implemented: Exit op");
+                            //Exit node forwards input to parent frame
+                            FrameIter parentFrame = frameParents.get(varToExec.getFrame());
+                            Preconditions.checkNotNull(parentFrame, "Parent frame must not be null for exit op: variable to exec is %s", varToExec);
+
+                            vid = new VarId(opOutputVarNames[i], parentFrame.getFrame(), parentFrame.getIteration());
                         } else if(parameterizedOp instanceof NextIteration) {
                             //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
                             vid = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration() + 1);
@@ -299,18 +306,6 @@ public abstract class AbstractSession<T,O> {
                         log.info("Marked merge op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
                     }
 
-
-//                    if(isConstOrPhInput) {
-//                        //Mark that outVar needs to use placeholder/constant (same regardless of frame/iter)
-//                        if(!execConstInputs.containsKey(opOutputs[0]))
-//                            execConstInputs.put(opOutputs[0], new HashSet<String>());
-//                        execConstInputs.get(opOutputs[0]).add(executedVar.getVariable());
-//                    } else {
-//                        //Mark that outVar needs this specific executedVar (i.e., specific frame/iteration)
-//                        if (!execInputs.containsKey(outVarId))
-//                            execInputs.put(outVarId, new HashSet<VarId>());
-//                        execInputs.get(outVarId).add(executedVar);
-//                    }
                     //Mark that we need the specified input to calculate this output
                     addToExecInputs(isConstOrPhInput, outVarId, executedVar, execInputs, execConstInputs);
                     continue;
@@ -326,15 +321,19 @@ public abstract class AbstractSession<T,O> {
                         log.info("Marked enter op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
                     }
 
-//                    //Mark that outVar needs this specific executedVar
-//                    if(!execInputs.containsKey(outVarId))
-//                        execInputs.put(outVarId, new HashSet<VarId>());
-//                    execInputs.get(outVarId).add(executedVar);
-
                     //Mark that we need the specified input to calculate this output
                     addToExecInputs(isConstOrPhInput, outVarId, executedVar, execInputs, execConstInputs);
                     continue;
                 } else if(sameDiff.getFunctionById(opName) instanceof Exit){
+                    //Exit node forwards input to parent frame
+                    String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);
+                    FrameIter parentFrame = frameParents.get(executedVar.getFrame());
+                    Preconditions.checkNotNull(parentFrame, "Parent frame must not be null for exit op: variable to exec is %s", executedVar);
+
+                    VarId outputVarId = new VarId(opOutputs[0], parentFrame.getFrame(), parentFrame.getIteration());
+
+                    addToExecInputs(isConstOrPhInput, outputVarId, executedVar, execInputs, execConstInputs);
+
                     throw new UnsupportedOperationException("Not yet implemented: Exit op");
                 } else if(sameDiff.getFunctionById(opName) instanceof NextIteration){
                     //NextIteration is available for execution when its single input is available
@@ -347,11 +346,6 @@ public abstract class AbstractSession<T,O> {
                         availableForExec.add(outVarId);
                         log.info("Marked NextIteration op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
                     }
-
-//                    //Mark that NextIteration outVar nneeds this specific executedVar
-//                    if(!execInputs.containsKey(outVarId))
-//                        execInputs.put(outVarId, new HashSet<VarId>());
-//                    execInputs.get(outVarId).add(executedVar);
 
                     //Mark that we need the specified input to calculate this output
                     addToExecInputs(isConstOrPhInput, outVarId, executedVar, execInputs, execConstInputs);
@@ -402,7 +396,6 @@ public abstract class AbstractSession<T,O> {
                 if(opOutputs != null){
 
                     for(String s : opOutputs){
-//                        VarId outVarId = newVarId(s, executedVar);                 //If not Enter/Exit/NextIteration, then frame and iteration is same as input
                         //The input (for normal ops - not Enter/Exit/NextITeration) have the same frame and iteration number as the just executed var
                         //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame
                         //Exception 2 to this: placeholders. As above
@@ -415,10 +408,6 @@ public abstract class AbstractSession<T,O> {
                             //Normal (non-constant)
                             outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
                         }
-//                        //Mark that outVar needs this specific executedVar
-//                        if(!execInputs.containsKey(outVarId))
-//                            execInputs.put(outVarId, new HashSet<VarId>());
-//                        execInputs.get(outVarId).add(executedVar);
 
                         //Mark that we need the specified input to calculate this output
                         addToExecInputs(isConstOrPhInput, outVarId, executedVar, execInputs, execConstInputs);
@@ -435,8 +424,6 @@ public abstract class AbstractSession<T,O> {
                             log.info("Marked variable as available for execution: {} - output of op {} ({}) with op inputs {}", vid, opName,
                                     sameDiff.getFunctionById(opName).getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
                         }
-//                    log.info("Marked variables as available for execution: {} - output of op {} ({}) with op inputs {}", Arrays.toString(opOutputs), opName,
-//                            sameDiff.getFunctionById(opName).getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
                     }
                 }
 
@@ -477,6 +464,16 @@ public abstract class AbstractSession<T,O> {
         public String toString() {
             return "VarId(\"" + variable + "\",\"" + frame + "\"," + iteration + ")";
         }
+    }
+
+    /*
+    Identifies frame + iteration. Used for exit nodes
+     */
+    @Data
+    @AllArgsConstructor
+    protected static class FrameIter {
+        private String frame;
+        private int iteration;
     }
 
 }

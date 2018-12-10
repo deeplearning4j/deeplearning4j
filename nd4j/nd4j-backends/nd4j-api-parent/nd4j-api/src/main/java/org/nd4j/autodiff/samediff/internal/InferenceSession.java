@@ -76,7 +76,17 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             Preconditions.checkNotNull(enterInput, "Could not get enter op input: output variable %s", anOutput);
             return new INDArray[]{enterInput};
         } else if(op instanceof Exit) {
-            throw new UnsupportedOperationException("Not yet implemented");
+            //Exit node forwards input to parent frame
+
+            VarId inputVarId;
+            if(opInputs == null || opInputs.size() == 0){
+                //Constant or placeholder
+                inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0);
+            } else {
+                inputVarId = opInputs.iterator().next();
+            }
+            INDArray exitInput = this.nodeOutputs.get(inputVarId);
+            return new INDArray[]{exitInput};
         } else if(op instanceof NextIteration){
             //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
             Preconditions.checkState(totalInputs == 1, "Expected exactly 1 op input for NextIteration: got %s+%s", opInputs, constAndPhInputs);
