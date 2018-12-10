@@ -53,12 +53,7 @@ public class KFoldIteratorTest extends BaseNd4jTest {
 		final int numExamples = 42;
 		final int numFeatures = 3;
 		INDArray features = Nd4j.rand(new int[] {numExamples, numFeatures});
-		
-		double[] labelValues = new double[numExamples];
-		for (int i = 0; i < numExamples; i++) {
-			labelValues[i] = i;
-		}
-		INDArray labels = Nd4j.create(labelValues).transpose();
+		INDArray labels = Nd4j.linspace(1, numExamples, numExamples, DataType.DOUBLE).reshape(-1, 1);
 		
 		DataSet dataSet = new DataSet(features, labels);
 		
@@ -113,7 +108,8 @@ public class KFoldIteratorTest extends BaseNd4jTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void checkCornerCaseException() {
-        DataSet allData = new DataSet(Nd4j.linspace(1,3,3).transpose(), Nd4j.linspace(1,3,3).transpose());
+        DataSet allData = new DataSet(Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1), 
+                                    Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1));
         int k = 1;
         //this will throw illegal argument exception
         new KFoldIterator(k, allData);
@@ -191,7 +187,7 @@ public class KFoldIteratorTest extends BaseNd4jTest {
                     allLabels = Nd4j.vstack(allLabels, currentBatchL).dup();
                 }
             }
-            allBatches = new DataSet(allFeatures, allLabels.reshape(allFeatures.size(0), 1));
+            allBatches = new DataSet(allFeatures, allLabels.reshape(-1, 1));
         }
 
         public DataSet getAllBatches() {
@@ -232,7 +228,8 @@ public class KFoldIteratorTest extends BaseNd4jTest {
     
     @Test
     public void test5974(){
-        DataSet ds = new DataSet(Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(1, -1).transpose(), Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(1, -1).transpose());
+        DataSet ds = new DataSet(Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1), 
+                                Nd4j.linspace(1,99,99, DataType.DOUBLE).reshape(-1, 1));
 
         KFoldIterator iter = new KFoldIterator(10, ds);
 
@@ -243,11 +240,11 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             int countTrain;
             if(count < 9){
                 //Folds 0 to 8: should have 10 examples for test
-                testFold = Nd4j.linspace(10*count+1, 10*count+10, 10, DataType.DOUBLE).reshape(1, -1).transpose();
+                testFold = Nd4j.linspace(10*count+1, 10*count+10, 10, DataType.DOUBLE).reshape(-1, 1);
                 countTrain = 99 - 10;
             } else {
                 //Fold 9 should have 9 examples for test
-                testFold = Nd4j.linspace(10*count+1, 10*count+9, 9, DataType.DOUBLE).reshape(1, -1).transpose();
+                testFold = Nd4j.linspace(10*count+1, 10*count+9, 9, DataType.DOUBLE).reshape(-1, 1);
                 countTrain = 99-9;
             }
             String s = String.valueOf(count);
