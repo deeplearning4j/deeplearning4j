@@ -37,12 +37,6 @@ using namespace simdOps;
     }
 
     template <typename X, typename Y, typename Z, typename OpType>
-    __global__ void scalarSimpleStrided(Nd4jLong length, void* x, void *scalar, Nd4jLong xEws, void *params, void *z, Nd4jLong zEws, int *allocationBuffer) {
-        
-        functions::scalar::ScalarTransform<X,Y,Z>::template transformCuda<OpType>(length,x,scalar,xEws,params,z,zEws,allocationBuffer);
-    }
-
-    template <typename X, typename Y, typename Z, typename OpType>
     __global__ void scalarAlongDimension(void *x,
                                           Nd4jLong *xShapeInfo,
                                           void *extraParams,
@@ -75,11 +69,7 @@ namespace functions {
 
         auto length = shape::length(hxShapeInfo);
 
-        if (xEws >= 0 && zEws >= 0 && xOrder == zOrder) {
-            scalarSimpleStrided<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(length, vx, vscalar, xEws, vextraParams, vz, zEws, allocPointer);
-        } else {
-            scalarSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
-        }
+        scalarSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
     }
 
     template<typename X, typename Y, typename Z>
@@ -104,16 +94,6 @@ namespace functions {
         DISPATCH_BY_OPNUM_TTT(intermediateAlongDimension, PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalars, vextraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS);
     }
 
-
-    template<typename X, typename Y, typename Z>
-    __device__ void ScalarTransform<X,Y,Z>::transformCudaLegacy(int opNum, void* vscalar,
-            void *vy, Nd4jLong *yShapeInfo,
-            void *vparams,
-            void *vz, Nd4jLong *zShapeInfo,
-            int *allocationBuffer) {
-
-        DISPATCH_BY_OPNUM_TTT(transformCuda, PARAMS(vscalar, vy, yShapeInfo, vparams, vz, zShapeInfo, allocationBuffer), SCALAR_OPS);
-    }
 ////////////////////////////////////////////////////////////////////////////////
 /**
 * Cuda implementation of transform
@@ -146,9 +126,21 @@ __device__ void ScalarTransform<X,Y,Z>::transformCuda(void* vx,
     }
     __syncthreads();
 
+    auto xEws = shape::elementWiseStride(xShapeInfo);
+    auto zEws = shape::elementWiseStride(zShapeInfo);
 
-    for (Nd4jLong i = tid; i < length; i+= totalThreads) {
-        z[shape::getIndexOffset(i, zShapeInfo, length)] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], scalar, params);
+    auto xOrder = shape::order(xShapeInfo);
+    auto zOrder = shape::order(zShapeInfo);
+
+
+    if (xEws == zEws && xOrder == zOrder) {
+        for (Nd4jLong i = tid; i < length; i += totalThreads) {
+            z[i * zEws] = OpType::op(x[i * xEws], scalar, params);
+        }
+    } else {
+        for (Nd4jLong i = tid; i < length; i += totalThreads) {
+            z[shape::getIndexOffset(i, zShapeInfo, length)] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], scalar, params);
+        }
     }
 }
 
@@ -195,42 +187,6 @@ void __device__ ScalarTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xShape
             oZ[f] = OpType::op(oX[f], scalars[r], extraParams);         
     }
 }
-
-////////////////////////////////////////////////////////////////////////////////
-/**
-*
-* @param n
-* @param idx
-* @param x
-* @param y
-* @param yEWS
-* @param params
-* @param z
-* @param blockSize
-*/
-template<typename X, typename Y, typename Z>
-template<typename OpType>
-__device__ void ScalarTransform<X,Y,Z>::transformCuda(Nd4jLong n,
-                                                    void* vx,
-                                                    void *vscalar, Nd4jLong xEws,
-                                                    void *vparams,
-                                                    void *vz, Nd4jLong zEws,
-                                                    int *allocationBuffer) {
-
-    auto x = reinterpret_cast<X*>(vx);
-    auto y = reinterpret_cast<Y*>(vscalar)[0];
-    auto z = reinterpret_cast<Z*>(vz);
-    auto params = reinterpret_cast<Z*>(vparams);
-
-    int totalThreads = gridDim.x * blockDim.x;
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;            
-            
-    for (Nd4jLong i = tid; i < n; i += totalThreads) {
-        z[i * zEws] = OpType::op(x[i * xEws], y, params);
-    }
-            
-}
-
 
 }
 }

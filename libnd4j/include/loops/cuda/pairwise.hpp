@@ -27,47 +27,15 @@
 using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
-template<typename X, typename Y, typename Z, typename OpType>
-__device__ void pairwiseSimpleShapedGeneric(void* x, Nd4jLong *xShapeInfo,
-									void *y, Nd4jLong *yShapeInfo, 
-									void *z, Nd4jLong *zShapeInfo, 
-									void *params, 
-									int *allocationBuffer) {
-   
-    functions::pairwise_transforms::PairWiseTransform<X,Y,Z>::template transformCuda<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer, nullptr);
-}
-
-template<typename X, typename Y, typename Z, typename OpType>
-__device__ void pairwiseSimpleStridedGeneric(Nd4jLong length, void* x, Nd4jLong xEws,
-									  void *y, Nd4jLong yEws,
-									  void *z, Nd4jLong zEws,
-									  void *params,
-									  int *allocationBuffer) {
-
-	functions::pairwise_transforms::PairWiseTransform<X,Y,Z>::template transformCuda<OpType>(length, x, y, xEws, yEws,  params, z, zEws, allocationBuffer, nullptr);
-}
-
-////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
 __global__ void pairwiseSimpleShaped(void* x, Nd4jLong *xShapeInfo, 
 									void *y, Nd4jLong *yShapeInfo, 
 									void *z, Nd4jLong *zShapeInfo, 
 									void *params, 
 									int *allocationBuffer) {
-        
-	pairwiseSimpleShapedGeneric<X, Y, Z, OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer);
+
+	functions::pairwise_transforms::PairWiseTransform<X,Y,Z>::template transformCuda<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer, nullptr);
 }
-
-template <typename X, typename Y, typename Z, typename OpType>
-__global__ void pairwiseSimpleStrided(Nd4jLong length, void* x, Nd4jLong xEws,
-									 void *y, Nd4jLong yEws,
-									 void *z, Nd4jLong zEws,
-									 void *params,
-									 int *allocationBuffer) {
-
-	pairwiseSimpleStridedGeneric<X, Y, Z, OpType>(length, x, xEws, y, yEws, z, zEws, params, allocationBuffer);
-}
-
 
 namespace functions           {
 namespace pairwise_transforms {
@@ -92,34 +60,8 @@ void _CUDA_H PairWiseTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cuda
 	auto zEWS = shape::elementWiseStride(hzShapeInfo);
 	auto zOrder = shape::order(hzShapeInfo);
 
-	if (xEWS >= 1 && zEWS >= 1 && yEWS >= 1 && xOrder == yOrder && xOrder == zOrder) {
-		pairwiseSimpleStrided<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(length, vx, xEWS, vy, yEWS, vz, zEWS, vextraParams, allocPointer);
-	} else {
-		pairwiseSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
-	}
-}
 
-////////////////////////////////////////////////////////////////////////////////
-template<typename T, typename Y, typename Z>
-template<typename OpType>
-__device__ void PairWiseTransform<T,Y,Z>::transformCuda(Nd4jLong len,
-														void *vx, void *vy,
-														Nd4jLong xEws, Nd4jLong yEws,
-														void *vparams,
-														void *vz, Nd4jLong zEws,
-														int *allocPointer, 
-														Nd4jLong *tadOnlyShapeInfo) {
-	auto x = reinterpret_cast<T*>(vx);
-	auto y = reinterpret_cast<Y*>(vy);
-	auto z = reinterpret_cast<Z*>(vz);
-	auto params = reinterpret_cast<Z*>(vparams);
-
-	int tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-	for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
-		z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], params);
-	}
-
+	pairwiseSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -141,7 +83,20 @@ __device__ void PairWiseTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xSha
 
 	Nd4jLong len = shape::length(xShapeInfo);
 
-	if (vx == vz) {
+	auto xEws = shape::elementWiseStride(xShapeInfo);
+	auto yEws = shape::elementWiseStride(yShapeInfo);
+	auto zEws = shape::elementWiseStride(zShapeInfo);
+
+	auto xOrder = shape::order(xShapeInfo);
+	auto yOrder = shape::order(yShapeInfo);
+	auto zOrder = shape::order(zShapeInfo);
+
+
+	if (xEws >= 1 && yEws >= 1 && zEws >= 1 && xOrder == yOrder && xOrder == zOrder) {
+		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
+			z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
+		}
+	} else if (vx == vz) {
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
 			auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
 			auto yOffset = shape::getIndexOffset(i, yShapeInfo, len);
