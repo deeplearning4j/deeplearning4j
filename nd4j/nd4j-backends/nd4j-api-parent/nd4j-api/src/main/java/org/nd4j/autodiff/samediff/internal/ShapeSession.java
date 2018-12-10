@@ -14,7 +14,7 @@ public class ShapeSession extends AbstractSession<LongShapeDescriptor, Different
     }
 
     @Override
-    public DifferentialFunction getAndParameterizeOp(String opName, VarId anOutput, Set<VarId> opInputs, Set<String> constAndPhInputs) {
+    public DifferentialFunction getAndParameterizeOp(String opName, Set<VarId> opInputs, Set<String> constAndPhInputs) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

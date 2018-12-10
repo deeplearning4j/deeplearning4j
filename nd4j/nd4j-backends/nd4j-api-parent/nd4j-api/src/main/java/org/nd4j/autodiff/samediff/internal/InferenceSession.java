@@ -150,7 +150,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     }
 
     @Override
-    public DifferentialFunction getAndParameterizeOp(String opName, VarId anOutput, Set<VarId> opInputs, Set<String> constAndPhInputs) {
+    public DifferentialFunction getAndParameterizeOp(String opName, Set<VarId> opInputs, Set<String> constAndPhInputs) {
 
         DifferentialFunction df = sameDiff.getFunctionById(opName);
 
