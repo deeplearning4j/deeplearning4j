@@ -27,15 +27,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang3.ArrayUtils;
-import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.flow.FlowPath;
-import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.ShapeSession;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
@@ -55,9 +54,6 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity;
-import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
-import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
@@ -73,6 +69,9 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
 import org.nd4j.linalg.api.ops.impl.loss.LogLoss;
 import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
+import org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
@@ -184,13 +183,8 @@ public class SameDiff {
     private Map<String, String> baseNameForFunctionInstanceId;
 
     private DifferentialFunctionFactory functionFactory;
-    @Deprecated //TO BE REMOVED - to Variable
-    private Map<String, SDVariable> variableMap;                    //Key: SDVariable name. Value: SDVariable
     @Deprecated //TO BE REMOVED - to ShapeSession
     private Map<String, long[]> variableNameToShape;                //Key: SDVariable name. Value: shape for that variable
-    //gradient information
-    @Deprecated //TO BE REMOVED - to Variable
-    private Map<String, SDVariable> gradients;                      //Key:
     @Deprecated //TO BE REMOVED - to Variable
     private Map<String, SDVariable> forwardVarForGrad;
 
@@ -339,12 +333,11 @@ public class SameDiff {
      */
     public void updateVariableName(String varName, String withName) {
         SDVariable oldVarNameRef = getVariable(varName);
-        variableMap.remove(oldVarNameRef.getVarName());
-        variables.remove(oldVarNameRef.getVarName());
+        Variable v = variables.remove(oldVarNameRef.getVarName());
         val oldVarName = varName;
         oldVarNameRef.setVarName(withName);
-        variableMap.put(withName, oldVarNameRef);
-
+        v.setName(withName);
+        variables.put(withName, v);
 
         for (val reverseValues : outgoingArgsReverse.entrySet()) {
             for (int i = 0; i < reverseValues.getValue().length; i++) {
@@ -372,12 +365,6 @@ public class SameDiff {
         if (variableNameToShape.containsKey(oldVarName)) {
             val shape = variableNameToShape.remove(oldVarName);
             variableNameToShape.put(withName, shape);
-        }
-
-
-        if (gradients.containsKey(oldVarName)) {
-            val grad = gradients.remove(oldVarName);
-            gradients.put(withName, grad);
         }
 
         if (forwardVarForGrad.containsKey(oldVarName)) {
@@ -887,7 +874,7 @@ public class SameDiff {
      * @param variable the name of the variable to associate the array with
      */
     public void associateArrayWithVariable(INDArray arr, @NonNull String variable) {
-    Preconditions.checkState(variableMap.containsKey(variable), "Cannot associate array with variable \"%s\": " +
+    Preconditions.checkState(variables.containsKey(variable), "Cannot associate array with variable \"%s\": " +
             "variable \"%s\" does not exist in this SameDiff instance", variable, variable);
         associateArrayWithVariable(arr, this.getVariable(variable));
     }
@@ -945,7 +932,11 @@ public class SameDiff {
      * @return Map of variables by name
      */
     public Map<String, SDVariable> variableMap() {
-        return variableMap;
+        Map<String,SDVariable> ret = new HashMap<>();
+        for(Variable v : variables.values()){
+            ret.put(v.getName(), v.getVariable());
+        }
+        return ret;
     }
 
 
@@ -1014,10 +1005,8 @@ public class SameDiff {
 
     private SameDiff() {
         functionFactory = new DifferentialFunctionFactory(this);
-        variableMap = new LinkedHashMap<>();
         sameDiffFunctionDefinitionMap = new LinkedHashMap<>();
         sameDiffFunctionInstances = new LinkedHashMap<>();
-        gradients = new LinkedHashMap<>();
         forwardVarForGrad = new LinkedHashMap<>();
         opsForResult = new IntArrayKeyMap<>();
         variableNameToArr = new LinkedHashMap<>();
@@ -1402,7 +1391,7 @@ public class SameDiff {
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + (variableMap != null ? variableMap.hashCode() : 0);
+        result = 31 * result + (variables != null ? variables.hashCode() : 0);
         return result;
     }
 
@@ -1416,9 +1405,9 @@ public class SameDiff {
      */
     public static SameDiff create(SameDiff originalSameDiff) {
         SameDiff ret = SameDiff.builder()
-                .variableMap(originalSameDiff.variableMap)
                 .sameDiffFunctionInstances(originalSameDiff.sameDiffFunctionInstances)
                 .build();
+        ret.variables.putAll(originalSameDiff.variables);
         //ensuring proper sameDiff reference
         DifferentialFunctionFactory differentialFunctionFactory = new DifferentialFunctionFactory(ret);
         ret.functionFactory = differentialFunctionFactory;
@@ -1432,7 +1421,7 @@ public class SameDiff {
 
         SameDiff sameDiff = (SameDiff) o;
 
-        if (variableMap != null ? !variableMap.equals(sameDiff.variableMap) : sameDiff.variableMap != null)
+        if (variables != null ? !variables.equals(sameDiff.variables) : sameDiff.variables != null)
             return false;
         if (sameDiffFunctionDefinitionMap != null ? !sameDiffFunctionDefinitionMap.equals(sameDiff.sameDiffFunctionDefinitionMap) : sameDiff.sameDiffFunctionDefinitionMap != null)
             return false;
@@ -1561,7 +1550,7 @@ public class SameDiff {
      * @return All variables in the graph
      */
     public List<SDVariable> variables() {
-        return new ArrayList<>(variableMap.values());
+        return new ArrayList<>(variableMap().values());
     }
 
     /**
@@ -1658,8 +1647,9 @@ public class SameDiff {
                 int iteration = trainingConfig.getIterationCount();
                 int e = trainingConfig.getEpochCount();
                 for (String s : trainingConfig.getTrainableParams()) {
-                    INDArray param = variableMap.get(s).getArr();
-                    INDArray grad = variableMap.get(s).getGradient().getArr();
+                    //TODO fix using inference session
+                    INDArray param = null;  //variableMap.get(s).getArr();
+                    INDArray grad = null;   //variableMap.get(s).getGradient().getArr();
                     //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
                     // which should flow through to here
 
@@ -1784,7 +1774,8 @@ public class SameDiff {
                 //Variable is trainable if it's not the output of some function
                 //TODO also - should be floating point type
                 List<String> trainVarList = new ArrayList<>();
-                for(SDVariable v : variableMap.values()){
+                for(Variable var : variables.values()){
+                    SDVariable v = var.getVariable();
                     String n = v.getVarName();
                     if((!functionOutputFor.containsKey(n) || functionOutputFor.get(n) == null || functionOutputFor.get(n).size() == 0) &&       //Is a leaf (not the output of a function)
                             !placeHolderVarNames.contains(n) &&                                                                                 //and not a placeholder
@@ -1803,7 +1794,7 @@ public class SameDiff {
             //Allocate updater state
             long numTrainableParams = 0;
             for(String s : trainingConfig.getTrainableParams()) {
-                SDVariable v = variableMap.get(s);
+                SDVariable v = variables.get(s).getVariable();
                 Preconditions.checkState(v != null, "No variable found for trainable parameter name \"%s\"", s);
 
                 INDArray arr = v.getArr();
@@ -1821,7 +1812,7 @@ public class SameDiff {
             updaterViews = new HashMap<>();
             updaterMap = new HashMap<>();
             for(String s : trainingConfig.getTrainableParams()) {
-                long thisSize = trainingConfig.getUpdater().stateSize(variableMap.get(s).getArr().length());
+                long thisSize = trainingConfig.getUpdater().stateSize(variables.get(s).getVariable().getArr().length());
                 INDArray view = (updaterStateSize == 0 || thisSize == 0 ? null :
                         updaterState.get(NDArrayIndex.interval(0, 1), NDArrayIndex.interval(viewSoFar, viewSoFar + thisSize)));
 
@@ -2226,9 +2217,8 @@ public class SameDiff {
     }
 
     protected SDVariable var(String name, WeightInitScheme weightInitScheme, boolean placeholderOnNullShape, long... shape) {
-        if (variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
-            throw new IllegalArgumentException("Another variable with the name " + name +
-                    " already exists.");
+        if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
+            throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
 
 
         if (name == null || name.length() < 1)
@@ -2247,15 +2237,12 @@ public class SameDiff {
                 .build();
 
 
-        addVariable(ret);
-        variableMap.put(name, ret);
-        return ret;
+        return addVariable(ret);
     }
 
     public SDVariable var(String name, LongShapeDescriptor shape, WeightInitScheme weightInitScheme) {
-        if (variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
-            throw new IllegalArgumentException("Another variable with the name " + name +
-                    " already exists.");
+        if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
+            throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
 
 
         if (name == null || name.length() < 1)
@@ -2275,9 +2262,7 @@ public class SameDiff {
                 .build();
 
 
-        addVariable(ret);
-        variableMap.put(name, ret);
-        return ret;
+        return addVariable(ret);
     }
 
 
@@ -2323,14 +2308,11 @@ public class SameDiff {
      * @return
      */
     public SDVariable var(final SDVariable arr) {
-        if (variableMap.containsKey(arr.getVarName()) && variableMap.get(arr.getVarName()).getArr() != null)
-            return variableMap.get(arr.getVarName());
+        if (variables.containsKey(arr.getVarName()) && variables.get(arr.getVarName()).getVariable().getArr() != null)
+            return variables.get(arr.getVarName()).getVariable();
 
         if (arr.getVarName() == null || arr.getVarName().length() < 1)
             throw new IllegalArgumentException("Name for variable must be defined");
-
-        if (arr == null)
-            throw new IllegalArgumentException("Array for " + arr.getVarName() + " must not be null");
 
         if (workspace == null)
             initWorkspace();
@@ -2358,13 +2340,12 @@ public class SameDiff {
                 .build();
 
 
-        variableMap.put(arr.getVarName(), ret);
-        return ret;
+        return addVariable(ret);
     }
 
     private String getNewVarName() {
         String varName = "sd_var_" + String.valueOf(variableId);
-        while (variableMap.containsKey(varName)) {
+        while (variables.containsKey(varName)) {
             variableId++;
             varName = "sd_var_" + String.valueOf(variableId);
         }
@@ -2421,9 +2402,8 @@ public class SameDiff {
      * @return New SDVariable with the specified name and array
      */
     public SDVariable var(String name, INDArray arr) {
-        if (variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
-            throw new IllegalArgumentException("Another variable with the name " + name +
-                    " already exists.");
+        if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
+            throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
 
 
         if (name == null || name.length() < 1)
@@ -2461,11 +2441,7 @@ public class SameDiff {
         addVariable(ret);
         if (getShapeForVarName(name) == null)
             putShapeForVarName(name, arr.shape());
-        //ensure there is a reference to the array in the integer index
-        //this is used later for op creation
-        variableMap.put(name, ret);
         return ret;
-
     }
 
     /**
@@ -2629,7 +2605,7 @@ public class SameDiff {
      * @return the variabel instance if there is one
      */
     public SDVariable getVariable(String name) {
-        return variableMap.get(name);
+        return variables.get(name).getVariable();
     }
 
 
@@ -2643,10 +2619,10 @@ public class SameDiff {
         //TODO 2018/06/26 - Review this?
         //Gradients are being placed in the inner "grad" function SameDiff instance, but not the outer one
         // should they be synced and we just use the map in this instance?
-        if (gradients.containsKey(varName)) {
-            return gradients.get(varName);
-        } else if(sameDiffFunctionInstances.containsKey("grad") && sameDiffFunctionInstances.get("grad").gradients.containsKey(varName)){
-            return sameDiffFunctionInstances.get("grad").gradients.get(varName);
+        if (variables.containsKey(varName) && variables.get(varName).getGradient() != null) {
+            return variables.get(varName).getGradient();
+        } else if(sameDiffFunctionInstances.containsKey("grad") && sameDiffFunctionInstances.get("grad").variables.containsKey(varName)){
+            return sameDiffFunctionInstances.get("grad").variables.get(varName).getGradient();
         }
         return null;
     }
@@ -2659,21 +2635,11 @@ public class SameDiff {
      * @param variable     the gradient variable
      */
     public void setGradientForVariableName(String variableName, SDVariable variable) {
+        Preconditions.checkState(variables.containsKey(variableName), "No variable exists with name \"%s\"", variableName);
         if (variable == null) {
             throw new ND4JIllegalStateException("Unable to set null gradient for variable name " + variableName);
         }
-        gradients.put(variableName, variable);
-    }
-
-
-    /**
-     * Get the forward variable for gradient based on the gradient's vertex id
-     *
-     * @param vertexId the vertex id
-     * @return the gradient for the variable or null
-     */
-    public SDVariable getForwardVariableForVertexId(int vertexId) {
-        return forwardVarForGrad.get(vertexId);
+        variables.get(variableName).setGradient(variable);
     }
 
 
@@ -9220,27 +9186,16 @@ public class SameDiff {
      * Add the specified variable to this SameDiff instance
      * @param variable Variable to add
      */
-    public void addVariable(SDVariable variable) {
-        if (variableMap == null)
-            variableMap = new HashMap<>();
-
+    public SDVariable addVariable(SDVariable variable) {
         Preconditions.checkState(variable.getSameDiff() == this, "Samediff instance must be the same.");
 
-
-        /**
-         * Of note here:
-         * We don't validate based on vertex id because more than one input can have the same
-         * vertex id as a result.
-         *
-         * We validate based on variable opName instead which takes in to account function names as well
-         * as input ids
-         */
-        if (variableMap.containsKey(variable.getVarName()) && !variableMap.get(variable.getVarName()).equals(variable)) {
+        if (variables.containsKey(variable.getVarName()) && !variables.get(variable.getVarName()).getVariable().equals(variable)) {
             throw new IllegalArgumentException("Variable already found with variable opName " + variable.getVarName());
         }
 
         Preconditions.checkState(variable.getSameDiff() == this, "Same diff instance for variable must be the same!");
-        variableMap.put(variable.getVarName(), variable);
+        variables.put(variable.getVarName(), Variable.builder().name(variable.getVarName()).variable(variable).build());
+        return variable;
     }
 
 
@@ -9922,38 +9877,6 @@ public class SameDiff {
     }
 
 
-    public INDArray yetAnotherExecMethod(@NonNull Map<String, INDArray> inputs) {
-        if (!wasRegistered.get()) {
-            synchronized (this) {
-                if (!wasRegistered.get()) {
-                    val bb = asFlatBuffers();
-                    val ptr = new BytePointer(bb);
-
-                    Nd4j.getExecutioner().registerGraph(this.hashCode(), ptr);
-
-                    wasRegistered.set(true);
-                }
-            }
-        }
-
-        val newMap = new LinkedHashMap<String, INDArray>();
-        val keySet = inputs.keySet();
-
-        for (val key : keySet) {
-            val vx = variableMap.get(key);
-            newMap.put(vx.getVarName(), inputs.get(key));
-        }
-
-        val result = Nd4j.getExecutioner().executeGraph(this.hashCode(), newMap, this.reverseMap);
-        if (result.size() == 0)
-            throw new ND4JIllegalStateException("Execution failed");
-
-        val list = new ArrayList<INDArray>(result.values());
-
-        return list.get(list.size() - 1);
-    }
-
-
     /**
      * Executes the list of operations.
      * This exec method is for only invoking operations rather than creating them
@@ -10256,7 +10179,7 @@ public class SameDiff {
                 //start with scalar backprop
                 SDVariable initialGrad = sameDiff.var("one-var", Nd4j.trueScalar(1.0));
                 sameDiff.forwardVarForGrad.put(firstBackward.getVarName(), initialGrad);
-                sameDiff.gradients.put(firstBackward.getVarName(), initialGrad);
+                sameDiff.variables.get(firstBackward.getVarName()).setGradient(initialGrad);
 
                 SDVariable gradientBackwardsMarker = sameDiff.gradientBackwardsMarker(firstBackward);
 
@@ -10549,7 +10472,7 @@ public class SameDiff {
      */
     public void putPlaceHolderForVariable(String varName, String... placeHolderVariables) {
         for (val placeHolderVariable : placeHolderVariables) {
-            if (!variableMap.containsKey(placeHolderVariable)) {
+            if (!variables.containsKey(placeHolderVariable)) {
                 throw new ND4JIllegalStateException("No variable found for " + placeHolderVariable);
             }
         }
@@ -10630,11 +10553,11 @@ public class SameDiff {
             throw new NullPointerException("Null input: No variable found for updating!");
         }
 
-        if(newVarName != null && variableMap.containsKey(newVarName) && varToUpdate != variableMap.get(newVarName)){
+        if(newVarName != null && variables.containsKey(newVarName) && varToUpdate != variables.get(newVarName).getVariable()){
             throw new IllegalStateException("Variable name \"" + newVarName + "\" already exists for a different SDVariable");
         }
 
-        if (newVarName == null && variableMap.containsKey(varToUpdate.getVarName())) {
+        if (newVarName == null && variables.containsKey(varToUpdate.getVarName())) {
             //Edge case: suppose we do m1=sd.mean(in), m2=sd.mean(m1) -> both initially have the name
             // "mean" and consequently a new variable name needs to be generated
             newVarName = generateNewVarName(varToUpdate.getVarName(), 0);
@@ -10679,7 +10602,7 @@ public class SameDiff {
      * If this is not done, arrays and shapes could be fetched from the incorrect SameDiff instance for some methods
      */
     protected void associateSameDiffWithOpsAndVariables(){
-        for(SDVariable var : variableMap.values()){
+        for(SDVariable var : variableMap().values()){
             var.setSameDiff(this);
         }
         for(DifferentialFunction df : functionInstancesById.values()){
@@ -12121,7 +12044,7 @@ public class SameDiff {
                     .shape(shape)
                     .placeholderOnNullShape(false)      //Placeholders are stored separately
                     .build();
-            sd.variableMap.put(n, var);
+            sd.variables.put(n, Variable.builder().name(n).variable(var).build());
             sd.variableNameToShape.put(n, shape);
 
 
@@ -12209,7 +12132,7 @@ public class SameDiff {
                 for( int i=0; i<outputNamesLength; i++ ){
                     String n = fn.outputNames(i);
                     varNames[i] = n;
-                    if(!sd.variableMap.containsKey(n)){
+                    if(!sd.variables.containsKey(n)){
                         //Need to create the variable - perhaps it wasn't exported
                         SDVariable var = SDVariable.builder()
                                 .varName(n)
@@ -12217,7 +12140,7 @@ public class SameDiff {
                                 .shape(null)
                                 .placeholderOnNullShape(false)  //Placeholders are stored separately
                                 .build();
-                        sd.variableMap.put(n, var);
+                        sd.variables.put(n, Variable.builder().name(n).variable(var).build());
                         variablesByNodeAndOutNum.put(new Pair<>(opId, i), var);
                     }
                 }

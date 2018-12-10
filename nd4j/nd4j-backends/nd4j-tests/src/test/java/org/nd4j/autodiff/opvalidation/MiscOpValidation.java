@@ -796,11 +796,11 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testFillOp(){
 
-        INDArray ia = Nd4j.trueVector(new double[]{2,2});
+        INDArray ia = Nd4j.trueVector(new double[]{2,2}).castTo(DataType.INT);
         double value = 42;
-        INDArray out = Nd4j.create(2,2);
+        INDArray out = Nd4j.create(DataType.DOUBLE, 2,2);
         OpTestCase op = new OpTestCase(new Fill(ia, out, value));
-        INDArray expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42);
+        INDArray expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42.0);
 
         op.expectedOutput(0, expOut);
         String err = OpValidation.validate(op);
