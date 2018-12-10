@@ -18,9 +18,9 @@
 // Created by raver on 9/28/2018.
 //
 
-#ifdef __ND4J_EXPERIMENTAL__
+#ifndef __ND4J_EXPERIMENTAL__
 
-#ifndef "../scalar.hpp"
+#include "../scalar.hpp"
 
 namespace functions {
     namespace scalar {
