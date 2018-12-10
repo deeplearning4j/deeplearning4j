@@ -22,7 +22,7 @@ public class WeightInitDistribution implements IWeightInit {
     }
 
     @Override
-    public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
+    public INDArray init(long fanIn, long fanOut, long[] shape, char order, INDArray paramView) {
         //org.nd4j.linalg.api.rng.distribution.Distribution not serializable
         org.nd4j.linalg.api.rng.distribution.Distribution dist = Distributions.createDistribution(distribution);
         if (dist instanceof OrthogonalDistribution) {

@@ -220,8 +220,8 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
 
             val inputDepth = layerConf.getNIn();
 
-            double fanIn = inputDepth * kernel[0] * kernel[1];
-            double fanOut = depthMultiplier * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
+            final long fanIn = inputDepth * kernel[0] * kernel[1];
+            final long fanOut = depthMultiplier * kernel[0] * kernel[1] / (stride[0] * stride[1]);
 
             val weightsShape = new long[] {depthMultiplier, inputDepth, kernel[0], kernel[1]};
 
@@ -249,8 +249,8 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
             val inputDepth = layerConf.getNIn();
             val outputDepth = layerConf.getNOut();
 
-            double fanIn = inputDepth * depthMultiplier;
-            double fanOut = fanIn;
+            final long fanIn = inputDepth * depthMultiplier;
+            final long fanOut = fanIn;
 
             val weightsShape = new long[] {outputDepth, depthMultiplier * inputDepth, 1, 1};
 

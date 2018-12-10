@@ -15,7 +15,7 @@ public class WeightInitReluUniform implements IWeightInit {
 
 
     @Override
-    public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
+    public INDArray init(long fanIn, long fanOut, long[] shape, char order, INDArray paramView) {
         double u = Math.sqrt(6.0 / fanIn);
         Nd4j.rand(paramView, Nd4j.getDistributions().createUniform(-u, u)); //U(-sqrt(6/fanIn), sqrt(6/fanIn)
         return paramView.reshape(order, shape);

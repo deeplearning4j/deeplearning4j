@@ -15,7 +15,7 @@ import java.util.Arrays;
 public class WeightInitIdentity implements IWeightInit {
 
     @Override
-    public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
+    public INDArray init(long fanIn, long fanOut, long[] shape, char order, INDArray paramView) {
         if(shape.length != 2 || shape[0] != shape[1]){
             throw new IllegalStateException("Cannot use IDENTITY init with parameters of shape "
                     + Arrays.toString(shape) + ": weights must be a square matrix for identity");

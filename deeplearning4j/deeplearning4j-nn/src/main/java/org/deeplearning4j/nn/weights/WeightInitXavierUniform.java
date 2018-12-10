@@ -13,7 +13,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public class WeightInitXavierUniform implements IWeightInit {
 
     @Override
-    public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
+    public INDArray init(long fanIn, long fanOut, long[] shape, char order, INDArray paramView) {
         //As per Glorot and Bengio 2010: Uniform distribution U(-s,s) with s = sqrt(6/(fanIn + fanOut))
         //Eq 16: http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf
         double s = Math.sqrt(6.0) / Math.sqrt(fanIn + fanOut);

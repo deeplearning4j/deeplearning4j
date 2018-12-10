@@ -27,5 +27,5 @@ public interface IWeightInit extends Serializable {
      * @param order Order of array, e.g. Fortran ('f') or C ('c')
      * @param paramView View of parameters to initialize (and reshape)
      */
-    INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView);
+    INDArray init(long fanIn, long fanOut, long[] shape, char order, INDArray paramView);
 }
