@@ -16,6 +16,7 @@
 
 package org.nd4j.weightinit;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -44,7 +45,7 @@ public interface WeightInitScheme {
      * @param shape the shape of the array
      * @return the created array
      */
-    INDArray create(long... shape);
+    INDArray create(DataType dataType, long... shape);
 
 
     /**

@@ -29,31 +29,36 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-void sparseSoftmaxCrossEntropyLossWithLogits(const NDArray<T>& labels, const NDArray<T>& logits, NDArray<T>& output) {
+void sparseSoftmaxCrossEntropyLossWithLogits(const NDArray& labels, const NDArray& logits, NDArray& output) {
 
-
-    NDArray<T> maxAlongDim = logits.template reduceAlongDims<simdOps::Max<T>>({-1}, true);
-    NDArray<T> logitsExp = (logits - maxAlongDim).template transform<simdOps::Exp<T>>();
-    NDArray<T> logSoftMax = ( logitsExp / logitsExp.template reduceAlongDims<simdOps::Sum<T>>({-1}, true) ).template transform<simdOps::Log<T>>();
+    auto maxAlongDim = logits.reduceAlongDims(reduce::Max, {-1}, true);    
+    auto logitsExp = (logits - maxAlongDim).transform(transform::Exp, nullptr);
+    auto logSoftMax = ( logitsExp / logitsExp.reduceAlongDims(reduce::Sum, {-1}, true) ).transform(transform::Log);
         
     const Nd4jLong labelsLen = labels.lengthOf();
 
-    std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(logits.rankOf(), {-1});
+    std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(logits.rankOf(), {-1});
  
 #pragma omp parallel for schedule(guided) 
     for(Nd4jLong i = 0; i < labelsLen; ++i) {
-        
-        NDArray<T> subArr = logSoftMax(i, dimsToExclude);
-        output(i) = -subArr(labels(i));
+
+        auto subArr = logSoftMax(i, dimsToExclude);
+
+        // FIXME: double
+        output.p(i, -subArr.e<double>(labels.e<Nd4jLong>(i)));
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
+void reduceZeroCountWeights(NDArray* weightsBroad, Nd4jLong sizeAtRestDims, NDArray& numOfNonZeroWeights) {
 
-template void sparseSoftmaxCrossEntropyLossWithLogits<float>(const NDArray<float>& labels, const NDArray<float>& logits, NDArray<float>& output);
-template void sparseSoftmaxCrossEntropyLossWithLogits<float16>(const NDArray<float16>& labels, const NDArray<float16>& logits, NDArray<float16>& output);
-template void sparseSoftmaxCrossEntropyLossWithLogits<double>(const NDArray<double>& labels, const NDArray<double>& logits, NDArray<double>& output);
-
+#pragma omp parallel for schedule(static)
+    for(int i = 0; i < numOfNonZeroWeights.lengthOf(); ++i)
+        for(int j = 0; j < sizeAtRestDims; ++j)
+            if(weightsBroad->e<float>(i*sizeAtRestDims + j) != 0.f)
+                numOfNonZeroWeights.p<Nd4jLong>(i, 1 + numOfNonZeroWeights.e<Nd4jLong>(i));
+}
+    
 }
 }
 }

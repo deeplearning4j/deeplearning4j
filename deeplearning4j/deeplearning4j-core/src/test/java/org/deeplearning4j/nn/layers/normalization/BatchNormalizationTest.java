@@ -43,6 +43,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
@@ -77,7 +78,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
     static {
         //Force Nd4j initialization, then set data type to double:
         Nd4j.zeros(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
     protected INDArray dnnInput = Nd4j.linspace(0, 31, 32).reshape(2, 16);

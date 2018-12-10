@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.blas.impl;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.blas.params.SparseCOOGemvParameters;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 
@@ -41,14 +42,14 @@ public abstract class SparseBaseLevel2 extends SparseBaseLevel implements Level2
 
         switch (A.data().dataType()) {
             case DOUBLE:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, parameters.getA(), parameters.getX(),
+                DefaultOpExecutioner.validateDataType(DataType.DOUBLE, parameters.getA(), parameters.getX(),
                                 parameters.getY());
                 dcoomv(parameters.getAOrdering(), parameters.getM(), parameters.getVal(), parameters.getRowInd(),
                                 parameters.getColInd(), parameters.getNnz(), parameters.getX(), parameters.getY());
 
                 break;
             case FLOAT:
-                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, parameters.getA(), parameters.getX(),
+                DefaultOpExecutioner.validateDataType(DataType.FLOAT, parameters.getA(), parameters.getX(),
                                 parameters.getY());
                 scoomv(parameters.getAOrdering(), parameters.getM(), parameters.getVal(), parameters.getRowInd(),
                                 parameters.getColInd(), parameters.getNnz(), parameters.getX(), parameters.getY());

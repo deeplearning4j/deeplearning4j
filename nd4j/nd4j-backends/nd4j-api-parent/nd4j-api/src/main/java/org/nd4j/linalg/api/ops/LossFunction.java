@@ -24,7 +24,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public interface LossFunction extends Accumulation {
+public interface LossFunction extends ReduceOp {
     /**
      * The true
      * @return

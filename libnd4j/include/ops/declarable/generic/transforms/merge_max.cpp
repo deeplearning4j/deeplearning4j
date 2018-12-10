@@ -31,9 +31,9 @@ OP_IMPL(mergemax, -1, 1, false) {
         
     REQUIRE_OK(this->validateInputDimensionsMatch(block));
         
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
-    std::vector<NDArray<T>*> inArrs(block.width());
+    std::vector<NDArray*> inArrs(block.width());
     
     for(int i = 0; i < block.width(); ++i)
         inArrs[i] = INPUT_VARIABLE(i);
@@ -45,7 +45,11 @@ OP_IMPL(mergemax, -1, 1, false) {
 
 DECLARE_SYN(MergeMax, mergemax);
 
-
+    DECLARE_TYPES(mergemax) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes(nd4j::DataType::ANY);
+    }
 
 }
 }

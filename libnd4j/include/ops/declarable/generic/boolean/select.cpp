@@ -33,13 +33,18 @@ namespace nd4j {
 
             REQUIRE_TRUE(x->isSameShape(y), 0, "Select: X and Y shape should be equal");
             if (x->isScalar()) {
-                REQUIRE_TRUE(cond->isScalar(), 0, "Select: Condition should gave either equal shape to X/Y first dimension or to be scalar");
+                REQUIRE_TRUE(cond->isScalar(), 0,
+                             "Select: Condition should gave either equal shape to X/Y first dimension or to be scalar");
 
                 auto z = OUTPUT_VARIABLE(0);
 
-                T v = cond->getIndexedScalar(0)  == (T) 0.0f ? y->getIndexedScalar(0) : x->getIndexedScalar(0);
-
-                z->putIndexedScalar(0, v);
+                if (y->isR()) {
+                    auto v = !cond->e<bool>(0)? y->e<double>(0) : x->e<double>(0);
+                    z->p(0, v);
+                } else {
+                    auto v = !cond->e<bool>(0)? y->e<Nd4jLong>(0) : x->e<Nd4jLong>(0);
+                    z->p(0, v);
+                }
             } else {
                 bool same = cond->isSameShape(x);
                 REQUIRE_TRUE(cond->isScalar() || cond->lengthOf() == x->sizeAt(0) || same, 0, "Select: Condition should gave either equal shape to X/Y first dimension or to be scalar");
@@ -47,27 +52,30 @@ namespace nd4j {
                     auto z = OUTPUT_VARIABLE(0);
 
                     for (int e = 0; e < cond->lengthOf(); e++) {
-                        T v = cond->getIndexedScalar(e);
-                        T r = v == (T) 0.0f ? y->getIndexedScalar(e) : x->getIndexedScalar(e);
-                        z->putIndexedScalar(e, r);
+                        if (y->isR()) {
+                            auto r = !cond->e<bool>(e) ? y->e<double>(e) : x->e<double>(e);
+                            z->p(e, r);
+                        } else {
+                            auto r = !cond->e<bool>(e) ? y->e<Nd4jLong>(e) : x->e<Nd4jLong>(e);
+                            z->p(e, r);
+                        }
                     }
                 } else {
                     REQUIRE_TRUE(cond->lengthOf() == x->sizeAt(0), 0, "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead", cond->lengthOf());
 
                     auto z = OUTPUT_VARIABLE(0);
 
-                    auto dims = ShapeUtils<T>::convertAxisToTadTarget(x->rankOf(), {0});
+                    auto dims = ShapeUtils::convertAxisToTadTarget(x->rankOf(), {0});
                     auto tadsX = x->allTensorsAlongDimension(dims);
                     auto tadsY = y->allTensorsAlongDimension(dims);
                     auto tadsZ = z->allTensorsAlongDimension(dims);
 
                     for (int e = 0; e < tadsX->size(); e++) {
-                        T v = cond->getIndexedScalar(e);
-                        
-                        if (v == (T) 0.0f)
+                        if (!cond->e<bool>(e)) {
                             tadsZ->at(e)->assign(tadsY->at(e));
-                        else
+                        } else {
                             tadsZ->at(e)->assign(tadsX->at(e));
+                        }
                     }
 
                     delete tadsX;
@@ -86,6 +94,14 @@ namespace nd4j {
             COPY_SHAPE(inShape, newshape);
 
             return SHAPELIST(newshape);
+        }
+
+        DECLARE_TYPES(select) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::BOOL)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedInputTypes(2, DataType::ANY)
+                    ->setAllowedOutputTypes(1, DataType::INHERIT);
         }
     }
 }

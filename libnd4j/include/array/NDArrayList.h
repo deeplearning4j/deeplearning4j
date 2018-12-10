@@ -28,10 +28,10 @@
 #include <map>
 #include <NDArray.h>
 #include <memory/Workspace.h>
+#include <dll.h>
 
 namespace nd4j {
-    template <typename T>
-    class NDArrayList {
+    class ND4J_EXPORT NDArrayList {
     private:
         // workspace where chunks belong to
         nd4j::memory::Workspace* _workspace = nullptr;
@@ -40,8 +40,10 @@ namespace nd4j {
         std::pair<int, int> _id;
         std::string _name;
 
+        nd4j::DataType _dtype;
+
         // stored chunks
-        std::map<int, nd4j::NDArray<T>*> _chunks;
+        std::map<int, nd4j::NDArray*> _chunks;
 
         // just a counter, for stored elements
         std::atomic<int> _elements;
@@ -62,24 +64,26 @@ namespace nd4j {
         NDArrayList(int height, bool expandable = false);
         ~NDArrayList();
 
-        NDArray<T>* read(int idx);
-        NDArray<T>* readRaw(int idx);
-        Nd4jStatus write(int idx, NDArray<T>* array);
+        nd4j::DataType dataType();
 
-        NDArray<T>* pick(std::initializer_list<int> indices);
-        NDArray<T>* pick(std::vector<int>& indices);
+        NDArray* read(int idx);
+        NDArray* readRaw(int idx);
+        Nd4jStatus write(int idx, NDArray* array);
+
+        NDArray* pick(std::initializer_list<int> indices);
+        NDArray* pick(std::vector<int>& indices);
         bool isWritten(int index);
 
-        NDArray<T>* stack();
-        void unstack(NDArray<T>* array, int axis);
+        NDArray* stack();
+        void unstack(NDArray* array, int axis);
 
         std::pair<int,int>& id();
         std::string& name();
         nd4j::memory::Workspace* workspace();
 
-        NDArrayList<T>* clone();
+        NDArrayList* clone();
 
-        bool equals(NDArrayList<T>& other);
+        bool equals(NDArrayList& other);
 
         int elements();
         int height();

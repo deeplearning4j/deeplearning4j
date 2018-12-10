@@ -29,14 +29,21 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
 
-            nd4j_debug("Comparing [%f] to [%f]\n", x->getScalar(0), y->getScalar(0));
-            if (x->getScalar(0) < y->getScalar(0))
+            nd4j_printf("Comparing [%f] to [%f]\n", x->e<float>(0), y->e<float>(0));
+            if (x->e<float>(0) < y->e<float>(0))
                 return ND4J_STATUS_TRUE;
             else
                 return ND4J_STATUS_FALSE;
         }
         //DECLARE_SYN(Less, lt_scalar);
         //DECLARE_SYN(less, lt_scalar);
+
+        DECLARE_TYPES(lt_scalar) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::BOOL);
+        }
     }
 }
 

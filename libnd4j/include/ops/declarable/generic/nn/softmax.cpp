@@ -28,42 +28,51 @@
 namespace nd4j {
 namespace ops {
 
+    DECLARE_TYPES(softmax) {
+        getOpDescriptor()
+                ->setAllowedInputTypes({ALL_FLOATS})
+                ->setAllowedOutputTypes({ALL_FLOATS})
+                ->setSameMode(true);
+    }
 
 CONFIGURABLE_OP_IMPL(softmax, 1, 1, true, 0, 0) {
-    
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
     
     const int rank = input->rankOf();
     const int dim  = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
     REQUIRE_TRUE(dim < rank, 0, "SOFTMAX OP: the value of input integer parameter (dimension) must be less than input array rank %i, but got dimension = %i instead !", rank, dim);
 
-    helpers::softmax<T>(*input, *output, dim);
+    helpers::softmax(*input, *output, dim);
 
     return Status::OK();
 }
 
 
 CONFIGURABLE_OP_IMPL(softmax_bp, 2, 1, true, 0, 0) {
-    
-    NDArray<T>* input = INPUT_VARIABLE(0);
-    NDArray<T>* gradO = INPUT_VARIABLE(1);
-    NDArray<T>* gradI = OUTPUT_VARIABLE(0);    
+    auto input = INPUT_VARIABLE(0);
+    auto gradO = INPUT_VARIABLE(1);
+    auto gradI = OUTPUT_VARIABLE(0);
 
     const int rank = input->rankOf();
     const int dim  = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
     REQUIRE_TRUE(dim < rank, 0, "SOFTMAX_BP OP: the value of input integer parameter (dimension) must be less than input array rank %i, but got dimension = %i instead !", rank, dim);
     
-    helpers::softmax<T>(*input, *gradI, dim);
+    helpers::softmax(*input, *gradI, dim);
 
-    NDArray<T> sumAlongDim = (*gradI * *gradO).template reduceAlongDims<simdOps::Sum<T>>({dim}, true);
+    auto sumAlongDim = (*gradI * *gradO).reduceAlongDims(reduce::Sum, {dim}, true);
     gradI->assign(*gradI * (*gradO - sumAlongDim));
 
     return Status::OK();
 }
 
+    DECLARE_TYPES(softmax_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
 }
 }

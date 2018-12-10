@@ -21,3 +21,4 @@ from .memory_manager import *
 from .ops import *
 from .tf_model import *
 from .keras_model import *
+from .spark import *

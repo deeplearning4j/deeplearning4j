@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,8 +38,8 @@ public class BaseDL4JTest {
     /**
      * Override this to set the datatype of the tests defined in the child class
      */
-    public DataBuffer.Type getDataType(){
-        return DataBuffer.Type.FLOAT;
+    public DataType getDataType(){
+        return DataType.FLOAT;
     }
 
     @Before

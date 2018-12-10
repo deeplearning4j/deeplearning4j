@@ -21,9 +21,11 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -48,8 +50,8 @@ public class Linspace extends BaseRandomOp {
         // no-op
     }
 
-    public Linspace(double from, double to, int length) {
-        this(Nd4j.createUninitialized(new int[] {1, length}, Nd4j.order()), from, to);
+    public Linspace(double from, double to, int length, DataType dataType) {
+        this(Nd4j.createUninitialized(dataType, new long[] {1, length}, Nd4j.order()), from, to);
     }
 
     public Linspace(@NonNull INDArray z, double from, double to) {
@@ -172,8 +174,9 @@ public class Linspace extends BaseRandomOp {
     }
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        return Collections.singletonList(new long[]{length});
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        throw new UnsupportedOperationException();
+        //return Collections.singletonList(new long[]{length});
     }
 
 

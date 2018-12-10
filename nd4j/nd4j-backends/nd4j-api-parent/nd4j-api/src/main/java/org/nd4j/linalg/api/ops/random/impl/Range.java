@@ -21,8 +21,10 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -84,7 +86,7 @@ public class Range extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-
+/*
         NodeDef startNode = null,endNode = null,deltaNode = null;
         for(val  node : graph.getNodeList()) {
             if(node.getName().equals(nodeDef.getInput(0))) {
@@ -137,7 +139,7 @@ public class Range extends DynamicCustomOp {
         val fromVar = initWith.getVariable(TFGraphMapper.getInstance().getNodeName(startNode.getName()));
         val toVar = initWith.getVariable(TFGraphMapper.getInstance().getNodeName(endNode.getName()));
         val deltaVar =  initWith.getVariable(TFGraphMapper.getInstance().getNodeName(deltaNode.getName()));
-
+*/
 //        this.fromVertexId = fromVar.getVarName();
 //        this.toVertexId = toVar.getVarName();
 //        this.deltaVertexId = deltaVar.getVarName();
@@ -155,78 +157,22 @@ public class Range extends DynamicCustomOp {
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
         val iArgs = iArgs();
         val tArgs = tArgs();
         val inputArgs = inputArguments();
         int cnt = 0;
 
-        if (iArgs.length > 0) {
-            int start = (int) iArgs[0];
-            int stop = (int) iArgs[1];
-            int step = (int) iArgs[2];
-
-            double e = (double) start;
-            if (start > stop) {
-                while (e > (double) stop) {
-                    cnt++;
-                    e = (double) step > 0.0 ? e - step : e + step;
-                }
-            } else {
-                while (e < (double) stop) {
-                    cnt++;
-                    e += step;
-                }
-            }
-
-            return Arrays.asList(new long[]{cnt});
+        if(args().length > 1) {
+            if (inputArgs.length > 0)
+                return Nd4j.getExecutioner().calculateOutputShape(this);
+        } else if (iArgs.length > 0) {
+            return Nd4j.getExecutioner().calculateOutputShape(this);
+        } else if (tArgs.length > 0) {
+            return Nd4j.getExecutioner().calculateOutputShape(this);
         }
-
-        else if (tArgs.length > 0) {
-            double start = tArgs[0];
-            double stop = tArgs[1];
-            double step = tArgs[2];
-
-            double e = start;
-            if (start > stop) {
-                while (e > stop) {
-                    cnt++;
-                    e = step > 0.0 ? e - step : e + step;
-                }
-            } else {
-                while (e < stop) {
-                    cnt++;
-                    e += step;
-                }
-            }
-
-            return Arrays.asList(new long[]{cnt});
-        }
-
-        else if(inputArgs.length > 0) {
-            double start = inputArgs[0].getDouble(0);
-            double stop = inputArgs[1].getDouble(0);
-            double step = inputArgs[2].getDouble(0);
-
-            double e = start;
-            if (start > stop) {
-                while (e > stop) {
-                    cnt++;
-                    e = step > 0.0 ? e - step : e + step;
-                }
-            } else {
-                while (e < stop) {
-                    cnt++;
-                    e += step;
-                }
-            }
-
-            return Arrays.asList(new long[]{cnt});
-        }
-
 
        return Collections.emptyList();
-
     }
 
     @Override

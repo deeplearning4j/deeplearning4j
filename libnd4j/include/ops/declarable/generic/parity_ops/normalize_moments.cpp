@@ -26,57 +26,35 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(normalize_moments, 3, 2, false, 1, 0) {
-            NDArray<T>* counts = INPUT_VARIABLE(0);
-            NDArray<T>* means = INPUT_VARIABLE(1);
-            NDArray<T>* variances = INPUT_VARIABLE(2);
+            auto counts = INPUT_VARIABLE(0);
+            auto  means = INPUT_VARIABLE(1);
+            auto variances = INPUT_VARIABLE(2);
 
-            NDArray<T>* resMeans = OUTPUT_VARIABLE(0);
-            NDArray<T>* resVariances = OUTPUT_VARIABLE(1);
-/*
-    divisor = math_ops.reciprocal(counts, name="divisor")
-    if shift is not None:
-      shifted_mean = math_ops.multiply(mean_ss, divisor, name="shifted_mean")
-      mean = math_ops.add(shifted_mean, shift, name="mean")
-    else:  # no shift.
-      shifted_mean = math_ops.multiply(mean_ss, divisor, name="mean")
-      mean = shifted_mean
-    variance = math_ops.subtract(
-        math_ops.multiply(variance_ss, divisor),
-        math_ops.square(shifted_mean),
-        name="variance")
-  return (mean, variance)
+            auto resMeans = OUTPUT_VARIABLE(0);
+            auto resVariances = OUTPUT_VARIABLE(1);
 
-*/
-
-            T shift(0);
+            // FIXME: double?
+            double shift(0);
             
             if (block.getTArguments()->size() > 0) {
                 shift = T_ARG(0);
             }
-//            nd4j_printf("means output %p \n",  resMeans->getBuffer())
-//            nd4j_printf("variance output %p \n",  resVariances->getBuffer())
-//            resMeans->printBuffer("Output Means");
-//            resVariances->printBuffer("Output Variance");
 
-            means->template applyScalar<simdOps::Divide<T>>((*counts)(0.), resMeans, nullptr);
+            means->applyScalarArr(scalar::Divide, counts, resMeans, nullptr);
 
-            std::unique_ptr<NDArray<T>> squareMeans(resMeans->dup('c'));
-            std::unique_ptr<NDArray<T>> tempVariances(resVariances->dup('c'));
+            std::unique_ptr<NDArray> squareMeans(resMeans->dup('c'));
+            std::unique_ptr<NDArray> tempVariances(resVariances->dup('c'));
 
-            squareMeans->template applyTransform<simdOps::Square<T>>((T*)nullptr);
-            variances->template applyScalar<simdOps::Divide<T>>((*counts)(0.), tempVariances.get(), nullptr);
+            squareMeans->applyTransform(transform::Square, squareMeans.get(), nullptr);
+            variances->applyScalarArr(scalar::Divide, counts, tempVariances.get(), nullptr);
 //            tempVariances->printIndexedBuffer("varianced divided by count");
-            tempVariances->template applyPairwiseTransform<simdOps::Subtract<T>>(squareMeans.get(), resVariances, nullptr);
+            tempVariances->applyPairwiseTransform(pairwise::Subtract, squareMeans.get(), resVariances, nullptr);
 
-            if (shift != T(0)) {
-                resMeans->template applyScalar<simdOps::Add<T>>(shift, resMeans, nullptr);
+            if (shift != 0) {
+                resMeans->applyScalar(scalar::Add, shift, resMeans, nullptr);
             }
-          
-//            resMeans->printBuffer("Output Means");
-//            resVariances->printBuffer("Output Variance");
-//            nd4j_printf("means output %p \n",  resMeans->getBuffer())
-//            nd4j_printf("variance output %p \n",  resVariances->getBuffer())
-            return ND4J_STATUS_OK;
+
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(normalize_moments) {
@@ -93,6 +71,12 @@ namespace nd4j {
             shapeList->push_back(varianceShape);
 
             return shapeList;
+        }
+
+        DECLARE_TYPES(normalize_moments) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }
 

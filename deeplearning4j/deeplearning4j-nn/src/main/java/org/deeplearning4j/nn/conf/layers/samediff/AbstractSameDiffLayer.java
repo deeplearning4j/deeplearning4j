@@ -153,11 +153,6 @@ public abstract class AbstractSameDiffLayer extends Layer {
     }
 
     @Override
-    public boolean isPretrain() {
-        return false;
-    }
-
-    @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         return new LayerMemoryReport(); //TODO
     }

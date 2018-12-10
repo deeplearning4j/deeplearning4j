@@ -402,7 +402,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
         Pair<Gradient, Double> graphTbpttPair = graphTBPTT.gradientAndScore();
 
         assertEquals(graphPair.getFirst().gradientForVariable(), graphTbpttPair.getFirst().gradientForVariable());
-        assertEquals(graphPair.getSecond(), graphTbpttPair.getSecond());
+        assertEquals(graphPair.getSecond(), graphTbpttPair.getSecond(), 1e-8);
 
         //Check states: expect stateMap to be empty but tBpttStateMap to not be
         Map<String, INDArray> l0StateMLN = graph.rnnGetPreviousState(0);
@@ -530,7 +530,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
 
         MultiDataSet data = new MultiDataSet(new INDArray[] {Nd4j.linspace(1, 10, 10).reshape(1, 1, 10)},
                         new INDArray[] {Nd4j.linspace(2, 20, 10).reshape(1, 1, 10)}, null,
-                        new INDArray[] {Nd4j.ones(10)});
+                        new INDArray[] {Nd4j.ones(1, 10)});
 
         net.fit(data);
     }
@@ -551,8 +551,8 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
             net.init();
 
             MultiDataSet data = new MultiDataSet(new INDArray[] {Nd4j.linspace(1, 10, 10).reshape(1, 1, 10)},
-                            new INDArray[] {Nd4j.linspace(2, 20, 10).reshape(1, 1, 10)}, new INDArray[] {Nd4j.ones(10)},
-                            new INDArray[] {Nd4j.ones(10)});
+                            new INDArray[] {Nd4j.linspace(2, 20, 10).reshape(1, 1, 10)}, new INDArray[] {Nd4j.ones(1, 10)},
+                            new INDArray[] {Nd4j.ones(1, 10)});
 
             net.fit(data);
             assertNull(net.getInputMaskArrays());

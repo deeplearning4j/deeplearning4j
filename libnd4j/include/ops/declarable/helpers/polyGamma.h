@@ -30,8 +30,7 @@ namespace helpers {
 
 
 	// calculate the polygamma function
-    template <typename T>
-    NDArray<T> polyGamma(const NDArray<T>& n, const NDArray<T>& x);
+    void polyGamma(const NDArray& n, const NDArray& x, NDArray& output);
     
 
 }

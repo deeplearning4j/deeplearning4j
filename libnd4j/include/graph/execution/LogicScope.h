@@ -34,10 +34,9 @@ namespace nd4j {
          *
          * @tparam T
          */
-        template <typename T>
         class LogicScope {
         public:
-            static Nd4jStatus processNode(Graph<T>* graph, Node<T>* node);
+            static Nd4jStatus processNode(Graph* graph, Node* node);
         };
     }
 }

@@ -427,6 +427,7 @@ namespace shape {
 
     INLINEDEF void TAD::createTadOnlyShapeInfo() {
         this->tadOnlyShapeInfo = this->shapeInfoOnlyShapeAndStride();
+        nd4j::ArrayOptions::setDataType(this->tadOnlyShapeInfo, nd4j::ArrayOptions::dataType(this->originalShapeInfo));
 
         if (this->tadShape != nullptr)
             delete[] this->tadShape;

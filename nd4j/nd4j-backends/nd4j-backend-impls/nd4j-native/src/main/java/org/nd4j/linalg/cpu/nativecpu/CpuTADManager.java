@@ -22,6 +22,7 @@ import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.api.buffer.LongBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -92,7 +93,7 @@ public class CpuTADManager implements TADManager {
                 DataBuffer outputBuffer = new LongBuffer(targetRank * 2 + 4);
                 DataBuffer offsetsBuffer = new LongBuffer(offsetLength);
 
-                DataBuffer dimensionBuffer = constantHandler.getConstantBuffer(dimension);
+                DataBuffer dimensionBuffer = constantHandler.getConstantBuffer(dimension, DataType.INT);
                 Pointer dimensionPointer = dimensionBuffer.addressPointer();
 
                 Pointer xShapeInfo = array.shapeInfoDataBuffer().addressPointer();

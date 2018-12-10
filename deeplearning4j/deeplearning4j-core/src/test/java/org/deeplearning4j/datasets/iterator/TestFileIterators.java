@@ -47,12 +47,12 @@ public class TestFileIterators extends BaseDL4JTest {
         folder.create();
         File f = folder.newFolder();
 
-        DataSet d1 = new DataSet(Nd4j.linspace(1, 10, 10).transpose(),
-                Nd4j.linspace(101, 110, 10).transpose());
-        DataSet d2 = new DataSet(Nd4j.linspace(11, 20, 10).transpose(),
-                Nd4j.linspace(111, 120, 10).transpose());
-        DataSet d3 = new DataSet(Nd4j.linspace(21, 30, 10).transpose(),
-                Nd4j.linspace(121, 130, 10).transpose());
+        DataSet d1 = new DataSet(Nd4j.linspace(1, 10, 10).reshape(10,1),
+                Nd4j.linspace(101, 110, 10).reshape(10,1));
+        DataSet d2 = new DataSet(Nd4j.linspace(11, 20, 10).reshape(10,1),
+                Nd4j.linspace(111, 120, 10).reshape(10,1));
+        DataSet d3 = new DataSet(Nd4j.linspace(21, 30, 10).reshape(10,1),
+                Nd4j.linspace(121, 130, 10).reshape(10,1));
 
         d1.save(new File(f, "d1.bin"));
         File f2 = new File(f, "subdir/d2.bin");
@@ -137,10 +137,10 @@ public class TestFileIterators extends BaseDL4JTest {
         /*
         //TODO different file iteration orders make the batch recombining hard to test...
         exp = Arrays.asList(
-                new DataSet(Nd4j.linspace(1, 15, 15).transpose(),
-                        Nd4j.linspace(101, 115, 15).transpose()),
-                new DataSet(Nd4j.linspace(16, 30, 15).transpose(),
-                        Nd4j.linspace(116, 130, 15).transpose()));
+                new DataSet(Nd4j.linspace(1, 15, 15).reshape(10,1),
+                        Nd4j.linspace(101, 115, 15).reshape(10,1)),
+                new DataSet(Nd4j.linspace(16, 30, 15).reshape(10,1),
+                        Nd4j.linspace(116, 130, 15).reshape(10,1)));
         act = new ArrayList<>();
         */
         iter = new FileDataSetIterator(f, true, null, 15, (String[]) null);
@@ -159,12 +159,12 @@ public class TestFileIterators extends BaseDL4JTest {
         folder.create();
         File f = folder.newFolder();
 
-        MultiDataSet d1 = new org.nd4j.linalg.dataset.MultiDataSet(Nd4j.linspace(1, 10, 10).transpose(),
-                Nd4j.linspace(101, 110, 10).transpose());
-        MultiDataSet d2 = new org.nd4j.linalg.dataset.MultiDataSet(Nd4j.linspace(11, 20, 10).transpose(),
-                Nd4j.linspace(111, 120, 10).transpose());
-        MultiDataSet d3 = new org.nd4j.linalg.dataset.MultiDataSet(Nd4j.linspace(21, 30, 10).transpose(),
-                Nd4j.linspace(121, 130, 10).transpose());
+        MultiDataSet d1 = new org.nd4j.linalg.dataset.MultiDataSet(Nd4j.linspace(1, 10, 10).reshape(10,1),
+                Nd4j.linspace(101, 110, 10).reshape(10,1));
+        MultiDataSet d2 = new org.nd4j.linalg.dataset.MultiDataSet(Nd4j.linspace(11, 20, 10).reshape(10,1),
+                Nd4j.linspace(111, 120, 10).reshape(10,1));
+        MultiDataSet d3 = new org.nd4j.linalg.dataset.MultiDataSet(Nd4j.linspace(21, 30, 10).reshape(10,1),
+                Nd4j.linspace(121, 130, 10).reshape(10,1));
 
         d1.save(new File(f, "d1.bin"));
         File f2 = new File(f, "subdir/d2.bin");
@@ -246,10 +246,10 @@ public class TestFileIterators extends BaseDL4JTest {
         /*
         //TODO different file iteration orders make the batch recombining hard to test...
         exp = Arrays.<MultiDataSet>asList(
-                new org.nd4j.linalg.dataset.MultiDataSet(Nd4j.linspace(1, 15, 15).transpose(),
-                        Nd4j.linspace(101, 115, 15).transpose()),
-                new org.nd4j.linalg.dataset.MultiDataSet(Nd4j.linspace(16, 30, 15).transpose(),
-                        Nd4j.linspace(116, 130, 15).transpose()));
+                new org.nd4j.linalg.dataset.MultiDataSet(Nd4j.linspace(1, 15, 15).reshape(10,1),
+                        Nd4j.linspace(101, 115, 15).reshape(10,1)),
+                new org.nd4j.linalg.dataset.MultiDataSet(Nd4j.linspace(16, 30, 15).reshape(10,1),
+                        Nd4j.linspace(116, 130, 15).reshape(10,1)));
         act = new ArrayList<>();
         while (iter.hasNext()) {
             act.add(iter.next());

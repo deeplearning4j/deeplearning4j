@@ -32,15 +32,14 @@ namespace nd4j {
          * Their code is the part of GraphExecutioner logic. But we still want them to be expressed via Graph
          * @tparam T
          */
-        template <typename T>
-        class ND4J_EXPORT LogicOp : public DeclarableOp<T> {
+        class ND4J_EXPORT LogicOp : public DeclarableOp {
         protected:
-            Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block) override;
+            Nd4jStatus validateAndExecute(nd4j::graph::Context& block) override;
         public:
             LogicOp(const char *name);
             ~LogicOp() = default;
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block) override;
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context &block) override;
         };
     }
 }

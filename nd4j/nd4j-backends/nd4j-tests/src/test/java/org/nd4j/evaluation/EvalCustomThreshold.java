@@ -172,10 +172,10 @@ public class EvalCustomThreshold extends BaseNd4jTest {
         EvaluationBinary eStd = new EvaluationBinary();
         eStd.eval(labels, probs);
 
-        EvaluationBinary eb05 = new EvaluationBinary(Nd4j.create(new double[] {0.5, 0.5}));
+        EvaluationBinary eb05 = new EvaluationBinary(Nd4j.create(new double[] {0.5, 0.5}, new long[]{1,2}));
         eb05.eval(labels, probs);
 
-        EvaluationBinary eb05v2 = new EvaluationBinary(Nd4j.create(new double[] {0.5, 0.5}));
+        EvaluationBinary eb05v2 = new EvaluationBinary(Nd4j.create(new double[] {0.5, 0.5}, new long[]{1,2}));
         for (int i = 0; i < nExamples; i++) {
             eb05v2.eval(labels.getRow(i), probs.getRow(i));
         }

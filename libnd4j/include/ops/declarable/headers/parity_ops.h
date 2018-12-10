@@ -115,7 +115,7 @@ namespace nd4j {
          * 1: bias vector
          */
         #if NOT_EXCLUDED(OP_biasadd)
-        DECLARE_OP(biasadd, 2, 1, true);
+        DECLARE_CUSTOM_OP(biasadd, 2, 1, true, 0, 0);
         DECLARE_CUSTOM_OP(biasadd_bp, 3, 2, false, 0, 0);
         #endif
 
@@ -634,10 +634,10 @@ namespace nd4j {
          *  will be sorted by the values in descending order.
          *  The first parameter is a NDArray for working.
          *  The second is k (default 1) - optional
-         *  The third is boolean value(default is 1) (0 - as is, 1 - sorted by value) optional
+         *  The third is boolean value(default is true) (0 - as is, 1 - sorted by value) optional
          */
         #if NOT_EXCLUDED(OP_top_k)
-        DECLARE_CUSTOM_OP(top_k, 1, 2, false, 0, -2);
+        DECLARE_CUSTOM_OP(top_k, 1, 2, false, 0, -1);
         #endif
 
         /**
@@ -739,30 +739,8 @@ namespace nd4j {
         DECLARE_OP(stop_gradient, 1, 1, true);
         #endif
 
-        /**
-         * l2_loss op.
-         * compute a l2 norm for given array.
-         *
-         * input param - an array (tensor)
-         * output value - a real number with given type (e.g. float or double)
-         */
-        #if NOT_EXCLUDED(OP_l2_loss)
-        DECLARE_CUSTOM_OP(l2_loss, 1, 1, false, 0, 0);
-        #endif
-
         #if NOT_EXCLUDED(OP_parallel_stack)
         DECLARE_CUSTOM_OP(parallel_stack, -1, 1, false, 0, 0);
-        #endif
-
-	/**
-         * This op calculates logarithmic loss of poison distributed input
-         * Input arguments
-         *  0 - target
-         *  1 - input
-         *  optional int - boolean value compute_full_loss: 0 (default) or 1 (compute)
-         */
-        #if NOT_EXCLUDED(OP_log_poison_loss)
-        DECLARE_CONFIGURABLE_OP(log_poison_loss, 2, 1, true, 0, 0);
         #endif
 
         /**
@@ -816,8 +794,10 @@ namespace nd4j {
         DECLARE_OP(weighted_cross_entropy_with_logits, 3, 1, true);
         #endif
 
+
+
         /**
-         * This op calculates weighted logarithmic loss of input
+         * This op calculates dropout of input
          * Input arguments
          *  0 - input tensor
          *  1 - noise_shape - (vector with shape to reduce) - optional
@@ -828,6 +808,20 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_dropout)
         DECLARE_CONFIGURABLE_OP(dropout, 1, 1, true, 1, 1);
+        #endif
+        #if NOT_EXCLUDED(OP_dropout_bp)
+        DECLARE_CONFIGURABLE_OP(dropout_bp, 2, 1, false, 1, 1);
+        #endif
+
+        /*  Calculates alpha weighted dropout
+            T params:
+                0 - drop probability
+                1 - alpha value
+                2 - alpha' value
+                3 - beta value
+         */
+        #if NOT_EXCLUDED(OP_alpha_dropout_bp)
+        DECLARE_CONFIGURABLE_OP(alpha_dropout_bp, 2, 1, false, 4, 1);
         #endif
 
 
@@ -1165,6 +1159,21 @@ namespace nd4j {
         #endif
 
         /**
+         * lin_space - op porting from TF (https://www.tensorflow.org/api_docs/python/tf/lin_space)
+         * 
+         * input params:
+         *    0 - startVal - NDArray scalar (float point)
+         *    1 - finishVal - NDArray scalar (float point)
+         *    2 - numOfElements - NDArray scalar (integer)
+         * 
+         * output:
+         *    0 - 1D NDArray with the same type as input and length as given with numOfElements param.
+         */
+        #if NOT_EXCLUDED(OP_lin_space)
+        DECLARE_CUSTOM_OP(lin_space, 3, 1, false, 0, 0);
+        #endif
+
+        /**
          * reduction_sum - tf.reduction_sum operation
          * 
          * input params:
@@ -1353,7 +1362,7 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(reduce_norm_max_bp, 2, 1, false, 0, 0);
         #endif
 
-		/**
+        /**
         * This op calculates mean of elements along given dimensions
         *
         * input array:
@@ -1368,9 +1377,13 @@ namespace nd4j {
         * output array:
         *    reduced tensor with calculated means
         */
+        #if NOT_EXCLUDED(OP_reduce_mean)
         DECLARE_CUSTOM_OP(reduce_mean, 1, 1, false, 0, 0);
-        DECLARE_CUSTOM_OP(reduce_mean_bp, 2, 1, false, 0, 0)
+        #endif
 
+        #if NOT_EXCLUDED(OP_reduce_mean_bp)
+        DECLARE_CUSTOM_OP(reduce_mean_bp, 2, 1, false, 0, 0)
+        #endif
         /**
         * This op calculates sample variance of elements along given dimensions
         *
@@ -1522,9 +1535,9 @@ namespace nd4j {
          *
          * output - lower triangular matrix (matricies when rank > 2) with the same shape as input.
          * */
-#if NOT_EXCLUDED(OP_cholesky)
+        #if NOT_EXCLUDED(OP_cholesky)
         DECLARE_OP(cholesky, 1, 1, true);
-#endif
+        #endif
         /*
          * nth_element - apply nth_element for last dimension of input tensor
          * input array:

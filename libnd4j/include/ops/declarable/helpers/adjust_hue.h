@@ -128,8 +128,7 @@ namespace helpers {
         }
     }
 
-    template <typename T>
-    void _adjust_hue(NDArray<T> *input, NDArray<T> *output, T delta, bool isNHWC);
+    void _adjust_hue(NDArray *input, NDArray *output, NDArray *delta, bool isNHWC);
 }
 }
 }

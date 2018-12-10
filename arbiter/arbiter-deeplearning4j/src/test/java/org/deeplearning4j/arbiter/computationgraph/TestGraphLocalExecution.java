@@ -108,7 +108,7 @@ public class TestGraphLocalExecution {
                             .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "0")
                     .setOutputs("1")
                     .setInputTypes(InputType.feedForward(784))
-                    .numEpochs(3).pretrain(false).backprop(true).build();
+                    .numEpochs(3).build();
 
             DataProvider dp = null;
             Class<? extends DataSource> ds = null;
@@ -176,7 +176,7 @@ public class TestGraphLocalExecution {
                         "in")
                 .addLayer("out", new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "layer0")
-                .setOutputs("out").numEpochs(3).pretrain(false).backprop(true).build();
+                .setOutputs("out").numEpochs(3).build();
 
         //Define configuration:
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
@@ -223,7 +223,7 @@ public class TestGraphLocalExecution {
                         "in")
                 .addLayer("out", new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "layer0")
-                .setOutputs("out").numEpochs(3).pretrain(false).backprop(true).build();
+                .setOutputs("out").numEpochs(3).build();
 
         //Define configuration:
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, null);
@@ -317,7 +317,7 @@ public class TestGraphLocalExecution {
                         "in") //1-2 identical layers (except nIn)
                 .addLayer("out", new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "first")
-                .setOutputs("out").earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
+                .setOutputs("out").earlyStoppingConfiguration(esConf).build();
 
         //Define configuration:
 

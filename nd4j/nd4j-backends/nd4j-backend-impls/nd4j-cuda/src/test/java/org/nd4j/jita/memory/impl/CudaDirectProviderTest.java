@@ -35,7 +35,7 @@ public class CudaDirectProviderTest {
     public void mallocHost() throws Exception {
         CudaDirectProvider provider = new CudaDirectProvider();
 
-        AllocationShape shape = new AllocationShape(100000, 4, DataBuffer.Type.FLOAT);
+        AllocationShape shape = new AllocationShape(100000, 4, DataType.FLOAT);
         AllocationPoint point = new AllocationPoint();
         point.setShape(shape);
 
@@ -57,7 +57,7 @@ public class CudaDirectProviderTest {
     public void mallocDevice() throws Exception {
         CudaDirectProvider provider = new CudaDirectProvider();
 
-        AllocationShape shape = new AllocationShape(300000, 4, DataBuffer.Type.FLOAT);
+        AllocationShape shape = new AllocationShape(300000, 4, DataType.FLOAT);
         AllocationPoint point = new AllocationPoint();
         point.setShape(shape);
 

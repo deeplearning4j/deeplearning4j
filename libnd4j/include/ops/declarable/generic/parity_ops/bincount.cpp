@@ -27,11 +27,16 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
+        DECLARE_TYPES(bincount) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
-            NDArray<T>* values = INPUT_VARIABLE(0);
+        CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
+            auto values = INPUT_VARIABLE(0);
             
-            NDArray<T>* weights = nullptr;
+            NDArray *weights = nullptr;
             if (block.width() > 1) {
                 weights = INPUT_VARIABLE(1);
                 REQUIRE_TRUE(values->isSameShape(weights), 0, "bincount: the input and weights shapes should be equals");
@@ -39,7 +44,7 @@ namespace nd4j {
             int maxLength = -1;
             int minLength = 0;
             int maxIndex = values->argMax();
-            maxLength = int((*values)(maxIndex))  + 1;
+            maxLength = values->e<int>(maxIndex)  + 1;
 
             if (block.numI() > 0) {
                 minLength = nd4j::math::nd4j_max(INT_ARG(0), 0);
@@ -47,20 +52,25 @@ namespace nd4j {
                     maxLength = nd4j::math::nd4j_min(maxLength, INT_ARG(1));
             }
 
-            NDArray<T>* result = OUTPUT_VARIABLE(0);
-            result->assign((T)0.0);
+            auto result = OUTPUT_VARIABLE(0);
+            result->assign(0.0f);
              
             helpers::adjustWeights(values, weights, result, minLength, maxLength);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(bincount) {
             auto shapeList = SHAPELIST(); 
             auto in = INPUT_VARIABLE(0);
+            nd4j::DataType dtype = DataType::INT32;
+            if (block.width() > 1)
+                dtype = in->dataType();
+            else if (block.numI() > 2)
+                dtype = (nd4j::DataType)INT_ARG(2);
 
             int maxIndex = in->argMax();
-            int maxLength = int((*in)(maxIndex))  + 1;
+            int maxLength = in->e<int>(maxIndex)  + 1;
 
             if (block.numI() > 0)
                 maxLength = nd4j::math::nd4j_max(maxLength, INT_ARG(0));
@@ -68,11 +78,7 @@ namespace nd4j {
             if (block.numI() > 1) 
                 maxLength = nd4j::math::nd4j_min(maxLength, INT_ARG(1));
 
-            Nd4jLong* newshape;
-            
-            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-
-            shape::shapeVector(maxLength,  newshape);
+            auto newshape = ShapeBuilders::createVectorShapeInfo(dtype, maxLength, block.workspace());
 
             shapeList->push_back(newshape); 
             return shapeList;

@@ -36,19 +36,19 @@
 
 namespace nd4j {
 namespace graph {
-    template <typename T>
+
     class ND4J_EXPORT GraphState {
     protected:
         // id of this GraphState instance
         Nd4jLong _id = 0;
 
         // map of scopes. Scope id is used as key, since it's referred in calls later anyway
-        std::map<int, Scope<T> *> _scopes;
+        std::map<int, Scope *> _scopes;
 
         // this variable space holds temp references
-        VariableSpace<T> _variableSpace;
+        VariableSpace _variableSpace;
 
-        Graph<T> *_graph;
+        Graph *_graph;
 
     public:
         explicit GraphState(Nd4jLong id);
@@ -93,16 +93,16 @@ namespace graph {
          * @param op
          * @return
          */
-        Nd4jStatus attachOpToScope(int scopeId, int nodeId, DeclarableOp<T> *op, ArgumentsList inputs);
+        Nd4jStatus attachOpToScope(int scopeId, int nodeId, nd4j::ops::DeclarableOp *op, ArgumentsList inputs);
 
         /**
          * This method returns pointer to the scope with given id
          * 
          * @param scopeId - id of the scope
          */
-        Scope<T>* getScope(int scopeId);
+        Scope* getScope(int scopeId);
 
-        Graph<T>* graph();
+        Graph* graph();
 #endif
         /**
          * This method adds given op to the end of specified scope
@@ -131,7 +131,7 @@ namespace graph {
          *
          * @return
          */
-        VariableSpace<T>*  variableSpace();
+        VariableSpace*  variableSpace();
     };
 }
 }

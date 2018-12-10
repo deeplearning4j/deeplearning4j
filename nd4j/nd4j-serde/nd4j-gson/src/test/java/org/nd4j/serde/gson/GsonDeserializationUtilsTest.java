@@ -17,6 +17,7 @@
 package org.nd4j.serde.gson;
 
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -67,7 +68,7 @@ public class GsonDeserializationUtilsTest {
 
     @Test
     public void testSimpleVector() {
-        INDArray arr = Nd4j.linspace(1, 4, 4);
+        INDArray arr = Nd4j.linspace(1, 4, 4, DataType.FLOAT);
         assertEquals(GsonDeserializationUtils.deserializeRawJson(arr.toString()), arr);
     }
 

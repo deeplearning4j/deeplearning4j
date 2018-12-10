@@ -77,7 +77,7 @@ public class UnsupervisedTestCases {
                                 .nIn(28 * 28)                                   //Input size: 28x28
                                 .nOut(32)                                       //Size of the latent variable space: p(z|x) - 32 values
                                 .build())
-                        .pretrain(true).backprop(false).build();
+                        .build();
             }
 
             @Override

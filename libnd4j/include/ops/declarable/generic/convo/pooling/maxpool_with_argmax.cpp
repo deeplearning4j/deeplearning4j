@@ -29,9 +29,9 @@ namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(max_pool_with_argmax, 1, 2, false, 0, 9) {
 
-            NDArray<T>* x = INPUT_VARIABLE(0);
-            NDArray<T>* z = OUTPUT_VARIABLE(0);
-            NDArray<T>* indeces = OUTPUT_VARIABLE(1);
+            auto x = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
+            auto indeces = OUTPUT_VARIABLE(1);
 
             REQUIRE_TRUE(x->rankOf() == 4, 0, "max_pool_with_argmax: Input should have rank of 4, but got %i instead", x->rankOf());
 
@@ -39,18 +39,24 @@ namespace nd4j {
 
             helpers::maxPoolingFunctor(x, z, argI, indeces);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
-        
-        DECLARE_SHAPE_FN(max_pool_with_argmax) {
-            auto in = inputShape->at(0);
-            Nd4jLong* valuesShape = nullptr;
-            Nd4jLong* indicesShape = nullptr;
-            COPY_SHAPE(in, valuesShape);
-            COPY_SHAPE(in, indicesShape);
-            auto shapes = SHAPELIST(valuesShape, indicesShape);
 
-            return shapes;
+        DECLARE_TYPES(max_pool_with_argmax) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::INHERIT)
+                    ->setAllowedOutputTypes(1, DataType::INT64);
+
+        }
+
+        DECLARE_SHAPE_FN(max_pool_with_argmax) {
+            
+            auto in = inputShape->at(0);
+            Nd4jLong* valuesShape = ShapeBuilders::copyShapeInfo(in, false, block.getWorkspace());    
+            Nd4jLong* indicesShape = ShapeBuilders::copyShapeInfoAndType(in, DataType::INT64, false, block.getWorkspace());    
+            
+            return SHAPELIST(valuesShape, indicesShape);
         }
     }
 }

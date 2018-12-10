@@ -23,6 +23,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -655,7 +656,7 @@ public class Shape {
         char outOrder = (anyOrder ? arr.ordering() : order);
         if (outOrder == 'a')
             outOrder = Nd4j.order();
-        INDArray z = Nd4j.createUninitialized(arr.shape(), outOrder);
+        INDArray z = Nd4j.createUninitialized(arr.dataType(), arr.shape(), outOrder);
         z.assign(arr);
         return z;
     }
@@ -3200,14 +3201,16 @@ public class Shape {
         return ret;
     }
 
-    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order) {
-        offset = 0;
+    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType) {
+        long offset = 0;
+
+        ArrayOptionsHelper.setOptionBit(offset, dataType);
 
         if (shape.length != stride.length)
             throw new IllegalStateException("Shape and stride must be the same length");
 
         int rank = shape.length;
-        long shapeBuffer[] = new long[rank * 2 + 4];
+        long shapeBuffer[] = new long[Shape.shapeInfoLength(rank)];
         shapeBuffer[0] = rank;
         int count = 1;
         for (int e = 0; e < shape.length; e++)
@@ -3216,7 +3219,32 @@ public class Shape {
         for (int e = 0; e < stride.length; e++)
             shapeBuffer[count++] = stride[e];
 
-        shapeBuffer[count++] = (int) offset;
+        shapeBuffer[count++] = offset;
+        shapeBuffer[count++] = elementWiseStride;
+        shapeBuffer[count] = (int) order;
+
+        DataBuffer ret = Nd4j.createBufferDetached(shapeBuffer);
+        ret.setConstant(true);
+
+        return ret;
+    }
+
+    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras) {
+
+        if (shape.length != stride.length)
+            throw new IllegalStateException("Shape and stride must be the same length");
+
+        int rank = shape.length;
+        long shapeBuffer[] = new long[Shape.shapeInfoLength(rank)];
+        shapeBuffer[0] = rank;
+        int count = 1;
+        for (int e = 0; e < shape.length; e++)
+            shapeBuffer[count++] = shape[e];
+
+        for (int e = 0; e < stride.length; e++)
+            shapeBuffer[count++] = stride[e];
+
+        shapeBuffer[count++] = extras;
         shapeBuffer[count++] = elementWiseStride;
         shapeBuffer[count] = (int) order;
 
@@ -3575,6 +3603,83 @@ public class Shape {
         return Arrays.equals(input.stride(), defaultStrides);
     }
 
+    public static boolean isS(@NonNull DataType x) {
+        return x == DataType.UTF8;
+    }
+
+    public static boolean isB(@NonNull DataType x) {
+        return x == DataType.BOOL;
+    }
+
+    public static boolean isZ(@NonNull DataType x) {
+        return !isR(x) && !isS(x) && !isB(x);
+    }
+
+    public static boolean isR(@NonNull DataType x) {
+        return x == DataType.FLOAT || x == DataType.HALF || x == DataType.DOUBLE;
+    }
+
+    private static DataType max(@NonNull DataType typeX, @NonNull DataType typeY) {
+        return DataType.values()[Math.max(typeX.ordinal(), typeY.ordinal())];
+    }
+
+    public static DataType pickPairwiseDataType(@NonNull DataType typeX, @NonNull Number number) {
+        if (number instanceof Double) {
+            return pickPairwiseDataType(typeX, DataType.DOUBLE);
+        } else if (number instanceof Float) {
+            return pickPairwiseDataType(typeX, DataType.FLOAT);
+        } else if (number instanceof Long) {
+            return pickPairwiseDataType(typeX, DataType.LONG);
+        } else if (number instanceof Integer) {
+            return pickPairwiseDataType(typeX, DataType.INT);
+        } else if (number instanceof Short) {
+            return pickPairwiseDataType(typeX, DataType.SHORT);
+        } else if (number instanceof Byte) {
+            return pickPairwiseDataType(typeX, DataType.BYTE);
+        } else {
+            throw new UnsupportedOperationException("Unknown Number used: [" + number.getClass().getCanonicalName() + "]");
+        }
+    }
+
+    public static DataType pickPairwiseDataType(@NonNull DataType typeX, @NonNull DataType typeY) {
+        if (typeX == typeY)
+            return typeX;
+
+        val rX = isR(typeX);
+        val rY = isR(typeY);
+
+        // if X is float - use it
+        if (rX && !rY)
+            return typeX;
+
+        // if Y is float - use it
+        if (!rX && rY)
+            return typeY;
+
+        // if both data types are float - return biggest one
+        if (rX && rY) {
+            // if we allow precision boost, then we pick bigger data type
+            if (Nd4j.isPrecisionBoostAllowed()) {
+                return max(typeX, typeY);
+            } else {
+                // and we return first operand otherwise
+                return typeX;
+            }
+
+        }
+
+        // if that's not real type, we apply same rules
+        if (!rX && !rY) {
+            if (Nd4j.isPrecisionBoostAllowed()) {
+                return max(typeX, typeY);
+            } else {
+                // and we return first operand otherwise
+                return typeX;
+            }
+        }
+
+        return typeX;
+    }
 
     public static boolean isEmpty(long[] shapeInfo) {
         return ArrayOptionsHelper.arrayType(shapeInfo) == ArrayType.EMPTY;

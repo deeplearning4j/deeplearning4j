@@ -93,8 +93,7 @@ public class TestComputationGraphSpace {
                                         "in")
                         .addLayer("1", new OutputLayerSpace.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX)
                                         .build(), "0")
-                        .setOutputs("1").setInputTypes(InputType.feedForward(10)).pretrain(false).backprop(true)
-                        .build();
+                        .setOutputs("1").setInputTypes(InputType.feedForward(10)).build();
 
         int nParams = mls.numParameters();
         assertEquals(3, nParams);
@@ -129,8 +128,6 @@ public class TestComputationGraphSpace {
 
 
             ComputationGraphConfiguration conf = mls.getValue(rvs).getConfiguration();
-            assertEquals(false, conf.isPretrain());
-            assertEquals(true, conf.isBackprop());
 
             int nLayers = conf.getVertexInputs().size();
             assertEquals(2, nLayers);

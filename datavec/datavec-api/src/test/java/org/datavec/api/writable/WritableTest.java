@@ -19,6 +19,7 @@ package org.datavec.api.writable;
 import org.datavec.api.writable.batch.NDArrayRecordBatch;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -62,7 +63,7 @@ public class WritableTest {
         BytesWritable byteWritable = new BytesWritable(doubleWrite);
         assertEquals(2,byteWritable.getDouble(1),1e-1);
         DataBuffer dataBuffer = Nd4j.createBuffer(new double[] {1,2});
-        assertEquals(dataBuffer,byteWritable.asNd4jBuffer(DataBuffer.Type.DOUBLE,8));
+        assertEquals(dataBuffer,byteWritable.asNd4jBuffer(DataType.DOUBLE,8));
     }
 
     @Test

@@ -20,7 +20,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.layers.dropout.CudnnDropoutHelper;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 

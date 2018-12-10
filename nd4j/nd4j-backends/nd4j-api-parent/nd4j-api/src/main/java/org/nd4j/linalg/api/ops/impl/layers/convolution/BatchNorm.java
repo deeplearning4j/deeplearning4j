@@ -20,6 +20,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -52,7 +53,7 @@ public class BatchNorm extends DynamicCustomOp {
     private boolean applyGamma;
     private boolean applyBeta;
     private double epsilon;
-    private int[] axis;
+    private int[] jaxis;
 
     @Builder(builderMethodName = "builder")
     public BatchNorm(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[]
@@ -65,7 +66,7 @@ public class BatchNorm extends DynamicCustomOp {
         this.applyGamma = applyGamma;
         this.applyBeta = applyBeta;
         this.epsilon = epsilon;
-        this.axis = axis;
+        this.jaxis = axis;
         if(inputArrays != null) {
             addInputArgument(inputArrays);
         }
@@ -78,9 +79,10 @@ public class BatchNorm extends DynamicCustomOp {
     public void addArgs() {
         addIArgument(ArrayUtil.fromBoolean(applyGamma));
         addIArgument(ArrayUtil.fromBoolean(applyBeta));
-        if(axis != null) {
+        if(jaxis != null) {
             //If null: op defaults to last dimension
-            addIArgument(axis);
+            for (val v:jaxis)
+                axis.add(v);
         }
         addTArgument(epsilon);
     }
@@ -115,13 +117,13 @@ public class BatchNorm extends DynamicCustomOp {
             String dataFormat = attributesForNode.get("data_format").getS().toStringUtf8();
             //TODO not sure if these conv1d/3d cases appear. But BN definitely uses "NCHW" or "NHWC"
             if(dataFormat.equalsIgnoreCase(Conv2DConfig.NCHW) || dataFormat.equalsIgnoreCase(Conv1DConfig.NCW) || dataFormat.equalsIgnoreCase(Conv3DConfig.NCDHW)){
-                axis = new int[]{1};
+                jaxis = new int[]{1};
             } else if(dataFormat.equalsIgnoreCase(Conv2DConfig.NHWC)){
-                axis = new int[]{3};
+                jaxis = new int[]{3};
             } else if(dataFormat.equalsIgnoreCase(Conv1DConfig.NWC)){
-                axis = new int[]{2};
+                jaxis = new int[]{2};
             } else if(dataFormat.equalsIgnoreCase(Conv3DConfig.NDHWC)){
-                axis = new int[]{4};
+                jaxis = new int[]{4};
             } else {
                 throw new IllegalStateException("Unknown data format: \"" + dataFormat + "\"" );
             }
