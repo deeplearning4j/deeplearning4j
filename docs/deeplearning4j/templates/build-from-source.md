@@ -12,47 +12,56 @@ weight: 10
 
 *Unless you have a very good reason to build from source (such as developing new features - excluding custom layers, custom activation functions, custom loss functions, etc - all of which can be added without modifying DL4J directly) then you shouldn't build from source. Building from source can be quite complex, with no benefit in a lot of cases.*
 
-For those developers and engineers who prefer to use the most up-to-date version of Deeplearning4j or fork and build their own version, these instructions will walk you through building and installing Deeplearning4j. The preferred installation destination is to your machine's local maven repository. If you are not using the master branch, you can modify these steps as needed (i.e.: switching GIT branches and modifying the `build-dl4j-stack.sh` script).
+For those developers and engineers who prefer to use the most up-to-date version of Deeplearning4j or fork and build their own version, these instructions will walk you through building and installing Deeplearning4j. The preferred installation destination is to your machine's local maven repository.
 
 Building locally requires that you build the entire Deeplearning4j stack which includes:
 
-- [libnd4j](https://github.com/deeplearning4j/libnd4j)
-- [nd4j](https://github.com/deeplearning4j/nd4j)
-- [datavec](https://github.com/deeplearning4j/datavec)
-- [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)
+* [LIBND4J](https://github.com/deeplearning4j/libnd4j)
+* [ND4J](https://github.com/deeplearning4j/nd4j)
+* [Datavec](https://github.com/deeplearning4j/datavec)
+* [Arbiter](https://github.com/deeplearning4j/arbiter)
+* [ND4S](https://github.com/deeplearning4j/nd4s)
+* [Gym Java Client](https://github.com/deeplearning4j/gym-java-client)
+* [RL4J](https://github.com/deeplearning4j/rl4j)
+* [ScalNet](https://github.com/deeplearning4j/scalnet)
+* [PyDL4J](https://github.com/deeplearning4j/pydl4j)
+* [Jumpy](https://github.com/deeplearning4j/jumpy)
+* [PyDatavec](https://github.com/deeplearning4j/pydatavec)
+* [DeepLearning4J](https://github.com/deeplearning4j/deeplearning4j)
 
-Note that Deeplearning4j is designed to work on most platforms (Windows, OS X, and Linux) and is also includes multiple "flavors" depending on the computing architecture you choose to utilize. This includes CPU (OpenBLAS, MKL, ATLAS) and GPU (CUDA). The DL4J stack also supports x86 and PowerPC architectures.
+Note that Deeplearning4j is designed to work on most platforms (Windows, OS X, and Linux) and it also includes multiple "flavors" depending on the computing architecture you choose to utilize. This includes CPU (OpenBLAS, MKL, ATLAS) and GPU (CUDA). The DL4J stack also supports x86 and PowerPC architectures.
 
 ## Prerequisites
 
 Your local machine will require some essential software and environment variables set *before* you try to build and install the DL4J stack. Depending on your platform and the version of your operating system, the instructions may vary in getting them to work. This software includes:
 
-- git
-- cmake (3.2 or higher)
-- OpenMP
-- gcc (4.9 or higher)
-- maven (3.3 or higher)
+* git
+* cmake
+* OpenMP supported compiler (Recommended)
+* gcc >= 4.9
+* g++ >= 4.9
+* maven >= 3.3
+* Python Develper Tools
 
 Architecture-specific software includes:
 
 CPU options:
 
-- Intel MKL
-- OpenBLAS
-- ATLAS
+* Intel MKL
+* OpenBLAS
+* ATLAS
 
 GPU options:
 
-- CUDA
-
+* CUDA
 
 IDE-specific requirements:
 
-- IntelliJ Lombok plugin
+* IntelliJ Lombok plugin
 
 DL4J testing dependencies:
 
-- dl4j-test-resources
+* dl4j-test-resources
 
 ### Installing Prerequisite Tools
 
@@ -61,7 +70,7 @@ DL4J testing dependencies:
 **Ubuntu**
 Assuming you are using Ubuntu as your flavor of Linux and you are running as a non-root user, follow these steps to install prerequisite software:
 
-```
+```bash
 sudo apt-get purge maven maven2 maven3
 sudo add-apt-repository ppa:natecarlson/maven3
 sudo apt-get update
