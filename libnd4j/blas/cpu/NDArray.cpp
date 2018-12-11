@@ -39,6 +39,7 @@
 #include <helpers/ArrayUtils.h>
 #include <MmulHelper.h>
 #include <helpers/threshold.h>
+#include <graph/exceptions/datatype_exception.h>
 
 namespace nd4j {
 
@@ -4460,6 +4461,8 @@ template void NDArray::operator/=(const bool scalar);
             NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Multiply, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
             return result;
         }
+        if (this->dataType() != other.dataType() && other.dataType() != nd4j::DataType::BOOL && !nd4j::Environment::getInstance()->isExperimentalBuild())
+            throw nd4j::datatype_exception::build("NDArray operator* both operands must have same data type", this->dataType(), other.dataType());
 
         return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), other);
     }

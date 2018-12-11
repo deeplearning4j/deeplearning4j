@@ -80,7 +80,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test1) {
     weights.assign(0.5);    
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {0});
+    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {0}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
