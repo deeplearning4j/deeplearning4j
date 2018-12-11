@@ -22,7 +22,6 @@ import com.google.common.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.rits.cloning.Cloner;
 import com.rits.cloning.IFastCloner;
-import com.sun.istack.internal.NotNull;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
@@ -144,8 +143,9 @@ public class SameDiff {
     @Getter
     private final Map<Long,InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
 
-    private final Map<String,DeviceLocalNDArray> constantArrays = new HashMap<>();
-    private final Map<String,DeviceLocalNDArray> variablesArrays = new HashMap<>();     //TODO issues with DeviceLocal +  mutable / changed during training?
+    private final Map<String,DeviceLocalNDArray> constantArrays = new ConcurrentHashMap<>();
+    private final Map<String,DeviceLocalNDArray> variablesArrays = new ConcurrentHashMap<>();     //TODO issues with DeviceLocal +  mutable / changed during training?
+    private final Map<Long,Map<String,INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
     //TODO these will eventually be merged into Variable class field
     @Getter
@@ -590,7 +590,7 @@ public class SameDiff {
     }
 
 
-    public void setArrayForVariable(@NotNull String varName, @NotNull INDArray arr){
+    public void setArrayForVariable(@NonNull String varName, @NonNull INDArray arr){
         Preconditions.checkState(variables.containsKey(varName), "No variable with name \"%s\" exists", varName);
 
         SDVariable v = getVariable(varName);
@@ -786,7 +786,10 @@ public class SameDiff {
                     return null;
                 return s.get(varName, InferenceSession.OUTER_FRAME, 0);
             case PLACEHOLDER:
-                throw new UnsupportedOperationException("Cannot get placeholder value via this method");
+                long tid = Thread.currentThread().getId();
+                if(placeholdersPerThread.get(tid) == null)
+                    return null;
+                return placeholdersPerThread.get(tid).get(varName);
             default:
                 throw new RuntimeException("Unknown variable type: " + v.getVariableType());
         }
@@ -1423,6 +1426,22 @@ public class SameDiff {
         for(String s : variables.keySet()){
             if(isPlaceHolder(s))
                 out.add(s);
+        }
+        return out;
+    }
+
+    /**
+     * Outputs are those variables (not placeholders, constants, etc) that are the output of a function that aren't the
+     * input to any other ops.
+     * Usually these are the output of the last function(s) in the SameDiff instance.
+     * @return The (inferred) outputs of the SameDiff instance, in no particular order
+     */
+    public List<String> outputs(){
+        List<String> out = new ArrayList<>();
+        for(Variable v : variables.values()){
+            if(v.getVariable().isConstant() || v.getVariable().isPlaceHolder() || (v.getInputsForOp() != null || !v.getInputsForOp().isEmpty()))
+                continue;
+            out.add(v.getName());
         }
         return out;
     }
@@ -9643,7 +9662,6 @@ public class SameDiff {
         return generateOutputVariableForOp(function, function.opName());
     }
 
-
     /**
      * Get a SameDiff function instance given the name of the function
      *
@@ -9654,90 +9672,6 @@ public class SameDiff {
         return sameDiffFunctionInstances.get(functionName);
     }
 
-
-    /**
-     * Execute the specified ops and return the output of the last one
-     *
-     * @param ops Ops to execute
-     * @return Output (or first output) of the final op in the list, after execution
-     */
-    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
-    public INDArray execAndEndResult(List<DifferentialFunction> ops) {
-        List<DifferentialFunction> exec = exec(ops);
-        Op op = (Op) exec.get(exec.size() - 1);
-        return op.z();
-    }
-
-    /**
-     * Execute the graph using the current arrays/state and return the array for the final variable in the graph.<br>
-     * After execution, the arrays for other variables can be obtained using {@link #getArrForVarName(String)}
-     * or {@link SDVariable#getArr()}<br>
-     * <p>
-     * Note: If the final operation has multiple output variables, use {@link #execAndEndResults()} instead
-     *
-     * @return The output of the final operation in the graph after execution
-     */
-    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
-    public INDArray execAndEndResult() {
-        List<DifferentialFunction> exec = exec().getRight();
-        val finalOp = exec.get(exec.size() - 1);
-        val output = finalOp.outputVariables();
-        if (output.length > 1) {
-            throw new ND4JIllegalStateException(finalOp.opName() + " has multiple outputs. Use execAndEndResults instead.");
-        }
-        return output[0].getArr();
-    }
-
-    /**
-     * Execute the graph using the current arrays/state and return the array(s) for the final variable in the graph.<br>
-     * After execution, the arrays for other variables can be obtained using {@link #getArrForVarName(String)}
-     * or {@link SDVariable#getArr()}<br>
-     *
-     * @return The outputs of the final operation in the graph, after execution
-     */
-    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
-    public INDArray[] execAndEndResults() {
-        List<DifferentialFunction> exec = exec().getRight();
-        val finalOp = exec.get(exec.size() - 1);
-        val output = finalOp.outputVariables();
-        INDArray outArrays[] = new INDArray[output.length];
-        for (int i = 0; i < outArrays.length; i++) {
-            outArrays[i] = output[i].getArr();
-        }
-        return outArrays;
-    }
-
-    /**
-     * Execute the graph using the current arrays/state and return the (first, and possibly only) array for the specified
-     * variable in the graph.<br>
-     * After execution, the arrays for other variables can be obtained using {@link #getArrForVarName(String)}
-     * or {@link SDVariable#getArr()}
-     *
-     * @return The output of the final operation in the graph
-     */
-    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
-    public INDArray execAndEndResult(int outputIndex) {
-        List<DifferentialFunction> exec = exec().getRight();
-        val output = exec.get(exec.size() - 1).outputVariables()[outputIndex];
-        return output.getArr();
-    }
-
-
-    /**
-     * Executes the list of operations.
-     * This exec method is for only invoking operations rather than creating them
-     *
-     * @param ops the list of already created ops
-     * @return the passes in list
-     */
-    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return\
-    public List<DifferentialFunction> exec(List<DifferentialFunction> ops) {
-        for (int i = 0; i < ops.size(); i++) {
-            Op op = (Op) ops.get(i);
-            Nd4j.getExecutioner().exec(op);
-        }
-        return ops;
-    }
 
     public TensorList getListByName(@NonNull String name) {
         return lists.get(name);
@@ -9872,7 +9806,17 @@ public class SameDiff {
      */
     @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
     public INDArray execAndEndResult(String functionName) {
-        return sameDiffFunctionInstances.get(functionName).execAndEndResult();
+//        return sameDiffFunctionInstances.get(functionName).execAndEndResult();
+        throw new UnsupportedOperationException("Not yet reimplemented");
+    }
+
+    @Deprecated
+    public INDArray execAndEndResult(){
+        List<String> outputs = outputs();
+        Preconditions.checkState(outputs.size() == 1, "Method can only be used with SameDiff instances with a single output");
+        long tid = Thread.currentThread().getId();
+        Map<String,INDArray> placeholders = placeholdersPerThread.get(tid);
+        return execSingle(placeholders, outputs.get(0));
     }
 
 
@@ -9894,19 +9838,6 @@ public class SameDiff {
         associateSameDiffWithOpsAndVariables();
 
         return ret;
-    }
-
-    /**
-     * Exec the given function given the ops
-     *
-     * @param functionName the opName of the function to
-     *                     exec
-     * @param cachedOps    the cached operations
-     * @return
-     */
-    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
-    public List<DifferentialFunction> exec(String functionName, List<DifferentialFunction> cachedOps) {
-        return sameDiffFunctionInstances.get(functionName).exec(cachedOps);
     }
 
 
@@ -9939,6 +9870,18 @@ public class SameDiff {
         }
 
         return forward;
+    }
+
+    public void execBackwards(Map<String,INDArray> placeholders){
+        if (getFunction("grad") == null) {
+            createGradFunction();
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("About to execute backward function");
+        }
+
+        exec("grad");
     }
 
     /**
@@ -10096,37 +10039,6 @@ public class SameDiff {
                 return new SDVariable[]{sameDiff.var("grad", org.nd4j.linalg.api.buffer.DataType.FLOAT, 1)};
             }
         });
-    }
-
-
-    /**
-     * Exec a backwards operation and return the end result
-     *
-     * @return
-     */
-    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
-    public INDArray execBackwardAndEndResult() {
-        List<DifferentialFunction> backwards = execBackwards().getRight();
-        DifferentialFunction df = backwards.get(backwards.size() - 1);
-        if (df instanceof Op) {
-            return ((Op) df).z();
-        } else if (df instanceof DynamicCustomOp) {
-            return ((DynamicCustomOp) df).getOutputArgument(0);
-        } else {
-            return null;
-        }
-    }
-
-
-    /**
-     * Creates and executes a list of operations
-     *
-     * @return
-     */
-    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
-    public INDArray execWithPlaceHolderAndEndResult(Map<String, INDArray> inputs) {
-        resolveVariablesWith(inputs);
-        return execAndEndResult();
     }
 
 
@@ -10381,6 +10293,45 @@ public class SameDiff {
         }
     }
 
+    public Map<String,INDArray> execAll(Map<String,INDArray> placeholders){
+        List<String> allVars = new ArrayList<>();
+        for(Variable v : variables.values()){
+            allVars.add(v.getName());
+        }
+        return exec(placeholders, allVars.toArray(new String[allVars.size()]));
+    }
+
+    public INDArray execSingle(Map<String,INDArray> placeholders, String output){
+        return exec(placeholders, output).get(output);
+    }
+
+    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, List<String> outputs){
+        return exec(placeholders, outputs.toArray(new String[outputs.size()]));
+    }
+
+    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, String... outputs){
+        Preconditions.checkState(outputs != null && outputs.length > 0, "No outputs were specified");
+        long threadId = Thread.currentThread().getId();
+        if(!sessions.containsKey(threadId)){
+            log.info("Creating new InferenceSession for thread %s", threadId);
+            sessions.put(threadId, new InferenceSession(this));
+        }
+
+        //Check that all placeholders are provided
+        List<String> phNames = inputs();
+        if(phNames != null) {
+            for (String s : phNames) {
+                Preconditions.checkState(placeholders.containsKey(s), "No placeholder variable was provided for variable \"%s\"." +
+                        " Cannot execute without all placeholders set", s);
+            }
+        }
+
+        InferenceSession is = sessions.get(threadId);
+        Map<String,INDArray> ret = is.output(Arrays.asList(outputs), placeholders);
+        return ret;
+    }
+
+
     /**
      * Execute the SameDiff instance using the current state<br>
      * After execution, the arrays for variables can be obtained using {@link #getArrForVarName(String)} or
@@ -10389,693 +10340,29 @@ public class SameDiff {
      */
     @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return\
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec() {
-
-        throw new UnsupportedOperationException("TO BE REPLACED BY INFERENCE SESSION");
-        /*
-        *
-        if (exec_cache != null){
-            return exec_cache;
-        }
-        *
-
-        if (log.isTraceEnabled()) {
-            log.trace("Starting execution: {} functions", functionInstancesById.size());
+        List<String> outputs = new ArrayList<>();
+        for(Variable v : variables.values()){
+            outputs.add(v.getName());
         }
 
-
-        if (!resolvedVariables)
-            resolveVariablesWith(new LinkedHashMap<String, INDArray>());
-
-        List<DifferentialFunction> ops = new ArrayList<>();
-
-        // we don't care if this thread had any other FlowPath objects attached. we'll just create new one
-        localFlowPath.set(new FlowPath());
-
-        val flowPath = localFlowPath.get();
-
-        Map<SDVariable, DifferentialFunction> opMap = new HashMap<>();
-        val funcs = new ArrayList<DifferentialFunction>(functionInstancesById.values());
-        List<String> funcNames = new ArrayList<>(functionInstancesById.keySet());       //LinkedHashMap, so order for both these vars should be identical
-        boolean onBackward = false;
-
-
-        // dequeue for Frames (nested, probably)
-        val frames = new ArrayDeque<String>();
-
-        // simple flag, set true if within frame
-        boolean inFrame = false;
-
-        // yet another flag, to remove LastFrame once we really left last frame
-        boolean frameLeft = false;
-
-        //If true: this execution includes gradient functions...
-        boolean isExecBackwards = functionInstancesById.containsKey(GradientBackwardsMarker.OP_NAME);
-
-        //Before execution: set the SameDiff instance
-        //This is necessary, because the one op could be shared by both forward and backward samediff instances
-        //If the SameDiff instance isn't set, they might use wrong shapes or arrays as part of their ops
-        //And, set the SameDiff instance on all variables, for exactly the same reason
-        associateSameDiffWithOpsAndVariables();
-
-
-
-        int i = 0;
-        int exec_counter = 0;
-        for (; i < funcs.size(); i++) {
-            ++exec_counter;
-
-            if (log.isTraceEnabled()) {
-                val f = funcs.get(i);
-                String[] argNames = f.argNames();
-                String[] outNames = f.outputVariablesNames();
-                log.trace("Starting execution of step {} of {}: Function {} (ownName={}) - {}", exec_counter, funcs.size(),
-                        f.opName(), f.getOwnName(), f.getClass().getName());
-                log.trace("Function inputs: {} - Function outputs: {}", (argNames == null ? "(none)" : Arrays.toString(argNames)),
-                        (outNames == null ? "(none)" : Arrays.toString(outNames)));
-                SDVariable[] args = f.args();
-                for (int arg = 0; arg < args.length; arg++) {
-                    if (args[arg] == null) {
-                        log.trace("--> arg {} - {}: argument is null!", arg, argNames[arg]);
-                    } else {
-                        INDArray arr = args[arg].getArr();
-                        String arrShape = (arr == null ? "<array not present>" : Arrays.toString(arr.shape()));
-                        log.trace("--> arg {} - {}: array shape: {}", arg, argNames[arg], arrShape);
-                    }
-
+        List<String> placeholders = inputs();
+        if(placeholders == null || placeholders.isEmpty()) {
+            exec(Collections.<String, INDArray>emptyMap(), outputs.toArray(new String[outputs.size()]));
+        } else {
+            //If user is using this method: they should have set placeholders earlier...
+            Map<String,INDArray> setPlaceholders = placeholdersPerThread.get(Thread.currentThread().getId());
+            if(setPlaceholders == null )
+                throw new IllegalStateException("Cannot execute: placeholders have not been set, expected " + placeholders.size() + " placeholders");
+            for(String s : placeholders){
+                if(!setPlaceholders.containsKey(s)){
+                    throw new IllegalStateException("Cannot execute: placeholder \"" + s + "\" has not been set");
                 }
             }
 
-            val opName = funcs.get(i).opName();
-            if (!onBackward && GradientBackwardsMarker.OP_NAME.equals(opName)) {
-                onBackward = true;
-            }
-
-            if (GradientBackwardsMarker.OP_NAME.equals(opName))
-                continue;
-
-            DifferentialFunction differentialFunction = funcs.get(i);
-
-            if((differentialFunction instanceof ExternalErrorsFunction)) {
-                if(isExecBackwards)
-                    ((ExternalErrorsFunction) differentialFunction).updateBeforeExecution();
-
-                continue;
-            }
-
-            val ownName = differentialFunction.getOwnName();
-
-            // just registering function for this pass
-            flowPath.ensureNodeStateExists(differentialFunction.getOwnName());
-
-            if (differentialFunction instanceof SDVariable) {
-                if (log.isTraceEnabled()) {
-                    log.trace("Skipping differentialFunction that is instanceof SDVariable: {}", opName);
-                }
-                continue;
-            }
-
-            val args = getInputsForFunction(differentialFunction);
-
-            log.trace("Step: {}; Executing op [{}] for node [{}]", exec_counter, opName, ownName);
-
-            // check if inputs are active nodes. skip step otherwise
-            // please note: Exit node can't be skipped, because it's either rewind point or exit loop point
-            boolean shouldSkip = false;
-            if (differentialFunction instanceof Merge) {
-                val arg0 = args[0];
-                val arg1 = args[1];
-
-                if (!flowPath.isActive(arg0) && !flowPath.isActive(arg1))
-                    shouldSkip = true;
-            } else {
-                if (!(differentialFunction instanceof Exit)) {
-
-                    // if we've left Exit nodes, we can finally delete last frame name
-                    if (frameLeft) {
-                        frameLeft = false;
-
-                        val frame_name = frames.removeLast();
-                        flowPath.activateFrame(frame_name, false);
-                        flowPath.forgetFrame(frame_name);
-                    }
-
-                    // we must check, if there's inactive nodes used as inputs for this node
-                    for (val input : args) {
-                        if (!flowPath.isActive(input)) {
-                            // propagate inactivity
-                            flowPath.markActive(differentialFunction.getOwnName(), false);
-                            shouldSkip = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (shouldSkip) {
-                if (log.isTraceEnabled()) {
-                    log.trace("Skipping function {}: shouldSkip = true", opName);
-                }
-                continue;
-            }
-
-            differentialFunction.resolvePropertiesFromSameDiffBeforeExecution();
-            flowPath.markActive(differentialFunction.getOwnName(), true);
-
-             *
-             * This set of operations (Enter/Exit/NextIteration/Exit/Switch) are special snowflakes: they modify graph execution order, and basically used here to replicate TF logic.
-             * Since SameDiff itself has own logic for loops and conditionals using Scopes
-             *
-            if (differentialFunction instanceof LoopCond) {
-                if (log.isTraceEnabled())
-                    log.trace("Starting execution of LoopCond op with name {}, inputs variables {}, and output variables {}", differentialFunction.getOwnName(),
-                            Arrays.toString(getInputsForFunction(differentialFunction)), Arrays.toString(getOutputsForFunction(differentialFunction)));
-
-                // this node just passes single input forward, for future evaluation
-                val inputs = getInputVariablesForFunction(differentialFunction);
-
-                val array = inputs[0].getArr();
-                variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
-
-                flowPath.markExecuted(differentialFunction.getOwnName(), true);
-
-                if ((int) array.getDouble(0) == 1) {
-                    val frameName = frames.getLast();
-                    // incrementing number of cycles for THIS frame, only if LoopCond is true
-                    flowPath.incrementNumberOfCycles(frameName);
-                }
-            } else if (differentialFunction instanceof Enter) {
-                if (log.isTraceEnabled())
-                    log.trace("Starting execution of Enter op with name {}, inputs variables {}, and output variables {}", differentialFunction.getOwnName(),
-                            Arrays.toString(getInputsForFunction(differentialFunction)), Arrays.toString(getOutputsForFunction(differentialFunction)));
-
-                //  if (flowPath.wasExecuted(differentialFunction.getOwnName()))
-                //      continue;
-
-                val inputs = getInputVariablesForFunction(differentialFunction);
-
-                val array = inputs[0].getArr();
-                val name = inputs[0].getVarName();
-
-                if (array != null)
-                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
-                else {
-                    val cleansed = name.replaceAll(":.*","");
-                    val list = lists.get(cleansed);
-                    if (list != null)
-                        lists.put(ownName, list);
-                }
-
-                flowPath.markExecuted(differentialFunction.getOwnName(), true);
-
-                // frame_name MUST be non-null here
-                val frame_name = ((Enter) differentialFunction).getFrameName();
-                if (!flowPath.isRegisteredFrame(frame_name)) {
-                    flowPath.registerFrame(frame_name);
-                    frames.addLast(frame_name);
-                    inFrame = true;
-                }
-
-
-            } else if (differentialFunction instanceof Exit) {
-                if (log.isTraceEnabled())
-                    log.trace("Starting execution of Exit op with name {}, inputs variables {}, and output variables {}", differentialFunction.getOwnName(),
-                            Arrays.toString(getInputsForFunction(differentialFunction)), Arrays.toString(getOutputsForFunction(differentialFunction)));
-
-                // this is just exit point of graph: it maps own input to own output or rewinds graph to specific position planned at first NextIteration node
-
-                val frame_name = frames.getLast();
-
-                // saving frame_name for backward pass
-                ((Exit) differentialFunction).setFrameName(frame_name);
-
-                if (!flowPath.isFrameActive(frame_name)) {
-                    flowPath.markActive(differentialFunction.getOwnName(), false);
-
-                    // if frame is inactive, lets remove it from queue as well
-                    frameLeft = true;
-                    continue;
-                }
-
-                // Exit node is called in any way, doesn't matters if body was executed or not
-                // so, we're checking if rewind was planned (so, NextIteration was executed before Exit)
-                // and if it's TRUE - we're setting applying rewind by setting loop idx and calling continue
-                if (flowPath.isRewindPlanned(frame_name)) {
-                    // just reset loop
-                    flowPath.planRewind(frame_name, false);
-                    val currentPosition = i;
-                    i = flowPath.getRewindPosition(frame_name);
-                    val startPosition = i + 1;
-                    flowPath.setRewindPosition(frame_name, -1);
-
-                    continue;
-                }
-
-                val inputs = getInputVariablesForFunction(differentialFunction);
-
-                val array = inputs[0].getArr();
-                val name = inputs[0].getVarName();
-
-                if (array != null)
-                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
-                else {
-                    val cleansed = name.replaceAll(":.*","");
-                    val list = lists.get(cleansed);
-                    if (list != null)
-                        lists.put(ownName, list);
-                }
-
-                flowPath.markExecuted(differentialFunction.getOwnName(), true);
-
-                // now it's safe to remove LastFrame
-                frameLeft = true;
-
-            } else if (differentialFunction instanceof NextIteration) {
-                if (log.isTraceEnabled())
-                    log.trace("Starting execution of NextIteration op with name {}, inputs variables {}, and output variables {}", differentialFunction.getOwnName(),
-                            Arrays.toString(getInputsForFunction(differentialFunction)), Arrays.toString(getOutputsForFunction(differentialFunction)));
-
-                // this operations merges own input, and schedules rewind to specific Merge node
-                val inputs = getInputVariablesForFunction(differentialFunction);
-                val frame_name = frames.getLast();
-
-                val array = inputs[0].getArr();
-                val name = inputs[0].getVarName();
-
-                if (array != null)
-                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
-                else {
-                    val cleansed = name.replaceAll(":.*","");
-                    val list = lists.get(cleansed);
-                    if (list != null)
-                        lists.put(ownName, list);
-                }
-
-                flowPath.markExecuted(differentialFunction.getOwnName(), true);
-
-                // if NextIteration wasn't skipped with inactive branch, we'll plan rewind for this frame. obviously, only once
-                if (!flowPath.isRewindPlanned(frame_name)) {
-                    flowPath.planRewind(frame_name, true);
-
-                    continue;
-                }
-
-            } else if (differentialFunction instanceof Merge) {
-                if (log.isTraceEnabled())
-                    log.trace("Starting execution of Merge op with name {}, inputs variables {}, and output variables {}", differentialFunction.getOwnName(),
-                            Arrays.toString(getInputsForFunction(differentialFunction)), Arrays.toString(getOutputsForFunction(differentialFunction)));
-
-                // merge operation takes two inputs, and saves one of them as own output.
-                // if SDVariable exists for second input - we use it. First input used otherwise
-                val inputs = getInputVariablesForFunction(differentialFunction);
-
-                val frame_name = frames.size() > 0 ? frames.getLast() : null;
-
-                if (frame_name != null)
-                    flowPath.activateFrame(frame_name, true);
-
-                // frame_name can be null if this merge node is used for something that's not loop. i.e. switch/merge pair
-                if (frame_name != null)
-                    flowPath.setRewindPositionOnce(frame_name, i - 1);
-
-                // NextIteration can have NO frame_name defined. so let's propagate it
-                if (inputs.length == 2) {
-                    val secondArg = functionInstancesById.get(inputs[1].getVarName());
-
-                    if (secondArg != null && secondArg instanceof NextIteration) {
-                        ((NextIteration) secondArg).setFrameName(frame_name);
-                    }
-                }
-
-                // we must check second input first here
-                if (flowPath.wasExecuted(inputs[1].getVarName())) {
-                    // propagate second input
-                    val array = inputs[1].getArr();
-                    val name = inputs[1].getVarName();
-
-                    if (array != null)
-                        variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
-                    else {
-                        val cleansed = name.replaceAll(":.*","");
-                        val list = lists.get(cleansed);
-                        if (list != null)
-                            lists.put(ownName, list);
-                    }
-
-                    // nullify executed mark
-                    flowPath.markExecuted(inputs[1].getVarName(), false);
-                } else {
-                    // propagate first input
-                    val array = inputs[0].getArr();
-                    val name = inputs[0].getVarName();
-
-                    if (array != null)
-                        variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
-                    else {
-                        val cleansed = name.replaceAll(":.*","");
-                        val list = lists.get(cleansed);
-                        if (list != null)
-                            lists.put(ownName, list);
-                    }
-                }
-
-                flowPath.markExecuted(differentialFunction.getOwnName(), true);
-            } else if (differentialFunction instanceof Switch) {
-                if (log.isTraceEnabled())
-                    log.trace("Starting execution of Switch op with name {}, inputs variables {}, and output variables {}", differentialFunction.getOwnName(),
-                            Arrays.toString(getInputsForFunction(differentialFunction)), Arrays.toString(getOutputsForFunction(differentialFunction)));
-
-                // switch takes 2 inputs: actual input and boolean scalar. If scalar is false, input is saved as output:0, if scalar is true, input is saved as output:1
-                ((CustomOp) differentialFunction).populateInputsAndOutputsFromSameDiff();
-
-                val inputs = getInputVariablesForFunction(differentialFunction);
-
-                val input = inputs[0].getArr();
-                val bool = inputs[1].getArr();
-                val name = inputs[0].getVarName();
-
-                // basically we're setting one of the graph branches inactive. branch 0 for false, branch 1 for true
-                if ((int) bool.getDouble(0) == 0) {
-                    // false step, we'll propagate output:0 here
-                    flowPath.setActiveBranch(differentialFunction.getOwnName(), 0);
-                    flowPath.markActive(differentialFunction.getOwnName(), true);
-                    flowPath.markActive(differentialFunction.getOwnName() + ":1", false);
-
-                    if (input != null)
-                        variableNameToArr.put(differentialFunction.getOwnName(), input.dup(input.ordering()));
-                    else {
-                        val cleansed = name.replaceAll(":.*","");
-                        val list = lists.get(cleansed);
-                        if (list != null)
-                            lists.put(ownName, list);
-                    }
-                } else {
-                    // true step, we'll propagate output:1 here
-                    flowPath.setActiveBranch(differentialFunction.getOwnName(), 1);
-
-                    if (input != null)
-                        variableNameToArr.put(differentialFunction.getOwnName() + ":1", input.dup(input.ordering()));
-                    else {
-                        val cleansed = name.replaceAll(":.*","");
-                        val list = lists.get(cleansed);
-                        if (list != null)
-                            lists.put(ownName, list);
-                    }
-
-                    flowPath.markActive(differentialFunction.getOwnName(), false);
-                    flowPath.markActive(differentialFunction.getOwnName() + ":1", true);
-                }
-
-                flowPath.markExecuted(differentialFunction.getOwnName(), true);
-            } else if (differentialFunction instanceof BaseTensorOp) {
-                //if(log.isTraceEnabled())
-                log.info("Starting execution of Tensor op with name {}, inputs variables {}, and output variables {}", opName,
-                        Arrays.toString(getInputsForFunction(differentialFunction)), Arrays.toString(getOutputsForFunction(differentialFunction)));
-
-                // we just pull actual code out of
-                val list = ((BaseTensorOp) differentialFunction).execute(this);
-
-                if (!lists.containsKey(list.getName()))
-                    lists.put(list.getName(), list);
-
-                ops.add(differentialFunction);
-            } else if (differentialFunction instanceof If) {
-                if (log.isTraceEnabled())
-                    log.trace("Starting execution of If op with name {}, inputs variables {}, and output variables {}", differentialFunction.getOwnName(),
-                            Arrays.toString(getInputsForFunction(differentialFunction)), Arrays.toString(getOutputsForFunction(differentialFunction)));
-
-                If ifOp = (If) differentialFunction;
-                if (!onBackward) {
-                    ifOp.getPredicateExecution().exec();
-                    //depending on the block add the proper graph body to this for persistence
-                    //and possible later processing.
-                    if (ifOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
-                        ifOp.getLoopBodyExecution().exec();
-                        ifOp.exectedTrueOrFalse(true);
-                    } else {
-                        ifOp.getFalseBodyExecution().exec();
-                        ifOp.exectedTrueOrFalse(false);
-
-                    }
-                } else {
-                    if (ifOp.getTrueBodyExecuted() != null) {
-                        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards = null;
-                        List<SDVariable> variablesForFunctions = null;
-                        if (ifOp.getTrueBodyExecuted()) {
-                            execBackwards = ifOp.getLoopBodyExecution().execBackwards();
-
-                            variablesForFunctions = ifOp.getLoopBodyExecution().getVariablesAssociatedWithFunctions(execBackwards.getRight());
-                        } else {
-                            execBackwards = ifOp.getFalseBodyExecution().execBackwards();
-                            variablesForFunctions = ifOp.getFalseBodyExecution().getVariablesAssociatedWithFunctions(execBackwards.getRight());
-                        }
-
-
-                         * Maps the variables from the child namespace body to
-                         * the parent. This allows access to the underlying ndarray
-                         * and returning a valid variable reference for autodiff.
-
-                        for (SDVariable variable : variablesForFunctions) {
-                            SDVariable proxyVar = var(variable);
-                        }
-
-
-                    } else
-                        throw new ND4JIllegalStateException("No body was run.");
-
-                }
-
-                flowPath.markExecuted(differentialFunction.getOwnName(), true);
-
-                ops.add(differentialFunction);
-
-            } else if (differentialFunction instanceof While) {
-                if (log.isTraceEnabled())
-                    log.trace("Starting execution of While op with name {}, inputs variables {}, and output variables {}", differentialFunction.getOwnName(),
-                            Arrays.toString(getInputsForFunction(differentialFunction)), Arrays.toString(getOutputsForFunction(differentialFunction)));
-
-                While whileOp = (While) differentialFunction;
-
-                if (!onBackward) {
-                    SameDiff execBody = whileOp.getLoopBodyExecution();
-                    //depending on the block add the proper graph body to this for persistence
-                    //and possible later processing.
-                    //note that we need to update the graph predicate by running the execution
-
-
-                    whileOp.getPredicateExecution().exec();
-                    if (execBody.outputs == null) {
-                        // No explicit inputs/outputs provided.
-                        //Op was probably created by tensorflow import.
-                        // Non-inplace ops not supported.
-                        while (whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
-                            //run the body
-                            execBody.exec();
-                            whileOp.getPredicateExecution().exec();
-                            whileOp.incrementLoopCounter();
-                        }
-                    } else {
-                        if (whileOp.getTargetBoolean().getSameDiff().inputs == null) {
-                            whileOp.getTargetBoolean().getSameDiff().inputs = new SDVariable[whileOp.getInputVars().length];
-                            for (int e = 0; e < whileOp.getInputVars().length; e++) {
-                                whileOp.getTargetBoolean().getSameDiff().inputs[i] = whileOp.getTargetBoolean().getSameDiff().variables().get(i);
-                            }
-                        }
-                        while (whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
-                            //run the body
-                            execBody.exec();
-                            val outputs = execBody.outputs;
-
-                            int cnt = 0;
-                            for (val out : execBody.outputs) {
-                                execBody.associateArrayWithVariable(out.getArr(), execBody.inputs[cnt]);
-                                whileOp.getTargetBoolean().getSameDiff().associateArrayWithVariable(out.getArr(),
-                                        whileOp.getTargetBoolean().getSameDiff().inputs[cnt++]);
-                            }
-                            //update the predicate
-                            whileOp.getPredicateExecution().exec();
-                            whileOp.incrementLoopCounter();
-
-                        }
-                    }
-
-                    List<SDVariable> outputs = new ArrayList<>();
-                    val outputFuncArgs = new ArrayList<>(execBody.functionInstancesById.values()).get(execBody.functionInstancesById.values().size() - 1).outputVariables();
-                    outputs.addAll(Arrays.asList(outputFuncArgs));
-
-                    whileOp.setOutputVars(outputs.toArray(new SDVariable[outputs.size()]));
-                    ops.add(differentialFunction);
-                } else {
-
-                     * Note: Need to accumulate gradients.
-                     * Multiply each value by the number of times looped.
-                     * This approximates accumulating the gradient
-                     * across a number of loop cycles.
-                     * We only compute the gradient for the internal loop once
-                     * and from that we multiply the gradient by 5.
-                     *
-
-                    Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> mapListPair = whileOp.getLoopBodyExecution().execBackwards();
-                    for (SDVariable variable : mapListPair.getFirst().keySet()) {
-                        variable.getArr().muli(whileOp.getNumLooped());
-                    }
-
-
-                }
-
-                flowPath.markExecuted(differentialFunction.getOwnName(), true);
-
-            } else if (differentialFunction instanceof CustomOp) {
-                if (log.isTraceEnabled())
-                    log.trace("Starting execution of CustomOp op with name {}, inputs variables {}, and output variables {}", differentialFunction.getOwnName(),
-                            Arrays.toString(getInputsForFunction(differentialFunction)), Arrays.toString(getOutputsForFunction(differentialFunction)));
-
-
-                DynamicCustomOp customOp = (DynamicCustomOp) differentialFunction;
-
-                if (customOp.opName().equalsIgnoreCase("identity")) {
-                    val cleansed = args[0].replaceAll(":.*","");
-                    val list = lists.get(cleansed);
-                    if (list != null) {
-                        lists.put(ownName, list);
-
-                        flowPath.markExecuted(differentialFunction.getOwnName(), true);
-
-                        ops.add(customOp);
-
-                        continue;
-                    }
-                }
-
-                try {
-                    customOp.populateInputsAndOutputsFromSameDiff();
-                } catch (Throwable t) {
-                    throw new RuntimeException("Error populating inputs and outputs for function \"" + differentialFunction.getOwnName()
-                            + "\" of type " + differentialFunction.getClass().getName(), t);
-                }
-                customOp.assertValidForExecution();
-
-                Nd4j.getExecutioner().execAndReturn(customOp);
-
-                *
-                if (customOp instanceof LessThanOrEqual) {
-                    log.info("Step: {}; InnerCondition: {} <= {} = {}", exec_counter, customOp.getInputArgument(0), customOp.getInputArgument(1), customOp.getOutputArgument(0));
-                } else if (customOp instanceof LessThan) {
-                    log.info("Step: {}; OuterCondition: {} <= {} = {}", exec_counter, customOp.getInputArgument(0), customOp.getInputArgument(1), customOp.getOutputArgument(0));
-                }
-                *
-
-                flowPath.markExecuted(differentialFunction.getOwnName(), true);
-
-                ops.add(customOp);
-            } else if (differentialFunction instanceof Op) {
-                if (log.isTraceEnabled())
-                    log.trace("Starting execution of Op op with name {}, inputs variables {}, and output variables {}", differentialFunction.getOwnName(),
-                            Arrays.toString(getInputsForFunction(differentialFunction)), Arrays.toString(getOutputsForFunction(differentialFunction)));
-
-                val inputs = getInputVariablesForFunction(differentialFunction);
-
-                Op op = (Op) differentialFunction;
-                String outVarName = ((BaseOp) op).outputVariable().getVarName();
-
-                // ops in differential function might have stale NDArrays used. we should renew them
-                if(inputs != null && inputs.length > 0) {
-                    op.setX(inputs[0].getArr());
-                    if (inputs.length == 2)
-                        op.setY(inputs[1].getArr());
-                }
-
-                //Check output shape; allocate a new Z if required
-                //For example, if minibatch size has changed since last op execution
-                List<LongShapeDescriptor> outputShape = ((BaseOp)op).calculateOutputShape();
-                Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
-                //Update shape. DynamicCustomOp does this in populateInputsAndOutputsFromSameDiff(); for legacy ops, we'll do it here
-                putOrUpdateShapeForVarName(outVarName, outputShape.get(0), true);
-                INDArray z = op.z();
-                Preconditions.checkNotNull(z, "Could not get output array for op: %s", op.getClass());
-                if(!outputShape.get(0).equals(z.shapeDescriptor())){
-                    if(log.isTraceEnabled()){
-                        log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
-                                op.getClass().getSimpleName(), Arrays.toString(z.shape()), outputShape.get(0).toString());
-                    }
-                    //Get output variable:
-                    String fnName = funcNames.get(i);
-                    String outputName = outgoingArgsReverse.get(fnName)[0];
-                    SDVariable outputVar = getVariable(outputName);
-
-                    putOrUpdateShapeForVarName(outputName, outputShape.get(0), true);
-                    z = outputVar.storeAndAllocateNewArray();
-                    op.setZ(z);
-                }
-                if(getArrForVarName(outVarName) != z){  //Also handles null case
-                    putOrUpdateArrayForVarName(outVarName, z);
-                }
-
-
-                if (differentialFunction.getDimensions() == null)
-                    Nd4j.getExecutioner().exec(op);
-                else if (op.isExecSpecial()) {
-                    op.exec();
-                } else {
-                    int[] axes = differentialFunction.getDimensions();
-                    if (differentialFunction instanceof ReduceOp) {
-                        ReduceOp reduceOp = (ReduceOp) differentialFunction;
-
-                        Nd4j.getExecutioner().exec(reduceOp);
-
-                        if (differentialFunction.outputVariable().getArr() == null) {
-                            val var = differentialFunction.outputVariables()[0];
-                            updateVariable(var.getVarName(), reduceOp.z());
-                            updateShapeForVarName(var.getVarName(), reduceOp.z().shape());
-                        }
-                    } else if (differentialFunction instanceof BroadcastOp) {
-                        BroadcastOp broadcastOp = (BroadcastOp) differentialFunction;
-                        Nd4j.getExecutioner().exec(broadcastOp);
-                    } else if (differentialFunction instanceof GradientOp) {
-                        Nd4j.getExecutioner().exec(op);
-                    } else if (differentialFunction instanceof IndexAccumulation) {
-                        IndexAccumulation indexAccumulation = (IndexAccumulation) differentialFunction;
-                        Nd4j.getExecutioner().exec(indexAccumulation);
-
-                    } else if (differentialFunction instanceof TransformOp) {
-                        TransformOp t = (TransformOp) differentialFunction;
-                        Nd4j.getExecutioner().exec(t);
-                    }
-                }
-
-
-                flowPath.markExecuted(differentialFunction.getOwnName(), true);
-
-                ops.add(differentialFunction);
-            } else {
-                throw new IllegalStateException("Unknown function type: " + differentialFunction.getClass().getName());
-            }
-
-            //debug
-            // printFunction(differentialFunction);
-
-            if (log.isTraceEnabled()) {
-                log.trace("Execution completed for DifferentialFunction {} - {}", opName, differentialFunction.getOwnName());
-                SDVariable[] outputVars = differentialFunction.outputVariables();
-                for (int x = 0; x < outputVars.length; x++) {
-                    INDArray arr = outputVars[x].getArr();
-                    String arrShape = (arr == null ? "<no array>" : Arrays.toString(arr.shape()));
-                    log.trace("--> output {} - {}: array shape {}", x, outputVars[x].getVarName(), arrShape);
-                }
-            }
+            exec(setPlaceholders, outputs.toArray(new String[outputs.size()]));
         }
 
-        if (log.isTraceEnabled()) {
-            log.trace("Execution complete");
-        }
-
-        val ret = new Pair<>(opMap, ops);
-        exec_cache = ret;
-        if (parent != null) {
-            parent.exec_cache = exec_cache;
-        }
-
-        return ret;
-        */
+        return null;    //TODO
     }
 
 

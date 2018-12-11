@@ -956,7 +956,7 @@ public class SameDiffTests {
         val s = in2.add(5.0);
 
 
-        val arr = sd.execAndEndResult();
+        val arr = sd.execSingle(null, s.getVarName());
         log.info("Result M: {}", m.getArr());
         log.info("Result F: {}", f.getArr());
         log.info("Result S: {}", s.getArr());
@@ -1398,16 +1398,10 @@ public class SameDiffTests {
         SDVariable sdVariable = sameDiff.var("ones", ones);
         SDVariable result = sdVariable.addi(1.0);
         SDVariable total = sameDiff.sum(result, Integer.MAX_VALUE);
-        List<DifferentialFunction> ops = sameDiff.exec().getRight();
-        INDArray output = null;
-        for (int i = 0; i < 5; i++) {
-            output = sameDiff.execAndEndResult(ops);
-            System.out.println("Ones " + ones);
-            System.out.println(output);
-        }
+        sameDiff.execAndEndResult();
 
         assertEquals(Nd4j.valueArrayOf(4, 7), ones);
-        assertEquals(28, output.getDouble(0), 1e-1);
+        assertEquals(28, total.getArr().getDouble(0), 1e-1);
     }
 
 

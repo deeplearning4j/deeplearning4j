@@ -68,7 +68,7 @@ public class ExecutionTests extends BaseNd4jTest {
         val map0 = new LinkedHashMap<String, INDArray>();
         map0.put("alpha", array0);
 
-        val result_0 = tg.execWithPlaceHolderAndEndResult(map0);
+        val result_0 = tg.exec(map0, tg.outputs());
         val exp_0 = Nd4j.create(1, 3).assign(6.0);
 
         assertEquals(exp_0, result_0);
@@ -77,7 +77,7 @@ public class ExecutionTests extends BaseNd4jTest {
         val map1 = new LinkedHashMap<String, INDArray>();
         map1.put("alpha", array1);
 
-        val result_1 = tg.execWithPlaceHolderAndEndResult(map1);
+        val result_1 = tg.exec(map1, tg.outputs());
         val exp_1 = Nd4j.create(1, 3).assign(9.0);
 
         assertEquals(exp_1, result_1);

@@ -257,22 +257,25 @@ public class OpValidation {
 
 
         //Finally: check execution/output
-        INDArray[] outOrig = original.execAndEndResults();
-        INDArray[] outDe = deserialized.execAndEndResults();
-        Preconditions.checkState(outOrig.length == outDe.length, "Different number of outputs: %s expected vs. %s actual", outOrig.length, outDe.length);
-        DifferentialFunction[] functions = original.functions();
-        String[] outNames = original.getOutputsForFunction(functions[functions.length-1]);
-        for(int i=0; i<outOrig.length; i++ ){
-            Function<INDArray,String> fn = tc.fwdTestFns().get(outNames[i]);
+        Map<String,INDArray> outOrig = original.execAll(tc.placeholderValues());
+        Map<String,INDArray> outDe = deserialized.execAll(tc.placeholderValues());
+        Preconditions.checkState(outOrig.keySet().equals(outDe.keySet()), "Keysets for execution after deserialization does not match key set for original model");
+
+        for(String s : outOrig.keySet()){
+            INDArray orig = outOrig.get(s);
+            INDArray deser = outDe.get(s);
+
+            Function<INDArray,String> f = tc.fwdTestFns().get(s);
             String err = null;
-            if(fn != null){
-                err = fn.apply(outDe[i]);
+            if(f != null){
+                err = f.apply(deser);
             } else {
-                if(!outOrig[i].equals(outDe[i])) {
+                if(!orig.equals(deser)){
                     err = "INDArray equality failed";
                 }
             }
-            Preconditions.checkState(err == null, "Output array %s failed check - \"%ndSInfo\" vs \"%ndSInfo\" - %nd10 vs %nd10\nError:%s", i, outOrig[i], outDe[i], outOrig[i], outDe[i], err);
+
+            Preconditions.checkState(err == null, "Variable result (%s) failed check - \"%ndSInfo\" vs \"%ndSInfo\" - %nd10 vs %nd10\nError:%s", s, orig, deser, orig, deser, err);
         }
     }
 

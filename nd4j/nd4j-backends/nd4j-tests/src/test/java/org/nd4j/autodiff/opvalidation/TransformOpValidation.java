@@ -1380,7 +1380,7 @@ public class TransformOpValidation extends BaseOpValidation {
             }
         }, inputs);
 
-        INDArray executions = sameDiff.getFunction("tanhGradient").execBackwardAndEndResult();
+        INDArray executions = null; //TODO sameDiff.getFunction("tanhGradient").execBackwardAndEndResult();
         //[0.41997434161402614,0.07065082485316443,0.009866037165440211,0.0013409506830258655]
         INDArray assertion = Nd4j.create(new double[][]{
                 {0.41997434161402614, 0.07065082485316443},

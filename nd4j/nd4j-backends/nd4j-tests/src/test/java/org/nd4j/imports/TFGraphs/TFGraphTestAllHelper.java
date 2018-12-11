@@ -328,9 +328,9 @@ public class TFGraphTestAllHelper {
         //System.out.println(graph.summary());
         if (executeWith.equals(ExecuteWith.SAMEDIFF)) {
             if (!inputs.isEmpty()) {
-                graph.execWithPlaceHolder(inputs); //This is expected to be just one result
+                graph.exec(inputs, graph.outputs()); //This is expected to be just one result
             } else {
-                graph.execAndEndResults(); //there are graphs with no placeholders like g_00
+                graph.exec(Collections.emptyMap(), graph.outputs()); //there are graphs with no placeholders like g_00
             }
         } else if (executeWith.equals(ExecuteWith.LIBND4J)) {
             for (String input : inputs.keySet()) {

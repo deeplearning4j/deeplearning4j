@@ -152,35 +152,31 @@ public class GradCheckUtil {
     }
 
     public static boolean checkGradients(TestCase t){
-        return checkGradients(t.sameDiff(), t.gradCheckEpsilon(), t.gradCheckMaxRelativeError(), t.gradCheckMinAbsError(),
+        return checkGradients(t.sameDiff(), t.placeholderValues(), t.gradCheckEpsilon(), t.gradCheckMaxRelativeError(), t.gradCheckMinAbsError(),
                 t.gradCheckPrint(), t.gradCheckDefaultExitFirstFailure(), false, t.gradCheckDebugMode(), t.gradCheckSkipVariables());
     }
 
-    public static boolean checkGradients(SameDiff sd){
-        return checkGradients(sd, DEFAULT_PRINT, DEFAULT_EXIT_FIRST_FAILURE);
-    }
-
-    public static boolean checkGradients(SameDiff sd, String... skipVariables){
+    public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, String... skipVariables){
         Set<String> skip = null;
         if(skipVariables != null){
             skip = new HashSet<>();
             Collections.addAll(skip, skipVariables);
         }
-        return checkGradients(sd, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, DEFAULT_PRINT, DEFAULT_EXIT_FIRST_FAILURE,
+        return checkGradients(sd, placeholderValues, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, DEFAULT_PRINT, DEFAULT_EXIT_FIRST_FAILURE,
                 false, DEFAULT_DEBUG_MODE, skip);
     }
 
-    public static boolean checkGradients(SameDiff sd, boolean print, boolean exitOnFirstFailure){
-        return checkGradients(sd, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, print, exitOnFirstFailure);
+    public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, boolean print, boolean exitOnFirstFailure){
+        return checkGradients(sd, placeholderValues, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, print, exitOnFirstFailure);
     }
 
 
-    public static boolean checkGradients(SameDiff sd, double eps, double maxRelError, double minAbsError, boolean print,
+    public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, double eps, double maxRelError, double minAbsError, boolean print,
                                          boolean exitOnFirstFailure) {
-        return checkGradients(sd, eps, maxRelError, minAbsError, print, exitOnFirstFailure, false, DEFAULT_DEBUG_MODE, null);
+        return checkGradients(sd, placeholderValues, eps, maxRelError, minAbsError, print, exitOnFirstFailure, false, DEFAULT_DEBUG_MODE, null);
     }
 
-    public static boolean checkGradients(SameDiff sd, double eps, double maxRelError, double minAbsError, boolean print,
+    public static boolean checkGradients(SameDiff sd, Map<String,INDArray> placeholderValues, double eps, double maxRelError, double minAbsError, boolean print,
                                          boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode, Set<String> skipVariables){
 
         boolean debugBefore = sd.isDebugMode();
@@ -217,7 +213,12 @@ public class GradCheckUtil {
         }
 
         //Do forward pass, check that output is a scalar:
-        INDArray out = sd.execAndEndResult();
+        List<String> outputs = sd.outputs();
+        Preconditions.checkState(outputs.size() == 1, "Expected 1 output for gradient check, got %s", outputs);
+        String outName = outputs.get(0);
+        Map<String,INDArray> outMap = sd.exec(placeholderValues, outName);
+        Preconditions.checkState(outMap.size() == 1, "Expected 1 output, got %s", outMap.keySet());
+        INDArray out = outMap.get(outName);
         if(out.length() != 1){
             throw new IllegalStateException("Output variable is not a scalar - has shape " + Arrays.toString(out.shape()));
         }
@@ -225,7 +226,7 @@ public class GradCheckUtil {
         //TODO also check that all inputs are non-zero (otherwise: consider out = sum(x * y) with all x and y being 0
         // in this case, gradients of x and y are all 0 too
 
-        sd.execBackwards();
+        sd.execBackwards(placeholderValues);
         Map<String,INDArray> grad = new HashMap<>();
         for(SDVariable v : sd.variables()){
             if (fnOutputs.contains(v.getVarName())) {
@@ -283,9 +284,9 @@ public class GradCheckUtil {
                 totalCount++;
                 double orig = a.getDouble(idx);
                 a.putScalar(idx, orig+eps);
-                double scorePlus = sd.execAndEndResult().getDouble(0);
+                double scorePlus = sd.exec(placeholderValues, outputs.get(0)).get(outName).getDouble(0);
                 a.putScalar(idx, orig-eps);
-                double scoreMinus = sd.execAndEndResult().getDouble(0);
+                double scoreMinus = sd.exec(placeholderValues, outputs.get(0)).get(outName).getDouble(0);
                 a.putScalar(idx, orig);
 
                 double numericalGrad = (scorePlus - scoreMinus) / (2 * eps);
