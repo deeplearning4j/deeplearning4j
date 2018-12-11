@@ -195,6 +195,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * Distribution to sample initial weights from.
          * Equivalent to: {@code .weightInit(new WeightInitDistribution(distribution))}
          */
+        @Deprecated
         public T dist(Distribution dist) {
             return weightInit(dist);
         }

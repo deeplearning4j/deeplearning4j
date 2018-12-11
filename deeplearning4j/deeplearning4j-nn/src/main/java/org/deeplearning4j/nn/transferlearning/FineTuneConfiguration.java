@@ -202,6 +202,7 @@ public class FineTuneConfiguration {
          * Distribution to sample initial weights from.
          * Equivalent to: {@code .weightInit(new WeightInitDistribution(distribution))}
          */
+        @Deprecated
         public Builder dist(Distribution dist) {
             return weightInit(dist);
         }

@@ -779,6 +779,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          *
          * @see #weightInit(Distribution)
          */
+        @Deprecated
         public Builder dist(Distribution dist) {
             return weightInit(dist);
         }
