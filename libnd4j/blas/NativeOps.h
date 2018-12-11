@@ -1433,7 +1433,7 @@ public:
     Nd4jLong* getNpyArrayShape(void *npArray){
         cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
         int ndim = arr->shape.size();
-        Nd4jLong shape[ndim];
+        Nd4jLong* shape = new Nd4jLong[ndim];
         for (int i=0; i<ndim; i++){
             shape[i] = arr->shape.at(i);
         }

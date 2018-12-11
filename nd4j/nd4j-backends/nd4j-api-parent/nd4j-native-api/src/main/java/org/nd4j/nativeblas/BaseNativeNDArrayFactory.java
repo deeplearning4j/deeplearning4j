@@ -259,7 +259,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         nativeOps.releaseNumpy(pointer);
         return result;
     }
-
+    /*
     @Override
     public Map<String, INDArray> createFromNpzFile(File file){
         byte[] pathBytes = file.getAbsolutePath().getBytes(Charset.forName("UTF-8"));
@@ -269,5 +269,5 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         directBuffer.position(0);
 
     }
-
+*/
 }

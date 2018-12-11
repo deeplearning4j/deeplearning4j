@@ -1020,7 +1020,7 @@ public abstract class NativeOps extends Pointer {
 
     public abstract int getNumNpyArraysInMap(Pointer map);
 
-    public abstract Pointer getNpyArrayNameFromMap(Pointer map, int index);
+    public abstract String getNpyArrayNameFromMap(Pointer map, int index);
 
     public abstract Pointer getNpyArrayFromMap(Pointer map, int index);
 

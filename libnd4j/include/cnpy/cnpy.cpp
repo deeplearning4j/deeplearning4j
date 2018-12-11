@@ -376,7 +376,7 @@ cnpy::npz_t cnpy::npzLoad(FILE* fp){
     }
     return arrays;
 }
-*/
+
 /**
  * Load the numpy z archive
  * @param fname the fully qualified path
