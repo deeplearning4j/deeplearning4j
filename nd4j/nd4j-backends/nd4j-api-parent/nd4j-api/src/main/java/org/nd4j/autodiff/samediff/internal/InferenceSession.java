@@ -142,8 +142,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     @Override
     public INDArray getConstant(String variableName) {
         //TODO Proper constant checks
-        Preconditions.checkState(sameDiff.getImportedConstants() != null && sameDiff.getImportedConstants().contains(variableName),
-                "Variable %s is not a constant", variableName);
+        Preconditions.checkState(sameDiff.getVariable(variableName).isConstant(),"Variable %s is not a constant", variableName);
         return sameDiff.getArrForVarName(variableName);
     }
 

@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -153,14 +154,14 @@ public abstract class AbstractSession<T, O> {
 
             log.debug("Beginning execution step {}: variable {}", (step++), varToExec);
 
-            if (sameDiff.isPlaceHolder(varToExec.getVariable())) {
+            if (sameDiff.getVariable(varToExec.getVariable()).isPlaceHolder()) {
                 //Variable is placeholder: do lookup
                 nodeOutputs.put(varToExec, placeholderValues.get(varToExec.getVariable()));
                 updateDescendentsForExec(varToExec); //Check + mark descendants as available for exec
                 if (variables.contains(varToExec.getVariable())) {  //Check if required output
                     out.put(varToExec.getVariable(), placeholderValues.get(varToExec.getVariable()));
                 }
-            } else if (sameDiff.getImportedConstants() != null && sameDiff.getImportedConstants().contains(varToExec.getVariable())) {
+            } else if (sameDiff.getVariable(varToExec.getVariable()).isConstant()) {
                 //Variable is constant: do lookup
                 //TODO let's remove the "importad constants" field, just have constants
                 //TODO let's add an 'isConstant(String)'?
@@ -296,8 +297,8 @@ public abstract class AbstractSession<T, O> {
         List<String> l = sameDiff.getVariables().get(executedVar.getVariable()).getInputsForOp();
         String[] inputForOps = l == null ? null : l.toArray(new String[l.size()]);
 
-        boolean isConstOrPhInput = sameDiff.isPlaceHolder(executedVar.getVariable()) ||
-                (sameDiff.getImportedConstants() != null && sameDiff.getImportedConstants().contains(executedVar.getVariable()));
+        SDVariable v = sameDiff.getVariable(executedVar.getVariable());
+        boolean isConstOrPhInput = v.isPlaceHolder() || v.isConstant();
 
         //After a variable becomes available, we should look at the ops this is an input to, and check if we can execute this op now...
         if (inputForOps != null) {
@@ -376,8 +377,9 @@ public abstract class AbstractSession<T, O> {
                         //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame
                         //Exception 2 to this: placeholders. As above
                         //TODO Add SameDiff.isConstant(String) method... or SDVariable.isConstant() (or both)
+                        SDVariable sdv = sameDiff.getVariable(in);
                         VarId vid;
-                        if ((sameDiff.getImportedConstants() != null && sameDiff.getImportedConstants().contains(in)) || sameDiff.isPlaceHolder(in)) {
+                        if (sdv.isConstant() || sdv.isPlaceHolder()) {
                             //Constant
                             vid = newVarId(in, OUTER_FRAME, 0);
                         } else {
@@ -411,9 +413,9 @@ public abstract class AbstractSession<T, O> {
                         //The input (for normal ops - not Enter/Exit/NextITeration) have the same frame and iteration number as the just executed var
                         //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame
                         //Exception 2 to this: placeholders. As above
-                        //TODO Add SameDiff.isConstant(String) method... or SDVariable.isConstant() (or both)
+                        SDVariable sdv = sameDiff.getVariable(s);
                         VarId outVarId;
-                        if ((sameDiff.getImportedConstants() != null && sameDiff.getImportedConstants().contains(s)) || sameDiff.isPlaceHolder(s)) {
+                        if (sdv.isConstant() || sdv.isPlaceHolder()) {
                             //Constant
                             outVarId = newVarId(s, OUTER_FRAME, 0);
                         } else {

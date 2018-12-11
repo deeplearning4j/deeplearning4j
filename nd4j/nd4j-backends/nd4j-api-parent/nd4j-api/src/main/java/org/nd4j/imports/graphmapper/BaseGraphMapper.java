@@ -26,10 +26,12 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -188,27 +190,27 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         Map<String,Boolean> stringNodes = new HashMap<>();      //Key: name of string variable. Value: if it's a constant
         for (Map.Entry<String, TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
             DataType dt = dataTypeForTensor(entry.getValue());
+            INDArray arr = getNDArrayFromTensor(entry.getKey(), entry.getValue(), tfGraph);
             if (dt == DataType.UNKNOWN && !unknownTypeNodeImportable(entry.getValue())) {
-                val var = importState.getSameDiff().var(entry.getKey(), (LongShapeDescriptor) null, new ZeroInitScheme('c'));
-                //mark as place holder for validating resolution later.
+                SDVariable var;
                 if (isPlaceHolder(entry.getValue())) {
-                    importState.getSameDiff().addAsPlaceHolder(var.getVarName());
-                    if (var.getShape() != null)
-                        importState.getSameDiff().setOriginalPlaceHolderShape(var.getVarName(), var.getShape());
+                    var = importState.getSameDiff().placeHolder(entry.getKey(), dt, null);
+                } else if(isConstant(entry.getValue())){
+                    Preconditions.checkNotNull(arr, "Array is null for placeholder: %s", entry.getKey());
+                    var = importState.getSameDiff().constant(entry.getKey(), arr);
                 } else {
-                    //Not a placeholder, but SameDiff.var(String, shape=null, ZeroInitScheme()) above marked it as such due to null shape
-                    importState.getSameDiff().removeAsPlaceholder(var.getVarName());
+                    if(arr != null){
+                        var = importState.getSameDiff().var(entry.getKey(), arr);
+                    } else {
+                        long[] shape = getShapeFromTensor(entry.getValue());
+                        if(shape != null){
+                            importState.getSameDiff().var(entry.getKey(), dt, shape);
+                        }
+                    }
                 }
 
-                boolean isConst = isConstant(entry.getValue());
                 if(isStringType(entry.getValue())){
-                    stringNodes.put(entry.getKey(), isConst);
-                }
-                if(isConst){
-                    if (diff.getImportedConstants() == null) {
-                        diff.setImportedConstants(new LinkedHashSet<String>());
-                    }
-                    diff.getImportedConstants().add(entry.getKey());
+                    stringNodes.put(entry.getKey(), isConstant(entry.getValue()));
                 }
 
                 NODE_TYPE node = (NODE_TYPE) entry.getValue();      //TODO this only works for TF
@@ -220,52 +222,11 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                 continue;
             }
 
-            val arr = getNDArrayFromTensor(entry.getKey(), entry.getValue(), tfGraph);
+
             if (arr != null) {
                 val var = importState.getSameDiff().var(entry.getKey(), arr);
                 //ensure the array is made available for later processing
                 diff.associateArrayWithVariable(arr, var);
-
-                if (isConstant(entry.getValue())) {
-                    if (diff.getImportedConstants() == null) {
-                        diff.setImportedConstants(new LinkedHashSet<String>());
-                    }
-                    diff.getImportedConstants().add(entry.getKey());
-                }
-            }else if(getShapeFromTensor(entry.getValue()) == null) {
-                val var = importState.getSameDiff().var(entry.getKey(), (LongShapeDescriptor) null,new ZeroInitScheme('c'));
-                //mark as place holder for validating resolution later.
-
-                //note that this vertex id can still be a place holder
-                //with a -1 shape. Just because a shape is "known" doesn't mean
-                //that it isn't  a place holder.
-                if (isPlaceHolder(entry.getValue())) {
-                    val originalShape = getShapeFromTensor(entry.getValue());
-                    importState.getSameDiff().addAsPlaceHolder(var.getVarName());
-                    if (var.getShape() != null)
-                        importState.getSameDiff().setOriginalPlaceHolderShape(var.getVarName(), originalShape);
-
-                } else {
-                    //Not a placeholder, but SameDiff.var(String, shape=null, ZeroInitScheme()) above marked it as such due to null shape
-                    importState.getSameDiff().removeAsPlaceholder(var.getVarName());
-                }
-
-            } else {
-                long[] originalShape = getShapeFromTensor(entry.getValue());
-                DataType dataType = null;   //TODO
-                val var = importState.getSameDiff().var(entry.getKey(), dataType, originalShape);
-                //mark as place holder for validating resolution later.
-
-                //note that this vertex id can still be a place holder
-                //with a -1 shape. Just because a shape is "known" doesn't mean
-                //that it isn't  a place holder.
-                if (isPlaceHolder(entry.getValue())) {
-                    importState.getSameDiff().addAsPlaceHolder(var.getVarName());
-                    importState.getSameDiff().setOriginalPlaceHolderShape(var.getVarName(), originalShape);
-                } else if(originalShape == null){
-                    //Not a placeholder, but SameDiff.var(String, shape=null, ZeroInitScheme()) above marked it as such due to null shape
-                    importState.getSameDiff().removeAsPlaceholder(var.getVarName());
-                }
             }
 
             NODE_TYPE node = (NODE_TYPE) entry.getValue();      //TODO this only works for TF
@@ -355,10 +316,6 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
             String name = v.getVarName();
             if(sameDiff.isPlaceHolder(name)){
                 String varOutputOf = sameDiff.getVariables().get(name).getOutputOfOp();
-                if(varOutputOf != null){
-                    //Output of a function - can't be a placeholder
-                    sameDiff.removeAsPlaceholder(name);
-                }
             }
         }
 

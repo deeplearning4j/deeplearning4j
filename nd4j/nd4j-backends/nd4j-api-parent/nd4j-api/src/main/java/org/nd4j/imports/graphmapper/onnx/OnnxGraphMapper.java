@@ -408,7 +408,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
             importState.getSameDiff().putFunctionForId(newInstance.getOwnName(),newInstance);
             //ensure we can track node name to function instance later.
             diff.setBaseNameForFunctionInstanceId(tfNode.getName(),newInstance);
-            diff.addVarNameForImport(tfNode.getName());
+            //diff.addVarNameForImport(tfNode.getName());
         }
         catch (Exception e) {
             e.printStackTrace();

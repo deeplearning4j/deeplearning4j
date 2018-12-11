@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -31,8 +32,8 @@ public class FlatBufferSerdeTest {
     @Test
     public void testBasic() throws Exception {
         SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
-        sd.addAsPlaceHolder("in");
+        INDArray arr = Nd4j.linspace(1,12,12).reshape(3,4);
+        SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape() );
         SDVariable tanh = sd.tanh("out", in);
 
         ByteBuffer bb = sd.asFlatBuffers();
@@ -85,8 +86,8 @@ public class FlatBufferSerdeTest {
             for(boolean execFirst : new boolean[]{false, true}) {
                 log.info("Starting test: i={}, execFirst={}", i, execFirst);
                 SameDiff sd = SameDiff.create();
-                SDVariable in = sd.var("in", Nd4j.linspace(1, 12, 12).reshape(3, 4));
-                sd.addAsPlaceHolder("in");
+                INDArray arr = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+                SDVariable in = sd.var("in", arr.dataType(), arr.shape());
                 SDVariable x;
                 switch (i) {
                     case 0:
@@ -162,11 +163,13 @@ public class FlatBufferSerdeTest {
 
 
                 //Check placeholders
-                Set<String> phBefore = sd.getPlaceHolderVarNames();
-                Set<String> phAfter = restored.getPlaceHolderVarNames();
-
-                assertEquals(1, phBefore.size());
-                assertEquals(phBefore, phAfter);
+                Map<String,SDVariable> vBefore = sd.variableMap();
+                Map<String,SDVariable> vAfter = sd.variableMap();
+                assertEquals(vBefore.keySet(), vAfter.keySet());
+                for(String s : vBefore.keySet()){
+                    assertEquals(vBefore.get(s).isPlaceHolder(), vAfter.get(s).isPlaceHolder());
+                    assertEquals(vBefore.get(s).isConstant(), vAfter.get(s).isPlaceHolder());
+                }
             }
         }
     }

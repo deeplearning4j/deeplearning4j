@@ -24,6 +24,7 @@ import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -180,9 +181,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 sameDiff.addPropertyToResolve(on,name);
                 sameDiff.addVariableMappingForField(on,name,inputNode.getName());
                 return;
-            }
-            else if(inputNode == null) {
-                sameDiff.addAsPlaceHolder(input);
+            } else if(inputNode == null) {
+                //TODO need to do anything here given new design?
+                //sameDiff.addAsPlaceHolder(input);
                 return;
             }
 
@@ -491,10 +492,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         }
 
         else if(isPlaceHolder(tfNode)) {
-            val vertexId = diff.getVariable(getName(tfNode));
-            diff.addAsPlaceHolder(vertexId.getVarName());
-        }
-        else {
+            SDVariable var = diff.getVariable(getName(tfNode));
+            Preconditions.checkState(var.isPlaceHolder(), "Variable should be marked as placeholder at this point: %s", var);
+        } else {
             val opName = tfNode.getOp();
 
             // FIXME: early draft
@@ -529,20 +529,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     args[i] = diff.getVariable(name);
                     if(args[i] == null) {
                         args[i] = diff.var(name, (LongShapeDescriptor) null,new ZeroInitScheme('f'));
-                        diff.addAsPlaceHolder(args[i].getVarName());
-                    }
-
-                    /**
-                     * Note here that we are associating
-                     * the output/result variable
-                     * with its inputs and notifying
-                     * the variable that it has a place holder argument
-                     * it should resolve before trying to execute
-                     * anything.
-                     */
-                    if(diff.isPlaceHolder( args[i].getVarName())) {
-
-                        diff.putPlaceHolderForVariable(args[i].getVarName(), name);
+                        //diff.addAsPlaceHolder(args[i].getVarName());
                     }
                 }
 
@@ -556,8 +543,6 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 importState.getSameDiff().putFunctionForId(newInstance.getOwnName(),newInstance);
                 //ensure we can track node name to function instance later.
                 diff.setBaseNameForFunctionInstanceId(tfNode.getName(),newInstance);
-                diff.addVarNameForImport(tfNode.getName());
-
             } catch (Exception e) {
                 log.error("Failed with [{}]", opName);
                 throw new RuntimeException(e);

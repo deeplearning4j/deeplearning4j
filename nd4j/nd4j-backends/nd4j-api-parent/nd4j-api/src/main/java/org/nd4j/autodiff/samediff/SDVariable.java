@@ -105,6 +105,10 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return variableType == VariableType.PLACEHOLDER;
     }
 
+    public boolean isConstant(){
+        return variableType == VariableType.CONSTANT;
+    }
+
 
     @Override
     public String opName() {

@@ -164,11 +164,6 @@ public class SameDiff {
     private Map<String,GradientUpdater> updaterMap;                 //GradientUpdater instance for each trainable parameter
 
     ////////////////////////////////////////
-    @Deprecated //TO BE REMOVED - to Variable?
-    private Set<String> importedVarName;
-    @Deprecated //TO BE REMOVED - to Variable?
-    @Getter @Setter
-    private Set<String> importedConstants;
     //map a function's instance id to a base name, used for propagating variable names
     //for output during import
     private Map<String, String> baseNameForFunctionInstanceId;
@@ -963,7 +958,6 @@ public class SameDiff {
         placeHolderOriginalShapes = new LinkedHashMap<>();
         placeHolderFunctions = new LinkedHashSet<>();
         baseNameForFunctionInstanceId = new LinkedHashMap<>();
-        importedVarName = new LinkedHashSet<>();
         propertiesToResolve = new LinkedHashMap<>();
         propertiesForFunction = new LinkedHashMap<>();
         fieldVariableResolutionMapping = HashBasedTable.create();
@@ -1108,30 +1102,6 @@ public class SameDiff {
      */
     public String getVarNameForFieldAndFunction(DifferentialFunction function, String fieldName) {
         return fieldVariableResolutionMapping.get(function.getOwnName(), fieldName);
-    }
-
-
-    /**
-     * Returns true if the variable name is imported
-     *
-     * @param variableName the imported variable name
-     * @return true if the name is imported, false otherwise
-     */
-    public boolean isImportVariable(String variableName) {
-        return importedVarName.contains(variableName);
-    }
-
-    /**
-     * Marks a variable name as imported.
-     * This is used in conjunction with model
-     * import to ensure immutability
-     * when referencing graph variables
-     * mapped from an external source.
-     *
-     * @param varName the var name to add.
-     */
-    public void addVarNameForImport(String varName) {
-        importedVarName.add(varName);
     }
 
     /**
@@ -1886,6 +1856,14 @@ public class SameDiff {
     }
 
 
+    public SDVariable one(String name, int... shape){
+        return one(name, Nd4j.defaultFloatingPointType(), shape);
+    }
+
+    public SDVariable one(String name, long... shape){
+        return one(name, Nd4j.defaultFloatingPointType(), shape);
+    }
+
 
     /**
      * Create a new variable with the specified shape, with all values initialized to 1.0
@@ -1894,7 +1872,7 @@ public class SameDiff {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable one(String name, org.nd4j.linalg.api.buffer.DataType dataType, int[] shape) {
+    public SDVariable one(String name, org.nd4j.linalg.api.buffer.DataType dataType, int... shape) {
         return var(name, new ConstantInitScheme('f', 1.0), dataType, ArrayUtil.toLongArray(shape));
     }
 
@@ -1934,6 +1912,14 @@ public class SameDiff {
     }
 
 
+    public SDVariable zero(String name, long... shape){
+        return zero(name, Nd4j.defaultFloatingPointType(), shape);
+    }
+
+    public SDVariable zero(String name, int... shape){
+        return zero(name, Nd4j.defaultFloatingPointType(), shape);
+    }
+
     /**
      * Create a new variable with the specified shape, with all values initialized to 0
      *
@@ -1952,7 +1938,7 @@ public class SameDiff {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable zero(String name, org.nd4j.linalg.api.buffer.DataType dataType, int[] shape) {
+    public SDVariable zero(String name, org.nd4j.linalg.api.buffer.DataType dataType, int... shape) {
         return var(name, new ZeroInitScheme(), dataType, ArrayUtil.toLongArray(shape));
     }
 
@@ -1981,12 +1967,27 @@ public class SameDiff {
     }
 
     /**
+     * Create an SDVariable with a fixed/constant value
+     * @param name  Name of the constant SDVariable
+     * @param constant Value for the constant SDVariable
+     * @return
+     */
+    public SDVariable constant(@NonNull String name, @NonNull INDArray constant){
+        Preconditions.checkState(!variables.containsKey(name), "Variable with name \"%s\" already exists", name);
+        SDVariable v = new SDVariable(name, VariableType.CONSTANT, this, constant.shape(), constant.dataType(), null);
+        variables.put(name, Variable.builder().name(name).variable(v).build());
+        variableNameToArr.put(name, constant);
+        return v;
+    }
+
+    /**
      * Return a variable of given shape in which all values have a given constant value.
      *
      * @param value constant to set for each value
      * @param shape shape of the variable as long array
      * @return A new SDVariable of provided shape with constant value.
      */
+    @Deprecated
     public SDVariable constant(SDVariable value, long... shape) {
         return constant(null, value, shape);
     }
@@ -1999,6 +2000,7 @@ public class SameDiff {
      * @param shape shape of the variable as long array
      * @return A new SDVariable of provided shape with constant value.
      */
+    @Deprecated
     public SDVariable constant(String name, SDVariable value, long... shape) {
         SDVariable ret = f().constant(value, shape);
         return updateVariableNameAndReference(ret, name);
@@ -2107,6 +2109,9 @@ public class SameDiff {
         return ret;
     }
 
+    public SDVariable placeHolder(String name, long... shape){
+        return placeHolder(name, Nd4j.defaultFloatingPointType(), shape);
+    }
 
     /**
      * Create a variable with a place holder
@@ -2166,6 +2171,14 @@ public class SameDiff {
     public SDVariable var(String name, LongShapeDescriptor shapeDesc) {
         Preconditions.checkNotNull(shapeDesc != null, "Invalid shape: shape may not be null");
         return var(name, shapeDesc, new ZeroInitScheme());
+    }
+
+    public SDVariable var(String name, int... shape){
+        return var(name, Nd4j.defaultFloatingPointType(), shape);
+    }
+
+    public SDVariable var(String name, long... shape){
+        return var(name, Nd4j.defaultFloatingPointType(), shape);
     }
 
     /**
@@ -9574,13 +9587,7 @@ public class SameDiff {
                 if (checkGet == null) {
                     org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
                     checkGet = var(baseName, new ZeroInitScheme(ordering), dataType, (long[])null);
-                } else if (!importedVarName.contains(baseName)) {
-                    //need to find a new name
-                    String newName = generateNewVarName(baseName, 0);
-                    org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
-                    checkGet = var(newName, new ZeroInitScheme(ordering), dataType, (long[])null);
                 }
-
 
                 if (checkGet == null) {
                     org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
@@ -9627,22 +9634,6 @@ public class SameDiff {
                 // no-op.
                 // TODO: maybe we should check shapes equality here?
                 // it's either var that already exist, or something bad happening
-            } else if (!importedVarName.contains(baseName)) {
-                // FIXME: dead end.  it's impossible to get here with null as shape
-                //need to find a new name
-                int count = 1;
-                String name = baseName + "_" + count + (i > 0 ? ":" + i : "");
-                while (getVariable(name) != null) {
-                    count++;
-                    name = baseName + "_" + count + (i > 0 ? ":" + i : "");
-                }
-
-                if (getVariable(name) != null) {
-                    throw new ND4JIllegalStateException("Converged on already generated variable!");
-                }
-
-                org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
-                checkGet = var(name, new ZeroInitScheme(ordering), dataType, shape.getShape());
             }
 
             if (checkGet == null) {
@@ -10253,7 +10244,7 @@ public class SameDiff {
 
 
         for (val entry : arrays.entrySet()) {
-            if (!placeHolderVarNames.contains(entry.getKey())) {
+            if (!variables.get(entry.getKey()).getVariable().isPlaceHolder()) {
                 throw new ND4JIllegalStateException("Illegal variable " + entry.getKey() + " passed in. Variable found not to be a place holder variable");
             }
 

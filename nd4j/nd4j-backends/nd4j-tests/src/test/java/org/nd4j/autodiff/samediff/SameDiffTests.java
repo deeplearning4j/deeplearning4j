@@ -562,8 +562,7 @@ public class SameDiffTests {
     @Test(expected = ND4JIllegalStateException.class)
     public void testPlaceHolderWithFullShape() {
         val sd = SameDiff.create();
-        val placeholder = sd.var("somevar", new long[]{2, 2});
-        sd.addAsPlaceHolder(placeholder.getVarName());
+        val placeholder = sd.placeHolder("somevar", 2, 2);
         assertTrue(sd.isPlaceHolder(placeholder.getVarName()));
         sd.resolveVariablesWith(Collections.singletonMap(placeholder.getVarName(), Nd4j.linspace(1, 4, 4, DataType.FLOAT)));
     }
@@ -796,7 +795,7 @@ public class SameDiffTests {
     @Test
     public void testNegativeOneShape() {
         val sd = SameDiff.create();
-        val var = sd.var("test", new long[]{-1, 3});
+        SDVariable var = sd.placeHolder("test", DataType.FLOAT, -1, 3);
         assertNull(var.getShape());
         assertTrue(var.isPlaceHolder());
     }
