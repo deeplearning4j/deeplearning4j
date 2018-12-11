@@ -4,7 +4,7 @@ import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Initialize to zeroes
+ * Initialize to a constant value (deafult 0).
  *
  * @author Christian Skarby
  */
