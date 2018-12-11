@@ -30,88 +30,10 @@
 
 using namespace simdOps;
 
-    template <typename X, typename Y, typename Z, typename OpType>
-    __global__ void scalarSimpleShaped(void* x, void *y, Nd4jLong *xShapeInfo, void *params, void *z, Nd4jLong *zShapeInfo, int *allocationBuffer) {
-        
-        functions::scalar::ScalarTransform<X,Y,Z>::template transformCuda<OpType>(x,y,xShapeInfo,params,z,zShapeInfo,allocationBuffer);
-    }
-
-    template <typename X, typename Y, typename Z, typename OpType>
-    __global__ void scalarAlongDimension(void *x,
-                                          Nd4jLong *xShapeInfo,
-                                          void *extraParams,
-                                          void *z,
-                                          Nd4jLong *zShapeInfo,
-                                          void *scalars,
-                                          int *dimension,
-                                          int dimensionLength,
-                                          Nd4jLong *tadShapeInfo,
-                                          Nd4jLong *tadOffsets,
-                                          Nd4jLong *tadShapeInfoZ,
-                                          Nd4jLong *tadOffsetsZ) {
-        
-        functions::scalar::ScalarTransform<X,Y,Z>::template transformCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
-    }
-
-
-namespace functions {
-    namespace scalar {
-
-
-    template<typename X, typename Y, typename Z>
-    template<typename OpType>
-    void _CUDA_H ScalarTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, void* vscalar, void *vextraParams, int *allocPointer){
-        auto xEws = shape::elementWiseStride(hxShapeInfo);
-        auto xOrder = shape::order(hxShapeInfo);
-
-        auto zEws = shape::elementWiseStride(hzShapeInfo);
-        auto zOrder = shape::order(hzShapeInfo);
-
-        auto length = shape::length(hxShapeInfo);
-
-        scalarSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
-    }
-
-    template<typename X, typename Y, typename Z>
-    template<typename OpType>
-    void _CUDA_H ScalarTransform<X,Y,Z>::intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-        scalarAlongDimension<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z>>>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
-    }
-
-
-    template<typename X, typename Y, typename Z>
-    void ScalarTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, void* vscalar, void *vextraParams) {
-
-        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		    printf("H14 opNum:[%i]\n", opNum);
-
-        DISPATCH_BY_OPNUM_TTT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, hxShapeInfo, vz, zShapeInfo, hzShapeInfo, vscalar, vextraParams, nullptr), SCALAR_OPS);
-    }
-
-
-    template<typename X, typename Y, typename Z>
-    void ScalarTransform<X,Y,Z>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vscalars, void *vextraParams, int *dimension, int dimensionLength,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-        DISPATCH_BY_OPNUM_TTT(intermediateAlongDimension, PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalars, vextraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS);
-    }
-
 ////////////////////////////////////////////////////////////////////////////////
-/**
-* Cuda implementation of transform
-* @param x
-* @param xShapeInfo
-* @param z
-* @param zShapeInfo
-* @param extraParams
-* @param n
-*/
-template<typename X, typename Y, typename Z>
-template<typename OpType>
-__device__ void ScalarTransform<X,Y,Z>::transformCuda(void* vx,
-                                                    void *vscalar, Nd4jLong *xShapeInfo,
-                                                    void *vparams,
-                                                    void *vz, Nd4jLong *zShapeInfo,
-                                                    int *allocationBuffe) {
-
+template <typename X, typename Y, typename Z, typename OpType>
+__global__ static void scalarSimpleShaped(void* vx, void *vscalar, Nd4jLong *xShapeInfo, void *vparams, void *vz, Nd4jLong *zShapeInfo, int *allocationBuffer) {
+    
     auto scalar = reinterpret_cast<Y*>(vscalar)[0];
     auto x      = reinterpret_cast<X*>(vx);
     auto params = reinterpret_cast<Z*>(vparams);
@@ -142,20 +64,19 @@ __device__ void ScalarTransform<X,Y,Z>::transformCuda(void* vx,
             z[shape::getIndexOffset(i, zShapeInfo, length)] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], scalar, params);
         }
     }
+    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// ScalarOp along dimension
-template<typename X, typename Y, typename Z>
-template<typename OpType>
-void __device__ ScalarTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xShapeInfo,
-                                                      void *vextraParams,
-                                                      void *vz, Nd4jLong *zShapeInfo,
-                                                      void *vscalars,
-                                                      int *dimension, int dimensionLength,
-                                                      Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                                                      Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-
+template <typename X, typename Y, typename Z, typename OpType>
+__global__ static void scalarAlongDimension(void *vx, Nd4jLong *xShapeInfo,
+                                          void *vextraParams,
+                                          void *vz, Nd4jLong *zShapeInfo,
+                                          void *vscalars,
+                                          int *dimension, int dimensionLength,
+                                          Nd4jLong *tadShapeInfo,  Nd4jLong *tadOffsets,
+                                          Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+        
     auto x = reinterpret_cast<X*>(vx);
     auto extraParams = reinterpret_cast<Z*>(vextraParams);
     auto z = reinterpret_cast<Z*>(vz);
@@ -188,16 +109,61 @@ void __device__ ScalarTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xShape
     }
 }
 
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_0);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_1);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_2);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_3);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_4);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_5);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_6);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_7);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_8);
-        BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_9);
+
+namespace functions {
+namespace scalar    {
+
+////////////////////////////////////////////////////////////////////////////////
+template<typename X, typename Y, typename Z>
+template<typename OpType>
+void _CUDA_H ScalarTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, void* vscalar, void *vextraParams, int *allocPointer){
+    
+    auto xEws = shape::elementWiseStride(hxShapeInfo);
+    auto xOrder = shape::order(hxShapeInfo);
+
+    auto zEws = shape::elementWiseStride(hzShapeInfo);
+    auto zOrder = shape::order(hzShapeInfo);
+
+    auto length = shape::length(hxShapeInfo);
+
+    scalarSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+template<typename X, typename Y, typename Z>
+template<typename OpType>
+void _CUDA_H ScalarTransform<X,Y,Z>::intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+    scalarAlongDimension<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z>>>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+template<typename X, typename Y, typename Z>
+void ScalarTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, void* vscalar, void *vextraParams) {
+
+    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+	   printf("H14 opNum:[%i]\n", opNum);
+
+    DISPATCH_BY_OPNUM_TTT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, hxShapeInfo, vz, zShapeInfo, hzShapeInfo, vscalar, vextraParams, nullptr), SCALAR_OPS);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+template<typename X, typename Y, typename Z>
+void ScalarTransform<X,Y,Z>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vscalars, void *vextraParams, int *dimension, int dimensionLength,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+    DISPATCH_BY_OPNUM_TTT(intermediateAlongDimension, PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalars, vextraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS);
+}
+
+
+
+BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_0);
+BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_1);
+BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_2);
+BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_3);
+BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_4);
+BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_5);
+BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_6);
+BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_7);
+BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_8);
+BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT ScalarTransform, , PAIRWISE_TYPES_9);
 
 }
 }
