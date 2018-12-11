@@ -95,10 +95,11 @@ public abstract class AbstractSession<T, O> {
      */
     public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues) {
         Preconditions.checkState(!variables.isEmpty(), "Variables to perform forward pass for must not be empty");
-        Preconditions.checkState(sameDiff.getPlaceHolderVarNames() == null || sameDiff.getPlaceHolderVarNames().isEmpty()
-                        || (placeholderValues != null && placeholderValues.size() == sameDiff.getPlaceHolderVarNames().size() &&
-                        placeholderValues.keySet().containsAll(sameDiff.getPlaceHolderVarNames())),
-                "Invalid placeholders: SameDiff instance has placeholders %s, got placeholders %s", sameDiff.getPlaceHolderVarNames(),
+        List<String> sdPlaceholders = sameDiff.inputs();
+        Preconditions.checkState(sdPlaceholders == null || sdPlaceholders.isEmpty()
+                        || (placeholderValues != null && placeholderValues.size() == sdPlaceholders.size() &&
+                        placeholderValues.keySet().containsAll(sdPlaceholders)),
+                "Invalid placeholders: SameDiff instance has placeholders %s, got placeholders %s", sdPlaceholders,
                 (placeholderValues == null ? null : placeholderValues.keySet()));
 
 

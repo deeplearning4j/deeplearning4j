@@ -13,11 +13,13 @@ package org.nd4j.autodiff.samediff;
  * VARIABLE     Yes         Yes             Yes             No
  * CONSTANT     No          No              Yes             No
  * ARRAY        No          Yes             No              Yes
+ * PLACEHOLDER  No          No              No              No
  * </pre>
  *
  */
 public enum VariableType {
     VARIABLE,
     CONSTANT,
-    ARRAY
+    ARRAY,
+    PLACEHOLDER
 }

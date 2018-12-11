@@ -541,6 +541,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                      * anything.
                      */
                     if(diff.isPlaceHolder( args[i].getVarName())) {
+
                         diff.putPlaceHolderForVariable(args[i].getVarName(), name);
                     }
                 }

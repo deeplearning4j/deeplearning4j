@@ -24,6 +24,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
@@ -235,13 +236,23 @@ public class OpValidation {
         }
 
         //Check placeholders:
-        Set<String> pcBefore = original.getPlaceHolderVarNames();
-        Set<String> pcAfter = deserialized.getPlaceHolderVarNames();
-        if(pcBefore == null){
-            Preconditions.checkState(pcAfter == null || pcAfter.size() == 0, "%s", pcAfter);
+        Set<String> phBefore = new HashSet<>();
+        Set<String> phAfter = new HashSet<>();
+
+        for(Variable v : original.getVariables().values()){
+            if(v.getVariable().isPlaceHolder())
+                phBefore.add(v.getName());
+        }
+        for(Variable v : deserialized.getVariables().values()){
+            if(v.getVariable().isPlaceHolder())
+                phAfter.add(v.getName());
+        }
+
+        if(phBefore == null){
+            Preconditions.checkState(phAfter == null || phAfter.size() == 0, "%s", phAfter);
         } else {
-            Preconditions.checkState(pcAfter != null, "Placeholders after deserialization was null");
-            Preconditions.checkState(pcBefore.equals(pcAfter), "Before: %s, after deserialization: %s", pcBefore, pcAfter);
+            Preconditions.checkState(phAfter != null, "Placeholders after deserialization was null");
+            Preconditions.checkState(phBefore.equals(phAfter), "Before: %s, after deserialization: %s", phBefore, phAfter);
         }
 
 

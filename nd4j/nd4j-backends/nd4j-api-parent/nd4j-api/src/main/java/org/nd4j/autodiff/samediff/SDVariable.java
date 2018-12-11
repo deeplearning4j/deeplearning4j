@@ -64,6 +64,10 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     private String varName;
     @Getter
     @Setter
+    private VariableType variableType;
+
+    @Getter
+    @Setter
     protected WeightInitScheme weightInitScheme;
 
     @Getter (AccessLevel.NONE)
@@ -76,45 +80,21 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     // autogen_tag::sdvars::start
 
-    @Builder
-    private SDVariable(String varName,
-                       SameDiff sameDiff,
-                       long[] shape,
-                       DataType dataType,
-                       boolean placeholderOnNullShape,
-                       WeightInitScheme weightInitScheme) {
-        super(sameDiff,new Object[]{});
+
+    public SDVariable(@NonNull String varName, @NonNull VariableType varType, @NonNull SameDiff sameDiff, long[] shape, DataType dataType, WeightInitScheme weightInitScheme){
+        super(sameDiff, new Object[0]);
+        Preconditions.checkState(weightInitScheme == null || varType != VariableType.VARIABLE, "Weight initalization schemes can only be applied to VARIABLE type" +
+                " SDVariables - variable \"%s\" is of type %s but was provided a weight initialization scheme %s", varName, varType, weightInitScheme);
+
         this.varName = varName;
-        this.weightInitScheme = weightInitScheme;
+        this.variableType = varType;
         this.dataType = dataType;
+        this.weightInitScheme = weightInitScheme;
 
-        if(weightInitScheme == null) {
-            // we want C order as default in ALL cases
-            this.weightInitScheme = new ZeroInitScheme('c');
+        if(varType == VariableType.PLACEHOLDER){
+            sameDiff.setOriginalPlaceHolderShape(varName, shape);
+            sameDiff.putShapeForVarName(varName, shape);
         }
-
-        if(shape == null && placeholderOnNullShape) {
-            sameDiff.addAsPlaceHolder(varName);
-        } else {
-            boolean foundPlaceHolder = false;
-            if(shape != null ) {
-                for (int i = 0; i < shape.length; i++) {
-                    if (shape[i] < 0) {
-                        sameDiff.addAsPlaceHolder(varName);
-                        sameDiff.setOriginalPlaceHolderShape(varName, shape);
-                        foundPlaceHolder = true;
-                        break;
-                    }
-                }
-            }
-
-            if(!foundPlaceHolder && shape != null)
-                sameDiff.putShapeForVarName(varName,shape);
-        }
-
-        this.sameDiff = sameDiff;
-
-
     }
 
     /**
@@ -122,7 +102,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public boolean isPlaceHolder() {
-        return sameDiff.isPlaceHolder(varName);
+        return variableType == VariableType.PLACEHOLDER;
     }
 
 
@@ -172,6 +152,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return the allocated array
      */
     public INDArray storeAndAllocateNewArray() {
+        Preconditions.checkState(variableType == VariableType.VARIABLE, "Unable to allocate and store array for variable of type %s: only" +
+                " VARIABLE type variables can be initialized using this method", variableType);
         val shape = sameDiff.getShapeForVarName(getVarName());
         INDArray currArr = getArr();
         if(currArr != null && Arrays.equals(currArr.shape(),shape))

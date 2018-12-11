@@ -502,19 +502,6 @@ public abstract class DifferentialFunction {
         return sameDiff.f();
     }
 
-    /**
-     * Returns true if this
-     * function has place holder inputs
-     * @return
-     */
-    public boolean hasPlaceHolderInputs() {
-        val args = args();
-        for(val arg : args)
-            if(sameDiff.hasPlaceHolderVariables(arg().getVarName()))
-                return true;
-        return false;
-    }
-
 
     /**
      * Return the arguments for a given function

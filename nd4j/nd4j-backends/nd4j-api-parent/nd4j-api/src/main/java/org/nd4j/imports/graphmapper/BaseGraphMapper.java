@@ -251,8 +251,9 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                 }
 
             } else {
-                val originalShape = getShapeFromTensor(entry.getValue());
-                val var = importState.getSameDiff().var(entry.getKey(), originalShape);
+                long[] originalShape = getShapeFromTensor(entry.getValue());
+                DataType dataType = null;   //TODO
+                val var = importState.getSameDiff().var(entry.getKey(), dataType, originalShape);
                 //mark as place holder for validating resolution later.
 
                 //note that this vertex id can still be a place holder

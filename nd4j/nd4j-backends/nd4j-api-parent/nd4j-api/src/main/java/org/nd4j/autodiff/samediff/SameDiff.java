@@ -32,7 +32,6 @@ import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.loss.LossReduce;
-import org.nd4j.autodiff.samediff.flow.FlowPath;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.ShapeSession;
@@ -56,7 +55,7 @@ import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
-import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell;
@@ -73,10 +72,8 @@ import org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
-import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
-import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -166,7 +163,7 @@ public class SameDiff {
     @Getter
     private Map<String,GradientUpdater> updaterMap;                 //GradientUpdater instance for each trainable parameter
 
-    private boolean shouldBootStrap = true;
+    ////////////////////////////////////////
     @Deprecated //TO BE REMOVED - to Variable?
     private Set<String> importedVarName;
     @Deprecated //TO BE REMOVED - to Variable?
@@ -186,14 +183,6 @@ public class SameDiff {
     private Map<String, INDArray> variableNameToArr;                //Key: name of SDVariable. Value: Array for that variable
 
     private Map<String, TensorList> lists = new HashMap<>();    // Key - node name; Value - TensorList
-
-    // this entity holds runtime information for Switch/Merge/NextIteration etc stuff
-    @Deprecated //TO BE REMOVED - move to InferenceSession
-    private transient ThreadLocal<FlowPath> localFlowPath = new ThreadLocal<FlowPath>();
-
-    // here we save String -> Integer conversion to variables
-    @Deprecated //TO BE REMOVED - to Variable
-    private transient Map<String, Integer> reverseMap = null;
 
     // counter for auto-naming variables
     private int variableId = 0;
@@ -225,12 +214,8 @@ public class SameDiff {
      */
     private Map<String, Map<String, Object>> propertiesForFunction;
 
-    @Deprecated //TO BE REMOVED ??
-    private Map<String, List<String[]>> placeHolderMap;
     @Deprecated //TO BE REMOVED - to Variable
     private Map<String, long[]> placeHolderOriginalShapes;
-    @Getter
-    private Set<String> placeHolderVarNames;
     @Deprecated //TO BE REMOVED - to InferenceSession
     private MemoryWorkspace workspace;
     private Map<String, SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
@@ -238,9 +223,6 @@ public class SameDiff {
     private Set<String> placeHolderFunctions;
     private static Cloner cloner = newCloner();
     private static Map<String, Method> opMethods;
-
-//    @Getter
-//    private Map<String, DifferentialFunction> functionInstancesById;
 
     private Table<String, String, String> fieldVariableResolutionMapping;
 
@@ -258,7 +240,6 @@ public class SameDiff {
     @Getter
     @Setter
     boolean logExecution = true;
-
 
     @Getter
     private SameDiff parent;
@@ -355,11 +336,6 @@ public class SameDiff {
         if (forwardVarForGrad.containsKey(oldVarName)) {
             val forwardGrad = forwardVarForGrad.remove(oldVarName);
             forwardVarForGrad.put(withName, forwardGrad);
-        }
-
-        if (placeHolderMap.containsKey(oldVarName)) {
-            val placeholders = placeHolderMap.remove(oldVarName);
-            placeHolderMap.put(withName, placeholders);
         }
 
 
@@ -743,14 +719,6 @@ public class SameDiff {
             }
         }
 
-        for (int i = 0; i < shape.length; i++) {
-            if (shape[i] < 1) {
-                addAsPlaceHolder(varName);
-                placeHolderOriginalShapes.put(varName, shape);
-                return;
-            }
-        }
-
 
         if(log.isTraceEnabled()){
             long[] pShape = variableNameToShape.get(varName);
@@ -777,14 +745,6 @@ public class SameDiff {
 
         if (variableNameToShape.containsKey(varName)) {
             throw new ND4JIllegalStateException("Shape for " + varName + " already exists!");
-        }
-
-        for (int i = 0; i < shape.length; i++) {
-            if (shape[i] < 1) {
-                addAsPlaceHolder(varName);
-                placeHolderOriginalShapes.put(varName, shape);
-                return;
-            }
         }
 
         variableNameToShape.put(varName, shape);
@@ -1000,8 +960,6 @@ public class SameDiff {
         opsForResult = new IntArrayKeyMap<>();
         variableNameToArr = new LinkedHashMap<>();
         variableNameToShape = new LinkedHashMap<>();
-        placeHolderMap = new LinkedHashMap<>();
-        placeHolderVarNames = new LinkedHashSet<>();
         placeHolderOriginalShapes = new LinkedHashMap<>();
         placeHolderFunctions = new LinkedHashSet<>();
         baseNameForFunctionInstanceId = new LinkedHashMap<>();
@@ -1510,7 +1468,12 @@ public class SameDiff {
      * @return the inputs for this graph
      */
     public List<String> inputs() {
-        return new ArrayList<>(placeHolderVarNames);
+        List<String> out = new ArrayList<>();
+        for(String s : variables.keySet()){
+            if(isPlaceHolder(s))
+                out.add(s);
+        }
+        return out;
     }
 
     /**
@@ -1664,12 +1627,6 @@ public class SameDiff {
             if(incrementEpochCount)
                 trainingConfig.incrementEpochCount();
         }
-
-
-        //Clear placeholder arrays
-        for(String s : placeHolderVarNames){
-            variableNameToArr.remove(s);
-        }
     }
 
     /**
@@ -1747,7 +1704,7 @@ public class SameDiff {
                     SDVariable v = var.getVariable();
                     String n = v.getVarName();
                     if(variables.get(n).getOutputOfOp() == null &&       //Is a leaf (not the output of a function)
-                            !placeHolderVarNames.contains(n) &&                                                                                 //and not a placeholder
+                            !isPlaceHolder(n) &&                                                                                 //and not a placeholder
                             (trainingConfig.getDataSetFeatureMapping() == null || !trainingConfig.getDataSetFeatureMapping().contains(n))   &&  //and not an input (this really should be a placeholder, but we can't guarantee that...)
                             (trainingConfig.getDataSetLabelMapping() == null || !trainingConfig.getDataSetLabelMapping().contains(n))   &&      //and not a label (this really should be a placeholder, but we can't guarantee that...)
                             (trainingConfig.getDataSetFeatureMaskMapping() == null || !trainingConfig.getDataSetFeatureMaskMapping().contains(n))   &&  //and not a feature mask (this really should be a placeholder, but we can't guarantee that...)
@@ -1937,8 +1894,8 @@ public class SameDiff {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable one(String name, int[] shape) {
-        return var(name, ArrayUtil.toLongArray(shape), new ConstantInitScheme('f', 1.0));
+    public SDVariable one(String name, org.nd4j.linalg.api.buffer.DataType dataType, int[] shape) {
+        return var(name, new ConstantInitScheme('f', 1.0), dataType, ArrayUtil.toLongArray(shape));
     }
 
     /**
@@ -1948,8 +1905,8 @@ public class SameDiff {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable one(String name, long... shape) {
-        return var(name, shape, new ConstantInitScheme('f', 1.0));
+    public SDVariable one(String name, org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
+        return var(name, new ConstantInitScheme('f', 1.0), dataType, shape);
     }
 
     /**
@@ -1984,8 +1941,8 @@ public class SameDiff {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable zero(String name, long... shape) {
-        return var(name, shape, new ZeroInitScheme());
+    public SDVariable zero(String name, org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
+        return var(name, new ZeroInitScheme(), dataType, shape);
     }
 
     /**
@@ -1995,8 +1952,8 @@ public class SameDiff {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable zero(String name, int[] shape) {
-        return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
+    public SDVariable zero(String name, org.nd4j.linalg.api.buffer.DataType dataType, int[] shape) {
+        return var(name, new ZeroInitScheme(), dataType, ArrayUtil.toLongArray(shape));
     }
 
     /**
@@ -2150,14 +2107,6 @@ public class SameDiff {
         return ret;
     }
 
-    /**
-     * @deprecated Use {@link #var(String, WeightInitScheme, long...)}
-     */
-    @Deprecated
-    public SDVariable var(String name, long[] shape, WeightInitScheme weightInitScheme) {
-        return var(name, weightInitScheme, shape);
-    }
-
 
     /**
      * Create a variable with a place holder
@@ -2166,10 +2115,9 @@ public class SameDiff {
      * @return
      */
     public SDVariable placeHolder(String name, org.nd4j.linalg.api.buffer.DataType dataType, long...shape) {
-        //TODO actually use/store datatype for placeholder
         //TODO always add cast op after placeholder - this allows user to use any array type whilst giving is consistent shape inference
-        SDVariable ret = var(name,new ZeroInitScheme(),shape);
-        addAsPlaceHolder(name);
+        SDVariable ret = new SDVariable(name, VariableType.PLACEHOLDER, this, shape, dataType, null);
+        variables.put(name, Variable.builder().name(name).variable(ret).build());
         return ret;
     }
 
@@ -2181,11 +2129,7 @@ public class SameDiff {
      * @param weightInitScheme the weight initialization scheme
      * @return the created variable
      */
-    public SDVariable var(String name, WeightInitScheme weightInitScheme, long... shape) {
-        return var(name, weightInitScheme, true, shape);
-    }
-
-    protected SDVariable var(String name, WeightInitScheme weightInitScheme, boolean placeholderOnNullShape, long... shape) {
+    public SDVariable var(@NonNull String name, @NonNull WeightInitScheme weightInitScheme, @NonNull org.nd4j.linalg.api.buffer.DataType dataType, @NonNull long... shape) {
         if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
             throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
 
@@ -2197,41 +2141,12 @@ public class SameDiff {
             initWorkspace();
 
 
-        SDVariable ret = SDVariable.builder()
-                .sameDiff(this)
-                .shape(shape).weightInitScheme(weightInitScheme)
-                .varName(name)
-                .dataType(Nd4j.dataType())
-                .placeholderOnNullShape(placeholderOnNullShape)
-                .build();
-
-
+        SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, shape, dataType, weightInitScheme);
         return addVariable(ret);
     }
 
-    public SDVariable var(String name, LongShapeDescriptor shape, WeightInitScheme weightInitScheme) {
-        if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
-            throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
-
-
-        if (name == null || name.length() < 1)
-            name = getNewVarName();
-
-        if (workspace == null)
-            initWorkspace();
-
-
-        SDVariable ret = SDVariable.builder()
-                .sameDiff(this)
-                .shape(shape != null ? shape.getShape() : null)
-                .weightInitScheme(weightInitScheme)
-                .dataType(shape != null ? shape.dataType() : Nd4j.dataType())
-                .placeholderOnNullShape(false)
-                .varName(name)
-                .build();
-
-
-        return addVariable(ret);
+    public SDVariable var(@NonNull String name, @NonNull LongShapeDescriptor shape, WeightInitScheme weightInitScheme) {
+        return var(name, weightInitScheme, shape.dataType(), shape.getShape());
     }
 
 
@@ -2243,9 +2158,9 @@ public class SameDiff {
      * @param shape the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(String name, long... shape) {
+    public SDVariable var(String name, org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
         Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
-        return var(name, new ZeroInitScheme(), shape);
+        return var(name, new ZeroInitScheme(), dataType, shape);
     }
 
     public SDVariable var(String name, LongShapeDescriptor shapeDesc) {
@@ -2261,9 +2176,9 @@ public class SameDiff {
      * @param shape the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(String name, int... shape) {
+    public SDVariable var(String name, org.nd4j.linalg.api.buffer.DataType dataType, int... shape) {
         Preconditions.checkNotNull(shape, "Invalid shape: shape may not be null");
-        return var(name, new ZeroInitScheme(), ArrayUtil.toLongArray(shape));
+        return var(name, new ZeroInitScheme(), dataType, ArrayUtil.toLongArray(shape));
     }
 
 
@@ -2286,18 +2201,18 @@ public class SameDiff {
         if (workspace == null)
             initWorkspace();
 
-        final SDVariable ret = SDVariable.builder()
+        /*
+        final SDVariable ret = new SDVariable()
                 .sameDiff(this)
                 .shape(arr.getShape())
                 .varName(arr.getVarName())
                 .placeholderOnNullShape(false)
                 .weightInitScheme(new NDArraySupplierInitScheme(new NDArraySupplierInitScheme.NDArraySupplier() {
                     @Override
-                    /**
-                     * Pre allocate the array if it doesn't already exist.
-                     * The reason we do this is to avoid race conditions with
-                     * {@link #allocate()}
-                     */
+
+//                     * Pre allocate the array if it doesn't already exist.
+//                     * The reason we do this is to avoid race conditions with
+//                     * {@link #allocate()}
                     public INDArray getArr() {
                         if (arr.getArr() == null) {
                             INDArray retArr = arr.getWeightInitScheme().create(arr.dataType(), arr.getShape());
@@ -2310,6 +2225,8 @@ public class SameDiff {
 
 
         return addVariable(ret);
+        */
+        throw new UnsupportedOperationException("Not yet reimplemented");
     }
 
     private String getNewVarName() {
@@ -2328,8 +2245,8 @@ public class SameDiff {
      * @param shape the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(int... shape) {
-        return var(getNewVarName(), shape);
+    public SDVariable var(org.nd4j.linalg.api.buffer.DataType dataType, int... shape) {
+        return var(getNewVarName(), dataType, shape);
     }
 
     /**
@@ -2339,8 +2256,8 @@ public class SameDiff {
      * @param shape the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(long... shape) {
-        return var(getNewVarName(), shape);
+    public SDVariable var(org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
+        return var(getNewVarName(), dataType, shape);
     }
 
     /**
@@ -2351,8 +2268,8 @@ public class SameDiff {
      * @param shape            the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(WeightInitScheme weightInitScheme, long... shape) {
-        return var(getNewVarName(), shape, weightInitScheme);
+    public SDVariable var(WeightInitScheme weightInitScheme, org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
+        return var(getNewVarName(), weightInitScheme, dataType, shape);
     }
 
     /**
@@ -2383,25 +2300,8 @@ public class SameDiff {
 
         if (workspace == null)
             initWorkspace();
-
-        val arrRef = arr.migrate();
-        SDVariable ret = SDVariable.builder()
-                .sameDiff(this)
-                .shape(arr.shape())
-                .varName(name)
-                .dataType(arr.dataType())
-                .placeholderOnNullShape(false)  //N/A here
-                .weightInitScheme(new NDArraySupplierInitScheme(new NDArraySupplierInitScheme.NDArraySupplier() {
-                    @Override
-                    /**
-                     * Return array
-                     */
-                    public INDArray getArr() {
-                        return arrRef;
-                    }
-                }))
-                .build();
-
+        arr = arr.migrate();
+        SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, arr.shape(), arr.dataType(), new NDArraySupplierInitScheme(arr));
 
         associateArrayWithVariable(arr, ret);
         if (ArrayUtil.prod(arr.shape()) == 1)
@@ -9647,7 +9547,8 @@ public class SameDiff {
                     SDVariable var = (i == 0 ? getVariable(baseName) : getVariable(baseName + ":" + i));
                     if (var == null) {
                         //Generate new variable name if one with the specified name doesn't exist
-                        var = var(generateNewVarName(baseName, i), new ZeroInitScheme(ordering), false, (long[])null);
+                        org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
+                        var = var(generateNewVarName(baseName, i), new ZeroInitScheme(ordering), dataType, (long[])null);
                     }
                     var.setOutputIndex(i);
                     var.setCreator(function);
@@ -9671,16 +9572,19 @@ public class SameDiff {
                     ordering = function.args()[0].getArr().ordering();
                 }
                 if (checkGet == null) {
-                    checkGet = var(baseName, new ZeroInitScheme(ordering), false, (long[])null);
+                    org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
+                    checkGet = var(baseName, new ZeroInitScheme(ordering), dataType, (long[])null);
                 } else if (!importedVarName.contains(baseName)) {
                     //need to find a new name
                     String newName = generateNewVarName(baseName, 0);
-                    checkGet = var(newName, new ZeroInitScheme(ordering), false, (long[])null);
+                    org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
+                    checkGet = var(newName, new ZeroInitScheme(ordering), dataType, (long[])null);
                 }
 
 
                 if (checkGet == null) {
-                    checkGet = var(baseName, new ZeroInitScheme(ordering), false, (long[])null);
+                    org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
+                    checkGet = var(baseName, new ZeroInitScheme(ordering), dataType, (long[])null);
                 }
 
                 checkGet.setOutputIndex(0);
@@ -9714,7 +9618,8 @@ public class SameDiff {
             SDVariable checkGet = getVariable(baseName);
             if (checkGet == null) {
                 // obviously - there's no such var, just add it
-                checkGet = var(baseName, new ZeroInitScheme(ordering), false, shape.getShape());
+                org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
+                checkGet = var(baseName, new ZeroInitScheme(ordering), dataType, shape.getShape());
             } else if (shape != null && !shapeAlreadyExistsForVarName(checkGet.getVarName())) {
                 // var exists, let's update its shape
                 putShapeForVarName(checkGet.getVarName(), shape);
@@ -9736,11 +9641,13 @@ public class SameDiff {
                     throw new ND4JIllegalStateException("Converged on already generated variable!");
                 }
 
-                checkGet = var(name, new ZeroInitScheme(ordering), false, shape.getShape());
+                org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
+                checkGet = var(name, new ZeroInitScheme(ordering), dataType, shape.getShape());
             }
 
             if (checkGet == null) {
-                checkGet = var(baseName + (i > 0 ? ":" + i : ""), new ZeroInitScheme(ordering), false, shape.getShape());
+                org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
+                checkGet = var(baseName + (i > 0 ? ":" + i : ""), new ZeroInitScheme(ordering), dataType, shape.getShape());
             }
 
             checkGet.setOutputIndex(i);
@@ -10212,7 +10119,7 @@ public class SameDiff {
                     log.trace("Defining backward function complete");
                 }
 
-                return new SDVariable[]{sameDiff.var("grad", new int[]{1, 1})};
+                return new SDVariable[]{sameDiff.var("grad", org.nd4j.linalg.api.buffer.DataType.FLOAT, 1)};
             }
         });
     }
@@ -10305,36 +10212,8 @@ public class SameDiff {
      * @return True if the variable is a placeholder, false otherwise
      */
     public boolean isPlaceHolder(String varName) {
-        return placeHolderVarNames.contains(varName);
-    }
-
-
-    /**
-     * Add  this vertex id as a place holder
-     *
-     * @param varName the vertex id to add
-     */
-    @Deprecated //TO BE REMOVED from public API. User should not be able to create variable then 'set as placeholder' later
-    public void addAsPlaceHolder(String varName) {
-        placeHolderVarNames.add(varName);
-        if (getVariable(varName) != null && getVariable(varName).getShape() != null) {
-            placeHolderOriginalShapes.put(varName, getVariable(varName).getShape());
-        }
-    }
-
-    /**
-     * Undo an {@link #addAsPlaceHolder(String)} call - i.e., the variable will still be present in the SameDiff
-     * graph, but it will no longer be marked as a placeholder. If the variable was not marked as a placeholder
-     * initially, this operation will be a no-op.
-     * Note that this function should not generally be used by users - it is intended for developer/internal use.
-     *
-     * @param varName Variable name
-     */
-    @Deprecated //TO BE REMOVED from public API. User should not be able to change placeholder status after created
-    public void removeAsPlaceholder(String varName) {
-        placeHolderVarNames.remove(varName);
-        placeHolderOriginalShapes.remove(varName);
-        placeHolderMap.remove(varName);
+        Preconditions.checkState(variables.containsKey(varName), "No variable present in SameDiff instance with name \"%s\"", varName);
+        return variables.get(varName).getVariable().isPlaceHolder();
     }
 
 
@@ -10406,73 +10285,6 @@ public class SameDiff {
         //declare resolved
         resolvedVariables = true;
     }
-
-    /**
-     * Returns true if all place holder variables are resolved.<br>
-     * A place holder variable is resolved when {@link #getVariable(String)} getArr() does not return null and
-     * the shape is properly resolved.
-     *
-     * @return true if all place holder variables are resolved.
-     */
-    public boolean allPlaceHolderVariablesResolved() {
-        for (val vertexId : placeHolderVarNames) {
-            val var = getVariable(vertexId);
-            if (var.getArr() == null) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Add one or more place holder variables for the given vertex id.
-     * <p>
-     * Note that if a vertex id in placeHolderVariables isn't present in this samediff instance anyways,
-     * an {@link ND4JIllegalStateException} is thrown
-     *
-     * @param varName              the vertex id to add place holders for
-     * @param placeHolderVariables the place holder variables
-     */
-    public void putPlaceHolderForVariable(String varName, String... placeHolderVariables) {
-        for (val placeHolderVariable : placeHolderVariables) {
-            if (!variables.containsKey(placeHolderVariable)) {
-                throw new ND4JIllegalStateException("No variable found for " + placeHolderVariable);
-            }
-        }
-
-        List<String[]> placeHolders = placeHolderMap.get(varName);
-        if (placeHolders == null) {
-            placeHolders = new ArrayList<>();
-            placeHolderMap.put(varName, placeHolders);
-        }
-
-        placeHolders.add(placeHolderVariables);
-    }
-
-
-    /**
-     * Returns true if the given vertex id has any placeholder variables
-     *
-     * @param vertexId the vertex id to check for
-     * @return true if this vertex has any place holder variables or not
-     */
-    public boolean hasPlaceHolderVariables(String vertexId) {
-        return placeHolderMap.containsKey(vertexId);
-    }
-
-    /**
-     * Get the place holders for a given vertex id. May return null.
-     * <p>
-     * Consider using {@link #hasPlaceHolderVariables(String)}
-     *
-     * @param varName the vertex id to get the place holders for
-     * @return the place holder variables for the given vertex id or null
-     */
-    public List<String[]> getPlaceHoldersFor(String varName) {
-        return placeHolderMap.get(varName);
-    }
-
 
     /**
      * Creates and executes a list of operations based on the given variables passed in.<br>
@@ -11758,11 +11570,20 @@ public class SameDiff {
         int variablesOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatVariables));
         int nodesOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(flatNodes));
 
-        int[] placeholderOffsets = new int[placeHolderVarNames == null ? 0 : placeHolderVarNames.size()];
-        if(placeHolderVarNames != null){
+        int numPlaceholders = 0;
+        for(SDVariable v : variables()){
+            if(v.isPlaceHolder()){
+                numPlaceholders++;
+            }
+        }
+
+        int[] placeholderOffsets = new int[numPlaceholders];
+        if(numPlaceholders > 0){
             int i=0;
-            for(String s : placeHolderVarNames){
-                placeholderOffsets[i++] = bufferBuilder.createString(s);
+            for(SDVariable v : variables()){
+                if(!v.isPlaceHolder())
+                    continue;
+                placeholderOffsets[i++] = bufferBuilder.createString(v.getVarName());
             }
         }
         int placeholdersOffset = FlatGraph.createPlaceholdersVector(bufferBuilder, placeholderOffsets);
@@ -11771,8 +11592,9 @@ public class SameDiff {
         bufferBuilder.finish(fg);
 
         synchronized (this) {
-            if (this.reverseMap == null)
-                this.reverseMap = reverseMap;
+            for(Map.Entry<String,Integer> e : reverseMap.entrySet()){
+                this.variables.get(e.getKey()).setVariableIndex(e.getValue());
+            }
         }
 
         return bufferBuilder.dataBuffer();
@@ -11996,6 +11818,14 @@ public class SameDiff {
 
         SameDiff sd = SameDiff.create();
 
+        //Reconstruct placeholders
+        int numPlaceholders = fg.placeholdersLength();
+        Set<String> ph = new LinkedHashSet<>();
+        for(int i=0; i<numPlaceholders; i++ ){
+            ph.add(fg.placeholders(i));
+        }
+//        sd.placeHolderVarNames = ph;
+
         //Reconstruct variables:
         Map<Integer,SDVariable> varNodeIds = new HashMap<>();
         Map<Pair<Integer,Integer>, SDVariable> variablesByNodeAndOutNum = new HashMap<>();
@@ -12009,12 +11839,12 @@ public class SameDiff {
 
             String n = v.name();
 
-            SDVariable var = SDVariable.builder()
-                    .varName(n)
-                    .sameDiff(sd)
-                    .shape(shape)
-                    .placeholderOnNullShape(false)      //Placeholders are stored separately
-                    .build();
+            byte dtypeByte = v.dtype();
+            org.nd4j.linalg.api.buffer.DataType dtype = getDataTypeFromByte(dtypeByte);
+
+            //TODO Infer this properly! Could be constant, etc.
+            VariableType vt = ph.contains(n) ? VariableType.PLACEHOLDER : VariableType.VARIABLE;
+            SDVariable var = new SDVariable(n, vt, sd, shape, dtype, null);
             sd.variables.put(n, Variable.builder().name(n).variable(var).build());
             sd.variableNameToShape.put(n, shape);
 
@@ -12109,13 +11939,8 @@ public class SameDiff {
                     String n = fn.outputNames(i);
                     varNames[i] = n;
                     if(!sd.variables.containsKey(n)){
-                        //Need to create the variable - perhaps it wasn't exported
-                        SDVariable var = SDVariable.builder()
-                                .varName(n)
-                                .sameDiff(sd)
-                                .shape(null)
-                                .placeholderOnNullShape(false)  //Placeholders are stored separately
-                                .build();
+                        //Need to create the variable - perhaps it wasn't exported. Note output of node -> can only be VARIABLE type
+                        SDVariable var = new SDVariable(n, VariableType.VARIABLE, sd, null, null, null);
                         sd.variables.put(n, Variable.builder().name(n).variable(var).build());
                         variablesByNodeAndOutNum.put(new Pair<>(opId, i), var);
                     }
@@ -12132,14 +11957,6 @@ public class SameDiff {
                 }
             }
         }
-
-        //Reconstruct placeholders
-        int numPlaceholders = fg.placeholdersLength();
-        Set<String> ph = new LinkedHashSet<>();
-        for(int i=0; i<numPlaceholders; i++ ){
-            ph.add(fg.placeholders(i));
-        }
-        sd.placeHolderVarNames = ph;
 
         return sd;
     }

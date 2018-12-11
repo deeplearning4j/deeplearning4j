@@ -35,6 +35,7 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -260,9 +261,10 @@ public class TFGraphTestAllHelper {
             // to be detected before later failures)
             Set<String> varNamesSet = new HashSet<>(graph.variableMap().keySet());
             List<String> varNames = new ArrayList<>();
-            Map<String,DifferentialFunction> fns = graph.getFunctionInstancesById();  //LinkedHashMap defines execution order
-            for(Map.Entry<String,DifferentialFunction> e : fns.entrySet()){
-                String[] outputs = graph.getOutputsForFunction(e.getValue());
+//            Map<String,DifferentialFunction> fns = graph.getFunctionInstancesById();  //LinkedHashMap defines execution order
+            Map<String,SameDiffOp> fns = graph.getOps();
+            for(Map.Entry<String,SameDiffOp> e : fns.entrySet()){
+                String[] outputs = graph.getOutputsForFunction(e.getValue().getOp());
                 Collections.addAll(varNames, outputs);
             }
 

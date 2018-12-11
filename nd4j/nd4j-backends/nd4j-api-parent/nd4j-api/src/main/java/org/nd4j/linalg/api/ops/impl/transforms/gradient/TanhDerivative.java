@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.ops.BaseGradientOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -103,8 +104,8 @@ public class TanhDerivative extends BaseGradientOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().div(f().one(outputVariables()[0].getShape()), f().pow(f().cosh(arg()), 2));
-        return Arrays.asList(ret);
+        SDVariable ret = f().div(sameDiff.onesLike(outputVariables()[0]), f().pow(f().cosh(arg()), 2));
+        return Collections.singletonList(ret);
     }
 
     @Override
