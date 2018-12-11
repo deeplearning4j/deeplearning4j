@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -22,52 +22,54 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * Element-wise exponential function minus 1, i.e. for each element x in a tensor computes the
- * transformation exp(x) - 1.
+ * ACosh elementwise function
  *
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
-public class Expm1 extends BaseTransformFloatOp {
-    public Expm1(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+public class ACosh extends BaseTransformStrictOp {
+
+    public ACosh() {
+    }
+
+    public ACosh(INDArray x) {
+        super(x);
+    }
+
+    public ACosh(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
+    public ACosh(INDArray indArray, INDArray indArray1, int length) {
+        super(indArray, indArray1, length);
+    }
+
+    public ACosh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+
         super(sameDiff, i_v, inPlace);
     }
 
-    public Expm1(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public ACosh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public Expm1(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public ACosh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
-    }
-
-    public Expm1() {
-    }
-
-    public Expm1(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public Expm1(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public Expm1(INDArray x) {
-        super(x);
     }
 
     @Override
     public int opNum() {
-        return 33;
+        return 46;
     }
 
     @Override
     public String opName() {
-        return "expm1";
+        return "acosh";
     }
 
     @Override
@@ -77,14 +79,16 @@ public class Expm1 extends BaseTransformFloatOp {
 
     @Override
     public String tensorflowName() {
-        return "Expm1";
+        return "Acosh";
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().mul(f().exp(arg()), i_v.get(0));
-        return Arrays.asList(ret);
+        //dacosh(x)/dx = 1/(sqrt(x^2-1)) -- note that domain is x >= 1
+        SDVariable xSqPlus1 = sameDiff.square(arg()).sub(1.0);
+        SDVariable sqrt = sameDiff.sqrt(xSqPlus1);
+        return Arrays.asList(i_v.get(0).div(sqrt));
     }
 
 }

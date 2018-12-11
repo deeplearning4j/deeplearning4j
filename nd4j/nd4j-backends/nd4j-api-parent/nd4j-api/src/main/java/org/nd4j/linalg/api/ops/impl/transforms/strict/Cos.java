@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -22,53 +22,59 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * Gaussian error function (erf) function, which is defined as
- * <p>
- * erf(x) = 1 / sqrt(pi) * integral_(-x, x) exp(-t^2) dt
+ * Cosine elementwise function
  *
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
-public class Erf extends BaseTransformFloatOp {
-    public Erf(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+public class Cos extends BaseTransformStrictOp {
+
+    public Cos(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Erf(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
+    public Cos(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public Erf(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public Cos(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public Erf() {
+    public Cos() {
     }
 
-    public Erf(INDArray x, INDArray z) {
+    public Cos(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public Erf(INDArray x, INDArray z, long n) {
+    public Cos(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Erf(INDArray x) {
+    public Cos(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 27;
+        return 22;
     }
 
     @Override
     public String opName() {
-        return "erf";
+        return "cos";
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable ret = f().neg(f().sin(arg())).mul(i_v.get(0));
+        return Arrays.asList(ret);
     }
 
     @Override
@@ -78,17 +84,8 @@ public class Erf extends BaseTransformFloatOp {
 
     @Override
     public String tensorflowName() {
-        return "Erf";
+        return "Cos";
     }
 
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        // Derivative of erf(z) is 2 / sqrt(pi) * e^(-z^2)
-        SDVariable gradient = i_v.get(0);
-        SDVariable z = arg();
-        SDVariable constant = sameDiff.onesLike(gradient).mul(2.0 / Math.sqrt(Math.PI));
-        SDVariable ret = constant.mul(sameDiff.exp(z.mul(z).mul(-1))).mul(gradient);
-        return Collections.singletonList(ret);
-    }
 
 }

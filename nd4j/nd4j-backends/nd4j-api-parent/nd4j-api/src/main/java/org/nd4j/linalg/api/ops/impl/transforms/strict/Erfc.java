@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -22,6 +22,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Collections;
 import java.util.List;
@@ -35,7 +36,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class Erfc extends BaseTransformFloatOp {
+public class Erfc extends BaseTransformStrictOp {
     public Erfc(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -65,7 +66,7 @@ public class Erfc extends BaseTransformFloatOp {
 
     @Override
     public int opNum() {
-        return 32;
+        return 50;
     }
 
     @Override

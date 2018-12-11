@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -22,43 +22,52 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * Tanh elementwise function
+ * Swish function
  *
  * @author raver119@gmail.com
  */
-public class Tan extends BaseTransformFloatOp {
-    public Tan(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+public class Swish extends BaseTransformStrictOp {
+    public Swish(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Tan() {
+    public Swish(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public Tan(INDArray x, INDArray z) {
+    public Swish(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
+    public Swish() {
+    }
+
+    public Swish(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public Tan(INDArray x, INDArray z, long n) {
+    public Swish(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Tan(INDArray x) {
-        super(x);
+    public Swish(INDArray ndArray) {
+        super(ndArray);
     }
 
     @Override
     public int opNum() {
-        return 21;
+        return 43;
     }
 
     @Override
     public String opName() {
-        return "tan";
+        return "swish";
     }
 
     @Override
@@ -68,15 +77,13 @@ public class Tan extends BaseTransformFloatOp {
 
     @Override
     public String tensorflowName() {
-        return "Tan";
+        return "Swish";
     }
+
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //d(tan(x))/dx = (sec(x))^2 = 1 / (cos(x))^2
-
-        SDVariable oneDivCos2 = sameDiff.square(sameDiff.cos(arg())).rdiv(1.0);
-        SDVariable ret = oneDivCos2.mul(i_v.get(0));
+        SDVariable ret = f().swishDerivative(arg()).mul(i_v.get(0));
         return Arrays.asList(ret);
     }
 

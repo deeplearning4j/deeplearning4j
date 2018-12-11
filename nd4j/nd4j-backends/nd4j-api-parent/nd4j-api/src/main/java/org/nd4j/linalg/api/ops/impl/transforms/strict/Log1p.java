@@ -14,78 +14,76 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Softsign element-wise activation function. f(x) = x/(1+abs(x))<br>
- * Similar in shape to tanh but may outperform it due to
- * 'gentler' nonlinearity (smoother asymptotes).<br>
- * See for example: http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf
+ * Log1p function
  *
- * @author Alex Black
- */
-public class SoftSign extends BaseTransformFloatOp {
-    public SoftSign(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+ * @author raver119@gmail.com
+  */
+public class Log1p extends BaseTransformStrictOp {
+    public Log1p(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SoftSign(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public Log1p(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public SoftSign(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public Log1p(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public SoftSign() {
-    }
+    public Log1p() {}
 
-    public SoftSign(INDArray x, INDArray z) {
+    public Log1p(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public SoftSign(INDArray x, INDArray z, long n) {
+    public Log1p(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public SoftSign(INDArray x) {
+    public Log1p(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 13;
+        return 44;
     }
 
     @Override
     public String opName() {
-        return "softsign";
+        return "log1p";
     }
 
     @Override
     public String onnxName() {
-        return "Softsign";
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "Softsign";
+        return "Log1p";
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().softsignDerivative(arg()).mul(i_v.get(0));
-        return Arrays.asList(ret);
+        f().validateDifferentialFunctionsameDiff(arg());
+        return Collections.singletonList(i_v.get(0).div(arg().add(1.0)));
     }
 
 }

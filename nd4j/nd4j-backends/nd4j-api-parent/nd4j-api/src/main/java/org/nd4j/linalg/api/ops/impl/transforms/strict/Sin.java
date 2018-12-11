@@ -14,13 +14,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -30,60 +32,59 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Log extends BaseTransformFloatOp {
-    public Log(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+public class Sin extends BaseTransformStrictOp {
+    public Sin(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Log(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public Sin(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public Log(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public Sin(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public Log() {
-    }
-
-    public Log(INDArray x, INDArray z) {
+    public Sin(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public Log(INDArray x, INDArray z, long n) {
+    public Sin(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Log(INDArray x) {
+    public Sin(INDArray x) {
         super(x);
+    }
+
+    public Sin() {
     }
 
     @Override
     public int opNum() {
-        return 2;
+        return 27;
     }
 
     @Override
     public String opName() {
-        return "log";
+        return "sin";
     }
-
 
     @Override
     public String onnxName() {
-        return "Log";
+        throw new NoOpNameFoundException("No onnx op found for " + opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "Log";
+        return "Sin";
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        f().validateDifferentialFunctionsameDiff(arg());
-        SDVariable toInverse = sameDiff.setupFunction(f().div(i_v.get(0), arg()));
-        return Arrays.asList(toInverse);
+        SDVariable ret = f().cos(arg()).mul(i_v.get(0));
+        return Arrays.asList(ret);
     }
+
 }

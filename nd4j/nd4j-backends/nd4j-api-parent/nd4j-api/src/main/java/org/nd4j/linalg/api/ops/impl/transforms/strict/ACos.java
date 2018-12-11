@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -22,53 +22,52 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * ACosh elementwise function
+ * Log elementwise function
  *
  * @author Adam Gibson
  */
-public class ACosh extends BaseTransformFloatOp {
-
-    public ACosh() {
-    }
-
-    public ACosh(INDArray x) {
-        super(x);
-    }
-
-    public ACosh(INDArray x, INDArray y) {
-        super(x, y);
-    }
-
-    public ACosh(INDArray indArray, INDArray indArray1, int length) {
-        super(indArray, indArray1, length);
-    }
-
-    public ACosh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-
+public class ACos extends BaseTransformStrictOp {
+    public ACos(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ACosh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public ACos(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public ACosh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public ACos(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+    }
+
+    public ACos() {
+    }
+
+    public ACos(INDArray x) {
+        super(x);
+    }
+
+    public ACos(INDArray x, INDArray y) {
+        super(x, y);
+    }
+
+    public ACos(INDArray indArray, INDArray indArray1, int length) {
+        super(indArray, indArray1, length);
     }
 
     @Override
     public int opNum() {
-        return 28;
+        return 30;
     }
 
     @Override
     public String opName() {
-        return "acosh";
+        return "acos";
     }
 
     @Override
@@ -78,16 +77,16 @@ public class ACosh extends BaseTransformFloatOp {
 
     @Override
     public String tensorflowName() {
-        return "Acosh";
+        return "Acos";
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //dacosh(x)/dx = 1/(sqrt(x^2-1)) -- note that domain is x >= 1
-        SDVariable xSqPlus1 = sameDiff.square(arg()).sub(1.0);
-        SDVariable sqrt = sameDiff.sqrt(xSqPlus1);
-        return Arrays.asList(i_v.get(0).div(sqrt));
+        //dacos(x)/dx = -1 / sqrt(1-x^2)
+        SDVariable oneSubSq = f().square(arg()).rsub(1.0);
+        SDVariable sqrt = f().sqrt(oneSubSq);
+        SDVariable ret = sqrt.rdiv(-1.0).mul(i_v.get(0));
+        return Arrays.asList(ret);
     }
-
 }

@@ -14,75 +14,66 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * @author Adam Gibson
+ * Rational Tanh Approximation elementwise function, as described at https://github.com/deeplearning4j/libnd4j/issues/351
+ *
+ * @author raver119@gmail.com
  */
-public class SoftPlus extends BaseTransformFloatOp {
-    public SoftPlus(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+public class RationalTanh extends BaseTransformStrictOp {
+    public RationalTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SoftPlus(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
+    public RationalTanh() {}
 
-    public SoftPlus(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
-    public SoftPlus(INDArray x, INDArray z) {
+    public RationalTanh(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public SoftPlus() {
-        super();
-    }
-
-    public SoftPlus(INDArray x, INDArray z, long n) {
+    public RationalTanh(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-
-    public SoftPlus(INDArray x) {
+    public RationalTanh(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 6;
+        return 37;
     }
 
     @Override
     public String opName() {
-        return "softplus";
+        return "rational_tanh";
     }
 
     @Override
     public String onnxName() {
-        return "Softplus";
+        return "Tanh";
     }
 
     @Override
     public String tensorflowName() {
-        return "Softplus";
+        return "RationalTanh";
     }
+
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //dL/dIn = dL/Out * dOut/dIn
-        SDVariable ret = f().sigmoid(arg()).mul(i_v.get(0));
-        return Arrays.asList(ret);
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Collections.singletonList(f().tanhRationalDerivative(arg()).mul(f1.get(0)));
     }
-
 }
