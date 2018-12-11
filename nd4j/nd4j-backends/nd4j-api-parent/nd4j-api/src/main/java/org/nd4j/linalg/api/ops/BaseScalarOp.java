@@ -44,20 +44,20 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     public BaseScalarOp(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n);
-        this.scalarValue = Nd4j.scalar(num);
+        this.scalarValue = Nd4j.scalar(x.dataType(), num);
 
         init(x, y, z, n);
     }
 
     public BaseScalarOp(INDArray x, Number num) {
         super(x);
-        this.scalarValue = Nd4j.scalar(num);
+        this.scalarValue = Nd4j.scalar(x.dataType(), num);
         init(x, y, z, n);
 
     }
     public BaseScalarOp(INDArray x, INDArray z, Number set) {
         super(x, null, z, x.length());
-        this.scalarValue= Nd4j.scalar(set);
+        this.scalarValue= Nd4j.scalar(x.dataType(), set);
     }
 
 
