@@ -173,7 +173,7 @@ public abstract class AbstractSession<T, O> {
                 }
             } else if (sameDiff.getVariableOutputFunction(varToExec.getVariable()) != null) {
                 //Variable is the output of an op -> execute op
-                String opName = sameDiff.getFunctionOutputFor().get(varToExec.getVariable()).get(0).getOwnName();
+                String opName = sameDiff.getVariables().get(varToExec.getVariable()).getOutputOfOp();
 
                 //Execute op
                 FrameIter frameIter = varToExec.toFrameIter();
@@ -292,13 +292,8 @@ public abstract class AbstractSession<T, O> {
     protected void updateDescendentsForExec(VarId executedVar) {
         String varName = executedVar.getVariable();
         //Find any ops (or variables with control dependencies) that this is required for execution of and check if now available for exec
-        List<DifferentialFunction> l = sameDiff.getFunctionsArgsFor().get(varName);
-        String[] inputForOps = l == null ? null : new String[l.size()];
-        if (l != null) {
-            for (int i = 0; i < inputForOps.length; i++) {
-                inputForOps[i] = l.get(i).getOwnName();
-            }
-        }
+        List<String> l = sameDiff.getVariables().get(executedVar.getVariable()).getInputsForOp();
+        String[] inputForOps = l == null ? null : l.toArray(new String[l.size()]);
 
         boolean isConstOrPhInput = sameDiff.isPlaceHolder(executedVar.getVariable()) ||
                 (sameDiff.getImportedConstants() != null && sameDiff.getImportedConstants().contains(executedVar.getVariable()));

@@ -347,16 +347,10 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                 outNames[i] = outVars[i].getVarName();
             }
             sd.getOutgoingArgsReverse().put(df.getOwnName(), outNames);
-        } else {
-            outVars = df.outputVariables();
         }
 
-        Map<String,List<DifferentialFunction>> fnOutputsFor = sd.getFunctionOutputFor();
         for(String s : outNames) {
-            if (!fnOutputsFor.containsKey(s)) {
-                fnOutputsFor.put(s, new ArrayList<DifferentialFunction>());
-            }
-            fnOutputsFor.get(s).add(df);
+            sd.getVariables().get(s).setOutputOfOp(df.getOwnName());
         }
     }
 
@@ -374,8 +368,8 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         for(SDVariable v : sameDiff.variables()){
             String name = v.getVarName();
             if(sameDiff.isPlaceHolder(name)){
-                List<DifferentialFunction> l = sameDiff.functionOutputFor(name);
-                if(l != null && !l.isEmpty()){
+                String varOutputOf = sameDiff.getVariables().get(name).getOutputOfOp();
+                if(varOutputOf != null){
                     //Output of a function - can't be a placeholder
                     sameDiff.removeAsPlaceholder(name);
                 }

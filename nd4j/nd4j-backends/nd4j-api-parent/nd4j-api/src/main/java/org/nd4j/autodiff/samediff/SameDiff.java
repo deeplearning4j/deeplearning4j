@@ -191,14 +191,6 @@ public class SameDiff {
     @Deprecated //TO BE REMOVED - to InferenceSession
     private Map<String, INDArray> variableNameToArr;                //Key: name of SDVariable. Value: Array for that variable
 
-    //individual index for variable names
-    @Deprecated //TO BE REMOVED - to Variable
-    @Getter
-    private Map<String, List<DifferentialFunction>> functionsArgsFor;   //Key: SDVariable name. Value: all DifferentialFunctions it is an input to
-    @Deprecated //TO BE REMOVED - to Variable
-    @Getter
-    private Map<String, List<DifferentialFunction>> functionOutputFor;  //Key: SDVariable name. Value: DifferentialFunctions this variable is an output for (TODO: Why is this a list? Isn't it *always* length 1?)
-
     private Map<String, TensorList> lists = new HashMap<>();    // Key - node name; Value - TensorList
 
     // this entity holds runtime information for Switch/Merge/NextIteration etc stuff
@@ -378,9 +370,10 @@ public class SameDiff {
         }
 
 
-        if (functionsArgsFor.containsKey(oldVarName)) {
-            val funcs = functionsArgsFor.remove(oldVarName);
-            for (val func : funcs) {
+        if (v.getInputsForOp() != null) {
+            List<String> funcNames = v.getInputsForOp();
+            for (String s : funcNames) {
+                DifferentialFunction func = functionInstancesById.get(s);
                 if (func instanceof BaseOp) {
                     BaseOp baseOp = (BaseOp) func;
                     if (baseOp.getXVertexId() != null && baseOp.getXVertexId().equals(oldVarName)) {
@@ -397,37 +390,27 @@ public class SameDiff {
 
                 }
             }
-
-            functionsArgsFor.put(withName, funcs);
         }
 
 
-        if (functionOutputFor.containsKey(oldVarName)) {
-            val funcs = functionOutputFor.remove(oldVarName);
-            for (val func : funcs) {
-                if (func instanceof BaseOp) {
-                    BaseOp baseOp = (BaseOp) func;
-                    if (baseOp.getXVertexId() != null && baseOp.getXVertexId().equals(oldVarName)) {
-                        baseOp.setXVertexId(withName);
-                    }
-
-                    if (baseOp.getYVertexId() != null && baseOp.getYVertexId().equals(oldVarName)) {
-                        baseOp.setYVertexId(withName);
-                    }
-
-                    if (baseOp.getZVertexId() != null && baseOp.getZVertexId().equals(oldVarName)) {
-                        baseOp.setZVertexId(withName);
-                    }
-
+        if (v.getOutputOfOp() != null) {
+            DifferentialFunction func = functionInstancesById.get(v.getOutputOfOp());
+            if (func instanceof BaseOp) {
+                BaseOp baseOp = (BaseOp) func;
+                if (baseOp.getXVertexId() != null && baseOp.getXVertexId().equals(oldVarName)) {
+                    baseOp.setXVertexId(withName);
                 }
+
+                if (baseOp.getYVertexId() != null && baseOp.getYVertexId().equals(oldVarName)) {
+                    baseOp.setYVertexId(withName);
+                }
+
+                if (baseOp.getZVertexId() != null && baseOp.getZVertexId().equals(oldVarName)) {
+                    baseOp.setZVertexId(withName);
+                }
+
             }
-
-            functionOutputFor.put(withName, funcs);
         }
-
-//        variableMap.remove(oldVarName);
-
-
     }
 
 
@@ -529,8 +512,10 @@ public class SameDiff {
         return functionInstancesById.containsKey(id);
     }
 
-    public List<DifferentialFunction> functionOutputFor(String varName){
-        return functionOutputFor.get(varName);
+    public DifferentialFunction functionOutputFor(String varName){
+        if(variables.get(varName).getOutputOfOp() == null)
+            return null;
+        return functionInstancesById.get(variables.get(varName).getOutputOfOp());
     }
 
     /**
@@ -1018,8 +1003,6 @@ public class SameDiff {
         outgoingArgsReverse = new LinkedHashMap<>();
         functionInstancesById = new LinkedHashMap<>();
         placeHolderFunctions = new LinkedHashSet<>();
-        functionsArgsFor = new LinkedHashMap<>();
-        functionOutputFor = new LinkedHashMap<>();
         baseNameForFunctionInstanceId = new LinkedHashMap<>();
         importedVarName = new LinkedHashSet<>();
         permuteOrder = new LinkedHashMap<>();
@@ -1285,15 +1268,9 @@ public class SameDiff {
 
         outgoingArgsReverse.put(function.getOwnName(), varNames);
 
-        for (val resultName : varNames) {
-            List<DifferentialFunction> funcs = functionOutputFor.get(resultName);
-            if (funcs == null) {
-                funcs = new ArrayList<>();
-                functionOutputFor.put(resultName, funcs);
-            }
-            funcs.add(function);
+        for (String resultName : varNames) {
+            variables.get(resultName).setOutputOfOp(function.getOwnName());
         }
-
     }
 
     /**
@@ -1314,14 +1291,14 @@ public class SameDiff {
         }
 
         incomingArgsReverse.put(function.getOwnName(), variables);
-        for (val variableName : variables) {
-            List<DifferentialFunction> funcs = functionsArgsFor.get(variableName);
+        for (String variableName : variables) {
+            List<String> funcs = this.variables.get(variableName).getInputsForOp();
             if (funcs == null) {
                 funcs = new ArrayList<>();
-                functionsArgsFor.put(variableName, funcs);
+                this.variables.get(variableName).setInputsForOp(funcs);
             }
 
-            funcs.add(function);
+            funcs.add(function.getOwnName());
         }
     }
 
@@ -1349,21 +1326,9 @@ public class SameDiff {
      * @return The differential function that this variable is an output of, or null if it is not the output of a function
      */
     public DifferentialFunction getVariableOutputFunction(String variableName) {
-        List<DifferentialFunction> list = functionOutputFor.get(variableName);
-        if (list == null) {
+        if(variables.get(variableName).getOutputOfOp() == null)
             return null;
-        }
-        return list.get(0);
-    }
-
-    /**
-     * Return a list of differential functions (if any) that this variable is the input argument for
-     *
-     * @param variableName Name of the variable
-     * @return The differential functions that this variable is an input argument for, or null if it is not the input to any function
-     */
-    public List<DifferentialFunction> getVariableArgOfFunctions(String variableName) {
-        return functionsArgsFor.get(variableName);
+        return functionInstancesById.get(variables.get(variableName).getOutputOfOp());
     }
 
 
@@ -1777,7 +1742,7 @@ public class SameDiff {
                 for(Variable var : variables.values()){
                     SDVariable v = var.getVariable();
                     String n = v.getVarName();
-                    if((!functionOutputFor.containsKey(n) || functionOutputFor.get(n) == null || functionOutputFor.get(n).size() == 0) &&       //Is a leaf (not the output of a function)
+                    if(variables.get(n).getOutputOfOp() == null &&       //Is a leaf (not the output of a function)
                             !placeHolderVarNames.contains(n) &&                                                                                 //and not a placeholder
                             (trainingConfig.getDataSetFeatureMapping() == null || !trainingConfig.getDataSetFeatureMapping().contains(n))   &&  //and not an input (this really should be a placeholder, but we can't guarantee that...)
                             (trainingConfig.getDataSetLabelMapping() == null || !trainingConfig.getDataSetLabelMapping().contains(n))   &&      //and not a label (this really should be a placeholder, but we can't guarantee that...)
@@ -11570,8 +11535,8 @@ public class SameDiff {
         for (SDVariable input : inputs) {
             String varName = input.getVarName();
             int outIdx;
-            if(functionOutputFor.containsKey(varName)){
-                DifferentialFunction df = functionOutputFor.get(varName).get(0);
+            if(this.variables.get(varName).getOutputOfOp() != null){
+                DifferentialFunction df = functionInstancesById.get(this.variables.get(varName).getOutputOfOp());
                 outIdx = ArrayUtils.indexOf(outgoingArgsReverse.get(df.getOwnName()), varName);
             } else {
                 outIdx = 0;
@@ -11710,9 +11675,9 @@ public class SameDiff {
             String varName = variable.getVarName();
             int varIdx;
             int outputNum;
-            if(functionOutputFor.containsKey(varName)){
+            if(variables.get(varName).getOutputOfOp() != null){
                 //This variable is the output of a node
-                DifferentialFunction df = functionOutputFor.get(varName).get(0);
+                DifferentialFunction df = functionInstancesById.get(variables.get(varName).getOutputOfOp());
                 if(!idxForOps.containsKey(df)){
                     varIdx = idCounter.incrementAndGet();
                     idxForOps.put(df, varIdx);
@@ -12609,14 +12574,10 @@ public class SameDiff {
                 arrayShape = Arrays.toString(arr.shape());
             }
 
-            List<DifferentialFunction> dfs = functionsArgsFor.get(s);
+            List<String> argNames = variables.get(s).getInputsForOp();
             String dfArrStr = "";
-            if (dfs != null) {
-                String[] dfArr = new String[dfs.size()];
-                for (int i = 0; i < dfs.size(); i++) {
-                    dfArr[i] = dfs.get(i).getOwnName();
-                }
-                dfArrStr = Arrays.toString(dfArr);
+            if (argNames != null) {
+                dfArrStr = argNames.toString();
             }
 
             String outputOfStr = outputOfFn.get(s);
