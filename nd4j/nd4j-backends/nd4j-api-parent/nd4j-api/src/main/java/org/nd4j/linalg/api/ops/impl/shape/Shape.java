@@ -20,6 +20,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -77,7 +78,7 @@ public class Shape extends DynamicCustomOp {
 
         val output_type = nodeDef.getAttrOrThrow("out_type").getType().getNumber();
         val dtype = DataTypeAdapter.dtypeConv(output_type);
-        iArguments.add((long) SameDiff.getDataTypeAsByte(dtype));
+        iArguments.add((long) FlatBuffersMapper.getDataTypeAsByte(dtype));
     }
 
     @Override

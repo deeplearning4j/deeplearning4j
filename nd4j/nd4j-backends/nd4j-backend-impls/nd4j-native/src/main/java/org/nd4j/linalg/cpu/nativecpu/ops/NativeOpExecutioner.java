@@ -25,6 +25,7 @@ import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -1156,7 +1157,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         loop.execAggregateBatch(null, batch.getNumAggregates(), batch.opNum(),
                     batch.getSample().maxArguments(), batch.getSample().maxShapes(),
                     batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
-                    batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer, SameDiff.getDataTypeAsByte(dataType));
+                    batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer, FlatBuffersMapper.getDataTypeAsByte(dataType));
 
     }
 
@@ -1262,7 +1263,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         loop.execAggregate(null, op.opNum(), arguments, numArguments, shapes, numShapes, pointer,
                     numIndexArguments, intArrays, numIntArrays, block.getRealArgumentsPointer(),
-                    numRealArguments, SameDiff.getDataTypeAsByte(dataType));
+                    numRealArguments, FlatBuffersMapper.getDataTypeAsByte(dataType));
 
     }
 

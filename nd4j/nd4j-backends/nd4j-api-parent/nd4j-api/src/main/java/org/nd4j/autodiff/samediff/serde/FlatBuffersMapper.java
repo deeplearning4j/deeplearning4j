@@ -30,7 +30,28 @@ public class FlatBuffersMapper {
      * @return
      */
     public static byte getDataTypeAsByte(org.nd4j.linalg.api.buffer.DataType type) {
-        return SameDiff.getDataTypeAsByte(type);
+        switch (type) {
+            case FLOAT:
+                return DataType.FLOAT;
+            case DOUBLE:
+                return DataType.DOUBLE;
+            case HALF:
+                return DataType.HALF;
+            case INT:
+                return DataType.INT32;
+            case LONG:
+                return DataType.INT64;
+            case BOOL:
+                return DataType.BOOL;
+            case SHORT:
+                return DataType.INT16;
+            case BYTE:
+                return DataType.INT8;
+            case UBYTE:
+                return DataType.UINT8;
+            default:
+                throw new ND4JIllegalStateException("Unknown or unsupported DataType used: [" + type + "]");
+        }
     }
 
     /**
@@ -40,7 +61,26 @@ public class FlatBuffersMapper {
      * @return
      */
     public static org.nd4j.linalg.api.buffer.DataType getDataTypeFromByte(byte val) {
-        return SameDiff.getDataTypeFromByte(val);
+        if (val == DataType.FLOAT)
+            return org.nd4j.linalg.api.buffer.DataType.FLOAT;
+        else if (val == DataType.DOUBLE)
+            return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
+        else if (val == DataType.HALF)
+            return  org.nd4j.linalg.api.buffer.DataType.HALF;
+        else if (val == DataType.INT32)
+            return org.nd4j.linalg.api.buffer.DataType.INT;
+        else if (val == DataType.INT64)
+            return org.nd4j.linalg.api.buffer.DataType.LONG;
+        else if (val == DataType.INT8)
+            return org.nd4j.linalg.api.buffer.DataType.BYTE;
+        else if (val == DataType.BOOL)
+            return org.nd4j.linalg.api.buffer.DataType.BOOL;
+        else if (val == DataType.UINT8)
+            return org.nd4j.linalg.api.buffer.DataType.UBYTE;
+        else if (val == DataType.INT16)
+            return org.nd4j.linalg.api.buffer.DataType.SHORT;
+        else
+            throw new RuntimeException("Unknown datatype: " + val);
     }
 
 
@@ -96,7 +136,54 @@ public class FlatBuffersMapper {
      * @return Op type
      */
     public static Op.Type getTypeFromByte(byte type) {
-        return SameDiff.getTypeFromByte(type);
+        switch (type) {
+            case OpType.SCALAR:
+                return Op.Type.SCALAR;
+            case OpType.SCALAR_BOOL:
+                return Op.Type.SCALAR_BOOL;
+            case OpType.BROADCAST:
+                return Op.Type.BROADCAST;
+            case OpType.BROADCAST_BOOL:
+                return Op.Type.BROADCAST_BOOL;
+            case OpType.TRANSFORM_BOOL:
+                return Op.Type.TRANSFORM_BOOL;
+            case OpType.TRANSFORM_FLOAT:
+                return Op.Type.TRANSFORM_FLOAT;
+            case OpType.TRANSFORM_SAME:
+                return Op.Type.TRANSFORM_SAME;
+            case OpType.TRANSFORM_ANY:
+                return Op.Type.TRANSFORM_ANY;
+            case OpType.TRANSFORM_STRICT:
+                return Op.Type.TRANSFORM_STRICT;
+            case OpType.REDUCE_BOOL:
+                return Op.Type.REDUCE_BOOL;
+            case OpType.REDUCE_LONG:
+                return Op.Type.REDUCE_LONG;
+            case OpType.REDUCE_FLOAT:
+                return Op.Type.REDUCE_FLOAT;
+            case OpType.REDUCE_SAME:
+                return Op.Type.REDUCE_SAME;
+            case OpType.REDUCE_3:
+                return Op.Type.REDUCE3;
+            case OpType.INDEX_REDUCE:
+                return Op.Type.INDEXREDUCE;
+            case OpType.RANDOM:
+                return Op.Type.RANDOM;
+            case OpType.LOGIC:
+                return Op.Type.META;
+            case OpType.CUSTOM:
+                return Op.Type.CUSTOM;
+            case OpType.SHAPE:
+                return Op.Type.SHAPE;
+            case OpType.PAIRWISE:
+                return Op.Type.PAIRWISE;
+            case OpType.PAIRWISE_BOOL:
+                return Op.Type.PAIRWISE_BOOL;
+            case OpType.SUMMARYSTATS:
+                return Op.Type.SUMMARYSTATS;
+            default:
+                throw new UnsupportedOperationException("Unknown op type passed in: " + type);
+        }
     }
 
     /**
@@ -106,7 +193,56 @@ public class FlatBuffersMapper {
      * @return Byte representing the op type
      */
     public static byte getFlatOpType(Op.Type type) {
-        return SameDiff.getFlatOpType(type);
+        switch (type) {
+            case SCALAR:
+                return OpType.SCALAR;
+            case BROADCAST:
+                return OpType.BROADCAST;
+            case TRANSFORM_BOOL:
+                return OpType.TRANSFORM_BOOL;
+            case TRANSFORM_FLOAT:
+                return OpType.TRANSFORM_FLOAT;
+            case TRANSFORM_SAME:
+                return OpType.TRANSFORM_SAME;
+            case TRANSFORM_STRICT:
+                return OpType.TRANSFORM_STRICT;
+            case SPECIAL:
+                return OpType.TRANSFORM_STRICT;
+            case REDUCE_FLOAT:
+                return OpType.REDUCE_FLOAT;
+            case REDUCE_BOOL:
+                return OpType.REDUCE_BOOL;
+            case REDUCE_SAME:
+                return OpType.REDUCE_SAME;
+            case REDUCE_LONG:
+                return OpType.REDUCE_LONG;
+            case REDUCE3:
+                return OpType.REDUCE_3;
+            case INDEXREDUCE:
+                return OpType.INDEX_REDUCE;
+            case RANDOM:
+                return OpType.RANDOM;
+            case MERGE:
+            case CONDITIONAL:
+            case LOOP:
+            case RETURN:
+            case ENTER:
+            case EXIT:
+            case NEXT_ITERATION:
+            case LOOP_COND:
+            case IF:
+                return OpType.LOGIC;
+            case CUSTOM:
+                return OpType.CUSTOM;
+            case SHAPE:
+                return OpType.SHAPE;
+            case PAIRWISE:
+                return OpType.PAIRWISE;
+            case SUMMARYSTATS:
+                return OpType.SUMMARYSTATS;
+            default:
+                throw new UnsupportedOperationException("Unknown op type passed in: " + type);
+        }
     }
 
 
