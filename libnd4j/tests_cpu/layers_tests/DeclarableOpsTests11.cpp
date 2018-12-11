@@ -2437,3 +2437,27 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test8) {
     delete results;
 }
 
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test1) {
+
+    NDArray labels('c', {2}, {2,1}, nd4j::DataType::INT64);
+    NDArray logits('c', {2,3}, nd4j::DataType::DOUBLE);
+    
+    NDArray dLdpExp('c', {2,3}, {0.30061,  0.33222, -0.63283, 0.30061, -0.66778,  0.36717});
+    
+    logits.linspace(0.1, 0.1);     
+
+    nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits_grad op;
+
+    auto results = op.execute({&labels, &logits}, {}, {});
+    
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *dLdp = results->at(0);    
+    
+    ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
+    ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
+
+    delete results;
+}
+

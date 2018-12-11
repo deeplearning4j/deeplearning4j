@@ -695,8 +695,7 @@ TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test1
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto output = results->at(0);
-    output->printIndexedBuffer("Output SSCELwL");
-    expected.printIndexedBuffer("Expect SSCELwL");
+
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 

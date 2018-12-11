@@ -336,6 +336,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_sparse_softmax_cross_entropy_loss_with_logits)
         DECLARE_CUSTOM_OP(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 0, 0);
         #endif
 
 

@@ -24,7 +24,6 @@
 #include <ops/declarable/CustomOperations.h>
 #include <numeric>
 #include <iostream>
-#include <ops/declarable/helpers/losses.h>
 
 namespace nd4j {
 namespace ops  {

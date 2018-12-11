@@ -87,7 +87,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
     auto labels  = INPUT_VARIABLE(1);
     auto output  = OUTPUT_VARIABLE(0);
 
-    auto dLdp = OUTPUT_VARIABLE(0);     // dL/dlogits    
+    auto dLdp = OUTPUT_VARIABLE(0);     // dL/dlogits
     auto dLdl = OUTPUT_VARIABLE(1);     // dL/dlabels
 
     const int classesDim = block.getIArguments()->size() > 0 ? INT_ARG(0) : logits->rankOf()-1;
@@ -128,8 +128,8 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_with_logits_grad) {
 
     DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(logitsShapeInfo));    
 
-    Nd4jLong *dLdpShapeInfo = ShapeBuilders::copyShapeInfoAndType(logitsShapeInfo, outType, false, block.getWorkspace());        
-    Nd4jLong *dLdlShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());    
+    Nd4jLong *dLdpShapeInfo = ShapeBuilders::copyShapeInfoAndType(logitsShapeInfo, outType, false, block.getWorkspace());
+    Nd4jLong *dLdlShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
     
     return SHAPELIST(dLdpShapeInfo, dLdlShapeInfo);
 }
