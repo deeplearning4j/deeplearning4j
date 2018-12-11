@@ -236,6 +236,28 @@ public class MixedDataTypesTests {
     }
 
     @Test
+    public void testNewAssign_1() throws Exception {
+        val arrayX = Nd4j.create(DataType.FLOAT, 5);
+        val arrayY = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+        val exp = Nd4j.create(new float[]{1.f, 2.f, 3.f, 4.f, 5.f});
+
+        arrayX.assign(arrayY);
+
+        assertEquals(exp, arrayX);
+    }
+
+    @Test
+    public void testNewAssign_2() throws Exception {
+        val arrayX = Nd4j.create(DataType.INT, 5);
+        val arrayY = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+        val exp = Nd4j.create(new int[]{1, 2, 3, 4, 5});
+
+        arrayX.assign(arrayY);
+
+        assertEquals(exp, arrayX);
+    }
+
+    @Test
     public void testMethods_1() {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
