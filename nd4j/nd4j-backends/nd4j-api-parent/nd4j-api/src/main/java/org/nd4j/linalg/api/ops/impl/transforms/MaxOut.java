@@ -112,7 +112,7 @@ public class MaxOut extends BaseTransformOp {
     }
 
     @Override
-    public boolean validateDataTypes() {
+    public boolean validateDataTypes(boolean experimentalMode) {
         if (!x().isR())
             return false;
 

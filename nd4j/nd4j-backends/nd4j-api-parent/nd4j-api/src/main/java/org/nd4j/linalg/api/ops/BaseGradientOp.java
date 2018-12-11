@@ -105,7 +105,7 @@ public abstract class BaseGradientOp extends BaseTransformOp implements Gradient
     }
 
     @Override
-    public boolean validateDataTypes() {
+    public boolean validateDataTypes(boolean experimentalMode) {
         if (!x().isR())
             throw new ND4JIllegalArgumentException("Op.X must be one of floating types");
 

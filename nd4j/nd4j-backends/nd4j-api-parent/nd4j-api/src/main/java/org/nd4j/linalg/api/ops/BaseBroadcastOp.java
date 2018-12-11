@@ -23,6 +23,7 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
@@ -204,7 +205,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     }
 
     @Override
-    public boolean validateDataTypes() {
+    public boolean validateDataTypes(boolean experimentalMode) {
 
         val op = opNum();
 
@@ -212,6 +213,9 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
             Preconditions.checkArgument(y().dataType() == z().dataType() || x().dataType() == z().dataType(),
                     "Op.Z type must be either Op.X or Op.Y: x.dataType=%s, y.dataType=%s, z.dataType=%s, op=%s",
                     x.dataType(), y.dataType(), z.dataType(), getClass().getName());
+
+            if (!experimentalMode)
+                Preconditions.checkArgument(x.dataType() == y.dataType() || y.dataType() == DataType.BOOL, "Op.X must have same data type as Op.Y");
 
         if (y() != null) {
             if (op != 1 && (y().isR() || x().isR()))
