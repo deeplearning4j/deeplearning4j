@@ -14,7 +14,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public class WeightInitRelu implements IWeightInit {
 
     @Override
-    public INDArray init(long fanIn, long fanOut, long[] shape, char order, INDArray paramView) {
+    public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
         Nd4j.randn(paramView).muli(FastMath.sqrt(2.0 / fanIn)); //N(0, 2/nIn)
         return paramView.reshape(order, shape);
     }

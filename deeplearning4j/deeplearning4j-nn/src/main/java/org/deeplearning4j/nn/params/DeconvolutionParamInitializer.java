@@ -51,8 +51,8 @@ public class DeconvolutionParamInitializer extends ConvolutionParamInitializer {
             val inputDepth = layerConf.getNIn();
             val outputDepth = layerConf.getNOut();
 
-            final long fanIn = inputDepth * kernel[0] * kernel[1];
-            final long fanOut = outputDepth * kernel[0] * kernel[1] / (stride[0] * stride[1]);
+            double fanIn = inputDepth * kernel[0] * kernel[1];
+            double fanOut = outputDepth * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
 
             val weightsShape = new long[] {inputDepth, outputDepth, kernel[0], kernel[1]};
 

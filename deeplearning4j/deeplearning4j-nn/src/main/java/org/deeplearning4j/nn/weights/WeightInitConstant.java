@@ -23,7 +23,7 @@ public class WeightInitConstant implements IWeightInit {
 
 
     @Override
-    public INDArray init(long fanIn, long fanOut, long[] shape, char order, INDArray paramView) {
+    public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
         paramView.assign(value);
         return paramView.reshape(order, shape);
     }

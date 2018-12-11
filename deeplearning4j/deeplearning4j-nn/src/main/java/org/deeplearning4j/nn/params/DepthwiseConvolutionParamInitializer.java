@@ -193,8 +193,8 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
 
             val inputDepth = layerConf.getNIn();
 
-            final long fanIn = inputDepth * kernel[0] * kernel[1];
-            final long fanOut = depthMultiplier * kernel[0] * kernel[1] / (stride[0] * stride[1]);
+            double fanIn = inputDepth * kernel[0] * kernel[1];
+            double fanOut = depthMultiplier * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
 
             val weightsShape = new long[] {kernel[0], kernel[1], inputDepth, depthMultiplier};
 

@@ -130,9 +130,9 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
             val inputDepth = layerConf.getNIn();
             val outputDepth = layerConf.getNOut();
 
-            final long  fanIn = inputDepth * kernel[0] * kernel[1] * kernel[2];
-            final long  fanOut = outputDepth * kernel[0] * kernel[1] * kernel[2] /
-                    (stride[0] * stride[1] * stride[2]);
+            double fanIn = inputDepth * kernel[0] * kernel[1] * kernel[2];
+            double fanOut = outputDepth * kernel[0] * kernel[1] * kernel[2] /
+                    ((double) stride[0] * stride[1] * stride[2]);
 
             val weightsShape = new long[]{outputDepth, inputDepth, kernel[0], kernel[1], kernel[2]};
 

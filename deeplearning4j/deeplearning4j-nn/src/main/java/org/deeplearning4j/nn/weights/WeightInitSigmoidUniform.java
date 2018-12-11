@@ -15,7 +15,7 @@ public class WeightInitSigmoidUniform implements IWeightInit {
 
 
     @Override
-    public INDArray init(long fanIn, long fanOut, long[] shape, char order, INDArray paramView) {
+    public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
         double r = 4.0 * Math.sqrt(6.0 / (fanIn + fanOut));
         Nd4j.rand(paramView, Nd4j.getDistributions().createUniform(-r, r));
         return paramView.reshape(order, shape);
