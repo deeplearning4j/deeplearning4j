@@ -34,6 +34,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.util.Map;
 
 /**
  * Base class with {@link NativeOps}
@@ -257,6 +258,16 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         // releasing original pointer here
         nativeOps.releaseNumpy(pointer);
         return result;
+    }
+
+    @Override
+    public Map<String, INDArray> createFromNpzFile(File file){
+        byte[] pathBytes = file.getAbsolutePath().getBytes(Charset.forName("UTF-8"));
+        ByteBuffer directBuffer = ByteBuffer.allocateDirect(pathBytes.length).order(ByteOrder.nativeOrder());
+        directBuffer.put(pathBytes);
+        directBuffer.rewind();
+        directBuffer.position(0);
+
     }
 
 }

@@ -1016,6 +1016,22 @@ public abstract class NativeOps extends Pointer {
      */
     public abstract Pointer pointerForAddress(long address);
 
+    public abstract Pointer mapFromNpzFile(BytePointer path);
+
+    public abstract int getNumNpyArraysInMap(Pointer map);
+
+    public abstract Pointer getNpyArrayNameFromMap(Pointer map, int index);
+
+    public abstract Pointer getNpyArrayFromMap(Pointer map, int index);
+
+    public abstract Pointer getNpyArrayData(Pointer npArray);
+
+    public abstract  LongPointer getNpyArrayShape(Pointer npArray);
+
+    public abstract int getNpyArrayRank(Pointer npArray);
+
+    public abstract char getNpyArrayOrder(Pointer npArray);
+
 
     public abstract void tear(PointerPointer extras,
                               Pointer tensor, @Cast("Nd4jLong *") LongPointer xShapeInfo,
