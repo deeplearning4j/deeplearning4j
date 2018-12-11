@@ -22,6 +22,7 @@ import com.google.common.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.rits.cloning.Cloner;
 import com.rits.cloning.IFastCloner;
+import com.sun.istack.internal.NotNull;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
@@ -174,9 +175,6 @@ public class SameDiff {
     @Deprecated //TO BE REMOVED - to Variable
     private Map<String, SDVariable> forwardVarForGrad;
 
-    @Deprecated //TO BE REMOVED - to InferenceSession
-    private Map<String, INDArray> variableNameToArr;                //Key: name of SDVariable. Value: Array for that variable
-
     private Map<String, TensorList> lists = new HashMap<>();    // Key - node name; Value - TensorList
 
     // counter for auto-naming variables
@@ -317,10 +315,10 @@ public class SameDiff {
             }
         }
 
-        if (variableNameToArr.containsKey(oldVarName)) {
-            val arr = variableNameToArr.remove(oldVarName);
-            variableNameToArr.put(withName, arr);
-        }
+//        if (variableNameToArr.containsKey(oldVarName)) {
+//            val arr = variableNameToArr.remove(oldVarName);
+//            variableNameToArr.put(withName, arr);
+//        }
 
 
         if (variableNameToShape.containsKey(oldVarName)) {
@@ -592,53 +590,16 @@ public class SameDiff {
     }
 
 
-    /**
-     * Update the INDArray for the given variable. Note that the array must exist to use this method.
-     *
-     * @param varName Name of the variable to update the array for
-     * @param arr     Array to update
-     * @throws ND4JIllegalStateException when the array does not exist.
-     * @see #putArrayForVarName(String, INDArray)
-     * @see #putOrUpdateShapeForVarName(String, long[], boolean)
-     */
-    public void updateArrayForVarName(String varName, INDArray arr) {
-        if (!variableNameToArr.containsKey(varName)) {
-            throw new ND4JIllegalStateException("Array for " + varName + " does not exist. Please use putArrayForVertexId instead.");
-        }
+    public void setArrayForVariable(@NotNull String varName, @NotNull INDArray arr){
+        Preconditions.checkState(variables.containsKey(varName), "No variable with name \"%s\" exists", varName);
 
-        variableNameToArr.put(varName, arr);
-    }
-
-    /**
-     * Adds an INDArray for a given variable name.
-     * Use {@link #updateArrayForVarName(String, INDArray)} if the array already exists.
-     *
-     * @param varName the vertex id to add
-     * @param arr     the array to add
-     * @throws ND4JIllegalStateException when the array already exists.
-     * @see #putOrUpdateShapeForVarName(String, long[], boolean)
-     */
-    public void putArrayForVarName(String varName, INDArray arr) {
-        if (varName == null)
-            throw new ND4JIllegalStateException("No null names allowed!");
-
-        if (variableNameToArr.containsKey(varName)) {
-            throw new ND4JIllegalStateException("Array for " + varName + " already exists!");
-        }
-
-        variableNameToArr.put(varName, arr);
-    }
-
-    /**
-     * Put the array if it does not exist for the given variable name, or update it if it does
-     * @param varName Variable name
-     * @param arr     Array
-     */
-    public void putOrUpdateArrayForVarName(@NonNull String varName, INDArray arr){
-        if(variableNameToArr.containsKey(varName)){
-            updateArrayForVarName(varName, arr);
+        SDVariable v = getVariable(varName);
+        if(v.isConstant()) {
+            constantArrays.put(varName, new DeviceLocalNDArray(arr));
+        } else if(v.getVariableType() == VariableType.VARIABLE){
+            variablesArrays.put(varName, new DeviceLocalNDArray(arr));
         } else {
-            putArrayForVarName(varName, arr);
+            throw new UnsupportedOperationException("Cannot set variable of type " + v.getVariableType() + " using this method");
         }
     }
 
@@ -655,15 +616,15 @@ public class SameDiff {
      * @return the shape for the given vertex if any.
      */
     public long[] getShapeForVarName(String varName) {
-        if (variableNameToArr.containsKey(varName)) {
-            return variableNameToArr.get(varName).shape();
+        if (getVariable(varName).getArr() != null) {
+            return getVariable(varName).getArr().shape();
         }
         return variableNameToShape.get(varName);
     }
 
     public LongShapeDescriptor getShapeDescriptorForVarName(String varName) {
-        if (variableNameToArr.containsKey(varName)) {
-            return variableNameToArr.get(varName).shapeDescriptor();
+        if (getVariable(varName).getArr() != null) {
+            return getVariable(varName).getArr().shapeDescriptor();
         }
         // FIXME: do we really want this Nd4j.dataType() here?
         return LongShapeDescriptor.fromShape(variableNameToShape.get(varName), Nd4j.dataType());
@@ -695,11 +656,12 @@ public class SameDiff {
      * @see #putShapeForVarName(String, long[])
      * @see #putOrUpdateShapeForVarName(String, long[], boolean)
      */
-    public void updateShapeForVarName(String varName, long[] shape, boolean clearArrayOnShapeMismatch) {
+    public void updateShapeForVarName(@NonNull String varName, @NonNull long[] shape, boolean clearArrayOnShapeMismatch) {
         if (shape == null) {
             throw new ND4JIllegalStateException("Null shapes not allowed!");
         }
 
+        /*
         if (variableNameToArr.containsKey(varName) && !Arrays.equals(variableNameToArr.get(varName).shape(), shape)) {
             if(clearArrayOnShapeMismatch){
                 if(log.isTraceEnabled()){
@@ -721,6 +683,8 @@ public class SameDiff {
                     (pShape == null ? "<not set>" : Arrays.toString(pShape)), Arrays.toString(shape));
         }
         variableNameToShape.put(varName, shape);
+        */
+        throw new UnsupportedOperationException("Not yet reimplemented");
     }
 
 
@@ -798,7 +762,7 @@ public class SameDiff {
      * @return true if a vertex with the given INDArray exists, and it has an INDArray associated with it
      */
     public boolean arrayAlreadyExistsForVarName(String varName) {
-        return variableNameToArr.containsKey(varName);
+        return getVariable(varName).getArr() != null;
     }
 
     /**
@@ -808,7 +772,24 @@ public class SameDiff {
      * @return Array, or null if none exists
      */
     public INDArray getArrForVarName(String varName) {
-        return variableNameToArr.get(varName);
+        Preconditions.checkState(variables.containsKey(varName), "No variable found with name \"%s\"", varName);
+        SDVariable v = variables.get(varName).getVariable();
+        switch(v.getVariableType()){
+            case VARIABLE:
+                return variablesArrays.get(varName).get();
+            case CONSTANT:
+                return constantArrays.get(varName).get();
+            case ARRAY:
+                //Only stored in inference session...
+                InferenceSession s = sessions.get(Thread.currentThread().getId());
+                if(s == null)
+                    return null;
+                return s.get(varName, InferenceSession.OUTER_FRAME, 0);
+            case PLACEHOLDER:
+                throw new UnsupportedOperationException("Cannot get placeholder value via this method");
+            default:
+                throw new RuntimeException("Unknown variable type: " + v.getVariableType());
+        }
     }
 
     /**
@@ -833,22 +814,23 @@ public class SameDiff {
         if (variable == null) {
             throw new ND4JIllegalArgumentException("Variable must not be null!");
         }
-
         if (arr == null) {
             throw new ND4JIllegalArgumentException("Array must not be null");
         }
 
-        variableNameToArr.put(variable.getVarName(), arr);
-        putOrUpdateShapeForVarName(variable.getVarName(), arr.shape(), true);
-        // invalidate exec cache
-        exec_cache = null;
+        if(variable.isConstant()){
+            constantArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr));
+        }
+
+        //putOrUpdateShapeForVarName(variable.getVarName(), arr.shape(), true);
 
         //Also update nested SameDiff instances (such as gradient function)
         if(sameDiffFunctionInstances != null && sameDiffFunctionInstances.size() > 0){
             for(Map.Entry<String,SameDiff> e : sameDiffFunctionInstances.entrySet()){
                 SameDiff sd = e.getValue();
-                if(sd.variableNameToArr != null && sd.variableNameToArr.containsKey(variable.getVarName())){
-                    sd.associateArrayWithVariable(arr, variable);
+                SDVariable v = sd.getVariable(variable.getVarName());
+                if(v != null){
+                    sd.associateArrayWithVariable(arr, v);
                 }
             }
         }
@@ -953,7 +935,6 @@ public class SameDiff {
         sameDiffFunctionInstances = new LinkedHashMap<>();
         forwardVarForGrad = new LinkedHashMap<>();
         opsForResult = new IntArrayKeyMap<>();
-        variableNameToArr = new LinkedHashMap<>();
         variableNameToShape = new LinkedHashMap<>();
         placeHolderOriginalShapes = new LinkedHashMap<>();
         placeHolderFunctions = new LinkedHashSet<>();
@@ -1621,7 +1602,7 @@ public class SameDiff {
         double l2Loss = 0.0;
         for (String s : trainingConfig.getTrainableParams()) {
             //L2: loss += 0.5 * lambda * sum_i param_i^2
-            double norm2 = variableNameToArr.get(s).norm2Number().doubleValue();
+            double norm2 = getVariable(s).getArr().norm2Number().doubleValue();
             l2Loss += 0.5 * l2 * norm2 * norm2;
         }
         return l2Loss;
@@ -1649,7 +1630,7 @@ public class SameDiff {
         double l1Loss = 0.0;
         for (String s : trainingConfig.getTrainableParams()) {
             //L1: loss += lambda * sum_i |param_i|
-            double norm1 = variableNameToArr.get(s).norm1Number().doubleValue();
+            double norm1 = getVariable(s).getArr().norm1Number().doubleValue();
             l1Loss += l1 * norm1;
         }
         return l1Loss;
@@ -1842,16 +1823,17 @@ public class SameDiff {
             Map<String,INDArray> placeholderMap = toPlaceholderMap(ds);
             resolveVariablesWith(placeholderMap, false);
 
-            exec(); //TODO partial exec
-            for(Map.Entry<String,List<IEvaluation>> e : variableEvals.entrySet()){
-                INDArray prediction = variableNameToArr.get(e.getKey());
-                for(IEvaluation eval : e.getValue()){
-                    //TODO masking, time series, etc
-
-                    INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
-                    eval.eval(label, prediction);
-                }
-            }
+//            exec(); //TODO partial exec
+//            for(Map.Entry<String,List<IEvaluation>> e : variableEvals.entrySet()){
+//                INDArray prediction = variableNameToArr.get(e.getKey());
+//                for(IEvaluation eval : e.getValue()){
+//                    //TODO masking, time series, etc
+//
+//                    INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
+//                    eval.eval(label, prediction);
+//                }
+//            }
+            throw new UnsupportedOperationException("Not yet reimplemented");       //Use InferenceSession
         }
     }
 
@@ -1976,7 +1958,7 @@ public class SameDiff {
         Preconditions.checkState(!variables.containsKey(name), "Variable with name \"%s\" already exists", name);
         SDVariable v = new SDVariable(name, VariableType.CONSTANT, this, constant.shape(), constant.dataType(), null);
         variables.put(name, Variable.builder().name(name).variable(v).build());
-        variableNameToArr.put(name, constant);
+        constantArrays.put(name, new DeviceLocalNDArray(constant));
         return v;
     }
 
@@ -9843,10 +9825,11 @@ public class SameDiff {
                 ret[i] = sub.var(variables[i]);
             }
 
-            sub.inputs = ret;
-            sub.outputs = functionDefinition.define(sub, null, ret);
+//            sub.inputs = ret;
+//            sub.outputs = functionDefinition.define(sub, null, ret);
 
             sameDiffFunctionInstances.put(function, sub);
+            throw new UnsupportedOperationException("Not yet reimplemented");
         }
         this.child = null;
         return sameDiffFunctionInstances.get(function);
@@ -10259,7 +10242,7 @@ public class SameDiff {
 
             updateShapeForVarName(entry.getKey(), entry.getValue().shape(), true);
             associateArrayWithVariable(entry.getValue(), getVariable(entry.getKey()));
-            updateArrayForVarName(entry.getKey(), entry.getValue());
+            setArrayForVariable(entry.getKey(), entry.getValue());
         }
 
         if(resolveProperties) {
@@ -10396,21 +10379,6 @@ public class SameDiff {
                 }
             }
         }
-    }
-
-
-    // required for loops
-    private SDVariable[] outputs;
-    private SDVariable[] inputs;
-
-
-    private Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec_cache;
-
-    /**
-     * Clear the execution cache, if it is present
-     */
-    public void clearExecutionCache(){
-        exec_cache = null;
     }
 
     /**
@@ -11202,20 +11170,6 @@ public class SameDiff {
         return ret;
     }
 
-    /**
-     * Update the {@link INDArray}
-     * ndarray for the given variable name
-     *
-     * @param variableName the variable to update
-     * @param arr          the array to update with
-     */
-    public void updateVariable(String variableName, INDArray arr) {
-        if (!variableNameToArr.containsKey(variableName))
-            putArrayForVarName(variableName, arr);
-        else
-            updateArrayForVarName(variableName, arr);
-    }
-
 
     protected int asFlatNode(String name, @NonNull SameDiff scope, @NonNull FlatBufferBuilder bufferBuilder) {
         int scopeName = bufferBuilder.createString(name);
@@ -11843,7 +11797,7 @@ public class SameDiff {
             FlatArray fa = v.ndarray();
             if(fa != null){
                 INDArray arr = Nd4j.createFromFlatArray(fa);
-                sd.variableNameToArr.put(n, arr);
+                sd.setArrayForVariable(n, arr);
             }
 
             IntPair id = v.id();    //First value: node (op) id. Second: output number

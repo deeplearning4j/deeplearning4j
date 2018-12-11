@@ -26,7 +26,7 @@ import java.util.*;
 public abstract class AbstractSession<T, O> {
 
     //All execution happens in a frame... this is the name of the main/outer frame
-    protected static final String OUTER_FRAME = "main";
+    public static final String OUTER_FRAME = "main";
 
     protected final SameDiff sameDiff;
     @Getter

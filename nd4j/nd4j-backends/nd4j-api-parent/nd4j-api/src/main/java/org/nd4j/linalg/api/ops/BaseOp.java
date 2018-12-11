@@ -251,7 +251,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     this.z = getResult.getArr();
                 else if(sameDiff.getShapeForVarName(getResult.getVarName()) != null) {
                     val shape = sameDiff.getShapeForVarName(getResult.getVarName());
-                    sameDiff.putArrayForVarName(getResult.getVarName(),getResult.getWeightInitScheme().create(getResult.dataType(), shape));
+                    sameDiff.setArrayForVariable(getResult.getVarName(),getResult.getWeightInitScheme().create(getResult.dataType(), shape));
                 }
                 else
                     throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");
@@ -325,7 +325,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             }
         }
         else if(zVertexId != null && sameDiff != null && sameDiff.getArrForVarName(zVertexId) == null && z != null) {
-            sameDiff.putArrayForVarName(zVertexId,z);
+            sameDiff.setArrayForVariable(zVertexId,z);
         }
 
         return z;
@@ -351,7 +351,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     return newVars;
                 }
 
-                sameDiff.putArrayForVarName(newVars[0].getVarName(),inputArr);
+                sameDiff.setArrayForVariable(newVars[0].getVarName(),inputArr);
                 z = inputArr;
                 if(sameDiff.getOutputsForFunction(this) == null)
                     sameDiff.addOutgoingFor(newVars,this);

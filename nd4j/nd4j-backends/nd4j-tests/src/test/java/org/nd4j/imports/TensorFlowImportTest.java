@@ -333,7 +333,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         val ipod = Nd4j.read(new DataInputStream(new ClassPathResource("tf_graphs/ipod.nd4").getInputStream()));
 
-        tg.updateVariable("input",ipod);
+        tg.setArrayForVariable("input",ipod);
 
         val buffer = tg.asFlatBuffers();
         assertNotNull(buffer);
@@ -471,7 +471,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     public void testIntermediateTensorArraySimple1() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array.pb.txt").getInputStream());
-        tg.updateVariable("input_matrix",Nd4j.ones(3,2));
+        tg.setArrayForVariable("input_matrix",Nd4j.ones(3,2));
 
         assertNotNull(tg);
 
@@ -498,7 +498,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     public void testIntermediateTensorArrayLoop1() throws Exception {
         val input = Nd4j.linspace(1, 10, 10, DataType.FLOAT).reshape(5, 2);
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array_loop.pb.txt").getInputStream());
-        tg.updateVariable("input_matrix",input);
+        tg.setArrayForVariable("input_matrix",input);
         assertNotNull(tg);
 
         val fb = tg.asFlatBuffers();

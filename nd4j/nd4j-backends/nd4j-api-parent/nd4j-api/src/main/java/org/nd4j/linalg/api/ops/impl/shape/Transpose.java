@@ -122,7 +122,7 @@ public class Transpose extends DynamicCustomOp {
         if (arr == null) {
             val arrVar = sameDiff.getVariable(arg().getVarName());
             arr = arrVar.getWeightInitScheme().create(arrVar.dataType(), arrVar.getShape());
-            sameDiff.putArrayForVarName(arg().getVarName(), arr);
+            sameDiff.setArrayForVariable(arg().getVarName(), arr);
         }
 
         if(permuteArrayOp != null){

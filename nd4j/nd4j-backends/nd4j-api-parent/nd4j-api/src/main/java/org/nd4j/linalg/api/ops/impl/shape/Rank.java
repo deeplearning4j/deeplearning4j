@@ -59,7 +59,7 @@ public class Rank extends DynamicCustomOp {
             val inputShape = initWith.getShapeForVarName(input.getVarName());
             val resultLength = Nd4j.scalar(inputShape.length);
             val thisResultId = outputVertex;
-            initWith.putArrayForVarName(thisResultId, resultLength);
+            initWith.setArrayForVariable(thisResultId, resultLength);
             initWith.putShapeForVarName(thisResultId, new long[]{1, 1});
         }
     }
