@@ -250,7 +250,7 @@ public class MixedDataTypesTests {
     public void testNewAssign_2() throws Exception {
         val arrayX = Nd4j.create(DataType.INT, 5);
         val arrayY = Nd4j.create(new double[]{1, 2, 3, 4, 5});
-        val exp = Nd4j.create(new int[]{1, 2, 3, 4, 5});
+        val exp = Nd4j.create(new int[]{1, 2, 3, 4, 5}, new long[]{5}, DataType.INT);
 
         arrayX.assign(arrayY);
 
