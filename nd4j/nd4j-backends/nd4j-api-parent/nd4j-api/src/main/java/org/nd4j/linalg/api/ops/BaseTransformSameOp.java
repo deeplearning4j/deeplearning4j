@@ -101,10 +101,11 @@ public abstract class BaseTransformSameOp extends BaseTransformOp implements Tra
     }
 
     @Override
-    public boolean validateDataTypes() {
-        if (y() != null)
+    public boolean validateDataTypes(boolean experimentalMode) {
+        if (y() != null) {
             Preconditions.checkArgument(x().dataType() == y().dataType(), "Op.X type must be the same as Op.Y type: x.datatype=%s, y.datatype=%s for op %s",
-                    x().dataType(), y().dataType(), getClass() );
+                    x().dataType(), y().dataType(), getClass());
+        }
 
 
         if (z() != null)

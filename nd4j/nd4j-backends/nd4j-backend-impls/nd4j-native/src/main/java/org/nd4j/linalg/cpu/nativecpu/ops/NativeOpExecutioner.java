@@ -58,6 +58,7 @@ import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
+import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -93,11 +94,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private ThreadLocal<Map<Integer,BooleanPointer>> bArgsPointer = new ThreadLocal<>();
     private ThreadLocal<Map<Integer,ShortPointer>> halfArgsPointer = new ThreadLocal<>();
 
-
-
     protected Map<String, CustomOpDescriptor> customOps = null;
 
     protected ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
+
+    protected AtomicBoolean experimentalMode = new AtomicBoolean(false);
 
     /**
      * Instead of allocating new memory chunks for each batch invocation, we reuse them on thread/opNum basis
@@ -108,6 +109,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     public NativeOpExecutioner() {
         tadManager.init(loop, constantHandler);
+
+        experimentalMode.set(loop.isExperimentalEnabled());
     }
 
     @Override
@@ -749,7 +752,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     op.setZ(Nd4j.create(op.resultType(), op.x().shape()));
 
 
-                op.validateDataTypes();
+                op.validateDataTypes(experimentalMode.get());
 
                 //log.info("X type: {}; Y type: {}; Z type: {}; OpNum: {}", op.x().dataType(), op.y().dataType(), op.z().dataType(), op.opNum());
 
@@ -797,7 +800,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if (op.z() == null)
                     op.setZ(Nd4j.create(op.resultType(), op.x().shape()));
 
-                op.validateDataTypes();
+                op.validateDataTypes(experimentalMode.get());
 
 
                 switch (op.getOpType()) {
@@ -876,7 +879,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         //validateDataType(Nd4j.dataType(), op);
 
-        op.validateDataTypes();
+        op.validateDataTypes(experimentalMode.get());
 
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
