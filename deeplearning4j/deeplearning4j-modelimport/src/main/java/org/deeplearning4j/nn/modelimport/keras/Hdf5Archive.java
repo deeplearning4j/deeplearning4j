@@ -238,6 +238,20 @@ public class Hdf5Archive implements Closeable {
             int j;
             INDArray data;
             switch (nbDims) {
+                case 5: /* 3D Convolution weights */
+                    dataBuffer = new float[(int) (dims[0] * dims[1] * dims[2] * dims[3] * dims[4])];
+                    fp = new FloatPointer(dataBuffer);
+                    dataset.read(fp, dataType);
+                    fp.get(dataBuffer);
+                    data = Nd4j.create((int) dims[0], (int) dims[1], (int) dims[2], (int) dims[3], (int) dims[4]);
+                    j = 0;
+                    for (int i1 = 0; i1 < dims[0]; i1++)
+                        for (int i2 = 0; i2 < dims[1]; i2++)
+                            for (int i3 = 0; i3 < dims[2]; i3++)
+                                for (int i4 = 0; i4 < dims[3]; i4++)
+                                    for (int i5 = 0; i5 < dims[4]; i5++)
+                                        data.putScalar(new int[] { i1, i2, i3, i4, i5 }, dataBuffer[j++]);
+                    break;
                 case 4: /* 2D Convolution weights */
                     dataBuffer = new float[(int) (dims[0] * dims[1] * dims[2] * dims[3])];
                     fp = new FloatPointer(dataBuffer);
