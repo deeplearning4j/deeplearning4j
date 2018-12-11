@@ -25,6 +25,7 @@ import org.apache.commons.lang3.builder.Diff;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -298,26 +299,10 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         //Build functionOutputFor - i.e., map from SDVariable -> functions it's an output for (should only ever be 1)
         //Also build outgoingArgsReverse: map from DifferentialFunction name to SDVariable names that are outputs
         Map<String,List<DifferentialFunction>> fnOutputsFor = new LinkedHashMap<>();
-        for(DifferentialFunction df : diff.getFunctionInstancesById().values()){
-//            SDVariable[] vars = df.outputVariables();
-//            String[] fnOutputs = df.outputVariablesNames();       //This does a ninja output INDArray allocation...
-////            String[] fnOutputs = diff.getOutputsForFunction(df);
-//            for(String s : fnOutputs){
-//                if(!fnOutputsFor.containsKey(s)){
-//                    fnOutputsFor.put(s, new ArrayList<DifferentialFunction>());
-//                }
-//                fnOutputsFor.get(s).add(df);
-//            }
+        for(SameDiffOp op : diff.getOps().values()){
+            DifferentialFunction df = op.getOp();
             initOutputVariables(diff, df);
         }
-//        //Set using reflection, we don't want a public getter that users can break the internal state with
-//        try {
-//            Field f = SameDiff.class.getDeclaredField("functionOutputFor");
-//            f.setAccessible(true);
-//            f.set(diff, fnOutputsFor);
-//        } catch (Exception e){
-//            throw new RuntimeException(e);
-//        }
 
         //Validate the graph structure
         validateGraphStructure(diff);
@@ -346,7 +331,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
             for( int i=0; i<outVars.length; i++ ){
                 outNames[i] = outVars[i].getVarName();
             }
-            sd.getOutgoingArgsReverse().put(df.getOwnName(), outNames);
+            sd.getOps().get(df.getOwnName()).setOutputsOfOp(Arrays.asList(outNames));
         }
 
         for(String s : outNames) {
@@ -377,15 +362,14 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         }
 
         //Second: check that all op inputs actually exist in the graph
-        Map<String,DifferentialFunction> opMap = sameDiff.getFunctionInstancesById();
-        for(Map.Entry<String,DifferentialFunction> e : opMap.entrySet()){
-            String[] inputs = sameDiff.getInputsForFunction(e.getValue());
+        for(SameDiffOp op : sameDiff.getOps().values()){
+            List<String> inputs = op.getInputsToOp();
             if(inputs == null)
                 continue;
 
             for(String s : inputs){
                 if(sameDiff.getVariable(s) == null){
-                    throw new IllegalStateException("Import validation failed: op \"" + e.getKey() + "\" of type " + e.getValue().getClass().getSimpleName()
+                    throw new IllegalStateException("Import validation failed: op \"" + op.getName() + "\" of type " + op.getOp().getClass().getSimpleName()
                             + " has input \"" + s + "\" that does not have a corresponding variable in the graph");
                 }
             }

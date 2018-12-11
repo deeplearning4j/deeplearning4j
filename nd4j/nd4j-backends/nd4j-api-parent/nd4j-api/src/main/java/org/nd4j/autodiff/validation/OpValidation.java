@@ -23,6 +23,7 @@ import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
@@ -378,9 +379,8 @@ public class OpValidation {
 
 
     public static void collectTensorflowImportCoverage(SameDiff graph){
-
-        Map<String,DifferentialFunction> map = graph.getFunctionInstancesById();
-        for(DifferentialFunction d : map.values()){
+        for(SameDiffOp op : graph.getOps().values()){
+            DifferentialFunction d = op.getOp();
             String[] tfNames = null;
             try{
                 tfNames = d.tensorflowNames();

@@ -305,9 +305,9 @@ public abstract class AbstractSession<T, O> {
 
                 if (sameDiff.getFunctionById(opName) instanceof Merge) {
                     //Merge op: available for execution when *any* of its inputs are available. But only mark it for exec once...
-                    String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);
-                    Preconditions.checkState(opOutputs.length == 1, "Expected only 1 output variable for merge op, got %s", opOutputs);
-                    VarId outVarId = newVarId(opOutputs[0], executedVar.getFrame(), executedVar.getIteration());
+                    List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
+                    Preconditions.checkState(opOutputs.size() == 1, "Expected only 1 output variable for merge op, got %s", opOutputs);
+                    VarId outVarId = newVarId(opOutputs.get(0), executedVar.getFrame(), executedVar.getIteration());
                     if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable())) {
                         availableForExec.add(outVarId);
                         log.info("Marked merge op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
@@ -319,10 +319,10 @@ public abstract class AbstractSession<T, O> {
                 } else if (sameDiff.getFunctionById(opName) instanceof Enter) {
                     //Enter node: available for exec when any of its inputs are available for exec
                     // Note input feeds from one frame to another
-                    String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);
-                    Preconditions.checkState(opOutputs.length == 1, "Expected only 1 output variable for enter op, got %s", opOutputs);
+                    List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
+                    Preconditions.checkState(opOutputs.size() == 1, "Expected only 1 output variable for enter op, got %s", opOutputs);
                     Enter e = (Enter) sameDiff.getFunctionById(opName);
-                    VarId outVarId = newVarId(opOutputs[0], e.getFrameName(), 0);
+                    VarId outVarId = newVarId(opOutputs.get(0), e.getFrameName(), 0);
                     if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable())) {
                         availableForExec.add(outVarId);
                         log.info("Marked enter op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
@@ -336,11 +336,11 @@ public abstract class AbstractSession<T, O> {
                     continue;
                 } else if (sameDiff.getFunctionById(opName) instanceof Exit) {
                     //Exit node forwards input to parent frame
-                    String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);
+                    List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
                     FrameIter parentFrame = frameParents.get(executedVar.getFrame());
                     Preconditions.checkNotNull(parentFrame, "Parent frame must not be null for exit op: variable to exec is %s", executedVar);
 
-                    VarId outVarId = new VarId(opOutputs[0], parentFrame.getFrame(), parentFrame.getIteration());
+                    VarId outVarId = new VarId(opOutputs.get(0), parentFrame.getFrame(), parentFrame.getIteration());
                     if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable())) {
                         availableForExec.add(outVarId);
                         log.info("Marked Exit op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
@@ -350,9 +350,9 @@ public abstract class AbstractSession<T, O> {
                 } else if (sameDiff.getFunctionById(opName) instanceof NextIteration) {
                     //NextIteration is available for execution when its single input is available
                     //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
-                    String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);
-                    Preconditions.checkState(opOutputs.length == 1, "Expected exactly 1 output for NextIteration op: got %s", opOutputs);
-                    VarId outVarId = newVarId(opOutputs[0], executedVar.getFrame(), executedVar.getIteration() + 1);
+                    List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
+                    Preconditions.checkState(opOutputs.size() == 1, "Expected exactly 1 output for NextIteration op: got %s", opOutputs);
+                    VarId outVarId = newVarId(opOutputs.get(0), executedVar.getFrame(), executedVar.getIteration() + 1);
 
                     if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable())) {
                         availableForExec.add(outVarId);
@@ -403,7 +403,7 @@ public abstract class AbstractSession<T, O> {
                     }
                 }
 
-                String[] opOutputs = sameDiff.getOutgoingArgsReverse().get(opName);
+                List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
                 if (opOutputs != null) {
 
                     for (String s : opOutputs) {
