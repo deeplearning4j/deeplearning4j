@@ -293,7 +293,7 @@ public class SameDiff {
      */
     public void updateVariableName(String varName, String withName) {
         SDVariable oldVarNameRef = getVariable(varName);
-        Variable v = variables.remove(oldVarNameRef.getVarName());
+        Variable v = variables.remove(varName);
         String oldVarName = varName;
         oldVarNameRef.setVarName(withName);
         v.setName(withName);
@@ -616,7 +616,7 @@ public class SameDiff {
      * @return the shape for the given vertex if any.
      */
     public long[] getShapeForVarName(String varName) {
-        if (getVariable(varName).getArr() != null) {
+        if (arrayAlreadyExistsForVarName(varName)) {
             return getVariable(varName).getArr().shape();
         }
         return variableNameToShape.get(varName);
@@ -762,7 +762,20 @@ public class SameDiff {
      * @return true if a vertex with the given INDArray exists, and it has an INDArray associated with it
      */
     public boolean arrayAlreadyExistsForVarName(String varName) {
-        return getVariable(varName).getArr() != null;
+        SDVariable var = getVariable(varName);
+        switch(var.getVariableType()){
+            case VARIABLE:
+            case ARRAY:
+                long tid = Thread.currentThread().getId();
+                return sessions.containsKey(tid) && sessions.get(tid).get(varName, InferenceSession.OUTER_FRAME, 0) != null;
+            case CONSTANT:
+                return constantArrays.containsKey(varName);
+            case PLACEHOLDER:
+                return placeholdersPerThread.containsKey(Thread.currentThread().getId()) &&
+                        placeholdersPerThread.get(Thread.currentThread().getId()).containsKey(varName);
+            default:
+                throw new RuntimeException("Unknown variable type: " + var.getVariableType());
+        }
     }
 
     /**
@@ -776,8 +789,12 @@ public class SameDiff {
         SDVariable v = variables.get(varName).getVariable();
         switch(v.getVariableType()){
             case VARIABLE:
+                if(!variablesArrays.containsKey(varName))
+                    return null;
                 return variablesArrays.get(varName).get();
             case CONSTANT:
+                if(!constantArrays.containsKey(varName))
+                    return null;
                 return constantArrays.get(varName).get();
             case ARRAY:
                 //Only stored in inference session...
@@ -787,7 +804,7 @@ public class SameDiff {
                 return s.get(varName, InferenceSession.OUTER_FRAME, 0);
             case PLACEHOLDER:
                 long tid = Thread.currentThread().getId();
-                if(placeholdersPerThread.get(tid) == null)
+                if(placeholdersPerThread.get(tid) == null || !placeholdersPerThread.get(tid).containsKey(varName))
                     return null;
                 return placeholdersPerThread.get(tid).get(varName);
             default:
@@ -2485,7 +2502,8 @@ public class SameDiff {
      * @return the variabel instance if there is one
      */
     public SDVariable getVariable(String name) {
-        return variables.get(name).getVariable();
+        Variable v = variables.get(name);
+        return v == null ? null : v.getVariable();
     }
 
 
@@ -9092,7 +9110,7 @@ public class SameDiff {
      * @return the new generated name
      */
     public String generateNewVarName(String baseName, int argIndex) {
-        if (getVariable(baseName) == null && argIndex == 0) {
+        if (!variables.containsKey(baseName) && argIndex == 0) {
             return baseName;
         }
 

@@ -83,7 +83,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     public SDVariable(@NonNull String varName, @NonNull VariableType varType, @NonNull SameDiff sameDiff, long[] shape, DataType dataType, WeightInitScheme weightInitScheme){
         super(sameDiff, new Object[0]);
-        Preconditions.checkState(weightInitScheme == null || varType != VariableType.VARIABLE, "Weight initalization schemes can only be applied to VARIABLE type" +
+        Preconditions.checkState(weightInitScheme == null || varType == VariableType.VARIABLE, "Weight initalization schemes can only be applied to VARIABLE type" +
                 " SDVariables - variable \"%s\" is of type %s but was provided a weight initialization scheme %s", varName, varType, weightInitScheme);
 
         this.varName = varName;
