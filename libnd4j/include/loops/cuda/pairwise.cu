@@ -28,52 +28,12 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
-__global__ void pairwiseSimpleShaped(void* x, Nd4jLong *xShapeInfo, 
-									void *y, Nd4jLong *yShapeInfo, 
-									void *z, Nd4jLong *zShapeInfo, 
-									void *params, 
-									int *allocationBuffer) {
-
-	functions::pairwise_transforms::PairWiseTransform<X,Y,Z>::template transformCuda<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, params, allocationBuffer, nullptr);
-}
-
-namespace functions           {
-namespace pairwise_transforms {
-
-////////////////////////////////////////////////////////////////////////////////
-template<typename X, typename Y, typename Z>
-template<typename OpType>
-void _CUDA_H PairWiseTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream, 
-														void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo,
-														void *vy, Nd4jLong *yShapeInfo, Nd4jLong *hyShapeInfo,
-														void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo,
-														void *vextraParams,
-														int *allocPointer){
-
-    auto length = shape::length(hxShapeInfo);
-	auto xEWS = shape::elementWiseStride(hxShapeInfo);
-	auto xOrder = shape::order(hxShapeInfo);
-
-	auto yEWS = shape::elementWiseStride(hyShapeInfo);
-	auto yOrder = shape::order(hyShapeInfo);
-
-	auto zEWS = shape::elementWiseStride(hzShapeInfo);
-	auto zOrder = shape::order(hzShapeInfo);
-
-
-	pairwiseSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-template<typename X, typename Y, typename Z>
-template<typename OpType>
-__device__ void PairWiseTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xShapeInfo, 
-														void *vy, Nd4jLong *yShapeInfo, 
-														void *vz, Nd4jLong *zShapeInfo, 
-														void *vextraParams, 
-														int *allocPointer, 
-														Nd4jLong *tadOnlyShapeInfo) {
-
+__global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo, 
+											void *vy, Nd4jLong *yShapeInfo, 
+											void *vz, Nd4jLong *zShapeInfo, 
+											void *vextraParams, 
+											int *allocationBuffer) {
+	
 	auto x = reinterpret_cast<X*>(vx);
 	auto y = reinterpret_cast<Y*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
@@ -112,6 +72,22 @@ __device__ void PairWiseTransform<X,Y,Z>::transformCuda(void *vx, Nd4jLong *xSha
 			z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
 		}
 	}
+}
+
+namespace functions           {
+namespace pairwise_transforms {
+
+////////////////////////////////////////////////////////////////////////////////
+template<typename X, typename Y, typename Z>
+template<typename OpType>
+void _CUDA_H PairWiseTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream, 
+														void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo,
+														void *vy, Nd4jLong *yShapeInfo, Nd4jLong *hyShapeInfo,
+														void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo,
+														void *vextraParams,
+														int *allocPointer){
+
+	pairwiseSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams, allocPointer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
