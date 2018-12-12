@@ -4339,6 +4339,9 @@ void NDArray::operator/=(const NDArray& other) {
     if (other.isB())
         throw std::runtime_error("NDArray::operator/=: you can't divide by bool array!");
 
+    if (this->dataType() != other.dataType() && other.dataType() && !nd4j::Environment::getInstance()->isExperimentalBuild())
+        throw nd4j::datatype_exception::build("NDArray operator/= both operands must have same data type", this->dataType(), other.dataType());
+
     if (!this->isScalar() && other.isScalar()) {
         NativeOpExcutioner::execScalar(nd4j::scalar::Divide, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, nullptr);
     }
@@ -4399,7 +4402,7 @@ void NDArray::operator*=(const T scalar) {
     if (isS())
         throw std::runtime_error("NDArray::operator*=: you can't use this method on String array!");
 
-    auto tmp = NDArrayFactory::create(scalar, _workspace);
+    auto tmp = NDArrayFactory::create(this->dataType(), scalar, _workspace);
     NativeOpExcutioner::execScalar(nd4j::scalar::Multiply, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
 }
 template void NDArray::operator*=(const double scalar);
@@ -4418,7 +4421,7 @@ void NDArray::operator/=(const T scalar) {
     if (isS())
         throw std::runtime_error("NDArray::operator/=: you can't use this method on String array!");
 
-    auto tmp = NDArrayFactory::create(scalar, _workspace);
+    auto tmp = NDArrayFactory::create(this->dataType(), scalar, _workspace);
     NativeOpExcutioner::execScalar(nd4j::scalar::Divide, this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
 }
 template void NDArray::operator/=(const double scalar);
@@ -4488,6 +4491,8 @@ template void NDArray::operator/=(const bool scalar);
             NativeOpExcutioner::execPairwiseTransform(nd4j::pairwise::Divide, _buffer, _shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
             return result;
         }
+        if (this->dataType() != other.dataType() && other.dataType() != nd4j::DataType::BOOL && !nd4j::Environment::getInstance()->isExperimentalBuild())
+            throw nd4j::datatype_exception::build("NDArray operator* both operands must have same data type", this->dataType(), other.dataType());
 
         return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), other);
     }
