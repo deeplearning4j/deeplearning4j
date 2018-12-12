@@ -3720,7 +3720,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test14) {
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *result = results->at(0);            
+    auto *result = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));

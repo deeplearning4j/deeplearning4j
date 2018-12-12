@@ -300,6 +300,7 @@ namespace ops {
        */         
         #if NOT_EXCLUDED(OP_cosine_distance_loss)
         DECLARE_CUSTOM_OP(cosine_distance_loss, 3, 1, false, 0, 2);
+        DECLARE_CUSTOM_OP(cosine_distance_loss_grad, 3, 3, false, 0, 2);
         #endif
 
         //////////////////////////////////////////////////////////////////////////
