@@ -323,6 +323,11 @@ void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, vo
     auto yType = nd4j::ArrayOptions::dataType(scalarShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
+    if (!nd4j::Environment::getInstance()->isExperimentalBuild()) {
+        if (yType != xType && (yType != nd4j::DataType::BOOL && xType != nd4j::DataType::BOOL))
+            throw nd4j::datatype_exception::build("NativeOps::execScalar both operands must have same data type", xType,
+                                                  yType);
+    }
 #ifdef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
@@ -336,6 +341,9 @@ void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, vo
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(scalarShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
+
+    if (yType != xType && yType != nd4j::DataType::BOOL && !nd4j::Environment::getInstance()->isExperimentalBuild())
+        throw nd4j::datatype_exception::build("NativeOps::execScalar both operands must have same data type", xType, yType);
 
 #ifdef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
@@ -489,9 +497,4 @@ void NativeOpExcutioner::execReduce3(int opNum, void *x, Nd4jLong *xShapeInfo, v
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(opNum, x, xShapeInfo, extraParamsVals, y, yShapeInfo, result, resultShapeInfoBuffer, dimension, dimensionLength), LIBND4J_TYPES, FLOAT_TYPES);
 }
-
-
-
-
-
 

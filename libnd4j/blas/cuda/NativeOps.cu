@@ -622,6 +622,9 @@ void NativeOps::execPairwiseTransform(
 
     dim3 launchDims(256, 1024, 8192);
 
+	if (yType != xType && yType != nd4j::DataType::BOOL && !this->isExperimentalEnabled())
+		throw nd4j::datatype_exception::build("NativeOps::execPairwiseTransform both operands must have same data type", xType, yType);
+
     if (xType != zType && yType != zType)
         throw std::runtime_error("NativeOps::execPairwiseTransform requires Z operand to have either X or Y type");
 
@@ -2471,10 +2474,10 @@ void NativeOps::execScalarBool(Nd4jPointer *extraPointers,
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
 	if (xType != yType )
-		throw std::runtime_error("NativeOps::execScalarBool requires X & Y to have same type");
+		throw nd4j::datatype_exception::build("NativeOps::execScalarBool requires X & Y to have same type", xType, yType);
 
 	if (!DataTypeUtils::isB(zType) )
-		throw std::runtime_error("NativeOps::execScalarBool requires Z operand to have BOOL type");
+		throw nd4j::datatype_exception::build("NativeOps::execScalarBool requires Z operand to have BOOL type", nd4j::DataType::BOOL, zType);
 
 	BUILD_DOUBLE_SELECTOR(xType, yType, functions::scalar::ScalarBoolTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, BOOL_TYPES);
 
@@ -2499,6 +2502,8 @@ void NativeOps::execScalar(
 	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 	auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+	if (yType != xType && yType != nd4j::DataType::BOOL && !this->isExperimentalEnabled())
+		throw nd4j::datatype_exception::build("NativeOps::execScalar both operands must have same data type", xType, yType);
 
 	if (!Environment::getInstance()->isExperimentalBuild() && Environment::getInstance()->isDebug()) {
         auto sX = DataTypeUtils::asString(xType);
@@ -2537,6 +2542,9 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+	if (yType != xType && yType != nd4j::DataType::BOOL && !this->isExperimentalEnabled())
+		throw nd4j::datatype_exception::build("NativeOps::execScalar both operands must have same data type", xType, yType);
 
 	dim3 launchDims(256, 256, 16384);
 
@@ -2951,6 +2959,9 @@ void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+	if (yType != xType && yType != nd4j::DataType::BOOL && !this->isExperimentalEnabled())
+		throw nd4j::datatype_exception::build("NativeOps::execReduce3All both operands must have same data type", xType, yType);
 
     if (yType != xType)
         throw nd4j::datatype_exception::build("NativeOps::execReduce3All both operands must have same data type", xType, yType);
