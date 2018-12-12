@@ -55,7 +55,7 @@ DataTypeUtil = autoclass('org.nd4j.linalg.api.buffer.util.DataTypeUtil')
 MemoryManager = autoclass('org.nd4j.linalg.memory.MemoryManager')
 SameDiff = autoclass('org.nd4j.autodiff.samediff.SameDiff')
 TFGraphMapper = autoclass('org.nd4j.imports.graphmapper.tf.TFGraphMapper')
-DataSet = autoclass('org.nd4j.linalg.dataset.DataSet')
+JDataset = autoclass('org.nd4j.linalg.dataset.DataSet')
 ArrayList = autoclass('java.util.ArrayList')
 
 
@@ -67,7 +67,7 @@ def ArrayDescriptor():
     return autoclass('org.deeplearning4j.spark.parameterserver.python.ArrayDescriptor')
 
 
-def DataSetDescriptor():
+def DatasetDescriptor():
     return autoclass('org.deeplearning4j.spark.parameterserver.python.DataSetDescriptor')
 
 
