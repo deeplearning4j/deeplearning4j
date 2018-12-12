@@ -1373,7 +1373,7 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
                     DEBUG_KERNEL(stream, opNum);
 
                     // exp 3
-                    execTransformFloat(extraPointers, transform::Exp, hZ, hZShapeInfo, dZ, dZShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+                    execTransformStrict(extraPointers, transform::Exp, hZ, hZShapeInfo, dZ, dZShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
 
                     DEBUG_KERNEL(stream, opNum);
 
@@ -1399,7 +1399,7 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
 
                     // log 3
                     if (opNum == transform::LogSoftMax)
-                        execTransformFloat(extraPointers, transform::Log, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+                        execTransformStrict(extraPointers, transform::Log, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams);
                     else if (opNum == transform::SoftMaxDerivative)
                         execTransformStrict(extraPointers, transform::SpecialDerivative, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams);
 
@@ -2029,6 +2029,8 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
 
+    cudaError_t res = cudaStreamSynchronize(*stream);
+    checkCudaErrors(res);
     nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
 }
 
