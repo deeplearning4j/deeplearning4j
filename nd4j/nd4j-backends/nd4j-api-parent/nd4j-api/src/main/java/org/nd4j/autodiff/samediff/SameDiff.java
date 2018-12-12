@@ -771,7 +771,7 @@ public class SameDiff {
             case VARIABLE:
             case ARRAY:
                 long tid = Thread.currentThread().getId();
-                return sessions.containsKey(tid) && sessions.get(tid).get(varName, InferenceSession.OUTER_FRAME, 0) != null;
+                return sessions.containsKey(tid) && sessions.get(tid).contains(varName, InferenceSession.OUTER_FRAME, 0);
             case CONSTANT:
                 return constantArrays.containsKey(varName);
             case PLACEHOLDER:
@@ -10805,9 +10805,9 @@ public class SameDiff {
             int name = bufferBuilder.createString(variable.getVarName());
             int array = arr == null ? 0 : arr.toFlatArray(bufferBuilder);
             int id = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
+            byte varType = (byte)variable.getVariableType().ordinal();
 
-
-            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name,  FlatBuffersMapper.getDataTypeAsByte(variable.dataType()), 0, array, -1);
+            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name,  FlatBuffersMapper.getDataTypeAsByte(variable.dataType()), 0, array, -1, varType);
             flatVariables.add(flatVariable);
         }
 
@@ -10843,7 +10843,8 @@ public class SameDiff {
 
                 log.debug("Adding [{}] as [{}]", pair.getFirst(), idx);
 
-                int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, FlatBuffersMapper.getDataTypeAsByte(arr.dataType()),0, array, -1);
+                byte varType = (byte)node.getVariableType().ordinal();
+                int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, FlatBuffersMapper.getDataTypeAsByte(arr.dataType()),0, array, -1, varType);
                 flatVariables.add(flatVariable);
             }
 
@@ -11131,7 +11132,7 @@ public class SameDiff {
             org.nd4j.linalg.api.buffer.DataType dtype = FlatBuffersMapper.getDataTypeFromByte(dtypeByte);
 
             //TODO Infer this properly! Could be constant, etc.
-            VariableType vt = ph.contains(n) ? VariableType.PLACEHOLDER : VariableType.VARIABLE;
+            VariableType vt = VariableType.values()[v.variabletype()];
             SDVariable var = new SDVariable(n, vt, sd, shape, dtype, null);
             sd.variables.put(n, Variable.builder().name(n).variable(var).build());
             sd.variableNameToShape.put(n, shape);

@@ -66,6 +66,11 @@ public abstract class AbstractSession<T, O> {
         this.sameDiff = sameDiff;
     }
 
+    public boolean contains(String variable, String frame, int iteration){
+        VarId varId = newVarId(variable, frame, iteration);
+        return nodeOutputs.containsKey(varId);
+    }
+
     /**
      * Get a previously calculated output
      */
@@ -144,8 +149,15 @@ public abstract class AbstractSession<T, O> {
 
             //Get any variable and execute it's corresponding op
             VarId varToExec = availableForExec.remove();
-            if (nodeOutputs.containsKey(varToExec))
-                continue;   //Already processed this one. May occur if execution was triggered by a different output of a multi-output op
+            if (nodeOutputs.containsKey(varToExec)) {
+                //Already processed this one. May occur if execution was triggered by a different output of a multi-output op
+                //But we'll still update its descendants to ensure they are marked as available
+                if (variables.contains(varToExec.getVariable())) {  //Check if required output
+                    out.put(varToExec.getVariable(), nodeOutputs.get(varToExec));
+                }
+                updateDescendentsForExec(varToExec);
+                continue;
+            }
 
             //Get inputs to this variable. May be actual op inputs, or just control dependencies
             Set<VarId> inputsToVar = execInputs.get(varToExec);
@@ -171,8 +183,6 @@ public abstract class AbstractSession<T, O> {
                 if (variables.contains(varToExec.getVariable())) {  //Check if required output
                     out.put(varToExec.getVariable(), phArr);
                 }
-//            } else if(sameDiff.getVariable(varToExec.getVariable()).getVariableType() == VariableType.VARIABLE){
-//                //VARIABLE type - i.e., a trainable parameter...
 
 
             } else if (sameDiff.getVariableOutputFunction(varToExec.getVariable()) != null) {

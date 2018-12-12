@@ -267,6 +267,17 @@ public class OpValidation {
             Preconditions.checkState(phBefore.equals(phAfter), "Before: %s, after deserialization: %s", phBefore, phAfter);
         }
 
+        Map<String,Variable> varsBefore = original.getVariables();
+        Map<String,Variable> varsAfter = deserialized.getVariables();
+        Preconditions.checkState(varsBefore.keySet().equals(varsAfter.keySet()), "Variable keysets do not match: %s vs %s", varsBefore.keySet(), varsAfter.keySet());
+        for(String s : varsBefore.keySet()){
+            Variable vB = varsBefore.get(s);
+            Variable vA = varsAfter.get(s);
+            Preconditions.checkState(vB.getName().equals(vA.getName()), "Variable names do not match: %s vs %s", vA.getName(), vB.getName());
+            Preconditions.checkState(vB.getVariable().getVariableType() == vA.getVariable().getVariableType(),
+                    "Variable types do not match: %s - %s vs %s", s, vB.getVariable().getVariableType(), vA.getVariable().getVariableType());
+        }
+
 
         //Finally: check execution/output
         Map<String,INDArray> outOrig = original.execAll(tc.placeholderValues());

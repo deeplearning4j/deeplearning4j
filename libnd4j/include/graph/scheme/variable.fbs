@@ -3,6 +3,13 @@ include "utils.fbs";
 
 namespace nd4j.graph;
 
+// Variable type for variables
+enum VariableType:byte {
+    VARIABLE,
+    CONSTANT,
+    ARRAY,
+    PLACEHOLDER
+}
 
 table FlatVariable {
     id:IntPair; // ID of the Variable, in format of IntPair.first is node Id, IntPair.second is output index of the node
@@ -13,6 +20,7 @@ table FlatVariable {
     ndarray:FlatArray;
 
     device:int; // default is -1, which means _auto_
+	variabletype:VariableType;
 }
 
 root_type FlatVariable;

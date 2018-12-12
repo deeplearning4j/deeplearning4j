@@ -146,7 +146,8 @@ public class GraphInferenceGrpcClient {
             val nameOff = id.getName() != null ? builder.createString(id.getName()) : 0;
 
             val arrOff = array.toFlatArray(builder);
-            val varOff = FlatVariable.createFlatVariable(builder, idPair, nameOff, FlatBuffersMapper.getDataTypeAsByte(array.dataType()),0,  arrOff, -1);
+            byte variableType = 0;  //TODO is this OK here?
+            val varOff = FlatVariable.createFlatVariable(builder, idPair, nameOff, FlatBuffersMapper.getDataTypeAsByte(array.dataType()),0,  arrOff, -1, variableType);
             ins[cnt++] = varOff;
         }
 
