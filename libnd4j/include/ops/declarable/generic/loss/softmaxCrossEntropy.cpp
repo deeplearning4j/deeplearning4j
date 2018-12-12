@@ -51,10 +51,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 
 	// If label_smoothing is nonzero, smooth the labels towards 1/num_classes: new_onehot_labels = onehot_labels * (1 - label_smoothing) + label_smoothing / num_classes
 	// num_classes = labels->sizeAt(1)
-	auto newLabels = labels;
+	auto cLabels = labels->cast(weights->dataType());
+	auto newLabels = cLabels;
 	if(labelsSmoothing != 0.) {
-		newLabels = new NDArray(labels);
-    	*newLabels = (1.f - labelsSmoothing) * *labels + labelsSmoothing / labels->sizeAt(1);
+		newLabels = new NDArray(cLabels);
+    	*newLabels = (1.f - labelsSmoothing) * *cLabels + labelsSmoothing / cLabels->sizeAt(1);
 	}	
 		
 	// main formula: result = - sum_i(lables_i * log(softmax_i)) - sum over last dimension
@@ -126,7 +127,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
     if(weightsBroad != weights)
     	delete weightsBroad;
     if(newLabels != labels)
-    	delete newLabels; 
+    	delete newLabels;
+
+    delete cLabels;
    		
     return Status::OK();
 }
