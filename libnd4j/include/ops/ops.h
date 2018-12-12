@@ -2696,7 +2696,10 @@ namespace simdOps {
 			auto z1 = static_cast<Z>(d1);
 			auto z2 = static_cast<Z>(d2);
 
-			return nd4j::math::nd4j_max<Z>(nd4j::math::nd4j_abs<Z>(z1), nd4j::math::nd4j_abs<Z>(z2));
+			if (nd4j::math::nd4j_abs<Z>(z1) > nd4j::math::nd4j_abs<Z>(z2))
+				return z1;
+			else
+				return z2;
 		}
 	};
 
@@ -2712,7 +2715,10 @@ namespace simdOps {
 			auto z1 = static_cast<Z>(d1);
 			auto z2 = static_cast<Z>(d2);
 
-			return nd4j::math::nd4j_min<Z>(nd4j::math::nd4j_abs<Z>(z1), nd4j::math::nd4j_abs<Z>(z2));
+			if (nd4j::math::nd4j_abs<Z>(z1) < nd4j::math::nd4j_abs<Z>(z2))
+				return z1;
+			else
+				return z2;
 		}
 	};
 

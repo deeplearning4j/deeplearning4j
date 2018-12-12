@@ -775,6 +775,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     case TRANSFORM_FLOAT:
                     case TRANSFORM_STRICT:
                     case TRANSFORM_SAME:
+                        if (!experimentalMode.get())
+                            Preconditions.checkArgument(op.x().dataType() == op.y().dataType() || op.y().dataType() == DataType.BOOL, "Op.X and Op.Y must be the same");
+
                         loop.execPairwiseTransform(dummy, op.opNum(),
                             op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 null, null,

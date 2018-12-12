@@ -31,6 +31,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.*;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -110,6 +111,8 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
             arr2 = (INDArray) ois.readObject();
         }
 
+        assertEquals(arr.dataType(), arr2.dataType());
+        arr1 = arr1.castTo(arr2.dataType());
         assertTrue(Transforms.abs(arr1.sub(arr2).div(arr1)).maxNumber().doubleValue() < 0.01);
     }
 
