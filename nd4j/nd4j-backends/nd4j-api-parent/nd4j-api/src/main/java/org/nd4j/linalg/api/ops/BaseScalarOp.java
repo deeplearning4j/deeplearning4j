@@ -45,6 +45,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     public BaseScalarOp(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n);
+        if (x.isCompressed())
+            Nd4j.getCompressor().decompressi(x);
+
         this.scalarValue = Nd4j.scalar(x.dataType(), num);
 
         init(x, y, z, n);
@@ -52,12 +55,18 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     public BaseScalarOp(INDArray x, Number num) {
         super(x);
+        if (x.isCompressed())
+            Nd4j.getCompressor().decompressi(x);
+
         this.scalarValue = Nd4j.scalar(x.dataType(), num);
         init(x, y, z, n);
 
     }
     public BaseScalarOp(INDArray x, INDArray z, Number set) {
         super(x, null, z, x.length());
+        if (x.isCompressed())
+            Nd4j.getCompressor().decompressi(x);
+
         this.scalarValue= Nd4j.scalar(x.dataType(), set);
     }
 
