@@ -15,7 +15,7 @@ nd4j.graph = nd4j.graph || {};
 /**
  * @enum
  */
-nd4j.graph.VariableType = {
+nd4j.graph.VarType = {
   VARIABLE: 0,
   CONSTANT: 1,
   ARRAY: 2,
@@ -118,11 +118,11 @@ nd4j.graph.FlatVariable.prototype.device = function() {
 };
 
 /**
- * @returns {nd4j.graph.VariableType}
+ * @returns {nd4j.graph.VarType}
  */
 nd4j.graph.FlatVariable.prototype.variabletype = function() {
   var offset = this.bb.__offset(this.bb_pos, 16);
-  return offset ? /** @type {nd4j.graph.VariableType} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.VariableType.VARIABLE;
+  return offset ? /** @type {nd4j.graph.VarType} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.VarType.VARIABLE;
 };
 
 /**
@@ -203,10 +203,10 @@ nd4j.graph.FlatVariable.addDevice = function(builder, device) {
 
 /**
  * @param {flatbuffers.Builder} builder
- * @param {nd4j.graph.VariableType} variabletype
+ * @param {nd4j.graph.VarType} variabletype
  */
 nd4j.graph.FlatVariable.addVariabletype = function(builder, variabletype) {
-  builder.addFieldInt8(6, variabletype, nd4j.graph.VariableType.VARIABLE);
+  builder.addFieldInt8(6, variabletype, nd4j.graph.VarType.VARIABLE);
 };
 
 /**
