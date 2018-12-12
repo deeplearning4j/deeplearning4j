@@ -10682,11 +10682,7 @@ public class SameDiff {
         int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
         int bArgs = FlatNode.createExtraBoolsVector(bufferBuilder, boolArgs != null ? boolArgs : new boolean[0]);
         int dimensions = FlatNode.createDimensionsVector(bufferBuilder, dims);
-        int fname = bufferBuilder.createString(
-                outputVertexId == null ||
-                        outputVertexId.length < 1 ||
-                        outputVertexId[0] == null ? "" :
-                        outputVertexId[0].getVarName());
+        int fname = bufferBuilder.createString(node.getOwnName());
         int scopeName = bufferBuilder.createString("");
 
         if (node.opType() == null)
@@ -10702,6 +10698,14 @@ public class SameDiff {
 
         int opNameOffset = bufferBuilder.createString(opName);
 
+        byte[] outTypes = new byte[outVarNames.size()];
+        int i=0;
+        for(String s : outVarNames){
+            SDVariable v = getVariable(s);
+            outTypes[i++] = FlatBuffersMapper.getDataTypeAsByte(v.dataType());
+        }
+        int outTypesOffset = FlatNode.createOutputTypesVector(bufferBuilder, outTypes);
+
         int flatNode = FlatNode.createFlatNode(
                 bufferBuilder,
                 ownId,
@@ -10716,10 +10720,13 @@ public class SameDiff {
                 integerArgs,
                 bArgs,
                 dimensions,
-                -1,
-                0, 0, scopeName,
+                -1,     //Device
+                0,      //Scope ID
+                scopeName,      //Scope name
                 outVarNamesOffset,
-                opNameOffset);
+                opNameOffset,
+                outTypesOffset   //Output types
+        );
 
         return flatNode;
     }

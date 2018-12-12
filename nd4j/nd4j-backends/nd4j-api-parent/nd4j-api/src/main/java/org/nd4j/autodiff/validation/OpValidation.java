@@ -227,12 +227,24 @@ public class OpValidation {
         }
 
         //Check ops:
-        DifferentialFunction[] dfOrig = original.functions();
-        DifferentialFunction[] dfDe = deserialized.functions();
-        Preconditions.checkState(dfOrig.length == dfDe.length, "Number of functions differs: %s vs. %s", dfOrig.length, dfDe.length);
-        for( int i=0; i<dfOrig.length; i++ ){
-            Preconditions.checkState(dfOrig[i].getClass().equals(dfDe[i].getClass()), "Different classes: op %s - %s vs %s",
-                    i, dfOrig[i].getClass(), dfDe[i].getClass());
+        Map<String,SameDiffOp> opsOrig = original.getOps();
+        Map<String,SameDiffOp> opsDeser = deserialized.getOps();
+        Preconditions.checkState(opsOrig.keySet().equals(opsDeser.keySet()), "Op names differs: %s vs. %s", opsOrig.keySet(), opsDeser.keySet());
+
+        for(String s : opsOrig.keySet()){
+            SameDiffOp orig = opsOrig.get(s);
+            SameDiffOp des = opsDeser.get(s);
+            Preconditions.checkState(orig.getName().equals(des.getName()), "Names differ: %s vs %s", orig.getName(), des.getName());
+            Preconditions.checkState((orig.getInputsToOp() == null) == (des.getInputsToOp() == null), "Inputs differ: %s vs. %s", orig.getInputsToOp(), des.getInputsToOp());
+            Preconditions.checkState(orig.getInputsToOp() == null || orig.getInputsToOp().equals(des.getInputsToOp()), "Inputs differ: %s vs. %s", orig.getInputsToOp(), des.getInputsToOp());
+
+            Preconditions.checkState((orig.getOutputsOfOp() == null) == (des.getOutputsOfOp() == null), "Outputs differ: %s vs. %s", orig.getOutputsOfOp(), des.getOutputsOfOp());
+            Preconditions.checkState(orig.getOutputsOfOp() == null || orig.getOutputsOfOp().equals(des.getOutputsOfOp()), "Outputs differ: %s vs. %s", orig.getOutputsOfOp(), des.getOutputsOfOp());
+
+            Preconditions.checkState((orig.getControlDeps() == null) == (des.getControlDeps() == null), "Control dependencies differ: %s vs. %s", orig.getControlDeps(), des.getControlDeps());
+            Preconditions.checkState(orig.getControlDeps() == null || orig.getControlDeps().equals(des.getControlDeps()), "Control dependencies differ: %s vs. %s", orig.getControlDeps(), des.getControlDeps());
+
+            Preconditions.checkState(orig.getOp().getClass() == des.getOp().getClass(), "Classes differ: %s v. %s", orig.getOp().getClass(), des.getOp().getClass());
         }
 
         //Check placeholders:

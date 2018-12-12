@@ -408,7 +408,6 @@ public class LegacyOpMapper {
                 return ScalarMin.class;
             case 13:
                 return ScalarSet.class;
-
             case 16:
                 return ScalarGreaterThanOrEqual.class;
             case 17:
