@@ -116,7 +116,7 @@ void NativeOpExcutioner::execBroadcast(int opNum, void *x, Nd4jLong *xShapeInfo,
     auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
     if (yType != xType && yType != nd4j::DataType::BOOL && !nd4j::Environment::getInstance()->isExperimentalBuild())
-        throw nd4j::datatype_exception::build("NativeOps::execPairwiseTransform both operands must have same data type", xType, yType);
+        throw nd4j::datatype_exception::build("NativeOps::execBroadcast both operands must have same data type", xType, yType);
 
 #ifdef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::exec(opNum, x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);

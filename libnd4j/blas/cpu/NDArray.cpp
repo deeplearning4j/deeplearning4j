@@ -977,8 +977,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         if (other.isScalar()) {
             if(this->isScalar()) {
                 if (!this->isEmpty() && !other.isEmpty()) {
-                    BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign,
-                                          (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
+                    BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign, (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
                 }
                 else if (this->isEmpty() != other.isEmpty()) { // need assign non-empty scalar to empty
                     if (other.isEmpty())
@@ -988,7 +987,18 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
                 }
             }
             else {
-                NativeOpExcutioner::execScalar(scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, other._buffer, other._shapeInfo, nullptr);
+                if (Environment::getInstance()->isExperimentalBuild() || this->dataType() == other.dataType() || other.isB()) {
+                    NativeOpExcutioner::execScalar(scalar::CopyPws, _buffer, _shapeInfo, _buffer, _shapeInfo, other._buffer, other._shapeInfo, nullptr);
+                } else {
+                    if (other.isR()) {
+                        auto o = other.e<double>(0);
+                        this->assign(o);
+                    } else if (other.isZ()) {
+                        auto o = other.e<Nd4jLong>(0);
+                        this->assign(o);
+                    } else
+                        throw datatype_exception::build("NDArray::assign() requires data types must be the same", this->dataType(), other.dataType());
+                }
             }
             return;
         }
@@ -1003,11 +1013,9 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         // memcpy is allowed only for same order && same ews (being equal to 1)
         if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1)
             memcpy(_buffer, other._buffer, _length * sizeOfT());
-        else if(_dataType == other._dataType)
-            NativeOpExcutioner::execTransformSame(transform::Copy, other._buffer, other._shapeInfo, _buffer, _shapeInfo, nullptr, nullptr, nullptr);
         else
-            NativeOpExcutioner::execPairwiseTransform(pairwise::CopyPws, _buffer, _shapeInfo, other._buffer, other._shapeInfo, _buffer, _shapeInfo, nullptr);
-            
+            NativeOpExcutioner::execTransformAny(transform::Assign, other._buffer, other._shapeInfo, _buffer, _shapeInfo, nullptr, nullptr, nullptr);
+
     }
 
 
