@@ -126,10 +126,12 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 
     if(weightsBroad != weights)
     	delete weightsBroad;
+
+    if(cLabels != newLabels)
+    	delete cLabels;
+
     if(newLabels != labels)
     	delete newLabels;
-
-    delete cLabels;
    		
     return Status::OK();
 }
