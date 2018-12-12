@@ -21,9 +21,24 @@
 #include <graph/LaunchContext.h>
 
 namespace nd4j {
-    namespace graph {
-        LaunchContext::LaunchContext() {
+namespace graph {
+
+#ifdef __CUDACC__
+////////////////////////////////////////////////////////////////////////
+LaunchContext::LaunchContext(const void* cudaStream, const void* reductionPointer, const void* scalarPointer, const int* allocationPointer)  {
+	
+	_cudaStream 	   = cudaStream;
+	_reductionPointer  = reductionPointer;	
+	_scalarPointer     = scalarPointer;
+	_allocationPointer = allocationPointer;	
+}	
+#endif
+
+////////////////////////////////////////////////////////////////////////
+LaunchContext::LaunchContext() {
             // default constructor, just to make clang/ranlib happy
-        }
-    }
+}
+
+
+}
 }
