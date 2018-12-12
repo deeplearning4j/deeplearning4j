@@ -20,7 +20,8 @@ public interface IWeightInit extends Serializable {
     char DEFAULT_WEIGHT_INIT_ORDER = WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER;
 
     /**
-     * Initialize parameters in the given view
+     * Initialize parameters in the given view. Double values are used for fanIn and fanOut as some layers
+     * (convolution with stride) results in a non-integer number which may be truncated to zero in certain configurations
      * @param fanIn Number of input parameters
      * @param fanOut Number of output parameters
      * @param shape Desired shape of array (users shall assume paramView has this shape after method has finished)
