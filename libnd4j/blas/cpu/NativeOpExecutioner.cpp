@@ -109,7 +109,7 @@ void NativeOpExecutioner::execIndexReduce(nd4j::graph::LaunchContext *lc,
  * @param hX
  * @param hXShapeInfo
  * @param hY
- * @param yShapeInfo
+ * @param hYShapeInfo
  * @param hZ
  * @param hZShapeInfo
  * @param dimension
@@ -135,7 +135,7 @@ void NativeOpExecutioner::execBroadcast(nd4j::graph::LaunchContext *lc,
 #ifndef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::exec(opNum, hX, hXShapeInfo, hY, yShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
 #endif
 }
 
@@ -190,7 +190,7 @@ void NativeOpExecutioner::execPairwiseTransform(nd4j::graph::LaunchContext *lc,
 #ifndef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::pairwise_transforms::PairWiseTransform, ::exec(opNum, hX, hXShapeInfo, hY, yShapeInfo, hZ, hZShapeInfo, extraParams), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::pairwise_transforms::PairWiseTransform, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams), LIBND4J_TYPES);
 #endif
 }
 
@@ -209,7 +209,7 @@ void NativeOpExecutioner::execPairwiseBoolTransform(nd4j::graph::LaunchContext *
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::pairwise_transforms::PairWiseBoolTransform, ::exec(opNum, hX, hXShapeInfo, hY, dYShapeInfo, hZ, hZShapeInfo, extraParams), LIBND4J_TYPES, BOOL_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::pairwise_transforms::PairWiseBoolTransform, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams), LIBND4J_TYPES, BOOL_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -365,7 +365,7 @@ void NativeOpExecutioner::execReduceLongScalar(nd4j::graph::LaunchContext *lc,
  * @param hXShapeInfo
  * @param extraParamsVals
  * @param hY
- * @param yShapeInfo
+ * @param hYShapeInfo
  * @param hZ
  * @param hZShapeInfo
  * @param dimension
@@ -396,7 +396,7 @@ void NativeOpExecutioner::execReduce3Scalar(nd4j::graph::LaunchContext *lc,
 * @param hXShapeInfo
 * @param extraParamsVals
 * @param hY
-* @param yShapeInfo
+* @param hYShapeInfo
 * @param hZ
 * @param hZShapeInfo
 */
@@ -507,7 +507,7 @@ void NativeOpExecutioner::execScalar(nd4j::graph::LaunchContext *lc,
 #ifndef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, scalar, extraParams), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams), LIBND4J_TYPES);
 #endif
 }
 
@@ -532,7 +532,7 @@ void NativeOpExecutioner::execScalar(nd4j::graph::LaunchContext *lc,
 #ifndef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
 #endif
 }
 
@@ -748,45 +748,45 @@ void NativeOpExecutioner::execTransformStrict(nd4j::graph::LaunchContext *lc,
 void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
                             int opNum,
                             Nd4jPointer state,
-                            void *hZ, Nd4jLong *hZShapeBuffer,
-                            void *dZ, Nd4jLong *dZShapeBuffer,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo,
                             void *extraArguments) {
 
-    auto zType = nd4j::ArrayOptions::dataType(hZShapeBuffer);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::execTransform(opNum, state, hZ, hZShapeBuffer, extraArguments), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::execTransform(opNum, state, hZ, hZShapeInfo, extraArguments), FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
                             int opNum,
                             Nd4jPointer state,
-                            void *hX, Nd4jLong *hXShapeBuffer,
-                            void *dX, Nd4jLong *dXShapeBuffer,
-                            void *hZ, Nd4jLong *hZShapeBuffer,
-                            void *dZ, Nd4jLong *dZShapeBuffer,
+                            void *hX, Nd4jLong *hXShapeInfo,
+                            void *dX, Nd4jLong *dXShapeInfo,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo,
                             void *extraArguments) {
 
-    auto zType = nd4j::ArrayOptions::dataType(hZShapeBuffer);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::execTransform(opNum, state, hX, hXShapeBuffer, hZ, hZShapeBuffer, extraArguments), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::execTransform(opNum, state, hX, hXShapeInfo, hZ, hZShapeInfo, extraArguments), FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
                           int opNum,
                           Nd4jPointer state,
-                          void *hX, Nd4jLong *hXShapeBuffer,
-                          void *dX, Nd4jLong *dXShapeBuffer,
-                          void *hY, Nd4jLong *hYShapeBuffer,
-                          void *dY, Nd4jLong *dYShapeBuffer,
-                          void *hZ, Nd4jLong *hZShapeBuffer,
-                          void *dZ, Nd4jLong *dZShapeBuffer,
+                          void *hX, Nd4jLong *hXShapeInfo,
+                          void *dX, Nd4jLong *dXShapeInfo,
+                          void *hY, Nd4jLong *hYShapeInfo,
+                          void *dY, Nd4jLong *dYShapeInfo,
+                          void *hZ, Nd4jLong *hZShapeInfo,
+                          void *dZ, Nd4jLong *dZShapeInfo,
                           void *extraArguments) {
 
-    auto xType = nd4j::ArrayOptions::dataType(hZShapeBuffer);
+    auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::execTransform(opNum, state, hX, hXShapeBuffer, hY, hYShapeBuffer, hZ, hZShapeBuffer, extraArguments), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::execTransform(opNum, state, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraArguments), FLOAT_TYPES);
 }
 
 

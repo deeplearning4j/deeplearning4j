@@ -45,7 +45,8 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    static void execIndexReduceScalar(nd4j::graph::LaunchContext *lc, int opNum, 
+    static void execIndexReduceScalar(nd4j::graph::LaunchContext *lc, 
+                                    int opNum, 
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
                                     void *extraParams,
@@ -440,8 +441,7 @@ public:
                                 void *extraParams,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension,
-                                int dimensionLength,
+                                int *dimension, int dimensionLength,
                                 bool biasCorrected);
 
  /**
