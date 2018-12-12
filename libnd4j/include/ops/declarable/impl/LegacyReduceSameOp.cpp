@@ -55,7 +55,7 @@ namespace nd4j {
 //                    (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                 if (block.getAxis()->empty() || allAxes) {
                     // scalar
-                    NativeOpExcutioner::execReduceSameScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
+                    NativeOpExcutioner::execReduceSameScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
                 } else {
                     // TAD
                     std::vector<int> dims(*block.getAxis());
@@ -72,7 +72,7 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExcutioner::execReduceSame(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execReduceSame(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }
 
                 STORE_RESULT(*z);
@@ -100,7 +100,7 @@ namespace nd4j {
                     //x->printIndexedBuffer("x");
 
                     // scalar
-                    NativeOpExcutioner::execReduceSameScalar(opNum, b, s, e, z->buffer(), z->shapeInfo());
+                    NativeOpExcutioner::execReduceSameScalar(nullptr, opNum, b, s, e, z->buffer(), z->shapeInfo());
                 } else {
                     // TAD
                     if (indices->lengthOf() > 1)
@@ -114,7 +114,7 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0);
 
-                    NativeOpExcutioner::execReduceSame(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execReduceSame(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }
             }
 

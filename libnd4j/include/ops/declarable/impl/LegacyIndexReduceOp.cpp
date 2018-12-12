@@ -117,7 +117,7 @@ namespace nd4j {
             if (block.width() == 1) {
                 if (block.getAxis()->size() == 0) {
                     // scalar
-                    NativeOpExcutioner::execIndexReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(),
+                    NativeOpExcutioner::execIndexReduceScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(),
                                                                          block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo());
                 } else {
                     // TAD
@@ -133,7 +133,7 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),
+                    NativeOpExcutioner::execIndexReduce(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),
                                                         reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);                }
             } else {
                 // TF mode
@@ -149,7 +149,7 @@ namespace nd4j {
                 }
 
                 if (allAxes) {
-                    NativeOpExcutioner::execIndexReduceScalar(opNum, x->getBuffer(), x->getShapeInfo(),
+                    NativeOpExcutioner::execIndexReduceScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(),
                                                               block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo());
 
                 } else {
@@ -162,7 +162,7 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExcutioner::execIndexReduce(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),
+                    NativeOpExcutioner::execIndexReduce(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),
                                                         reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }
             }

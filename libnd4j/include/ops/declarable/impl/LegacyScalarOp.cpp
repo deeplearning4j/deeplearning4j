@@ -60,15 +60,15 @@ namespace nd4j {
             if (block.width() > 1) {
                 auto y = INPUT_VARIABLE(1);
 
-                NativeOpExcutioner::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y->buffer(), y->shapeInfo(), block.getTArguments()->data() + offset);
+                NativeOpExcutioner::execScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y->buffer(), y->shapeInfo(), block.getTArguments()->data() + offset);
             } else if (block.getTArguments()->size() > 0) {
                 auto y = NDArrayFactory::create(T_ARG(0), block.getWorkspace());
                 offset++;
-                NativeOpExcutioner::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y.buffer(), y.shapeInfo(), block.getTArguments()->data() + offset);
+                NativeOpExcutioner::execScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y.buffer(), y.shapeInfo(), block.getTArguments()->data() + offset);
             } else {
                 auto y = NDArrayFactory::create(_scalar, block.getWorkspace());
 
-                NativeOpExcutioner::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y.buffer(), y.shapeInfo(), block.getTArguments()->data() + offset);
+                NativeOpExcutioner::execScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y.buffer(), y.shapeInfo(), block.getTArguments()->data() + offset);
             }
 
             STORE_RESULT(*z);
