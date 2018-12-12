@@ -85,10 +85,10 @@ struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_ID) &&
            verifier.VerifyTable(id()) &&
            VerifyOffset(verifier, VT_NAME) &&
-           verifier.VerifyString(name()) &&
+           verifier.Verify(name()) &&
            VerifyField<int8_t>(verifier, VT_DTYPE) &&
            VerifyOffset(verifier, VT_SHAPE) &&
-           verifier.VerifyVector(shape()) &&
+           verifier.Verify(shape()) &&
            VerifyOffset(verifier, VT_NDARRAY) &&
            verifier.VerifyTable(ndarray()) &&
            VerifyField<int32_t>(verifier, VT_DEVICE) &&
