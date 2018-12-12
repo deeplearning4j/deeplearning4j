@@ -2498,6 +2498,14 @@ void NativeOps::execScalar(
 	auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+	if (!Environment::getInstance()->isExperimentalBuild() && Environment::getInstance()->isDebug()) {
+        auto sX = DataTypeUtils::asString(xType);
+        auto sY = DataTypeUtils::asString(yType);
+        auto sZ = DataTypeUtils::asString(zType);
+
+        nd4j_printf("Running execScalar with dtypes: [%s], [%s], [%s]\n", sX.c_str(), sY.c_str(), sZ.c_str());
+    }
+
 
 #ifdef __ND4J_EXPERIMENTAL__
 	BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dZ, dZShapeInfo, hZShapeInfo, dScalar, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
