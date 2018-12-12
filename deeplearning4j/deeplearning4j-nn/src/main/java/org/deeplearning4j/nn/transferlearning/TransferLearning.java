@@ -153,7 +153,7 @@ public class TransferLearning {
                 throw new UnsupportedOperationException("Not supported!, Use " +
                         "nOutReplace(layerNum, nOut, new WeightInitDistribution(dist), new WeightInitDistribution(distNext)) instead!");
             }
-            return nOutReplace(layerNum, nOut, scheme.getWeightInitFunction(null), schemeNext.getWeightInitFunction(null));
+            return nOutReplace(layerNum, nOut, scheme.getWeightInitFunction(), schemeNext.getWeightInitFunction());
         }
 
         /**
@@ -189,7 +189,7 @@ public class TransferLearning {
                 throw new UnsupportedOperationException("Not supported!, Use " +
                         "nOutReplace(int layerNum, int nOut, Distribution dist, Distribution distNext) instead!");
             }
-            return nOutReplace(layerNum, nOut, scheme.getWeightInitFunction(null), new WeightInitDistribution(distNext));
+            return nOutReplace(layerNum, nOut, scheme.getWeightInitFunction(), new WeightInitDistribution(distNext));
         }
 
         /**
@@ -205,7 +205,7 @@ public class TransferLearning {
          * @see org.deeplearning4j.nn.weights.WeightInitDistribution
          */
         public Builder nOutReplace(int layerNum, int nOut, Distribution dist, WeightInit schemeNext) {
-            return nOutReplace(layerNum, nOut, new WeightInitDistribution(dist), schemeNext.getWeightInitFunction(null));
+            return nOutReplace(layerNum, nOut, new WeightInitDistribution(dist), schemeNext.getWeightInitFunction());
         }
 
         /**
@@ -666,7 +666,7 @@ public class TransferLearning {
                 throw new UnsupportedOperationException("Not supported!, Use " +
                         "nOutReplace(layerNum, nOut, new WeightInitDistribution(dist), new WeightInitDistribution(distNext)) instead!");
             }
-            return nOutReplace(layerName, nOut, scheme.getWeightInitFunction(null), new WeightInitDistribution(dist));
+            return nOutReplace(layerName, nOut, scheme.getWeightInitFunction(), new WeightInitDistribution(dist));
         }
 
         public GraphBuilder nOutReplace(String layerName, int nOut, Distribution dist, WeightInit scheme) {
@@ -674,7 +674,7 @@ public class TransferLearning {
                 throw new UnsupportedOperationException("Not supported!, Use " +
                         "nOutReplace(layerNum, nOut, new WeightInitDistribution(dist), new WeightInitDistribution(distNext)) instead!");
             }
-            return nOutReplace(layerName, nOut, new WeightInitDistribution(dist), scheme.getWeightInitFunction(null));
+            return nOutReplace(layerName, nOut, new WeightInitDistribution(dist), scheme.getWeightInitFunction());
         }
 
 
@@ -683,7 +683,7 @@ public class TransferLearning {
                 throw new UnsupportedOperationException("Not supported!, Use " +
                         "nOutReplace(layerNum, nOut, new WeightInitDistribution(dist), new WeightInitDistribution(distNext)) instead!");
             }
-            return nOutReplace(layerName, nOut, scheme.getWeightInitFunction(null), schemeNext.getWeightInitFunction(null));
+            return nOutReplace(layerName, nOut, scheme.getWeightInitFunction(), schemeNext.getWeightInitFunction());
         }
 
         /**

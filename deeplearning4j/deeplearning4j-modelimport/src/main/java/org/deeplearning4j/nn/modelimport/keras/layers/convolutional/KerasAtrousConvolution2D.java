@@ -91,7 +91,7 @@ public class KerasAtrousConvolution2D extends KerasConvolution {
         ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
-                .weightInit(weightInit.getWeightInitFunction(null))
+                .weightInit(weightInit.getWeightInitFunction())
                 .dilation(getDilationRate(layerConfig, 2, conf, true))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))

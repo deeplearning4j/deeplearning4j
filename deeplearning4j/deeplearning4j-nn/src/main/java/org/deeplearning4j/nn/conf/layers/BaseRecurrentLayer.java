@@ -127,7 +127,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
                 throw new UnsupportedOperationException("Not supported!, Use weightInit(Distribution distribution) instead!");
             }
 
-            this.weightInitFnRecurrent = weightInit.getWeightInitFunction(null);
+            this.weightInitFnRecurrent = weightInit.getWeightInitFunction();
             return (T) this;
         }
 

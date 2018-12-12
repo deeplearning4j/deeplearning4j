@@ -71,6 +71,16 @@ public enum WeightInit {
     RELU_UNIFORM, IDENTITY, LECUN_UNIFORM, VAR_SCALING_NORMAL_FAN_IN, VAR_SCALING_NORMAL_FAN_OUT, VAR_SCALING_NORMAL_FAN_AVG,
     VAR_SCALING_UNIFORM_FAN_IN, VAR_SCALING_UNIFORM_FAN_OUT, VAR_SCALING_UNIFORM_FAN_AVG;
 
+
+    /**
+     * Create an instance of the weight initialization function
+     *
+     * @return a new {@link IWeightInit} instance
+     */
+    public IWeightInit getWeightInitFunction() {
+        return getWeightInitFunction(null);
+    }
+
     /**
      * Create an instance of the weight initialization function
      *

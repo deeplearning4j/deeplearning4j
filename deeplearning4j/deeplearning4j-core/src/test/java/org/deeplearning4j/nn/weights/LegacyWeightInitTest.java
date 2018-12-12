@@ -66,7 +66,7 @@ public class LegacyWeightInitTest {
                 final INDArray expected = WeightInitUtil.initWeights(fanIn, fanOut, shape, legacyWi, null, inLegacy);
 
                 Nd4j.getRandom().setSeed(SEED);
-                final INDArray actual = legacyWi.getWeightInitFunction(null)
+                final INDArray actual = legacyWi.getWeightInitFunction()
                         .init(fanIn, fanOut, shape, WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER, inTest);
                 assertArrayEquals("Incorrect shape for " + legacyWi + "!", shape, actual.shape());
 
@@ -127,7 +127,7 @@ public class LegacyWeightInitTest {
         for (WeightInit legacyWi : WeightInit.values()) {
             if (legacyWi != WeightInit.DISTRIBUTION) {
                 Nd4j.getRandom().setSeed(SEED);
-                final IWeightInit before = legacyWi.getWeightInitFunction(null);
+                final IWeightInit before = legacyWi.getWeightInitFunction();
                 final INDArray expected = before.init(fanIn, fanOut, shape, inBefore.ordering(), inBefore);
 
                 final String json = mapper.writeValueAsString(before);
@@ -185,10 +185,12 @@ public class LegacyWeightInitTest {
     public void equalsAndHashCode() {
         WeightInit lastInit = WeightInit.values()[WeightInit.values().length-1];
         for (WeightInit legacyWi : WeightInit.values()) {
-            assertEquals("Shall be equal!", legacyWi.getWeightInitFunction(null), legacyWi.getWeightInitFunction(null));
-            assertNotEquals("Shall not be equal!", lastInit.getWeightInitFunction(null), legacyWi.getWeightInitFunction(null));
-            if(legacyWi != WeightInit.NORMAL && legacyWi != WeightInit.LECUN_NORMAL) {
-                lastInit = legacyWi;
+            if(legacyWi != WeightInit.DISTRIBUTION) {
+                assertEquals("Shall be equal!", legacyWi.getWeightInitFunction(), legacyWi.getWeightInitFunction());
+                assertNotEquals("Shall not be equal!", lastInit.getWeightInitFunction(), legacyWi.getWeightInitFunction());
+                if (legacyWi != WeightInit.NORMAL && legacyWi != WeightInit.LECUN_NORMAL) {
+                    lastInit = legacyWi;
+                }
             }
         }
         Distribution lastDist = distributions.get(distributions.size() - 1);

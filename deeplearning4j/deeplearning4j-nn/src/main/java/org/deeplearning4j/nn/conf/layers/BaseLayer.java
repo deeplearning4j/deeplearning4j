@@ -167,7 +167,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
                 throw new UnsupportedOperationException("Not supported!, Use weightInit(Distribution distribution) instead!");
             }
 
-            this.weightInitFn = weightInit.getWeightInitFunction(null);
+            this.weightInitFn = weightInit.getWeightInitFunction();
             return (T) this;
         }
 

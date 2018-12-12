@@ -84,20 +84,20 @@ public class KerasInitilizationTest {
 
     private IWeightInit[] dl4jInitializers() {
         return new IWeightInit[]{
-                WeightInit.XAVIER.getWeightInitFunction(null),
-                WeightInit.XAVIER_UNIFORM.getWeightInitFunction(null),
-                WeightInit.LECUN_NORMAL.getWeightInitFunction(null),
-                WeightInit.LECUN_UNIFORM.getWeightInitFunction(null),
+                WeightInit.XAVIER.getWeightInitFunction(),
+                WeightInit.XAVIER_UNIFORM.getWeightInitFunction(),
+                WeightInit.LECUN_NORMAL.getWeightInitFunction(),
+                WeightInit.LECUN_UNIFORM.getWeightInitFunction(),
                 WeightInit.DISTRIBUTION.getWeightInitFunction(new UniformDistribution(minValue, maxValue)),
-                WeightInit.RELU.getWeightInitFunction(null),
-                WeightInit.RELU_UNIFORM.getWeightInitFunction(null),
-                WeightInit.ONES.getWeightInitFunction(null),
-                WeightInit.ZERO.getWeightInitFunction(null),
-                WeightInit.IDENTITY.getWeightInitFunction(null),
+                WeightInit.RELU.getWeightInitFunction(),
+                WeightInit.RELU_UNIFORM.getWeightInitFunction(),
+                WeightInit.ONES.getWeightInitFunction(),
+                WeightInit.ZERO.getWeightInitFunction(),
+                WeightInit.IDENTITY.getWeightInitFunction(),
                 WeightInit.DISTRIBUTION.getWeightInitFunction(new NormalDistribution(mean, stdDev)),
                 WeightInit.DISTRIBUTION.getWeightInitFunction(new OrthogonalDistribution(gain)),
                 WeightInit.DISTRIBUTION.getWeightInitFunction(new ConstantDistribution(value)),
-                WeightInit.VAR_SCALING_NORMAL_FAN_IN.getWeightInitFunction(null)};
+                WeightInit.VAR_SCALING_NORMAL_FAN_IN.getWeightInitFunction()};
     }
 
     private Distribution[] dl4jDistributions() {

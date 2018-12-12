@@ -173,7 +173,7 @@ public class FineTuneConfiguration {
                 throw new UnsupportedOperationException("Not supported!, User weightInit(Distribution distribution) instead!");
             }
 
-            this.weightInitFn = weightInit.getWeightInitFunction(null);
+            this.weightInitFn = weightInit.getWeightInitFunction();
             return this;
         }
 

@@ -70,7 +70,7 @@ public class LayerBuilderTest extends BaseDL4JTest {
         checkSerialization(layer);
 
         assertEquals(act, layer.getActivationFn());
-        assertEquals(weight.getWeightInitFunction(null), layer.getWeightInitFn());
+        assertEquals(weight.getWeightInitFunction(), layer.getWeightInitFn());
         assertEquals(new Dropout(dropOut), layer.getIDropout());
         assertEquals(updater, layer.getIUpdater());
         assertEquals(gradNorm, layer.getGradientNormalization());

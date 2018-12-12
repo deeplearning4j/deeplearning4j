@@ -740,7 +740,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
              //   throw new UnsupportedOperationException("Not supported!, Use weightInit(Distribution distribution) instead!");
             }
 
-            this.weightInitFn = weightInit.getWeightInitFunction(null);
+            this.weightInitFn = weightInit.getWeightInitFunction();
             return this;
         }
 
