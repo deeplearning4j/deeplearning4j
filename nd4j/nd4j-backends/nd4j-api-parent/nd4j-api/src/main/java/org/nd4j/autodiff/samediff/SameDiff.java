@@ -10362,7 +10362,7 @@ public class SameDiff {
         Preconditions.checkState(outputs != null && outputs.length > 0, "No outputs were specified");
         long threadId = Thread.currentThread().getId();
         if(!sessions.containsKey(threadId)){
-            log.info("Creating new InferenceSession for thread %s", threadId);
+            log.info("Creating new InferenceSession for thread {}", threadId);
             sessions.put(threadId, new InferenceSession(this));
         }
 
@@ -11203,6 +11203,17 @@ public class SameDiff {
             }
             sd.ops.get(df.getOwnName()).setInputsToOp(Arrays.asList(inputNames));
 
+            //Record that input variables are input to this op
+            for(String inName : inputNames) {
+                Variable v = sd.getVariables().get(inName);
+                if(v.getInputsForOp() == null){
+                    v.setInputsForOp(new ArrayList<String>());
+                }
+                if(!v.getInputsForOp().contains(df.getOwnName())){
+                    v.getInputsForOp().add(df.getOwnName());
+                }
+            }
+
             List<SDVariable> varsForOp = variablesByName.get(name);
 
             //Can't assume that variables for the op have all been defined. For example, if we export before execution in SameDiff
@@ -11218,6 +11229,7 @@ public class SameDiff {
                 varNames = new String[varsForOp.size()];
                 for( int i=0; i<varNames.length; i++ ){
                     varNames[i] = varsForOp.get(i).getVarName();
+                    sd.getVariables().get(varNames[i]).setOutputOfOp(df.getOwnName());
                 }
                 sd.ops.get(df.getOwnName()).setOutputsOfOp(Arrays.asList(varNames));
             } else {
@@ -11233,6 +11245,7 @@ public class SameDiff {
                         sd.variables.put(n, Variable.builder().name(n).variable(var).build());
                         variablesByNodeAndOutNum.put(new Pair<>(opId, i), var);
                     }
+                    sd.getVariables().get(varNames[i]).setOutputOfOp(df.getOwnName());
                 }
                 sd.ops.get(df.getOwnName()).setOutputsOfOp(Arrays.asList(varNames));
             }
