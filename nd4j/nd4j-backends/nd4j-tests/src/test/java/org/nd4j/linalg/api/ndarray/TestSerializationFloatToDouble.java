@@ -73,7 +73,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
         //Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         System.out.println("The data opType is " + Nd4j.dataType());
-        INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
+        INDArray arr1 = Nd4j.linspace(1, length, length, DataType.FLOAT).reshape('c', 10, 10);
         arr1.subi(50.0123456);
 
         INDArray arr2;
@@ -134,7 +134,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
         //Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         System.out.println("The data opType is " + Nd4j.dataType());
-        INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
+        INDArray arr1 = Nd4j.linspace(1, length, length, DataType.FLOAT).reshape('c', 10, 10);
         INDArray sub1 = arr1.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
 
         INDArray arr2;
@@ -142,7 +142,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
             arr2 = Nd4j.read(dis);
         }
 
-        //assertEquals(sub,arr2);
+        //assertEquals(sub,arr2);\
         assertTrue(Transforms.abs(sub1.sub(arr2).div(sub1)).maxNumber().doubleValue() < 0.01);
     }
 
@@ -162,7 +162,7 @@ public class TestSerializationFloatToDouble extends BaseNd4jTest {
         byte[] bytes = baos.toByteArray();
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         System.out.println("The data opType is " + Nd4j.dataType());
-        INDArray arr1 = Nd4j.linspace(1, length, length).reshape('c', 10, 10);
+        INDArray arr1 = Nd4j.linspace(1, length, length, DataType.FLOAT).reshape('c', 10, 10);
         INDArray sub1 = arr1.get(NDArrayIndex.interval(5, 10), NDArrayIndex.interval(5, 10));
 
         INDArray arr2;

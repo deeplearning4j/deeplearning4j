@@ -6778,4 +6778,8 @@ public class Nd4j {
     public static INDArray create(@NonNull Collection<String> strings, long[] shape, char order) {
         return INSTANCE.create(strings, shape, order);
     }
+
+    public static boolean isExperimentalMode() {
+        return getExecutioner().isExperimentalMode();
+    }
 }
