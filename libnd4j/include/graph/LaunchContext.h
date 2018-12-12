@@ -23,14 +23,39 @@
 
 #include <dll.h>
 
-namespace nd4j {
-    namespace graph {
-        class ND4J_EXPORT LaunchContext {
-        public:
-            LaunchContext();
-            ~LaunchContext() = default;
-        };
-    }
+namespace nd4j  {
+namespace graph {
+
+class ND4J_EXPORT LaunchContext {
+
+	private:
+		#ifdef __CUDACC__
+		void* _reductionPointer;
+		void* _scalarPointer;
+		int* _allocationPointer;		
+		cudaStream_t* _cudaStream;
+		#endif		
+	
+	public:
+		#ifdef __CUDACC__
+		
+		LaunchContext(const void* _cudaStream = nullptr, const void* reductionPointer = nullptr, const void* scalarPointer = nullptr, const int* allocationPointer = nullptr);
+		
+		inline void* getReductionPointer () const {return _reductionPointer;};			
+		
+		inline void* getScalarPointer() const {return _scalarPointer;};
+
+		inline int* getAllocationPointer() const {return _allocationPointer;};
+
+		inline cudaStream_t* getCudaStream() const {return _cudaStream;};
+		
+		#endif
+
+    	LaunchContext();
+    	~LaunchContext() = default;
+};
+
+}
 }
 
 
