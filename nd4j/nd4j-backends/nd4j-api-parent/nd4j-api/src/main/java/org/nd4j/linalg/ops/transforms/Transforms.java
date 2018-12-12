@@ -40,9 +40,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
 import org.nd4j.linalg.api.ops.impl.transforms.same.*;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Stabilize;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.inverse.InvertMatrix;
 

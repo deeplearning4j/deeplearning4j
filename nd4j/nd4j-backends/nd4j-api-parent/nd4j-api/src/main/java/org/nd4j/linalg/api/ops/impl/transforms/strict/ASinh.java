@@ -14,76 +14,77 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * LogSigmoid function
+ * Arcsin elementwise function
  *
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
-public class LogSigmoid extends BaseTransformFloatOp {
-    public LogSigmoid(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+public class ASinh extends BaseTransformStrictOp {
+    public ASinh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public LogSigmoid(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public ASinh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public LogSigmoid(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public ASinh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public LogSigmoid() {
+    public ASinh() {
     }
 
-    public LogSigmoid(INDArray x, INDArray z) {
+    public ASinh(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public LogSigmoid(INDArray x, INDArray z, long n) {
+    public ASinh(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public LogSigmoid(INDArray ndArray) {
-        super(ndArray);
+    public ASinh(INDArray x) {
+        super(x);
     }
 
     @Override
     public int opNum() {
-        return 31;
+        return 47;
     }
 
     @Override
     public String opName() {
-        return "logsigmoid";
+        return "asinh";
     }
 
     @Override
     public String onnxName() {
-        return "LogSigmoid";
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "LogSigmoid";
+        return "Asinh";
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().logSigmoidDerivative(arg(), i_v.get(0));
+        //dasinh(x)/dx = 1 / sqrt(x^2+1)
+        SDVariable xSqPlus1 = f().square(arg()).add(1.0);
+        SDVariable ret = i_v.get(0).div(f().sqrt(xSqPlus1));
         return Arrays.asList(ret);
     }
-
-
 }

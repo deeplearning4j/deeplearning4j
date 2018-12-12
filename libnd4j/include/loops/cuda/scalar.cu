@@ -55,7 +55,7 @@ __global__ static void scalarSimpleShaped(void* vx, void *vscalar, Nd4jLong *xSh
     auto zOrder = shape::order(zShapeInfo);
 
 
-    if (xEws == zEws && xOrder == zOrder) {
+    if (xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
         for (Nd4jLong i = tid; i < length; i += totalThreads) {
             z[i * zEws] = OpType::op(x[i * xEws], scalar, params);
         }

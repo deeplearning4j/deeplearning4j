@@ -46,15 +46,15 @@ public class StandardizeStrategy implements NormalizerStrategy<DistributionStats
     @Override
     public void preProcess(INDArray array, INDArray maskArray, DistributionStats stats) {
         if (array.rank() <= 2) {
-            array.subiRowVector(stats.getMean());
-            array.diviRowVector(filteredStd(stats));
+            array.subiRowVector(stats.getMean().castTo(array.dataType()));
+            array.diviRowVector(filteredStd(stats).castTo(array.dataType()));
         }
         // if array Rank is 3 (time series) samplesxfeaturesxtimesteps
         // if array Rank is 4 (images) samplesxchannelsxrowsxcols
         // both cases operations should be carried out in dimension 1
         else {
-            Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(array, stats.getMean(), array, 1));
-            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(array, filteredStd(stats), array, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(array, stats.getMean().castTo(array.dataType()), array, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(array, filteredStd(stats).castTo(array.dataType()), array, 1));
         }
 
         if (maskArray != null) {
@@ -74,8 +74,8 @@ public class StandardizeStrategy implements NormalizerStrategy<DistributionStats
             array.muliRowVector(filteredStd(stats));
             array.addiRowVector(stats.getMean());
         } else {
-            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(array, filteredStd(stats), array, 1));
-            Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(array, stats.getMean(), array, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(array, filteredStd(stats).castTo(array.dataType()), array, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(array, stats.getMean().castTo(array.dataType()), array, 1));
         }
 
         if (maskArray != null) {

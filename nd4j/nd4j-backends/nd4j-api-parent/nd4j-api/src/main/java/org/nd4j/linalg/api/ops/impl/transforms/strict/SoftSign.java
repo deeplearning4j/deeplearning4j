@@ -14,74 +14,79 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * Hard tanh elementwise function
+ * Softsign element-wise activation function. f(x) = x/(1+abs(x))<br>
+ * Similar in shape to tanh but may outperform it due to
+ * 'gentler' nonlinearity (smoother asymptotes).<br>
+ * See for example: http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf
  *
- * @author Adam Gibson
+ * @author Alex Black
  */
-public class HardTanh extends BaseTransformFloatOp {
-    public HardTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+public class SoftSign extends BaseTransformStrictOp {
+    public SoftSign(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public HardTanh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public SoftSign(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public HardTanh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public SoftSign(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public HardTanh() {
+    public SoftSign() {
     }
 
-    public HardTanh(INDArray x, INDArray z) {
+    public SoftSign(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public HardTanh(INDArray x, INDArray z, long n) {
+    public SoftSign(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public HardTanh(INDArray x) {
+    public SoftSign(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 12;
+        return 34;
     }
 
     @Override
     public String opName() {
-        return "hardtanh";
+        return "softsign";
     }
-
 
     @Override
     public String onnxName() {
-        return "HardTanh";
+        return "Softsign";
     }
 
     @Override
     public String tensorflowName() {
-        return "HardTanh";
+        return "Softsign";
     }
+
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().hardTanhDerivative(arg()).mul(i_v.get(0));
+        SDVariable ret = f().softsignDerivative(arg()).mul(i_v.get(0));
         return Arrays.asList(ret);
     }
+
 }

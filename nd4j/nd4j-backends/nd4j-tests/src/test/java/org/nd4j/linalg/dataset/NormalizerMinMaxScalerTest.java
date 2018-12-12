@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
@@ -60,8 +61,8 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
         DataSet sampleDataSet = new DataSet(featureSet, labelSet);
 
         //expected min and max
-        INDArray theoreticalMin = Nd4j.create(new double[] {x, y, z});
-        INDArray theoreticalMax = Nd4j.create(new double[] {nSamples * x, nSamples * y, nSamples * z});
+        INDArray theoreticalMin = Nd4j.create(new double[] {x, y, z}, new long[]{1,3}).castTo(DataType.FLOAT);
+        INDArray theoreticalMax = Nd4j.create(new double[] {nSamples * x, nSamples * y, nSamples * z}, new long[]{1,3}).castTo(DataType.FLOAT);
         INDArray theoreticalRange = theoreticalMax.sub(theoreticalMin);
 
         NormalizerMinMaxScaler myNormalizer = new NormalizerMinMaxScaler();

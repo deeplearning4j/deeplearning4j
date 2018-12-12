@@ -775,6 +775,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     case TRANSFORM_FLOAT:
                     case TRANSFORM_STRICT:
                     case TRANSFORM_SAME:
+                        if (!experimentalMode.get())
+                            Preconditions.checkArgument(op.x().dataType() == op.y().dataType() || op.y().dataType() == DataType.BOOL, "Op.X and Op.Y must have the same data type, but got " + op.x().dataType() + " vs " + op.y().dataType());
+
                         loop.execPairwiseTransform(dummy, op.opNum(),
                             op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 null, null,
@@ -2065,5 +2068,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public ExecutionerType type() {
         return ExecutionerType.NATIVE_CPU;
+    }
+
+    @Override
+    public boolean isExperimentalMode() {
+        return experimentalMode.get();
     }
 }

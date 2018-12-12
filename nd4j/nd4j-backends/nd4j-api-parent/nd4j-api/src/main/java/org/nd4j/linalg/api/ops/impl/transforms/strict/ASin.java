@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -22,68 +22,72 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * Log elementwise function
+ * Arcsin elementwise function
  *
  * @author Adam Gibson
  */
-public class Sin extends BaseTransformFloatOp {
-    public Sin(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+public class ASin extends BaseTransformStrictOp {
+    public ASin(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Sin(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public ASin(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public Sin(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public ASin(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public Sin(INDArray x, INDArray z) {
+    public ASin() {
+    }
+
+    public ASin(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public Sin(INDArray x, INDArray z, long n) {
+    public ASin(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Sin(INDArray x) {
+    public ASin(INDArray x) {
         super(x);
-    }
-
-    public Sin() {
     }
 
     @Override
     public int opNum() {
-        return 5;
+        return 31;
     }
 
     @Override
     public String opName() {
-        return "sin";
+        return "asin";
     }
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op found for " + opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "Sin";
+        return "Asin";
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().cos(arg()).mul(i_v.get(0));
+        //d(asin(x))/dx = 1/sqrt(1-x^2)
+        SDVariable oneSubSq = sameDiff.square(arg()).rsub(1.0);
+        SDVariable ret = sameDiff.sqrt(oneSubSq).rdiv(1.0).mul(i_v.get(0));
         return Arrays.asList(ret);
     }
+
 
 }

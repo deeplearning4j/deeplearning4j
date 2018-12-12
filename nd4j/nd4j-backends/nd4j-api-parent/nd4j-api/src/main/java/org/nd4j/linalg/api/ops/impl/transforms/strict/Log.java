@@ -14,78 +14,77 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * Arc Tangent elementwise function
+ * Log elementwise function
  *
  * @author Adam Gibson
  */
-public class ATan extends BaseTransformFloatOp {
-    public ATan(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+public class Log extends BaseTransformStrictOp {
+    public Log(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ATan(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public Log(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public ATan(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public Log(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public ATan() {
+    public Log() {
     }
 
-    public ATan(INDArray x, INDArray z) {
+    public Log(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public ATan(INDArray x, INDArray z, long n) {
+    public Log(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public ATan(INDArray x) {
+    public Log(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 11;
+        return 24;
     }
 
     @Override
     public String opName() {
-        return "atan";
+        return "log";
     }
 
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
+        return "Log";
     }
 
     @Override
     public String tensorflowName() {
-        return "Atan";
+        return "Log";
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //d(atan(x))/dx = 1/(x^2+1)
-        SDVariable xSqPlus1 = f().square(arg()).add(1.0);
-        SDVariable ret = xSqPlus1.rdiv(1.0).mul(i_v.get(0));
-        return Arrays.asList(ret);
+        f().validateDifferentialFunctionsameDiff(arg());
+        SDVariable toInverse = sameDiff.setupFunction(f().div(i_v.get(0), arg()));
+        return Arrays.asList(toInverse);
     }
 }

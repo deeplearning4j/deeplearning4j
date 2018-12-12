@@ -179,7 +179,7 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
 	// dE_i/dp_i = (1-y_i)/(1-p_i+eps) - y_i/(p_i+eps)
 	dLdp->assign(oneMinusLabels / onePlusEpsMinusPredict - *labels / predictPlusEps);	// dE/dp	
 	// dE_i/dy_i = log((1+2eps)/(p_i+eps) - 1)
-	((1. + 2*epsilon) / predictPlusEps  - 1).applyTransform(transform::Log, dLdl);		// dE/dy
+	((1. + 2. * epsilon) / predictPlusEps  - 1.).applyTransform(transform::Log, dLdl);		// dE/dy
 
 	NDArray E = -(*labels) * predictPlusEps.transform(transform::Log) - oneMinusLabels * onePlusEpsMinusPredict.transform(transform::Log);
 	
@@ -247,17 +247,18 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
 				*dLdw = 0.;
 			}
 			else {
+				auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.getWorkspace());
 				if(weights->isScalar())
 					dLdw->assign(E.reduceNumber(reduce::Sum) / numOfNonZeroWeights);
 				else if(weights != weightsBroad) {
 					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
 					E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
-					*dLdw /= numOfNonZeroWeights;
+					*dLdw /= numOfNonZeroWeightsScalar;
 				}
 				else
-					dLdw->assign(E / numOfNonZeroWeights);
+					dLdw->assign(E / numOfNonZeroWeightsScalar);
 				
-				NDArray temp = *weightsBroad / numOfNonZeroWeights;
+				NDArray temp = *weightsBroad / numOfNonZeroWeightsScalar;
 				*dLdp *= temp;
 				*dLdl *= temp;
 			}

@@ -14,68 +14,75 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidDerivative;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * HardSigmoid function
+ * Tanh elementwise function
  *
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
-public class HardSigmoid extends BaseTransformFloatOp {
-    public HardSigmoid() {}
+public class Tanh extends BaseTransformStrictOp {
+    public Tanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
+    }
 
-    public HardSigmoid(INDArray x, INDArray z) {
+    public Tanh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    }
+
+    public Tanh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
+    public Tanh() {
+    }
+
+    public Tanh(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public HardSigmoid(INDArray x, INDArray z, long n) {
+    public Tanh(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public HardSigmoid(INDArray ndArray) {
-        super(ndArray);
-    }
-
-    public HardSigmoid(SameDiff sameDiff, SDVariable in, boolean inPlace){
-        super(sameDiff, in, inPlace);
+    public Tanh(INDArray x) {
+        super(x);
     }
 
     @Override
     public int opNum() {
-        return 16;
+        return 29;
     }
 
     @Override
     public String opName() {
-        return "hard_sigmoid";
+        return "tanh";
     }
 
     @Override
     public String onnxName() {
-        return "HardSigmoid";
+        return "Tanh";
     }
 
     @Override
     public String tensorflowName() {
-        return "HardSigmoid";
+        return "Tanh";
     }
+
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable in = arg();
-        SDVariable dOutdIn = new HardSigmoidDerivative(sameDiff, in, false).outputVariables()[0];
-        return Collections.singletonList(dOutdIn.mul(f1.get(0)));
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable ret = f().tanhDerivative(arg(), i_v.get(0));
+        return Arrays.asList(ret);
     }
-
-
 }

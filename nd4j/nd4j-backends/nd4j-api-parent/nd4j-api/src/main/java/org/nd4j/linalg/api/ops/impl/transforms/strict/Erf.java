@@ -14,66 +14,82 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Element-wise exponential function
+ * Gaussian error function (erf) function, which is defined as
+ * <p>
+ * erf(x) = 1 / sqrt(pi) * integral_(-x, x) exp(-t^2) dt
  *
- * @author Adam Gibson
+ * @author raver119@gmail.com
  */
-public class Exp extends BaseTransformFloatOp {
-    public Exp(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+public class Erf extends BaseTransformStrictOp {
+    public Erf(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Exp() {
+    public Erf(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public Exp(INDArray x, INDArray z) {
+    public Erf(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+        super(sameDiff, i_v, extraArgs);
+    }
+
+    public Erf() {
+    }
+
+    public Erf(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public Exp(INDArray x, INDArray z, long n) {
+    public Erf(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Exp(INDArray x) {
+    public Erf(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 1;
+        return 45;
     }
 
     @Override
     public String opName() {
-        return "exp";
+        return "erf";
     }
 
     @Override
     public String onnxName() {
-        return "Exp";
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "Exp";
+        return "Erf";
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().mul(f().exp(arg()), i_v.get(0));
-        return Arrays.asList(ret);
+        // Derivative of erf(z) is 2 / sqrt(pi) * e^(-z^2)
+        SDVariable gradient = i_v.get(0);
+        SDVariable z = arg();
+        SDVariable constant = sameDiff.onesLike(gradient).mul(2.0 / Math.sqrt(Math.PI));
+        SDVariable ret = constant.mul(sameDiff.exp(z.mul(z).mul(-1))).mul(gradient);
+        return Collections.singletonList(ret);
     }
 
 }

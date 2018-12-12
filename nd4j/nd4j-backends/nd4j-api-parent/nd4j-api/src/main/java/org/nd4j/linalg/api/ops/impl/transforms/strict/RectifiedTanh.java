@@ -14,8 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.floating;
+package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -23,79 +24,51 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Set range to a particular set of values
+ * RectifiedTanh
  *
- * @author Adam Gibson
+ * Essentially max(0, tanh(x))
+ *
+ * @author raver119@gmail.com
  */
-public class SetRange extends BaseTransformFloatOp {
-
-    private double min, max;
-
-    public SetRange(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double min, double max) {
+public class RectifiedTanh extends BaseTransformStrictOp {
+    public RectifiedTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
-        this.min = min;
-        this.max = max;
     }
 
-    public SetRange(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double min, double max) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.min = min;
-        this.max = max;
-    }
+    public RectifiedTanh() {}
 
-    public SetRange(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double min, double max) {
-        super(sameDiff, i_v, extraArgs);
-        this.min = min;
-        this.max = max;
-    }
-
-    public SetRange() {}
-
-    public SetRange(INDArray x) {
-        this(x, 0, 1);
-    }
-
-    public SetRange(INDArray x, INDArray z, double min, double max) {
+    public RectifiedTanh(INDArray x, INDArray z) {
         super(x, z);
-        this.min = min;
-        this.max = max;
-        init(x, y, z, n);
     }
 
-    public SetRange(INDArray x, INDArray z, long n, double min, double max) {
+    public RectifiedTanh(INDArray x, INDArray z, long n) {
         super(x, z, n);
-        this.min = min;
-        this.max = max;
-        init(x, y, z, n);
     }
-/*
-    public SetRange(INDArray x, INDArray y, INDArray z, long n, double min, double max) {
-        super(x, y, z, n);
-        this.min = min;
-        this.max = max;
-        init(x, y, z, n);
-    }
-*/
-    public SetRange(INDArray x, double min, double max) {
+
+    public RectifiedTanh(INDArray x) {
         super(x);
-        this.min = min;
-        this.max = max;
-        init(x, y, z, n);
     }
 
     @Override
     public int opNum() {
-        return 3;
+        return 38;
     }
 
     @Override
     public String opName() {
-        return "setrange";
+        return "rectified_tanh";
     }
+
     @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
@@ -107,15 +80,18 @@ public class SetRange extends BaseTransformFloatOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {min, max};
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
     }
 
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        super.initFromOnnx(node, initWith, attributesForNode, graph);
+    }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.singletonList(f().tanhRectifiedDerivative(arg()).mul(f1.get(0)));
     }
 }

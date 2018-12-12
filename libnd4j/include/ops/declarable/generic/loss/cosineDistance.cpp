@@ -63,7 +63,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 		weightsBroad = new NDArray(weights->tile(reps));
 	}
 
-	auto ts = NDArrayFactory::create(1.f, block.getWorkspace());
+	auto ts = NDArrayFactory::create(weights->dataType(), 1.f, block.getWorkspace());
 
 	NDArray weightedLosses = ts - ((*predictions) * (*labels)).reduceAlongDims(reduce::Sum, {dim}, true);
 

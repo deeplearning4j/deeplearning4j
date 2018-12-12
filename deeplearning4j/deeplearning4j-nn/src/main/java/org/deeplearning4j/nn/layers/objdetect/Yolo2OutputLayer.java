@@ -502,8 +502,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //dI/dy = omega * (1^(min(y1+h1/2) - 1^(max(y1-h1/2))
         //omega = min(x1+w1/2,x2+w2/2) - max(x1-w1/2,x2+w2/2)       i.e., from diff = minBR.sub(maxTL), which has shape [mb, b, 2, h, w]
         //lambda = min(y1+h1/2,y2+h2/2) - max(y1-h1/2,y2+h2/2)
-        INDArray dI_dxy = maskMinBR.castTo(DataType.FLOAT).subi(maskMaxTL);              //Shape: [mb, b, 2, h, w]
-        INDArray dI_dwh = maskMinBR.castTo(DataType.FLOAT).addi(maskMaxTL).muli(0.5);    //Shape: [mb, b, 2, h, w]
+        INDArray dI_dxy = maskMinBR.castTo(Nd4j.defaultFloatingPointType()).subi(maskMaxTL);              //Shape: [mb, b, 2, h, w]
+        INDArray dI_dwh = maskMinBR.castTo(Nd4j.defaultFloatingPointType()).addi(maskMaxTL).muli(0.5);    //Shape: [mb, b, 2, h, w]
 
         dI_dxy.get(all(), all(), point(0), all(), all()).muli(diff.get(all(), all(), point(1), all(), all()));
         dI_dxy.get(all(), all(), point(1), all(), all()).muli(diff.get(all(), all(), point(0), all(), all()));

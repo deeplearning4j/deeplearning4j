@@ -21,9 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
-import org.nd4j.linalg.api.ops.impl.transforms.floating.Exp;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;

@@ -55,7 +55,7 @@ TEST_F(GraphTests, SingleInput1) {
     graph->getVariableSpace()->putVariable(-1, x);
 
     auto nodeA = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
-    auto nodeB = new Node(OpType_TRANSFORM_FLOAT, transform::Cosine, 2, {1}, {3});
+    auto nodeB = new Node(OpType_TRANSFORM_STRICT, transform::Cosine, 2, {1}, {3});
     auto nodeC = new Node(OpType_TRANSFORM_SAME, transform::Abs, 3, {2}, {});
 
     graph->addNode(nodeA);
