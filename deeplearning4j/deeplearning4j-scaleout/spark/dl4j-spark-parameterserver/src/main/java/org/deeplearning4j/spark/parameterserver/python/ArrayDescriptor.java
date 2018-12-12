@@ -44,6 +44,10 @@ public class ArrayDescriptor implements java.io.Serializable{
         return stride;
     }
 
+    public DataType getType(){
+        return type;
+    }
+
     private long size(){
         long s = 1;
         for (long d: shape){
