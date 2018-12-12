@@ -14,26 +14,26 @@ namespace graph {
 
 struct FlatVariable;
 
-enum VariableType {
-  VariableType_VARIABLE = 0,
-  VariableType_CONSTANT = 1,
-  VariableType_ARRAY = 2,
-  VariableType_PLACEHOLDER = 3,
-  VariableType_MIN = VariableType_VARIABLE,
-  VariableType_MAX = VariableType_PLACEHOLDER
+enum VarType {
+  VarType_VARIABLE = 0,
+  VarType_CONSTANT = 1,
+  VarType_ARRAY = 2,
+  VarType_PLACEHOLDER = 3,
+  VarType_MIN = VarType_VARIABLE,
+  VarType_MAX = VarType_PLACEHOLDER
 };
 
-inline const VariableType (&EnumValuesVariableType())[4] {
-  static const VariableType values[] = {
-    VariableType_VARIABLE,
-    VariableType_CONSTANT,
-    VariableType_ARRAY,
-    VariableType_PLACEHOLDER
+inline const VarType (&EnumValuesVarType())[4] {
+  static const VarType values[] = {
+    VarType_VARIABLE,
+    VarType_CONSTANT,
+    VarType_ARRAY,
+    VarType_PLACEHOLDER
   };
   return values;
 }
 
-inline const char * const *EnumNamesVariableType() {
+inline const char * const *EnumNamesVarType() {
   static const char * const names[] = {
     "VARIABLE",
     "CONSTANT",
@@ -44,9 +44,9 @@ inline const char * const *EnumNamesVariableType() {
   return names;
 }
 
-inline const char *EnumNameVariableType(VariableType e) {
+inline const char *EnumNameVarType(VarType e) {
   const size_t index = static_cast<int>(e);
-  return EnumNamesVariableType()[index];
+  return EnumNamesVarType()[index];
 }
 
 struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -77,18 +77,18 @@ struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t device() const {
     return GetField<int32_t>(VT_DEVICE, 0);
   }
-  VariableType variabletype() const {
-    return static_cast<VariableType>(GetField<int8_t>(VT_VARIABLETYPE, 0));
+  VarType variabletype() const {
+    return static_cast<VarType>(GetField<int8_t>(VT_VARIABLETYPE, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_ID) &&
            verifier.VerifyTable(id()) &&
            VerifyOffset(verifier, VT_NAME) &&
-           verifier.Verify(name()) &&
+           verifier.VerifyString(name()) &&
            VerifyField<int8_t>(verifier, VT_DTYPE) &&
            VerifyOffset(verifier, VT_SHAPE) &&
-           verifier.Verify(shape()) &&
+           verifier.VerifyVector(shape()) &&
            VerifyOffset(verifier, VT_NDARRAY) &&
            verifier.VerifyTable(ndarray()) &&
            VerifyField<int32_t>(verifier, VT_DEVICE) &&
@@ -118,7 +118,7 @@ struct FlatVariableBuilder {
   void add_device(int32_t device) {
     fbb_.AddElement<int32_t>(FlatVariable::VT_DEVICE, device, 0);
   }
-  void add_variabletype(VariableType variabletype) {
+  void add_variabletype(VarType variabletype) {
     fbb_.AddElement<int8_t>(FlatVariable::VT_VARIABLETYPE, static_cast<int8_t>(variabletype), 0);
   }
   explicit FlatVariableBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -141,7 +141,7 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariable(
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
     flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0,
-    VariableType variabletype = VariableType_VARIABLE) {
+    VarType variabletype = VarType_VARIABLE) {
   FlatVariableBuilder builder_(_fbb);
   builder_.add_device(device);
   builder_.add_ndarray(ndarray);
@@ -161,7 +161,7 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
     const std::vector<int64_t> *shape = nullptr,
     flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0,
-    VariableType variabletype = VariableType_VARIABLE) {
+    VarType variabletype = VarType_VARIABLE) {
   return nd4j::graph::CreateFlatVariable(
       _fbb,
       id,

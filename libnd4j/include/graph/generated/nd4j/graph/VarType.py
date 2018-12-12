@@ -2,7 +2,7 @@
 
 # namespace: graph
 
-class VariableType(object):
+class VarType(object):
     VARIABLE = 0
     CONSTANT = 1
     ARRAY = 2

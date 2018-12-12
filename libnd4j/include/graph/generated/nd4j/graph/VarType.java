@@ -2,8 +2,8 @@
 
 package nd4j.graph;
 
-public final class VariableType {
-  private VariableType() { }
+public final class VarType {
+  private VarType() { }
   public static final byte VARIABLE = 0;
   public static final byte CONSTANT = 1;
   public static final byte ARRAY = 2;

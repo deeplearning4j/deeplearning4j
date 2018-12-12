@@ -4,7 +4,7 @@ include "utils.fbs";
 namespace nd4j.graph;
 
 // Variable type for variables
-enum VariableType:byte {
+enum VarType:byte {
     VARIABLE,
     CONSTANT,
     ARRAY,
@@ -20,7 +20,7 @@ table FlatVariable {
     ndarray:FlatArray;
 
     device:int; // default is -1, which means _auto_
-	variabletype:VariableType;
+	variabletype:VarType;
 }
 
 root_type FlatVariable;

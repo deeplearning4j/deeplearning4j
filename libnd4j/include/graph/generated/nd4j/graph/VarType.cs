@@ -5,7 +5,7 @@
 namespace nd4j.graph
 {
 
-public enum VariableType : sbyte
+public enum VarType : sbyte
 {
  VARIABLE = 0,
  CONSTANT = 1,
