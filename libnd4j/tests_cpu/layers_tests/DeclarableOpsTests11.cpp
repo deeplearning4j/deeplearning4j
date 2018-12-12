@@ -38,6 +38,9 @@ public:
 };
 
 TEST_F(DeclarableOpsTests11, test_mixed_biasadd_1) {
+    if (!Environment::getInstance()->isExperimentalBuild())
+        return;
+
     auto x = NDArrayFactory::create<double>('c', {2, 3});
     auto y = NDArrayFactory::create<float>('c', {3}, {1.f, 2.f, 3.f});
     auto z = NDArrayFactory::create<float>('c', {2, 3});
