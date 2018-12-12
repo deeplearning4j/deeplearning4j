@@ -60,7 +60,7 @@ def java2pyArrayRDD(java_rdd, py_sc):
     pydescriptors = []
     for i in range(num_descriptors):
         jdesc = descriptors.get(i)
-        pydesc = j2py(jdesc)
+        pydesc = j2py_arr_desc(jdesc)
         pydescriptors.append(pydesc)
     pyrdd = py_sc.parallelize(nparrays)
     pyrdd = pyrdd.map(desc2np)
