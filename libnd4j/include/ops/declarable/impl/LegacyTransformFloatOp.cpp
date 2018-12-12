@@ -20,7 +20,7 @@
 
 #include <ops/declarable/LegacyTransformFloatOp.h>
 
-#include <NativeOpExcutioner.h>
+#include <NativeOpExecutioner.h>
 
 
 namespace nd4j {
@@ -43,7 +43,7 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExcutioner::execTransformFloat(nullptr, opNum, input->getBuffer(), input->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
+            NativeOpExecutioner::execTransformFloat(nullptr, opNum, input->getBuffer(), input->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
 
             STORE_RESULT(*z);
 

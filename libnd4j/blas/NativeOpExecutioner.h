@@ -34,7 +34,7 @@
  *
  */
 
-class ND4J_EXPORT NativeOpExcutioner {
+class ND4J_EXPORT NativeOpExecutioner {
 public:
     /**
      *

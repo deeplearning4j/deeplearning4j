@@ -369,7 +369,7 @@ TEST_F(LegacyOpsTests, Test_IsMax_1) {
 
     double extra[] = {1.0, 0.0};
 
-    NativeOpExcutioner::execTransformAny(nullptr, transform::IsMax, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), extra, nullptr, nullptr);
+    NativeOpExecutioner::execTransformAny(nullptr, transform::IsMax, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), extra, nullptr, nullptr);
 
     z.printIndexedBuffer("z");
     for (int e = 0; e < z.lengthOf(); e++) {
@@ -385,7 +385,7 @@ TEST_F(LegacyOpsTests, Test_IsMax_2) {
 
     double extra[] = {1.0, 0.0};
 
-    NativeOpExcutioner::execTransformAny(nullptr, transform::IsMax, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), extra, nullptr, nullptr);
+    NativeOpExecutioner::execTransformAny(nullptr, transform::IsMax, x.buffer(), x.shapeInfo(), z.buffer(), z.shapeInfo(), extra, nullptr, nullptr);
 
     z.printIndexedBuffer("z");
  for (int e = 0; e < z.lengthOf(); e++) {

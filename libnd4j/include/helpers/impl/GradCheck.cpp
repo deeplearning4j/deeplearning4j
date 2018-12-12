@@ -85,9 +85,9 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 			double scorePlus = 0.;			
 			for(int k = 0; k < numOutArrs; ++k) {                // loop through output array
 				if(loss == SUM)
-					NativeOpExcutioner::execReduceSameScalar(nullptr, reduce::Sum, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
+					NativeOpExecutioner::execReduceSameScalar(nullptr, reduce::Sum, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
 				else
-					NativeOpExcutioner::execReduceFloatScalar(nullptr, reduce::Mean, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
+					NativeOpExecutioner::execReduceFloatScalar(nullptr, reduce::Mean, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
 				scorePlus += tmpScalar.e<double>(0);
 			}
 			delete outArrsFF;
@@ -99,9 +99,9 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 
 			for(int k = 0; k < numOutArrs; ++k) {            // loop through output array
 				if(loss == SUM)
-					NativeOpExcutioner::execReduceSameScalar(nullptr, reduce::Sum, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
+					NativeOpExecutioner::execReduceSameScalar(nullptr, reduce::Sum, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
 				else
-					NativeOpExcutioner::execReduceFloatScalar(nullptr, reduce::Mean, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
+					NativeOpExecutioner::execReduceFloatScalar(nullptr, reduce::Mean, outArrsFF->at(k)->getBuffer(), outArrsFF->at(k)->getShapeInfo(), nullptr, tmpScalar.buffer(), tmpScalar.shapeInfo());
 				scoreMinus += tmpScalar.e<double>(0);
 			}
 			delete outArrsFF;

@@ -20,7 +20,7 @@
 
 #include <ops/declarable/LegacyRandomOp.h>
 #include <helpers/RandomLauncher.h>
-#include <NativeOpExcutioner.h>
+#include <NativeOpExecutioner.h>
 #include <NDArrayFactory.h>
 #include <Status.h>
 #include <ops/declarable/CustomOperations.h>

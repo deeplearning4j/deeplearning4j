@@ -20,7 +20,7 @@
 
 #include <ops/declarable/LegacyTransformOp.h>
 
-#include <NativeOpExcutioner.h>
+#include <NativeOpExecutioner.h>
 
 #ifdef ONLY_SAME_TRANSFORM
 namespace nd4j {

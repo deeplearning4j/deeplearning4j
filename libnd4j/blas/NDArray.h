@@ -21,7 +21,7 @@
 #include <initializer_list>
 #include <functional>
 #include <shape.h>
-#include "NativeOpExcutioner.h"
+#include "NativeOpExecutioner.h"
 #include <memory/Workspace.h>
 #include <indexing/NDIndex.h>
 #include <indexing/IndicesList.h>

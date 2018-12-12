@@ -20,7 +20,7 @@
 
 #include <ops/declarable/LegacyTransformStrictOp.h>
 
-#include <NativeOpExcutioner.h>
+#include <NativeOpExecutioner.h>
 
 
 namespace nd4j {
@@ -43,7 +43,7 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExcutioner::execTransformStrict(nullptr, opNum, input->getBuffer(), input->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
+            NativeOpExecutioner::execTransformStrict(nullptr, opNum, input->getBuffer(), input->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
 
             STORE_RESULT(*z);
 
