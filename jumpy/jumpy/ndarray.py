@@ -178,18 +178,35 @@ def _to_numpy(nd4j_array):
 
 
 def _indarray(x):
-    if type(x) is INDArray:
+    typ = type(x)
+    if typ is INDArray:
         return x
-    elif type(x) is ndarray:
+    elif typ is ndarray:
         return x.array
-    elif 'numpy' in str(type(x)):
+    elif 'numpy' in str(typ):
         return _from_numpy(x)
-    elif type(x) in (list, tuple):
+    elif typ in (list, tuple):
         return _from_numpy(np.array(x))
-    elif type(x) in (int, float):
+    elif typ in (int, float):
         return Nd4j.scalar(x)
     else:
-        raise Exception('Data type not understood :' + str(type(x)))
+        raise Exception('Data type not understood :' + str(typ))
+
+
+def _nparray(x):
+    typ = type(x)
+    if typ is INDArray:
+        return ndarray(x).numpy()
+    elif typ is ndarray:
+        return x.numpy()
+    elif 'numpy' in str(typ):
+        return x
+    elif typ in (list, tuple):
+        return np.array(x)
+    elif typ in (int, float):
+        return np.array(x)
+    else:
+        raise Exception('Data type not understood :' + str(typ))
 
 
 def broadcast_like(y, x):
@@ -229,12 +246,6 @@ def broadcast_like(y, x):
 
 
 def broadcast(x, y):
-    print(x)
-    print(y)
-    print(x.dataType().toString())
-    print(y.dataType().toString())
-    assert isinstance(x, INDArray)
-    assert isinstance(y, INDArray)
     xs = x.shape()
     ys = y.shape()
     if xs == ys:
@@ -298,8 +309,11 @@ class ndarray(object):
             self.array = _from_numpy(data)
 
     def numpy(self):
-        np_array = _to_numpy(self.array)
-        return np_array
+        try:
+            return self.np_array
+        except AttributeError:
+            self.np_array = _to_numpy(self.array)
+            return self.np_array
 
     @property
     def size(self):
@@ -319,6 +333,7 @@ class ndarray(object):
         return len(self.array.shape())
 
     def __getitem__(self, key):
+        return ndarray(self.numpy()[key])
         if type(key) is int:
             return ndarray(self.array.get(NDArrayIndex.point(key)))
         if type(key) is slice:
@@ -376,6 +391,8 @@ class ndarray(object):
             return ndarray(self.array.get(*args))
 
     def __setitem__(self, key, other):
+        self.numpy()[key] = _nparray(other)
+        return
         other = _indarray(other)
         view = self[key]
         if view is None:
@@ -385,31 +402,38 @@ class ndarray(object):
         view.assign(other)
 
     def __add__(self, other):
+        return ndarray(self.numpy() + _nparray(other))
         other = _indarray(other)
         x, y = broadcast(self.array, other)
         return ndarray(x.add(y))
 
     def __sub__(self, other):
+        return ndarray(self.numpy() - _nparray(other))
         other = _indarray(other)
         x, y = broadcast(self.array, other)
         return ndarray(x.sub(y))
 
     def __mul__(self, other):
+        return ndarray(self.numpy() * _nparray(other))
         other = _indarray(other)
         x, y = broadcast(self.array, other)
         return ndarray(x.mul(y))
 
     def __div__(self, other):
+        return ndarray(self.numpy() / _nparray(other))
         other = _indarray(other)
         x, y = broadcast(self.array, other)
         return ndarray(x.div(y))
 
     def __pow__(self, other):
+        return ndarray(self.numpy() ** _nparray(other))
         other = _indarray(other)
         x, y = broadcast(self.array, other)
         return ndarray(Transforms.pow(x, y))
 
     def __iadd__(self, other):
+        self.numpy().__iadd__(_nparray(other))
+        return self
         other = _indarray(other)
         if self.array.shape() == other.shape():
             self.array = self.array.addi(other)
@@ -419,6 +443,8 @@ class ndarray(object):
         return self
 
     def __isub__(self, other):
+        self.numpy().__isub__(_nparray(other))
+        return self
         other = _indarray(other)
         if self.array.shape() == other.shape():
             self.array = self.array.subi(other)
@@ -428,6 +454,8 @@ class ndarray(object):
         return self
 
     def __imul__(self, other):
+        self.numpy().__imul__(_nparray(other))
+        return self
         other = _indarray(other)
         if self.array.shape() == other.shape():
             self.array = self.array.muli(other)
@@ -437,6 +465,8 @@ class ndarray(object):
         return self
 
     def __idiv__(self, other):
+        self.numpy().__idiv__(_nparray(other))
+        return self
         other = _indarray(other)
         if self.array.shape() == other.shape():
             self.array = self.array.divi(other)
@@ -446,6 +476,8 @@ class ndarray(object):
         return self
 
     def __ipow__(self, other):
+        self.numpy().__ipow__(_nparray(other))
+        return self
         other = _indarray(other)
         if self.array.shape() == other.shape():
             self.array = self.array.divi(other)
