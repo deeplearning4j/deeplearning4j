@@ -43,7 +43,8 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExecutioner::execTransformFloat(nullptr, opNum, input->getBuffer(), input->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
+            NativeOpExecutioner::execTransformFloat(nullptr, opNum, input->getBuffer(), input->getShapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
+                    z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
 
             STORE_RESULT(*z);
 
