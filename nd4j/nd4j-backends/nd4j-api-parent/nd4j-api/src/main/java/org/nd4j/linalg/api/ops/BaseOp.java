@@ -314,20 +314,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
     @Override
     public INDArray z() {
-        if(z == null) {
-            if(sameDiff != null) {
-                this.z = outputVariables()[0].getArr();
-                if(this.z == null) {
-                    val var = outputVariables()[0];
-                    if(var.getShape() != null)
-                        this. z = var.storeAndAllocateNewArray();
-                }
-            }
-        }
-        else if(zVertexId != null && sameDiff != null && sameDiff.getArrForVarName(zVertexId) == null && z != null) {
-            sameDiff.setArrayForVariable(zVertexId,z);
-        }
-
         return z;
     }
 
@@ -358,31 +344,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 return newVars;
             }
 
-            val newVars = sameDiff.generateOutputVariableForOp(this, baseName);
-
-            INDArray arr = null;
-            if(newVars == null || newVars.length < 1 || newVars[0].getShape() == null) {
-                arr = null;
-            }
-            else if(newVars[0].getArr() == null) {
-                arr = newVars[0].storeAndAllocateNewArray();
-            }
-            else
-                arr = newVars[0].getArr();
-
-            if(arr == null) {
-                val shapes = calculateOutputShape();
-                if(shapes != null && !shapes.isEmpty() && shapes.get(0) != null) {
-                    sameDiff.putShapeForVarName(newVars[0].getVarName(),shapes.get(0));
-                    arr = newVars[0].storeAndAllocateNewArray();
-                }
-            }
-
-            if(arr != null) {
-                setZ(arr);
-            }
-            if(sameDiff.getOutputsForFunction(this) == null)
-                sameDiff.addOutgoingFor(newVars,this);
+            SDVariable[] newVars = sameDiff.generateOutputVariableForOp(this, baseName);
+            if (sameDiff.getOutputsForFunction(this) == null)
+                sameDiff.addOutgoingFor(newVars, this);
             return newVars;
         }
 

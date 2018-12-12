@@ -24,7 +24,7 @@ public class ShapeSession extends AbstractSession<LongShapeDescriptor, Different
     }
 
     @Override
-    public LongShapeDescriptor getConstant(String variableName) {
+    public LongShapeDescriptor getConstantOrVariable(String variableName) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

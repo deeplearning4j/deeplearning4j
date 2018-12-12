@@ -5,11 +5,10 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 
 import java.util.*;
@@ -161,18 +160,21 @@ public abstract class AbstractSession<T, O> {
                 if (variables.contains(varToExec.getVariable())) {  //Check if required output
                     out.put(varToExec.getVariable(), placeholderValues.get(varToExec.getVariable()));
                 }
-            } else if (sameDiff.getVariable(varToExec.getVariable()).isConstant()) {
+            } else if (sameDiff.getVariable(varToExec.getVariable()).isConstant() ||
+                    sameDiff.getVariable(varToExec.getVariable()).getVariableType() == VariableType.VARIABLE) {
                 //Variable is constant: do lookup
-                //TODO let's remove the "importad constants" field, just have constants
-                //TODO let's add an 'isConstant(String)'?
-
-                T phArr = getConstant(varToExec.getVariable());
+                //OR variable is VARIABLE type - i.e., a trainable parameter...
+                T phArr = getConstantOrVariable(varToExec.getVariable());
                 Preconditions.checkNotNull(phArr, "Encountered null placeholder array for constant: %s", varToExec);
                 nodeOutputs.put(varToExec, phArr);
                 updateDescendentsForExec(varToExec); //Check + mark descendants as available for exec
                 if (variables.contains(varToExec.getVariable())) {  //Check if required output
-                    out.put(varToExec.getVariable(), placeholderValues.get(varToExec.getVariable()));
+                    out.put(varToExec.getVariable(), phArr);
                 }
+//            } else if(sameDiff.getVariable(varToExec.getVariable()).getVariableType() == VariableType.VARIABLE){
+//                //VARIABLE type - i.e., a trainable parameter...
+
+
             } else if (sameDiff.getVariableOutputFunction(varToExec.getVariable()) != null) {
                 //Variable is the output of an op -> execute op
                 String opName = sameDiff.getVariables().get(varToExec.getVariable()).getOutputOfOp();
@@ -229,6 +231,8 @@ public abstract class AbstractSession<T, O> {
                         out.put(opOutputVarNames[i], opOutputValues[i]);
                     }
                 }
+            } else {
+                throw new IllegalStateException("Unable to execute variable " + varToExec + " of type " + sameDiff.getVariable(varToExec.getVariable()).getVariableType());
             }
         }
 
@@ -447,12 +451,14 @@ public abstract class AbstractSession<T, O> {
     }
 
     /**
-     * Get the constant output - for example, constant array or constant shape
+     * Get the constant or variable output - for example, constant array or constant shape.
+     * Note that both constants and variables (i.e., VariableType.CONSTANT and VariableType.VARIABLE) are the same
+     * for all frames and iterations.
      *
      * @param variableName The name of the variable to get the constant for
      * @return The constant
      */
-    public abstract T getConstant(String variableName);
+    public abstract T getConstantOrVariable(String variableName);
 
     /**
      * Get the parameterized op to execute - for example, the op/DifferentialFunction with all inputs set

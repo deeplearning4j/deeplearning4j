@@ -4,7 +4,9 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -140,9 +142,10 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     }
 
     @Override
-    public INDArray getConstant(String variableName) {
-        //TODO Proper constant checks
-        Preconditions.checkState(sameDiff.getVariable(variableName).isConstant(),"Variable %s is not a constant", variableName);
+    public INDArray getConstantOrVariable(String variableName) {
+        SDVariable v = sameDiff.getVariable(variableName);
+        Preconditions.checkState(sameDiff.getVariable(variableName).isConstant() || v.getVariableType() == VariableType.VARIABLE,
+                "Variable %s is not a constant", variableName);
         return sameDiff.getArrForVarName(variableName);
     }
 
@@ -224,8 +227,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             List<LongShapeDescriptor> outputShape = ((BaseOp)op).calculateOutputShape();
             Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
             INDArray z = op.z();
-            Preconditions.checkNotNull(z, "Could not get output array for op: %s", op.getClass());
-            if(!outputShape.get(0).equals(z.shapeDescriptor()) || isLoop){
+            if(z == null || !outputShape.get(0).equals(z.shapeDescriptor()) || isLoop){
                 if(log.isTraceEnabled()){
                     log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
                             op.getClass().getSimpleName(), Arrays.toString(z.shape()), outputShape.get(0).toString());

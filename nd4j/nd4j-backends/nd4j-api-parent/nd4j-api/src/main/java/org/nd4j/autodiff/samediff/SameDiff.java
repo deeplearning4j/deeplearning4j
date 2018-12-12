@@ -301,16 +301,20 @@ public class SameDiff {
 
         for(SameDiffOp op : ops.values()){
             List<String> outputsOfOp = op.getOutputsOfOp();
-            for (int i = 0; i < outputsOfOp.size(); i++) {
-                if (outputsOfOp.get(i).equals(oldVarName)) {
-                    outputsOfOp.set(i, withName);
+            if(outputsOfOp != null && !outputsOfOp.isEmpty()) {
+                for (int i = 0; i < outputsOfOp.size(); i++) {
+                    if (outputsOfOp.get(i).equals(oldVarName)) {
+                        outputsOfOp.set(i, withName);
+                    }
                 }
             }
 
             List<String> inputsToOp = op.getInputsToOp();
-            for (int i = 0; i < inputsToOp.size(); i++) {
-                if (inputsToOp.get(i).equals(oldVarName)) {
-                    inputsToOp.set(i, withName);
+            if(inputsToOp != null && !inputsToOp.isEmpty()) {
+                for (int i = 0; i < inputsToOp.size(); i++) {
+                    if (inputsToOp.get(i).equals(oldVarName)) {
+                        inputsToOp.set(i, withName);
+                    }
                 }
             }
         }
@@ -789,8 +793,11 @@ public class SameDiff {
         SDVariable v = variables.get(varName).getVariable();
         switch(v.getVariableType()){
             case VARIABLE:
-                if(!variablesArrays.containsKey(varName))
-                    return null;
+                if(!variablesArrays.containsKey(varName)) {
+                    //VARIBALE type arrays should have a parameter initializer...
+                    // we should use this to azy init the array if none is present
+                    v.storeAndAllocateNewArray();
+                }
                 return variablesArrays.get(varName).get();
             case CONSTANT:
                 if(!constantArrays.containsKey(varName))
@@ -838,8 +845,24 @@ public class SameDiff {
             throw new ND4JIllegalArgumentException("Array must not be null");
         }
 
-        if(variable.isConstant()){
-            constantArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr));
+        switch(variable.getVariableType()){
+            case VARIABLE:
+                variablesArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr));
+                break;
+            case CONSTANT:
+                constantArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr));
+                break;
+            case ARRAY:
+                throw new UnsupportedOperationException("Cannot associate array with SDVariable of type ARRAY");
+            case PLACEHOLDER:
+                long tid = Thread.currentThread().getId();
+                if(!placeholdersPerThread.containsKey(tid)){
+                    placeholdersPerThread.put(tid, new HashMap<String, INDArray>());
+                }
+                placeholdersPerThread.get(tid).put(variable.getVarName(), arr);
+                break;
+            default:
+                throw new IllegalStateException("Unknown variable type: " + variable.getVariableType());
         }
 
         //putOrUpdateShapeForVarName(variable.getVarName(), arr.shape(), true);
@@ -2153,6 +2176,11 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable var(@NonNull String name, @NonNull WeightInitScheme weightInitScheme, @NonNull org.nd4j.linalg.api.buffer.DataType dataType, @NonNull long... shape) {
+        return var(name, VariableType.VARIABLE, weightInitScheme, dataType, shape);
+    }
+
+    protected SDVariable var(@NonNull String name, @NonNull VariableType variableType, WeightInitScheme weightInitScheme,
+                             @NonNull org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
         if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
             throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
 
@@ -2164,7 +2192,7 @@ public class SameDiff {
             initWorkspace();
 
 
-        SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, shape, dataType, weightInitScheme);
+        SDVariable ret = new SDVariable(name, variableType, this, shape, dataType, weightInitScheme);
         return addVariable(ret);
     }
 
@@ -9579,8 +9607,9 @@ public class SameDiff {
                     SDVariable var = (i == 0 ? getVariable(baseName) : getVariable(baseName + ":" + i));
                     if (var == null) {
                         //Generate new variable name if one with the specified name doesn't exist
+                        //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
                         org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
-                        var = var(generateNewVarName(baseName, i), new ZeroInitScheme(ordering), dataType, (long[])null);
+                        var = var(generateNewVarName(baseName, i), VariableType.ARRAY, null, dataType, (long[])null);
                     }
                     var.setOutputIndex(i);
                     var.setCreator(function);
@@ -9604,13 +9633,15 @@ public class SameDiff {
                     ordering = function.args()[0].getArr().ordering();
                 }
                 if (checkGet == null) {
+                    //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
                     org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
-                    checkGet = var(baseName, new ZeroInitScheme(ordering), dataType, (long[])null);
+                    checkGet = var(baseName, VariableType.ARRAY, null, dataType, (long[])null);
                 }
 
                 if (checkGet == null) {
+                    //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
                     org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
-                    checkGet = var(baseName, new ZeroInitScheme(ordering), dataType, (long[])null);
+                    checkGet = var(baseName, VariableType.ARRAY, null, dataType, (long[])null);
                 }
 
                 checkGet.setOutputIndex(0);
@@ -9638,14 +9669,14 @@ public class SameDiff {
         val ownName = function.getOwnName();
         val rootName = baseName;
         for (int i = 0; i < ret.length; i++) {
-            val shape = outputShape.get(i);
+            LongShapeDescriptor shape = outputShape.get(i);
             // it should be: rootName:index. i.e.: split:1, split:2, split:3, split:4 etc
             baseName = rootName + (i > 0 ? ":" + i : "");
             SDVariable checkGet = getVariable(baseName);
             if (checkGet == null) {
                 // obviously - there's no such var, just add it
-                org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
-                checkGet = var(baseName, new ZeroInitScheme(ordering), dataType, shape.getShape());
+                //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
+                checkGet = var(baseName, VariableType.ARRAY, null, shape.dataType(), shape.getShape());
             } else if (shape != null && !shapeAlreadyExistsForVarName(checkGet.getVarName())) {
                 // var exists, let's update its shape
                 putShapeForVarName(checkGet.getVarName(), shape);
@@ -10728,13 +10759,13 @@ public class SameDiff {
 
         int idx = 0;
         val idxForOps = new IdentityHashMap<DifferentialFunction,Integer>();
-        for (val variable : variables()) {
-            log.debug("Exporting variable: [{}]", variable.getVarName());
-            if (variable.getArr() == null || variable.getShape() == null) {
-                //putArrayForVarName(variable.getVarName(), Nd4j.scalar(1.0));
-                //addAsPlaceHolder(variable.getVarName());
+        List<SDVariable> allVars = variables();
+        for (SDVariable variable : allVars) {
+            INDArray arr = variable.getArr();
+            if(variable.isPlaceHolder()){
                 continue;
             }
+            log.debug("Exporting variable: [{}]", variable.getVarName());
 
             //If variable is the output of some op - let's use the ONE index for exporting, and properly track the output
             // numbers. For example, unstack(x) -> y0, y1, y2 -> the y's should be say (3,0), (3,1), (3,2) NOT (4,0), (5,0), (6,0)
@@ -10762,14 +10793,14 @@ public class SameDiff {
             reverseMap.put(variable.getVarName(), varIdx);
             log.debug("Adding [{}] as [{}]", variable.getVarName(), varIdx);
 
-            val arr = variable.getArr();
+//            val arr = variable.getArr();
 
             int name = bufferBuilder.createString(variable.getVarName());
-            int array = arr.toFlatArray(bufferBuilder);
+            int array = arr == null ? 0 : arr.toFlatArray(bufferBuilder);
             int id = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
 
 
-            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name,  FlatBuffersMapper.getDataTypeAsByte(arr.dataType()), 0, array, -1);
+            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name,  FlatBuffersMapper.getDataTypeAsByte(variable.dataType()), 0, array, -1);
             flatVariables.add(flatVariable);
         }
 

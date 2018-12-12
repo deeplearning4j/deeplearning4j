@@ -208,6 +208,7 @@ public class FlatBuffersMapper {
                 return OpType.TRANSFORM_STRICT;
             case SPECIAL:
                 return OpType.TRANSFORM_STRICT;
+            case VARIANCE:
             case REDUCE_FLOAT:
                 return OpType.REDUCE_FLOAT;
             case REDUCE_BOOL:
