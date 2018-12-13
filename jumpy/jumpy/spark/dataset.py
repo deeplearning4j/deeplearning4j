@@ -14,7 +14,22 @@
 # SPDX-License-Identifier: Apache-2.0
 ################################################################################
 
+from ..ndarray import ndarray
+from ..java_classes import JDataset
 
-from .fast_impl import py2javaArrayRDD, java2pyArrayRDD
-from .fast_impl import py2javaDatasetRDD, java2pyDatasetRDD
-# from .naive_impl import py2javaRDD, java2pyRDD
+class Dataset(object):
+
+    def __init__(self, features, labels, features_mask=None, labels_mask=None):
+        self.features = ndarray(features)
+        self.labels = ndarray(labels)
+        if features_mask is None:
+            self.features_mask = None
+        else:
+            self.features_mask = ndarray(features_mask)
+        if labels_mask is None:
+            self.labels_mask = None
+        else:
+            self.labels_mask = ndarray(labels_mask)
+
+    def to_java(self):
+        return JDataset(self.features.array, self.labels.array, self.features_mask, self.labels_mask)
