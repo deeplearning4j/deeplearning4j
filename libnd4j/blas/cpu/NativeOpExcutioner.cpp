@@ -332,16 +332,19 @@ void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, vo
     auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(scalarShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
-
+    void* internalScalar = scalar;
     if (!nd4j::Environment::getInstance()->isExperimentalBuild()) {
-        if ((yType != xType && yType != nd4j::DataType::BOOL) || zType != xType)
-            throw nd4j::datatype_exception::build("NativeOps::execScalar both operands must have same data type", xType,
-                                                  yType);
+        if ((yType != xType && yType != nd4j::DataType::BOOL) || zType != xType){
+            throw nd4j::datatype_exception::build("NativeOps::execScalar both operands must have same data type", xType, yType);
+        }
     }
+
 #ifdef __ND4J_EXPERIMENTAL__
-    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform,
+                                     ::transform(opNum, x, xShapeInfo, result, resultShapeInfo, scalar, extraParams),
+                                     LIBND4J_TYPES);
 #endif
 }
 
