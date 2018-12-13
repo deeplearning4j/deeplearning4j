@@ -81,7 +81,7 @@ public class LegacyPooling2D extends BaseTransformFloatOp {
 
     @Override
     public int opNum() {
-        return 23;
+        return 2;
     }
 
     @Override

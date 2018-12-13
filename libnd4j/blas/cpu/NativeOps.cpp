@@ -56,7 +56,7 @@ char *name;
 bool nameSet = false;
 
 
-#ifdef __EXPERIMENTAL__
+#ifdef __ND4J_EXPERIMENTAL__
 bool experimentalSupport = true;
 #else
 bool experimentalSupport = false;

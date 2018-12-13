@@ -3624,6 +3624,9 @@ public class Shape {
     }
 
     public static DataType pickPairwiseDataType(@NonNull DataType typeX, @NonNull Number number) {
+        if (!Nd4j.isExperimentalMode())
+            return typeX;
+
         if (number instanceof Double) {
             return pickPairwiseDataType(typeX, DataType.DOUBLE);
         } else if (number instanceof Float) {
@@ -3642,6 +3645,9 @@ public class Shape {
     }
 
     public static DataType pickPairwiseDataType(@NonNull DataType typeX, @NonNull DataType typeY) {
+        if (!Nd4j.isExperimentalMode())
+            return typeX;
+
         if (typeX == typeY)
             return typeX;
 

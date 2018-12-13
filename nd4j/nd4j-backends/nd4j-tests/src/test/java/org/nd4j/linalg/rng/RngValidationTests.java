@@ -99,13 +99,13 @@ public class RngValidationTests {
 
             testCases.add(TestCase.builder().opType("gaussian").dataType(type).shape(new long[0]).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("gaussian").dataType(type).shape(1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
-                    .expectedMean(0.0).expectedStd(1.0).meanMinAbsErrorTolerance(0.05).stdMinAbsErrorTolerance(0.05).build());
+                    .expectedMean(0.0).expectedStd(1.0).stdRelativeErrorTolerance(0.03).meanMinAbsErrorTolerance(0.1).stdMinAbsErrorTolerance(0.1).build());
             testCases.add(TestCase.builder().opType("gaussian").dataType(type).shape(100,1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
                     .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
 
             testCases.add(TestCase.builder().opType("binomial").dataType(type).shape(new long[0]).minValue(0).maxValue(5).minValueInclusive(true).maxValueInclusive(true).arg("n", 5).arg("p",0.5).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("binomial").dataType(type).shape(1000).minValue(0).maxValue(10).minValueInclusive(true).maxValueInclusive(true).arg("n", 10).arg("p",0.5)
-                    .expectedMean(10*0.5).expectedStd(Math.sqrt(10*0.5*(1-0.5)) /*var = np(1-p)*/).build());
+                    .stdRelativeErrorTolerance(0.02).expectedMean(10*0.5).expectedStd(Math.sqrt(10*0.5*(1-0.5)) /*var = np(1-p)*/).build());
             testCases.add(TestCase.builder().opType("binomial").dataType(type).shape(100,10000).minValue(0).maxValue(20).minValueInclusive(true).maxValueInclusive(true).arg("n", 20).arg("p",0.2)
                     .expectedMean(20*0.2).expectedStd(Math.sqrt(20*0.2*(1-0.2)) /*var = np(1-p)*/).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.01).build());
 
@@ -113,14 +113,14 @@ public class RngValidationTests {
                 //Assume variance is similar to non-truncated normal (should be a bit less in practice) but use large relative error here
             testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(new long[0]).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(1000).minValue(-2.0).maxValue(2.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
-                    .expectedMean(0.0).expectedStd(1.0).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.01).build());
+                    .expectedMean(0.0).expectedStd(1.0).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.1).build());
             testCases.add(TestCase.builder().opType("truncated_normal").dataType(type).shape(100,10000).minValue(1.0).maxValue(3.0).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
                     .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.001).stdRelativeErrorTolerance(0.2).meanMinAbsErrorTolerance(0.001).build());
 
             //Dropout (non-inverted): same as bernoulli distribution, when dropout applied to "ones" array
             testCases.add(TestCase.builder().opType("dropout").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.5).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("dropout").dataType(type).shape(1000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.4)
-                    .expectedMean(0.4).expectedStd(Math.sqrt(0.4*(1-0.4)) /*var = p*(1-p)*/).build());
+                    .expectedMean(0.4).expectedStd(Math.sqrt(0.4*(1-0.4)) /*var = p*(1-p)*/).meanMinAbsErrorTolerance(0.05).stdMinAbsErrorTolerance(0.05).build());
             testCases.add(TestCase.builder().opType("dropout").dataType(type).shape(100,10000).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.3)
                     .expectedMean(0.3).expectedStd(Math.sqrt(0.3*(1-0.3)) /*var = p*(1-p)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
 
@@ -128,7 +128,7 @@ public class RngValidationTests {
             testCases.add(TestCase.builder().opType("dropout_inverted").dataType(type).shape(new long[0]).minValue(0).maxValue(1).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.5).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("dropout_inverted").dataType(type).shape(1000).minValue(0).maxValue(1.0/0.4).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.4)
                     //Mean: 0.4 probability of  being retained - mean is 0.4 probability * (1.0/0.4) = 1.0. i.e., expected mean is unchanged by inverted dropout
-                    .expectedMean(1.0).expectedStd(1/0.4*Math.sqrt(0.4*(1-0.4)) /*var = p*(1-p)*/).build());
+                    .expectedMean(1.0).expectedStd(1/0.4*Math.sqrt(0.4*(1-0.4)) /*var = p*(1-p)*/).meanMinAbsErrorTolerance(0.05).stdMinAbsErrorTolerance(0.05).build());
             testCases.add(TestCase.builder().opType("dropout_inverted").dataType(type).shape(100,10000).minValue(0).maxValue(1.0/0.3).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.3)
                     .expectedMean(1.0).expectedStd(1/0.3*Math.sqrt(0.3*(1-0.3)) /*var = p*(1-p); note var(aX) = a^2 var(X)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
 
@@ -141,7 +141,7 @@ public class RngValidationTests {
             testCases.add(TestCase.builder().opType("lognormal").dataType(type).shape(new long[0]).minValue(0).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true)
                     .arg("mu", 0.0).arg("s", 1.0).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("lognormal").dataType(type).shape(1000).minValue(0).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true)
-                    .arg("mu", 0.0).arg("s", 1.0).expectedMean(Math.exp(0.0 + 1.0/2.0)).expectedStd(Math.sqrt((Math.exp(1.0)-1)*Math.exp(1.0)) ).meanRelativeErrorTolerance(0.05).stdRelativeErrorTolerance(0.05)
+                    .arg("mu", 0.0).arg("s", 1.0).expectedMean(Math.exp(0.0 + 1.0/2.0)).expectedStd(Math.sqrt((Math.exp(1.0)-1)*Math.exp(1.0)) ).meanRelativeErrorTolerance(0.1).stdRelativeErrorTolerance(0.1)
                     .meanMinAbsErrorTolerance(0.1).stdMinAbsErrorTolerance(0.1).build());
             testCases.add(TestCase.builder().opType("lognormal").dataType(type).shape(100,10000).minValue(0).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mu", 2.0).arg("s", 0.5)
                     .expectedMean(Math.exp(2.0 + 0.5*0.5/2.0)).expectedStd(Math.sqrt((Math.exp(0.5*0.5)-1)*Math.exp(2.0*2.0+0.5*0.5))).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
@@ -234,8 +234,8 @@ public class RngValidationTests {
             }
 
             //Check for NaNs, Infs, etc
-            int countNaN = Nd4j.getExecutioner().execAndReturn(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isNan())).sumNumber().intValue();
-            int countInf = Nd4j.getExecutioner().execAndReturn(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isInfinite())).sumNumber().intValue();
+            int countNaN = Nd4j.getExecutioner().execAndReturn(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isNan())).castTo(DataType.INT).sumNumber().intValue();
+            int countInf = Nd4j.getExecutioner().execAndReturn(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isInfinite())).castTo(DataType.INT).sumNumber().intValue();
             assertEquals("NaN - expected 0 values", 0, countNaN);
             assertEquals("Infinite - expected 0 values", 0, countInf);
 
