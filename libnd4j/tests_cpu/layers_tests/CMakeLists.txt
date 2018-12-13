@@ -21,6 +21,13 @@ if(WIN32)
     endforeach()
 endif()
 
+if (CUDA_BLAS)
+	find_package(CUDA)
+	message("Tests CUDA include directory: ${CUDA_INCLUDE_DIRS}")
+	include_directories(${CUDA_INCLUDE_DIRS})
+	add_definitions(-D__CUDABLAS__=true)
+endif()
+
 # -fsanitize=address
 # -fsanitize=leak
 if (APPLE)
@@ -88,7 +95,11 @@ else()
     message("OPENMP NOT FOUND")
 endif()
 
-file(GLOB_RECURSE TEST_SOURCES false ./*.cpp ./*.h)
+if (CPU_BLAS)
+	file(GLOB_RECURSE TEST_SOURCES false ./*.cpp ./*.h)
+elseif (CUDA_BLAS)
+	file(GLOB_RECURSE TEST_SOURCES false ./*.cpp ./*.cu ./*.h)
+endif()
 
 # Filter out any source files from */CMakeFiles/* paths. these tend to cause problems such a multiple main definitions.
 set (EXCLUDE_DIR "/CMakeFiles/")

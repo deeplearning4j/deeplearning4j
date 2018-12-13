@@ -23,9 +23,9 @@
 namespace nd4j {
 namespace graph {
 
-#ifdef __CUDACC__
+#ifdef __CUDABLAS__
 ////////////////////////////////////////////////////////////////////////
-LaunchContext::LaunchContext(cudaStream_t *cudaStream, const void* reductionPointer, const void* scalarPointer, const int* allocationPointer)  {
+LaunchContext::LaunchContext(cudaStream_t *cudaStream, void* reductionPointer, void* scalarPointer, int* allocationPointer)  {
 	
 	_cudaStream 	   = cudaStream;
 	_reductionPointer  = reductionPointer;	

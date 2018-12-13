@@ -127,6 +127,8 @@ if(CUDA_BLAS)
     endif()
 
     if (CUDA_FOUND)
+		message("CUDA include directory: ${CUDA_INCLUDE_DIRS}")
+		include_directories(${CUDA_INCLUDE_DIRS})
         message("CUDA found!")
         set( CUDA_ARCHITECTURE_MINIMUM "3.0" CACHE STRING "Minimum required CUDA compute capability" )
         SET(CUDA_VERBOSE_BUILD ON)
