@@ -131,7 +131,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         // all 0s if no class label is present
         val size1 = labels.size(1);
         INDArray classLabels = labels.get(all(), interval(4,size1), all(), all());   //Shape: [minibatch, nClasses, H, W]
-        INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(nhw, 'c'), 1).castTo(DataType.BOOL); //Shape: [minibatch, H, W]
+        INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(nhw, 'c'), 1);//.castTo(DataType.BOOL); //Shape: [minibatch, H, W]
+        INDArray maskObjectPresentBool = maskObjectPresent.castTo(DataType.BOOL);
 
         // ----- Step 1: Labels format conversion -----
         //First: Convert labels/ground truth (x1,y1,x2,y2) from "coordinates (grid box units)" format to "center position in grid box" format
@@ -177,7 +178,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         // ----- Step 3: Calculate IOU(predicted, labels) to infer 1_ij^obj mask array (for loss function) -----
         //Calculate IOU (intersection over union - aka Jaccard index) - for the labels and predicted values
-        IOURet iouRet = calculateIOULabelPredicted(labelTLXY, labelBRXY, predictedWH, predictedXYCenterGrid, maskObjectPresent);  //IOU shape: [minibatch, B, H, W]
+        IOURet iouRet = calculateIOULabelPredicted(labelTLXY, labelBRXY, predictedWH, predictedXYCenterGrid, maskObjectPresent, maskObjectPresentBool);  //IOU shape: [minibatch, B, H, W]
         INDArray iou = iouRet.getIou();
 
         //Mask 1_ij^obj: isMax (dimension 1) + apply object present mask. Result: [minibatch, B, H, W]
@@ -187,8 +188,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         // have the highest IOU
         INDArray mask1_ij_obj = Nd4j.create(DataType.BOOL, iou.shape(), 'c');
         Nd4j.getExecutioner().execAndReturn(new IsMax(iou, mask1_ij_obj, 1));
-        Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, maskObjectPresent, mask1_ij_obj, 0,2,3));
+        Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(mask1_ij_obj, maskObjectPresentBool, mask1_ij_obj, 0,2,3));
         INDArray mask1_ij_noobj = Transforms.not(mask1_ij_obj);
+        mask1_ij_obj = mask1_ij_obj.castTo(Nd4j.defaultFloatingPointType());
 
 
 
@@ -207,6 +209,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray mask1_ij_obj_2d = mask1_ij_obj.reshape(mb*b*h*w, 1);  //Must be C order before reshaping
         INDArray mask1_ij_noobj_2d = Transforms.not(mask1_ij_obj_2d);   //Not op is copy op; mask has 1 where box is not responsible for prediction
+
+        mask1_ij_obj_2d = mask1_ij_obj_2d.castTo(Nd4j.defaultFloatingPointType());
+        mask1_ij_noobj_2d = mask1_ij_noobj_2d.castTo(Nd4j.defaultFloatingPointType());
+
 
         INDArray predictedXYCenter2d = predictedXYCenterGrid.permute(0,1,3,4,2)  //From: [mb, B, 2, H, W] to [mb, B, H, W, 2]
                 .dup('c').reshape('c', mb*b*h*w, 2);
@@ -417,7 +423,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
      * @param objectPresentMask 3d [mb, H, W] - mask array, for objects present (1) or not (0) in grid cell
      * @return IOU and gradients
      */
-    private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray predictedWH, INDArray predictedXYinGridBox, INDArray objectPresentMask){
+    private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray predictedWH, INDArray predictedXYinGridBox, INDArray objectPresentMask, INDArray objectPresentMaskBool){
         // FIXME: int cast
         int mb = (int) labelTL.size(0);
         int h = (int) labelTL.size(2);
@@ -470,9 +476,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray noIntMask = Transforms.or(noIntMask1, noIntMask2 );
 
         INDArray intMask = Transforms.not(noIntMask); //Values 0 if no intersection
-        Broadcast.mul(intMask, objectPresentMask, intMask, 0, 2, 3);
+        Broadcast.mul(intMask, objectPresentMaskBool, intMask, 0, 2, 3);
 
         //Mask the intersection area: should be 0 if no intersection
+        intMask = intMask.castTo(Nd4j.defaultFloatingPointType());
         intersectionArea.muli(intMask);
 
 
@@ -494,16 +501,18 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Finally, calculate derivatives:
         INDArray maskMaxTL = Nd4j.createUninitialized(DataType.BOOL, maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
         Broadcast.gt(predictedTL_XY, labelTL, maskMaxTL, 0, 2, 3, 4);   // z = x > y
+        maskMaxTL = maskMaxTL.castTo(Nd4j.defaultFloatingPointType());
 
         INDArray maskMinBR = Nd4j.createUninitialized(DataType.BOOL, maxTL.shape(), maxTL.ordering());    //1 if predicted Top/Left is max, 0 otherwise
         Broadcast.lt(predictedBR_XY, labelBR, maskMinBR, 0, 2, 3, 4);   // z = x < y
+        maskMinBR = maskMinBR.castTo(Nd4j.defaultFloatingPointType());
 
         //dI/dx = lambda * (1^(min(x1+w1/2) - 1^(max(x1-w1/2))
         //dI/dy = omega * (1^(min(y1+h1/2) - 1^(max(y1-h1/2))
         //omega = min(x1+w1/2,x2+w2/2) - max(x1-w1/2,x2+w2/2)       i.e., from diff = minBR.sub(maxTL), which has shape [mb, b, 2, h, w]
         //lambda = min(y1+h1/2,y2+h2/2) - max(y1-h1/2,y2+h2/2)
-        INDArray dI_dxy = maskMinBR.castTo(Nd4j.defaultFloatingPointType()).subi(maskMaxTL);              //Shape: [mb, b, 2, h, w]
-        INDArray dI_dwh = maskMinBR.castTo(Nd4j.defaultFloatingPointType()).addi(maskMaxTL).muli(0.5);    //Shape: [mb, b, 2, h, w]
+        INDArray dI_dxy = maskMinBR.subi(maskMaxTL);              //Shape: [mb, b, 2, h, w]
+        INDArray dI_dwh = maskMinBR.addi(maskMaxTL).muli(0.5);    //Shape: [mb, b, 2, h, w]
 
         dI_dxy.get(all(), all(), point(0), all(), all()).muli(diff.get(all(), all(), point(1), all(), all()));
         dI_dxy.get(all(), all(), point(1), all(), all()).muli(diff.get(all(), all(), point(0), all(), all()));
