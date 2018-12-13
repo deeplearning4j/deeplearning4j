@@ -15,6 +15,7 @@
  ******************************************************************************/
 
 
+#include "NativeOpExecutioner.h"
 #include "../NativeOps.h"
 #include <cuda.h>
 #include <cuda_launch_config.h>
@@ -126,33 +127,6 @@ typedef struct {
 } __syncInfo;
 
 typedef __syncInfo SyncInfo;
-
-
-/**
-* This is utility kernel, that updates given special buffer with proper values in device memory
-*/
-extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension, Nd4jLong *specialPointer, int rows, nd4j::DataType dataType) {
-    Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (tid > 0)
-        return;
-
-    dimension[0] = 0;
-    maxDimension[0] = 1;
-
-    specialPointer[0] = 2;
-    specialPointer[1] = rows;
-    specialPointer[2] = 1;
-    specialPointer[3] = 1;
-    specialPointer[4] = 1;
-    specialPointer[5] = 0;
-    specialPointer[6] = 1;
-    specialPointer[7] = 99;
-
-    ArrayOptions::setDataType(specialPointer, dataType);
-
-    //printf("special[0]: [%lld]\n", (long long) specialPointer[0]);
-    //shape::printShapeInfoLinear("prepareShapeBuffer", specialPointer);
-}
 
 
 // this method isn't used, left here for legacy and caution purposes
@@ -1349,7 +1323,7 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
                     tempPointers[7] = (Nd4jPointer) hostMaxShapeBuffer;
                     tempPointers[8] = (Nd4jPointer) hostMaxShapeBuffer;
 
-                    prepareShapeBuffer<<<1, 1, 128, *stream>>>(dimension, maxDimension, maxShapeBuffer, shape[0], xType);
+                    // prepareShapeBuffer<<<1, 1, 128, *stream>>>(dimension, maxDimension, maxShapeBuffer, shape[0], xType);
 
                     DEBUG_KERNEL(stream, opNum);
 
