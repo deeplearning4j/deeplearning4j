@@ -208,10 +208,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //(and masks) to a 2d representation, suitable for use in DL4J's loss functions
 
         INDArray mask1_ij_obj_2d = mask1_ij_obj.reshape(mb*b*h*w, 1);  //Must be C order before reshaping
-        INDArray mask1_ij_noobj_2d = Transforms.not(mask1_ij_obj_2d);   //Not op is copy op; mask has 1 where box is not responsible for prediction
-
-        mask1_ij_obj_2d = mask1_ij_obj_2d.castTo(Nd4j.defaultFloatingPointType());
-        mask1_ij_noobj_2d = mask1_ij_noobj_2d.castTo(Nd4j.defaultFloatingPointType());
+        INDArray mask1_ij_noobj_2d = mask1_ij_obj_2d.rsub(1.0);
 
 
         INDArray predictedXYCenter2d = predictedXYCenterGrid.permute(0,1,3,4,2)  //From: [mb, B, 2, H, W] to [mb, B, H, W, 2]
@@ -270,7 +267,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreForExamples);
         }
-
 
         double positionLoss = layerConf().getLossPositionScale().computeScore(labelXYCenter2d, predictedXYCenter2d, identity, mask1_ij_obj_2d, false );
         double sizeScaleLoss = layerConf().getLossPositionScale().computeScore(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d, false);
@@ -511,7 +507,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //dI/dy = omega * (1^(min(y1+h1/2) - 1^(max(y1-h1/2))
         //omega = min(x1+w1/2,x2+w2/2) - max(x1-w1/2,x2+w2/2)       i.e., from diff = minBR.sub(maxTL), which has shape [mb, b, 2, h, w]
         //lambda = min(y1+h1/2,y2+h2/2) - max(y1-h1/2,y2+h2/2)
-        INDArray dI_dxy = maskMinBR.subi(maskMaxTL);              //Shape: [mb, b, 2, h, w]
+        INDArray dI_dxy = maskMinBR.sub(maskMaxTL);              //Shape: [mb, b, 2, h, w]
         INDArray dI_dwh = maskMinBR.addi(maskMaxTL).muli(0.5);    //Shape: [mb, b, 2, h, w]
 
         dI_dxy.get(all(), all(), point(0), all(), all()).muli(diff.get(all(), all(), point(1), all(), all()));
