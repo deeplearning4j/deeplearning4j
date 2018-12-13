@@ -234,17 +234,19 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
 				*dLdw = 0.;
 			}
 			else {
+				auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.getWorkspace());
+
 				if(weights->isScalar())
-					dLdw->assign(E.reduceNumber(reduce::Sum) / numOfNonZeroWeights);
+					dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
 				else if(weights != weightsBroad) {
 					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
 					E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
-					*dLdw /= numOfNonZeroWeights;
+					*dLdw /= numOfNonZeroWeightsScalar;
 				}
 				else
-					dLdw->assign(E / numOfNonZeroWeights);
+					dLdw->assign(E / numOfNonZeroWeightsScalar);
 				
-				NDArray temp = *weightsBroad / numOfNonZeroWeights;
+				NDArray temp = *weightsBroad / numOfNonZeroWeightsScalar;
 				*dLdp *= temp;				
 			}
 			break;

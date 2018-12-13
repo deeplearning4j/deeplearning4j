@@ -328,10 +328,10 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testArangeMul() {
-        INDArray arange = Nd4j.arange(1, 17).reshape(4, 4);
+        INDArray arange = Nd4j.arange(1, 17).reshape(4, 4).castTo(DataType.DOUBLE);
         INDArrayIndex index = interval(0, 2);
         INDArray get = arange.get(index, index);
-        INDArray ones = Nd4j.ones(2, 2).mul(0.25);
+        INDArray ones = Nd4j.ones(DataType.DOUBLE, 2, 2).mul(0.25);
         INDArray mul = get.mul(ones);
         INDArray assertion = Nd4j.create(new double[][] {{0.25, 0.5}, {1.25, 1.5}});
         assertEquals(assertion, mul);

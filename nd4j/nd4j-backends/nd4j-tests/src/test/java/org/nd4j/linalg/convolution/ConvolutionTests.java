@@ -34,6 +34,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 import java.util.List;
@@ -2037,12 +2038,12 @@ public class ConvolutionTests extends BaseNd4jTest {
         [ 0,  0],   [ 0,  0]    [ 0,  0]    [ 0,  0]    [ 0,  0]
          */
 
-        INDArray origInput = Nd4j.create(inputShape);
+        INDArray origInput = Nd4j.create(DataType.DOUBLE, ArrayUtil.toLongArray(inputShape));
         origInput.get(point(0), point(0), all(), all()).assign(
-                Nd4j.linspace(1,20,20, DataType.FLOAT).reshape('c',4,5));
+                Nd4j.linspace(1,20,20, DataType.DOUBLE).reshape('c',4,5));
 
 
-        INDArray expMax = Nd4j.create(1,1,4,5);
+        INDArray expMax = Nd4j.create(DataType.DOUBLE, 1,1,4,5);
         expMax.get(point(0), point(0), all(), all()).assign(
                 Nd4j.create(new double[][]{
                         { 7,  8,  9, 10,  9},
@@ -2050,7 +2051,7 @@ public class ConvolutionTests extends BaseNd4jTest {
                         {17, 18, 19, 20, 19},
                         {12, 13, 14, 15, 14}}));
 
-        INDArray sum = Nd4j.create(1,1,4,5);
+        INDArray sum = Nd4j.create(DataType.DOUBLE, 1,1,4,5);
         sum.get(point(0), point(0), all(), all()).assign(
                 Nd4j.create(new double[][]{
                         { 7,     (6+8),       (7+9),       (8+10),       9},
@@ -2072,12 +2073,12 @@ public class ConvolutionTests extends BaseNd4jTest {
         for( int i=0; i<3; i++ ){
 
 
-            List<Pair<INDArray, String>> inputs = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, inputShape, DataType.FLOAT);
+            List<Pair<INDArray, String>> inputs = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, inputShape, DataType.DOUBLE);
 
             for(Pair<INDArray,String> pIn : inputs){
                 INDArray input = pIn.getFirst().assign(origInput);
 
-                INDArray out = Nd4j.create(DataType.FLOAT, input.shape(), 'c');
+                INDArray out = Nd4j.create(DataType.DOUBLE, input.shape(), 'c');
 
                 //TODO Test on weird strides also (i.e., remove the dup here)
                 input = input.dup('c');

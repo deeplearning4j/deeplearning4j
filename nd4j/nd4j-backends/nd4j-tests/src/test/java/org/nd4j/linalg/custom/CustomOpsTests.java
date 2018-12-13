@@ -192,6 +192,9 @@ public class CustomOpsTests {
 
     @Test
     public void testNoneInplaceOp5() throws Exception {
+        if (!Nd4j.isExperimentalMode())
+            return;
+
         val arrayX = Nd4j.create(DataType.INT, 10, 10);
         val arrayY = Nd4j.create(DataType.FLOAT, 10, 10);
 
