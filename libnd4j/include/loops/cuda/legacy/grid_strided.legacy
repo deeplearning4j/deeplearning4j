@@ -50,7 +50,7 @@ __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, con
         paramsPtr = reinterpret_cast<T *>(params);
     }
     __syncthreads();
-#ifdef __EXPERIMENTAL__
+#ifdef __ND4J_EXPERIMENTAL__
     if (opTypeB == 0) { // SCALAR
         if (opTypeA == 0) {
             // double scalar

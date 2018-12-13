@@ -27,18 +27,6 @@ using namespace simdOps;
 
 namespace functions {
     namespace transform {
-
-        template <typename X, typename Y>
-        void TransformFloat<X, Y>::exec(int opNum,
-                void *x,
-                Nd4jLong xEws,
-                void *z,
-                Nd4jLong zEws,
-                void *extraParams,
-                const Nd4jLong n) {
-            DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xEws, z, zEws, extraParams, n), TRANSFORM_FLOAT_OPS);
-		}
-
         template <typename X, typename Y>
         void TransformFloat<X, Y>::exec(
 				int opNum,
@@ -81,7 +69,18 @@ namespace functions {
                 // loop2ArrsSame<X>(x, xShapeInfo, z, zShapeInfo, extraParams, OpType::op);
 
                 if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
-                    exec<OpType>(x,xEws,z,zEws,extraParams,len);
+                    //exec<OpType>(x,xEws,z,zEws,extraParams,len);
+                    nd4j::OmpLaunchHelper info(len);
+#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+                    {
+                        auto threadNum = omp_get_thread_num();
+                        Nd4jLong threadOffset = info.getThreadOffset(threadNum);
+                        auto xi = x + xEws * threadOffset;
+                        auto zi = z + zEws * threadOffset;
+#pragma omp simd
+                        for (Nd4jLong j = 0; j < info.getItersPerThread(threadNum); j++)
+                            zi[j*zEws] = OpType::op(xi[j*xEws], extraParams);
+                    }
                 }
                 else {
                             
@@ -144,33 +143,6 @@ namespace functions {
                             }
                         }
                     }                                   
-                }
-        }
-        
-
-        template <typename X, typename Z>
-        template <typename OpType>
-		void _CUDA_H TransformFloat<X, Z>::exec(void *vx,
-                             Nd4jLong xEws,
-                             void *vz,
-                             Nd4jLong zEws,
-                             void *vextraParams,
-                             const Nd4jLong len) {
-                
-                auto x = reinterpret_cast<X *>(vx);
-                auto z = reinterpret_cast<Z *>(vz);
-                auto extraParams = reinterpret_cast<Z *>(vextraParams);    
-
-                nd4j::OmpLaunchHelper info(len);
-                #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-                {                
-                    auto threadNum = omp_get_thread_num();                    
-                    Nd4jLong threadOffset = info.getThreadOffset(threadNum);
-                    auto xi = x + xEws * threadOffset;
-                    auto zi = z + zEws * threadOffset;        
-                    #pragma omp simd
-                    for (Nd4jLong j = 0; j < info.getItersPerThread(threadNum); j++) 
-                        zi[j*zEws] = OpType::op(xi[j*xEws], extraParams);
                 }
         }
 
