@@ -62,7 +62,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 	NDArray quadratic(error.getShapeInfo(), block.getWorkspace());
 	error.applyScalar(scalar::MinPairwise, delta, &quadratic);
  
-    NDArray weightedLosses = quadratic * quadratic * 0.5f + (error - quadratic)*delta;
+    NDArray weightedLosses = quadratic * quadratic * 0.5f + (error - quadratic) * delta;
 
     // multiply weightedLosses on weights
      weightedLosses *= (*weights);

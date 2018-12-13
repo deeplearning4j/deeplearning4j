@@ -74,11 +74,11 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
     const auto bF = (*bias)({0,0,  0,  K});                       // biases for forget gate [1 x K]
     const auto bR = (*bias)({0,0,  K,2*K});                       // biases for reset  gate [1 x K]
 
-    NDArray xt(block.getWorkspace());
-    NDArray zt(block.getWorkspace());
-    NDArray ft(block.getWorkspace());
-    NDArray rt(block.getWorkspace());
-    NDArray ht(block.getWorkspace());
+    NDArray xt(input->dataType(), block.getWorkspace());
+    NDArray zt(input->dataType(), block.getWorkspace());
+    NDArray ft(input->dataType(), block.getWorkspace());
+    NDArray rt(input->dataType(), block.getWorkspace());
+    NDArray ht(input->dataType(), block.getWorkspace());
     NDArray ct = *init;
     NDArray gct(state->ordering(), {bS, K}, input->dataType(), block.getWorkspace());
     NDArray xmt = *input;

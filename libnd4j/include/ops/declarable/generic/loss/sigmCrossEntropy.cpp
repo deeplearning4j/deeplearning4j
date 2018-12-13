@@ -161,7 +161,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
     auto dLdl = OUTPUT_VARIABLE(2);		// dL/dlabels
 
     
-    float labelsSmoothing = T_ARG(0);
+    NDArray labelsSmoothing = NDArrayFactory::create(logits->dataType(), T_ARG(0), block.getWorkspace());
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
     // take into account Alex's proposition to treat "none" the same as "weighted_sum" mode when calculating gradients
@@ -184,9 +184,9 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 	
 	// If labelsSmoothing is nonzero, smooth the labels towards 1/2:
 	auto newLabels = labels;
-	if(labelsSmoothing != 0.) {
+	if(labelsSmoothing.e<float>(0) != 0.f) {
 		newLabels = new NDArray(*labels);
-    	newLabels->applyScalar(scalar::SXELogitsSmoother, labelsSmoothing, newLabels, nullptr);
+    	newLabels->applyScalar(scalar::SXELogitsSmoother, labelsSmoothing.e<float>(0), newLabels, nullptr);
 	}
 	
 	NDArray E(labels, false, block.getWorkspace());	
@@ -198,7 +198,8 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 	helpers::sigmCrossEntropyGrad(logits, newLabels, dLdp);
 	
 	// dLdl = -logits
-	dLdl->assign(*logits * (labelsSmoothing - 1.f));
+	labelsSmoothing -= 1.f;
+	dLdl->assign(*logits * labelsSmoothing);
 
 	switch (reductionMode) {		
 		case 1: {											// 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
@@ -241,7 +242,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 					((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
 				}					
 				else 
-					dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum));					
+					dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum));
 			}
 			break;
 		}

@@ -66,11 +66,11 @@ void sruCell(const NDArray* x, const NDArray* c0, const NDArray* w, const NDArra
 
     // ◦ means element-wise product or so called Hadamard product
     // current sell state = f◦c0 + (1 - f)◦(x*Wc)
-    c->assign( f*(*c0) + (1.f - f) * z({0,0 ,0, inSize}) );
+    c->assign(f * (*c0) + (1.f - f) * z({0, 0 ,0, inSize}) );
     // *c = f*(*c0 - z({},{0, inSize})) + z({{},{0, inSize}});
 
     // current cell output = r◦activation(c) + (1 - r)◦x
-    h->assign( r*activation(*c) + (1.f - r) * (*x) );
+    h->assign( r * activation(*c) + (1.f - r) * (*x) );
     // *h = r * (activation<T>(c) - *x) + *x;        
 }
 
