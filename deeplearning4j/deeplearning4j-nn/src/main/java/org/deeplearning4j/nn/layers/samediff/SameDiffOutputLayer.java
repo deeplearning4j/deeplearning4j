@@ -100,7 +100,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
         //TODO optimize
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            sameDiff.clearExecutionCache();
+//            sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
             if(layerConf().labelsRequired() && labels != null) {
                 sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));

@@ -10524,7 +10524,7 @@ public class SameDiff {
                 0,
                 0,
                 -1,
-                0, 0, 0, 0,0);
+                0, 0, 0, 0,0, 0);
 
         return flatNode;
     }
@@ -10684,6 +10684,15 @@ public class SameDiff {
         int dimensions = FlatNode.createDimensionsVector(bufferBuilder, dims);
         int fname = bufferBuilder.createString(node.getOwnName());
         int scopeName = bufferBuilder.createString("");
+        int scalar = 0;
+        if(node instanceof ScalarOp){
+            ScalarOp sOp = (ScalarOp)node;
+            INDArray s = sOp.scalar();
+            if(s != null){
+                scalar = s.toFlatArray(bufferBuilder);
+            }
+        }
+
 
         if (node.opType() == null)
             log.warn("Null-op node: {}", node);
@@ -10725,7 +10734,8 @@ public class SameDiff {
                 scopeName,      //Scope name
                 outVarNamesOffset,
                 opNameOffset,
-                outTypesOffset   //Output types
+                outTypesOffset,   //Output types
+                scalar
         );
 
         return flatNode;
