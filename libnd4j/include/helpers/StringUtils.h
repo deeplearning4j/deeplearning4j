@@ -36,8 +36,8 @@ namespace nd4j {
             os << value ;
 
             //convert the string stream into a string and return
-            return os.str() ;
-        };
+            return os.str();
+        }
 
         /**
          * This method just concatenates error message with a given graphId

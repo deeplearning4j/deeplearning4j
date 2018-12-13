@@ -23,6 +23,13 @@
 
 #include <dll.h>
 
+#ifdef __CUDACC__
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+#include <cuda_runtime.h>
+#include <cuda_device_runtime_api.h>
+#endif
+
 namespace nd4j  {
 namespace graph {
 
@@ -33,13 +40,13 @@ class ND4J_EXPORT LaunchContext {
 		void* _reductionPointer;
 		void* _scalarPointer;
 		int* _allocationPointer;		
-		cudaStream_t* _cudaStream;
+		cudaStream_t *_cudaStream;
 		#endif		
 	
 	public:
 		#ifdef __CUDACC__
 		
-		LaunchContext(const void* _cudaStream = nullptr, const void* reductionPointer = nullptr, const void* scalarPointer = nullptr, const int* allocationPointer = nullptr);
+		LaunchContext(cudaStream_t* _cudaStream, const void* reductionPointer = nullptr, const void* scalarPointer = nullptr, const int* allocationPointer = nullptr);
 		
 		inline void* getReductionPointer () const {return _reductionPointer;};			
 		

@@ -25,7 +25,7 @@ namespace graph {
 
 #ifdef __CUDACC__
 ////////////////////////////////////////////////////////////////////////
-LaunchContext::LaunchContext(const void* cudaStream, const void* reductionPointer, const void* scalarPointer, const int* allocationPointer)  {
+LaunchContext::LaunchContext(cudaStream_t *cudaStream, const void* reductionPointer, const void* scalarPointer, const int* allocationPointer)  {
 	
 	_cudaStream 	   = cudaStream;
 	_reductionPointer  = reductionPointer;	
