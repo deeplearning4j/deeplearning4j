@@ -416,7 +416,7 @@ public class SameDiff {
         for (val var : variables()) {
             val clone = cloner.deepCloneDontCloneInstances(var, var.getSameDiff());
             val newVar = sameDiff.var(clone);
-            if (var.getArr() != null) {
+            if (var.getArr() != null && var.getVariableType() != VariableType.ARRAY) {      //ARRAY type = "activations" - are overwritten anyway
                 sameDiff.associateArrayWithVariable(var.getArr(), newVar);
             }
 
@@ -1243,6 +1243,12 @@ public class SameDiff {
             }
         }
 
+        //Add function if it doesn't exist
+        //TODO could "not existing" be a bug sometimes?
+        if(!ops.containsKey(function.getOwnName())){
+            ops.put(function.getOwnName(), SameDiffOp.builder().name(function.getOwnName()).op(function).build());
+        }
+
         ops.get(function.getOwnName()).setInputsToOp(Arrays.asList(variables));
         for (String variableName : variables) {
             List<String> funcs = this.variables.get(variableName).getInputsForOp();
@@ -1479,7 +1485,7 @@ public class SameDiff {
     public List<String> outputs(){
         List<String> out = new ArrayList<>();
         for(Variable v : variables.values()){
-            if(v.getVariable().isConstant() || v.getVariable().isPlaceHolder() || (v.getInputsForOp() != null || !v.getInputsForOp().isEmpty()))
+            if(v.getVariable().isConstant() || v.getVariable().isPlaceHolder() || (v.getInputsForOp() != null && !v.getInputsForOp().isEmpty()))
                 continue;
             out.add(v.getName());
         }
@@ -2250,42 +2256,21 @@ public class SameDiff {
      * @param arr
      * @return
      */
-    public SDVariable var(final SDVariable arr) {
+    public SDVariable var(@NonNull final SDVariable arr) {
         if (variables.containsKey(arr.getVarName()) && variables.get(arr.getVarName()).getVariable().getArr() != null)
             return variables.get(arr.getVarName()).getVariable();
 
         if (arr.getVarName() == null || arr.getVarName().length() < 1)
             throw new IllegalArgumentException("Name for variable must be defined");
 
-        if (workspace == null)
-            initWorkspace();
+        VariableType vt = arr.getVariableType();
+        WeightInitScheme s = null;
+        if(vt == VariableType.CONSTANT || vt == VariableType.VARIABLE){
+            s = new NDArraySupplierInitScheme(arr.getArr());
+        }
 
-        /*
-        final SDVariable ret = new SDVariable()
-                .sameDiff(this)
-                .shape(arr.getShape())
-                .varName(arr.getVarName())
-                .placeholderOnNullShape(false)
-                .weightInitScheme(new NDArraySupplierInitScheme(new NDArraySupplierInitScheme.NDArraySupplier() {
-                    @Override
-
-//                     * Pre allocate the array if it doesn't already exist.
-//                     * The reason we do this is to avoid race conditions with
-//                     * {@link #allocate()}
-                    public INDArray getArr() {
-                        if (arr.getArr() == null) {
-                            INDArray retArr = arr.getWeightInitScheme().create(arr.dataType(), arr.getShape());
-                            associateArrayWithVariable(retArr, arr);
-                        }
-                        return arr.getArr();
-                    }
-                }))
-                .build();
-
-
+        SDVariable ret = new SDVariable(arr.getVarName(), arr.getVariableType(), this, arr.getShape(), arr.dataType(), s);
         return addVariable(ret);
-        */
-        throw new UnsupportedOperationException("Not yet reimplemented");
     }
 
     private String getNewVarName() {
@@ -10007,8 +9992,20 @@ public class SameDiff {
                     func.setSameDiff(sameDiff);
                 }
 
-                val initialOuts = allFunctions.get(allFunctions.size() - 1).getOp().outputVariables();
-                val firstBackward = initialOuts[0];
+//                val initialOuts = allFunctions.get(allFunctions.size() - 1).getOp().outputVariables();
+//                val firstBackward = initialOuts[0];
+
+                //Find final outputs - these are SDVariables that are output of a function that are not inputs to anything else
+                // i.e., ArrayType - not constant, variable, placeholder
+                List<SDVariable> finalOutputs = new ArrayList<>();
+                for(Variable v : sameDiff.variables.values()){
+                    if(v.getVariable().getVariableType() != VariableType.ARRAY || (v.getInputsForOp() != null && ! v.getInputsForOp().isEmpty())){
+                        continue;
+                    }
+                    finalOutputs.add(v.getVariable());
+                }
+
+                Preconditions.checkState(!finalOutputs.isEmpty(), "Could not infer final network outputs to begin differentiation");
 
                 if (log.isTraceEnabled()) {
                     String[] initialOutputsStr = allFunctions.get(allFunctions.size() - 1).getOp().outputVariablesNames();
@@ -10016,74 +10013,131 @@ public class SameDiff {
                     log.trace("Defining backward function: initial outputs {}", s);
                 }
 
+                //Differentiate ops in any valid reverse topological order to ensure the parent gradient nodes are
+                // available before we try to differentiate the op
+                Queue<DifferentialFunction> availableForDiff = new LinkedList<>();
                 //start with scalar backprop
                 SDVariable initialGrad = sameDiff.var("one-var", Nd4j.trueScalar(1.0));
-                sameDiff.forwardVarForGrad.put(firstBackward.getVarName(), initialGrad);
-                sameDiff.variables.get(firstBackward.getVarName()).setGradient(initialGrad);
+                for(SDVariable v : finalOutputs) {
+                    sameDiff.setGradientForVariableName(v.getVarName(), initialGrad);
+                    SDVariable gradientBackwardsMarker = sameDiff.gradientBackwardsMarker(v);
+                    DifferentialFunction df = sameDiff.getVariableOutputFunction(gradientBackwardsMarker.getVarName());
+                    availableForDiff.add(df);
+                }
 
-                SDVariable gradientBackwardsMarker = sameDiff.gradientBackwardsMarker(firstBackward);
+                int numProcessed = 0;
+                while(availableForDiff.size() > 0){
+                    DifferentialFunction df = availableForDiff.remove();
 
-                //reinitialize list with all declared variables
-                allFunctions = new ArrayList<>(sameDiff.ops.values());
-                Collections.reverse(allFunctions);
-
-
-                for (int i = 0; i < allFunctions.size(); i++) {
-                    DifferentialFunction action = allFunctions.get(i).getOp();
-                    if (log.isTraceEnabled()) {
-                        log.trace("Defining backward function step {} of {}: {} ({}) - {}", (i + 1), allFunctions.size(),
-                                action.opName(), action.getOwnName(), action.getClass().getName());
-                    }
-
-                    if (action instanceof GradientBackwardsMarker) {
-                        continue;
-                    }
-
-                    DifferentialFunction currFunction = action;
-                    Preconditions.checkState(currFunction.getSameDiff() == sameDiff, "Wrong samediff instance found!");
-                    //Preconditions.checkNotNull("Gradient for " + currFunction.opName() + " was null ! " + sameDiff.getVariableForVertexId(currFunction.getVertexId()).getGradient());
-                    val args = currFunction.outputVariables();
-                    for (val arg : args) {
-                        if (arg.getSameDiff() != sameDiff) {
-                            arg.setSameDiff(sameDiff);
-                        }
+                    //Get the inputs and outputs of the op
+                    List<String> inputsToOp;
+                    List<String> outputsOfOp;
+                    if(df instanceof GradientBackwardsMarker){
+                        SameDiffOp op = sameDiff.ops.get(df.getOwnName());
+                        inputsToOp = op.getInputsToOp();
+                        outputsOfOp = Collections.emptyList();
+                    } else {
+                        inputsToOp = sameDiff.ops.get(df.getOwnName()).getInputsToOp();
+                        outputsOfOp = sameDiff.ops.get(df.getOwnName()).getOutputsOfOp();
+                        numProcessed++;
                     }
 
 
+                    //Get gradients for all output variables:
                     List<SDVariable> grads = new ArrayList<>();
-                    for (val varToGrad : args) {
-                        val grad = varToGrad.gradient();
-                        if (grad == null)
-                            throw new ND4JIllegalStateException("No gradient found for " + varToGrad.getVarName());
-                        grads.add(grad);
+                    for(String s : outputsOfOp){
+                        SDVariable g = sameDiff.getVariable(s).gradient();
+                        Preconditions.checkNotNull(g, "Could not get gradient for variable %s as output of op %s", g.getVarName(), df.getOwnName());
+                        grads.add(g);
                     }
 
-                    List<SDVariable> currFnGrads = currFunction.diff(grads);
+                    //Differentiate:
+                    List<SDVariable> currFnGrads = df.diff(grads);
 
-                    if (log.isTraceEnabled()) {
-                        log.trace("Finished Defining backward function step {} of {}: {} ({}) - {}", (i + 1), allFunctions.size(),
-                                action.opName(), action.getOwnName(), action.getClass().getName());
+                    //Check the inputs, see if we can differentiate those ops now (and if so: add to queue)
+                    for(String s : inputsToOp){
+                        Variable v = sameDiff.variables.get(s);
+                        String opName = v.getOutputOfOp();
+                        if(opName == null){
+                            //Skip placeholder/constant etc
+                            continue;
+                        }
+
+                        //We can differentiate this op if output variables all have gradients defined
+                        //TODO what about control ops? Need to be handled differently?
+                        boolean allAvaliable = true;
+                        SameDiffOp o = sameDiff.ops.get(opName);
+                        for(String opOutputs : o.getOutputsOfOp()){
+                            SDVariable g = sameDiff.getVariable(opOutputs).getGradient();
+                            allAvaliable &= (g != null);
+                            if(g == null)
+                                break;
+                        }
+
+                        if(allAvaliable)
+                            availableForDiff.add(o.getOp());
                     }
+                }
 
-//                    if (debugMode) {
-//                        //Expect incoming args and outgoing args to be the same
-//                        Preconditions.checkState(sameDiff.incomingArgsReverse.keySet().equals(sameDiff.outgoingArgsReverse.keySet()),
-//                                "incomingArgsReverse and outgoingArgsReverse keysets not equal after backprop of function %s of %s: %s (%s)",
-//                                (i + 1), allFunctions.size(), action.getOwnName(), action.getClass().getName());
+                Preconditions.checkState(numProcessed == ops.size(), "Only differentiated %s of %s ops", numProcessed, ops.size());
+
+
+//                for (int i = 0; i < allFunctions.size(); i++) {
+//                    DifferentialFunction action = allFunctions.get(i).getOp();
+//                    if (log.isTraceEnabled()) {
+//                        log.trace("Defining backward function step {} of {}: {} ({}) - {}", (i + 1), allFunctions.size(),
+//                                action.opName(), action.getOwnName(), action.getClass().getName());
 //                    }
-                }
-
-
-                if (sameDiff.isDebugMode()) {
-                    //ensure all gradients are present for all variables
-                    for (SDVariable sdVariable : variables()) {
-                        sdVariable.gradient();
-                    }
-                }
-
-                if (log.isTraceEnabled()) {
-                    log.trace("Defining backward function complete");
-                }
+//
+//                    if (action instanceof GradientBackwardsMarker) {
+//                        continue;
+//                    }
+//
+//                    DifferentialFunction currFunction = action;
+//                    Preconditions.checkState(currFunction.getSameDiff() == sameDiff, "Wrong samediff instance found!");
+//                    //Preconditions.checkNotNull("Gradient for " + currFunction.opName() + " was null ! " + sameDiff.getVariableForVertexId(currFunction.getVertexId()).getGradient());
+//                    val args = currFunction.outputVariables();
+//                    for (val arg : args) {
+//                        if (arg.getSameDiff() != sameDiff) {
+//                            arg.setSameDiff(sameDiff);
+//                        }
+//                    }
+//
+//
+//                    List<SDVariable> grads = new ArrayList<>();
+//                    for (val varToGrad : args) {
+//                        val grad = varToGrad.gradient();
+//                        if (grad == null)
+//                            throw new ND4JIllegalStateException("No gradient found for " + varToGrad.getVarName());
+//                        grads.add(grad);
+//                    }
+//
+//                    List<SDVariable> currFnGrads = currFunction.diff(grads);
+//
+//                    if (log.isTraceEnabled()) {
+//                        log.trace("Finished Defining backward function step {} of {}: {} ({}) - {}", (i + 1), allFunctions.size(),
+//                                action.opName(), action.getOwnName(), action.getClass().getName());
+//                    }
+//
+////                    if (debugMode) {
+////                        //Expect incoming args and outgoing args to be the same
+////                        Preconditions.checkState(sameDiff.incomingArgsReverse.keySet().equals(sameDiff.outgoingArgsReverse.keySet()),
+////                                "incomingArgsReverse and outgoingArgsReverse keysets not equal after backprop of function %s of %s: %s (%s)",
+////                                (i + 1), allFunctions.size(), action.getOwnName(), action.getClass().getName());
+////                    }
+//                }
+//
+//
+//                if (sameDiff.isDebugMode()) {
+//                    //ensure all gradients are present for all variables
+//                    for (SDVariable sdVariable : variables()) {
+//                        sdVariable.gradient();
+//                    }
+//                }
+//
+//                if (log.isTraceEnabled()) {
+//                    log.trace("Defining backward function complete");
+//                }
 
                 return new SDVariable[]{sameDiff.var("grad", org.nd4j.linalg.api.buffer.DataType.FLOAT, 1)};
             }

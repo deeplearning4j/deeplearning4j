@@ -21,6 +21,9 @@ import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -201,14 +204,15 @@ public class GradCheckUtil {
             }
         }
 
-        //Check that all *input* SDVariables have arrays associated with them
-        for(SDVariable s : sd.variables()){
-            if (fnOutputs.contains(s.getVarName())) {
-                //This is not an input to the graph
+        //Check that all non-Array type SDVariables have arrays associated with them
+        for(Variable v : sd.getVariables().values()){
+            if(v.getVariable().getVariableType() == VariableType.ARRAY){
+                //OK if variable is not available for this, it'll be created during forward pass
                 continue;
             }
-            if(s.getArr() == null){
-                throw new IllegalStateException("Variable \"" + s.getVarName() + "\" does not have array associated with it");
+
+            if(v.getVariable().getArr(true) == null){
+                throw new IllegalStateException("Variable \"" + v.getName() + "\" does not have array associated with it");
             }
         }
 
@@ -246,7 +250,9 @@ public class GradCheckUtil {
                     v.getVarName() + "\": shape " + Arrays.toString(v.getArr().shape()) + " vs. gradient shape " +
                     Arrays.toString(ga.shape()));
             }
+            System.out.println("ABOUT TO DUP");
             grad.put(v.getVarName(), ga.dup());
+            System.out.println("DONE DUP");
         }
 
         //Validate gradients for each variable:
@@ -379,59 +385,51 @@ public class GradCheckUtil {
         }
 
         //1. Check incomingArgsReverse and outgoingArgsReverse
-        Map<String,String[]> incomingArgsReverse = getObject("incomingArgsReverse", sd, SameDiff.class);
-        Map<String,String[]> outgoingArgsReverse = getObject("outgoingArgsReverse", sd, SameDiff.class);
-
-        Preconditions.checkState(dfs.length == incomingArgsReverse.size(), "All functions not present in incomingArgsReverse");
-        Preconditions.checkState(dfs.length == outgoingArgsReverse.size(), "All functions not present in outgoingArgsReverse");
+        Map<String,SameDiffOp> ops = sd.getOps();
+        Preconditions.checkState(dfs.length == ops.size(), "All functions not present in incomingArgsReverse");
         for(DifferentialFunction df : dfs){
-            Preconditions.checkState(incomingArgsReverse.containsKey(df.getOwnName()), df.getOwnName() + " not present in incomingArgsReverse");
-            Preconditions.checkState(outgoingArgsReverse.containsKey(df.getOwnName()), df.getOwnName() + " not present in outgoingArgsReverse");
+            Preconditions.checkState(ops.containsKey(df.getOwnName()), df.getOwnName() + " not present in ops map");
 
-            String[] str = incomingArgsReverse.get(df.getOwnName());
-            for(String s : str){
-                Preconditions.checkState(varSetStr.contains(s), "Variable " + s + " in incomingArgsReverse value not a known variable name");
+            List<String> str = ops.get(df.getOwnName()).getInputsToOp();
+            if(str != null) {
+                for (String s : str) {
+                    Preconditions.checkState(varSetStr.contains(s), "Variable " + s + " in op inputs not a known variable name");
+                }
             }
 
-            str = outgoingArgsReverse.get(df.getOwnName());
-            for(String s : str){
-                Preconditions.checkState(varSetStr.contains(s), "Variable " + s + " in outgoingArgsReverse value not a known variable name");
+            str = ops.get(df.getOwnName()).getOutputsOfOp();
+            if(str != null) {
+                for (String s : str) {
+                    Preconditions.checkState(varSetStr.contains(s), "Variable " + s + " in op outputs not a known variable name");
+                }
             }
         }
 
         //Also check that outgoingArgsReverse values are unique: i.e., shouldn't have the same op appearing multiple times
         Map<String,String> seen = new HashMap<>();
-        for(Map.Entry<String,String[]> e : outgoingArgsReverse.entrySet()){
-            String[] varNames = e.getValue();
-            for(String s : varNames){
-                if(seen.containsKey(s)){
-                    throw new IllegalStateException("Already saw variable \"" + s + "\" as output for op \"" + seen.get(s)
-                            + "\": expected variables to be present as an output only once; also seen as output for op \"" +
-                            e.getKey() + "\"");
+        for(Map.Entry<String,SameDiffOp> e : ops.entrySet()){
+            List<String> varNames = e.getValue().getOutputsOfOp();
+            if(varNames != null) {
+                for (String s : varNames) {
+                    if (seen.containsKey(s)) {
+                        throw new IllegalStateException("Already saw variable \"" + s + "\" as output for op \"" + seen.get(s)
+                                + "\": expected variables to be present as an output only once; also seen as output for op \"" +
+                                e.getKey() + "\"");
+                    }
+                    seen.put(s, e.getKey());
                 }
-                seen.put(s, e.getKey());
             }
         }
 
         //2. Check variableMap
-        Map<String, SDVariable> variableMap = getObject("variableMap", sd, SameDiff.class);
+        Map<String, Variable> variableMap = sd.getVariables();
         Preconditions.checkState(vars.size() == variableMap.size(), "Variable map size check failed");
-        for(Map.Entry<String, SDVariable> e : variableMap.entrySet()){
-            Preconditions.checkState(e.getKey().equals(e.getValue().getVarName()), "Name not equal");
+        for(Map.Entry<String, Variable> e : variableMap.entrySet()){
+            Preconditions.checkState(e.getKey().equals(e.getValue().getVariable().getVarName()), "Name not equal");
         }
 
-        //3. Check functionArgsFor, functionOutputsFor
-        Map<String, List<DifferentialFunction>> functionsArgsFor = getObject("functionsArgsFor", sd, SameDiff.class);
-        Map<String, List<DifferentialFunction>> functionOutputFor = getObject("functionOutputFor", sd, SameDiff.class);
-        //TODO legit that some aren't present in these maps... equivalent to mapping to empty list. There might be a better
-        // check we can do here, however...
-//        Preconditions.checkState(functionsArgsFor.size() == vars.size(), "Unexpected size for functionsArgsFor: expected %s, got %s", vars.size(), functionsArgsFor.size());
-//        Preconditions.checkState(functionOutputFor.size() == vars.size(), "Unexpected size for functionOutputFor: expected %s, got %s", vars.size(), functionOutputFor.size());
-//        Preconditions.checkState(functionsArgsFor.keySet().containsAll(varSetStr), "functionArgsFor doesn't contain all variable names");
-//        Preconditions.checkState(functionOutputFor.keySet().containsAll(varSetStr), "functionOutputFor doesn't contain all variable names");
-
         if(generateAndCheckGradFn) {
-            //4. Check gradient function
+            //3. Check gradient function
             if(sd.getFunction("grad") == null){
                 sd.createGradFunction();
             }

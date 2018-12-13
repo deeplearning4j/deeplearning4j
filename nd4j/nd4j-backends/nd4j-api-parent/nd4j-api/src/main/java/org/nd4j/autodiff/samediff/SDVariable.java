@@ -69,6 +69,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     @Getter
     @Setter
     protected WeightInitScheme weightInitScheme;
+    protected long[] shape;
 
     @Getter (AccessLevel.NONE)
     @Setter
@@ -90,6 +91,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         this.variableType = varType;
         this.dataType = dataType;
         this.weightInitScheme = weightInitScheme;
+        this.shape = shape;
 
         if(varType == VariableType.PLACEHOLDER){
             sameDiff.setOriginalPlaceHolderShape(varName, shape);
@@ -211,8 +213,14 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             if(log.isTraceEnabled()){
                 log.trace("getArr() for variable \"{}\" allocated new scalar array: shape {}", getVarName(), Arrays.toString(getShape()));
             }
-        }
-        else if(sameDiff.getShapeForVarName(getVarName()) == null) {
+        } else if(variableType == VariableType.VARIABLE && weightInitScheme != null && shape != null){
+            INDArray arr = weightInitScheme.create(dataType, shape);
+            sameDiff.associateArrayWithVariable(arr, this);
+            if(log.isTraceEnabled()){
+                log.trace("getArr() for variable \"{}\" allocated new array: shape {}", getVarName(), Arrays.toString(getShape()));
+            }
+            return arr;
+        } else if(sameDiff.getShapeForVarName(getVarName()) == null) {
             if (enforceExistence) {
                 throw new IllegalStateException("Cannot get array for SDVariable \"" + getVarName() + "\": no array has" +
                         " been defined, and array shape cannot be calculated");

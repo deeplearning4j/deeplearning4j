@@ -105,7 +105,7 @@ public class GradientBackwardsMarker extends BaseGradientOp  {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException();
+        return i_v;
     }
 
     @Override
