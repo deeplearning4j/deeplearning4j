@@ -9976,7 +9976,6 @@ public class SameDiff {
                     throw new ND4JIllegalStateException("No ops found!");
                 }
 
-
                 for (SameDiffOp op : allFunctions) {
                     DifferentialFunction func = op.getOp();
                     if (func instanceof SDVariable) {
@@ -9991,9 +9990,6 @@ public class SameDiff {
                         output.setSameDiff(sameDiff);
                     func.setSameDiff(sameDiff);
                 }
-
-//                val initialOuts = allFunctions.get(allFunctions.size() - 1).getOp().outputVariables();
-//                val firstBackward = initialOuts[0];
 
                 //Find final outputs - these are SDVariables that are output of a function that are not inputs to anything else
                 // i.e., ArrayType - not constant, variable, placeholder
@@ -10080,64 +10076,6 @@ public class SameDiff {
                 }
 
                 Preconditions.checkState(numProcessed == ops.size(), "Only differentiated %s of %s ops", numProcessed, ops.size());
-
-
-//                for (int i = 0; i < allFunctions.size(); i++) {
-//                    DifferentialFunction action = allFunctions.get(i).getOp();
-//                    if (log.isTraceEnabled()) {
-//                        log.trace("Defining backward function step {} of {}: {} ({}) - {}", (i + 1), allFunctions.size(),
-//                                action.opName(), action.getOwnName(), action.getClass().getName());
-//                    }
-//
-//                    if (action instanceof GradientBackwardsMarker) {
-//                        continue;
-//                    }
-//
-//                    DifferentialFunction currFunction = action;
-//                    Preconditions.checkState(currFunction.getSameDiff() == sameDiff, "Wrong samediff instance found!");
-//                    //Preconditions.checkNotNull("Gradient for " + currFunction.opName() + " was null ! " + sameDiff.getVariableForVertexId(currFunction.getVertexId()).getGradient());
-//                    val args = currFunction.outputVariables();
-//                    for (val arg : args) {
-//                        if (arg.getSameDiff() != sameDiff) {
-//                            arg.setSameDiff(sameDiff);
-//                        }
-//                    }
-//
-//
-//                    List<SDVariable> grads = new ArrayList<>();
-//                    for (val varToGrad : args) {
-//                        val grad = varToGrad.gradient();
-//                        if (grad == null)
-//                            throw new ND4JIllegalStateException("No gradient found for " + varToGrad.getVarName());
-//                        grads.add(grad);
-//                    }
-//
-//                    List<SDVariable> currFnGrads = currFunction.diff(grads);
-//
-//                    if (log.isTraceEnabled()) {
-//                        log.trace("Finished Defining backward function step {} of {}: {} ({}) - {}", (i + 1), allFunctions.size(),
-//                                action.opName(), action.getOwnName(), action.getClass().getName());
-//                    }
-//
-////                    if (debugMode) {
-////                        //Expect incoming args and outgoing args to be the same
-////                        Preconditions.checkState(sameDiff.incomingArgsReverse.keySet().equals(sameDiff.outgoingArgsReverse.keySet()),
-////                                "incomingArgsReverse and outgoingArgsReverse keysets not equal after backprop of function %s of %s: %s (%s)",
-////                                (i + 1), allFunctions.size(), action.getOwnName(), action.getClass().getName());
-////                    }
-//                }
-//
-//
-//                if (sameDiff.isDebugMode()) {
-//                    //ensure all gradients are present for all variables
-//                    for (SDVariable sdVariable : variables()) {
-//                        sdVariable.gradient();
-//                    }
-//                }
-//
-//                if (log.isTraceEnabled()) {
-//                    log.trace("Defining backward function complete");
-//                }
 
                 return new SDVariable[]{sameDiff.var("grad", org.nd4j.linalg.api.buffer.DataType.FLOAT, 1)};
             }
