@@ -17,20 +17,22 @@ public class ArrayDescriptor implements java.io.Serializable{
     private long[] shape;
     private long[] stride;
     DataType type;
+    char ordering;
     private static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
     public ArrayDescriptor(INDArray array) throws Exception{
-        this(array.data().address(), array.shape(), array.stride(), array.data().dataType());
+        this(array.data().address(), array.shape(), array.stride(), array.data().dataType(), array.ordering());
+        if (array.isEmpty()){
+            throw new UnsupportedOperationException("Empty arrays are not supported");
+        }
     }
 
-    public ArrayDescriptor(long address, long[] shape, long[] stride, DataType type) throws Exception{
+    public ArrayDescriptor(long address, long[] shape, long[] stride, DataType type, char ordering){
         this.address = address;
         this.shape = shape;
         this.stride = stride;
         this.type = type;
-        if (type != DataType.FLOAT && type != DataType.DOUBLE){
-            throw new Exception("Unsupported type.");
-        }
+        this.ordering = ordering;
     }
     public long getAddress(){
         return address;
@@ -48,6 +50,10 @@ public class ArrayDescriptor implements java.io.Serializable{
         return type;
     }
 
+    public char getOrdering(){
+        return ordering;
+    }
+
     private long size(){
         long s = 1;
         for (long d: shape){
@@ -56,11 +62,11 @@ public class ArrayDescriptor implements java.io.Serializable{
         return s;
     }
 
-    public INDArray getArray(){
+    public INDArray getArray() {
         Pointer ptr = nativeOps.pointerForAddress(address);
+        ptr = ptr.limit(size());
         DataBuffer buff = Nd4j.createBuffer(ptr, size(), type);
-
-        return Nd4j.create(buff, shape, stride, 0, 'c', type);
+        return Nd4j.create(buff, shape, stride, 0, ordering, type);
     }
 
 }
