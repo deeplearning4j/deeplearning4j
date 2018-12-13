@@ -22,17 +22,17 @@ public class ArrayDescriptor implements java.io.Serializable{
 
     public ArrayDescriptor(INDArray array) throws Exception{
         this(array.data().address(), array.shape(), array.stride(), array.data().dataType(), array.ordering());
+        if (array.isEmpty()){
+            throw new UnsupportedOperationException("Empty arrays are not supported");
+        }
     }
 
-    public ArrayDescriptor(long address, long[] shape, long[] stride, DataType type, char ordering) throws Exception{
+    public ArrayDescriptor(long address, long[] shape, long[] stride, DataType type, char ordering){
         this.address = address;
         this.shape = shape;
         this.stride = stride;
         this.type = type;
         this.ordering = ordering;
-        if (type != DataType.FLOAT && type != DataType.DOUBLE){
-            throw new Exception("Unsupported type.");
-        }
     }
     public long getAddress(){
         return address;
