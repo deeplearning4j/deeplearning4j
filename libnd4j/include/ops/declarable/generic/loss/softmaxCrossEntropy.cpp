@@ -130,11 +130,10 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
     if(weightsBroad != weights)
     	delete weightsBroad;
 
-    if(cLabels != newLabels)
-    	delete cLabels;
-
-    if(newLabels != labels)
+    if(newLabels != cLabels)
     	delete newLabels;
+    
+	delete cLabels;
    		
     return Status::OK();
 }
@@ -219,10 +218,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 
 	// If label_smoothing is nonzero, smooth the labels towards 1/num_classes: new_onehot_labels = onehot_labels * (1 - label_smoothing) + label_smoothing / num_classes
 	// num_classes = labels->sizeAt(1)
-	auto newLabels = labels;
+	auto cLabels = labels->cast(weights->dataType());
+	auto newLabels = cLabels;
 	if(labelsSmoothing != 0.) {
-		newLabels = new NDArray(labels->getShapeInfo(), dLdl->dataType(), false, block.getWorkspace());
-    	newLabels->assign((1.f - labelsSmoothing) * *labels + labelsSmoothing / labels->sizeAt(1));
+		newLabels = new NDArray(labels->getShapeInfo(), dLdl->dataType(), false, block.getWorkspace());		
+    	newLabels->assign((1.f - labelsSmoothing) * *cLabels + labelsSmoothing / cLabels->sizeAt(1));    	
 	}
 
 	NDArray softmax = (*logits - logits->reduceAlongDims(reduce::Max, dimensions, true)).transform(transform::Exp);
@@ -266,7 +266,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 			
 			break;
 		}
-		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of all elements of weightsBroad array
+		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of all elements of weightsBroad array			
 			NDArray sum;
 			if (weights->isScalar())
 				sum = (*weights) * E.lengthOf();
@@ -344,8 +344,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 
     if(weightsBroad != weights)
     	delete weightsBroad;
-    if(newLabels != labels)
+    
+    if(newLabels != cLabels)
     	delete newLabels; 
+
+    delete cLabels;
    		
     return Status::OK();
 }
