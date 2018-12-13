@@ -144,6 +144,11 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     }
 
     @Override
+    public void setScalar(INDArray scalar){
+        this.scalarValue = scalar;
+    }
+
+    @Override
     public INDArray scalar() {
         if(y() != null && y().isScalar())
             return y();

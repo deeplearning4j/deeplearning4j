@@ -302,7 +302,11 @@ public class FlatBuffersMapper {
         for( int i=0; i<dimensions.length; i++ ){
             dimensions[i] = fn.dimensions(i);
         }
-        //float scalar = fn.scalar();
+        FlatArray fa = fn.scalar();
+        INDArray scalar = null;
+        if(fa != null){
+            scalar = Nd4j.createFromFlatArray(fa);
+        }
 
         FlatProperties[] flatProperties = new FlatProperties[fn.propertiesLength()];
         for( int i=0; i<flatProperties.length; i++ ){
@@ -353,7 +357,7 @@ public class FlatBuffersMapper {
             }
             if(opType == Op.Type.SCALAR){
                 ScalarOp sOp = (ScalarOp)op;
-                //sOp.setScalar(scalar);
+                sOp.setScalar(scalar);
             } else if(opType == Op.Type.REDUCE_FLOAT || opType == Op.Type.REDUCE3 || opType == Op.Type.SUMMARYSTATS || opType == Op.Type.VARIANCE) {
                 val ba = (BaseReduceOp) op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
