@@ -325,6 +325,7 @@ namespace nd4j {
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
         void* specialBuffer();
+        void* getSpecialBuffer() const;
 
         /**
          * Returns True if it's legally empty NDArray, or false otherwise
@@ -336,6 +337,7 @@ namespace nd4j {
         *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
         */
         Nd4jLong* specialShapeInfo();
+        Nd4jLong* getSpecialShapeInfo() const;
 
         /**
         *  set values for _bufferD and _shapeInfoD

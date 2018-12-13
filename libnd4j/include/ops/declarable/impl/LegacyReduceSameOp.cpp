@@ -55,7 +55,8 @@ namespace nd4j {
 //                    (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                 if (block.getAxis()->empty() || allAxes) {
                     // scalar
-                    NativeOpExecutioner::execReduceSameScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
+                    NativeOpExecutioner::execReduceSameScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                            block.getTArguments()->data(), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
                 } else {
                     // TAD
                     std::vector<int> dims(*block.getAxis());
@@ -72,7 +73,10 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExecutioner::execReduceSame(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExecutioner::execReduceSame(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                            block.getTArguments()->data(),
+                            z->getBuffer(), z->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                            dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }
 
                 STORE_RESULT(*z);
@@ -100,7 +104,8 @@ namespace nd4j {
                     //x->printIndexedBuffer("x");
 
                     // scalar
-                    NativeOpExecutioner::execReduceSameScalar(nullptr, opNum, b, s, e, z->buffer(), z->shapeInfo());
+                    NativeOpExecutioner::execReduceSameScalar(nullptr, opNum, b, s, x->specialBuffer(), x->specialShapeInfo(),
+                            e, z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
                 } else {
                     // TAD
                     if (indices->lengthOf() > 1)
@@ -114,7 +119,9 @@ namespace nd4j {
 
                     auto z = OUTPUT_VARIABLE(0);
 
-                    NativeOpExecutioner::execReduceSame(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExecutioner::execReduceSame(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                            block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                            axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }
             }
 

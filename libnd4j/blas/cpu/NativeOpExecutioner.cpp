@@ -67,9 +67,9 @@ void NativeOpExecutioner::execIndexReduceScalar(nd4j::graph::LaunchContext *lc, 
                                     void *dZ, Nd4jLong *dZShapeInfo) {
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
-    auto z = reinterpret_cast<Nd4jLong*>(hZ);
+    auto hz = reinterpret_cast<Nd4jLong*>(hZ);
 
-    BUILD_SINGLE_SELECTOR(xType, z[0] = functions::indexreduce::IndexReduce, ::execScalar(opNum,hX,hXShapeInfo,extraParams), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, hz[0] = functions::indexreduce::IndexReduce, ::execScalar(opNum,hX,hXShapeInfo,extraParams), LIBND4J_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -96,9 +96,10 @@ void NativeOpExecutioner::execIndexReduce(nd4j::graph::LaunchContext *lc,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
-    auto z = reinterpret_cast<Nd4jLong*>(hZ);
+    Nd4jLong* hz = reinterpret_cast<Nd4jLong*>(hZ);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::exec(opNum, hX, hXShapeInfo, extraParams, z, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::exec(opNum, hX, hXShapeInfo, extraParams, hz, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
+//    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::exec(opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -453,6 +454,7 @@ void NativeOpExecutioner::execReduce3All(nd4j::graph::LaunchContext *lc,
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execAll(opNum, hX, hXShapeInfo, extraParamsVals, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets), LIBND4J_TYPES, FLOAT_TYPES);
+//    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execAll(opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParamsVals, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -472,6 +474,7 @@ void NativeOpExecutioner::execReduce3TAD(nd4j::graph::LaunchContext *lc,
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(opNum, hX, hXShapeInfo, extraParamsVals, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
+//    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParamsVals, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 

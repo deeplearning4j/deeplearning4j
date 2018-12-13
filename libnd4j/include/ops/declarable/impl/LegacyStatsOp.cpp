@@ -38,7 +38,8 @@ namespace nd4j {
 
             if (block.getIArguments()->size() == 1 || (block.getIArguments()->size() == 2 && INT_ARG(1) == MAX_INT)) {
                 // scalar
-                NativeOpExecutioner::execSummaryStatsScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), nullptr, z->getBuffer(), z->getShapeInfo(),  biasCorrected);
+                NativeOpExecutioner::execSummaryStatsScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                        nullptr, z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), biasCorrected);
             } else {
                 // dimensions for TAD
                 // we should skip first argument here, because it's addressing bias correction
@@ -52,7 +53,8 @@ namespace nd4j {
 
                 REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
-                NativeOpExecutioner::execSummaryStats(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), biasCorrected);
+                NativeOpExecutioner::execSummaryStats(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), block.getTArguments()->data(),
+                        z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(), (int) dims.size(), biasCorrected);
             }
 
             STORE_RESULT(*z);

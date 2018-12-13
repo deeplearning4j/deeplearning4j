@@ -118,7 +118,10 @@ namespace nd4j {
                 if (block.getAxis()->size() == 0) {
                     // scalar
                     NativeOpExecutioner::execIndexReduceScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(),
-                                                                         block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo());
+                                                                         x->getSpecialBuffer(), x->getSpecialShapeInfo(),
+                                                                         block.getTArguments()->data(),
+                                                                         z->getBuffer(), z->getShapeInfo(),
+                                                                         z->getSpecialBuffer(), z->getSpecialShapeInfo());
                 } else {
                     // TAD
                     std::vector<int> dims(block.getAxis()->size());
@@ -133,8 +136,14 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExecutioner::execIndexReduce(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),
-                                                        reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);                }
+                    NativeOpExecutioner::execIndexReduce(nullptr, opNum, x->getBuffer(), x->getShapeInfo(),
+                                                         x->getSpecialBuffer(), x->getSpecialShapeInfo(),
+                            block.getTArguments()->data(),
+                                                        reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(),
+                                                        z->getSpecialBuffer(), z->getSpecialShapeInfo(),
+                                                        dims.data(), (int) dims.size(),
+                                                        tad.tadOnlyShapeInfo, tad.tadOffsets);
+                }
             } else {
                 // TF mode
                 auto indices = INPUT_VARIABLE(1);
@@ -150,7 +159,10 @@ namespace nd4j {
 
                 if (allAxes) {
                     NativeOpExecutioner::execIndexReduceScalar(nullptr, opNum, x->getBuffer(), x->getShapeInfo(),
-                                                              block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo());
+                                                              x->getSpecialBuffer(), x->getSpecialShapeInfo(),
+                                                              block.getTArguments()->data(),
+                                                              z->getBuffer(), z->getShapeInfo(), z->getSpecialBuffer(),
+                                                              z->getSpecialShapeInfo());
 
                 } else {
                     if (indices->lengthOf() > 1)
@@ -162,8 +174,12 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExecutioner::execIndexReduce(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),
-                                                        reinterpret_cast<Nd4jLong *>(z->getBuffer()), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExecutioner::execIndexReduce(nullptr, opNum,
+                            x->getBuffer(), x->getShapeInfo(), x->getSpecialBuffer(), x->getSpecialShapeInfo(),
+                            block.getTArguments()->data(),
+                            reinterpret_cast<Nd4jLong *>(z->getBuffer()),
+                            z->getShapeInfo(), z->getSpecialBuffer(), z->getSpecialShapeInfo(),
+                            axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }
             }
 
