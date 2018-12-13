@@ -17,6 +17,10 @@
 #include "../NativeOpExecutioner.h"
 #include <cuda.h>
 #include <cuda_launch_config.h>
+#include <op_boilerplate.h>
+#include <helpers/DebugHelper.h>
+#include <DataTypeUtils.h>
+#include <graph/exceptions/datatype_exception.h>
 
 #include <loops/transform_float.h>
 #include <loops/transform_bool.h>
@@ -39,6 +43,7 @@
 #include <loops/scalar.h>
 #include <loops/random.h>
 
+using namespace nd4j;
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execPairwiseTransform(nd4j::graph::LaunchContext *lc,
@@ -72,7 +77,7 @@ void NativeOpExecutioner::execPairwiseTransform(nd4j::graph::LaunchContext *lc,
 }
 
 void NativeOpExecutioner::execPairwiseBoolTransform(
-        Nd4jPointer *extraPointers,
+		nd4j::graph::LaunchContext *lc,
         int opNum,
         void *hX, Nd4jLong *hXShapeInfo,
         void *dX, Nd4jLong *dXShapeInfo,
