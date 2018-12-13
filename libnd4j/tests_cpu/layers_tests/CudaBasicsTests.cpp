@@ -80,5 +80,7 @@ TEST_F(CudaBasicsTests, TestPairwise_1) {
 	cudaFree(devBufferPtrZ);
 	cudaFree(devShapePtrX);
 
-	ASSERT_EQ(exp, z);
+	for (int e = 0; e < z.lengthOf(); e++) {
+		ASSERT_EQ(exp.e<double>(e), z.e<double>(e), 1e-5);
+	}
 }
