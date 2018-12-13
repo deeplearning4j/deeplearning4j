@@ -21,29 +21,60 @@
 #include <helpers/DebugHelper.h>
 #include <DataTypeUtils.h>
 #include <graph/exceptions/datatype_exception.h>
+#include <helpers/CudaLaunchHelper.h>
+#include <helpers/ShapeBuilders.h>
 
 #include <loops/transform_float.h>
 #include <loops/transform_bool.h>
 #include <loops/transform_any.h>
 #include <loops/transform_same.h>
 #include <loops/transform_strict.h>
-
 #include <loops/reduce_float.h>
 #include <loops/reduce_same.h>
 #include <loops/reduce_bool.h>
 #include <loops/reduce_long.h>
-
 #include <loops/broadcasting.h>
 #include <loops/indexreduce.h>
 #include <loops/pairwise_transform.h>
+#include <loops/pairwise_bool.h>
+#include <loops/broadcasting_bool.h>
 #include <loops/reduce_float.h>
 #include <loops/reduce3.h>
 #include <loops/summarystatsreduce.h>
 #include <loops/transform_same.h>
 #include <loops/scalar.h>
 #include <loops/random.h>
+#include <loops/special_kernels.h>
+#include <loops/scalar_bool.h>
 
 using namespace nd4j;
+
+/**
+* This is utility kernel, that updates given special buffer with proper values in device memory
+*/
+extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension, Nd4jLong *specialPointer, int rows, nd4j::DataType dataType) {
+    Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid > 0)
+        return;
+
+    dimension[0] = 0;
+    maxDimension[0] = 1;
+
+    specialPointer[0] = 2;
+    specialPointer[1] = rows;
+    specialPointer[2] = 1;
+    specialPointer[3] = 1;
+    specialPointer[4] = 1;
+    specialPointer[5] = 0;
+    specialPointer[6] = 1;
+    specialPointer[7] = 99;
+
+    ArrayOptions::setDataType(specialPointer, dataType);
+
+    //printf("special[0]: [%lld]\n", (long long) specialPointer[0]);
+    //shape::printShapeInfoLinear("prepareShapeBuffer", specialPointer);
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execPairwiseTransform(nd4j::graph::LaunchContext *lc,
@@ -173,18 +204,17 @@ void NativeOpExecutioner::execBroadcastBool(nd4j::graph::LaunchContext *lc,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOpExecutioner::execBroadcast(
-		Nd4jPointer *extraPointers,
-		int opNum,
-		void *hX, Nd4jLong *hXShapeInfo,
-		void *dX, Nd4jLong *dXShapeInfo,
-		void *hY, Nd4jLong *hYShapeInfo,
-		void *dY, Nd4jLong *dYShapeInfo,
-		void *hZ, Nd4jLong *hZShapeInfo,
-		void *dZ, Nd4jLong *dZShapeInfo,
-		int *dimension, int dimensionLength,
-		Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-		Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+void   NativeOpExecutioner::execBroadcast(nd4j::graph::LaunchContext *lc,
+		                              int opNum,
+		                              void *hX, Nd4jLong *hXShapeInfo,
+		                              void *dX, Nd4jLong *dXShapeInfo,
+		                              void *hY, Nd4jLong *hYShapeInfo,
+		                              void *dY, Nd4jLong *dYShapeInfo,
+		                              void *hZ, Nd4jLong *hZShapeInfo,
+		                              void *dZ, Nd4jLong *dZShapeInfo,
+		                              int *dimension, int dimensionLength,
+		                              Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+		                              Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
 
 	auto stream = lc->getCudaStream();
 
@@ -509,7 +539,7 @@ void NativeOpExecutioner::execTransformAny(nd4j::graph::LaunchContext *lc,
                     /**
                     * In case of vector-input for IsMax, it just turns into IndexReduce call + further filler call
                     */
-                    execIndexReduceScalar(extraPointers, indexreduce::IndexMax, nullptr, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, scalarShape, special, nullptr);
+                    execIndexReduceScalar(lc, indexreduce::IndexMax, nullptr, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, scalarShape, special, nullptr);
                     Nd4jLong maxIdx = -119;
                     checkCudaErrors(cudaStreamSynchronize(*stream));
                     cudaMemcpyAsync(&maxIdx, special, sizeof(Nd4jLong), cudaMemcpyDeviceToHost, *stream);
@@ -536,7 +566,7 @@ void NativeOpExecutioner::execTransformAny(nd4j::graph::LaunchContext *lc,
                     int dimensionLength = 0;
 
                     // we call for IMax on specified dimension
-                    execIndexReduce(extraPointers, indexreduce::IndexMax, nullptr, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, hostTShapeInfo, special, hostYShapeInfo, dimension, dimensionLength);
+                    execIndexReduce(lc, indexreduce::IndexMax, nullptr, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, hostTShapeInfo, special, hostYShapeInfo, dimension, dimensionLength, nullptr, nullptr);
 
                     DEBUG_KERNEL(stream, opNum);
 
@@ -602,87 +632,43 @@ void NativeOpExecutioner::execTransformStrict(nd4j::graph::LaunchContext *lc,
                     auto maxDimension = dimension + 1;
                     auto maxShapeBuffer = reinterpret_cast<Nd4jLong *>(maxDimension + 1);
                     auto special = reinterpret_cast<double *> (maxShapeBuffer + (MAX_RANK * 2 + 4));
-
-                    Nd4jPointer tempPointers[16];
-                    tempPointers[0] = extraPointers[0];
-                    tempPointers[1] = extraPointers[1];
-                    tempPointers[2] = extraPointers[2];
-                    tempPointers[3] = extraPointers[3];
-                    tempPointers[4] = extraPointers[4];
-                    tempPointers[5] = extraPointers[5];
-                    tempPointers[6] = extraPointers[6];
-                    tempPointers[7] = extraPointers[7];
-                    tempPointers[8] = extraPointers[8];
-                    tempPointers[9] = extraPointers[9];
-                    tempPointers[10] = extraPointers[10];
-                    tempPointers[11] = extraPointers[11];
-                    tempPointers[12] = extraPointers[12];
-                    tempPointers[13] = extraPointers[13];
-                    tempPointers[14] = extraPointers[14];
-                    tempPointers[15] = extraPointers[15];
+                
 
                     Nd4jLong maxShape[2] = {shape::shapeOf(hXShapeInfo)[0], 1};
                     auto hostMaxShapeBuffer = shape::shapeBuffer(2, xType, maxShape);
-
-                    tempPointers[7] = (Nd4jPointer) hostMaxShapeBuffer;
-                    tempPointers[8] = (Nd4jPointer) hostMaxShapeBuffer;
 
                     prepareShapeBuffer<<<1, 1, 128, *stream>>>(dimension, maxDimension, maxShapeBuffer, shape[0], xType);
 
                     DEBUG_KERNEL(stream, opNum);
 
-                    //shape::printShapeInfo(maxShapeBuffer);
-                    tempPointers[9] = extraPointers[12];
-                    tempPointers[10] = extraPointers[13];
-                    tempPointers[11] = extraPointers[14];
-
                     // max 3
-                    execReduceSame(tempPointers, reduce::Max, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, maxDimension, 1);
+                    execReduceSame(lc, reduce::Max, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, maxDimension, 1, tadShapeInfo, tadOffsets);
 
                     DEBUG_KERNEL(stream, opNum);
 
-                    tempPointers[8] = extraPointers[8];
-                    tempPointers[9] = extraPointers[9];
-                    tempPointers[10] = extraPointers[10];
-                    tempPointers[11] = extraPointers[11];
-                    tempPointers[12] = extraPointers[10];
-                    tempPointers[13] = extraPointers[11];
-
                     // sub 1
-                    execBroadcast(tempPointers, broadcast::Subtract, hX, hXShapeInfo, dX, dXShapeInfo, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, nullptr, hZShapeInfo, dZ, dZShapeInfo, dimension, 1);
+                    execBroadcast(lc, broadcast::Subtract, hX, hXShapeInfo, dX, dXShapeInfo, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, nullptr, hZShapeInfo, dZ, dZShapeInfo, dimension, 1, tadShapeInfo, tadOffsets, nullptr, nullptr);
 
                     DEBUG_KERNEL(stream, opNum);
 
                     // exp 3
-                    execTransformFloat(extraPointers, transform::Exp, hZ, hZShapeInfo, dZ, dZShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+                    execTransformFloat(lc, transform::Exp, hZ, hZShapeInfo, dZ, dZShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
 
                     DEBUG_KERNEL(stream, opNum);
 
-                    tempPointers[8] = tempPointers[7];
-                    tempPointers[9] = extraPointers[12];
-                    tempPointers[10] = extraPointers[13];
-                    tempPointers[11] = extraPointers[14];
-
                     //sum 1
-                    execReduceSame(tempPointers, reduce::Sum, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, maxDimension, 1);
-
-                    tempPointers[8] = extraPointers[8];
-                    tempPointers[9] = extraPointers[9];
-                    tempPointers[10] = extraPointers[10];
-                    tempPointers[11] = extraPointers[11];
-                    tempPointers[12] = extraPointers[10];
-                    tempPointers[13] = extraPointers[11];
+                    execReduceSame(lc, reduce::Sum, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, maxDimension, 1, tadShapeInfo, tadOffsets);
 
                     // divide 3
-                    execBroadcast(tempPointers, broadcast::Divide, hZ, hZShapeInfo, dZ, dZShapeInfo, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, nullptr, hZShapeInfo, dZ, dZShapeInfo, dimension, 1);
+                    execBroadcast(lc, broadcast::Divide, hZ, hZShapeInfo, dZ, dZShapeInfo, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, nullptr, hZShapeInfo, dZ, dZShapeInfo, dimension, 1, tadShapeInfo, tadOffsets, nullptr, nullptr);
 
                     DEBUG_KERNEL(stream, opNum);
 
                     // log 3
                     if (opNum == transform::LogSoftMax)
-                        execTransformFloat(extraPointers, transform::Log, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+                        execTransformFloat(lc, transform::Log, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
                     else if (opNum == transform::SoftMaxDerivative)
-                        execTransformStrict(extraPointers, transform::SpecialDerivative, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+                        execTransformStrict(lc, transform::SpecialDerivative, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
 
                     nd4j::DebugHelper::checkErrorCode(stream, "SoftMax(...) failed");
 
@@ -928,11 +914,11 @@ void NativeOpExecutioner::execScalarBool(nd4j::graph::LaunchContext *lc,
 						   				int opNum,
 						   				void *hX, Nd4jLong *hXShapeInfo,
 						   				void *dX, Nd4jLong *dXShapeInfo,
+                                        void *extraParams,
 						   				void *hZ, Nd4jLong *hZShapeInfo,
 						   				void *dZ, Nd4jLong *dZShapeInfo,
 						   				void *hScalars, Nd4jLong *hScalarShapeInfo,
-						   				void *dScalars, Nd4jLong *dScalarShapeInfo,
-						   				void *extraParams,
+						   				void *dScalars, Nd4jLong *dScalarShapeInfo,						   				
 						   				int *dimension, int dimensionLength,
                            				Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                            				Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
@@ -990,11 +976,11 @@ void NativeOpExecutioner::execScalar(nd4j::graph::LaunchContext *lc,
 					 				int opNum,
 					 				void *hX, Nd4jLong *hXShapeInfo,
                      				void *dX, Nd4jLong *dXShapeInfo,
+                                    void *extraParams,
                      				void *hZ, Nd4jLong *hZShapeInfo,
                      				void *dZ, Nd4jLong *dZShapeInfo,
                      				void *hScalars, Nd4jLong *hScalarShapeInfo,
-                     				void *dScalars, Nd4jLong *dScalarShapeInfo,
-					 				void *extraParams,
+                     				void *dScalars, Nd4jLong *dScalarShapeInfo,					 			
 					 				int *dimension, int dimensionLength,
                      				Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                      				Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
@@ -1036,7 +1022,7 @@ void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     // functions::random::RandomFunction<float>::executeCudaSingle(launchDims, extraPointers, opNum, stateHost, dZ, dZShapeInfo, extraArguments),
-    BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::executeCudaSingle(launchDims, extraPointers, opNum, stateDevice, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::executeCudaSingle(launchDims, nullptr, opNum, stateDevice, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
     checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
     checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1044,7 +1030,7 @@ void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execRandom(Nd4jPointer *extraPointers, 
+void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
 							int opNum, 
 							Nd4jPointer stateHost, 
 						   	void *hX, Nd4jLong *hXShapeInfo, 
@@ -1065,7 +1051,7 @@ void NativeOpExecutioner::execRandom(Nd4jPointer *extraPointers,
     dim3 launchDims = dim3(512, 512, 32768);
     auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     // functions::random::RandomFunction<float>::executeCudaDouble(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments);
-    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaDouble(launchDims, extraPointers, opNum, stateDevice, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaDouble(launchDims, nullptr, opNum, stateDevice, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
     checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
     checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1073,7 +1059,7 @@ void NativeOpExecutioner::execRandom(Nd4jPointer *extraPointers,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execRandom(Nd4jPointer *extraPointers, 
+void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
 							int opNum, 
 							Nd4jPointer stateHost, 
 							void *hX, Nd4jLong *hXShapeInfo, 
@@ -1095,7 +1081,7 @@ void NativeOpExecutioner::execRandom(Nd4jPointer *extraPointers,
     dim3 launchDims = dim3(512, 512, 32768);
     auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     // functions::random::RandomFunction<float>::executeCudaTriple(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments);
-    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaTriple(launchDims, extraPointers, opNum, stateDevice, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaTriple(launchDims, nullptr, opNum, stateDevice, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
     checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
     checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1103,7 +1089,7 @@ void NativeOpExecutioner::execRandom(Nd4jPointer *extraPointers,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execReduce3All((nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execReduce3All(nd4j::graph::LaunchContext *lc,
 									int opNum,
 									void *hX, Nd4jLong *hXShapeInfo,
                             		void *dX, Nd4jLong *dXShapeInfo,
