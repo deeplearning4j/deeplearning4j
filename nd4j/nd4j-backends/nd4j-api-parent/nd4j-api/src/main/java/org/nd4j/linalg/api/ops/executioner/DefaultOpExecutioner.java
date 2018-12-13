@@ -878,4 +878,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         return arr.shapeInfoToString().replaceAll("\n","");
     }
+
+    @Override
+    public boolean isExperimentalMode() {
+        return false;
+    }
 }

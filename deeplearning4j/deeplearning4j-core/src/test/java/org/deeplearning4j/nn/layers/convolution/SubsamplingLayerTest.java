@@ -69,7 +69,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
     @Test
     public void testSubSampleMaxActivate() throws Exception {
         INDArray containedExpectedOut =
-                        Nd4j.create(new double[] {5., 7., 6., 8., 4., 7., 5., 9.}, new long[] {1, 2, 2, 2}).castTo(DataType.FLOAT);
+                        Nd4j.create(new double[] {5., 7., 6., 8., 4., 7., 5., 9.}, new long[] {1, 2, 2, 2}).castTo(Nd4j.defaultFloatingPointType());
         INDArray containedInput = getContainedData();
         INDArray input = getData();
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
@@ -87,7 +87,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
     @Test
     public void testSubSampleMeanActivate() throws Exception {
         INDArray containedExpectedOut =
-                        Nd4j.create(new double[] {2., 4., 3., 5., 3.5, 6.5, 4.5, 8.5}, new int[] {1, 2, 2, 2}).castTo(DataType.FLOAT);
+                        Nd4j.create(new double[] {2., 4., 3., 5., 3.5, 6.5, 4.5, 8.5}, new int[] {1, 2, 2, 2}).castTo(Nd4j.defaultFloatingPointType());
         INDArray containedInput = getContainedData();
         INDArray input = getData();
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
@@ -107,11 +107,11 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
     @Test
     public void testSubSampleLayerMaxBackprop() throws Exception {
         INDArray expectedContainedEpsilonInput =
-                        Nd4j.create(new double[] {1., 1., 1., 1., 1., 1., 1., 1.}, new int[] {1, 2, 2, 2});
+                        Nd4j.create(new double[] {1., 1., 1., 1., 1., 1., 1., 1.}, new int[] {1, 2, 2, 2}).castTo(Nd4j.defaultFloatingPointType());
 
         INDArray expectedContainedEpsilonResult = Nd4j.create(new double[] {0., 0., 0., 1., 1., 0., 0., 0., 0., 0., 1.,
                         0., 0., 1., 0., 0., 0., 0., 0., 1., 1., 0., 0., 0., 1., 0., 1., 0., 0., 0., 0., 0.},
-                        new int[] {1, 2, 4, 4}).castTo(DataType.FLOAT);
+                        new int[] {1, 2, 4, 4}).castTo(Nd4j.defaultFloatingPointType());
 
         INDArray input = getContainedData();
 
@@ -137,11 +137,11 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
     @Test
     public void testSubSampleLayerAvgBackprop() throws Exception {
         INDArray expectedContainedEpsilonInput =
-                        Nd4j.create(new double[] {1., 2., 3., 4., 5., 6., 7., 8.}, new int[] {1, 2, 2, 2});
+                        Nd4j.create(new double[] {1., 2., 3., 4., 5., 6., 7., 8.}, new int[] {1, 2, 2, 2}).castTo(Nd4j.defaultFloatingPointType());
 
         INDArray expectedContainedEpsilonResult = Nd4j.create(new double[] {0.25, 0.25, 0.5, 0.5, 0.25, 0.25, 0.5, 0.5,
                         0.75, 0.75, 1., 1., 0.75, 0.75, 1., 1., 1.25, 1.25, 1.5, 1.5, 1.25, 1.25, 1.5, 1.5, 1.75, 1.75,
-                        2., 2., 1.75, 1.75, 2., 2.}, new int[] {1, 2, 4, 4}).castTo(DataType.FLOAT);
+                        2., 2., 1.75, 1.75, 2., 2.}, new int[] {1, 2, 4, 4}).castTo(Nd4j.defaultFloatingPointType());
         INDArray input = getContainedData();
 
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
@@ -182,7 +182,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
 
     public INDArray getContainedData() {
         INDArray ret = Nd4j.create(new double[] {1., 1., 3., 7., 5., 1., 3., 3., 2., 2., 8., 4., 2., 6., 4., 4., 3., 3.,
-                        6., 7., 4., 4., 6., 7., 5., 5., 9., 8., 4., 4., 9., 8.}, new int[] {1, 2, 4, 4}).castTo(DataType.FLOAT);
+                        6., 7., 4., 4., 6., 7., 5., 5., 9., 8., 4., 4., 9., 8.}, new int[] {1, 2, 4, 4}).castTo(Nd4j.defaultFloatingPointType());
         return ret;
     }
 

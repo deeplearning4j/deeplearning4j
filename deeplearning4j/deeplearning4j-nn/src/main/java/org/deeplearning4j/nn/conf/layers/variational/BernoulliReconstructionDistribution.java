@@ -99,6 +99,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     }
 
     private INDArray calcLogProbArray(INDArray x, INDArray preOutDistributionParams) {
+        x = x.castTo(Nd4j.defaultFloatingPointType());
         INDArray output = preOutDistributionParams.dup();
         activationFn.getActivation(output, false);
 
@@ -117,6 +118,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     public INDArray gradient(INDArray x, INDArray preOutDistributionParams) {
         INDArray output = preOutDistributionParams.dup();
         activationFn.getActivation(output, true);
+        x = x.castTo(Nd4j.defaultFloatingPointType());
 
         INDArray diff = x.sub(output);
         INDArray outOneMinusOut = output.rsub(1.0).muli(output);

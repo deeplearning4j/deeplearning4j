@@ -57,6 +57,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.LongPointerWrapper;
@@ -93,8 +94,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     protected Map<String, CustomOpDescriptor> customOps = null;
 
-    public CudaExecutioner() {
+    protected AtomicBoolean experimentalMode = new AtomicBoolean(false);
 
+    public CudaExecutioner() {
+        experimentalMode.set(nativeOps.isExperimentalEnabled());
     }
 
     public NativeOps getNativeOps() {
@@ -1361,7 +1364,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer devTadOffsets = null;
         Pointer devMaxTadOffsets = null;
 
-        op.validateDataTypes();
+        op.validateDataTypes(experimentalMode.get());
 
         // SoftMax, LogSoftMax, SoftMaxDerivative
         if (op.getOpType() == Op.Type.TRANSFORM_STRICT && (op.opNum() >= 0 && op.opNum() <= 2)) {
@@ -2596,6 +2599,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val ptr = new PagedPointer(addr);
         val str = new Nd4jCuda.utf8string(ptr);
         return str._buffer().substring(0, str._length());
+    }
+
+    @Override
+    public boolean isExperimentalMode() {
+        return experimentalMode.get();
     }
 }
 

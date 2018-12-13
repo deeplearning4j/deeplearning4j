@@ -36,7 +36,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
     auto output  = OUTPUT_VARIABLE(0);
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
-    float labelsSmoothing = T_ARG(0);
+    double labelsSmoothing = T_ARG(0);
     
     // input validation    		       
     REQUIRE_TRUE(labels->isSameShape(logits), 0, "SOFTMAX_CROSS_ENTROPY_LOSS OP: labels and logits arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(labels).c_str(), ShapeUtils::shapeAsString(logits).c_str());
@@ -54,10 +54,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 
 	// If label_smoothing is nonzero, smooth the labels towards 1/num_classes: new_onehot_labels = onehot_labels * (1 - label_smoothing) + label_smoothing / num_classes
 	// num_classes = labels->sizeAt(1)
-	auto newLabels = labels;
+	auto cLabels = labels->cast(weights->dataType());
+	auto newLabels = cLabels;
 	if(labelsSmoothing != 0.) {
-		newLabels = new NDArray(labels);
-    	*newLabels = (1.f - labelsSmoothing) * *labels + labelsSmoothing / labels->sizeAt(1);
+		newLabels = new NDArray(cLabels);
+    	*newLabels = (1.f - labelsSmoothing) * *cLabels + labelsSmoothing / cLabels->sizeAt(1);
 	}	
 		
 	// main formula: result = - sum_i(lables_i * log(softmax_i)) - sum over last dimension
@@ -128,8 +129,12 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 
     if(weightsBroad != weights)
     	delete weightsBroad;
+
+    if(cLabels != newLabels)
+    	delete cLabels;
+
     if(newLabels != labels)
-    	delete newLabels; 
+    	delete newLabels;
    		
     return Status::OK();
 }

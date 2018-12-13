@@ -128,6 +128,7 @@ def _from_numpy(np_array):
     _refs.append(np_array)
     pointer = native_ops.pointerForAddress(pointer_address)
     size = np_array.size
+    pointer.limit(size)
     jdtype = _dtype_py2j(np_array.dtype)
     '''
     mapping = {

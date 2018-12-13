@@ -6337,17 +6337,11 @@ public class Nd4j {
      */
     public static INDArray pile(INDArray... arrays) {
         // if we have vectors as input, it's just vstack use case
-        if (arrays[0].isRowVector() && arrays[0].rank() == 2) {
-            return Nd4j.vstack(arrays);
-        }
-
 
         long[] shape = arrays[0].shape();
         long[] newShape = ArrayUtils.add(shape, 0, 1);
 
         boolean shouldReshape = true;
-        if (arrays[0].size(0) == 1)
-            shouldReshape = false;
 
         List<INDArray> reshaped = new ArrayList<>();
         for(INDArray array: arrays) {
@@ -6816,5 +6810,9 @@ public class Nd4j {
 
     public static INDArray create(@NonNull Collection<String> strings, long[] shape, char order) {
         return INSTANCE.create(strings, shape, order);
+    }
+
+    public static boolean isExperimentalMode() {
+        return getExecutioner().isExperimentalMode();
     }
 }
