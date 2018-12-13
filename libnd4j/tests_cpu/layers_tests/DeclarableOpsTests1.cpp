@@ -841,7 +841,7 @@ TEST_F(DeclarableOpsTests1, ReverseModTest_1) {
     auto y = NDArrayFactory::create<double>('c', {3, 4, 5, 1});
     auto exp = NDArrayFactory::create<double>('c', {3, 4, 5, 6});
     auto z(exp);
-    x.assign(2.f);
+    x.assign(2.);
     y.assign(9.f);
     exp.assign(1.f);
     y.applyTrueBroadcast(BROADCAST(Mod), &x, &z, true);

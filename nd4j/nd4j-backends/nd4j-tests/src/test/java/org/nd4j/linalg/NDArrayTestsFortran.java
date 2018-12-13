@@ -784,7 +784,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     public void testAppendBias() {
         INDArray rand = Nd4j.linspace(1, 25, 25, DataType.DOUBLE).reshape(1, -1).transpose();
         INDArray test = Nd4j.appendBias(rand);
-        INDArray assertion = Nd4j.toFlattened(rand, Nd4j.scalar(DataType.DOUBLE, 1.0));
+        INDArray assertion = Nd4j.toFlattened(rand, Nd4j.scalar(DataType.DOUBLE, 1.0)).reshape(-1, 1);
         assertEquals(assertion, test);
     }
 

@@ -199,7 +199,7 @@ public class IndexingTests extends BaseNd4jTest {
         INDArray arange = Nd4j.arange(1, 17).reshape('f', 4, 4).castTo(DataType.DOUBLE);
         INDArrayIndex index = NDArrayIndex.interval(0, 2);
         INDArray get = arange.get(index, index);
-        INDArray zeroPointTwoFive = Nd4j.ones(2, 2).mul(0.25);
+        INDArray zeroPointTwoFive = Nd4j.ones(DataType.DOUBLE, 2, 2).mul(0.25);
         INDArray mul = get.mul(zeroPointTwoFive);
         INDArray assertion = Nd4j.create(new double[][] {{0.25, 1.25}, {0.5, 1.5}}, 'f');
         assertEquals(assertion, mul);
