@@ -68,7 +68,7 @@ namespace nd4j {
             };
             */
 
-            auto ts = NDArrayFactory::create<int>(2);
+            auto ts = NDArrayFactory::create(x->dataType(), 2, block.workspace());
 
 
             if (x->isSameShape(y)) {
