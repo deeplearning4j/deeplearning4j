@@ -112,11 +112,12 @@ public class BatchNormalization extends FeedForwardLayer {
                                             + getLayerName() + "\"");
         }
 
-        //Can handle CNN, flat CNN or FF input formats only
+        //Can handle CNN, flat CNN, CNN3D or FF input formats only
         switch (inputType.getType()) {
             case FF:
             case CNN:
             case CNNFlat:
+            case CNN3D:
                 return inputType; //OK
             default:
                 throw new IllegalStateException(
@@ -135,6 +136,9 @@ public class BatchNormalization extends FeedForwardLayer {
                     break;
                 case CNN:
                     nIn = ((InputType.InputTypeConvolutional) inputType).getChannels();
+                    break;
+                case CNN3D:
+                    nIn = ((InputType.InputTypeConvolutional3D) inputType).getChannels();
                     break;
                 case CNNFlat:
                     nIn = ((InputType.InputTypeConvolutionalFlat) inputType).getDepth();
