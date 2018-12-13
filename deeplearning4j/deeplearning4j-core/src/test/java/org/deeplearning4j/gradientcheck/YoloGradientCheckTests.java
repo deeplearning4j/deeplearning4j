@@ -155,6 +155,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
 
     @Test
     public void yoloGradientCheckRealData() throws Exception {
+        Nd4j.getRandom().setSeed(12345);
         InputStream is1 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2007_009346.jpg").getInputStream();
         InputStream is2 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2007_009346.xml").getInputStream();
         InputStream is3 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2008_003344.jpg").getInputStream();
@@ -212,6 +213,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
                 .convolutionMode(ConvolutionMode.Same)
                 .updater(new NoOp())
                 .weightInit(WeightInit.DISTRIBUTION).dist(new GaussianDistribution(0,0.1))
+                .seed(12345)
                 .list()
                 .layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nOut(4).build())
                 .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2).build())

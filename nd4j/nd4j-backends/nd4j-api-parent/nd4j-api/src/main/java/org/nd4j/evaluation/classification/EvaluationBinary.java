@@ -171,7 +171,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         } else {
             classPredictions = networkPredictions.gt(0.5);
         }
-        classPredictions = classPredictions.castTo(DataType.FLOAT);
+        classPredictions = classPredictions.castTo(Nd4j.defaultFloatingPointType());
 
         INDArray notLabels = labels.rsub(1.0);  //If labels are 0 or 1, then rsub(1) swaps
         INDArray notClassPredictions = classPredictions.rsub(1.0);

@@ -117,7 +117,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto name2 = builder.CreateString("wow2");
 
     auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM_SAME, transform::Abs, 0, in1, 0, vec1);
-    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM_FLOAT, transform::Cosine, 0, in2, 0, vec2);
+    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM_STRICT, transform::Cosine, 0, in2, 0, vec2);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fVar);
