@@ -48,7 +48,7 @@ release.properties
 *.iml
 *.prefs
 *.dylib
-lib/
+
 nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/resources/bin
 nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/test/resources/writeNumpy.csv
 nd4j/nd4j-backends/nd4j-tests/src/test/resources/tf_graphs/examples/**/data-all*
