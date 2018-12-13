@@ -221,13 +221,15 @@ if(CUDA_BLAS)
                 cpu/GraphExecutioner.cpp cpu/NativeOpExecutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
                 Environment.cpp Environment.h ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES} ${OPS_SOURCES})
-        target_link_libraries(${LIBND4J_NAME} ${CUDA_LIBRARIES})
+       
 
         if(WIN32)
             message("CUDA on Windows: enabling /EHsc")
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
             SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc")
         endif()
+
+		target_link_libraries(${LIBND4J_NAME} ${CUDA_LIBRARIES})
 
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)
 

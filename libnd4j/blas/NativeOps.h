@@ -21,7 +21,7 @@
 #ifndef NATIVEOPERATIONS_NATIVEOPS_H
 #define NATIVEOPERATIONS_NATIVEOPS_H
 
-
+/*
 #ifndef thread_local
 # if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__
 #  define thread_local _Thread_local
@@ -31,7 +31,7 @@
        defined __DMC__ || \
        defined __BORLANDC__ )
 #  define thread_local __declspec(thread)
-/* note that ICC (linux) and Clang are covered by __GNUC__ */
+// note that ICC (linux) and Clang are covered by __GNUC__ 
 # elif defined __GNUC__ || \
        defined __SUNPRO_C || \
        defined __xlC__
@@ -40,6 +40,7 @@
 #  error "Cannot define thread_local"
 # endif
 #endif
+*/
 
 #include <pointercast.h>
 #include <types/float16.h>
