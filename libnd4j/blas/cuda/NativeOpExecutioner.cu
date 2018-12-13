@@ -107,16 +107,16 @@ void NativeOpExecutioner::execPairwiseTransform(nd4j::graph::LaunchContext *lc,
     DEBUG_KERNEL(stream, opNum);
 }
 
-void NativeOpExecutioner::execPairwiseBoolTransform(
-		nd4j::graph::LaunchContext *lc,
-        int opNum,
-        void *hX, Nd4jLong *hXShapeInfo,
-        void *dX, Nd4jLong *dXShapeInfo,
-        void *hY, Nd4jLong *hYShapeInfo,
-        void *dY, Nd4jLong *dYShapeInfo,
-        void *hZ, Nd4jLong *hZShapeInfo,
-        void *dZ, Nd4jLong *dZShapeInfo,
-        void *extraParams) {    
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execPairwiseBoolTransform( nd4j::graph::LaunchContext *lc,
+                                                    int opNum,
+                                                    void *hX, Nd4jLong *hXShapeInfo,
+                                                    void *dX, Nd4jLong *dXShapeInfo,
+                                                    void *hY, Nd4jLong *hYShapeInfo,
+                                                    void *dY, Nd4jLong *dYShapeInfo,
+                                                    void *hZ, Nd4jLong *hZShapeInfo,
+                                                    void *dZ, Nd4jLong *dZShapeInfo,
+                                                    void *extraParams) {    
 
 	auto stream = lc->getCudaStream();
 
@@ -204,7 +204,7 @@ void NativeOpExecutioner::execBroadcastBool(nd4j::graph::LaunchContext *lc,
  * @param dimension
  * @param dimensionLength
  */
-void   NativeOpExecutioner::execBroadcast(nd4j::graph::LaunchContext *lc,
+void NativeOpExecutioner::execBroadcast(nd4j::graph::LaunchContext *lc,
 		                              int opNum,
 		                              void *hX, Nd4jLong *hXShapeInfo,
 		                              void *dX, Nd4jLong *dXShapeInfo,
@@ -411,7 +411,6 @@ void  NativeOpExecutioner::execReduceFloat(nd4j::graph::LaunchContext *lc,
 }
 
 
-////////////////////////////////////////////////////////////////////////
 /**
  *
  * @param opNum
@@ -419,6 +418,7 @@ void  NativeOpExecutioner::execReduceFloat(nd4j::graph::LaunchContext *lc,
  * @param dXShapeInfo
  * @param extraParams
  */
+////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execIndexReduceScalar(nd4j::graph::LaunchContext *lc,
 											int opNum,
 											void *hX, Nd4jLong *hXShapeInfo,
@@ -501,7 +501,7 @@ void NativeOpExecutioner::execReduceLongScalar(nd4j::graph::LaunchContext *lc,
                                     void *extraParams,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo) {
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
