@@ -127,45 +127,45 @@
         (18, SpecialDerivative), \
         (19, Stabilize), \
         (20, StabilizeFP16) ,\
-        (21, CubeDerivative)
+        (21, CubeDerivative) ,\
+        (22, Cosine), \
+        (23, Exp), \
+        (24, Log), \
+        (25, SetRange), \
+        (26, Sigmoid), \
+        (27, Sin), \
+        (28, SoftPlus), \
+        (29, Tanh), \
+        (30, ACos), \
+        (31, ASin), \
+        (32, ATan), \
+        (33, HardTanh), \
+        (34, SoftSign), \
+        (35, ELU), \
+        (36, HardSigmoid), \
+        (37, RationalTanh) ,\
+        (38, RectifiedTanh) ,\
+        (39, Sinh) ,\
+        (40, Cosh) ,\
+        (41, Tan) ,\
+        (42, SELU) ,\
+        (43, Swish) ,\
+        (44, Log1p), \
+        (45, Erf), \
+        (46, ACosh), \
+        (47, ASinh), \
+        (48, Rint), \
+        (49, LogSigmoid), \
+        (50, Erfc) ,\
+        (51, Expm1), \
+        (52, ATanh)
 
 // these ops return one of FLOAT data types
 #define TRANSFORM_FLOAT_OPS \
-        (0, Cosine), \
-        (1, Exp), \
-        (2, Log), \
-        (3, SetRange), \
-        (4, Sigmoid), \
-        (5, Sin), \
-        (6, SoftPlus), \
-        (7, Sqrt), \
-        (8, Tanh), \
-        (9, ACos), \
-        (10, ASin), \
-        (11, ATan), \
-        (12, HardTanh), \
-        (13, SoftSign), \
-        (14, ELU), \
-        (15, Histogram), \
-        (16, HardSigmoid), \
-        (17, RationalTanh) ,\
-        (18, RectifiedTanh) ,\
-        (19, Sinh) ,\
-        (20, Cosh) ,\
-        (21, Tan) ,\
-        (22, SELU) ,\
-        (23, Pooling2D) ,\
-        (24, Swish) ,\
-        (25, RSqrt), \
-        (26, Log1p), \
-        (27, Erf), \
-        (28, ACosh), \
-        (29, ASinh), \
-        (30, Rint), \
-        (31, LogSigmoid), \
-        (32, Erfc) ,\
-        (33, Expm1), \
-        (34, ATanh)
+        (0, Histogram), \
+        (1, Sqrt), \
+        (2, Pooling2D) ,\
+        (3, RSqrt)
 
 
 #define SUMMARY_STATS_OPS \

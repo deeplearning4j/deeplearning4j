@@ -53,9 +53,9 @@ public class LinAlgExceptions {
     }
 
     public static void assertSameShape(INDArray n, INDArray n2) {
-        if (!Shape.shapeEquals(n.shape(), n2.shape()))
-            throw new IllegalStateException("Mis matched shapes: " + Arrays.toString(n.shape()) + ", "
-                    + Arrays.toString(n2.shape()));
+        if (!Shape.isVector(n.shape()) && ! Shape.isVector(n2.shape()))
+            if (!Shape.shapeEquals(n.shape(), n2.shape()))
+                throw new IllegalStateException("Mis matched shapes: " + Arrays.toString(n.shape()) + ", " + Arrays.toString(n2.shape()));
     }
 
     public static void assertRows(INDArray n, INDArray n2) {
