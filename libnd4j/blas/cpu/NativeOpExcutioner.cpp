@@ -334,7 +334,7 @@ void NativeOpExcutioner::execScalar(int opNum, void *x, Nd4jLong *xShapeInfo, vo
     auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
     if (!nd4j::Environment::getInstance()->isExperimentalBuild()) {
-        if (yType != xType && yType != nd4j::DataType::BOOL && zType != xType)
+        if ((yType != xType && yType != nd4j::DataType::BOOL) || zType != xType)
             throw nd4j::datatype_exception::build("NativeOps::execScalar both operands must have same data type", xType,
                                                   yType);
     }

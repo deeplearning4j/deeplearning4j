@@ -2220,6 +2220,18 @@ TEST_F(DeclarableOpsTests11, mean_pairwssqerr_loss_test9) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, SafeDivideMixed_Test1) {
+
+    NDArray labels('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});
+    auto sumDiff = labels.reduceAlongDims(reduce::Sum, {1}, true);
+
+    NDArray numOfNonZero(sumDiff.getShapeInfo(), nd4j::DataType::INT64, false);
+    numOfNonZero.assign(1);
+    sumDiff.applyPairwiseTransform(pairwise::SafeDivide, &numOfNonZero, &sumDiff, nullptr);
+    sumDiff.printIndexedBuffer("Output as Is");
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_pairwssqerr_loss_test10) {
     
     NDArray labels('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});    
