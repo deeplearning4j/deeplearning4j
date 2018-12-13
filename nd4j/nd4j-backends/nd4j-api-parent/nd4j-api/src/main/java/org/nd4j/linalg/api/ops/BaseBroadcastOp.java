@@ -215,7 +215,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                     x.dataType(), y.dataType(), z.dataType(), getClass().getName());
 
             if (!experimentalMode)
-                Preconditions.checkArgument(x.dataType() == y.dataType() || y.dataType() == DataType.BOOL, "Op.X must have same data type as Op.Y");
+                Preconditions.checkArgument(x.dataType() == y.dataType() || y.dataType() == DataType.BOOL, "Op.X must have same data type as Op.Y: X.datatype=%s, Y.datatype=%s", x.dataType(), y.dataType());
 
         if (y() != null) {
             if (op != 1 && (y().isR() || x().isR()))
