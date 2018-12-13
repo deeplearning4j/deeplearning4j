@@ -620,16 +620,12 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
             NativeOpExecutioner::execTransformSame(nullptr, transform::Copy, _buffer, _shapeInfo, _bufferD, _shapeInfoD, newBuffer, shapeInfoNew, nullptr, nullptr, nullptr, nullptr, nullptr);
 
-            if (this->dataType() != other.dataType() && other.dataType() && !nd4j::Environment::getInstance()->isExperimentalBuild())
-        throw nd4j::datatype_exception::build("NDArray operator/= both operands must have same data type", this->dataType(), other.dataType());
-
-    if (_isBuffAlloc)
+            if (_isBuffAlloc)
                 RELEASE(_buffer, _workspace);
 
 
             if (_isShapeAlloc)
                 RELEASE(_shapeInfo, _workspace);
-
 
             _buffer = newBuffer;
             _shapeInfo = shapeInfoNew;
