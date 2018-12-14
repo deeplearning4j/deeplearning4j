@@ -89,9 +89,6 @@ TEST_F(CudaBasicsTests, TestPairwise_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests, execIndexReducescalar_1) {
 
-	if (!Environment::getInstance()->isExperimentalBuild())
-    	return;
-
     NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT32);
     NDArray x2('c', {2,2}, {0.5, 1.5, -4.5, 3.5}, nd4j::DataType::HALF);    
     NDArray x3('c', {2,2}, {0, -1, 0, 1}, nd4j::DataType::BOOL);
@@ -129,7 +126,7 @@ TEST_F(CudaBasicsTests, execIndexReducescalar_1) {
 	cudaMemcpyAsync(dZShapeInfo, scalar.getShapeInfo(), shape::shapeInfoByteLength(scalar.getShapeInfo()), cudaMemcpyHostToDevice, stream);
 	
 	void* reductionPointer = nullptr;	
-	cudaResult = cudaMallocHost((void**)&reductionPointer, 1024*1024);
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer), 1024*1024);
 	ASSERT_EQ(0, cudaResult);
 
 	LaunchContext lc(&stream, reductionPointer);
@@ -152,49 +149,54 @@ TEST_F(CudaBasicsTests, execIndexReducescalar_1) {
     cudaResult = cudaStreamSynchronize(stream); 
     ASSERT_EQ(0, cudaResult);
 
-    ASSERT_EQ(scalar, exp1);
+	ASSERT_NEAR(exp1.e<float>(0), scalar.e<float>(0), 1e-5);
 
     /***************************************/
     
-    // NativeOpExecutioner::execIndexReduceScalar(&lc,
-    // 											nd4j::indexreduce::IndexAbsoluteMax, 
-    // 											nullptr, x2.getShapeInfo(),
-    // 	                                       	dX2, dX2ShapeInfo, 
-    // 	                                       	nullptr, 
-    // 	                                       	nullptr, scalar.getShapeInfo(),
-    // 	                                       	dZ, dZShapeInfo);
+    NativeOpExecutioner::execIndexReduceScalar(&lc,
+    											nd4j::indexreduce::IndexAbsoluteMax, 
+    											nullptr, x2.getShapeInfo(),
+    	                                       	dX2, dX2ShapeInfo, 
+    	                                       	nullptr, 
+    	                                       	nullptr, scalar.getShapeInfo(),
+    	                                       	dZ, dZShapeInfo);
 
-    // cudaResult = cudaStreamSynchronize(stream); 
-    // ASSERT_EQ(0, cudaResult);
+    cudaResult = cudaStreamSynchronize(stream); 
+    ASSERT_EQ(0, cudaResult);
 
-    // cudaMemcpyAsync(scalar.buffer(), dZ, scalar.lengthOf() * scalar.sizeOfT(), cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(scalar.buffer(), dZ, scalar.lengthOf() * scalar.sizeOfT(), cudaMemcpyDeviceToHost, stream);
 
-    // cudaResult = cudaStreamSynchronize(stream); 
-    // ASSERT_EQ(0, cudaResult);
+    cudaResult = cudaStreamSynchronize(stream); 
+    ASSERT_EQ(0, cudaResult);
 
-    // ASSERT_EQ(scalar, exp2);
+    ASSERT_NEAR(exp2.e<float>(0), scalar.e<float>(0), 1e-5);
 
     // *************************************
 
-    // NativeOpExecutioner::execIndexReduceScalar(&lc, 
-    // 											nd4j::indexreduce::IndexAbsoluteMax, 
-    // 											nullptr, x3.getShapeInfo(),
-    // 	                                       	dX3, dX3ShapeInfo, 
-    // 	                                       	nullptr, 
-    // 	                                       	nullptr, scalar.getShapeInfo(),
-    // 	                                       	dZ, dZShapeInfo);
+    NativeOpExecutioner::execIndexReduceScalar(&lc, 
+    											nd4j::indexreduce::IndexAbsoluteMax, 
+    											nullptr, x3.getShapeInfo(),
+    	                                       	dX3, dX3ShapeInfo, 
+    	                                       	nullptr, 
+    	                                       	nullptr, scalar.getShapeInfo(),
+    	                                       	dZ, dZShapeInfo);
 
-    // cudaResult = cudaStreamSynchronize(stream); 
-    // ASSERT_EQ(0, cudaResult);
+    cudaResult = cudaStreamSynchronize(stream); 
+    ASSERT_EQ(0, cudaResult);
 
-    // cudaMemcpyAsync(scalar.buffer(), dZ, scalar.lengthOf() * scalar.sizeOfT(), cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(scalar.buffer(), dZ, scalar.lengthOf() * scalar.sizeOfT(), cudaMemcpyDeviceToHost, stream);
 
-    // cudaResult = cudaStreamSynchronize(stream); 
-    // ASSERT_EQ(0, cudaResult);
+    cudaResult = cudaStreamSynchronize(stream); 
+    ASSERT_EQ(0, cudaResult);
 
-    // ASSERT_EQ(scalar, exp3);
+    ASSERT_NEAR(exp3.e<float>(0), scalar.e<float>(0), 1e-5);
     
 	/***************************************/
+
+	cudaFree(dX1); 			cudaFree(dX2); 			cudaFree(dX3); 			cudaFree(dZ);
+	cudaFree(dX1ShapeInfo); cudaFree(dX2ShapeInfo); cudaFree(dX3ShapeInfo); cudaFree(dZShapeInfo); 
+
+	/***************************************/	
 
 	cudaResult = cudaStreamDestroy(stream); 
 	ASSERT_EQ(0, cudaResult);
