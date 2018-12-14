@@ -1854,6 +1854,9 @@ bool NDArray::isEmpty() const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::operator==(const NDArray &other) const {
+    if (this->dataType() != other.dataType())
+            return false;
+
     if (!this->isSameShape(&other))
         return false;
 
@@ -1862,6 +1865,9 @@ bool NDArray::operator==(const NDArray &other) const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::operator!=(const NDArray &other) const {
+    if (this->dataType() != other.dataType())
+        return true;
+
     if (!this->isSameShape(&other))
         return true;
 
