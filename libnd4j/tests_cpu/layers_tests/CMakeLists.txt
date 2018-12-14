@@ -46,11 +46,11 @@ else()
         endif()
     else()
         if (CPU_BLAS)
-            set(CMAKE_CXX_FLAGS " -fsanitize=address")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
         else()
             # CUDA?
         endif()
-        set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+        set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
     endif()
 endif()
 

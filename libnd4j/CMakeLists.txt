@@ -23,7 +23,11 @@ elseif(WIN32)
     endif()
 else()
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+
+    if (CPU_BLAS)
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+    endif()
 endif()
 
 if(NATIVE)
