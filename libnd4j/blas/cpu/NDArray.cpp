@@ -1693,15 +1693,22 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* othe
     auto otherShape = other->_shapeInfo;
     auto otherBuffer = other->_buffer;
     NDArray* otherAgain = nullptr;
+    DataType oldType = ArrayOptions::dataType(otherShape);
     if (!Environment::getInstance()->isExperimentalBuild()) {
         if (dataType() != other->dataType() && other->dataType() != BOOL) {
-            ArrayOptions::setDataType(otherShape, this->dataType());
-            otherAgain = new NDArray(otherShape, this->_workspace);
+            Nd4jLong* newShape = nullptr;
+            COPY_SHAPE_EX(otherShape, newShape, _workspace);
+            ArrayOptions::setDataType(newShape, this->dataType());
+            otherAgain = new NDArray(newShape, this->_workspace);
             otherAgain->assign(*other);
             otherBuffer = otherAgain->_buffer;
+            otherShape = newShape;
         }
     }
     NativeOpExcutioner::execPairwiseTransform(op, this->_buffer, this->_shapeInfo, otherBuffer, otherShape, target->_buffer, target->_shapeInfo, extraParams);
+    if (oldType != ArrayOptions::dataType(otherShape))
+        RELEASE(otherShape, _workspace);
+        //ArrayOptions::setDataType(otherShape, oldType);
 
     delete otherAgain;
 }

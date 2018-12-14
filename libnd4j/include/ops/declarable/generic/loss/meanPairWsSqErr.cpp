@@ -56,26 +56,29 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
 	NDArray diffs = *predictions - *labels;		
 
 	std::vector<int> reductionIdx = ShapeUtils::evalDimsToExclude(diffs.rankOf(), {0});	
-	NDArray sumSqrsDiffPerBatch = (diffs * diffs).reduceAlongDims(reduce::Sum, reductionIdx, true);
+	NDArray sumSqrsDiffPerBatch = (diffs*diffs).reduceAlongDims(reduce::Sum, reductionIdx, true);
 
 	NDArray numOfNonZeroWeights(sumSqrsDiffPerBatch.getShapeInfo(), nd4j::DataType::INT64, false, block.getWorkspace());
 	if(weights->isScalar()) {
 		if((*weights).e<double>(0) != 0.)
-			numOfNonZeroWeights.assign((labels->lengthOf() / labels->sizeAt(0)));
+			numOfNonZeroWeights.assign((labels->lengthOf()/labels->sizeAt(0)));
 	}
 	else 		
 		numOfNonZeroWeights.assign(weightsBroad->reduceAlongDims(reduce::CountNonZero, reductionIdx));	
 
-	NDArray numOfNonZeroWeightsMinusOne = numOfNonZeroWeights - 1LL;
+	NDArray numOfNonZeroWeightsMinusOne = numOfNonZeroWeights;// - 1LL;
+	numOfNonZeroWeightsMinusOne -= 1LL;
 	
-	sumSqrsDiffPerBatch.applyScalar(scalar::SafeDivide, numOfNonZeroWeightsMinusOne.e<Nd4jLong>(0), nullptr, nullptr);
+	sumSqrsDiffPerBatch.applyPairwiseTransform(pairwise::SafeDivide, numOfNonZeroWeightsMinusOne, nullptr);
 
 	auto sumDiff = diffs.reduceAlongDims(reduce::Sum, reductionIdx, true);
 	
-	auto nonZerosSquared = numOfNonZeroWeights * numOfNonZeroWeightsMinusOne;
-	(sumDiff * sumDiff).applyPairwiseTransform(pairwise::SafeDivide, &nonZerosSquared, &sumDiff, nullptr);
+	auto nonZerosSquared = numOfNonZeroWeights;
+	nonZerosSquared.applyPairwiseTransform(pairwise::Multiply, numOfNonZeroWeightsMinusOne, nullptr);
+	(sumDiff*sumDiff).applyPairwiseTransform(pairwise::SafeDivide, &nonZerosSquared, &sumDiff, nullptr);
 	
-	auto E = (sumSqrsDiffPerBatch - sumDiff) * 2.f;
+	auto E = (sumSqrsDiffPerBatch - sumDiff);
+	E *= 2.f;
 
     // multiply E on weights
     E *= *weights;
