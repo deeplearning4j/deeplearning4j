@@ -1410,6 +1410,7 @@ namespace nd4j {
 
         FORCEINLINE bool operator==(const NDArray &other) const;
 
+        FORCEINLINE bool operator!=(const NDArray &other) const;
     };
 
 
@@ -1857,6 +1858,14 @@ bool NDArray::operator==(const NDArray &other) const {
         return false;
 
     return this->equalsTo(&other);
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool NDArray::operator!=(const NDArray &other) const {
+    if (!this->isSameShape(&other))
+        return true;
+
+    return !this->equalsTo(&other);
 }
 
 //////////////////////////////////////////////////////////////////////////

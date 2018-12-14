@@ -37,3 +37,17 @@ public:
         fflush(stdout);
     }
 };
+
+TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_1) {
+    auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 1.0/0.0, 5});
+    auto y = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 1.0/0.0, 5});
+
+    ASSERT_EQ(x, y);
+}
+
+TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_2) {
+    auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 1.0/0.0, 5});
+    auto y = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, -1.0/0.0, 5});
+
+    ASSERT_NE(x, y);
+}
