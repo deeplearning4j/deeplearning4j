@@ -359,29 +359,24 @@ public class FlatBuffersMapper {
             if(opType == Op.Type.SCALAR){
                 ScalarOp sOp = (ScalarOp)op;
                 sOp.setScalar(scalar);
-            } else if(opType == Op.Type.REDUCE_FLOAT || opType == Op.Type.REDUCE3 || opType == Op.Type.SUMMARYSTATS || opType == Op.Type.VARIANCE) {
+            } else if(opType == Op.Type.REDUCE_FLOAT || opType == Op.Type.REDUCE3 || opType == Op.Type.SUMMARYSTATS || opType == Op.Type.VARIANCE
+                    || opType == Op.Type.REDUCE_BOOL || opType == Op.Type.REDUCE_LONG || opType == Op.Type.REDUCE_SAME) {
                 val ba = (BaseReduceOp) op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
                 ba.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
-            } else if (opType == Op.Type.REDUCE_BOOL) {
-                throw new UnsupportedOperationException();
-            } else if (opType == Op.Type.REDUCE_LONG) {
-                throw new UnsupportedOperationException();
-            } else if (opType == Op.Type.REDUCE_SAME) {
-                throw new UnsupportedOperationException();
-            } else if (opType == Op.Type.TRANSFORM_BOOL) {
-                throw new UnsupportedOperationException();
-            } else if (opType == Op.Type.TRANSFORM_FLOAT) {
-                throw new UnsupportedOperationException();
-            } else if (opType == Op.Type.TRANSFORM_SAME) {
-                throw new UnsupportedOperationException();
-            } else if (opType == Op.Type.TRANSFORM_STRICT) {
-                throw new UnsupportedOperationException();
             } else if(opType == Op.Type.INDEXREDUCE){
                 BaseIndexAccumulation bia = (BaseIndexAccumulation)op;
                 bia.setDimensions(dimensions);
                 bia.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
             }
+            /*
+            Op types that don't need any extra/special mapping:
+            TRANSFORM_BOOL - BooleanNot, IsFinite, IsInf, IsNaN, MatchConditionTransorm
+            TRANSFORM_ANY - IsMax, Assign
+            TRANSFORM_FLOAT - Histogram, Sqrt
+            TRANSFORM_STRICT - Cos, Log, Sigmoid, etc
+            TRANSFORM_SAME - Abs, Ceil, etc
+             */
 
             ((DifferentialFunction)op).setPropertiesForFunction(props);
             return (DifferentialFunction)op;

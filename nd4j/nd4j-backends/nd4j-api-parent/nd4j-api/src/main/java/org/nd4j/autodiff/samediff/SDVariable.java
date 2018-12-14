@@ -92,11 +92,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         this.dataType = dataType;
         this.weightInitScheme = weightInitScheme;
         this.shape = shape;
-
-        if(varType == VariableType.PLACEHOLDER){
-            sameDiff.setOriginalPlaceHolderShape(varName, shape);
-            sameDiff.putShapeForVarName(varName, shape);
-        }
     }
 
     /**

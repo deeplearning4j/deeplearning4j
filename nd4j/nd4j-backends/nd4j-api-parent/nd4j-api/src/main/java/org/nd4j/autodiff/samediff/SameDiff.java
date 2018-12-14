@@ -600,8 +600,14 @@ public class SameDiff {
         SDVariable v = getVariable(varName);
         if(v.isConstant()) {
             constantArrays.put(varName, new DeviceLocalNDArray(arr));
-        } else if(v.getVariableType() == VariableType.VARIABLE){
+        } else if(v.getVariableType() == VariableType.VARIABLE) {
             variablesArrays.put(varName, new DeviceLocalNDArray(arr));
+        } else if(v.isPlaceHolder()){
+            long tid = Thread.currentThread().getId();
+            if(!placeholdersPerThread.containsKey(tid)){
+                placeholdersPerThread.put(tid, new HashMap<String, INDArray>());
+            }
+            placeholdersPerThread.get(tid).put(varName, arr);
         } else {
             throw new UnsupportedOperationException("Cannot set variable of type " + v.getVariableType() + " using this method");
         }
@@ -845,6 +851,9 @@ public class SameDiff {
         if (arr == null) {
             throw new ND4JIllegalArgumentException("Array must not be null");
         }
+
+        Preconditions.checkState(variable.dataType() == arr.dataType(), "Variable %s has datatype %s: cannot associate array with type %s with this variable",
+                variable.getVarName(), variable.dataType(), arr.dataType());
 
         switch(variable.getVariableType()){
             case VARIABLE:
@@ -2200,7 +2209,6 @@ public class SameDiff {
         if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
             throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
 
-
         if (name == null || name.length() < 1)
             name = getNewVarName();
 
@@ -2209,7 +2217,13 @@ public class SameDiff {
 
 
         SDVariable ret = new SDVariable(name, variableType, this, shape, dataType, weightInitScheme);
-        return addVariable(ret);
+        addVariable(ret);
+
+        if(variableType == VariableType.PLACEHOLDER){
+            setOriginalPlaceHolderShape(name, shape);
+            putShapeForVarName(name, shape);
+        }
+        return ret;
     }
 
     public SDVariable var(@NonNull String name, @NonNull LongShapeDescriptor shape, WeightInitScheme weightInitScheme) {
@@ -2227,6 +2241,9 @@ public class SameDiff {
      */
     public SDVariable var(String name, org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
         Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
+        if(Shape.isPlaceholderShape(shape)){
+            return placeHolder(name, dataType, shape);
+        }
         return var(name, new ZeroInitScheme(), dataType, shape);
     }
 
@@ -2253,6 +2270,9 @@ public class SameDiff {
      */
     public SDVariable var(String name, org.nd4j.linalg.api.buffer.DataType dataType, int... shape) {
         Preconditions.checkNotNull(shape, "Invalid shape: shape may not be null");
+        if(Shape.isPlaceholderShape(shape)){
+            return placeHolder(name, dataType, ArrayUtil.toLongArray(shape));
+        }
         return var(name, new ZeroInitScheme(), dataType, ArrayUtil.toLongArray(shape));
     }
 
@@ -10398,9 +10418,15 @@ public class SameDiff {
             sessions.put(threadId, new InferenceSession(this));
         }
 
-        //Check that all placeholders are provided
         List<String> phNames = inputs();
-        if(phNames != null) {
+        if(placeholders == null && phNames != null){
+            //Maybe user set placeholders before calling exec method?
+            placeholders = placeholdersPerThread.get(Thread.currentThread().getId());
+        }
+
+        //Check that all placeholders are provided
+        if(phNames != null && phNames.size() > 0) {
+            Preconditions.checkNotNull(placeholders, "No placeholders were provided. Network has placeholders: %s", placeholders);
             for (String s : phNames) {
                 Preconditions.checkState(placeholders.containsKey(s), "No placeholder variable was provided for variable \"%s\"." +
                         " Cannot execute without all placeholders set", s);
@@ -10811,9 +10837,6 @@ public class SameDiff {
         List<SDVariable> allVars = variables();
         for (SDVariable variable : allVars) {
             INDArray arr = variable.getArr();
-            if(variable.isPlaceHolder()){
-                continue;
-            }
             log.debug("Exporting variable: [{}]", variable.getVarName());
 
             //If variable is the output of some op - let's use the ONE index for exporting, and properly track the output

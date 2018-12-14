@@ -47,6 +47,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -1041,11 +1042,11 @@ public class TransformOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 5;
-            SDVariable in1 = sd.var("in1", new int[]{-1, nOut});
-            SDVariable in2 = sd.var("in2", new int[]{-1, nOut});
+            SDVariable in1 = sd.var("in1", DataType.DOUBLE, new int[]{-1, nOut});
+            SDVariable in2 = sd.var("in2", DataType.DOUBLE, new int[]{-1, nOut});
 
-            INDArray ia = Nd4j.randn(minibatch, nOut);
-            INDArray ib = Nd4j.randn(minibatch, nOut);
+            INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
+            INDArray ib = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
             SDVariable t;
             TestCase tc = new TestCase(sd);
@@ -1091,25 +1092,25 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), ia.lt(ib));
                     break;
                 case 10:
-                    t = sd.gte(in1, in2);
-                    INDArray expOut10 = ia.dup();
+                    t = sd.gte(in1, in2).castTo(DataType.DOUBLE);
+                    INDArray expOut10 = Nd4j.create(DataType.BOOL, ia.shape());
                     Nd4j.getExecutioner().exec(new GreaterThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut10}));
-                    tc.expectedOutput(t.getVarName(), expOut10);
+                    tc.expectedOutput(t.getVarName(), expOut10.castTo(DataType.DOUBLE));
                     break;
                 case 11:
-                    t = sd.lte(in1, in2);
-                    INDArray expOut11 = ia.dup();
+                    t = sd.lte(in1, in2).castTo(DataType.DOUBLE);
+                    INDArray expOut11 = Nd4j.create(DataType.BOOL, ia.shape());
                     Nd4j.getExecutioner().exec(new LessThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut11}));
-                    tc.expectedOutput(t.getVarName(), expOut11);
+                    tc.expectedOutput(t.getVarName(), expOut11.castTo(DataType.DOUBLE));
                     break;
                 case 12:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.or(in1, in2);
-                    tc.expectedOutput(t.getVarName(), Transforms.or(ia, ib));
+                    t = sd.or(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL)).castTo(DataType.DOUBLE);
+                    tc.expectedOutput(t.getVarName(), Transforms.or(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL)).castTo(DataType.DOUBLE));
                     break;
                 case 13:
-                    ib = Nd4j.randn(nOut, nOut);
+                    ib = Nd4j.randn(DataType.DOUBLE, nOut, nOut);
                     t = sd.mmul(in1, in2);
                     tc.expectedOutput(t.getVarName(), ia.mmul(ib));
                     break;
@@ -1157,8 +1158,8 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 22:
                     //set diag
-                    ia = Nd4j.randn(nOut, nOut);
-                    ib = Nd4j.randn(1, nOut).reshape(nOut);
+                    ia = Nd4j.randn(DataType.DOUBLE, nOut, nOut);
+                    ib = Nd4j.randn(DataType.DOUBLE, 1, nOut).reshape(nOut);
                     INDArray expOut22 = ia.dup();
                     for( int j=0; j<nOut; j++ ){
                         expOut22.putScalar(j,j, ib.getDouble(j));

@@ -18,10 +18,14 @@ package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -47,4 +51,10 @@ public abstract class BaseArithmeticBackpropOp extends BaseDynamicTransformOp {
         return Nd4j.getExecutioner().calculateOutputShape(this);
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 3, "Expected exactly 3 input datatype, got input %s", dataTypes);
+        //Gradient types: same as input
+        return Arrays.asList(arg(0).dataType(), arg(1).dataType());
+    }
 }

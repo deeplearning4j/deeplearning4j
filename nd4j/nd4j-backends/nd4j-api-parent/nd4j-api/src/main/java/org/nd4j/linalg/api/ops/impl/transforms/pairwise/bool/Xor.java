@@ -98,6 +98,16 @@ public class Xor extends BaseTransformBoolOp {
     }
 
     @Override
+    public Type getOpType() {
+        return Type.PAIRWISE_BOOL;
+    }
+
+    @Override
+    public Type opType() {
+        return Type.PAIRWISE_BOOL;
+    }
+
+    @Override
     public String opName() {
         return "xor";
     }

@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.BooleanNot;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.IsFinite;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
@@ -70,9 +71,12 @@ public class LegacyOpMapper {
             case SCALAR:
                 return scalarOpClass(opNum);
             case TRANSFORM_SAME:
+            case TRANSFORM_STRICT:
                 return transformOpClass(opNum);
             case PAIRWISE:
                 return pairwiseOpClass(opNum);
+            case PAIRWISE_BOOL:
+                return pairwiseBoolOpClass(opNum);
             case BROADCAST:
                 return broadcastOpClass(opNum);
             case REDUCE_SAME:
@@ -90,6 +94,13 @@ public class LegacyOpMapper {
                 return varianceOpClass(opNum);
             case REDUCE_FLOAT:
                 return reduceOpClass(opNum);
+            case TRANSFORM_BOOL:
+                return transformBoolOpClass(opNum);
+            case TRANSFORM_ANY:
+                return transformAnyOpClass(opNum);
+            case TRANSFORM_FLOAT:
+                return transformFloatingOpClass(opNum);
+
             case SPECIAL:
             case GRID:
             case META:
@@ -655,6 +666,19 @@ public class LegacyOpMapper {
         }
     }
 
+    public static Class<?> pairwiseBoolOpClass(int opNum){
+        switch (opNum){
+            case 7:
+                return And.class;
+            case 8:
+                return Or.class;
+            case 9:
+                return Xor.class;
+            default:
+                throw new UnsupportedOperationException("No known pairwise bool op for op number: " + opNum);
+        }
+    }
+
     public static Class<?> indexReduceClass(int opNum){
         switch (opNum){
             case 0:
@@ -682,6 +706,47 @@ public class LegacyOpMapper {
                 return StandardDeviation.class;
             default:
                 throw new UnsupportedOperationException("No known variance op for op number: " + opNum);
+        }
+    }
+
+    public static Class<?> transformBoolOpClass(int opNum){
+        switch (opNum){
+            case 1:
+                return org.nd4j.linalg.api.ops.impl.transforms.bool.IsInf.class;
+            case 2:
+                return org.nd4j.linalg.api.ops.impl.transforms.bool.IsNaN.class;
+            case 3:
+                return org.nd4j.linalg.api.ops.impl.transforms.bool.IsFinite.class;
+            case 5:
+                return org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform.class;
+            case 7:
+                return org.nd4j.linalg.api.ops.impl.transforms.bool.BooleanNot.class;
+            default:
+                throw new UnsupportedOperationException("No known transform bool op for op number: " + opNum);
+        }
+    }
+
+    public static Class<?> transformAnyOpClass(int opNum){
+        switch (opNum){
+            case 0:
+                return Assign.class;
+            case 1:
+                return IsMax.class;
+            default:
+                throw new UnsupportedOperationException("No known transform any op for op number: " + opNum);
+        }
+    }
+
+    public static Class<?> transformFloatingOpClass(int opNum){
+        switch (opNum){
+            case 0:
+                return Histogram.class;
+            case 1:
+                return Sqrt.class;
+            case 3:
+                return RSqrt.class;
+            default:
+                throw new UnsupportedOperationException("No known transform floating op for op number: " + opNum);
         }
     }
 
