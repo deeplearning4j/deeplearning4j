@@ -81,6 +81,6 @@ TEST_F(CudaBasicsTests, TestPairwise_1) {
 	cudaFree(devShapePtrX);
 
 	for (int e = 0; e < z.lengthOf(); e++) {
-		ASSERT_NE(exp.e<double>(e), z.e<double>(e), 1e-5);
+		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
 	}
 }
