@@ -111,7 +111,7 @@ public class OutputLayerTest extends BaseDL4JTest {
         INDArray out = mln.output(input);
         assertArrayEquals(out.shape(), new long[] {miniBatchSize * timeSeriesLength, nOut});
 
-        INDArray preout = mln.activate(input);
+        INDArray preout = mln.output(input);
         assertArrayEquals(preout.shape(), new long[] {miniBatchSize * timeSeriesLength, nOut});
 
         //As above, but for RnnOutputLayer. Expect all activations etc. to be 3d
