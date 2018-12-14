@@ -46,7 +46,7 @@ class ND4J_EXPORT LaunchContext {
 	public:
 #ifdef __CUDABLAS__
 		
-		LaunchContext(cudaStream_t* _cudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
+		LaunchContext(cudaStream_t* cudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
 		
 		inline void* getReductionPointer () const {return _reductionPointer;};			
 		

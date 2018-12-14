@@ -453,8 +453,15 @@ void NativeOpExecutioner::execIndexReduceScalar(nd4j::graph::LaunchContext *lc,
 
     auto dz = reinterpret_cast<Nd4jLong*>(dZ);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz, nullptr, 0, nullptr, 0, 1, allocationPointer, reductionPointer, nullptr, nullptr), LIBND4J_TYPES);
-
+    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::executeIndexReduceScalar(launchDims, stream, 
+                                                                                                opNum, 
+                                                                                                dX, dXShapeInfo, shape::rank(hXShapeInfo), 
+                                                                                                extraParams, 
+                                                                                                dz, nullptr, 0, 
+                                                                                                nullptr, 0, 
+                                                                                                1, 
+                                                                                                allocationPointer, reductionPointer, 
+                                                                                                nullptr, nullptr), LIBND4J_TYPES);
     nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalar(...) failed");
 }
 

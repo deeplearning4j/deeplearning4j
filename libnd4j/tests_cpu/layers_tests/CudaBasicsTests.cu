@@ -84,3 +84,119 @@ TEST_F(CudaBasicsTests, TestPairwise_1) {
 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
 	}
 }
+
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execIndexReducescalar_1) {
+
+	if (!Environment::getInstance()->isExperimentalBuild())
+    	return;
+
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT32);
+    NDArray x2('c', {2,2}, {0.5, 1.5, -4.5, 3.5}, nd4j::DataType::HALF);    
+    NDArray x3('c', {2,2}, {0, -1, 0, 1}, nd4j::DataType::BOOL);
+    
+    NDArray scalar(nd4j::DataType::INT64);
+
+    NDArray exp1('c', {0}, {3}, nd4j::DataType::INT64);
+    NDArray exp2('c', {0}, {2}, nd4j::DataType::INT64);
+    NDArray exp3('c', {0}, {1}, nd4j::DataType::INT64);
+
+    void *dX1, *dX2, *dX3, *dZ; 
+    Nd4jLong *dX1ShapeInfo, *dX2ShapeInfo, *dX3ShapeInfo, *dZShapeInfo;
+
+    cudaError_t cudaResult;
+
+    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX1), x1.lengthOf() * x1.sizeOfT()); 		   		         	 ASSERT_EQ(0, cudaResult);
+    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX2), x2.lengthOf() * x2.sizeOfT()); 		   		         	 ASSERT_EQ(0, cudaResult);    
+    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX3), x3.lengthOf() * x3.sizeOfT()); 		   		         	 ASSERT_EQ(0, cudaResult);    
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dZ), scalar.lengthOf() * scalar.sizeOfT()); 				         ASSERT_EQ(0, cudaResult);
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX1ShapeInfo), shape::shapeInfoByteLength(x1.getShapeInfo()));    ASSERT_EQ(0, cudaResult);
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX2ShapeInfo), shape::shapeInfoByteLength(x2.getShapeInfo()));    ASSERT_EQ(0, cudaResult);
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX3ShapeInfo), shape::shapeInfoByteLength(x3.getShapeInfo()));    ASSERT_EQ(0, cudaResult);
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dZShapeInfo), shape::shapeInfoByteLength(scalar.getShapeInfo())); ASSERT_EQ(0, cudaResult);	
+
+    cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream); 
+	ASSERT_EQ(0, cudaResult);
+	
+	cudaMemcpyAsync(dX1, x1.buffer(), x1.lengthOf() * x1.sizeOfT(), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dX2, x2.buffer(), x2.lengthOf() * x2.sizeOfT(), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dX3, x3.buffer(), x3.lengthOf() * x3.sizeOfT(), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dX1ShapeInfo, x1.getShapeInfo(), shape::shapeInfoByteLength(x1.getShapeInfo()), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dX2ShapeInfo, x2.getShapeInfo(), shape::shapeInfoByteLength(x2.getShapeInfo()), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dX3ShapeInfo, x3.getShapeInfo(), shape::shapeInfoByteLength(x3.getShapeInfo()), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dZShapeInfo, scalar.getShapeInfo(), shape::shapeInfoByteLength(scalar.getShapeInfo()), cudaMemcpyHostToDevice, stream);
+	
+	void* reductionPointer = nullptr;	
+	cudaResult = cudaMallocHost((void**)&reductionPointer, 1024*1024);
+	ASSERT_EQ(0, cudaResult);
+
+	LaunchContext lc(&stream, reductionPointer);
+
+	/***************************************/
+	
+    NativeOpExecutioner::execIndexReduceScalar(&lc, 
+    											nd4j::indexreduce::IndexAbsoluteMax, 
+    											x1.buffer(), x1.getShapeInfo(),
+    	                                       	dX1, dX1ShapeInfo, 
+    	                                       	nullptr, 
+    	                                       	scalar.buffer(), scalar.getShapeInfo(),
+    	                                       	dZ, dZShapeInfo);
+
+    cudaResult = cudaStreamSynchronize(stream); 
+    ASSERT_EQ(0, cudaResult);
+
+    cudaMemcpyAsync(scalar.buffer(), dZ, scalar.lengthOf() * scalar.sizeOfT(), cudaMemcpyDeviceToHost, stream);
+
+    cudaResult = cudaStreamSynchronize(stream); 
+    ASSERT_EQ(0, cudaResult);
+
+    ASSERT_EQ(scalar, exp1);
+
+    /***************************************/
+    
+    // NativeOpExecutioner::execIndexReduceScalar(&lc,
+    // 											nd4j::indexreduce::IndexAbsoluteMax, 
+    // 											nullptr, x2.getShapeInfo(),
+    // 	                                       	dX2, dX2ShapeInfo, 
+    // 	                                       	nullptr, 
+    // 	                                       	nullptr, scalar.getShapeInfo(),
+    // 	                                       	dZ, dZShapeInfo);
+
+    // cudaResult = cudaStreamSynchronize(stream); 
+    // ASSERT_EQ(0, cudaResult);
+
+    // cudaMemcpyAsync(scalar.buffer(), dZ, scalar.lengthOf() * scalar.sizeOfT(), cudaMemcpyDeviceToHost, stream);
+
+    // cudaResult = cudaStreamSynchronize(stream); 
+    // ASSERT_EQ(0, cudaResult);
+
+    // ASSERT_EQ(scalar, exp2);
+
+    // *************************************
+
+    // NativeOpExecutioner::execIndexReduceScalar(&lc, 
+    // 											nd4j::indexreduce::IndexAbsoluteMax, 
+    // 											nullptr, x3.getShapeInfo(),
+    // 	                                       	dX3, dX3ShapeInfo, 
+    // 	                                       	nullptr, 
+    // 	                                       	nullptr, scalar.getShapeInfo(),
+    // 	                                       	dZ, dZShapeInfo);
+
+    // cudaResult = cudaStreamSynchronize(stream); 
+    // ASSERT_EQ(0, cudaResult);
+
+    // cudaMemcpyAsync(scalar.buffer(), dZ, scalar.lengthOf() * scalar.sizeOfT(), cudaMemcpyDeviceToHost, stream);
+
+    // cudaResult = cudaStreamSynchronize(stream); 
+    // ASSERT_EQ(0, cudaResult);
+
+    // ASSERT_EQ(scalar, exp3);
+    
+	/***************************************/
+
+	cudaResult = cudaStreamDestroy(stream); 
+	ASSERT_EQ(0, cudaResult);
+	
+}
