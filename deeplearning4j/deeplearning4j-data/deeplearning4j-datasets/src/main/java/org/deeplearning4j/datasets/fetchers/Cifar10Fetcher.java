@@ -54,7 +54,7 @@ public class Cifar10Fetcher extends CacheableExtractableDataSetFetcher {
     @Override
     public String localCacheName(){ return LOCAL_CACHE_NAME; }
     @Override
-    public long expectedChecksum(DataSetType set) { return 2719201119L; }
+    public long expectedChecksum(DataSetType set) { return 292852033L; }
     @Override
     public RecordReader getRecordReader(long rngSeed, int[] imgDim, DataSetType set, ImageTransform imageTransform) {
         Preconditions.checkState(imgDim == null || imgDim.length == 2, "Invalid image dimensions: must be null or lenth 2. Got: %s", imgDim);
