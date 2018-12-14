@@ -87,10 +87,10 @@ TEST_F(CudaBasicsTests, TestPairwise_1) {
 
 
 ////////////////////////////////////////////////////////////////////////////
-TEST_F(CudaBasicsTests, execIndexReducescalar_1) {
+TEST_F(CudaBasicsTests, execIndexReduceScalar_1) {
 
     NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT32);
-    NDArray x2('c', {2,2}, {0.5, 1.5, -4.5, 3.5}, nd4j::DataType::HALF);    
+    NDArray x2('c', {2,2}, {0.5, 1.5, -4.5, 3.5}, nd4j::DataType::FLOAT32);    
     NDArray x3('c', {2,2}, {0, -1, 0, 1}, nd4j::DataType::BOOL);
     
     NDArray scalar(nd4j::DataType::INT64);
