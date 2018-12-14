@@ -9561,6 +9561,18 @@ public class SameDiff {
         if (baseName == null)
             baseName = function.opName();
 
+        //First: calculate output data types. We can always calculate output data types, even if the input arrays
+        //are not available
+        List<org.nd4j.linalg.api.buffer.DataType> inputDataTypes = new ArrayList<>();
+        List<String> fnInputs = ops.get(function.getOwnName()).getInputsToOp();
+        if(fnInputs != null){
+            for(String var : fnInputs){
+                inputDataTypes.add(variables.get(var).getVariable().dataType());
+            }
+        }
+
+        List<org.nd4j.linalg.api.buffer.DataType> outputDataTypes = function.calculateOutputDataTypes(inputDataTypes);
+
         val outputShape = function.calculateOutputShape();
         if (outputShape == null || outputShape.isEmpty()) {
             if (function instanceof CustomOp) {
@@ -9585,6 +9597,8 @@ public class SameDiff {
                 }
                 SDVariable[] ret = new SDVariable[num_outputs];
 
+                //Infer the output types: we can always do 
+
                 //dynamic shapes
                 //When importing from TF: convention seem to be names like "unstack", "unstack:1", "unstack:2", ...
                 //TODO validate this!
@@ -9593,7 +9607,8 @@ public class SameDiff {
                     if (var == null) {
                         //Generate new variable name if one with the specified name doesn't exist
                         //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
-                        org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
+
+                        org.nd4j.linalg.api.buffer.DataType dataType  = outputDataTypes.get(i);
                         var = var(generateNewVarName(baseName, i), VariableType.ARRAY, null, dataType, (long[])null);
                     }
                     var.setOutputIndex(i);
@@ -9619,13 +9634,13 @@ public class SameDiff {
                 }
                 if (checkGet == null) {
                     //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
-                    org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
+                    org.nd4j.linalg.api.buffer.DataType dataType  = outputDataTypes.get(0);
                     checkGet = var(baseName, VariableType.ARRAY, null, dataType, (long[])null);
                 }
 
                 if (checkGet == null) {
                     //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
-                    org.nd4j.linalg.api.buffer.DataType dataType = org.nd4j.linalg.api.buffer.DataType.FLOAT;     //TODO FIX THIS
+                    org.nd4j.linalg.api.buffer.DataType dataType  = outputDataTypes.get(0);
                     checkGet = var(baseName, VariableType.ARRAY, null, dataType, (long[])null);
                 }
 
@@ -9642,6 +9657,13 @@ public class SameDiff {
             }
         }
 
+        //Check that output shapes and output dtypes actually match (they should)
+        for( int i=0; i<outputShape.size(); i++ ){
+            org.nd4j.linalg.api.buffer.DataType shapeDataType = outputShape.get(i).dataType();
+            org.nd4j.linalg.api.buffer.DataType calcType = outputDataTypes.get(i);
+            Preconditions.checkState(calcType == shapeDataType, "Calculated output data types do not match for shape calculation vs. datatype calculation:" +
+                    " %s vs %s for op %s output %s", shapeDataType, calcType, function.getClass().getName(), i);
+        }
 
         char ordering = 'c';
         if (function.args() != null && function.args().length > 0 && function.args()[0].getArr() != null) {
@@ -9661,6 +9683,8 @@ public class SameDiff {
             if (checkGet == null) {
                 // obviously - there's no such var, just add it
                 //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
+
+
                 checkGet = var(baseName, VariableType.ARRAY, null, shape.dataType(), shape.getShape());
             } else if (shape != null && !shapeAlreadyExistsForVarName(checkGet.getVarName())) {
                 // var exists, let's update its shape

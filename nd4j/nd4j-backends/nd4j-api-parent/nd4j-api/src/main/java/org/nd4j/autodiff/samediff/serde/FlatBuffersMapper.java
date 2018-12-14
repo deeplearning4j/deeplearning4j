@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.samediff.serde;
 
 import com.google.flatbuffers.FlatBufferBuilder;
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -29,7 +30,7 @@ public class FlatBuffersMapper {
      * @param type
      * @return
      */
-    public static byte getDataTypeAsByte(org.nd4j.linalg.api.buffer.DataType type) {
+    public static byte getDataTypeAsByte(@NonNull org.nd4j.linalg.api.buffer.DataType type) {
         switch (type) {
             case FLOAT:
                 return DataType.FLOAT;

@@ -209,7 +209,8 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 INDArray currOutput = (customOp.numOutputArguments() <= i ? null : customOp.getOutputArgument(i));
                 LongShapeDescriptor reqShape = outShape.get(i);
                 if(currOutput == null || currOutput.shapeDescriptor().equals(reqShape) || isLoop){
-                    customOp.setOutputArgument(i, Nd4j.create(reqShape, false));
+                    INDArray out = Nd4j.create(reqShape, false);
+                    customOp.setOutputArgument(i, out);
                 }
             }
 

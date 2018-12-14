@@ -26,6 +26,7 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.graph.DataType;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -774,15 +775,26 @@ public abstract class DifferentialFunction {
 
 
     /**
-     * Calculate
-     * the output shape for this op
-     * @return
+     * Calculate the output shape for this op
+     * @return List of output shape descriptors
      */
     public List<LongShapeDescriptor> calculateOutputShape() {
         throw new ND4JIllegalStateException("calculateOutputShape() method leaked out for [" + this.opName() + "]");
     }
 
-
+    /**
+     * Calculate the data types for the output arrays.
+     * Though datatypes can also be inferred from {@link #calculateOutputShape()}, this method differs in that it does not
+     * require the input arrays to be populated.
+     * This is important as it allows us to do greedy datatype inference for the entire net - even if arrays are not
+     * available.
+     *
+     * @param dataTypes The data types of the inputs
+     * @return The data types of the outputs
+     */
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        throw new UnsupportedOperationException("calculateOutputDataTypes() has not been implemented for " + getClass().getName());
+    }
 
 
     @Override
