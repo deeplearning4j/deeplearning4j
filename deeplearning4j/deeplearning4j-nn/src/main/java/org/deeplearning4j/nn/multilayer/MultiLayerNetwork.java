@@ -98,7 +98,7 @@ import java.util.*;
  * MultiLayerNetwork is a neural network with multiple layers in a stack, and usually an output layer.<br>
  * For neural networks with a more complex connection architecture, use {@link org.deeplearning4j.nn.graph.ComputationGraph}
  * which allows for an arbitrary directed acyclic graph connection structure between layers.
- * MultiLayerNetwork is trainable via backprop, with optional pretraining, depending on the type of layers it contains.
+ * MultiLayerNetwork is trainable via backprop, with optional unsupervised layerwise training, depending on the type of layers it contains.
  *
  * @author Adam Gibson
  */
@@ -238,20 +238,31 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
+    /**
+     * Set the last ETL time in milliseconds, for informational/reporting purposes. Generally used internally.
+     * @param time    ETL time
+     */
     public void setLastEtlTime(long time) {
         lastEtlTime.set(time);
     }
 
+    /**
+     * Get the last ETL time. This in informational, and is the amount of time in milliseconds that was required
+     * to obtain the last DataSet/MultiDataSet during fitting.
+     * A value consistently above 0 may indicate a data feeding bottleneck, or no asynchronous data prefetching (async
+     * prefetch is enabled by default)
+     * @return The last ETL time in milliseconds, if avaliable (or 0 if not)
+     */
     public long getLastEtlTime() {
         Long time = lastEtlTime.get();
         return time == null ? 0L : time;
     }
 
     /**
-     * Initialize the network based on the configuration
+     * Initialize the network based on the configuration (a MultiLayerConfiguration in JSON format) and parameters array
      *
      * @param conf   the configuration json
-     * @param params the parameters
+     * @param params the parameters for the network
      */
     public MultiLayerNetwork(String conf, INDArray params) {
         this(MultiLayerConfiguration.fromJson(conf));
@@ -261,7 +272,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Initialize the network based on the configuraiton
+     * Initialize the network based on the configuration and parameters array
      *
      * @param conf   the configuration
      * @param params the parameters
@@ -294,7 +305,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Perform layerwise pretraining on all pre-trainable layers in the network (VAEs, Autoencoders, etc), for the specified
+     * Perform layerwise unsupervised training on all pre-trainable layers in the network (VAEs, Autoencoders, etc), for the specified
      * number of epochs each. For example, if numEpochs=3, then layer 0 will be fit for 3 epochs, followed by layer 1
      * for 3 epochs, and so on.<br>
      * Note that pretraining will be performed on one layer after the other, resetting the DataSetIterator between iterations.<br>
@@ -449,6 +460,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return solver.getOptimizer();
     }
 
+    /**
+     * Get one parameter array for the network.<br>
+     * In MultiLayerNetwork, parameters are keyed like "0_W" and "0_b" to mean "weights of layer index 0" and "biases
+     * of layer index 0" respectively. Numbers increment sequentially, and the suffixes ("W", "b" etc) depend on the
+     * layer type, and are defined in the relevant parameter initializers for each layer.<br>
+     * Note that the returned INDArrays are views of the underlying network parameters, so modifications of the returned
+     * arrays will impact the parameters of the network.
+     *
+     * @param param the key of the parameter
+     * @return The specified parameter array for the network
+     * @see #paramTable() paramTable() method, for a map of all parameters
+     */
     @Override
     public INDArray getParam(String param) {
         //Get params for MultiLayerNetwork sub layers.
@@ -461,11 +484,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return layers[layerIdx].getParam(newKey);
     }
 
+    /**
+     * Return a map of all parameters in the network. Parameter names are as described in {@link #getParam(String)}.
+     * As per {@link #getParam(String)} the returned arrays are views - modifications to these will impact
+     * the underlying network parameters
+     * @return A map of all parameters in the network
+     */
     @Override
     public Map<String, INDArray> paramTable() {
         return paramTable(false);
     }
 
+    /**
+     * Returns a map of all parameters in the network as per {@link #paramTable()}.<br>
+     * Optionally (with backpropParamsOnly=true) only the 'backprop' parameters are returned - that is, any parameters
+     * involved only in unsupervised layerwise pretraining not standard inference/backprop are excluded from the returned list.
+     * @param backpropParamsOnly If true, return backprop params only. If false: return all params
+     * @return Parameters for the network
+     */
     public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
         //Get all parameters from all layers
         Map<String, INDArray> allParams = new LinkedHashMap<>();
@@ -479,6 +515,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return allParams;
     }
 
+    /**
+     * Intended for internal use
+     */
     @Override
     public boolean updaterDivideByMinibatch(String paramName) {
         int idx = paramName.indexOf('_');
@@ -487,6 +526,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return getLayer(layerIdx).updaterDivideByMinibatch(subName);
     }
 
+    /**
+     * Set the parameters of the netowrk. Note that the parameter keys must match the format as described in {@link #getParam(String)}
+     * and {@link #paramTable()}. Note that the values of the parameters used as an argument to this method are copied -
+     * i.e., it is safe to later modify/reuse the values in the provided paramTable without this impacting the network.
+     *
+     * @param paramTable    Parameters to set
+     */
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
         Map<String, INDArray> currParamTable = paramTable();
@@ -525,19 +571,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         layers[layerIdx].setParam(newKey, val);
     }
 
-
+    /**
+     * Get the configuration for the network
+     * @return Network configuration
+     */
     public MultiLayerConfiguration getLayerWiseConfigurations() {
         return layerWiseConfigurations;
     }
 
+    /**
+     * This method is intended for internal/developer use.
+     */
     public void setLayerWiseConfigurations(MultiLayerConfiguration layerWiseConfigurations) {
         this.layerWiseConfigurations = layerWiseConfigurations;
     }
 
     /**
      * Initialize the MultiLayerNetwork. This should be called once before the network is used.
-     * This is functionally equivalent to calling
-     * {@code init(null, false)}.
+     * This is functionally equivalent to calling {@code init(null, false)}.
      * @see MultiLayerNetwork#init(INDArray, boolean)
      */
     public void init() {
@@ -680,12 +731,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * This method allows you to specificy GradientsAccumulator instance to be used with this model
-     *
-     * PLEASE NOTE: Do not use this method unless you understand how to use GradientsAccumulator & updates sharing.
+     * This method allows you to specificy GradientsAccumulator instance to be used with this model<br>
+     * <br>
+     * PLEASE NOTE: Do not use this method unless you understand how to use GradientsAccumulator & updates sharing.<br>
      * PLEASE NOTE: Do not use this method on standalone model
      *
-     * @param accumulator
+     * @param accumulator    Gradient accumulator to use for the network
      */
     public void setGradientsAccumulator(GradientsAccumulator accumulator) {
         if (!isInitCalled())
@@ -734,15 +785,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
-    /**
-     * @deprecated Use {@link #output(INDArray)}
-     */
-    @Deprecated
-    public INDArray activate(INDArray input) {
-        return output(input);
-    }
-
-    public INDArray activationFromPrevLayer(int curr, INDArray input, boolean training, LayerWorkspaceMgr mgr) {
+    protected INDArray activationFromPrevLayer(int curr, INDArray input, boolean training, LayerWorkspaceMgr mgr) {
         if (getLayerWiseConfigurations().getInputPreProcess(curr) != null) {
             input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input, getInputMiniBatchSize(), mgr);
         }
@@ -783,9 +826,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Compute activations from input to output of the output layer
+     * Compute all layer activations, from input to output of the output layer.
+     * Note that the input is included in the list: thus feedForward(in,train).get(0) is the inputs,
+     * .get(1) is the activations of layer 0, and so on.
      *
-     * @return the list of activations for each layer
+     * @param train Training: if true, perform forward pass/inference at training time. Usually, inference is performed
+     *              with train = false. This impacts whether dropout etc is applied or not.
+     * @return The list of activations for each layer, including the input
      */
     public List<INDArray> feedForward(INDArray input, boolean train) {
         setInput(input);
@@ -793,7 +840,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Compute activations from input to output of the output layer
+     * Compute activations from input to output of the output layer.
+     * As per {@link #feedForward(INDArray, boolean)} but using the inputs that have previously been set using {@link #setInput(INDArray)}
      *
      * @return the list of activations for each layer
      */
@@ -1269,18 +1317,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Compute activations from input to output of the output layer
+     * Compute activations from input to output of the output layer.
+     * Equivalent to calling {@link #feedForward(boolean)} with train=false
      *
-     * @return the list of activations for each layer
+     * @return the list of activations for each layer, including the input
      */
     public List<INDArray> feedForward() {
         return feedForward(false);
     }
 
     /**
-     * Compute activations from input to output of the output layer
+     * Compute activations from input to output of the output layer.
+     * Equivalent to calling {@link #feedForward(INDArray, boolean)} with train = false
      *
-     * @return the list of activations for each layer
+     * @return the list of activations for each layer, including the input
      */
     public List<INDArray> feedForward(INDArray input) {
         if (input == null)
@@ -1292,6 +1342,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     /** Compute the activations from the input to the output layer, given mask arrays (that may be null)
      * The masking arrays are used in situations such an one-to-many and many-to-one rucerrent neural network (RNN)
      * designs, as well as for supporting time series of varying lengths within the same minibatch for RNNs.
+     * Other than mask arrays, this is equivalent to calling {@link #feedForward(INDArray, boolean)} with train = false
      */
     public List<INDArray> feedForward(INDArray input, INDArray featuresMask, INDArray labelsMask) {
         setLayerMaskArrays(featuresMask, labelsMask);
@@ -1313,8 +1364,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Clones the multilayernetwork
-     * @return
+     * Clones the MultiLayerNetwork
+     * @return A cloned MultiLayerNetwork with a copy of the configuration and parameters identical to the current network.
      */
     @Override
     public MultiLayerNetwork clone() {
@@ -1356,10 +1407,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Returns a 1 x m vector where the vector is composed of
-     * a flattened vector of all of the weights for the
-     * various neuralNets(w,hbias NOT VBIAS) and output layer
+     * Returns a 1 x m vector where the vector is composed of a flattened vector of all of the parameters (weights and
+     * biases etc) for all parameters in the network. Note that this method is generally reserved for developer and
+     * internal use - see {@link #getParam(String)} and {@link #paramTable()} for a more useful/interpretable
+     * representation of the parameters.
      *
+     * @param backwardOnly Return a copy of the parameters excluding
      * @return the params for this neural net
      */
     public INDArray params(boolean backwardOnly) {
