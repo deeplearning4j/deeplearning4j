@@ -180,7 +180,18 @@ if(CUDA_BLAS)
             endif()
 
         else()
-            if(CUDA_VERSION VERSION_GREATER "8.0") # cuda 9
+			if(CUDA_VERSION VERSION_GREATER "9.2") # cuda 9
+				message("CUDA 10 Debug build")
+                if ("${COMPUTE}" STREQUAL "all")
+                    if (APPLE)
+                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 ${EXPM} -G -g --cudart=static -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61  -gencode arch=compute_62,code=sm_62)
+                    elseif()
+                        list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 ${EXPM} -G -g --cudart=static -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61  -gencode arch=compute_62,code=sm_62 -gencode arch=compute_70,code=sm_70)
+                    endif()
+                else()
+                    list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 ${EXPM} -G -g --cudart=static -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
+                endif()
+            elseif(CUDA_VERSION VERSION_GREATER "8.0") # cuda 9
                 if ("${COMPUTE}" STREQUAL "all")
                     if (APPLE)
                         list(APPEND CUDA_NVCC_FLAGS -DCUDA_9 ${EXPM} -G -g --cudart=static -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_53,code=sm_53 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61  -gencode arch=compute_62,code=sm_62)
@@ -222,7 +233,7 @@ if(CUDA_BLAS)
             #cuda/NativeOps.cu ../include/loops/cuda/grid_strided.cu ../include/loops/cuda/grid_shaped.cu ../include/loops/cuda/scalar.cu ../include/loops/cuda/reduce.cu ../include/loops/cuda/pairwise_transform.cu
             # ../include/loops/cuda/scalar.cu
 
-		if (NOT MSVC_DEV)
+		if (NOT BUILD_TESTS)
 			CUDA_ADD_LIBRARY(${LIBND4J_NAME} SHARED cuda/NativeOps.cu ${LOOPS_SOURCES_CUDA}
                 ${CUSTOMOPS_HELPERS_SOURCES}
                 ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h

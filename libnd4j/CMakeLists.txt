@@ -69,9 +69,7 @@ if ($ENV{CLION_IDE})
 endif ()
 
 if (MSVC_DEV)
-	set(LIBND4J_ALL_OPS true)
     set(LIBND4J_BUILD_MINIFIER false)
-    add_subdirectory(tests_cpu)
 endif ()
 
 set (CMAKE_INSTALL_PREFIX $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/main/resources)
