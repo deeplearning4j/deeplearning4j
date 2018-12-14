@@ -18,8 +18,13 @@ package org.nd4j.linalg.api.ops.impl.reduce.bp;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+
+import java.util.Collections;
+import java.util.List;
 
 
 /**
@@ -104,5 +109,18 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
     }
 
     public abstract String opName();
+
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //Reduction backprop ops: expect 2 inputs... the original input, and the gradient at the outputs
+        //For example, for y=mean(x), inputs to ReduceMeanBp are x and dL/dy; output is dL/dx
+        //Now, we expect gradient dL/dx datatype to be same as x - which resticts us to real-valued x input
+        //i.e., 'gradient' of integer or boolean isn't defined
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatype, got input %s", dataTypes);
+        Preconditions.checkState(dataTypes.get(0).isFPType(), "First input must be a floating point type, got %s", dataTypes.get(0));
+        Preconditions.checkState(dataTypes.get(1).isFPType(), "Second input (gradient at reduction output) must be a floating point type, got %s", dataTypes.get(1));
+        return Collections.singletonList(dataTypes.get(0));
+    }
 
 }

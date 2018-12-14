@@ -115,11 +115,11 @@ public abstract class AbstractSession<T, O> {
 
 
         //Clear state from past
-        //TODO eventually we'll have cache
         availableForExec.clear();
         subgraph.clear();
         execInputs.clear();
         execConstInputs.clear();
+        nodeOutputs.clear();            //TODO eventually we'll have cache here for later execs... main challenge is detecting in-place array modifications and invalidating old results
 
         //Step 1: determine subgraph structure we actually need to execute
         //Basic plan: work backwards from the variables we want, based on the graph structure, to work out what

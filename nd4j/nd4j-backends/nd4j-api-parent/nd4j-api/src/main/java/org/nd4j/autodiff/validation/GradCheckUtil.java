@@ -250,9 +250,7 @@ public class GradCheckUtil {
                     v.getVarName() + "\": shape " + Arrays.toString(v.getArr().shape()) + " vs. gradient shape " +
                     Arrays.toString(ga.shape()));
             }
-            System.out.println("ABOUT TO DUP");
             grad.put(v.getVarName(), ga.dup());
-            System.out.println("DONE DUP");
         }
 
         //Validate gradients for each variable:
