@@ -273,12 +273,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
 
-/*
-    public DataType dataType() {
-        throw new UnsupportedOperationException();
-    }
-
-*/
     /**
      * Returns the shape of this variable
      * @return Shape of the variable
@@ -307,6 +301,14 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     public LongShapeDescriptor getShapeDescriptor() {
         return LongShapeDescriptor.fromShape(getShape(), this.dataType());
+    }
+
+    public SDVariable castTo(@NonNull DataType dataType){
+        return castTo(null, dataType);
+    }
+
+    public SDVariable castTo(String name, @NonNull DataType dataType){
+        return sameDiff.castTo(name, this, dataType);
     }
 
 

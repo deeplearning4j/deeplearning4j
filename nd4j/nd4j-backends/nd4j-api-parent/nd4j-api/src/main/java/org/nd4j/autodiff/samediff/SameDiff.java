@@ -2109,6 +2109,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable castTo(SDVariable toCast, org.nd4j.linalg.api.buffer.DataType toType){
+        return castTo(null, toCast, toType);
+    }
+
+    public SDVariable castTo(String name, SDVariable toCast, org.nd4j.linalg.api.buffer.DataType toType){
+        SDVariable ret = f().cast(toCast, toType);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      * @see #meshgrid(List, SDVariable...)
      */

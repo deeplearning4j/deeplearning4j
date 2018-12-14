@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.NoOp;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
@@ -65,6 +66,7 @@ import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
+import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
@@ -179,6 +181,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable range(double from, double to, double step) {
         return new Range(sameDiff(), from, to, step).outputVariable();
+    }
+
+    public SDVariable cast(SDVariable toCast, DataType toType){
+        return new Cast(sameDiff(), toCast, toType).outputVariable();
     }
 
     public SDVariable[] meshgrid(boolean cartesian, SDVariable... inputs) {

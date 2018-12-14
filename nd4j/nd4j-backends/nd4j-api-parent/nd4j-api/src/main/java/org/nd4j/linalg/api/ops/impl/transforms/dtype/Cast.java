@@ -21,6 +21,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
@@ -155,9 +156,18 @@ public class Cast extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        // FIXME: we'll just do reverse cast here, but we don't have sameDiff.cast() yet
-        SDVariable gradient = sameDiff.setupFunction(i_v.get(0));
-        throw new UnsupportedOperationException("Not implemented yet");
-        //return Collections.singletonList(sameDiff.batchToSpace(gradient, blocks, padding));
+        //If input is numerical: reverse cast. Otherwise 0
+        if(arg().dataType().isFPType()){
+            return Collections.singletonList(i_v.get(0).castTo(arg().dataType()));
+        } else {
+            return Collections.singletonList(f().zerosLike(arg()));
+        }
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //All scalar ops: output type is same as input type
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got input %s", dataTypes);
+        return Collections.singletonList(typeDst);
     }
 }
