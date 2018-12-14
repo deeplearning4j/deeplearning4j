@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -82,23 +83,18 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     }
 
     public BaseScalarOp(SameDiff sameDiff,
-                        SDVariable i_v,
+                        @NonNull SDVariable i_v,
                         Number scalar,
                         boolean inPlace,
                         Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
-        this.scalarValue = Nd4j.scalar(scalar);
-        if (i_v != null) {
-            this.xVertexId = i_v.getVarName();
-            sameDiff.addArgsFor(new String[]{xVertexId},this);
-            if(Shape.isPlaceholderShape(i_v.getShape())) {
-                sameDiff.addPropertyToResolve(this,i_v.getVarName());
-            }
-            f().validateDifferentialFunctionsameDiff(i_v);
-        } else {
-            throw new IllegalArgumentException("Input not null variable.");
+        this.scalarValue = Nd4j.scalar(i_v.dataType(), scalar);
+        this.xVertexId = i_v.getVarName();
+        sameDiff.addArgsFor(new String[]{xVertexId},this);
+        if(Shape.isPlaceholderShape(i_v.getShape())) {
+            sameDiff.addPropertyToResolve(this,i_v.getVarName());
         }
-
+        f().validateDifferentialFunctionsameDiff(i_v);
     }
 
 

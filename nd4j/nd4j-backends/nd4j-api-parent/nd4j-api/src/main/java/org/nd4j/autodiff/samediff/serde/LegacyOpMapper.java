@@ -260,7 +260,7 @@ public class LegacyOpMapper {
             case 32:
                 return LeakyReLUDerivative.class;
             case 33:
-                return RectifedLinear.class;
+                return RectifiedLinear.class;
             case 34:
                 return Step.class;
             case 35:
@@ -404,9 +404,9 @@ public class LegacyOpMapper {
                 return ScalarLessThanOrEqual.class;
             case 11:
                 return ScalarNotEquals.class;
-            case 12:
-                return ScalarMin.class;
             case 13:
+                return ScalarMin.class;
+            case 14:
                 return ScalarSet.class;
             case 16:
                 return ScalarGreaterThanOrEqual.class;
@@ -414,41 +414,18 @@ public class LegacyOpMapper {
                 return ScalarRemainder.class;
             case 18:
                 return ScalarFMod.class;
+            case 31:
+                return Pow.class;
+            case 32:
+                return PowDerivative.class;
+            case 37:
+                return ReplaceNans.class;
+            case 39:
+                return RectifiedLinear.class;
+            case 41:
+                return Step.class;
             default:
                 throw new UnsupportedOperationException("No known scalar op for op number: " + opNum);
-                //All of the following don't have java scalar ops?
-//            case 14:
-//                return ScalarMod.class;
-//            case 15:
-//                return ScalarReverseMod.class;
-//            case 19:
-//                return ScalarTruncateDiv.class;
-//            case 20:
-//                return FloorDiv.class;
-//            case 21:
-//                return FloorMod.class;
-//            case 22:
-//                return SquaredSubtract.class;
-//            case 23:
-//                return SafeDivide.class;
-//            case 24:
-//                return AMax.class;
-//            case 25:
-//                return AMin.class;
-//            case 26:
-//                return And.class;
-//            case 27:
-//                return Or.class;
-//            case 28:
-//                return Atan2.class;
-//            case 29:
-//                return LogicalOr.class;
-//            case 30:
-//                return LogicalXor.class;
-//            case 31:
-//                return LogicalNot.class;
-//            case 32:
-//                return LogicalAnd.class;
         }
     }
 

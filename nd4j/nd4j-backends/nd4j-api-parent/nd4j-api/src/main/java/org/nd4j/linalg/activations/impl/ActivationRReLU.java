@@ -22,7 +22,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.scalar.RectifedLinear;
+import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -70,7 +70,7 @@ public class ActivationRReLU extends BaseActivationFunction {
         } else {
             this.alpha = null;
             double a = 0.5 * (l + u);
-            return Nd4j.getExecutioner().exec(new RectifedLinear(in, a));
+            return Nd4j.getExecutioner().exec(new RectifiedLinear(in, a));
         }
 
         return in;

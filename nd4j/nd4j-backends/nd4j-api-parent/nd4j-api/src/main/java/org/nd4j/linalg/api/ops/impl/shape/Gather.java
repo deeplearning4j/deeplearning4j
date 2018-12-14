@@ -33,10 +33,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Gather op
@@ -196,5 +193,11 @@ public class Gather extends DynamicCustomOp {
         }
 
         return Arrays.asList(inputGrad, indicesGrad);
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //Output type is same as (first) input type
+        return Collections.singletonList(dataTypes.get(0));
     }
 }

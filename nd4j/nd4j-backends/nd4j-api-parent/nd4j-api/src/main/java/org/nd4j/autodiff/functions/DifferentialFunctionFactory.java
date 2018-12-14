@@ -1034,7 +1034,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable relu(SDVariable iX, double cutoff) {
-        return new RectifedLinear(sameDiff(), iX, false, cutoff).outputVariable();
+        return new RectifiedLinear(sameDiff(), iX, false, cutoff).outputVariable();
     }
 
     public SDVariable relu6(SDVariable iX, double cutoff) {

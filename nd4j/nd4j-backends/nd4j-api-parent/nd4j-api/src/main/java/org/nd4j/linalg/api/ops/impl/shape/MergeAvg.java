@@ -20,7 +20,9 @@ import lombok.extern.slf4j.Slf4j;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -84,6 +86,24 @@ public class MergeAvg extends DynamicCustomOp {
         for (int i = 0; i < args().length; i++)
             ret.add(gradient);
         return ret;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        DataType first = dataTypes.get(0);
+        List<DataType> out = new ArrayList<>(dataTypes.size());
+        for( int i=1; i<dataTypes.size(); i++ ){
+            DataType dt = dataTypes.get(i);
+            Preconditions.checkState(first == dt, "All inputs must have same datatype - got %s and %s for inputs 0 and %s respectively", first, dt, i);
+
+            if(first.isFPType()){
+                out.add(first);
+            } else {
+                out.add(Nd4j.defaultFloatingPointType());
+            }
+        }
+        //Output type is same as input types if FP, or default FP type otherwise
+        return out;
     }
 
 }

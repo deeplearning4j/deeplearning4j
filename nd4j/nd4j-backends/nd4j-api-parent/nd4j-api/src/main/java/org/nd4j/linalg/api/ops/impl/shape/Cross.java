@@ -18,10 +18,13 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -79,5 +82,12 @@ public class Cross extends DynamicCustomOp {
         SDVariable gradRight = grad.mul(sameDiff.cross(ones, a));
 
         return Arrays.asList(gradLeft, gradRight);
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes.size() == 2, "Expected list with exactly 2 datatype, got %s", dataTypes);
+        //Output type is same as input type
+        return Collections.singletonList(dataTypes.get(0));
     }
 }

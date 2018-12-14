@@ -25,7 +25,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import java.util.List;
 
 /**
- * OldReverse Division operation
+ * Reverse Division operation
  *
  * @author Adam Gibson
  */

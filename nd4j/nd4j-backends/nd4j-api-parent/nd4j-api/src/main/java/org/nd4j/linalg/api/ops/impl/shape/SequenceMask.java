@@ -21,9 +21,11 @@ import lombok.val;
 import onnx.OnnxMlProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -103,5 +105,13 @@ public class SequenceMask extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> grad){
         //Input is integer indices
         return Collections.singletonList(f().zerosLike(arg()));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype, got %s", dataTypes);
+        //Output type is same as input by default
+        //TODO TF allows customizing output type
+        return dataTypes;
     }
 }

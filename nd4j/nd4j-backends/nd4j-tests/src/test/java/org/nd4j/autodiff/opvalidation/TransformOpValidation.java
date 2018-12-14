@@ -100,10 +100,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
 
-//        for( int i=0; i<11; i++ ) {
-//            for (char inOrder : new char[]{'c', 'f'}) {
-        for( int i=0; i<1; i++ ) {
-            for (char inOrder : new char[]{'c'}) {
+        for( int i=0; i<11; i++ ) {
+            for (char inOrder : new char[]{'c', 'f'}) {
                 SameDiff sd = SameDiff.create();
 
                 INDArray inArr = Nd4j.linspace(1, n, n, DataType.DOUBLE).reshape('c', d0, d1, d2).dup(inOrder);
@@ -151,8 +149,8 @@ public class TransformOpValidation extends BaseOpValidation {
                     case 7:
                         inArr.assign(Nd4j.rand(inArr.shape()).muli(5).subi(2.5));
                         out = sd.scalarFloorMod(in, 2);
-                        tc.expected(out, Nd4j.getExecutioner().exec(new ScalarFMod(inArr.dup(), 2.0)));
-                        msg = "scalarRemainer - " + inOrder;
+                        tc.expected(out, Nd4j.getExecutioner().execAndReturn(new ScalarFMod(inArr.dup(), 2.0)));
+                        msg = "scalarFloorMod - " + inOrder;
                         break;
                     case 8:
                         inArr.assign(Nd4j.rand(inArr.shape()));
