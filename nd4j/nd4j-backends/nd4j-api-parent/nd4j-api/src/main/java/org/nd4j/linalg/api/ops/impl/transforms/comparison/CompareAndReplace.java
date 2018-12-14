@@ -18,7 +18,9 @@ package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
@@ -137,10 +139,17 @@ public class CompareAndReplace extends BaseTransformSameOp {
         //2 inputs: 'to' and 'from'
         //Pass through gradient for 'to' where condition is NOT satisfied
         //Pass through gradient for 'from' where condition IS satisfied
-        SDVariable maskMatched = sameDiff.matchCondition(arg(0), condition);
+        SDVariable maskMatched = sameDiff.matchCondition(arg(0), condition).castTo(arg().dataType());
         SDVariable maskNotMatched = maskMatched.rsub(1.0);
 
         return Arrays.asList(grad.get(0).mul(maskNotMatched), grad.get(0).mul(maskMatched));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatype, got input %s", dataTypes);
+        Preconditions.checkState(dataTypes.get(0) == dataTypes.get(1), "Input data types must be the same: got %s", dataTypes);
+        return Collections.singletonList(dataTypes.get(0));
     }
 }
 

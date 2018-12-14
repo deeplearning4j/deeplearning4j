@@ -769,6 +769,7 @@ public class SameDiff {
         SDVariable var = getVariable(varName);
         switch(var.getVariableType()){
             case VARIABLE:
+                return variablesArrays.containsKey(varName);
             case ARRAY:
                 long tid = Thread.currentThread().getId();
                 return sessions.containsKey(tid) && sessions.get(tid).contains(varName, InferenceSession.OUTER_FRAME, 0);
@@ -10026,9 +10027,11 @@ public class SameDiff {
 
                 //Find final outputs - these are SDVariables that are output of a function that are not inputs to anything else
                 // i.e., ArrayType - not constant, variable, placeholder
+                //Also should be a floating point type, to contribute to score
                 List<SDVariable> finalOutputs = new ArrayList<>();
                 for(Variable v : sameDiff.variables.values()){
-                    if(v.getVariable().getVariableType() != VariableType.ARRAY || (v.getInputsForOp() != null && ! v.getInputsForOp().isEmpty())){
+                    if(v.getVariable().getVariableType() != VariableType.ARRAY || (v.getInputsForOp() != null && ! v.getInputsForOp().isEmpty())
+                            || !v.getVariable().dataType().isFPType()){
                         continue;
                     }
                     finalOutputs.add(v.getVariable());
@@ -10048,7 +10051,11 @@ public class SameDiff {
                 //start with scalar backprop
                 SDVariable initialGrad = sameDiff.var("one-var", Nd4j.trueScalar(1.0));
                 for(SDVariable v : finalOutputs) {
-                    sameDiff.setGradientForVariableName(v.getVarName(), initialGrad);
+                    if(v.dataType() == initialGrad.dataType()){
+                        sameDiff.setGradientForVariableName(v.getVarName(), initialGrad);
+                    } else {
+                        sameDiff.setGradientForVariableName(v.getVarName(), initialGrad.castTo(v.dataType()));
+                    }
                     SDVariable gradientBackwardsMarker = sameDiff.gradientBackwardsMarker(v);
                     DifferentialFunction df = sameDiff.getVariableOutputFunction(gradientBackwardsMarker.getVarName());
                     availableForDiff.add(df);

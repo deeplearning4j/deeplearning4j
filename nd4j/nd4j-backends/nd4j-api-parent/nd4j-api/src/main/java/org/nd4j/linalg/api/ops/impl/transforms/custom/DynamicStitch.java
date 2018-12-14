@@ -19,9 +19,12 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.dataset.DataSet;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -100,4 +103,14 @@ public class DynamicStitch extends DynamicCustomOp {
         throw new NoOpNameFoundException("No onnx name found for shape " + opName());
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //Output type: same as (data) input type
+        DataType inputType = dataTypes.get(dataTypes.size()-1);
+        List<DataType> out = new ArrayList<>(numPartitions);
+        for( int i=0; i<numPartitions; i++ ){
+            out.add(inputType);
+        }
+        return out;
+    }
 }

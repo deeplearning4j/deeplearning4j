@@ -108,4 +108,11 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
         ret.add(LongShapeDescriptor.fromShape(reducedShape, this.resultType()));
         return ret;
     }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        //Output type: same as input type for BaseReduceSameOp
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got %s", getClass(), dataTypes);
+        return dataTypes;
+    }
 }

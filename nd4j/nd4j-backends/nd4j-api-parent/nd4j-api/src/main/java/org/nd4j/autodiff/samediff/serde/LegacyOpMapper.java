@@ -88,6 +88,8 @@ public class LegacyOpMapper {
             case VARIANCE:  //Intentional fall-through
             case SUMMARYSTATS:
                 return varianceOpClass(opNum);
+            case REDUCE_FLOAT:
+                return reduceOpClass(opNum);
             case SPECIAL:
             case GRID:
             case META:

@@ -129,4 +129,10 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
         ret.add(LongShapeDescriptor.fromShape(reducedShape, DataType.FLOAT));
         return ret;
     }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //Output data type: always float. TODO let's allow configuration...
+        return Collections.singletonList(Nd4j.defaultFloatingPointType());
+    }
 }

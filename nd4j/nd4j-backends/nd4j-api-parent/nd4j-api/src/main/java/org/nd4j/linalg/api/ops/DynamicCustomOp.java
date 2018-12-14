@@ -210,23 +210,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 return newVars;
             }
 
-
-            val outputShapes = calculateOutputShape();
-            if (newVars != null && outputShapes != null && !outputShapes.isEmpty()) {
-                for (int i = 0; i < newVars.length; i++) {
-                    if (newVars[i] == null)
-                        continue;
-                    attemptToGetOrCreateArrForVar(newVars[i], outputShapes.get(i));
-                }
-            } else if (getDescriptor() != null && getDescriptor().getNumOutputs() < 1  && getNumOutputs() < 1) {
-                //this should only happen if we have no way of knowing how many
-                //outputs are known from the descriptor
-                return new SDVariable[0];
-            } else {
-                outputVariables = newVars;
-                return newVars;
-            }
-
             outputVariables = newVars;
             if (sameDiff.getOutputsForFunction(this) == null)
                 sameDiff.addOutgoingFor(outputVariables, this);
