@@ -105,4 +105,11 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
         ret.add(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
         return ret;
     }
+
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //All reduce long ops: always long output type
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got input %s", dataTypes);
+        return Collections.singletonList(DataType.LONG);
+    }
 }

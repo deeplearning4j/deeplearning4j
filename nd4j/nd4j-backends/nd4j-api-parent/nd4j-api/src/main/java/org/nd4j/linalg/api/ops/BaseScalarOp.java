@@ -187,4 +187,11 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         return Type.SCALAR;
     }
 
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //All scalar ops: output type is same as input type
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got input %s", dataTypes);
+        return dataTypes;
+    }
+
 }

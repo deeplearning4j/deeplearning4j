@@ -115,4 +115,9 @@ public class GradientBackwardsMarker extends BaseGradientOp  {
 
         return Nd4j.defaultFloatingPointType();
     }
+
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        return dataTypes;
+    }
 }

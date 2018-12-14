@@ -119,4 +119,11 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
         this.n = arr.length();
         return ret;
     }
+
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //Transform any: for the purposes of samediff datatype calculation, treat as same in/out
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got input %s", dataTypes);
+        return dataTypes;
+    }
 }

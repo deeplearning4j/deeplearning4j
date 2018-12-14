@@ -143,4 +143,11 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
 
         return true;
     }
+
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //All index accumulation ops: always long output type
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got input %s", dataTypes);
+        return Collections.singletonList(DataType.LONG);
+    }
 }
