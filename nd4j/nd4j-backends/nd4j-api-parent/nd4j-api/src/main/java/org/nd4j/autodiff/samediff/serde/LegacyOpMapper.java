@@ -79,8 +79,14 @@ public class LegacyOpMapper {
                 return pairwiseBoolOpClass(opNum);
             case BROADCAST:
                 return broadcastOpClass(opNum);
+            case REDUCE_FLOAT:
+                return reduceFloatOpClass(opNum);
+            case REDUCE_BOOL:
+                return reduceBoolOpClass(opNum);
             case REDUCE_SAME:
                 return reduceSameOpClass(opNum);
+            case REDUCE_LONG:
+                return reduceLongOpClass(opNum);
             case INDEXREDUCE:
                 return indexReduceClass(opNum);
             case REDUCE3:
@@ -92,8 +98,6 @@ public class LegacyOpMapper {
             case VARIANCE:  //Intentional fall-through
             case SUMMARYSTATS:
                 return varianceOpClass(opNum);
-            case REDUCE_FLOAT:
-                return reduceFloatOpClass(opNum);
             case TRANSFORM_BOOL:
                 return transformBoolOpClass(opNum);
             case TRANSFORM_ANY:
@@ -498,6 +502,34 @@ public class LegacyOpMapper {
                 return AMin.class;
             default:
                 throw new UnsupportedOperationException("No known reduce same op for op number: " + opNum);
+        }
+    }
+
+    public static Class<?> reduceLongOpClass(int opNum){
+        switch (opNum){
+            case 0:
+                return CountNonZero.class;
+            case 1:
+                return CountZero.class;
+            case 2:
+                return MatchCondition.class;
+            default:
+                throw new UnsupportedOperationException("No known reduce long op for op number: " + opNum);
+        }
+    }
+
+    public static Class<?> reduceBoolOpClass(int opNum){
+        switch (opNum){
+            case 0:
+                return Any.class;
+            case 1:
+                return All.class;
+            case 4:
+                return IsNaN.class;
+            case 5:
+                return IsInf.class;
+            default:
+                throw new UnsupportedOperationException("No known reduce bool op for op number: " + opNum);
         }
     }
 

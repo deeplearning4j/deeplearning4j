@@ -132,7 +132,13 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             return c.outputArguments();
         } else if(op instanceof Op) {
             Op o = (Op) op;
-            Nd4j.getExecutioner().exec(o);
+            if(op.getDimensions() != null){
+                Nd4j.getExecutioner().exec(o, op.getDimensions());
+            } else {
+                Nd4j.getExecutioner().exec(o);
+            }
+
+
             return new INDArray[]{o.z()};
         } else {
             throw new UnsupportedOperationException("Execution not yet implemented for: " + op.getClass().getName());

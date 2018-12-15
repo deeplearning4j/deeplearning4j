@@ -965,9 +965,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if (!op.validateDataTypes()) {
                 StringBuilder sb = new StringBuilder();
                 sb.append("Data type validation failed for op ").append(op.getClass().getSimpleName()).append(": ")
-                        .append("Inputs: [x=").append(op.x() == null ? null : op.x().shapeInfoToString())
-                        .append(",y=").append(op.y() == null ? null : op.y().shapeInfoToString())
-                        .append(",z=").append(op.z() == null ? null : op.z().shapeInfoToString());
+                        .append("Arrays: [x=(").append(op.x() == null ? null : Shape.shapeToStringShort(op.x()))
+                        .append("),y=(").append(op.y() == null ? null : Shape.shapeToStringShort(op.y()))
+                        .append("),z=(").append(op.z() == null ? null : Shape.shapeToStringShort(op.z()))
+                        .append(")]");
 
                 throw new ND4JIllegalArgumentException(sb.toString());
             }

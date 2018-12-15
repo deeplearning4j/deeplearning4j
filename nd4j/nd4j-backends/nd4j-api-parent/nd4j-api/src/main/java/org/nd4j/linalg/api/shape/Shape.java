@@ -2978,6 +2978,11 @@ public class Shape {
         return sb.toString();
     }
 
+    public static String shapeToStringShort(INDArray arr){
+        long[] s = arr.shape();
+        return arr.dataType() + "," + (s == null ? "[]" : Arrays.toString(s)) + "," + arr.ordering();
+    }
+
 
 
     /**

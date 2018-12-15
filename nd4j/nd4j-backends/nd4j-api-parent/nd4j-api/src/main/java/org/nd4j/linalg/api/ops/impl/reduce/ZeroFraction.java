@@ -19,7 +19,9 @@ package org.nd4j.linalg.api.ops.impl.reduce;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
@@ -59,4 +61,9 @@ public class ZeroFraction extends DynamicCustomOp {
         return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected 1 datatype, got %s", dataTypes);
+        return Collections.singletonList(DataType.FLOAT);
+    }
 }

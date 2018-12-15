@@ -117,10 +117,13 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     public List<LongShapeDescriptor> calculateOutputShape() {
         val ret = new ArrayList<LongShapeDescriptor>(1);
 
-        val s = arg().getShape();
+        long[] s = arg().getShape();
 
-        if (s == null)
-            return Collections.emptyList();
+        if (s == null) {
+            if(x == null)
+                return Collections.emptyList();
+            s = x.shape();
+        }
 
         val aT = arg().dataType();
         val sT = scalarValue.dataType();

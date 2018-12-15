@@ -46,10 +46,6 @@ import org.nd4j.jackson.objectmapper.holder.ObjectMapperHolder;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -209,8 +205,6 @@ public class SameDiff {
 
     @Deprecated //TO BE REMOVED - to Variable
     private Map<String, long[]> placeHolderOriginalShapes;
-    @Deprecated //TO BE REMOVED - to InferenceSession
-    private MemoryWorkspace workspace;
     private Map<String, SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
     private Map<String, SameDiff> sameDiffFunctionInstances;
     private Set<String> placeHolderFunctions;
@@ -1461,17 +1455,6 @@ public class SameDiff {
         return ret;
     }
 
-    @Deprecated //TO BE REMOVED - move to InferenceSession
-    private void initWorkspace() {
-        workspace = Nd4j.getWorkspaceManager().createNewWorkspace(
-                WorkspaceConfiguration.builder()
-                        .initialSize(memoryForGraph())
-                        .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                        .policyLearning(LearningPolicy.FIRST_LOOP)
-                        .build());
-        Nd4j.getWorkspaceManager().setWorkspaceForCurrentThread(workspace);
-    }
-
     /**
      * Returns the inputs (placeholders)
      * for the samediff graph
@@ -2212,9 +2195,6 @@ public class SameDiff {
         if (name == null || name.length() < 1)
             name = getNewVarName();
 
-        if (workspace == null)
-            initWorkspace();
-
 
         SDVariable ret = new SDVariable(name, variableType, this, shape, dataType, weightInitScheme);
         addVariable(ret);
@@ -2372,8 +2352,6 @@ public class SameDiff {
         if (arr == null)
             throw new IllegalArgumentException("Array for " + name + " must not be null");
 
-        if (workspace == null)
-            initWorkspace();
         arr = arr.migrate();
         SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, arr.shape(), arr.dataType(), new NDArraySupplierInitScheme(arr));
 
@@ -9840,7 +9818,6 @@ public class SameDiff {
     public SameDiff defineFunction(String function, SameDiffFunctionDefinition functionDefinition, SDVariable[] variables) {
         if (!sameDiffFunctionInstances.containsKey(function)) {
             SameDiff sub = SameDiff.create();
-            sub.workspace = (workspace);
             this.child = sub;
             sub.parent = this;
             //setup subgraph
@@ -9878,7 +9855,6 @@ public class SameDiff {
                                Map<String, INDArray> inputs) {
         if (!sameDiffFunctionInstances.containsKey(function)) {
             SameDiff sub = SameDiff.create();
-            sub.workspace = (workspace);
             //setup subgraph
             //re execute to populate subgraph
             functionDefinition.define(sub, inputs, null);
