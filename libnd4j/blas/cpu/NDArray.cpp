@@ -1690,8 +1690,27 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* othe
         throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
     if (target->_dataType != this->_dataType && target->_dataType != other->_dataType)
         throw std::invalid_argument("NDArray::applyPairwiseTransform method - type of target array must be the same as type of this or other array !");
+    auto otherShape = other->_shapeInfo;
+    auto otherBuffer = other->_buffer;
+    NDArray* otherAgain = nullptr;
+    DataType oldType = ArrayOptions::dataType(otherShape);
+    if (!Environment::getInstance()->isExperimentalBuild()) {
+        if (dataType() != other->dataType() && other->dataType() != BOOL) {
+            Nd4jLong* newShape = nullptr;
+            COPY_SHAPE_EX(otherShape, newShape, _workspace);
+            ArrayOptions::setDataType(newShape, this->dataType());
+            otherAgain = new NDArray(newShape, this->_workspace);
+            otherAgain->assign(*other);
+            otherBuffer = otherAgain->_buffer;
+            otherShape = newShape;
+        }
+    }
+    NativeOpExcutioner::execPairwiseTransform(op, this->_buffer, this->_shapeInfo, otherBuffer, otherShape, target->_buffer, target->_shapeInfo, extraParams);
+    if (oldType != ArrayOptions::dataType(otherShape))
+        RELEASE(otherShape, _workspace);
+        //ArrayOptions::setDataType(otherShape, oldType);
 
-    NativeOpExcutioner::execPairwiseTransform(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams);
+    delete otherAgain;
 }
 
 void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *other, NDArray *target, void *extraParams) const{
@@ -1704,6 +1723,17 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
     if (_dataType != other->_dataType)
         throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - this and other arrays must have the same type !");
 
+    auto otherShape = other->_shapeInfo;
+    auto otherBuffer = other->_buffer;
+    NDArray* otherAgain = nullptr;
+    if (!Environment::getInstance()->isExperimentalBuild()) {
+        if (dataType() != other->dataType() && other->dataType() != BOOL) {
+            ArrayOptions::setDataType(otherShape, this->dataType());
+            otherAgain = new NDArray(otherShape, this->_workspace);
+            otherAgain->assign(*other);
+            otherBuffer = otherAgain->_buffer;
+        }
+    }
     NativeOpExcutioner::execPairwiseBoolTransform(op, this->_buffer, this->_shapeInfo, other->_buffer, other->_shapeInfo, target->_buffer, target->_shapeInfo, extraParams);
 }
 
@@ -2253,7 +2283,9 @@ void NDArray::applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArra
         target = this;
     if(target->_dataType != DataTypeUtils::pickPairwiseResultType(_shapeInfo, scalar->_shapeInfo) && !(target->_dataType == this->_dataType || target->_dataType == scalar->_dataType))
         throw std::invalid_argument("NDArray::applyScalarArr method: wrong type of target array!");
-
+    if (!Environment::getInstance()->isExperimentalBuild()) {
+        if (scalar->dataType() != this->dataType());
+    }
     NativeOpExcutioner::execScalar(op, _buffer, _shapeInfo, target->_buffer, target->_shapeInfo, scalar->_buffer, scalar->_shapeInfo, extraParams);
 }
 
@@ -4162,8 +4194,11 @@ ND4J_EXPORT NDArray operator-(const float& scalar, const NDArray& arr) {
 ND4J_EXPORT NDArray operator-(const double& scalar, const NDArray& arr) {
     if (arr.isS())
         throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
-
-    auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
+    DataType type = DataTypeUtils::fromT<double>();
+    if (!Environment::getInstance()->isExperimentalBuild()) {
+        type = arr.dataType();
+    }
+    auto tmp = NDArrayFactory::create(type, scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<double>()), false, arr.getWorkspace());
     NativeOpExcutioner::execScalar(nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
     return result;
@@ -4173,7 +4208,11 @@ ND4J_EXPORT NDArray operator-(const Nd4jLong& scalar, const NDArray& arr) {
     if (arr.isS())
         throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
 
-    auto tmp = NDArrayFactory::create(scalar, arr.getWorkspace());
+    DataType type = DataTypeUtils::fromT<double>();
+    if (!Environment::getInstance()->isExperimentalBuild()) {
+        type = arr.dataType();
+    }
+    auto tmp = NDArrayFactory::create(type, scalar, arr.getWorkspace());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<Nd4jLong>()), false, arr.getWorkspace());
     NativeOpExcutioner::execScalar(nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), result.getBuffer(), result.getShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), nullptr);
     return result;
