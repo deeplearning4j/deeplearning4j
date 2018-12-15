@@ -18,9 +18,12 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class LogicalXor extends DynamicCustomOp {
@@ -47,4 +50,11 @@ public class LogicalXor extends DynamicCustomOp {
         return Arrays.asList( sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatypes, got %s", dataTypes);
+        Preconditions.checkState(dataTypes.get(0) == DataType.BOOL, "Datatype for input 0 must be BOOL: got %s", dataTypes.get(0));
+        Preconditions.checkState(dataTypes.get(1) == DataType.BOOL, "Datatype for input 1 must be BOOL: got %s", dataTypes.get(1));
+        return Collections.singletonList(DataType.BOOL);
+    }
 }

@@ -1076,20 +1076,20 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), ia.rdiv(ib));
                     break;
                 case 6:
-                    t = sd.eq(in1, in2);
-                    tc.expectedOutput(t.getVarName(), ia.eq(ib));
+                    t = sd.eq(in1, in2).castTo(DataType.DOUBLE);
+                    tc.expectedOutput(t.getVarName(), ia.eq(ib).castTo(DataType.DOUBLE));
                     break;
                 case 7:
-                    t = sd.neq(in1, in2);
-                    tc.expectedOutput(t.getVarName(), ia.neq(ib));
+                    t = sd.neq(in1, in2).castTo(DataType.DOUBLE);
+                    tc.expectedOutput(t.getVarName(), ia.neq(ib).castTo(DataType.DOUBLE));
                     break;
                 case 8:
-                    t = sd.gt(in1, in2);
-                    tc.expectedOutput(t.getVarName(), ia.gt(ib));
+                    t = sd.gt(in1, in2).castTo(DataType.DOUBLE);
+                    tc.expectedOutput(t.getVarName(), ia.gt(ib).castTo(DataType.DOUBLE));
                     break;
                 case 9:
-                    t = sd.lt(in1, in2);
-                    tc.expectedOutput(t.getVarName(), ia.lt(ib));
+                    t = sd.lt(in1, in2).castTo(DataType.DOUBLE);
+                    tc.expectedOutput(t.getVarName(), ia.lt(ib).castTo(DataType.DOUBLE));
                     break;
                 case 10:
                     t = sd.gte(in1, in2).castTo(DataType.DOUBLE);
@@ -1125,14 +1125,14 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 16:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.and(in1, in2);
-                    tc.expectedOutput(t.getVarName(), Transforms.and(ia, ib));
+                    t = sd.and(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL)).castTo(DataType.DOUBLE);
+                    tc.expectedOutput(t.getVarName(), Transforms.and(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL)).castTo(DataType.DOUBLE));
                     break;
                 case 17:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
-                    t = sd.xor(in1, in2);
-                    tc.expectedOutput(t.getVarName(), Transforms.xor(ia, ib));
+                    t = sd.xor(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL)).castTo(DataType.DOUBLE);
+                    tc.expectedOutput(t.getVarName(), Transforms.xor(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL)).castTo(DataType.DOUBLE));
                     break;
                 case 18:
                     t = sd.assign(in1, in2);
@@ -1176,7 +1176,7 @@ public class TransformOpValidation extends BaseOpValidation {
             String name = funcs[0].opName();
 
             String msg = "test: " + i + " - " + name;
-            log.info("*** Starting test: " + msg);
+            log.info("***** Starting test: {} *****", msg);
 
             SDVariable loss = sd.mean("loss", t);
 

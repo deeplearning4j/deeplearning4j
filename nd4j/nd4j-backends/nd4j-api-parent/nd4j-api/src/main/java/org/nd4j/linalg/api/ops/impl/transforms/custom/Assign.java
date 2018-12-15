@@ -94,8 +94,8 @@ public class Assign extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactyl 1 input datatype, got %s", dataTypes);
-        return Collections.singletonList(outputVariable().dataType());
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatype, got %s", dataTypes);
+        return Collections.singletonList(dataTypes.get(0));
     }
 
 }

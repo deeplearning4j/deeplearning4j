@@ -20,6 +20,7 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -120,5 +121,11 @@ public class Choose extends DynamicCustomOp {
     @Override
     public String opName() {
         return "choose";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got %s", dataTypes);
+        return Collections.singletonList(dataTypes.get(0));
     }
 }

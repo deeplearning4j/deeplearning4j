@@ -2950,14 +2950,17 @@ public class Shape {
     }
 
     public static String shapeToString(LongBuffer buffer) {
+        int length = buffer.capacity();
+        long options = buffer.get(length -3);
         val shapeBuff = shapeOf(buffer);
         int rank = Shape.rank(buffer);
         val strideBuff = stride(buffer);
         StringBuilder sb = new StringBuilder();
-        sb.append("Rank: " + rank + ",");
-        sb.append("Offset: " + Shape.offset(buffer) + "\n");
-        sb.append(" Order: " + Shape.order(buffer));
-        sb.append(" Shape: [");
+        sb.append("Rank: ").append(rank).append(",")
+                .append(" DataType: ").append(ArrayOptionsHelper.dataType(options)).append(",")
+                .append(" Offset: ").append(Shape.offset(buffer)).append(",")
+                .append(" Order: ").append(Shape.order(buffer)).append(",")
+                .append(" Shape: [");
         for (int i = 0; i < rank; i++) {
             sb.append(shapeBuff.get(i));
             if (i < rank - 1)
@@ -2965,7 +2968,7 @@ public class Shape {
         }
         sb.append("], ");
 
-        sb.append(" stride: [");
+        sb.append(" Stride: [");
         for (int i = 0; i < rank; i++) {
             sb.append(strideBuff.get(i));
             if (i < rank - 1)

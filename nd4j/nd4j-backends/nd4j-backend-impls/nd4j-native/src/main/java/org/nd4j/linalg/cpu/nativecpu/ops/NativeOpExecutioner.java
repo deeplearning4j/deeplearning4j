@@ -1778,12 +1778,27 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if (status != OpStatus.ND4J_STATUS_OK)
                     throw new ND4JIllegalStateException("Failed to execute op [" + name + "] with error code [" + status +"]");
             }catch(Exception e) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Inputs: [");
+                for( int i=0; i<inputArgs.length; i++ ){
+                    if(i > 0)
+                        sb.append(",");
+                    sb.append(inputArgs[i].shapeInfoToString());
+                }
+                sb.append("]. Outputs: ");
+                for( int i=0; i<outputArgs.length; i++){
+                    if(i > 0)
+                        sb.append(",");
+                    sb.append(outputArgs[i].shapeInfoToString());
+                }
+                sb.append("]");
                 log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
                                 String.valueOf(op.numInputArguments()) + " inputs, " +
                                 String.valueOf(op.numOutputArguments()) + " outputs, "+
                                 String.valueOf(op.numTArguments()) + " targs and " +
                                 String.valueOf(op.numIArguments()) + " iargs. " +
-                "Please see above message (printed out from c++) for a possible cause of error.");
+                                sb.toString() +
+                " - Please see above message (printed out from c++) for a possible cause of error.");
                 throw e;
             }
 

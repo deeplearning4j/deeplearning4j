@@ -18,8 +18,11 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Collections;
 import java.util.List;
 
 public class MatrixDiag extends DynamicCustomOp {
@@ -46,5 +49,12 @@ public class MatrixDiag extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got %s", dataTypes);
+        Preconditions.checkState(dataTypes.get(0).isFPType(), "Input datatype must be a floating point type, got %s", dataTypes.get(0));
+        return Collections.singletonList(dataTypes.get(0));
     }
 }

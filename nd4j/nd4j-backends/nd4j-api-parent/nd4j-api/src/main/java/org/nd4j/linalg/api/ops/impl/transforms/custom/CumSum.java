@@ -21,10 +21,12 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.properties.adapters.BooleanAdapter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
@@ -138,6 +140,12 @@ public class CumSum extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         return Collections.singletonList(f().cumsumBp(arg(0), grad.get(0), exclusive, reverse, jaxis));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got %s", dataTypes);
+        return Collections.singletonList(dataTypes.get(0));
     }
 
 }

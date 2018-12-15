@@ -19,10 +19,13 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -60,5 +63,14 @@ public class Zeta extends BaseDynamicTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         throw new UnsupportedOperationException("Not yet implemented: " + opName());
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatypes, got %s", dataTypes);
+        Preconditions.checkState(dataTypes.get(0).isFPType(), "Input 0 datatype must be a floating point type, got %s", dataTypes.get(0));
+        Preconditions.checkState(dataTypes.get(1).isFPType(), "Input 1 datatype must be a floating point type, got %s", dataTypes.get(1));
+        Preconditions.checkState(dataTypes.get(0) == dataTypes.get(1), "Input datatypes must be equal, type, got %s", dataTypes);
+        return Collections.singletonList(dataTypes.get(0));
     }
 }

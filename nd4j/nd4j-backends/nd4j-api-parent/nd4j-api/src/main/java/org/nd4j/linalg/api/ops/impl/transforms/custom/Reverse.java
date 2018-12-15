@@ -18,10 +18,13 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class Reverse extends DynamicCustomOp {
@@ -54,6 +57,12 @@ public class Reverse extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         SDVariable ret = f().reverse(f1.get(0), dimensions);
         return Arrays.asList(ret);
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got %s", dataTypes);
+        return Collections.singletonList(dataTypes.get(0));
     }
 
 }

@@ -18,6 +18,8 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -64,5 +66,12 @@ public class MatrixDeterminant extends DynamicCustomOp {
 //        SDVariable dOutdIn = outputVariable().mul(trace);
 //        return Collections.singletonList(i_v.get(0).mul(dOutdIn).mul(sameDiff.onesLike(arg())));
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got %s", dataTypes);
+        Preconditions.checkState(dataTypes.get(0).isFPType(), "Input datatype must be a floating point type, got %s", dataTypes.get(0));
+        return Collections.singletonList(dataTypes.get(0));
     }
 }
