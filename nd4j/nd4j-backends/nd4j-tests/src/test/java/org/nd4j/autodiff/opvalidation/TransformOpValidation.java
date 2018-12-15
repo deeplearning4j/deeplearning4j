@@ -215,10 +215,10 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testCross() {
-        INDArray a = Nd4j.create(new float[]{4, 2, 1}, new int[]{1, 3});
-        INDArray b = Nd4j.create(new float[]{1, 3, 4}, new int[]{1, 3});
+        INDArray a = Nd4j.create(new double[]{4, 2, 1}, new int[]{1, 3});
+        INDArray b = Nd4j.create(new double[]{1, 3, 4}, new int[]{1, 3});
 
-        INDArray expOut = Nd4j.create(1, 3);
+        INDArray expOut = Nd4j.create(DataType.DOUBLE,1, 3);
 
         val op = new Cross(a, b, expOut);
         Nd4j.getExecutioner().exec(op);
@@ -378,8 +378,8 @@ public class TransformOpValidation extends BaseOpValidation {
     public void testDynamicPartition() {
         SameDiff sd = SameDiff.create();
 
-        INDArray ia = Nd4j.trueVector(new float[]{4, 3, 5, 7, 8, 0});
-        INDArray partitions = Nd4j.trueVector(new float[]{1, 0, 1, 0, 0, 1}).castTo(DataType.INT);
+        INDArray ia = Nd4j.create(new float[]{4, 3, 5, 7, 8, 0});
+        INDArray partitions = Nd4j.create(new float[]{1, 0, 1, 0, 0, 1}).castTo(DataType.INT);
         int numPartitions = 2;
 
         SDVariable in = sd.var("in", DataType.FLOAT, new long[]{6});
@@ -943,7 +943,7 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 71:
                     ia = Nd4j.randn(DataType.DOUBLE, nOut, nOut);
                     t = sd.diagPart(in);
-                    tc.expectedOutput(t.getVarName(), Nd4j.trueVector(new double[]{ia.getDouble(0,0), ia.getDouble(1,1), ia.getDouble(2,2), ia.getDouble(3,3)}).castTo(DataType.DOUBLE));
+                    tc.expectedOutput(t.getVarName(), Nd4j.create(new double[]{ia.getDouble(0,0), ia.getDouble(1,1), ia.getDouble(2,2), ia.getDouble(3,3)}).castTo(DataType.DOUBLE));
                     break;
                 case 72:
                     t = sd.identity(in);
@@ -1215,7 +1215,7 @@ public class TransformOpValidation extends BaseOpValidation {
             switch (i){
                 case 0:
                     inArr = Nd4j.create(new double[]{10,Double.POSITIVE_INFINITY, 0, Double.NEGATIVE_INFINITY});
-                    exp = Nd4j.trueVector(new boolean[]{true,false,true,false});
+                    exp = Nd4j.create(new boolean[]{true,false,true,false});
                     out = sd.isFinite(in);
                     break;
                 case 1:
@@ -1322,14 +1322,12 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable input = sameDiff.var("x", inputs.get("x"));
         SDVariable sigmoid = sameDiff.sigmoid(input);
         SDVariable sum = sameDiff.sum(sigmoid, Integer.MAX_VALUE);
-        List<DifferentialFunction> backwardsOps = sameDiff.execBackwards().getRight();
-        Op finalOp = (Op) backwardsOps.get(backwardsOps.size() - 1);
+        sameDiff.execBackwards();
+        INDArray arr = input.gradient().getArr();
         assertTrue(Nd4j.create(new double[][]{
                 {0.1966, 0.1050},
                 {0.0452, 0.0177}
-        }).equalsWithEps(
-                finalOp.z(), 1e-2));
-        System.out.println(backwardsOps);
+        }).equalsWithEps(arr, 1e-2));
     }
 
 
@@ -1342,39 +1340,6 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(1,sigmoid.depth());
     }*/
 
-
-    @Test
-    public void testTanhGradient() {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray sumInput = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
-        Map<String, INDArray> inputs = new HashMap<>();
-        inputs.put("x", sumInput);
-        sameDiff.defineFunction("tanhGradient", new SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable input = sameDiff.var("x", inputs.get("x"));
-                SDVariable tanh = sameDiff.tanh(input);
-                SDVariable sum = sameDiff.sum(tanh, Integer.MAX_VALUE);
-                return new SDVariable[]{tanh};
-            }
-        }, inputs);
-
-        INDArray executions = null; //TODO sameDiff.getFunction("tanhGradient").execBackwardAndEndResult();
-        //[0.41997434161402614,0.07065082485316443,0.009866037165440211,0.0013409506830258655]
-        INDArray assertion = Nd4j.create(new double[][]{
-                {0.41997434161402614, 0.07065082485316443},
-                {0.009866037165440211, 0.0013409506830258655}
-        });
-
-        assertTrue(assertion.equalsWithEps(
-                executions, 1e-3));
-
-        assertArrayEquals(sumInput.shape(), executions.shape());
-        assertEquals(assertion, executions);
-        System.out.println(executions);
-        //assertEquals(Nd4j.ones(2,2),executions);
-    }
-
     @Test
     public void testRank0EdgeCase(){
         SameDiff sd = SameDiff.create();
@@ -1383,7 +1348,8 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(8, d0, 0);
 
         SDVariable v2 = sd.sum(sd.var(Nd4j.create(new double[]{4, 4}))).div(2.0);
-        double d1 = sd.execAndEndResult().getDouble(0);
+        sd.exec();
+        double d1 = v2.getArr().getDouble(0);
         assertEquals(4, d1, 0);
     }
 
@@ -1421,10 +1387,10 @@ public class TransformOpValidation extends BaseOpValidation {
         for(String s : new String[]{"add", "sub", "mul", "div"}) {
             INDArray ref = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape(10, 3);
             INDArray indices = Nd4j.trueScalar(5);
-            INDArray upd = Nd4j.trueVector(new double[]{10, 20, 30});
+            INDArray upd = Nd4j.create(new double[]{10, 20, 30});
 
             //The non-scalar case works:
-//            INDArray indices = Nd4j.trueVector(new float[]{5});
+//            INDArray indices = Nd4j.create(new float[]{5});
 //            INDArray upd = Nd4j.create(new double[]{10, 20, 30}, new int[]{1, 3});
 
             INDArray exp = ref.dup();
@@ -1476,7 +1442,7 @@ public class TransformOpValidation extends BaseOpValidation {
                 .build();
 
         OpValidation.validate(new OpTestCase(op)
-                .expectedOutput(0, Nd4j.trueVector(new double[]{10, 1, 1, 1, 1, 1, 10})));
+                .expectedOutput(0, Nd4j.create(new double[]{10, 1, 1, 1, 1, 1, 10})));
     }
 
 
@@ -1485,9 +1451,9 @@ public class TransformOpValidation extends BaseOpValidation {
 //        OpValidationSuite.ignoreFailing();
 
         INDArray in = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2,3);
-        INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}});
+        INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}}).castTo(DataType.INT);
 
-        INDArray out = Nd4j.create(new long[]{4,7});
+        INDArray out = Nd4j.create(DataType.DOUBLE, 4,7);
 
         DynamicCustomOp op = DynamicCustomOp.builder("mirror_pad")
                 .addInputs(in, pad)
@@ -1513,9 +1479,9 @@ public class TransformOpValidation extends BaseOpValidation {
 //        OpValidationSuite.ignoreFailing();
 
         INDArray in = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2,3);
-        INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}});
+        INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}}).castTo(DataType.INT);
 
-        INDArray out = Nd4j.create(new long[]{4,7});
+        INDArray out = Nd4j.create(DataType.DOUBLE, new long[]{4,7});
 
         DynamicCustomOp op = DynamicCustomOp.builder("mirror_pad")
                 .addInputs(in, pad)
@@ -1541,7 +1507,7 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray in = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3,4);
         INDArray pad = Nd4j.create(new double[][]{{1,1},{1,1}}).castTo(DataType.INT);
 
-        INDArray out = Nd4j.create(new long[]{5,6});
+        INDArray out = Nd4j.create(DataType.DOUBLE, 5,6);
 
         DynamicCustomOp op = DynamicCustomOp.builder("mirror_pad")
                 .addInputs(in, pad)
@@ -1565,13 +1531,13 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testUnique(){
-        INDArray in = Nd4j.trueVector(new double[]{3, 4, 3, 1, 3, 0, 2, 4, 2, 4});
+        INDArray in = Nd4j.create(new double[]{3, 4, 3, 1, 3, 0, 2, 4, 2, 4});
 
-        INDArray expUnique = Nd4j.trueVector(new double[]{3, 4, 1, 0, 2});
-        INDArray expUniqueIdxs = Nd4j.trueVector(new double[]{0, 1, 0, 2, 0, 3, 4, 1, 4, 1});
+        INDArray expUnique = Nd4j.create(new double[]{3, 4, 1, 0, 2});
+        INDArray expUniqueIdxs = Nd4j.create(new double[]{0, 1, 0, 2, 0, 3, 4, 1, 4, 1}).castTo(DataType.LONG);
 
-        INDArray outUnique = Nd4j.create(expUnique.shape());
-        INDArray outUniqueIdxs = Nd4j.create(expUniqueIdxs.shape());
+        INDArray outUnique = Nd4j.create(DataType.DOUBLE, expUnique.shape());
+        INDArray outUniqueIdxs = Nd4j.create(DataType.LONG, expUniqueIdxs.shape());
 
         DynamicCustomOp op = DynamicCustomOp.builder("unique")
                 .addInputs(in)
@@ -1588,13 +1554,13 @@ public class TransformOpValidation extends BaseOpValidation {
     @Test
     public void testTopK(){
         OpValidationSuite.ignoreFailing();  //Can't assume sorted here
-        INDArray in = Nd4j.trueVector(new double[]{7, 3, 1, 2, 5, 0, 4, 6, 9, 8});
+        INDArray in = Nd4j.create(new double[]{7, 3, 1, 2, 5, 0, 4, 6, 9, 8});
 
-        INDArray expTopK = Nd4j.trueVector(new double[]{7, 5, 6, 9, 8});
-        INDArray expIndices = Nd4j.trueVector(new double[]{0, 4, 7, 8, 9});
+        INDArray expTopK = Nd4j.create(new double[]{7, 5, 6, 9, 8});
+        INDArray expIndices = Nd4j.create(new double[]{0, 4, 7, 8, 9});
 
-        INDArray expTopK_sorted = Nd4j.trueVector(new double[]{9, 8, 7, 6, 5});
-        INDArray expIndices_sorted = Nd4j.trueVector(new double[]{8, 9, 0, 7, 4});
+        INDArray expTopK_sorted = Nd4j.create(new double[]{9, 8, 7, 6, 5});
+        INDArray expIndices_sorted = Nd4j.create(new double[]{8, 9, 0, 7, 4});
 
         for(boolean sort : new boolean[]{false, true}) {
             INDArray outUnique = Nd4j.create(expTopK.shape());
@@ -1619,21 +1585,21 @@ public class TransformOpValidation extends BaseOpValidation {
         for( int k=4; k>= 1; k--){
             log.info("Testing: k=" + k);
             INDArray in = Nd4j.linspace(1, 20, 20, DataType.DOUBLE).reshape(4, 5);
-            INDArray idxs = Nd4j.trueVector(new double[]{1, 2, 3, 4});
+            INDArray idxs = Nd4j.create(new double[]{1, 2, 3, 4}).castTo(DataType.INT);
 
             INDArray expOut;
             switch (k){
                 case 4:
-                    expOut = Nd4j.trueVector(new double[]{1, 1, 1, 1});
+                    expOut = Nd4j.create(new boolean[]{true, true, true, true});
                     break;
                 case 3:
-                    expOut = Nd4j.trueVector(new double[]{0, 1, 1, 1});
+                    expOut = Nd4j.create(new boolean[]{false, true, true, true});
                     break;
                 case 2:
-                    expOut = Nd4j.trueVector(new double[]{0, 0, 1, 1});
+                    expOut = Nd4j.create(new boolean[]{false, false, true, true});
                     break;
                 case 1:
-                    expOut = Nd4j.trueVector(new double[]{0, 0, 0, 1});
+                    expOut = Nd4j.create(new boolean[]{false, false, false, true});
                     break;
                 default:
                     throw new RuntimeException();
@@ -1641,7 +1607,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
 
 
-            INDArray out = Nd4j.create(expOut.shape());
+            INDArray out = Nd4j.create(DataType.BOOL, expOut.shape());
 
             DynamicCustomOp op = DynamicCustomOp.builder("in_top_k")
                     .addInputs(in, idxs)

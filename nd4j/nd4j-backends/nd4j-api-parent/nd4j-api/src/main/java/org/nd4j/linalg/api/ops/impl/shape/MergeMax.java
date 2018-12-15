@@ -32,6 +32,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -83,7 +84,7 @@ public class MergeMax extends DynamicCustomOp {
         List<SDVariable> ret = new ArrayList<>();
         SDVariable out = outputVariable();
         for (int i = 0; i < args().length; i++){
-            SDVariable isMax = out.eq(arg(i));
+            SDVariable isMax = out.eq(arg(i)).castTo(arg(i).dataType());
             ret.add(isMax.mul(gradient));
         }
         return ret;
@@ -97,6 +98,6 @@ public class MergeMax extends DynamicCustomOp {
             Preconditions.checkState(first == dt, "All inputs must have same datatype - got %s and %s for inputs 0 and %s respectively", first, dt, i);
         }
         //Output type is same as input types
-        return dataTypes;
+        return Collections.singletonList(first);
     }
 }

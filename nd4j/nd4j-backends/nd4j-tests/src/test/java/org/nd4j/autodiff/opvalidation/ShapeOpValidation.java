@@ -189,16 +189,17 @@ public class ShapeOpValidation extends BaseOpValidation {
             SameDiff sd = SameDiff.create();
             SDVariable var;
             if(shape == null){
-                var = sd.var("in", Nd4j.trueScalar(1));
+                var = sd.var("in", Nd4j.scalar(1.0));
             } else {
-                var = sd.var("in", Nd4j.create(shape));
+                var = sd.var("in", Nd4j.create(DataType.DOUBLE, shape));
             }
 
             SDVariable rank = sd.rank(var);
 
-            INDArray expRank = Nd4j.trueScalar(shape == null ? 0 : shape.length);
+            INDArray expRank = Nd4j.scalar(DataType.INT, shape == null ? 0 : shape.length);
             String msg = "Rank " + (shape == null ? 0 : shape.length);
             String err = OpValidation.validate(new TestCase(sd)
+                    .gradientCheck(false)
                     .expected(rank, expRank));
 
             assertNull(err);
@@ -942,7 +943,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         System.out.println(sameDiff.summary());
 
         String err = OpValidation.validate(new TestCase(sameDiff)
-                .expected(result, Nd4j.create(new double[]{2,3}, new long[]{2})));
+                .expected(result, Nd4j.create(new double[]{2,3}, new long[]{2}).castTo(DataType.LONG)));
 
         assertNull(err);
     }
@@ -955,6 +956,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable result = sameDiff.size(x);
 
         String err = OpValidation.validate(new TestCase(sameDiff)
+                .gradientCheck(false)
                 .expected(result, Nd4j.trueScalar(6)));
 
         assertNull(err);
@@ -1375,7 +1377,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             SDVariable[] arr = new SDVariable[rank];
             List<String> names = new ArrayList<>();
             for( int i=0; i<rank; i++ ){
-                INDArray in = Nd4j.linspace(1,3+i, 3+i).reshape(3+i);
+                INDArray in = Nd4j.linspace(1,3+i, 3+i).reshape(3+i).castTo(DataType.DOUBLE);
                 arr[i] = sd.var("in"+i, in);
                 names.add("meshgrid-" + i);
             }
@@ -1394,7 +1396,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             }
             INDArray[] exp = new INDArray[shape.length];    //Nd4j.create(shape);
             for( int i=0; i<exp.length; i++ ){
-                exp[i] = Nd4j.create(shape);
+                exp[i] = Nd4j.create(DataType.DOUBLE, shape);
                 long nTensors = exp[i].tensorsAlongDimension(i);
                 for( long j=0; j<nTensors; j++ ){
                     INDArray tad = exp[i].tensorAlongDimension((int)j, i);
@@ -1429,7 +1431,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         List<INDArray> indices = new ArrayList<>();
 
         inArrs.add(Nd4j.linspace(1,48,48).reshape(2,4,3,2));
-        indices.add(Nd4j.trueVector(new double[]{1,0}));
+        indices.add(Nd4j.trueVector(new double[]{1,0}).castTo(DataType.INT));
         axis.add(-2);
 
         for( int i=0; i<inArrs.size(); i++ ){

@@ -962,8 +962,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 op.setZ(Nd4j.scalar(op.resultType(), 0));
             }
 
-            if (!op.validateDataTypes())
-                throw new ND4JIllegalArgumentException("Bad data types");
+            if (!op.validateDataTypes()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Data type validation failed for op ").append(op.getClass().getSimpleName()).append(": ")
+                        .append("Inputs: [x=").append(op.x() == null ? null : op.x().shapeInfoToString())
+                        .append(",y=").append(op.y() == null ? null : op.y().shapeInfoToString())
+                        .append(",z=").append(op.z() == null ? null : op.z().shapeInfoToString());
+
+                throw new ND4JIllegalArgumentException(sb.toString());
+            }
 
             // since we're going to call reduceToScalar, we must ensure equal lengths
             if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
@@ -1779,19 +1786,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     throw new ND4JIllegalStateException("Failed to execute op [" + name + "] with error code [" + status +"]");
             }catch(Exception e) {
                 StringBuilder sb = new StringBuilder();
-                sb.append("Inputs: [");
+                sb.append("Inputs: [(");
                 for( int i=0; i<inputArgs.length; i++ ){
                     if(i > 0)
-                        sb.append(",");
+                        sb.append("), (");
                     sb.append(inputArgs[i].shapeInfoToString());
                 }
-                sb.append("]. Outputs: ");
+                sb.append(")]. Outputs: [(");
                 for( int i=0; i<outputArgs.length; i++){
                     if(i > 0)
-                        sb.append(",");
+                        sb.append("), (");
                     sb.append(outputArgs[i].shapeInfoToString());
                 }
-                sb.append("]");
+                sb.append(")]");
                 log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
                                 String.valueOf(op.numInputArguments()) + " inputs, " +
                                 String.valueOf(op.numOutputArguments()) + " outputs, "+

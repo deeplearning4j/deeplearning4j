@@ -134,7 +134,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
         INDArray dLdIn;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            sameDiff.clearExecutionCache();
+//            sameDiff.clearExecutionCache();
             INDArray castInput = input.castTo(Nd4j.defaultFloatingPointType());
             if(castInput.isAttached())
                 castInput = castInput.dup();

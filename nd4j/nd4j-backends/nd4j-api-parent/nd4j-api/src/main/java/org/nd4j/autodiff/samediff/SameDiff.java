@@ -9627,7 +9627,10 @@ public class SameDiff {
                 }
                 SDVariable[] ret = new SDVariable[num_outputs];
 
-                //Infer the output types: we can always do 
+                //Infer the output types: we can always determine datatype but not always shapes
+                Preconditions.checkState(num_outputs == 0 || (outputDataTypes != null && outputDataTypes.size() == num_outputs),
+                        "Incorrect number of output datatypes: got %s but expected datatypes for %s outputs - %s (op: %s)",
+                        (outputDataTypes == null ? null : outputDataTypes.size()), num_outputs, outputDataTypes, function.getClass().getSimpleName());
 
                 //dynamic shapes
                 //When importing from TF: convention seem to be names like "unstack", "unstack:1", "unstack:2", ...
@@ -11210,7 +11213,7 @@ public class SameDiff {
 
 
             FlatArray fa = v.ndarray();
-            if(fa != null){
+            if(fa != null && vt != VariableType.ARRAY){
                 INDArray arr = Nd4j.createFromFlatArray(fa);
                 sd.setArrayForVariable(n, arr);
             }

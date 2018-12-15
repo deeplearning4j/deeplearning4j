@@ -126,7 +126,10 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
 
         val ret = new ArrayList<LongShapeDescriptor>(1);
         val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
-        ret.add(LongShapeDescriptor.fromShape(reducedShape, DataType.FLOAT));
+        DataType retType = arg().dataType();
+        if(!retType.isFPType())
+            retType = Nd4j.defaultFloatingPointType();
+        ret.add(LongShapeDescriptor.fromShape(reducedShape, retType));
         return ret;
     }
 

@@ -80,7 +80,7 @@ public class LegacyOpMapper {
             case BROADCAST:
                 return broadcastOpClass(opNum);
             case REDUCE_SAME:
-                return reduceOpClass(opNum);
+                return reduceSameOpClass(opNum);
             case INDEXREDUCE:
                 return indexReduceClass(opNum);
             case REDUCE3:
@@ -93,7 +93,7 @@ public class LegacyOpMapper {
             case SUMMARYSTATS:
                 return varianceOpClass(opNum);
             case REDUCE_FLOAT:
-                return reduceOpClass(opNum);
+                return reduceFloatOpClass(opNum);
             case TRANSFORM_BOOL:
                 return transformBoolOpClass(opNum);
             case TRANSFORM_ANY:
@@ -453,71 +453,51 @@ public class LegacyOpMapper {
         }
     }
 
-    public static Class<?> reduceOpClass(int opNum){
+    public static Class<?> reduceFloatOpClass(int opNum){
         switch (opNum) {
             case 0:
                 return Mean.class;
             case 1:
-                return Sum.class;
-            case 3:
-                return Max.class;
-            case 4:
-                return Min.class;
-            case 5:
-                return Norm1.class;
-            case 6:
-                return Norm2.class;
-            case 7:
-                return NormMax.class;
-            case 8:
-                return Prod.class;
-            case 9:
-                return StandardDeviation.class;
-            case 10:
-                return Variance.class;
-            case 11:
-                return ASum.class;
-            case 12:
-                return MatchCondition.class;
-            case 13:
-                return AMax.class;
-            case 14:
-                return AMin.class;
-            case 15:
                 return AMean.class;
-            case 16:
-                return Entropy.class;
-            case 17:
-                return LogEntropy.class;
-            case 18:
-                return ShannonEntropy.class;
-            case 19:
-                return LogSumExp.class;
-            case 20:
-                return Any.class;
-            case 21:
-                return All.class;
-            case 22:
-                return CountNonZero.class;
-            case 25:
+            case 2:
+                return Norm1.class;
+            case 3:
+                return Norm2.class;
+            case 4:
+                return NormMax.class;
+            case 7:
                 return SquaredNorm.class;
-            case 26:
-                return CountZero.class;
-            case 27:
-                return IsFinite.class;
-            case 29:
-                return IsNaN.class;
-            case 30:
-                return IsInf.class;
-
+            case 8:
+                return Entropy.class;
+            case 9:
+                return LogEntropy.class;
+            case 10:
+                return ShannonEntropy.class;
+            case 11:
+                return LogSumExp.class;
             default:
-                throw new UnsupportedOperationException("No known reduce op for op number: " + opNum);
-//            case 23:
-//                return NormFrobenius.class;
-//            case 24:
-//                return NormP.class;
-//            case 28:
-//                return IsInfOrNan.class;
+                throw new UnsupportedOperationException("No known reduce float op for op number: " + opNum);
+        }
+    }
+
+    public static Class<?> reduceSameOpClass(int opNum){
+        switch (opNum) {
+            case 0:
+                return Sum.class;
+            case 1:
+                return Max.class;
+            case 2:
+                return Min.class;
+            case 3:
+                return Prod.class;
+            case 4:
+                return ASum.class;
+            case 5:
+                return AMax.class;
+            case 6:
+                return AMin.class;
+            default:
+                throw new UnsupportedOperationException("No known reduce same op for op number: " + opNum);
         }
     }
 

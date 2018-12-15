@@ -18,10 +18,13 @@ package org.nd4j.linalg.api.ops.impl.scatter;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -55,6 +58,12 @@ public class ScatterNd extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradOut){
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected exactly 2 input datatypes, got %s", inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(1));
     }
 
 }
