@@ -19,13 +19,17 @@ package org.nd4j.linalg.api.ops.impl.transforms.clip;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.dataset.DataSet;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -81,10 +85,15 @@ public class ClipByValue extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         //dOut/dIn is 0 if clipped, 1 otherwise
-        SDVariable out = outputVariables()[0];
-        SDVariable notClippedLower = f().gt(arg(), clipValueMin);
-        SDVariable notClippedUpper = f().lt(arg(), clipValueMax);
+        SDVariable notClippedLower = f().gt(arg(), clipValueMin).castTo(arg().dataType());
+        SDVariable notClippedUpper = f().lt(arg(), clipValueMax).castTo(arg().dataType());
         SDVariable ret = notClippedLower.mul(notClippedUpper).mul(grad.get(0));
-        return Arrays.asList(ret);
+        return Collections.singletonList(ret);
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected exactly 1 input datatype, got %s", inputDataTypes);
+        return inputDataTypes;
     }
 }

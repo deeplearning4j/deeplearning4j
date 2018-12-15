@@ -136,7 +136,7 @@ public abstract class BaseGradientOp extends BaseTransformOp implements Gradient
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected exactly 1 input datatype, got %s");
-        return inputDataTypes;
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected exactly 2 input datatypes, got %s");
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

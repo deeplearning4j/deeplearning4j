@@ -107,6 +107,11 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
+        long[] s = arg().getShape();
+
+        if (s == null)
+            return Collections.emptyList();
+
         List<LongShapeDescriptor> ret = new ArrayList<>(1);
         ret.add(LongShapeDescriptor.fromShape(arg().getShape(), DataType.BOOL));
         return ret;
