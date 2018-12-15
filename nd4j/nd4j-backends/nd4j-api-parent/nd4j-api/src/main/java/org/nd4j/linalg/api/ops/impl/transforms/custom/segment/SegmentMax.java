@@ -18,9 +18,12 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom.segment;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -49,6 +52,13 @@ public class SegmentMax extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
         return Arrays.asList(f().segmentMaxBp(arg(0), arg(1), gradients.get(0)));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected exactly 2 input datatypes, got %s", inputDataTypes);
+        Preconditions.checkState(inputDataTypes.get(1).isIntType(), "Datatype for input 1 (Segment IDs) must be an integer type, got %s", inputDataTypes.get(1));
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 
 }

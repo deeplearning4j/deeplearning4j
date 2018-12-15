@@ -86,7 +86,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             SDVariable[] toConcat = new SDVariable[shapes.size()];
             INDArray[] orig = new INDArray[shapes.size()];
             for (int j = 0; j < shapes.size(); j++) {
-                orig[j] = Nd4j.rand(shapes.get(j));
+                orig[j] = Nd4j.rand(DataType.DOUBLE, shapes.get(j));
                 toConcat[j] = sd.var("concat-in-" + String.valueOf(j), orig[j]);
             }
 
@@ -353,7 +353,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             int[] os = t.getFirst();
             int[] b = t.getSecond();
             int[] e = t.getThird();
-            INDArray arr = Nd4j.rand(os);
+            INDArray arr = Nd4j.rand(DataType.DOUBLE, os);
 
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", arr);
@@ -749,8 +749,8 @@ public class ShapeOpValidation extends BaseOpValidation {
         orig[4] = Nd4j.rand(new int[]{3,4,5}).muli(10);
 
         INDArray[] exp = new INDArray[tileArg.size()];
-        exp[0] = Nd4j.trueVector(new double[]{3});
-        exp[1] = Nd4j.trueVector(new double[]{3,3,3,3,3});
+        exp[0] = Nd4j.create(new double[]{3});
+        exp[1] = Nd4j.create(new double[]{3,3,3,3,3});
         exp[2] = Nd4j.valueArrayOf(new long[]{3,4}, 3.0);
         exp[3] = Nd4j.create(2*2, 2*3);
         for( int i=0; i<2; i++ ){
@@ -910,7 +910,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testTranspose() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(1,4);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.transpose(x);
         SDVariable loss = sameDiff.standardDeviation(result, true);
@@ -937,13 +937,11 @@ public class ShapeOpValidation extends BaseOpValidation {
         SameDiff sameDiff = SameDiff.create();
         val shape = new long[]{2, 3};
         SDVariable x = sameDiff.var("x", shape);
-        SDVariable result = sameDiff.shape(x);
+        SDVariable result = sameDiff.shape(x).castTo(DataType.DOUBLE);
         SDVariable loss = sameDiff.standardDeviation(result, true);
 
-        System.out.println(sameDiff.summary());
-
         String err = OpValidation.validate(new TestCase(sameDiff)
-                .expected(result, Nd4j.create(new double[]{2,3}, new long[]{2}).castTo(DataType.LONG)));
+                .expected(result, Nd4j.create(new double[]{2,3}, new long[]{2})));
 
         assertNull(err);
     }
@@ -1016,7 +1014,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         //Case 0: no shape
         SameDiff sd = SameDiff.create();
-        INDArray ia = Nd4j.trueVector(new double[]{1,2,3});
+        INDArray ia = Nd4j.create(new double[]{1,2,3});
         SDVariable in = sd.var(ia);
         SDVariable constant = sd.constant(in, 3);
         SDVariable loss = constant.std(true);
@@ -1054,10 +1052,10 @@ public class ShapeOpValidation extends BaseOpValidation {
     public void invertPermutation() {
         SameDiff sd = SameDiff.create();
 
-        INDArray ia = Nd4j.create(new float[] {3, 4, 0, 2, 1});
-        INDArray expOut = Nd4j.create(new float[] {2, 4, 3, 0, 1});
+        INDArray ia = Nd4j.create(new float[] {3, 4, 0, 2, 1}).castTo(DataType.INT);
+        INDArray expOut = Nd4j.create(new float[] {2, 4, 3, 0, 1}).castTo(DataType.INT);
 
-        SDVariable input = sd.var("in", new int[] {1, 5});
+        SDVariable input = sd.var("in", DataType.INT, new int[] {1, 5});
         sd.associateArrayWithVariable(ia, input);
         SDVariable out = sd.invertPermutation(input);
 
@@ -1075,15 +1073,15 @@ public class ShapeOpValidation extends BaseOpValidation {
         List<INDArray> expected = new ArrayList<>();
 
 
-        indices.add(Nd4j.create(new double[][]{{0,0},{1,1}}));
+        indices.add(Nd4j.create(new double[][]{{0,0},{1,1}}).castTo(DataType.INT));
         params.add(Nd4j.create(new double[][]{{1,2},{3,4}}));
-        expected.add(Nd4j.trueVector(new double[]{1,4}));
+        expected.add(Nd4j.create(new double[]{1,4}));
 
-        indices.add(Nd4j.create(new double[][]{{1},{0}}));
+        indices.add(Nd4j.create(new double[][]{{1},{0}}).castTo(DataType.INT));
         params.add(Nd4j.create(new double[][]{{1,2},{3,4}}));
         expected.add(Nd4j.create(new double[][]{{3,4},{1,2}}));
 
-        indices.add(Nd4j.create(new double[][]{{0,1},{1,0}}));
+        indices.add(Nd4j.create(new double[][]{{0,1},{1,0}}).castTo(DataType.INT));
         params.add(Nd4j.create(new double[][][]{{{10,20},{30,40}},
                 {{11, 21}, {31,41}}}));
         expected.add(Nd4j.create(new double[][]{{30,40},{11,21}}));
@@ -1134,12 +1132,12 @@ public class ShapeOpValidation extends BaseOpValidation {
                 0, 0, 0,
                 0, 0, 0
         };
-        INDArray arr1 = Nd4j.create(input_data, new long[]{2, 5, 3});
-        INDArray arr2 = Nd4j.create(new float[]{3, 2}).reshape(2);
+        INDArray arr1 = Nd4j.create(input_data, new long[]{2, 5, 3}).castTo(DataType.DOUBLE);
+        INDArray seqLenArr = Nd4j.create(new float[]{3, 2}).reshape(2).castTo(DataType.INT);
         SDVariable x = sameDiff.var("x", arr1);
-        SDVariable seq_lengths = sameDiff.var("seq_lengths", arr2);
+        SDVariable seq_lengths = sameDiff.var("seq_lengths", seqLenArr);
         SDVariable result = sameDiff.reverseSequence(x, seq_lengths, 1, 0);
-        INDArray expected = Nd4j.create(expected_output, new long[]{2, 5, 3});
+        INDArray expected = Nd4j.create(expected_output, new long[]{2, 5, 3}).castTo(DataType.DOUBLE);
         assertArrayEquals(arr1.shape(), result.eval().shape());
         assertEquals(expected, result.eval());
 
@@ -1249,7 +1247,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSegmentOps(){
-        INDArray s = Nd4j.create(new double[]{0,0,0,1,2,2,3,3}, new long[]{8});
+        INDArray s = Nd4j.create(new double[]{0,0,0,1,2,2,3,3}, new long[]{8}).castTo(DataType.INT);
         INDArray d = Nd4j.create(new double[]{5,1,7,2,3,4,1,3}, new long[]{8});
         int numSegments = 4;
 
@@ -1261,7 +1259,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
             if(op.startsWith("u")){
                 //Unsorted segment cases
-                s = Nd4j.create(new double[]{3,1,0,0,2,0,3,2}, new long[]{8});
+                s = Nd4j.create(new double[]{3,1,0,0,2,0,3,2}, new long[]{8}).castTo(DataType.INT);
                 d = Nd4j.create(new double[]{1,2,5,7,3,1,3,4}, new long[]{8});
             }
 
@@ -1314,7 +1312,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                     break;
                 case "usqrtn":
                     sm = sd.unsortedSegmentSqrtN(data, segments, numSegments);
-                    exp = Nd4j.trueVector(new double[]{(5+7+1)/Math.sqrt(3), 2, (3+4)/Math.sqrt(2), (1+3)/Math.sqrt(2)});
+                    exp = Nd4j.create(new double[]{(5+7+1)/Math.sqrt(3), 2, (3+4)/Math.sqrt(2), (1+3)/Math.sqrt(2)});
                     break;
                 default:
                     throw new RuntimeException();
@@ -1431,7 +1429,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         List<INDArray> indices = new ArrayList<>();
 
         inArrs.add(Nd4j.linspace(1,48,48).reshape(2,4,3,2));
-        indices.add(Nd4j.trueVector(new double[]{1,0}).castTo(DataType.INT));
+        indices.add(Nd4j.create(new double[]{1,0}).castTo(DataType.INT));
         axis.add(-2);
 
         for( int i=0; i<inArrs.size(); i++ ){
@@ -1493,7 +1491,6 @@ public class ShapeOpValidation extends BaseOpValidation {
         }
     }
 
-    //TODO UPDATE TO OPVALIDATION
     @Test
     public void testGatherSimple() {
         SameDiff sameDiff = SameDiff.create();
@@ -1504,14 +1501,11 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertEquals(expected, result.eval());
     }
 
-
-
-    //TODO UPDATE TO OPVALIDATION
     @Test
     public void testGatherNdSingle() {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 24, 24)).reshape(2, 3, 4);
-        INDArray arr2 = Nd4j.create(new float[]{1, 2, 3, 0, 1, 3, 1, 0, 2}, new long[]{3, 3});
+        INDArray arr2 = Nd4j.create(new float[]{1, 2, 3, 0, 1, 3, 1, 0, 2}, new long[]{3, 3}).castTo(DataType.INT);
         SDVariable x = sameDiff.var("x", arr1);
         SDVariable idxs = sameDiff.var("idxs", arr2);
         SDVariable result = sameDiff.gatherNd(x, idxs);
@@ -1527,7 +1521,6 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertEquals(expected, result.eval());
     }
 
-    //TODO UPDATE TO OPVALIDATION
     @Test
     public void testStack2() {
         SameDiff sameDiff = SameDiff.create();
@@ -1539,7 +1532,6 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertArrayEquals(new long[]{3, 2, 2}, result.eval().shape());
     }
 
-    //TODO UPDATE TO OPVALIDATION
     @Test
     public void testParallelStack() {
         SameDiff sameDiff = SameDiff.create();
@@ -1552,7 +1544,6 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertEquals(Nd4j.concat(0, arr1, arr2).reshape(2, 3, 2), result.eval());
     }
 
-    //TODO UPDATE TO OPVALIDATION
     @Test
     public void testUnStack2() {
         SameDiff sameDiff = SameDiff.create();
@@ -1566,7 +1557,6 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertEquals(arr2, result[1].eval());
     }
 
-    //TODO UPDATE TO OPVALIDATION
     @Test
     public void testPermuteSimple() {
         SameDiff sameDiff = SameDiff.create();
@@ -1577,7 +1567,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     }
 
-    //TODO UPDATE TO OPVALIDATION
     @Test
     public void testConcat2() {
         SameDiff sameDiff = SameDiff.create();
@@ -1587,14 +1576,12 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable x2 = sameDiff.var("x2", arr2);
         SDVariable result = sameDiff.concat(0, x1, x2);
         assertArrayEquals(new long[]{2, 4}, result.eval().shape());
-
     }
 
-    //TODO UPDATE TO OPVALIDATION
     @Test
     public void testTile2() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4, DataType.DOUBLE));
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.tile(x, new int[]{2, 2});
         assertArrayEquals(new long[]{2, 8}, result.eval().shape());
@@ -1628,7 +1615,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable slice_full = sd.slice(in, new int[]{0, 0}, new int[]{3, 4});
         SDVariable subPart = sd.slice(in, new int[]{1, 2}, new int[]{2, 2});
 
-        sd.execAndEndResult();
+        sd.exec();
 
         assertEquals(inArr, slice_full.getArr());
         assertEquals(inArr.get(interval(1, 3), interval(2, 4)), subPart.getArr());
@@ -1644,7 +1631,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable slice_full = sd.slice(in, new int[]{0, 0, 0}, new int[]{3, 4, 5});
         SDVariable subPart = sd.slice(in, new int[]{1, 2, 3}, new int[]{2, 2, 1});
 
-        sd.execAndEndResult();
+        sd.exec();
 
         assertEquals(inArr, slice_full.getArr());
         assertEquals(inArr.get(interval(1, 3), interval(2, 4), interval(3, 4)), subPart.getArr());
@@ -1660,7 +1647,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable subPart = sd.stridedSlice(in, new int[]{1, 2}, new int[]{3, 4}, new int[]{1, 1});
         // SDVariable subPart2 = sd.stridedSlice(in, new int[]{0, 0}, new int[]{4, 5}, new int[]{2, 2});
 
-        sd.execAndEndResult();
+        sd.execAll(null);
 
         assertEquals(inArr, slice_full.getArr());
         assertEquals(inArr.get(interval(1, 3), interval(2, 4)), subPart.getArr());
@@ -1677,7 +1664,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable slice1 = sd.stridedSlice(in, new int[]{-999, 0}, new int[]{2, 4}, new int[]{1, 1}, 1 << 1, 0, 0, 0, 0);
         SDVariable slice2 = sd.stridedSlice(in, new int[]{1, 0}, new int[]{-999, 4}, new int[]{1, 1}, 0, 1, 0, 0, 0);
 
-        sd.execAndEndResult();
+        sd.execAll(null);
 
         assertEquals(inArr.get(NDArrayIndex.interval(0, 2), NDArrayIndex.all()), slice1.getArr());
         assertEquals(inArr.get(NDArrayIndex.interval(1, 3), NDArrayIndex.all()), slice2.getArr());
@@ -1694,7 +1681,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         //[1:3,...,1:4] -> [1:3,:,1:4]
         SDVariable slice2 = sd.stridedSlice(in, new int[]{1, 1}, new int[]{3, 4}, new int[]{1, 1}, 0, 0, 1 << 1, 0, 0);
 
-        sd.execAndEndResult();
+        sd.execAll(Collections.emptyMap());
 
         assertEquals(inArr.get(interval(1, 3), all(), all()), slice.getArr());
         assertEquals(inArr.get(interval(1, 3), all(), all()), slice2.getArr());
@@ -1734,7 +1721,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable slice2 = sd.stridedSlice(in, new int[]{2, 0, 0}, new int[]{-999, 4, 5}, new int[]{1, 1, 1}, 0, 0, 0, 0, 1);
         SDVariable slice3 = sd.stridedSlice(in, new int[]{1, 2, 1}, new int[]{-999, -999, 5}, new int[]{1, 1, 1}, 0, 0, 0, 0, 1 | 1 << 1);
 
-        sd.execAndEndResult();
+        sd.execAll(null);
 
         assertEquals(inArr.get(point(0), all(), all()), slice.getArr());
         assertEquals(inArr.get(point(2), all(), all()), slice2.getArr());
@@ -1744,7 +1731,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testSizeAt_1() throws Exception {
         val array = Nd4j.create(10, 20, 30);
-        val exp = Nd4j.trueScalar(20);
+        val exp = Nd4j.scalar(DataType.LONG, 20);
 
         val op = new SizeAt(array, 1);
 

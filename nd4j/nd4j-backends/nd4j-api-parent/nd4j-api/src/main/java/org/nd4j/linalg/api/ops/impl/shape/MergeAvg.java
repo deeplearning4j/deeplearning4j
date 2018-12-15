@@ -31,6 +31,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -91,19 +92,16 @@ public class MergeAvg extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         DataType first = dataTypes.get(0);
-        List<DataType> out = new ArrayList<>(dataTypes.size());
         for( int i=1; i<dataTypes.size(); i++ ){
             DataType dt = dataTypes.get(i);
             Preconditions.checkState(first == dt, "All inputs must have same datatype - got %s and %s for inputs 0 and %s respectively", first, dt, i);
-
-            if(first.isFPType()){
-                out.add(first);
-            } else {
-                out.add(Nd4j.defaultFloatingPointType());
-            }
         }
         //Output type is same as input types if FP, or default FP type otherwise
-        return out;
+        if(first.isFPType()){
+            return Collections.singletonList(first);
+        } else {
+            return Collections.singletonList(Nd4j.defaultFloatingPointType());
+        }
     }
 
 }

@@ -4801,7 +4801,7 @@ public class Nd4j {
 
     public static INDArray create(DataType dataType, @NonNull long[] shape, long[] strides, char ordering) {
         if(shape.length == 0)
-            return Nd4j.trueScalar(0.0);
+            return Nd4j.scalar(dataType, 0.0);
 
         checkShapeValues(shape);
 

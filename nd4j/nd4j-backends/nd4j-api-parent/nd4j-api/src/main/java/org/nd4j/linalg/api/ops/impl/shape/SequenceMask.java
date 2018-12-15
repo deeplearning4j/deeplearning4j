@@ -109,9 +109,10 @@ public class SequenceMask extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype, got %s", dataTypes);
+        SDVariable[] args = args();
+        Preconditions.checkState(dataTypes.size() == args.length, "Expected list with exactly %s datatypes, got %s", args.length, dataTypes);
         //Output type is same as input by default
         //TODO TF allows customizing output type
-        return dataTypes;
+        return Collections.singletonList(dataTypes.get(0));
     }
 }

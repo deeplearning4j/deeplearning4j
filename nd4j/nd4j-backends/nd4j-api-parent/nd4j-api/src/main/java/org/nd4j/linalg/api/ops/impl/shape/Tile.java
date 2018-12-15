@@ -108,6 +108,10 @@ public class Tile extends DynamicCustomOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
+
+        if(inputArguments.size() == 0)
+            return Collections.emptyList();
+
         /**
          * This op is special case: we can't infer its shape before both inputs are available.
          * So if reps argument is full of 0.0s - we skip shape inference

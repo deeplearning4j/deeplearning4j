@@ -97,7 +97,8 @@ public class ConcatBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype, got %s", dataTypes);
+        SDVariable[] args = args();
+        Preconditions.checkState(dataTypes.size() == args.length, "Expected list with exactly %s datatypes (original inputs + gradient), got %s", args.length, dataTypes);
         //Output type is same as (original) input types
         int n = getNumOutputs();
         List<DataType> out = new ArrayList<>(n);

@@ -223,6 +223,6 @@ public class Concat extends DynamicCustomOp {
             Preconditions.checkState(first == dt, "All inputs must have same datatype - got %s and %s for inputs 0 and %s respectively", first, dt, i);
         }
         //Output type is same as input types
-        return dataTypes;
+        return Collections.singletonList(first);
     }
 }

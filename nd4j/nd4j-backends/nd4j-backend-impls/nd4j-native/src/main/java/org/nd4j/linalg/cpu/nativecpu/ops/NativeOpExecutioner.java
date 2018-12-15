@@ -1697,8 +1697,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if (list.isEmpty())
                     throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
 
-                for (val shape: list)
-                    op.addOutputArgument(Nd4j.create(shape));
+                for (LongShapeDescriptor shape : list)
+                    op.addOutputArgument(Nd4j.create(shape, false));
 
             } catch (Exception e) {
                 throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");

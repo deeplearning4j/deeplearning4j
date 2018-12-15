@@ -18,7 +18,12 @@ package org.nd4j.linalg.api.ops.impl.transforms.segment.bp;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Segment product backprop operation
@@ -36,6 +41,12 @@ public class SegmentProdBp extends DynamicCustomOp {
     @Override
     public String opName(){
         return "segment_prod_bp";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 3, "Expected exactly 3 input data types, got %s", inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 
 }
