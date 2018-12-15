@@ -852,7 +852,7 @@ public class SameDiff {
             throw new ND4JIllegalArgumentException("Array must not be null");
         }
 
-        Preconditions.checkState(variable.dataType() == arr.dataType(), "Variable %s has datatype %s: cannot associate array with type %s with this variable",
+        Preconditions.checkState(variable.dataType() == arr.dataType(), "Variable \"%s\" has datatype %s: cannot associate array with type %s with this variable",
                 variable.getVarName(), variable.dataType(), arr.dataType());
 
         switch(variable.getVariableType()){
@@ -10068,6 +10068,7 @@ public class SameDiff {
                 //Differentiate ops in any valid reverse topological order to ensure the parent gradient nodes are
                 // available before we try to differentiate the op
                 Queue<DifferentialFunction> availableForDiff = new LinkedList<>();
+                Set<String> seenOps = new HashSet<>();
                 //start with scalar backprop
                 SDVariable initialGrad = sameDiff.var("one-var", Nd4j.trueScalar(1.0));
                 for(SDVariable v : finalOutputs) {
@@ -10078,7 +10079,10 @@ public class SameDiff {
                     }
                     SDVariable gradientBackwardsMarker = sameDiff.gradientBackwardsMarker(v);
                     DifferentialFunction df = sameDiff.getVariableOutputFunction(gradientBackwardsMarker.getVarName());
-                    availableForDiff.add(df);
+                    if(!seenOps.contains(df.getOwnName())) {
+                        availableForDiff.add(df);
+                        seenOps.add(df.getOwnName());
+                    }
                 }
 
                 int numProcessed = 0;
@@ -10130,8 +10134,10 @@ public class SameDiff {
                                 break;
                         }
 
-                        if(allAvaliable)
+                        if(allAvaliable && !seenOps.contains(o.getOp().getOwnName())) {
                             availableForDiff.add(o.getOp());
+                            seenOps.add(o.getOp().getOwnName());
+                        }
                     }
                 }
 

@@ -21,9 +21,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 public class InferenceSession extends AbstractSession<INDArray,DifferentialFunction> {
@@ -169,27 +167,59 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         int numArgs = (argNames == null ? 0 : argNames.length);
         int numNonConstIns = (opInputs == null ? 0 : opInputs.size());
         int numConstPhIns = (constAndPhInputs == null ? 0 : constAndPhInputs.size());
-        Preconditions.checkState(numArgs == (numNonConstIns + numConstPhIns),
-                "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
-                    opName, argNames, opInputs, constAndPhInputs);
+        boolean repeatedArgs = false;
+        if(numArgs != (numNonConstIns + numConstPhIns)){
+            if(numArgs > 1){
+                //Might be due to repeated inputs
+                Set<String> uniqueArgNames = new HashSet<>();
+                Collections.addAll(uniqueArgNames, argNames);
+                Preconditions.checkState(uniqueArgNames.size() == (numNonConstIns + numConstPhIns),
+                        "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
+                        opName, uniqueArgNames, opInputs, constAndPhInputs);
+                repeatedArgs = true;
+            } else {
+                Preconditions.checkState(numArgs == (numNonConstIns + numConstPhIns),
+                        "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
+                        opName, argNames, opInputs, constAndPhInputs);
+            }
+        }
+
         INDArray[] args = null;
         if(argNames != null && argNames.length > 0) {
             args = new INDArray[argNames.length];
-            if(opInputs != null) {
-                for (VarId vid : opInputs) {
-                    int idx = ArrayUtils.indexOf(argNames, vid.getVariable());
-                    Preconditions.checkState(idx >= 0, "Variable %s not found in arg names: %s", vid.getVariable(), argNames);
-                    args[idx] = this.nodeOutputs.get(vid);
+            int i = 0;
+            for(String s : argNames){
+                SDVariable v = sameDiff.getVariable(s);
+                if(v.isConstant() || v.isPlaceHolder()){
+                    args[i++] = v.getArr();
+                } else {
+                    for(VarId vid : opInputs){
+                        if(vid.getVariable().equals(s)){
+                            args[i++] = this.nodeOutputs.get(vid);
+                            break;
+                        }
+                    }
                 }
             }
-            if(constAndPhInputs != null) {
-                for (String s : constAndPhInputs) {
-                    int idx = ArrayUtils.indexOf(argNames, s);
-                    Preconditions.checkState(idx >= 0, "Variable %s not found in arg names: %s", s, argNames);
-                    VarId constPhVarId = newVarId(s, OUTER_FRAME, 0);
-                    args[idx] = this.nodeOutputs.get(constPhVarId);
-                }
-            }
+
+//            if(opInputs != null) {
+//                for (VarId vid : opInputs) {
+//                    int idx = ArrayUtils.indexOf(argNames, vid.getVariable());
+//                    Preconditions.checkState(idx >= 0, "Variable %s not found in arg names: %s", vid.getVariable(), argNames);
+//                    args[idx] = this.nodeOutputs.get(vid);
+//                }
+//            }
+//            if(constAndPhInputs != null) {
+//                for (String s : constAndPhInputs) {
+//                    int idx = ArrayUtils.indexOf(argNames, s);
+//                    while(repeatedArgs && args[idx] != null){
+//                        idx = ArrayUtils.indexOf(argNames, vid.getVariable(), idx+1);
+//                    }
+//                    Preconditions.checkState(idx >= 0, "Variable %s not found in arg names: %s", s, argNames);
+//                    VarId constPhVarId = newVarId(s, OUTER_FRAME, 0);
+//                    args[idx] = this.nodeOutputs.get(constPhVarId);
+//                }
+//            }
         }
 
         //Set the op inputs and output arguments
