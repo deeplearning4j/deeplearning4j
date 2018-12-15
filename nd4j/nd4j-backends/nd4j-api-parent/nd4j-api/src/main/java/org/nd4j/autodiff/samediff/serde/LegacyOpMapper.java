@@ -67,6 +67,8 @@ public class LegacyOpMapper {
         switch (opType){
             case SCALAR:
                 return scalarOpClass(opNum);
+            case SCALAR_BOOL:
+                return scalarBoolOpClass(opNum);
             case TRANSFORM_SAME:
                 return transformSameOpClass(opNum);
             case TRANSFORM_STRICT:
@@ -384,14 +386,47 @@ public class LegacyOpMapper {
                 return Pow.class;
             case 32:
                 return PowDerivative.class;
+            case 35:
+                return LeakyReLU.class;
             case 37:
                 return ReplaceNans.class;
             case 39:
                 return RectifiedLinear.class;
+            case 40:
+                return Relu6.class;
             case 41:
                 return Step.class;
             default:
                 throw new UnsupportedOperationException("No known scalar op for op number: " + opNum);
+        }
+    }
+
+    public static Class<?> scalarBoolOpClass(int opNum){
+        switch (opNum){
+            case 0:
+                return ScalarEquals.class;
+            case 1:
+                return ScalarGreaterThan.class;
+            case 2:
+                return ScalarLessThan.class;
+            case 3:
+                return ScalarEps.class;
+            case 4:
+                return ScalarGreaterThanOrEqual.class;
+            case 5:
+                return ScalarLessThanOrEqual.class;
+            case 6:
+                return ScalarNotEquals.class;
+            case 7:
+                return ScalarAdd.class;
+            case 8:
+                return ScalarOr.class;
+            case 9:
+                return ScalarXor.class;
+            case 10:
+                return ScalarNot.class;
+            default:
+                throw new UnsupportedOperationException("No known scalar bool op for op number: " + opNum);
         }
     }
 

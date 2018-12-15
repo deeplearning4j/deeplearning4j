@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -117,16 +118,18 @@ public class Fill extends DynamicCustomOp {
         if(numArgs < 1)
             return Collections.emptyList();
 
-        val shape = args()[0].getArr();
-        val value = args()[1].getArr();
-        if(shape == null || value == null)
+        SDVariable[] args = args();
+        INDArray shape = args()[0].getArr();
+        INDArray value = (args.length > 1 ? args()[1].getArr() : null);
+        if(shape == null)
             return Collections.emptyList();
         else {
+            //TODO properly allow customizing datatype
             if(shape.isEmpty()){
                 //Edge case, mainly for TF import
-                return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], value.dataType()));   //TODO is this OK?
+                return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], value == null ? Nd4j.defaultFloatingPointType() : value.dataType()));   //TODO is this OK?
             } else {
-                return Arrays.asList(LongShapeDescriptor.fromShape(shape.data().asLong(), value.dataType()));
+                return Arrays.asList(LongShapeDescriptor.fromShape(shape.data().asLong(), value == null ? Nd4j.defaultFloatingPointType() : value.dataType()));
             }
         }
     }
@@ -158,7 +161,7 @@ public class Fill extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatypes, got %s", dataTypes);
-        return Collections.singletonList(dataTypes.get(0));
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got %s", dataTypes);
+        return dataTypes;
     }
 }

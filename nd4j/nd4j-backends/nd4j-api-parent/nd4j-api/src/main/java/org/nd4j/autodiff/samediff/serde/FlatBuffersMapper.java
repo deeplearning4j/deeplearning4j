@@ -197,6 +197,8 @@ public class FlatBuffersMapper {
         switch (type) {
             case SCALAR:
                 return OpType.SCALAR;
+            case SCALAR_BOOL:
+                return OpType.SCALAR_BOOL;
             case BROADCAST:
                 return OpType.BROADCAST;
             case TRANSFORM_BOOL:

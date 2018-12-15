@@ -88,7 +88,7 @@ public class Rank extends DynamicCustomOp {
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
         List<LongShapeDescriptor> ret = new ArrayList<>();
-        ret.add(LongShapeDescriptor.fromShape(new long[]{}, DataType.BYTE));
+        ret.add(LongShapeDescriptor.fromShape(new long[]{}, DataType.INT));
         return ret;
     }
 

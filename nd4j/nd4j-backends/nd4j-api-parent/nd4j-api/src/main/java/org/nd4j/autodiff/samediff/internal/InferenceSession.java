@@ -110,7 +110,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             for (String s : in) {
                 VarId vid = newVarId(s, outputFrameIter);
                 if (nodeOutputs.containsKey(vid)) {
-                    log.info("Returning input \"{}\" for merge node \"{}\"", m.getOwnName(), s);
+                    log.trace("Returning input \"{}\" for merge node \"{}\"", m.getOwnName(), s);
                     return new INDArray[]{nodeOutputs.get(vid)};
                 }
             }

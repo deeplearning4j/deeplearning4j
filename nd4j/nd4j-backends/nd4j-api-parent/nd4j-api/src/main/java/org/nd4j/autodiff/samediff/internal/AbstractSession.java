@@ -163,7 +163,7 @@ public abstract class AbstractSession<T, O> {
             Set<VarId> inputsToVar = execInputs.get(varToExec);
             Set<String> constPhForVar = execConstInputs.get(varToExec.getVariable());
 
-            log.debug("Beginning execution step {}: variable {}", (step++), varToExec);
+            log.trace("Beginning execution step {}: variable {}", (step++), varToExec);
 
             if (sameDiff.getVariable(varToExec.getVariable()).isPlaceHolder()) {
                 //Variable is placeholder: do lookup
@@ -326,7 +326,7 @@ public abstract class AbstractSession<T, O> {
                     VarId outVarId = newVarId(opOutputs.get(0), executedVar.getFrame(), executedVar.getIteration());
                     if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable())) {
                         availableForExec.add(outVarId);
-                        log.info("Marked merge op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
+                        log.trace("Marked merge op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
                     }
 
                     //Mark that we need the specified input to calculate this output
@@ -341,7 +341,7 @@ public abstract class AbstractSession<T, O> {
                     VarId outVarId = newVarId(opOutputs.get(0), e.getFrameName(), 0);
                     if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable())) {
                         availableForExec.add(outVarId);
-                        log.info("Marked enter op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
+                        log.trace("Marked enter op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
                     }
 
                     //Also record the parent frame: we'll need this when we get to the corresponding exit ops
@@ -359,7 +359,7 @@ public abstract class AbstractSession<T, O> {
                     VarId outVarId = new VarId(opOutputs.get(0), parentFrame.getFrame(), parentFrame.getIteration());
                     if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable())) {
                         availableForExec.add(outVarId);
-                        log.info("Marked Exit op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
+                        log.trace("Marked Exit op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
                     }
 
                     addToExecInputs(isConstOrPhInput, executedVar, outVarId);
@@ -372,7 +372,7 @@ public abstract class AbstractSession<T, O> {
 
                     if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable())) {
                         availableForExec.add(outVarId);
-                        log.info("Marked NextIteration op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
+                        log.trace("Marked NextIteration op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
                     }
 
                     //Mark that we need the specified input to calculate this output
@@ -450,7 +450,7 @@ public abstract class AbstractSession<T, O> {
                                 continue;       //Don't need this variable to calculate requested outputs - so don't mark as available for execution
                             VarId vid = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
                             availableForExec.add(vid);
-                            log.info("Marked variable as available for execution: {} - output of op {} ({}) with op inputs {}", vid, opName,
+                            log.trace("Marked variable as available for execution: {} - output of op {} ({}) with op inputs {}", vid, opName,
                                     sameDiff.getFunctionById(opName).getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
                         }
                     }

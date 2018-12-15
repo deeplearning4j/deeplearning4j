@@ -558,7 +558,7 @@ public class TransformOpValidation extends BaseOpValidation {
             int minibatch = 5;
             SDVariable in = sd.var("in", new int[]{-1, nOut});
 
-            INDArray ia = Nd4j.randn(minibatch, nOut);
+            INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
             int dim;
             SDVariable t;
@@ -591,22 +591,22 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 6:
                     t = sd.pow(in, 2.5);
-                    ia = Nd4j.rand(minibatch, nOut);
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
                     tc.expectedOutput(t.getVarName(), Transforms.pow(ia, 2.5, true));
                     break;
                 case 7:
                     t = sd.sigmoid(in);
-                    ia = Nd4j.rand(minibatch, nOut).muli(2).subi(1.0);
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).muli(2).subi(1.0);
                     tc.expectedOutput(t.getVarName(), Transforms.sigmoid(ia, true));
                     break;
                 case 8:
                     t = sd.tanh(in);
-                    ia = Nd4j.rand(minibatch, nOut).muli(2).subi(1.0);
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).muli(2).subi(1.0);
                     tc.expectedOutput(t.getVarName(), Transforms.tanh(ia, true));
                     break;
                 case 9:
                     t = sd.tan(in);
-                    ia = Nd4j.rand(minibatch, nOut);
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
                     tc.expectedOutput(t.getVarName(), Transforms.tan(ia));
                     break;
                 case 10:
@@ -623,7 +623,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 13:
                     t = sd.log(in);
-                    ia = Nd4j.rand(minibatch, nOut);
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
                     tc.expectedOutput(t.getVarName(), Transforms.log(ia, true));
                     break;
                 case 14:
@@ -632,27 +632,27 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 15:
                     t = sd.acos(in);
-                    ia = Nd4j.rand(minibatch, nOut).muli(1.8).subi(0.9);
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).muli(1.8).subi(0.9);
                     tc.expectedOutput(t.getVarName(), Transforms.acos(ia, true));
                     break;
                 case 16:
                     t = sd.acosh(in);
-                    ia = Nd4j.rand(minibatch, nOut).addi(1.01); //Only defined for x >= 1
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new ACosh(ia.dup())));
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).addi(1.01); //Only defined for x >= 1
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new ACosh(ia.dup())));
                     break;
                 case 17:
                     t = sd.asin(in);
-                    ia = Nd4j.rand(minibatch, nOut).muli(1.8).subi(0.9);
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).muli(1.8).subi(0.9);
                     tc.expectedOutput(t.getVarName(), Transforms.asin(ia, true));
                     break;
                 case 18:
                     t = sd.atan(in);
-                    ia = Nd4j.rand(minibatch, nOut).muli(4).subi(2);
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).muli(4).subi(2);
                     tc.expectedOutput(t.getVarName(), Transforms.atan(ia, true));
                     break;
                 case 19:
                     t = sd.atanh(in);
-                    ia = Nd4j.rand(minibatch, nOut).muli(1.8).subi(0.9);
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).muli(1.8).subi(0.9);
                     tc.expectedOutput(t.getVarName(), Transforms.atanh(ia, true));
                     break;
                 case 20:
@@ -670,12 +670,12 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 23:
                     //TODO SHOULDN'T THIS HAVE A DIMENSION ARG???
                     t = sd.softmax(in);
-                    ia = Nd4j.rand(minibatch, nOut);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldSoftMax(ia.dup())));
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new OldSoftMax(ia.dup())));
                     break;
                 case 24:
                     t = sd.sqrt(in);
-                    ia = Nd4j.rand(minibatch, nOut);
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
                     tc.expectedOutput(t.getVarName(), Transforms.sqrt(ia, true));
                     break;
                 case 25:
@@ -778,7 +778,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), Transforms.ceil(ia, true));
                     break;
                 case 48:
-                    ia = Nd4j.randn(ia.shape()).muli(2);
+                    ia = Nd4j.randn(DataType.DOUBLE, ia.shape()).muli(2);
                     t = sd.clipByValue(in, -3, 2);
                     INDArray expOut48 = ia.dup();
                     BooleanIndexing.replaceWhere(expOut48, -3, Conditions.lessThan(-3));
@@ -789,13 +789,13 @@ public class TransformOpValidation extends BaseOpValidation {
                     //Clip by norm, dimension 0, some below threshold, some above
                     double clip = 2.0;
                     t = sd.clipByNorm(in, clip, 0);
-                    ia = Nd4j.rand(ia.shape());
+                    ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
                     ia.diviRowVector(ia.norm2(0)).muli(clip);  //Norm2 is now 'clip' (i.e., exactly at threshold
                     //System.out.println(ia.norm2(0));
                     ia.muliColumnVector(Nd4j.linspace(0.9, 1.1, ia.size(0), DataType.DOUBLE).transpose());
                     //System.out.println(ia.norm2(0));
 
-                    INDArray expOut49 = Nd4j.create(ia.shape());
+                    INDArray expOut49 = Nd4j.create(DataType.DOUBLE, ia.shape());
                     for (int j = 0; j < ia.columns(); j++) {
                         INDArray origCol = ia.getColumn(j);
                         if (origCol.norm2Number().doubleValue() < clip) {
@@ -811,7 +811,7 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 50:
                     dim = 1;
                     t = sd.reverse(in, dim);
-                    INDArray expOut50 = Nd4j.create(ia.shape());
+                    INDArray expOut50 = Nd4j.create(DataType.DOUBLE, ia.shape());
                     DynamicCustomOp reverse = DynamicCustomOp.builder("reverse")
                             .addIntegerArguments(dim)
                             .addInputs(ia).addOutputs(expOut50).build();
@@ -824,7 +824,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     boolean reverseBool = false;
 
                     t = sd.cumsum(in, exclusive, reverseBool, dim);
-                    INDArray expOut51 = Nd4j.create(ia.shape());
+                    INDArray expOut51 = Nd4j.create(DataType.DOUBLE, ia.shape());
                     DynamicCustomOp cumsum = DynamicCustomOp.builder("cumsum")
                             .addIntegerArguments((exclusive) ? 1 : 0, (reverseBool) ? 1 : 0, dim)
                             .addInputs(ia).addOutputs(expOut51).build();
@@ -838,7 +838,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     boolean ex = false;
                     boolean revBool = false;
                     t = sd.cumprod(in, ex, revBool, 0);
-                    INDArray expOut52 = Nd4j.create(ia.shape());
+                    INDArray expOut52 = Nd4j.create(DataType.DOUBLE, ia.shape());
                     for( int s0=0; s0<ia.size(0); s0++){
                         for( int s1=0; s1<ia.size(1); s1++ ){
                             double prod = 1.0;
@@ -857,14 +857,14 @@ public class TransformOpValidation extends BaseOpValidation {
                     t = sd.diag(in);
                     ia = Nd4j.create(new float[]{4, 2});
                     in = sd.var("in", new int[]{1, 2});
-                    INDArray expOut53 = Nd4j.create(new int[]{2, 2});
+                    INDArray expOut53 = Nd4j.create(DataType.DOUBLE, new long[]{2, 2});
                     DynamicCustomOp op = DynamicCustomOp.builder("diag").addInputs(ia).addOutputs(expOut53).build();
                     Nd4j.getExecutioner().exec(op);
                     tc.expectedOutput(t.getVarName(), expOut53);
                     break;
                 case 54:
                     t = sd.erf(in);
-                    INDArray expOut54 = Nd4j.createUninitialized(ia.shape(), ia.ordering());
+                    INDArray expOut54 = Nd4j.createUninitialized(DataType.DOUBLE, ia.shape(), ia.ordering());
                     Nd4j.getExecutioner().exec(new Erf(ia, expOut54));
                     tc.expectedOutput(t.getVarName(), expOut54);
                     break;
@@ -886,19 +886,19 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), Transforms.round(ia, true));
                     break;
                 case 59:
-                    ia = Nd4j.create(new float[]{4, 2});
-                    in = sd.var("in", new int[]{1, 2});
+                    ia = Nd4j.create(new float[]{4, 2}).castTo(DataType.DOUBLE);
+//                    in = sd.var("in", new int[]{1, 2});
                     t = sd.rsqrt(in);
                     tc.expectedOutput(t.getVarName(),Nd4j.getExecutioner().exec(new RSqrt(ia, Nd4j.create(ia.shape(), ia.ordering()))));
                     break;
                 case 60:
                     t = sd.relu6(in, 0);
-                    ia = Nd4j.rand(minibatch, nOut);
+                    ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
                     tc.expectedOutput(t.getVarName(),Transforms.relu6(ia, true));
                     break;
                 case 61:
-                    ia = Nd4j.create(new float[] {2, 2});
-                    in = sd.var("in", new int[]{1, 2});
+                    ia = Nd4j.create(new float[] {2, 2}).castTo(DataType.DOUBLE);
+//                    in = sd.var("in", new int[]{1, 2});
                     sd.associateArrayWithVariable(ia, in);
                     double value = 42;
                     t = sd.fill(in, value);
@@ -929,11 +929,11 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), ia.rdiv(1.0));
                     break;
                 case 68:
-                    t = sd.shape(in);
+                    t = sd.shape(in).castTo(DataType.DOUBLE);
                     tc.expectedOutput(t.getVarName(), Nd4j.create(ArrayUtil.toDouble(ia.shape())));
                     break;
                 case 69:
-                    t = sd.rank(in);
+                    t = sd.rank(in).castTo(DataType.DOUBLE);
                     tc.expectedOutput(t.getVarName(), Nd4j.create(new double[]{ia.rank()}));
                     break;
                 case 70:
@@ -941,9 +941,9 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), Nd4j.ones(ia.shape()));
                     break;
                 case 71:
-                    ia = Nd4j.randn(nOut, nOut);
+                    ia = Nd4j.randn(DataType.DOUBLE, nOut, nOut);
                     t = sd.diagPart(in);
-                    tc.expectedOutput(t.getVarName(), Nd4j.trueVector(new double[]{ia.getDouble(0,0), ia.getDouble(1,1), ia.getDouble(2,2), ia.getDouble(3,3)}));
+                    tc.expectedOutput(t.getVarName(), Nd4j.trueVector(new double[]{ia.getDouble(0,0), ia.getDouble(1,1), ia.getDouble(2,2), ia.getDouble(3,3)}).castTo(DataType.DOUBLE));
                     break;
                 case 72:
                     t = sd.identity(in);
@@ -951,7 +951,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 73:
                     t = sd.step(in, 1.0);
-                    tc.expected(t, ia.gte(1.0));
+                    tc.expected(t, ia.gte(1.0).castTo(DataType.DOUBLE));
                     break;
                 case 74:
                     if(OpValidationSuite.IGNORE_FAILING){
@@ -961,28 +961,28 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expected(t, ia.dup());
                     break;
                 case 75:
-                    ia = Nd4j.rand(ia.shape());
+                    ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
                     t = sd.log(in, 2);
                     tc.expected(t, Transforms.log(ia, 2, true));
                     break;
                 case 76:
-                    ia = Nd4j.rand(ia.shape());
+                    ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
                     t = sd.log(in, 10);
                     tc.expected(t, Transforms.log(ia, 10, true));
                     break;
                 case 77:
-                    ia = Nd4j.rand(ia.shape());
+                    ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
                     t = sd.matchCondition(in, Conditions.lessThan(0.5));
                     INDArray exp = ia.dup().lt(0.5);
                     tc.expected(t, exp);
                     break;
                 case 78:
-                    ia = Nd4j.rand(ia.shape()).muli(2).subi(1);
+                    ia = Nd4j.rand(DataType.DOUBLE, ia.shape()).muli(2).subi(1);
                     t = sd.f().tanhRational(in);
                     tc.expected(t, Nd4j.getExecutioner().exec(new RationalTanh(ia.dup())));
                     break;
                 case 79:
-                    ia = Nd4j.rand(ia.shape()).muli(2).subi(1);
+                    ia = Nd4j.rand(DataType.DOUBLE, ia.shape()).muli(2).subi(1);
                     t = sd.f().tanhRectified(in);
                     tc.expected(t, Nd4j.getExecutioner().exec(new RectifiedTanh(ia.dup())));
                     break;
