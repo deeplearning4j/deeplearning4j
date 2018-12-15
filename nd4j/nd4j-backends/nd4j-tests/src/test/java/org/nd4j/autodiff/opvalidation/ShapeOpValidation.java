@@ -133,7 +133,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                 String error = OpValidation.validate(tc);
                 if(error != null){
-                    failed.add(name);
+                    failed.add(error);
                 }
             }
         }
@@ -1563,6 +1563,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 6, 6).reshape(2, 3));
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.permute(x, 1, 0);
+        sameDiff.execAll(null);
         assertArrayEquals(new long[]{3, 2}, result.getShape());
 
     }
@@ -1570,8 +1571,8 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testConcat2() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
-        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(4, 8, 4));
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(1,4);
+        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(4, 8, 4)).reshape(1,4);
         SDVariable x1 = sameDiff.var("x1", arr1);
         SDVariable x2 = sameDiff.var("x2", arr2);
         SDVariable result = sameDiff.concat(0, x1, x2);

@@ -18,8 +18,11 @@ package org.nd4j.linalg.api.ops.impl.transforms.segment;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -63,4 +66,13 @@ public class UnsortedSegmentSum extends DynamicCustomOp {
         return Arrays.asList(f().unsortedSegmentSumBp(arg(0), arg(1), gradients.get(0), numSegments));
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected exactly 2 input data types, got %s", inputDataTypes);
+        List<DataType> out = new ArrayList<>();
+        for( int i=0; i<numSegments; i++ ){
+            out.add(inputDataTypes.get(0));
+        }
+        return out;
+    }
 }
