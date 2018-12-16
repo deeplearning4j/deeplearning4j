@@ -61,9 +61,11 @@ def java2pyArrayRDD(java_rdd, py_sc):
     for i in range(num_descriptors):
         jdesc = descriptors.get(i)
         pydesc = j2py_arr_desc(jdesc)
-        pydescriptors.append(pydesc)
+        nparrays.append(desc2np(pydesc))
+        #pydescriptors.append(pydesc)
+    #pyrdd = py_sc.parallelize(pydescriptors)
+    #pyrdd = pyrdd.map(desc2np)
     pyrdd = py_sc.parallelize(nparrays)
-    pyrdd = pyrdd.map(desc2np)
     return pyrdd
 
 
@@ -83,17 +85,19 @@ def py2javaArrayRDD(py_rdd, java_sc):
         ArrayDescriptor = getArrayDescriptor()
     if spark_utils is None:
         spark_utils = get_spark_utils()
-    
-    dtype_map = {
-        "float": DataType.FLOAT,
-        "double": DataType.DOUBLE
-    }
-    desc_rdd = py_rdd.map(np2desc)
-    descriptors = desc_rdd.collect()
+
+    #desc_rdd = py_rdd.map(np2desc)
+    #descriptors = desc_rdd.collect()
     arrlist = ArrayList()
+    nparrays = py_rdd.collect()
+    for nparr in nparrays:
+        arrlist.add(array(nparr).array)
+    return java_sc.parallelize(arrlist)
     for d in descriptors:
-        arrlist.add(ArrayDescriptor(d[0], d[1], d[2], dtype_map[d[3]]))
+        #arrlist.add(array(desc2np(d)).array)
+        arrlist.add(ArrayDescriptor(d[0], d[1], d[2], dtype_map[d[3]], 'c').getArray())
     java_rdd = java_sc.parallelize(arrlist)
+    #return java_rdd
     java_rdd = spark_utils.getArrayRDD(java_rdd)
     return java_rdd
 
