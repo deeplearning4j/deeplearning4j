@@ -226,6 +226,8 @@ namespace cnpy {
     ND4J_EXPORT NpyArray loadNpyFromHeader(char *data);
 
 
+    ND4J_EXPORT npz_t npzLoad(std::string fname);
+
 /**
 * Parse the numpy header from
 * the given file

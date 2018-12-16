@@ -1380,7 +1380,7 @@ public:
 
     void* mapFromNpzFile(std::string path){
         cnpy::npz_t* mapPtr = new cnpy::npz_t();
-        cnpy::npz_t map;// = cnpy::npzLoad(path);
+        cnpy::npz_t map= cnpy::npzLoad(path);
         mapPtr->insert(map.begin(), map.end());
         return reinterpret_cast<void*>(mapPtr);
     }
