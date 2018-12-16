@@ -37,3 +37,29 @@ public:
         fflush(stdout);
     }
 };
+
+TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_1) {
+    auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 1.0/0.0, 5});
+    auto y = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 1.0/0.0, 5});
+
+    ASSERT_EQ(x, y);
+}
+
+TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_2) {
+    auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 1.0/0.0, 5});
+    auto y = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, -1.0/0.0, 5});
+
+    ASSERT_NE(x, y);
+}
+
+TEST_F(DeclarableOpsTests14, Test_Diag_Zeros_1) {
+    auto x = NDArrayFactory::create<double>('c', {2}, {1, 2});
+    auto z = NDArrayFactory::create<double>('c', {2, 2}, {-119, -119, -119, -119});
+    auto exp = NDArrayFactory::create<double>('c', {2, 2}, {1, 0, 0, 2});
+
+    nd4j::ops::diag op;
+    auto status = op.execute({&x}, {&z}, {}, {}, {});
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(exp, z);
+}
