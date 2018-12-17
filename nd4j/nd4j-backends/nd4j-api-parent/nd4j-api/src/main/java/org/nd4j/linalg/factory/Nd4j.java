@@ -6934,30 +6934,117 @@ public class Nd4j {
 ///////////////////
 
     public static INDArray createFromArray(Double[] array) {
-        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.DOUBLE);
+        return createFromArray(ArrayUtil.toPrimitives(array));
     }
 
     public static INDArray createFromArray(Float[] array) {
-        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.FLOAT);
+        return createFromArray(ArrayUtil.toPrimitives(array));
     }
 
     public static INDArray createFromArray(Integer[] array) {
-        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.INT);
+        return createFromArray(ArrayUtil.toPrimitives(array));
     }
 
     public static INDArray createFromArray(Short[] array) {
-        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.SHORT);
+        return createFromArray(ArrayUtil.toPrimitives(array));
     }
     public static INDArray createFromArray(Byte[] array) {
-        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.BYTE);
+        return createFromArray(ArrayUtil.toPrimitives(array));
     }
 
     public static INDArray createFromArray(Long[] array) {
-        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.LONG);
+        return createFromArray(ArrayUtil.toPrimitives(array));
     }
 
     public static INDArray createFromArray(Boolean[] array) {
-        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.BOOL);
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+///////////////////
+
+    public static INDArray createFromArray(Double[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Float[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Integer[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Short[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+    public static INDArray createFromArray(Byte[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Long[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Boolean[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+///////////////////
+
+    public static INDArray createFromArray(Double[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Float[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Integer[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Short[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+    public static INDArray createFromArray(Byte[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Long[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Boolean[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+///////////////////
+
+    public static INDArray createFromArray(Double[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Float[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Integer[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Short[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+    public static INDArray createFromArray(Byte[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Long[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static INDArray createFromArray(Boolean[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
     }
 
     public static boolean isExperimentalMode() {
