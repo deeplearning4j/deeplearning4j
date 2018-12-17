@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.LegacyPooling2D;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.dataset.DataSet;
@@ -570,6 +571,51 @@ public class SpecialTests extends BaseNd4jTest {
                 System.out.println("DONE: " + i);
             }
         }
+    }
+
+
+    @Test
+    public void testSpaceToBatch() {
+        Nd4j.getRandom().setSeed(7331);
+
+        int miniBatch = 4;
+        int[] inputShape = new int[]{1, 2, 2, 1};
+
+        int M = 2;
+        int[] blockShape = new int[]{M, 1};
+        int[] paddingShape = new int[]{M, 2};
+
+        INDArray input = Nd4j.randn(inputShape).castTo(DataType.DOUBLE);
+        INDArray blocks = Nd4j.create(new float[]{2, 2}, blockShape).castTo(DataType.INT);
+        INDArray padding = Nd4j.create(new float[]{0, 0, 0, 0}, paddingShape).castTo(DataType.INT);
+
+        INDArray expOut = Nd4j.create(DataType.DOUBLE, miniBatch, 1, 1, 1);
+        val op = DynamicCustomOp.builder("space_to_batch")
+                .addInputs(input, blocks, padding)
+                .addOutputs(expOut).build();
+        Nd4j.getExecutioner().exec(op);
+    }
+
+    @Test
+    public void testBatchToSpace() {
+        Nd4j.getRandom().setSeed(1337);
+
+        int miniBatch = 4;
+        int[] inputShape = new int[]{miniBatch, 1, 1, 1};
+
+        int M = 2;
+        int[] blockShape = new int[]{M, 1};
+        int[] cropShape = new int[]{M, 2};
+
+        INDArray input = Nd4j.randn(inputShape).castTo(DataType.DOUBLE);
+        INDArray blocks = Nd4j.create(new float[]{2, 2}, blockShape).castTo(DataType.INT);
+        INDArray crops = Nd4j.create(new float[]{0, 0, 0, 0}, cropShape).castTo(DataType.INT);
+
+        INDArray expOut = Nd4j.create(DataType.DOUBLE, 1, 2, 2, 1);
+        DynamicCustomOp op = DynamicCustomOp.builder("batch_to_space")
+                .addInputs(input, blocks, crops)
+                .addOutputs(expOut).build();
+        Nd4j.getExecutioner().exec(op);
     }
 
     @Test

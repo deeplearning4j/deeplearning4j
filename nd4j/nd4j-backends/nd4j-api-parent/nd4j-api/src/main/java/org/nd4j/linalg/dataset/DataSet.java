@@ -559,7 +559,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void binarize(double cutoff) {
-        INDArray linear = getFeatures().linearView();
+        INDArray linear = getFeatures().reshape(-1);
         for (int i = 0; i < getFeatures().length(); i++) {
             double curr = linear.getDouble(i);
             if (curr > cutoff)

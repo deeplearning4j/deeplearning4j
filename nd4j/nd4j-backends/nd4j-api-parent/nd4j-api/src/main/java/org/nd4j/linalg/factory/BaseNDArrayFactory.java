@@ -357,7 +357,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray reverse(INDArray reverse) {
         // FIXME: native method should be used instead
-        INDArray rev = reverse.linearView();
+        INDArray rev = reverse.reshape(-1);
         INDArray ret = Nd4j.create(rev.shape());
         int count = 0;
         for (long i = rev.length() - 1; i >= 0; i--) {
@@ -929,7 +929,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         allC &= (ret.ordering() == 'c');
 
         if (toConcat[0].isScalar()) {
-            INDArray retLinear = ret.linearView();
+            INDArray retLinear = ret.reshape(-1);
             for (int i = 0; i < retLinear.length(); i++)
                 retLinear.putScalar(i, toConcat[i].getDouble(0));
             return ret;
