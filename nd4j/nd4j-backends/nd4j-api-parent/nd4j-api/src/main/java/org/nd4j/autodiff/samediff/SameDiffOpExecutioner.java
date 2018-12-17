@@ -597,4 +597,9 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     public String getString(Utf8Buffer buffer, long index) {
         return backendExecutioner.getString(buffer, index);
     }
+
+    @Override
+    public boolean isExperimentalMode() {
+        return backendExecutioner.isExperimentalMode();
+    }
 }

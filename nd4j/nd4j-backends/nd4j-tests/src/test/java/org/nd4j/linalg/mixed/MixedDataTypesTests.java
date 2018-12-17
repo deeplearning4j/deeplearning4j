@@ -146,6 +146,9 @@ public class MixedDataTypesTests {
 
     @Test
     public void testBasicOps_3() throws Exception {
+        if (!NativeOpsHolder.getInstance().getDeviceNativeOps().isExperimentalEnabled())
+            return;
+
         val exp = new int[]{1,1,1,1,1,1,1,1,1};
         val arrayX = Nd4j.create(DataType.INT, 3, 3);
         val arrayY = Nd4j.create(new int[]{1,1,1,1,1,1,1,1,1}, new long[]{3, 3}, DataType.LONG);
@@ -233,6 +236,28 @@ public class MixedDataTypesTests {
     }
 
     @Test
+    public void testNewAssign_1() throws Exception {
+        val arrayX = Nd4j.create(DataType.FLOAT, 5);
+        val arrayY = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+        val exp = Nd4j.create(new float[]{1.f, 2.f, 3.f, 4.f, 5.f});
+
+        arrayX.assign(arrayY);
+
+        assertEquals(exp, arrayX);
+    }
+
+    @Test
+    public void testNewAssign_2() throws Exception {
+        val arrayX = Nd4j.create(DataType.INT, 5);
+        val arrayY = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+        val exp = Nd4j.create(new int[]{1, 2, 3, 4, 5}, new long[]{5}, DataType.INT);
+
+        arrayX.assign(arrayY);
+
+        assertEquals(exp, arrayX);
+    }
+
+    @Test
     public void testMethods_1() {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
@@ -245,6 +270,9 @@ public class MixedDataTypesTests {
 
     @Test
     public void testMethods_2() {
+        if (!NativeOpsHolder.getInstance().getDeviceNativeOps().isExperimentalEnabled())
+            return;
+
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new double[]{1, 2, 3, 4}, new  long[]{4}, DataType.DOUBLE);
         val exp = Nd4j.create(new double[]{2, 4, 6, 8}, new  long[]{4}, DataType.DOUBLE);
@@ -257,6 +285,9 @@ public class MixedDataTypesTests {
 
     @Test
     public void testMethods_3() {
+        if (!NativeOpsHolder.getInstance().getDeviceNativeOps().isExperimentalEnabled())
+            return;
+
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new double[]{0.5, 0.5, 0.5, 0.5}, new  long[]{4}, DataType.DOUBLE);
         val exp = Nd4j.create(new double[]{1.5, 2.5, 3.5, 4.5}, new  long[]{4}, DataType.DOUBLE);
@@ -394,6 +425,7 @@ public class MixedDataTypesTests {
 
     @Test
     public void testSimple(){
+        Nd4j.create(1);
         for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.LONG}) {
             System.out.println("----- " + dt + " -----");
             INDArray arr = Nd4j.ones(dt,1, 5);
@@ -431,5 +463,23 @@ public class MixedDataTypesTests {
                 //System.out.println("double: " + dbl);
             }
         }
+    }
+
+    @Test
+    public void testArrayCreationFromPointer() {
+        val source = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+
+        val pAddress = source.data().addressPointer();
+        val shape = source.shape();
+        val stride = source.stride();
+        val order = source.ordering();
+
+        val buffer = Nd4j.createBuffer(pAddress, source.length(), source.dataType());
+        val restored = Nd4j.create(buffer, shape, stride, 0, order, source.dataType());
+        assertEquals(source, restored);
+
+        assertArrayEquals(source.toDoubleVector(), restored.toDoubleVector(), 1e-5);
+
+        assertEquals(source.getDouble(0), restored.getDouble(0), 1e-5);
     }
 }

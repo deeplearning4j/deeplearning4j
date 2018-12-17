@@ -242,7 +242,7 @@ public class BinomialDistribution extends BaseDistribution {
 
 
     private void ensureConsistent(int i) {
-        probabilityOfSuccess = p.linearView().getDouble(i);
+        probabilityOfSuccess = p.reshape(-1).getDouble(i);
     }
 
     @Override

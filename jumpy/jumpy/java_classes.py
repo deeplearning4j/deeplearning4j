@@ -32,22 +32,30 @@ INDArray = autoclass('org.nd4j.linalg.api.ndarray.INDArray')
 Transforms = autoclass('org.nd4j.linalg.ops.transforms.Transforms')
 NDArrayIndex = autoclass('org.nd4j.linalg.indexing.NDArrayIndex')
 DataBuffer = autoclass('org.nd4j.linalg.api.buffer.DataBuffer')
-DataType = autoclass('org.nd4j.linalg.api.buffer.DataBuffer$Type')
+DataType = autoclass('org.nd4j.linalg.api.buffer.DataType')
 System = autoclass('java.lang.System')
 Integer = autoclass('java.lang.Integer')
+Long = autoclass('java.lang.Long')
 Float = autoclass('java.lang.Float')
 Double = autoclass('java.lang.Double')
 Shape = autoclass('org.nd4j.linalg.api.shape.Shape')
 BinarySerde = autoclass('org.nd4j.serde.binary.BinarySerde')
 NativeOpsHolder = autoclass('org.nd4j.nativeblas.NativeOpsHolder')
+
 DoublePointer = autoclass('org.bytedeco.javacpp.DoublePointer')
 FloatPointer = autoclass('org.bytedeco.javacpp.FloatPointer')
+HalfPointer = autoclass('org.bytedeco.javacpp.ShortPointer')
+LongPointer = autoclass('org.bytedeco.javacpp.LongPointer')
 IntPointer = autoclass('org.bytedeco.javacpp.IntPointer')
+ShortPointer = autoclass('org.bytedeco.javacpp.ShortPointer')
+BoolPointer = autoclass('org.bytedeco.javacpp.BoolPointer')
+
+
 DataTypeUtil = autoclass('org.nd4j.linalg.api.buffer.util.DataTypeUtil')
 MemoryManager = autoclass('org.nd4j.linalg.memory.MemoryManager')
 SameDiff = autoclass('org.nd4j.autodiff.samediff.SameDiff')
 TFGraphMapper = autoclass('org.nd4j.imports.graphmapper.tf.TFGraphMapper')
-DataSet = autoclass('org.nd4j.linalg.dataset.DataSet')
+JDataset = autoclass('org.nd4j.linalg.dataset.DataSet')
 ArrayList = autoclass('java.util.ArrayList')
 
 
@@ -59,7 +67,7 @@ def ArrayDescriptor():
     return autoclass('org.deeplearning4j.spark.parameterserver.python.ArrayDescriptor')
 
 
-def DataSetDescriptor():
+def DatasetDescriptor():
     return autoclass('org.deeplearning4j.spark.parameterserver.python.DataSetDescriptor')
 
 

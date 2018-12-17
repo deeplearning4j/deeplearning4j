@@ -110,7 +110,7 @@ int blockLimit = 128;
 int maxThreads = 512;
 bool allowedP2P = false;
 bool supportedP2P = false;
-#ifdef __EXPERIMENTAL__
+#ifdef __ND4J_EXPERIMENTAL__
 bool experimentalSupport = true;
 #else
 bool experimentalSupport = false;
@@ -622,10 +622,13 @@ void NativeOps::execPairwiseTransform(
 
     dim3 launchDims(256, 1024, 8192);
 
+	if (yType != xType && yType != nd4j::DataType::BOOL && !this->isExperimentalEnabled())
+		throw nd4j::datatype_exception::build("NativeOps::execPairwiseTransform both operands must have same data type", xType, yType);
+
     if (xType != zType && yType != zType)
         throw std::runtime_error("NativeOps::execPairwiseTransform requires Z operand to have either X or Y type");
 
-#ifndef __ND4J_EXPERIMENTAL__
+#ifdef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dY, dYShapeInfo, hYShapeInfo, dZ, dZShapeInfo, hZShapeInfo, extraParams), LIBND4J_TYPES, LIBND4J_TYPES)
 #else
     BUILD_SINGLE_SELECTOR_THRICE(xType, functions::pairwise_transforms::PairWiseTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dY, dYShapeInfo, hYShapeInfo, dZ, dZShapeInfo, hZShapeInfo, extraParams), LIBND4J_TYPES)
@@ -768,7 +771,7 @@ void   NativeOps::execBroadcast(
 
 	dim3 launchDims(256, 256, 16384);
 
-#ifndef __ND4J_EXPERIMENTAL__
+#ifdef __ND4J_EXPERIMENTAL__
 	BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, dTADShapeInfo, dTADOffsets, dTADShapeInfoZ, dTADOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
 	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, dTADShapeInfo, dTADOffsets, dTADShapeInfoZ, dTADOffsetsZ), LIBND4J_TYPES);
@@ -1373,7 +1376,7 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
                     DEBUG_KERNEL(stream, opNum);
 
                     // exp 3
-                    execTransformFloat(extraPointers, transform::Exp, hZ, hZShapeInfo, dZ, dZShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+                    execTransformStrict(extraPointers, transform::Exp, hZ, hZShapeInfo, dZ, dZShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
 
                     DEBUG_KERNEL(stream, opNum);
 
@@ -1399,7 +1402,7 @@ void NativeOps::execTransformStrict(Nd4jPointer *extraPointers,int opNum,
 
                     // log 3
                     if (opNum == transform::LogSoftMax)
-                        execTransformFloat(extraPointers, transform::Log, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+                        execTransformStrict(extraPointers, transform::Log, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams);
                     else if (opNum == transform::SoftMaxDerivative)
                         execTransformStrict(extraPointers, transform::SpecialDerivative, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams);
 
@@ -2029,6 +2032,8 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
 
+    cudaError_t res = cudaStreamSynchronize(*stream);
+    checkCudaErrors(res);
     nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
 }
 
@@ -2469,10 +2474,10 @@ void NativeOps::execScalarBool(Nd4jPointer *extraPointers,
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
 	if (xType != yType )
-		throw std::runtime_error("NativeOps::execScalarBool requires X & Y to have same type");
+		throw nd4j::datatype_exception::build("NativeOps::execScalarBool requires X & Y to have same type", xType, yType);
 
 	if (!DataTypeUtils::isB(zType) )
-		throw std::runtime_error("NativeOps::execScalarBool requires Z operand to have BOOL type");
+		throw nd4j::datatype_exception::build("NativeOps::execScalarBool requires Z operand to have BOOL type", nd4j::DataType::BOOL, zType);
 
 	BUILD_DOUBLE_SELECTOR(xType, yType, functions::scalar::ScalarBoolTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, BOOL_TYPES);
 
@@ -2497,9 +2502,19 @@ void NativeOps::execScalar(
 	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 	auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+	if (yType != xType && yType != nd4j::DataType::BOOL && !this->isExperimentalEnabled())
+		throw nd4j::datatype_exception::build("NativeOps::execScalar both operands must have same data type", xType, yType);
+
+	if (!Environment::getInstance()->isExperimentalBuild() && Environment::getInstance()->isDebug()) {
+        auto sX = DataTypeUtils::asString(xType);
+        auto sY = DataTypeUtils::asString(yType);
+        auto sZ = DataTypeUtils::asString(zType);
+
+        nd4j_printf("Running execScalar with dtypes: [%s], [%s], [%s]\n", sX.c_str(), sY.c_str(), sZ.c_str());
+    }
 
 
-#ifndef __ND4J_EXPERIMENTAL__
+#ifdef __ND4J_EXPERIMENTAL__
 	BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dZ, dZShapeInfo, hZShapeInfo, dScalar, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
 	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dZ, dZShapeInfo, hZShapeInfo, dScalar, extraParams), LIBND4J_TYPES);
@@ -2528,9 +2543,12 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
     auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+	if (yType != xType && yType != nd4j::DataType::BOOL && !this->isExperimentalEnabled())
+		throw nd4j::datatype_exception::build("NativeOps::execScalar both operands must have same data type", xType, yType);
+
 	dim3 launchDims(256, 256, 16384);
 
-#ifndef __ND4J_EXPERIMENTAL__
+#ifdef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
 	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
@@ -2941,6 +2959,9 @@ void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+	if (yType != xType && yType != nd4j::DataType::BOOL && !this->isExperimentalEnabled())
+		throw nd4j::datatype_exception::build("NativeOps::execReduce3All both operands must have same data type", xType, yType);
 
     if (yType != xType)
         throw nd4j::datatype_exception::build("NativeOps::execReduce3All both operands must have same data type", xType, yType);

@@ -841,7 +841,7 @@ TEST_F(DeclarableOpsTests1, ReverseModTest_1) {
     auto y = NDArrayFactory::create<double>('c', {3, 4, 5, 1});
     auto exp = NDArrayFactory::create<double>('c', {3, 4, 5, 6});
     auto z(exp);
-    x.assign(2.f);
+    x.assign(2.);
     y.assign(9.f);
     exp.assign(1.f);
     y.applyTrueBroadcast(BROADCAST(Mod), &x, &z, true);
@@ -2791,7 +2791,8 @@ TEST_F(DeclarableOpsTests1, sru_old_test1) {
     auto state  = results->at(0);
     auto output = results->at(1);
     // state->printBuffer();
-
+    expState.printIndexedBuffer("EXP STATE");
+    state->printIndexedBuffer("OUT STATE");
     ASSERT_TRUE(expState.equalsTo(state));
     ASSERT_TRUE(expOut.equalsTo(output));
     
