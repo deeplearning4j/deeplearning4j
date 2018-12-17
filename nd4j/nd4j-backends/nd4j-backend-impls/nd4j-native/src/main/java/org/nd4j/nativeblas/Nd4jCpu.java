@@ -4137,6 +4137,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef NDArray other);
 
+        public native @Cast("bool") @Name("operator !=") boolean notEquals(@Const @ByRef NDArray other);
     }
 
 
@@ -4438,6 +4439,9 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // returns true if these two NDArrays have same _shapeInfo
 // still the definition of inline function must be in header file
 
+
+
+//////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////

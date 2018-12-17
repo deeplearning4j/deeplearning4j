@@ -26,6 +26,24 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
+    template <typename T>
+    static void reduceNorm2BP_scalar_(NDArray *input, NDArray *epsilon, NDArray *tempNorm, NDArray *output) {
+        T eps = epsilon->e<T>(0);
+        T n2 = tempNorm->e<T>(0);
+        auto norm2Backprop = LAMBDA_T(_x, eps, n2) {
+            return eps * _x / n2;
+        };
+        input->applyLambda<T>(norm2Backprop, output);
+    }
+    BUILD_SINGLE_TEMPLATE(template void reduceNorm2BP_scalar_, (NDArray *input, NDArray *epsilon, NDArray *tempNorm, NDArray *output), FLOAT_TYPES);
+
+
+    void reduceNorm2BP_scalar(NDArray *input, NDArray *epsilon, NDArray *tempNorm, NDArray *output) {
+        auto xType = epsilon->dataType();
+
+        BUILD_SINGLE_SELECTOR(xType, reduceNorm2BP_scalar_, (input, epsilon, tempNorm, output), FLOAT_TYPES);
+    }
+
     void reduceNorm1BP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes) {
 
         if (epsilon->isScalar()) {
