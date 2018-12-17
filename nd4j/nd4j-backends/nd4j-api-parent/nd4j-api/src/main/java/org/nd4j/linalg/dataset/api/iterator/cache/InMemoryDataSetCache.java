@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.dataset.api.iterator.cache;
 
-import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +62,7 @@ public class InMemoryDataSetCache implements DataSetCache {
 
         ByteArrayInputStream is = new ByteArrayInputStream(data);
 
-        DataSet ds = new DataSet();
+        DataSet ds = new org.nd4j.linalg.dataset.DataSet();
 
         ds.load(is);
 

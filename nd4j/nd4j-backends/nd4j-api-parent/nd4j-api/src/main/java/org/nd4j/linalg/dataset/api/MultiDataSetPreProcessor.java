@@ -18,9 +18,7 @@ package org.nd4j.linalg.dataset.api;
 
 /**PreProcessor interface for MultiDataSets
  */
-public interface MultiDataSetPreProcessor {
+public interface MultiDataSetPreProcessor extends IDataSetPreProcessor<MultiDataSet> {
 
-    /** Preprocess the MultiDataSet */
-    void preProcess(MultiDataSet multiDataSet);
 
 }

@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.dataset.api.iterator.cache;
 
-import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.DataSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -88,7 +88,7 @@ public class InFileDataSetCache implements DataSetCache {
         } else if (!file.isFile()) {
             throw new IllegalStateException("ERROR: cannot read DataSet: cache path " + file + " is not a file");
         } else {
-            DataSet ds = new DataSet();
+            DataSet ds = new org.nd4j.linalg.dataset.DataSet();
             ds.load(file);
             return ds;
         }

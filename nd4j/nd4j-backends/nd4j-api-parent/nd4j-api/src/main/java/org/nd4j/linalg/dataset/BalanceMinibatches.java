@@ -69,7 +69,7 @@ public class BalanceMinibatches {
 
         //lay out each example in their respective label directories tracking the paths along the way
         while (dataSetIterator.hasNext()) {
-            DataSet next = dataSetIterator.next();
+            org.nd4j.linalg.dataset.api.DataSet next = dataSetIterator.next();
             //infer minibatch size from iterator
             if (miniBatchSize < 0)
                 miniBatchSize = next.numExamples();

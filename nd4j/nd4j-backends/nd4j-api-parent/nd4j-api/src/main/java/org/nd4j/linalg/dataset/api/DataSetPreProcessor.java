@@ -16,19 +16,8 @@
 
 package org.nd4j.linalg.dataset.api;
 
-import java.io.Serializable;
-
 /**
  * Pre process a dataset
  */
-public interface DataSetPreProcessor extends Serializable {
-
-    /**
-     * Pre process a dataset
-     *
-     * @param toPreProcess the data set to pre process
-     */
-    void preProcess(DataSet toPreProcess);
-
-
+public interface DataSetPreProcessor extends IDataSetPreProcessor<DataSet> {
 }

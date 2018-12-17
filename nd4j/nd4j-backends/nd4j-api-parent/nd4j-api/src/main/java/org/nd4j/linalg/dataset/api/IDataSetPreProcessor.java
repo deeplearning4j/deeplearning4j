@@ -14,31 +14,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.dataset.api.iterator.cache;
+package org.nd4j.linalg.dataset.api;
 
-import org.nd4j.linalg.dataset.api.DataSet;
+import java.io.Serializable;
 
-/**
- * Created by anton on 7/16/16.
+/**PreProcessor interface for MultiDataSets
  */
-public interface DataSetCache {
-    /**
-     * Check is given namespace has complete cache of the data set
-     * @param namespace
-     * @return true if namespace is fully cached
-     */
-    boolean isComplete(String namespace);
+public interface IDataSetPreProcessor<T> extends Serializable {
 
-    /**
-     * Sets the flag indicating whether given namespace is fully cached
-     * @param namespace
-     * @param value
-     */
-    void setComplete(String namespace, boolean value);
+    /** Preprocess the MultiDataSet */
+    void preProcess(T multiDataSet);
 
-    DataSet get(String key);
-
-    void put(String key, DataSet dataSet);
-
-    boolean contains(String key);
 }
