@@ -6812,6 +6812,123 @@ public class Nd4j {
         return INSTANCE.create(strings, shape, order);
     }
 
+    public static INDArray createFromArray(double[] array) {
+        return create(array, new long[]{array.length}, DataType.DOUBLE);
+    }
+
+    public static INDArray createFromArray(float[] array) {
+        return create(array, new long[]{array.length}, DataType.FLOAT);
+    }
+
+    public static INDArray createFromArray(int[] array) {
+        return create(array, new long[]{array.length}, DataType.INT);
+    }
+
+    public static INDArray createFromArray(short[] array) {
+        return create(array, new long[]{array.length}, DataType.SHORT);
+    }
+    public static INDArray createFromArray(byte[] array) {
+        return create(array, new long[]{array.length}, DataType.BYTE);
+    }
+
+    public static INDArray createFromArray(long[] array) {
+        return create(array, new long[]{array.length}, DataType.LONG);
+    }
+
+    public static INDArray createFromArray(boolean[] array) {
+        return create(array, new long[]{array.length}, DataType.BOOL);
+    }
+
+///////////////////
+
+    public static INDArray createFromArray(double[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.DOUBLE);
+    }
+
+    public static INDArray createFromArray(float[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.FLOAT);
+    }
+
+    public static INDArray createFromArray(long[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.LONG);
+    }
+
+    public static INDArray createFromArray(int[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.INT);
+    }
+
+    public static INDArray createFromArray(short[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.SHORT);
+    }
+
+    public static INDArray createFromArray(byte[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.BYTE);
+    }
+
+    public static INDArray createFromArray(boolean[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.BOOL);
+    }
+
+///////////////////
+
+    public static INDArray createFromArray(double[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.DOUBLE);
+    }
+
+    public static INDArray createFromArray(float[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.FLOAT);
+    }
+
+    public static INDArray createFromArray(long[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.LONG);
+    }
+
+    public static INDArray createFromArray(int[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.INT);
+    }
+
+    public static INDArray createFromArray(short[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.SHORT);
+    }
+
+    public static INDArray createFromArray(byte[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.BYTE);
+    }
+
+    public static INDArray createFromArray(boolean[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.BOOL);
+    }
+
+///////////////////
+
+    public static INDArray createFromArray(double[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.DOUBLE);
+    }
+
+    public static INDArray createFromArray(float[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.FLOAT);
+    }
+
+    public static INDArray createFromArray(long[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.LONG);
+    }
+
+    public static INDArray createFromArray(int[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.INT);
+    }
+
+    public static INDArray createFromArray(short[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.SHORT);
+    }
+
+    public static INDArray createFromArray(byte[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.BYTE);
+    }
+
+    public static INDArray createFromArray(boolean[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.BOOL);
+    }
+
     public static boolean isExperimentalMode() {
         return getExecutioner().isExperimentalMode();
     }

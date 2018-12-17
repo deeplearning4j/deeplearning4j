@@ -2044,6 +2044,85 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static short[] flatten(short[][][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
+            return new short[0];
+        val ret = new short[arr.length * arr[0].length * arr[0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    ret[count++] = arr[i][j][k];
+                }
+        return ret;
+    }
+
+    public static byte[] flatten(byte[][][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
+            return new byte[0];
+        val ret = new byte[arr.length * arr[0].length * arr[0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    ret[count++] = arr[i][j][k];
+                }
+        return ret;
+    }
+
+    public static long[] flatten(long[][][][] arr) {
+        val ret = new long[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++)
+                    for (int m = 0; m < arr[0][0][0].length; m++)
+                        ret[count++] = arr[i][j][k][m];
+
+        return ret;
+    }
+
+    public static short[] flatten(short[][][][] arr) {
+        val ret = new short[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++)
+                    for (int m = 0; m < arr[0][0][0].length; m++)
+                        ret[count++] = arr[i][j][k][m];
+
+        return ret;
+    }
+
+    public static byte[] flatten(byte[][][][] arr) {
+        val ret = new byte[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++)
+                    for (int m = 0; m < arr[0][0][0].length; m++)
+                        ret[count++] = arr[i][j][k][m];
+
+        return ret;
+    }
+
+    public static boolean[] flatten(boolean[][][][] arr) {
+        val ret = new boolean[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++)
+                    for (int m = 0; m < arr[0][0][0].length; m++)
+                        ret[count++] = arr[i][j][k][m];
+
+        return ret;
+    }
 
     public static float[] flatten(float[][][][] arr) {
         float[] ret = new float[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
@@ -2089,6 +2168,28 @@ public class ArrayUtil {
         if(arr.length == 0 || arr[0].length == 0 )
             return new int[0];
         int[] ret = new int[arr.length * arr[0].length];
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[i].length; j++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
+
+    public static short[] flatten(short[][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 )
+            return new short[0];
+        val ret = new short[arr.length * arr[0].length];
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[i].length; j++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
+
+    public static byte[] flatten(byte[][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 )
+            return new byte[0];
+        val ret = new byte[arr.length * arr[0].length];
         int count = 0;
         for (int i = 0; i < arr.length; i++)
             for (int j = 0; j < arr[i].length; j++)
