@@ -690,7 +690,7 @@ public class Nd4j {
         int index = 0;
         for (Collection<INDArray> matrixCollection : matrices) {
             for (INDArray matrix : matrixCollection) {
-                INDArray linear = matrix.linearView();
+                INDArray linear = matrix.reshape(-1);
                 for (int i = 0; i < matrix.length(); i++) {
                     linear.putScalar(i, theta.getDouble(index));
                     index++;
@@ -1010,7 +1010,7 @@ public class Nd4j {
         int index = 0;
         for (Iterator<? extends INDArray> matrixIterator : matrices) {
             while (matrixIterator.hasNext()) {
-                INDArray matrix = matrixIterator.next().linearView();
+                INDArray matrix = matrixIterator.next().reshape(-1);
                 for (int i = 0; i < matrix.length(); i++) {
                     matrix.putScalar(i, theta.getDouble(index));
                     index++;

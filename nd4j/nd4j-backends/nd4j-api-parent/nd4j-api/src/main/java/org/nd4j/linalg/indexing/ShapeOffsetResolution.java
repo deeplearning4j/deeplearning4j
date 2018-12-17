@@ -221,7 +221,7 @@ public class ShapeOffsetResolution implements Serializable {
             long[] shape = new long[minDimensions];
             Arrays.fill(shape, 1);
             long[] stride = new long[minDimensions];
-            Arrays.fill(stride, arr.elementStride());
+            Arrays.fill(stride, 1);
             long[] offsets = new long[minDimensions];
             long offset = 0;
             //used for filling in elements of the actual shape stride and offsets
@@ -269,7 +269,7 @@ public class ShapeOffsetResolution implements Serializable {
             long[] shape = new long[minDimensions];
             Arrays.fill(shape, 1);
             long[] stride = new long[minDimensions];
-            Arrays.fill(stride, arr.elementStride());
+            Arrays.fill(stride, 1);
             long[] offsets = new long[minDimensions];
 
             for (int i = 0; i < shape.length; i++) {
@@ -301,7 +301,7 @@ public class ShapeOffsetResolution implements Serializable {
             long[] shape = new long[minDimensions];
             Arrays.fill(shape, 1);
             long[] stride = new long[minDimensions];
-            Arrays.fill(stride, arr.elementStride());
+            Arrays.fill(stride, 1);
             long[] offsets = new long[minDimensions];
             int prependNewAxes = 0;
             boolean allFirst = false;
@@ -583,9 +583,9 @@ public class ShapeOffsetResolution implements Serializable {
         //finally fill in teh rest of the strides if any are left over
         while (accumStrides.size() < accumOffsets.size()) {
             if (!isColumnVector)
-                accumStrides.add(0, (long) arr.elementStride());
+                accumStrides.add(0, 1L);
             else
-                accumStrides.add((long) arr.elementStride());
+                accumStrides.add(1L);
         }
 
 
