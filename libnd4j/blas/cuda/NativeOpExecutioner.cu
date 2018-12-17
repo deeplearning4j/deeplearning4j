@@ -873,6 +873,11 @@ void NativeOpExecutioner::execReduce3(nd4j::graph::LaunchContext *lc,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             int *dimension, int dimensionLength) {
 
+    if(shape::isScalar(hZShapeInfo)) {
+        NativeOpExecutioner::execReduce3(lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
+        return;
+    }
+
     auto stream = lc->getCudaStream();
     auto allocationPointer = lc->getAllocationPointer();
 
