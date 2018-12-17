@@ -364,10 +364,22 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test9) {
 }   
 
  
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, hinge_loss_14) {
 
+    NDArray logits('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {0}, {1.});
+    NDArray labels('c', {3,4}, {0,1,1,0,1,0,1,0,1,0,1,0});
 
-  
+    NDArray output('c', {0}, nd4j::DataType::DOUBLE);
 
+    logits.linspace(1.);
+    weights.assign(1.);    
 
- 
+    nd4j::ops::hinge_loss op;
+    Nd4jStatus status = op.execute({&logits, &weights, &labels}, {&output}, {}, {1}, {});
 
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    ASSERT_TRUE(output.e<double>(0) == 47.);
+}
