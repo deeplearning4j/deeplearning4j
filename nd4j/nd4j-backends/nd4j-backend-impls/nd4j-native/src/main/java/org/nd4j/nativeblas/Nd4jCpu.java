@@ -3095,7 +3095,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 				
         /**
-		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
+		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
         */
 		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace, isShapeAlloc); }
 		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
@@ -20872,6 +20872,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
+        @Namespace("nd4j::ops") public static class cosine_distance_loss_grad extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public cosine_distance_loss_grad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public cosine_distance_loss_grad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public cosine_distance_loss_grad position(long position) {
+                return (cosine_distance_loss_grad)super.position(position);
+            }
+        
+                                                                                    public cosine_distance_loss_grad() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
         //////////////////////////////////////////////////////////////////////////
@@ -20904,7 +20919,22 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public softmax_cross_entropy_loss_with_logits() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }  
+                                                                                }
+        @Namespace("nd4j::ops") public static class softmax_cross_entropy_loss_with_logits_grad extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public softmax_cross_entropy_loss_with_logits_grad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public softmax_cross_entropy_loss_with_logits_grad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public softmax_cross_entropy_loss_with_logits_grad position(long position) {
+                return (softmax_cross_entropy_loss_with_logits_grad)super.position(position);
+            }
+        
+                                                                                    public softmax_cross_entropy_loss_with_logits_grad() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
         //////////////////////////////////////////////////////////////////////////
@@ -20932,6 +20962,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public sparse_softmax_cross_entropy_loss_with_logits() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+        @Namespace("nd4j::ops") public static class sparse_softmax_cross_entropy_loss_with_logits_grad extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public sparse_softmax_cross_entropy_loss_with_logits_grad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public sparse_softmax_cross_entropy_loss_with_logits_grad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public sparse_softmax_cross_entropy_loss_with_logits_grad position(long position) {
+                return (sparse_softmax_cross_entropy_loss_with_logits_grad)super.position(position);
+            }
+        
+                                                                                    public sparse_softmax_cross_entropy_loss_with_logits_grad() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }

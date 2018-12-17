@@ -3095,7 +3095,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 				
         /**
-		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
+		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
         */
 		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace, isShapeAlloc); }
 		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/, @Cast("const bool") boolean isShapeAlloc/*=false*/);
