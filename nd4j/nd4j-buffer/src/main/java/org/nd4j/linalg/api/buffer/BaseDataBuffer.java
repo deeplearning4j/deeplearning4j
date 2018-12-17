@@ -36,6 +36,7 @@ import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -98,6 +99,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient boolean released = false;
 
     protected transient AtomicBoolean referenced = new AtomicBoolean(false);
+    protected transient Collection<BaseDataBuffer> references = new ArrayList<>();
 
     public BaseDataBuffer() {}
 
@@ -173,6 +175,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.underlyingLength = underlyingBuffer.underlyingLength();
         this.wrappedDataBuffer = underlyingBuffer;
         ((BaseDataBuffer) underlyingBuffer).referenced.compareAndSet(false, true);
+        ((BaseDataBuffer) underlyingBuffer).references.add(this);
 
         // Adding link to original databuffer
         if (underlyingBuffer.originalDataBuffer() == null) {
@@ -2260,10 +2263,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (wrappedDataBuffer != null && wrappedDataBuffer != this)
             return false;
 
-        if (referenced.get())
-            return false;
-
         return true;
+    }
+
+    protected void markReleased() {
+        this.released = true;
+
+        for (val r:references)
+            r.markReleased();
     }
 
     @Override
@@ -2271,11 +2278,16 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (!closeable())
             throw new IllegalStateException("Can't release this data buffer");
 
+        // notifying other databuffers that their underlying
+        for (val r:references)
+            r.markReleased();
+
         release();
     }
 
     protected void release() {
         this.pointer.deallocate();
         this.indexer = null;
+        this.pointer = null;
     }
 }

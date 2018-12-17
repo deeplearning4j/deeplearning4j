@@ -23,7 +23,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -68,7 +67,7 @@ public class CloseableTests extends BaseNd4jTest {
 
         val view = array.get(NDArrayIndex.point(1), NDArrayIndex.all());
 
-        assertFalse(array.closeable());
+        assertTrue(array.closeable());
         assertFalse(view.closeable());
     }
 
