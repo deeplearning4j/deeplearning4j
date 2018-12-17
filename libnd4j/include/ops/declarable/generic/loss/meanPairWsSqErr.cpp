@@ -66,16 +66,19 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
 	else 		
 		numOfNonZeroWeights.assign(weightsBroad->reduceAlongDims(reduce::CountNonZero, reductionIdx));	
 
-	NDArray numOfNonZeroWeightsMinusOne = numOfNonZeroWeights - 1;		
+	NDArray numOfNonZeroWeightsMinusOne = numOfNonZeroWeights;// - 1LL;
+	numOfNonZeroWeightsMinusOne -= 1LL;
 	
 	sumSqrsDiffPerBatch.applyPairwiseTransform(pairwise::SafeDivide, numOfNonZeroWeightsMinusOne, nullptr);
 
 	auto sumDiff = diffs.reduceAlongDims(reduce::Sum, reductionIdx, true);
 	
-	auto nonZerosSquared = numOfNonZeroWeights*numOfNonZeroWeightsMinusOne;
+	auto nonZerosSquared = numOfNonZeroWeights;
+	nonZerosSquared.applyPairwiseTransform(pairwise::Multiply, numOfNonZeroWeightsMinusOne, nullptr);
 	(sumDiff*sumDiff).applyPairwiseTransform(pairwise::SafeDivide, &nonZerosSquared, &sumDiff, nullptr);
 	
-	auto E = (sumSqrsDiffPerBatch - sumDiff) * 2.;
+	auto E = (sumSqrsDiffPerBatch - sumDiff);
+	E *= 2.f;
 
     // multiply E on weights
     E *= *weights;

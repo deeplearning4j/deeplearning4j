@@ -115,7 +115,7 @@ public class LinAlgExceptions {
     }
 
     public static void assertValidNum(INDArray n) {
-        INDArray linear = n.linearView();
+        INDArray linear = n.reshape(-1);
         for (int i = 0; i < linear.length(); i++) {
             double d = linear.getDouble(i);
             if (Double.isNaN(d) || Double.isInfinite(d))

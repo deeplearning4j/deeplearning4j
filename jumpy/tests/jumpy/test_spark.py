@@ -5,6 +5,7 @@ from jumpy.spark import java2pyArrayRDD
 from jumpy.spark import java2pyDatasetRDD
 from jumpy.spark import Dataset
 from jumpy.java_classes import ArrayList
+from numpy.testing import assert_allclose
 from jnius import autoclass
 import jumpy as jp
 import numpy as np
@@ -35,30 +36,37 @@ class TestSparkConverters(object):
         data = ArrayList()
 
         for _ in range(100):
-            arr = jp.zeros((20, 10)).array
+            arr = jp.array(np.random.random((32, 20))).array
             data.add(arr)
 
         java_rdd = java_sc.parallelize(data)
         py_rdd = java2pyArrayRDD(java_rdd, py_sc)
 
         data2 = py_rdd.collect()
-        assert len(data2) == data.size()
-        assert np.sum(data2) == 0.
+
+        data = [data.get(i) for i in range(data.size())]
+
+        assert len(data) == len(data2)
+
+        for d1, d2 in zip(data, data2):
+            assert_allclose(jp.array(d1).numpy(), d2)
 
 
     def test_py2java_array(self, java_sc, py_sc):
-        data = [np.zeros((20, 10)) for _ in range(100)]
+        data = [np.random.random((32, 20)) for _ in range(100)]
+
+        jdata = [jp.array(x) for x in data]  # required
 
         py_rdd = py_sc.parallelize(data)
         java_rdd = py2javaArrayRDD(py_rdd, java_sc)
 
         data2 = java_rdd.collect()
-        n = data2.size()
-        assert n == len(data)
-        s = 0.
-        for i in range(n):
-            s += float(jp.sum(data2.get(i)))
-        assert s == 0.
+        data2 = [data2.get(i) for i in range(data2.size())]
+        assert len(data) == len(data2)
+        for d1, d2 in zip(data, data2):
+            d2 = jp.array(d2).numpy()
+            assert_allclose(d1, d2)
+
 
 
 

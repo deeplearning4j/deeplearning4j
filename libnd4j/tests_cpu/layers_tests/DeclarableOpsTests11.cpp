@@ -2220,6 +2220,18 @@ TEST_F(DeclarableOpsTests11, mean_pairwssqerr_loss_test9) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, SafeDivideMixed_Test1) {
+
+    NDArray labels('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});
+    auto sumDiff = labels.reduceAlongDims(reduce::Sum, {1}, true);
+
+    NDArray numOfNonZero(sumDiff.getShapeInfo(), nd4j::DataType::INT64, false);
+    numOfNonZero.assign(1);
+    sumDiff.applyPairwiseTransform(pairwise::SafeDivide, &numOfNonZero, &sumDiff, nullptr);
+    sumDiff.printIndexedBuffer("Output as Is");
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_pairwssqerr_loss_test10) {
     
     NDArray labels('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});    
@@ -2436,6 +2448,33 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test8) {
     
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
+
+    delete results;
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, Multiply_BP_Test1) {
+
+    NDArray x('c', {3,4,5}, nd4j::DataType::DOUBLE);
+    NDArray y('c', {1,1,1}, nd4j::DataType::DOUBLE);
+
+    NDArray dLdp('c', {3,4,5}, nd4j::DataType::DOUBLE);
+    NDArray dLdpExp('c', {3,4,5}, nd4j::DataType::DOUBLE);
+
+    x.assign(1.0);//linspace(0.1, 0.1);
+    y.assign(1.0);
+    dLdp.assign(1.0);
+    dLdpExp.assign(1.0);
+    nd4j::ops::multiply_bp op;
+
+    auto results = op.execute({&x, &y, &dLdp}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *dLdo = results->at(0);
+    dLdo->printBuffer("Output for multiply_bp op");
+    ASSERT_TRUE(dLdpExp.isSameShape(dLdo));
+    ASSERT_TRUE(dLdpExp.equalsTo(dLdo));
 
     delete results;
 }
