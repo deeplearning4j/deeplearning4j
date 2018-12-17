@@ -34,6 +34,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -259,7 +260,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         nativeOps.releaseNumpy(pointer);
         return result;
     }
-    /*
+
     @Override
     public Map<String, INDArray> createFromNpzFile(File file){
         byte[] pathBytes = file.getAbsolutePath().getBytes(Charset.forName("UTF-8"));
@@ -267,7 +268,19 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         directBuffer.put(pathBytes);
         directBuffer.rewind();
         directBuffer.position(0);
+        Pointer pointer = nativeOps.mapFromNpzFile(new BytePointer(directBuffer));
+        int n = nativeOps.getNumNpyArraysInMap(pointer);
+        HashMap<String, INDArray> map = new HashMap<>();
+
+        for (int i=0; i<n; i++){
+            String arrName = nativeOps.getNpyArrayNameFromMap(pointer, i);
+            Pointer arrPtr = nativeOps.getNpyArrayFromMap(pointer, i);
+            INDArray indArray = createFromNpyPointer(arrPtr);
+            map.put(arrName, indArray);
+        }
+
+        return map;
 
     }
-*/
+
 }
