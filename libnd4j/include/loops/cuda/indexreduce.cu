@@ -194,7 +194,7 @@ namespace functions {
             __shared__ volatile int resultScalar;
 
             //shared memory space for storing intermediate results
-            IndexValue<T>* sPartials;
+            __shared__ IndexValue<T>* sPartials;
             if(threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
                 sPartials = reinterpret_cast<IndexValue<T>*>(shmem);
