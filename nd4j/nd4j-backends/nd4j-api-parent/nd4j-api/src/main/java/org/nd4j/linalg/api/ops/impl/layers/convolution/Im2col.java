@@ -19,6 +19,8 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 import lombok.Builder;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
@@ -83,5 +85,11 @@ public class Im2col extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         return Collections.singletonList(f().im2ColBp(arg(), grad.get(0), conv2DConfig));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected 1 input data type, got %s", inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

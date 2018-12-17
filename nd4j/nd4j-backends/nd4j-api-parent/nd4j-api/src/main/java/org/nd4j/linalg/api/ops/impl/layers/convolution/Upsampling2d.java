@@ -20,7 +20,9 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.ArrayList;
@@ -77,4 +79,9 @@ public class Upsampling2d extends DynamicCustomOp {
         return Collections.singletonList(f().upsampling2dBp(arg(), f1.get(0), nchw, scaleH, scaleW));
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected 1 input data type, got %s", inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
+    }
 }

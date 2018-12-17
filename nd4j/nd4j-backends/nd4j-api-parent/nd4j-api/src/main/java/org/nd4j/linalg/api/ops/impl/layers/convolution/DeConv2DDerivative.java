@@ -77,8 +77,8 @@ public class DeConv2DDerivative extends DeConv2D {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        int n = args().length;
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n-1, "Expected %s input data types, got %s", n-1, inputDataTypes);
+        int n = args().length;  //Original inputs + gradient at
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types, got %s", n, inputDataTypes);
         List<DataType> out = new ArrayList<>(n-1);
         for( int i=0; i<n-1; i++ ){
             out.add(inputDataTypes.get(i));
