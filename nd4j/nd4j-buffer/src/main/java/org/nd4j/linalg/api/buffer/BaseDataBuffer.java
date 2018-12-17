@@ -25,6 +25,7 @@ import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.AtomicDouble;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -94,6 +95,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient Long trackingPoint;
 
     protected transient boolean constant = false;
+    protected transient boolean released = false;
+
+    protected transient AtomicBoolean referenced = new AtomicBoolean(false);
 
     public BaseDataBuffer() {}
 
@@ -168,6 +172,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.elementSize = (byte) underlyingBuffer.getElementSize();
         this.underlyingLength = underlyingBuffer.underlyingLength();
         this.wrappedDataBuffer = underlyingBuffer;
+        ((BaseDataBuffer) underlyingBuffer).referenced.compareAndSet(false, true);
 
         // Adding link to original databuffer
         if (underlyingBuffer.originalDataBuffer() == null) {
@@ -2245,5 +2250,32 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public long capacity() {
         return pointer().capacity();
+    }
+
+    @Override
+    public boolean closeable() {
+        if (released)
+            return false;
+
+        if (wrappedDataBuffer != null && wrappedDataBuffer != this)
+            return false;
+
+        if (referenced.get())
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public void close() throws Exception {
+        if (!closeable())
+            throw new IllegalStateException("Can't release view data buffer");
+
+        release();
+    }
+
+    protected void release() {
+        this.pointer.deallocate();
+        this.indexer = null;
     }
 }
