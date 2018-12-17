@@ -30,6 +30,7 @@ namespace nd4j {
     protected:
         std::vector<Nd4jLong*> _shapes;
 
+        bool _destroyed = false;
         bool _autoremovable = false;
         bool _workspace = false;
     public:

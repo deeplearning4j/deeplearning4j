@@ -21,6 +21,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
@@ -44,20 +45,29 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     public BaseScalarOp(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n);
-        this.scalarValue = Nd4j.scalar(num);
+        if (x.isCompressed())
+            Nd4j.getCompressor().decompressi(x);
+
+        this.scalarValue = Nd4j.scalar(x.dataType(), num);
 
         init(x, y, z, n);
     }
 
     public BaseScalarOp(INDArray x, Number num) {
         super(x);
-        this.scalarValue = Nd4j.scalar(num);
+        if (x.isCompressed())
+            Nd4j.getCompressor().decompressi(x);
+
+        this.scalarValue = Nd4j.scalar(x.dataType(), num);
         init(x, y, z, n);
 
     }
     public BaseScalarOp(INDArray x, INDArray z, Number set) {
         super(x, null, z, x.length());
-        this.scalarValue= Nd4j.scalar(set);
+        if (x.isCompressed())
+            Nd4j.getCompressor().decompressi(x);
+
+        this.scalarValue= Nd4j.scalar(x.dataType(), set);
     }
 
 
@@ -148,7 +158,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     @Override
     public void setScalar(Number scalar) {
-        this.scalarValue = Nd4j.scalar(scalar);
+        this.scalarValue = Nd4j.scalar(x.dataType(), scalar);
     }
 
     @Override
@@ -169,11 +179,14 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     }
 
     @Override
-    public boolean validateDataTypes() {
+    public boolean validateDataTypes(boolean experimentalMode) {
         if (y() != null) {
             if (y().isR() || x().isR())
                 Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point:" +
                         " x.dataType=%s, y.dataType=%s, z.dataType=%s, op=%s", x.dataType(), y.dataType(), z.dataType(), getClass().getName());
+
+            if (!experimentalMode)
+                Preconditions.checkArgument(x.dataType() == y.dataType()  || y.dataType() == DataType.BOOL, "Op.X must have same data type as Op.Y");
         } else if (x().isR())
             Preconditions.checkArgument(z().isR(), "Op.Z must have floating point type, since one of operands is floating point:" +
                     " x.dataType=%s, z.dataType=%s, op=%s", x.dataType(), z.dataType(), getClass().getName());

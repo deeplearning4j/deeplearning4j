@@ -135,7 +135,7 @@ public class NormalizerTests extends BaseNd4jTest {
                                             .dup();
 
 
-            INDArray mask = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 0, 0}});
+            INDArray mask = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 0, 0}}).castTo(Nd4j.defaultFloatingPointType());
 
             DataSet ds = new DataSet(arr, null, mask, null);
             DataSet dsCopy1 = new DataSet(arr.dup(), null, mask, null);

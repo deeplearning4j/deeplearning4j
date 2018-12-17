@@ -64,15 +64,15 @@ public class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializ
     @Override
     public void preProcess(INDArray array, INDArray maskArray, MinMaxStats stats) {
         if (array.rank() <= 2) {
-            array.subiRowVector(stats.getLower());
-            array.diviRowVector(stats.getRange());
+            array.subiRowVector(stats.getLower().castTo(array.dataType()));
+            array.diviRowVector(stats.getRange().castTo(array.dataType()));
         }
         // if feature Rank is 3 (time series) samplesxfeaturesxtimesteps
         // if feature Rank is 4 (images) samplesxchannelsxrowsxcols
         // both cases operations should be carried out in dimension 1
         else {
-            Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(array, stats.getLower(), array, 1));
-            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(array, stats.getRange(), array, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(array, stats.getLower().castTo(array.dataType()), array, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(array, stats.getRange().castTo(array.dataType()), array, 1));
         }
 
         // Scale by target range
@@ -102,8 +102,8 @@ public class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializ
             array.muliRowVector(stats.getRange());
             array.addiRowVector(stats.getLower());
         } else {
-            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(array, stats.getRange(), array, 1));
-            Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(array, stats.getLower(), array, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(array, stats.getRange().castTo(array.dataType()), array, 1));
+            Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(array, stats.getLower().castTo(array.dataType()), array, 1));
         }
 
         if (maskArray != null) {

@@ -1410,7 +1410,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         int w = 6;
         int h = 6;
 
-        INDArray bbPrior = Nd4j.rand(b, 2).muliRowVector(Nd4j.create(new double[]{w, h}));
+        INDArray bbPrior = Nd4j.rand(b, 2).muliRowVector(Nd4j.create(new double[]{w, h}).castTo(Nd4j.defaultFloatingPointType()));
 
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()

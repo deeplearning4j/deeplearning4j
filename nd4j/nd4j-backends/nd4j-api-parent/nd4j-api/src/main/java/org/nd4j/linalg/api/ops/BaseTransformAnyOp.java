@@ -101,7 +101,7 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
     }
 
     @Override
-    public boolean validateDataTypes() {
+    public boolean validateDataTypes(boolean experimentalMode) {
         return true;
     }
 

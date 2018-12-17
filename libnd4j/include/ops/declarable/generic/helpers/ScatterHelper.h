@@ -198,6 +198,37 @@ static FORCEINLINE void scatterND(pairwise::Ops op, const NDArray& indices, cons
 }
 
 
+////////////////////////////////////////////////////////////////////////
+static FORCEINLINE void scatterForLoss(const NDArray& indices, const NDArray& updates, NDArray& output, const bool calcGrad) {
+
+    // requirements for arrays
+    // shapes of updates and output must be the same
+    // shape of indices should be the same as updates shape with last dimension excluded
+    // for example if updates is {a,b,c} then indices should be {a,b}
+
+    const Nd4jLong indicesLen = indices.lengthOf();
+
+    std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(updates.rankOf(), {-1});
+
+    if(!calcGrad) {
+        #pragma omp parallel for schedule(guided) 
+        for(Nd4jLong i = 0; i < indicesLen; ++i) {
+
+            auto subArr = updates(i, dimsToExclude);
+            output.p(i, subArr.e(indices.e<Nd4jLong>(i)));
+        }
+    }
+    else {
+        #pragma omp parallel for schedule(guided) 
+        for(Nd4jLong i = 0; i < indicesLen; ++i) {
+
+            auto subArr = updates(i, dimsToExclude);
+            auto ind = indices.e<Nd4jLong>(i);
+            subArr.p(ind, subArr.e(ind) - 1.);
+        }   
+    }
+}
+
 };
 
 

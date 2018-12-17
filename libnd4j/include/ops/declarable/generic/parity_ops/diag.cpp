@@ -34,7 +34,10 @@ CUSTOM_OP_IMPL(diag, 1, 1, false, 0, 0) {
     
     // input validation
     REQUIRE_TRUE(input->rankOf() <= 3, 0, "CUSTOM_OP diag: rank of input array must be <= 3 !, but got %i instead", input->rankOf());
-    
+
+    // TODO: still not sure if we really want this
+    output->assign(0);
+
     helpers::diagFunctor(input, output);    
     
     return Status::OK();

@@ -114,7 +114,24 @@ public class KerasReshape extends KerasLayer {
                     targetShape = new long[]{targetShape[2], targetShape[0], targetShape[1]};
                 preprocessor = new ReshapePreprocessor(inputShape, targetShape);
             }
-        } else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
+
+        } else if (inputType[0] instanceof InputType.InputTypeConvolutional3D) {
+            InputType.InputTypeConvolutional3D it = (InputType.InputTypeConvolutional3D) inputType[0];
+            val inputShape = new long[] { it.getDepth(), it.getHeight(), it.getWidth(), it.getChannels() };
+            val dimOrder = getDimOrder();
+            if (dimOrder == DimOrder.THEANO || dimOrder == DimOrder.NONE && kerasMajorVersion == 1) {
+                if (targetShape.length == 3) { // Keras edge case
+                    targetShape = new long[] { targetShape[1], targetShape[0], targetShape[2] };
+                } else {
+                    targetShape = new long[] { targetShape[2], targetShape[1], targetShape[0], targetShape[3] };
+                }
+                preprocessor = new ReshapePreprocessor(inputShape, targetShape);
+            } else {
+                if (inputShape[0] != targetShape[0])
+                    targetShape = new long[] { targetShape[3], targetShape[0], targetShape[1], targetShape[2] };
+                preprocessor = new ReshapePreprocessor(inputShape, targetShape);
+            }
+        }  else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
             InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType[0];
             val inputShape = new long[]{it.getSize(), it.getTimeSeriesLength()};
             preprocessor = new ReshapePreprocessor(inputShape, this.targetShape);
