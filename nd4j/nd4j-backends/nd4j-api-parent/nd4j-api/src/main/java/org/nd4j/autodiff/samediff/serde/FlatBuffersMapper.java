@@ -201,12 +201,16 @@ public class FlatBuffersMapper {
                 return OpType.SCALAR_BOOL;
             case BROADCAST:
                 return OpType.BROADCAST;
+            case BROADCAST_BOOL:
+                return OpType.BROADCAST_BOOL;
             case TRANSFORM_BOOL:
                 return OpType.TRANSFORM_BOOL;
             case TRANSFORM_FLOAT:
                 return OpType.TRANSFORM_FLOAT;
             case TRANSFORM_SAME:
                 return OpType.TRANSFORM_SAME;
+            case TRANSFORM_ANY:
+                return OpType.TRANSFORM_ANY;
             case TRANSFORM_STRICT:
                 return OpType.TRANSFORM_STRICT;
             case SPECIAL:
@@ -242,6 +246,8 @@ public class FlatBuffersMapper {
                 return OpType.SHAPE;
             case PAIRWISE:
                 return OpType.PAIRWISE;
+            case PAIRWISE_BOOL:
+                return OpType.PAIRWISE_BOOL;
             case SUMMARYSTATS:
                 return OpType.SUMMARYSTATS;
             default:
