@@ -2791,7 +2791,8 @@ TEST_F(DeclarableOpsTests1, sru_old_test1) {
     auto state  = results->at(0);
     auto output = results->at(1);
     // state->printBuffer();
-
+    expState.printIndexedBuffer("EXP STATE");
+    state->printIndexedBuffer("OUT STATE");
     ASSERT_TRUE(expState.equalsTo(state));
     ASSERT_TRUE(expOut.equalsTo(output));
     

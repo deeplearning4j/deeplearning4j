@@ -238,10 +238,10 @@ TEST_F(DeclarableOpsTests7, TEST_WHERE_MASK) {
     NDArray putArr(put,twoHundredShapePointer);
     NDArray resultArr(z,threeHundredShapePointer);
 
+    resultArr.assign(0.0);
     ArrayOptions::setDataType(threeHundredShapePointer, nd4j::DataType::BOOL);
     NDArray maskArr(mask,threeHundredShapePointer);
 
-    resultArr.assign(0.0);
     ArrayOptions::setDataType(threeHundredShapePointer, nd4j::DataType::DOUBLE);
     NDArray assertArr(assertion, threeHundredShapePointer);
     Nd4jStatus result = op.execute({&maskArr, &xArr, &putArr},{&resultArr},{},{},{});
