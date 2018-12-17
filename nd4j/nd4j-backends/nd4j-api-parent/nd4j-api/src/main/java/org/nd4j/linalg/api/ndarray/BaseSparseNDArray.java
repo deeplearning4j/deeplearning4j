@@ -393,17 +393,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public void markAsCompressed(boolean reallyCompressed) {
 
     }
-
-    @Override
-    public void setWrapAround(boolean wrapAround) {
-
-    }
-
-    @Override
-    public boolean isWrapAround() {
-        return false;
-    }
-
     @Override
     public int rank() {
         return Shape.rank(shapeInformation);
@@ -440,32 +429,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public int elementStride() {
-        return 0;
-    }
-
-    @Override
     public int elementWiseStride() {
-        return 0;
-    }
-
-    @Override
-    public boolean isCleanedUp() {
-        return false;
-    }
-
-    @Override
-    public void cleanup() {
-
-    }
-
-    @Override
-    public void resetLinearView() {
-
-    }
-
-    @Override
-    public int secondaryStride() {
         return 0;
     }
 
@@ -476,26 +440,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public INDArray putScalarUnsafe(long offset, double value) {
-        return null;
-    }
-
-    @Override
-    public int majorStride() {
-        return 0;
-    }
-
-    @Override
-    public int innerMostStride() {
-        return 0;
-    }
-
-    @Override
-    public INDArray linearView() {
-        return null;
-    }
-
-    @Override
-    public INDArray linearViewColumnOrder() {
         return null;
     }
 

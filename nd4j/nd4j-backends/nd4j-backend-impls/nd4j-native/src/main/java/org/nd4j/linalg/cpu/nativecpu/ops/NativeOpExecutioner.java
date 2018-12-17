@@ -1016,7 +1016,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             getPointerForExtraArgs(op, op.z().dataType()),
                             op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             null, null,
-                            true);
+                            ((Variance) op).isBiasCorrected());
                 } else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
                     val p = getPointerForExtraArgs(op, op.z().dataType());
                     loop.execReduce3Scalar(null, op.opNum(),

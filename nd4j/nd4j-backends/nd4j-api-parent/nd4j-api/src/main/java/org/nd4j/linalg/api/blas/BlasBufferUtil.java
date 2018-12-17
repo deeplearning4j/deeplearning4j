@@ -65,7 +65,7 @@ public class BlasBufferUtil {
             return buf.data().asFloat();
         } else {
             float[] ret = new float[(int) buf.length()];
-            INDArray linear = buf.linearView();
+            INDArray linear = buf.reshape(-1);
 
             for (int i = 0; i < buf.length(); i++)
                 ret[i] = linear.getFloat(i);
@@ -90,7 +90,7 @@ public class BlasBufferUtil {
 
         } else {
             double[] ret = new double[(int) buf.length()];
-            INDArray linear = buf.linearView();
+            INDArray linear = buf.reshape(-1);
             for (int i = 0; i < buf.length(); i++)
                 ret[i] = linear.getDouble(i);
             return ret;
@@ -256,7 +256,7 @@ public class BlasBufferUtil {
                     //need to do strided access with offset
                     for (int i = 0; i < data.length; i++) {
                         // FIXME: LONG
-                        int dIndex = (int) toSet.offset() + (i * toSet.majorStride());
+                        int dIndex = (int) toSet.offset() + (i * toSet.stride(-1));
                         d[dIndex] = data[count++];
                     }
                 }
@@ -273,7 +273,7 @@ public class BlasBufferUtil {
                 //need to do strided access with offset
                 for (int i = 0; i < data.length; i++) {
                     // FIXME: LONG
-                    int dIndex = (int) toSet.offset() + (i * toSet.majorStride());
+                    int dIndex = (int) toSet.offset() + (i * toSet.stride(-1));
                     underlyingData.put(dIndex, data[count++]);
                 }
             }
@@ -321,7 +321,7 @@ public class BlasBufferUtil {
                     //need to do strided access with offset
                     for (int i = 0; i < data.length; i++) {
                         // FIXME: LONG
-                        int dIndex = (int) toSet.offset() + (i * toSet.majorStride());
+                        int dIndex = (int) toSet.offset() + (i * toSet.stride(-1));
                         d[dIndex] = data[count++];
                     }
                 }
@@ -338,7 +338,7 @@ public class BlasBufferUtil {
                 //need to do strided access with offset
                 for (int i = 0; i < data.length; i++) {
                     // FIXME: LONG
-                    int dIndex = (int) toSet.offset() + (i * toSet.majorStride());
+                    int dIndex = (int) toSet.offset() + (i * toSet.stride(-1));
                     underlyingData.put(dIndex, data[count++]);
                 }
             }

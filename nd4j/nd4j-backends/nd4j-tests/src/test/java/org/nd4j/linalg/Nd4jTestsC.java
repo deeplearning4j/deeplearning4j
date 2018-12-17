@@ -1149,7 +1149,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testLinearViewGetAndPut() throws Exception {
         INDArray test = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
-        INDArray linear = test.linearView();
+        INDArray linear = test.reshape(-1);
         linear.putScalar(2, 6);
         linear.putScalar(3, 7);
         assertEquals(getFailureMessage(), 6, linear.getFloat(2), 1e-1);
@@ -1827,7 +1827,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.rand(shape);
 
         INDArray tad = arr.tensorAlongDimension(0, 1, 2);
-        boolean order = Shape.cOrFortranOrder(tad.shape(), tad.stride(), tad.elementStride());
+        boolean order = Shape.cOrFortranOrder(tad.shape(), tad.stride(), 1);
         assertArrayEquals(tad.shape(), new long[] {5, 7});
 
 
@@ -3088,7 +3088,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testNdArrayCreation() {
         double delta = 1e-1;
         INDArray n1 = Nd4j.create(new double[] {0d, 1d, 2d, 3d}, new long[] {2, 2}, 'c');
-        INDArray lv = n1.linearView();
+        INDArray lv = n1.reshape(-1);
         assertEquals(0d, lv.getDouble(0), delta);
         assertEquals(1d, lv.getDouble(1), delta);
         assertEquals(2d, lv.getDouble(2), delta);
