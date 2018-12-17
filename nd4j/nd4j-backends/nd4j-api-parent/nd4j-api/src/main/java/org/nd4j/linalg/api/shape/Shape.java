@@ -2980,7 +2980,7 @@ public class Shape {
 
     public static String shapeToStringShort(INDArray arr){
         long[] s = arr.shape();
-        return arr.dataType() + "," + (s == null ? "[]" : Arrays.toString(s)) + "," + arr.ordering();
+        return arr.dataType() + "," + (s == null ? "[]" : Arrays.toString(s).replace(" ","")) + "," + arr.ordering();
     }
 
 

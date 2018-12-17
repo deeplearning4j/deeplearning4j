@@ -655,8 +655,8 @@ public class MiscOpValidation extends BaseOpValidation {
                         for (boolean transposeResult : new boolean[]{false, true}) {    //https://github.com/deeplearning4j/deeplearning4j/issues/5648
                             Nd4j.getRandom().setSeed(12345);
 
-                            INDArray aArr = Nd4j.rand(t(transposeA, aShape)).dup(aOrder);
-                            INDArray bArr = Nd4j.rand(t(transposeB, bShape)).dup(bOrder);
+                            INDArray aArr = Nd4j.rand(DataType.DOUBLE, t(transposeA, aShape)).dup(aOrder);
+                            INDArray bArr = Nd4j.rand(DataType.DOUBLE, t(transposeB, bShape)).dup(bOrder);
 
                             SameDiff sd = SameDiff.create();
                             SDVariable a = sd.var("a", aArr);
@@ -1087,7 +1087,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
         //Because it's on the diagonal, should be the same for all axis args...
         for( int i=-1; i<=0; i++ ) {
-            INDArray indicesArr = Nd4j.trueVector(new double[]{0, 1, 2});
+            INDArray indicesArr = Nd4j.create(new double[]{0, 1, 2});
             int depth = 3;
 
             SameDiff sd = SameDiff.create();
@@ -1117,7 +1117,7 @@ public class MiscOpValidation extends BaseOpValidation {
         //https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/parity_ops/onehot.cpp
 
         for( int axis=-1; axis<=0; axis++ ) {
-            String err = OpValidation.validate(new OpTestCase(new OneHot(Nd4j.trueVector(new double[]{0, 1, 2}),
+            String err = OpValidation.validate(new OpTestCase(new OneHot(Nd4j.create(new double[]{0, 1, 2}),
                     Nd4j.create(3,3), 3, axis, 1.0, 0.0))
                     .expectedOutput(0, Nd4j.eye(3)));
 
@@ -1128,7 +1128,7 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testOneHot2() {
 
-        INDArray indicesArr = Nd4j.trueVector(new double[]{0, 2, -1, 1});
+        INDArray indicesArr = Nd4j.create(new double[]{0, 2, -1, 1});
 
         SameDiff sd = SameDiff.create();
         SDVariable indices = sd.var("indices", indicesArr);
@@ -1312,9 +1312,9 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testZerosLikeOp(){
 
-        INDArray arr = Nd4j.trueScalar(1.0);
-        INDArray out = Nd4j.trueScalar(-1);
-        INDArray exp = Nd4j.trueScalar(0);
+        INDArray arr = Nd4j.scalar(DataType.DOUBLE, 1.0);
+        INDArray out = Nd4j.scalar(DataType.DOUBLE, -1);
+        INDArray exp = Nd4j.scalar(DataType.DOUBLE, 0);
 
         OpTestCase op = new OpTestCase(new ZerosLike(arr, out));
         op.expectedOutput(0, exp);
@@ -1331,8 +1331,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
             SameDiff sd = SameDiff.create();
 
-            SDVariable labels = sd.var("labels", Nd4j.trueVector(new double[]{1, 2, 4}));
-            SDVariable predictions = sd.var("predictions", Nd4j.trueVector(new double[]{2, 2, 4}));
+            SDVariable labels = sd.var("labels", Nd4j.create(new double[]{1, 2, 4}));
+            SDVariable predictions = sd.var("predictions", Nd4j.create(new double[]{2, 2, 4}));
 
             INDArray exp = Nd4j.create(new double[][]{
                     {0, 0, 0, 0, 0},

@@ -1791,13 +1791,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 for( int i=0; i<inputArgs.length; i++ ){
                     if(i > 0)
                         sb.append("), (");
-                    sb.append(inputArgs[i].shapeInfoToString());
+                    sb.append(Shape.shapeToStringShort(inputArgs[i]));
                 }
                 sb.append(")]. Outputs: [(");
                 for( int i=0; i<outputArgs.length; i++){
                     if(i > 0)
                         sb.append("), (");
-                    sb.append(outputArgs[i].shapeInfoToString());
+                    sb.append(Shape.shapeToStringShort(outputArgs[i]));
                 }
                 sb.append(")]");
                 log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +

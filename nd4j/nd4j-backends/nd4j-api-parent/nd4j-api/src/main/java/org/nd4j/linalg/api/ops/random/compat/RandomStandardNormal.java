@@ -18,10 +18,15 @@ package org.nd4j.linalg.api.ops.random.compat;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * This op is a wrapper for RandomNormal Op
@@ -73,5 +78,13 @@ public class RandomStandardNormal extends DynamicCustomOp {
     public Object[] getExtraArgs() {
         // FIXME: why the hell we need this?
         return new Object[] {new Double(0.0), new Double(1.0)};
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected exactly 1 input datatype, got %s", inputDataTypes);
+        //Input data type specifies the shape; output data type should be any float
+        //TODO MAKE CONFIGUREABLE - https://github.com/deeplearning4j/deeplearning4j/issues/6854
+        return Collections.singletonList(DataType.FLOAT);
     }
 }
