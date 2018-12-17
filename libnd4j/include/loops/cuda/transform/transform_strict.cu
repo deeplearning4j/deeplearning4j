@@ -77,6 +77,7 @@ namespace functions {
 		        auto xEws = shape::elementWiseStride(shapeInfo);
     		    auto zEws = shape::elementWiseStride(zShapeInfo);
 	    	    auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+				int totalThreads = gridDim.x * blockDim.x;
 
                 __shared__ Nd4jLong length;
 		        if(threadIdx.x == 0)
@@ -84,13 +85,17 @@ namespace functions {
 		        __syncthreads();
 
 		        if(xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
-			        transformCuda<OpType>(
-				    	length,
-				    	y,
-				    	xEws,
-				    	params,
-				    	z,
-				    	zEws, allocationPointer, reductionPointer);
+					if(xEws == 1 && zEws == 1) {
+						/* equal, positive, non-unit increments. */
+						for (int i = tid; i < length; i += totalThreads) {
+							z[i] = OpType::op(y[i], params);
+						}
+					}
+					else {
+						for (int i = tid; i < length; i += totalThreads) {
+							z[i * zEws] = OpType::op(y[i * xEws], params);
+						}
+					}
 		        }
 		        else {			
 			
@@ -103,39 +108,6 @@ namespace functions {
 		        }
 	        }
 	    };
-
-        template<typename X>
-        template <typename OpType>
-	    __device__ void TransformStrict<X>::transformCuda(
-			Nd4jLong n,
-			void *vy,
-			Nd4jLong incy,
-			void *vparams,
-			void *vz,
-			Nd4jLong resultStride,
-			int *allocationPointer, void *vreductionPointer) {
-		
-        	auto y = static_cast<X*>(vy);
-		    auto z = static_cast<X*>(vz);
-		    auto params = static_cast<X*>(vparams);
-		    auto reductionPointer = static_cast<X*>(vreductionPointer);
-
-            int totalThreads = gridDim.x * blockDim.x;
-		    Nd4jLong i = blockIdx.x * blockDim.x + threadIdx.x;
-
-    		if(incy == 1 && resultStride == 1) {
-	    		/* equal, positive, non-unit increments. */
-			    for (; i < n; i += totalThreads) {
-				    z[i] = OpType::op(y[i], params);
-			    }
-		    }
-		    else {
-			    for (; i < n; i += totalThreads) {
-				    z[i * resultStride] = OpType::op(y[i * incy], params);
-			    }
-		    }
-	    }
-
 
 		template<typename X>
 		template <typename OpType>

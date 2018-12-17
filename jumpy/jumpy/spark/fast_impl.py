@@ -17,20 +17,29 @@
 import numpy as np
 from ..java_classes import ArrayList
 from ..java_classes import ArrayDescriptor as getArrayDescriptor
-from ..java_classes import DataSetDescriptor as getDataSetDescriptor
+from ..java_classes import DatasetDescriptor as getDatasetDescriptor
 from ..java_classes import DataType
 from ..java_classes import spark_utils as get_spark_utils
-from ..java_classes import DataSet
+from ..java_classes import JDataset
 from ..ndarray import array
+from .utils import np2desc
+from .utils import py2j_ds_desc
+from .utils import j2py_ds_desc
+from .utils import j2py_arr_desc
+from .utils import py2j_arr_desc
+from .utils import desc2np
+from .utils import desc2ds
+from .utils import ds2desc
+
 
 ArrayDescriptor = None
-DataSetDescriptor = None
+JDatasetDescriptor = None
 spark_utils = None
 
 
 
 
-def java2pyRDD(java_rdd, py_sc):
+def java2pyArrayRDD(java_rdd, py_sc):
     '''
     Arguments
 
@@ -48,16 +57,19 @@ def java2pyRDD(java_rdd, py_sc):
     descriptors = desc_rdd.collect()
     num_descriptors = descriptors.size()
     nparrays = []
+    pydescriptors = []
     for i in range(num_descriptors):
-        desc = descriptors.get(i)
-        indarray = desc.getArray()
-        jparray = array(indarray)
-        nparray = jparray.numpy()
-        nparrays.append(nparray)
-    return py_sc.parallelize(nparrays)
+        jdesc = descriptors.get(i)
+        pydesc = j2py_arr_desc(jdesc)
+        nparrays.append(desc2np(pydesc))
+        #pydescriptors.append(pydesc)
+    #pyrdd = py_sc.parallelize(pydescriptors)
+    #pyrdd = pyrdd.map(desc2np)
+    pyrdd = py_sc.parallelize(nparrays)
+    return pyrdd
 
 
-def py2javaRDD(py_rdd, java_sc):
+def py2javaArrayRDD(py_rdd, java_sc):
     '''
     Arguments
 
@@ -73,28 +85,49 @@ def py2javaRDD(py_rdd, java_sc):
         ArrayDescriptor = getArrayDescriptor()
     if spark_utils is None:
         spark_utils = get_spark_utils()
-    def np2desc(nparray):
-        address = nparray.__array_interface__['data'][0]
-        shape = nparray.shape
-        stride = nparray.strides
-        nptype = nparray.dtype
-        if nptype == np.float32:
-            dtype = "float"
-        elif nptype == np.float64:
-            dtype = "double"
-        else:
-            raise Exception("Unsupported data type: " + str(nptype))
-        return (address, shape, stride, dtype)
-    
-    dtype_map = {
-        "float": DataType.FLOAT,
-        "double": DataType.DOUBLE
-    }
-    desc_rdd = py_rdd.map(np2desc)
-    descriptors = desc_rdd.collect()
+
+    #desc_rdd = py_rdd.map(np2desc)
+    #descriptors = desc_rdd.collect()
     arrlist = ArrayList()
+    nparrays = py_rdd.collect()
+    for nparr in nparrays:
+        arrlist.add(array(nparr).array)
+    return java_sc.parallelize(arrlist)
     for d in descriptors:
-        arrlist.add(ArrayDescriptor(d[0], d[1], d[2], dtype_map[d[3]]))
+        #arrlist.add(array(desc2np(d)).array)
+        arrlist.add(ArrayDescriptor(d[0], d[1], d[2], dtype_map[d[3]], 'c').getArray())
     java_rdd = java_sc.parallelize(arrlist)
+    #return java_rdd
     java_rdd = spark_utils.getArrayRDD(java_rdd)
+    return java_rdd
+
+
+def java2pyDatasetRDD(java_rdd, py_sc):
+    global spark_utils
+    if spark_utils is None:
+        spark_utils = get_spark_utils()
+    desc_rdd = spark_utils.getDataSetDescriptorRDD(java_rdd)
+    descriptors = desc_rdd.collect()
+    num_descriptors = descriptors.size()
+    pydescriptors = []
+    for i in range(num_descriptors):
+        jdesc = descriptors.get(i)
+        pydesc = j2py_ds_desc(jdesc)
+        pydescriptors.append(pydesc)
+    pyrdd = py_sc.parallelize(pydescriptors)
+    pyrdd = pyrdd.map(desc2ds)
+    return pyrdd
+
+
+def py2javaDatasetRDD(py_rdd, java_sc):
+    global spark_utils
+    if spark_utils is None:
+        spark_utils = get_spark_utils()
+    desc_rdd = py_rdd.map(ds2desc)
+    pydescriptors = desc_rdd.collect()
+    jdescriptors = ArrayList()
+    for pydesc in pydescriptors:
+        jdescriptors.add(py2j_ds_desc(pydesc))
+    java_rdd = java_sc.parallelize(jdescriptors)
+    java_rdd = spark_utils.getDataSetRDD(java_rdd)
     return java_rdd

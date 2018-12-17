@@ -164,6 +164,35 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     template NDArray* NDArrayFactory::create_(const int16_t scalar, nd4j::memory::Workspace* workspace);
 
     template <typename T>
+    NDArray NDArrayFactory::create(DataType type, const T scalar, nd4j::memory::Workspace* workspace) {
+
+        NDArray res(type, workspace);
+
+        //int8_t *buffer;
+        //ALLOCATE(buffer, workspace, 1 * sizeof(T), int8_t);
+
+        //res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), workspace));
+        //res.setBuffer(buffer);
+        //res.triggerAllocationFlag(true, true);
+        //res.setWorkspace(workspace);
+
+        res.p(0, scalar);
+
+        return res;
+    }
+//    BUILD_DOUBLE_TEMPLATE(template NDArray NDArrayFactory::create, (DataType type, const T scalar, nd4j::memory::Workspace* workspace), LIBND4J_TYPES);
+    template NDArray NDArrayFactory::create(DataType type, const double scalar, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::create(DataType type, const float scalar, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::create(DataType type, const float16 scalar, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::create(DataType type, const bfloat16 scalar, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::create(DataType type, const Nd4jLong scalar, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::create(DataType type, const int scalar, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::create(DataType type, const int8_t scalar, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::create(DataType type, const uint8_t scalar, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::create(DataType type, const int16_t scalar, nd4j::memory::Workspace* workspace);
+    template NDArray NDArrayFactory::create(DataType type, const bool scalar, nd4j::memory::Workspace* workspace);
+
+    template <typename T>
     NDArray NDArrayFactory::create(const T scalar, nd4j::memory::Workspace* workspace) {
 
         NDArray res;

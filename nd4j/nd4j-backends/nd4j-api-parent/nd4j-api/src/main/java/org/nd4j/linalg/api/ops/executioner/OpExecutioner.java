@@ -396,6 +396,7 @@ public interface OpExecutioner {
 
     void enableVerboseMode(boolean reallyEnable);
 
+    boolean isExperimentalMode();
 
     void registerGraph(long id, Pointer graph);
 

@@ -166,6 +166,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_3) {
     ASSERT_TRUE(floating.equalsTo(conv));
 
     delete rv;
+    delete conv;
 }
 
 

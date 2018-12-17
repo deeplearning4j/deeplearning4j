@@ -140,7 +140,7 @@ public class Dropout implements IDropout {
 
         mask = workspaceMgr.createUninitialized(ArrayType.INPUT, output.shape(), output.ordering()).assign(1.0);
         Nd4j.getExecutioner().exec(new DropOutInverted(mask, mask, currP));
-        Nd4j.getExecutioner().exec(new OldMulOp(inputActivations, mask, output));
+        Nd4j.getExecutioner().exec(new OldMulOp(inputActivations.castTo(Nd4j.defaultFloatingPointType()), mask, output));
         return output;
     }
 

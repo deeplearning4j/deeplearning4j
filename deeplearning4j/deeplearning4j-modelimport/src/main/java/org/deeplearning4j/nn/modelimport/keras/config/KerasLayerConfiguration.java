@@ -297,11 +297,17 @@ public class KerasLayerConfiguration {
     private final String INIT_TRUNCATED_NORMAL = "truncated_normal";
     private final String INIT_TRUNCATED_NORMAL_ALIAS = "TruncatedNormal";
     private final String INIT_GLOROT_NORMAL = "glorot_normal";
+    private final String INIT_GLOROT_NORMAL_ALIAS = "GlorotNormal";
     private final String INIT_GLOROT_UNIFORM = "glorot_uniform";
+    private final String INIT_GLOROT_UNIFORM_ALIAS = "GlorotUniform";
     private final String INIT_HE_NORMAL = "he_normal";
+    private final String INIT_HE_NORMAL_ALIAS = "HeNormal";
     private final String INIT_HE_UNIFORM = "he_uniform";
+    private final String INIT_HE_UNIFORM_ALIAS = "HeUniform";
     private final String INIT_LECUN_UNIFORM = "lecun_uniform";
+    private final String INIT_LECUN_UNIFORM_ALIAS = "LecunUniform";
     private final String INIT_LECUN_NORMAL = "lecun_normal";
+    private final String INIT_LECUN_NORMAL_ALIAS = "LecunNormal";
     private final String INIT_NORMAL = "normal";
     private final String INIT_RANDOM_NORMAL = "random_normal";
     private final String INIT_RANDOM_NORMAL_ALIAS = "RandomNormal";
