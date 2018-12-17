@@ -1380,12 +1380,11 @@ public:
 
     void* mapFromNpzFile(std::string path){
         cnpy::npz_t* mapPtr = new cnpy::npz_t();
-        cnpy::npz_t map= cnpy::npzLoad(path);
+        cnpy::npz_t map = cnpy::npzLoad(path);
         mapPtr->insert(map.begin(), map.end());
         return reinterpret_cast<void*>(mapPtr);
     }
 
-    /*
 
     int getNumNpyArraysInMap(void *map){
         cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
@@ -1448,7 +1447,6 @@ public:
         return (arr->fortranOrder)?'f':'c';
     }
 
- */
 
 /**
   * Get the element size for a numpy array
