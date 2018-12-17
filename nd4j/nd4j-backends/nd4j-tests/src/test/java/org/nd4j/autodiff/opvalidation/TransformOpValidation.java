@@ -456,7 +456,7 @@ public class TransformOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
 
         INDArray ia = Nd4j.create(new double[]{1, 2}, new int[] {2});
-        SDVariable in = sd.var("in", new long[]{2});
+        SDVariable in = sd.var("in", DataType.DOUBLE, new long[]{2});
         INDArray expOut = Nd4j.create(new double[][]{{1, 0},{0,2}});
 
         INDArray expOut2 = Nd4j.create(DataType.DOUBLE, 2,2);

@@ -56,8 +56,8 @@ public class BatchMmul extends DynamicCustomOp {
                      boolean transposeB) {
         super(null, sameDiff, ArrayUtils.addAll(
                 new SDVariable[]{
-                        sameDiff.var(Nd4j.ones(matrices.length / 2)), // alphas
-                        sameDiff.var(Nd4j.zeros(matrices.length / 2))}, // betas
+                        sameDiff.var(Nd4j.ones(matrices[0].dataType(), matrices.length / 2)), // alphas
+                        sameDiff.var(Nd4j.zeros(matrices[1].dataType(), matrices.length / 2))}, // betas
                 matrices));
 
         Preconditions.checkState(matrices.length % 2 == 0, "The number of provided matrices needs" +
@@ -126,9 +126,14 @@ public class BatchMmul extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 inputs to batch mmul op, got %s", dataTypes);
-        Preconditions.checkState(dataTypes.get(0).isFPType() && dataTypes.get(1).isFPType(), "Inputs to batch mmul op must both be a floating point type: got %s", dataTypes);
-        return Collections.singletonList(dataTypes.get(0));
+        List<DataType> out = new ArrayList<>();
+        for(int i=0; i<dataTypes.size()-2; i++ ) {  //-2 for the alpha and beta params
+            Preconditions.checkState(dataTypes.get(i).isFPType(), "Inputs to batch mmul op must all be a floating point type: got %s", dataTypes);
+            if(i%2 == 0){
+                out.add(dataTypes.get(i));
+            }
+        }
+        return out;
     }
 }
 

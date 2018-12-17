@@ -453,8 +453,8 @@ public class MiscOpValidation extends BaseOpValidation {
                     inShape = new int[]{10, 10, 10};
                 }
 
-                SDVariable in = sd.var("in", Nd4j.rand(inShape));
-                SDVariable indices = sd.var("indices", Nd4j.create(new double[]{0, 3, 7}));
+                SDVariable in = sd.var("in", Nd4j.rand(DataType.DOUBLE, inShape));
+                SDVariable indices = sd.var("indices", Nd4j.create(new double[]{0, 3, 7}).castTo(DataType.INT));
 
                 INDArray gatherExp = null;
                 if(rank == 2){
@@ -463,7 +463,6 @@ public class MiscOpValidation extends BaseOpValidation {
                 }
 
                 SDVariable gather = sd.gather(in, indices, dim);
-                sd.execAndEndResult();  //TODO REMOVE THIS
 
                 SDVariable loss = sd.standardDeviation("loss", gather, true, Integer.MAX_VALUE);
 
@@ -699,12 +698,13 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testBatchMmulBasic() {
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6873
         int M = 5;
         int N = 3;
         int K = 4;
 
-        INDArray A = Nd4j.create(new float[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}).reshape(M, N);
-        INDArray B = Nd4j.create(new float[]{1,2,3,4,5,6,7,8,9,10,11,12}).reshape(N, K);
+        INDArray A = Nd4j.create(new float[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}).reshape(M, N).castTo(DataType.DOUBLE);
+        INDArray B = Nd4j.create(new float[]{1,2,3,4,5,6,7,8,9,10,11,12}).reshape(N, K).castTo(DataType.DOUBLE);
 
         SameDiff sd = SameDiff.create();
 
