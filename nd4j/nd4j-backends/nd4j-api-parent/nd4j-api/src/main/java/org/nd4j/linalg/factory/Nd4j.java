@@ -6812,6 +6812,8 @@ public class Nd4j {
         return INSTANCE.create(strings, shape, order);
     }
 
+///////////////////
+
     public static INDArray createFromArray(double[] array) {
         return create(array, new long[]{array.length}, DataType.DOUBLE);
     }
@@ -6927,6 +6929,35 @@ public class Nd4j {
 
     public static INDArray createFromArray(boolean[][][][] array) {
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.BOOL);
+    }
+
+///////////////////
+
+    public static INDArray createFromArray(Double[] array) {
+        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.DOUBLE);
+    }
+
+    public static INDArray createFromArray(Float[] array) {
+        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.FLOAT);
+    }
+
+    public static INDArray createFromArray(Integer[] array) {
+        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.INT);
+    }
+
+    public static INDArray createFromArray(Short[] array) {
+        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.SHORT);
+    }
+    public static INDArray createFromArray(Byte[] array) {
+        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.BYTE);
+    }
+
+    public static INDArray createFromArray(Long[] array) {
+        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.LONG);
+    }
+
+    public static INDArray createFromArray(Boolean[] array) {
+        return create(ArrayUtil.toPrimitives(array), new long[]{array.length}, DataType.BOOL);
     }
 
     public static boolean isExperimentalMode() {

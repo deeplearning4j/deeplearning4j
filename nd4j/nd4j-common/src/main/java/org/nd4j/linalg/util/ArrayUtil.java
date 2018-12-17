@@ -3018,4 +3018,60 @@ public class ArrayUtil {
     public static int fromBoolean(boolean bool) {
         return bool ? 1 : 0;
     }
+
+    public static int[] toPrimitives(Integer[] array) {
+        val res = new int[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
+
+    public static long[] toPrimitives(Long[] array) {
+        val res = new long[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
+
+    public static short[] toPrimitives(Short[] array) {
+        val res = new short[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
+
+    public static float[] toPrimitives(Float[] array) {
+        val res = new float[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
+
+    public static double[] toPrimitives(Double[] array) {
+        val res = new double[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
+
+    public static boolean[] toPrimitives(Boolean[] array) {
+        val res = new boolean[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
+
+    public static byte[] toPrimitives(Byte[] array) {
+        val res = new byte[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
 }
