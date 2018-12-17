@@ -2254,7 +2254,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public boolean closeable() {
-        if (released)
+        if (released || isAttached() || isConstant())
             return false;
 
         if (wrappedDataBuffer != null && wrappedDataBuffer != this)
@@ -2269,7 +2269,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public void close() throws Exception {
         if (!closeable())
-            throw new IllegalStateException("Can't release view data buffer");
+            throw new IllegalStateException("Can't release this data buffer");
 
         release();
     }

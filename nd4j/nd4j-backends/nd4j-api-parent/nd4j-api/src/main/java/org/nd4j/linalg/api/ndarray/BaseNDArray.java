@@ -6468,7 +6468,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean closeable() {
-        if (released)
+        if (released || isAttached())
             return false;
 
         // empty arrays have no buffer at all
@@ -6488,7 +6488,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return;
 
         if (!closeable())
-            throw new ND4JIllegalStateException("Can't release view array");
+            throw new ND4JIllegalStateException("Can't release this INDArray");
 
         data.close();
 
