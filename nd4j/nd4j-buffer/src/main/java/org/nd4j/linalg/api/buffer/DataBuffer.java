@@ -694,5 +694,5 @@ public interface DataBuffer extends Serializable, AutoCloseable {
      *
      * PLEASE NOTE: This method is NOT safe by any means
      */
-    void close() throws Exception;
+    void close();
 }

@@ -2267,7 +2267,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close()  {
         if (!closeable())
             throw new IllegalStateException("Can't release this data buffer");
 

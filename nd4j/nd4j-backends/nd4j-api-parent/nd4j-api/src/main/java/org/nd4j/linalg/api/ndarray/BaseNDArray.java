@@ -6482,7 +6482,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         // empty arrays have no buffer at all
         if (released || isEmpty())
             return;
