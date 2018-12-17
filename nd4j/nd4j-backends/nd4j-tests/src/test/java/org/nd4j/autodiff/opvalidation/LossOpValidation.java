@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -72,22 +73,22 @@ public class LossOpValidation extends BaseOpValidation {
 
                     int nOut = 4;
                     int minibatch = 10;
-                    SDVariable predictions = sd.var("in", new int[]{-1, nOut});
-                    SDVariable labels = sd.var("labels", new int[]{-1, nOut});
+                    SDVariable predictions = sd.var("in", DataType.DOUBLE, new int[]{-1, nOut});
+                    SDVariable labels = sd.var("labels", DataType.DOUBLE, new int[]{-1, nOut});
                     SDVariable w;
                     INDArray wArrBroadcast;
                     switch (weights){
                         case "none":
                             w = null;
-                            wArrBroadcast = Nd4j.ones(minibatch, nOut);
+                            wArrBroadcast = Nd4j.ones(DataType.DOUBLE, minibatch, nOut);
                             break;
                         case "scalar":
-                            w = sd.var("weights", Nd4j.trueScalar(1.0));
-                            wArrBroadcast = Nd4j.valueArrayOf(minibatch, nOut, 1.0);
+                            w = sd.var("weights", Nd4j.scalar(DataType.DOUBLE, 1.0));
+                            wArrBroadcast = Nd4j.valueArrayOf(minibatch, nOut, 1.0).castTo(DataType.DOUBLE);
                             break;
                         case "perExample":
-                            w = sd.var("weights", Nd4j.trueVector(new double[]{0,0,1,1,2,2,3,3,4,4}).reshape(minibatch, 1));
-                            wArrBroadcast = Nd4j.create(minibatch, nOut).addiColumnVector(w.getArr());
+                            w = sd.var("weights", Nd4j.create(new double[]{0,0,1,1,2,2,3,3,4,4}).reshape(minibatch, 1));
+                            wArrBroadcast = Nd4j.create(DataType.DOUBLE, minibatch, nOut).addiColumnVector(w.getArr());
                             break;
                         case "perOutput":
                             w = sd.var("weights", Nd4j.create(new double[][]{
@@ -98,11 +99,11 @@ public class LossOpValidation extends BaseOpValidation {
                         default:
                             throw new RuntimeException();
                     }
-                    INDArray wArr = w == null ? Nd4j.trueScalar(1.0) : w.getArr();
+                    INDArray wArr = w == null ? Nd4j.scalar(DataType.DOUBLE, 1.0) : w.getArr();
 
 
-                    INDArray predictionsArr = Nd4j.randn(minibatch, nOut);
-                    INDArray labelsArr = Nd4j.randn(minibatch, nOut);
+                    INDArray predictionsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
+                    INDArray labelsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
                     INDArray expOut = null;
                     SDVariable loss = null;
@@ -189,7 +190,7 @@ public class LossOpValidation extends BaseOpValidation {
                             }
                             INDArray logP2 = Transforms.log(softmaxPredictions, true);
                             expOut = labelsArrCopy.mul(logP2).negi().sum(1);
-                            loss = sd.lossSoftmaxCrossEntropy("loss", labels, predictions, w, reduction, lblSmooth2);
+                            loss = sd.lossSoftmaxCrossEntropy("loss", labels.castTo(DataType.INT), predictions, w, reduction, lblSmooth2);
                             break;
                         case "mpwse":
                             expOut = Nd4j.create(labelsArr.size(0));
@@ -248,10 +249,10 @@ public class LossOpValidation extends BaseOpValidation {
                         case MEAN_BY_NONZERO_WEIGHT_COUNT:
                             if((fn.startsWith("softmax") || fn.equals("cosine"))) {
                                 //1d output, not 2d
-                                int countNonZero = wArrBroadcast.getColumn(0).neq(0.0).sumNumber().intValue();
+                                int countNonZero = wArrBroadcast.getColumn(0).neq(0.0).castTo(DataType.DOUBLE).sumNumber().intValue();
                                 expOut = expOut.sum().divi(countNonZero);
                             } else {
-                                int countNonZero = wArrBroadcast.neq(0.0).sumNumber().intValue();
+                                int countNonZero = wArrBroadcast.neq(0.0).castTo(DataType.DOUBLE).sumNumber().intValue();
                                 expOut = expOut.sum().divi(countNonZero);
                             }
                             break;

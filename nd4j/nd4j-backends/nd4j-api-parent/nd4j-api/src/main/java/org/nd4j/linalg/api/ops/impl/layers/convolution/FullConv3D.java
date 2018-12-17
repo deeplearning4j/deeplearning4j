@@ -21,9 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.properties.adapters.IntArrayIntIndexAdpater;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.FullConv3DConfig;
@@ -217,4 +219,10 @@ public class FullConv3D extends DynamicCustomOp {
         return ret;
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        int n = args().length;
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types, got %s", n, inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
+    }
 }

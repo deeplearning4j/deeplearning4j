@@ -23,7 +23,9 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
@@ -302,4 +304,9 @@ public class MaxPooling2D extends DynamicCustomOp {
         return "MaxPool";
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected 1 input data type, got %s", inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
+    }
 }

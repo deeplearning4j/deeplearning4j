@@ -84,7 +84,7 @@ public class ConfusionMatrix extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        //TODO make this configurable
-        return Collections.singletonList(DataType.INT);
+        //TODO make this configurable: https://github.com/deeplearning4j/deeplearning4j/issues/6854
+        return Collections.singletonList(DataType.FLOAT);
     }
 }

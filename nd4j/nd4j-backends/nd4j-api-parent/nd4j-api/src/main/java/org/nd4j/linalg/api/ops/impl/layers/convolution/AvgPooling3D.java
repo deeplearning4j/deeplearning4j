@@ -21,10 +21,14 @@ import lombok.extern.slf4j.Slf4j;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 
@@ -77,5 +81,11 @@ public class AvgPooling3D extends Pooling3D {
     @Override
     public String tensorflowName() {
         return "AvgPool3D";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected 1 input data type, got %s", inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

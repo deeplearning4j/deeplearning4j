@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
@@ -31,10 +32,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -215,6 +213,12 @@ public class Pooling3D extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
       throw new NoOpNameFoundException("No op opName found for op " + opName());
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected 1 input data type, got %s", inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 
 }

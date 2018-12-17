@@ -20,10 +20,13 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 
+import java.util.Collections;
 import java.util.List;
 
 
@@ -58,6 +61,12 @@ public class Pooling2DDerivative extends Pooling2D {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         throw new UnsupportedOperationException("Unable to take derivative of derivative.");
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected 2 input data types, got %s", inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 
 }

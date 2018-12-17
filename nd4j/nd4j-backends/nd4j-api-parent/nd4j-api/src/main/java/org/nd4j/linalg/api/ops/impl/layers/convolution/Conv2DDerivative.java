@@ -20,10 +20,13 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -76,4 +79,14 @@ public class Conv2DDerivative extends Conv2D {
         }
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        int n = args().length;  //Original inputs + gradient at
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types, got %s", n, inputDataTypes);
+        List<DataType> out = new ArrayList<>(n-1);
+        for( int i=0; i<n-1; i++ ){
+            out.add(inputDataTypes.get(i));
+        }
+        return out;
+    }
 }

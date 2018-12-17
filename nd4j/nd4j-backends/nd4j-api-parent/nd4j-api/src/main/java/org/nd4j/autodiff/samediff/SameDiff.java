@@ -10125,6 +10125,8 @@ public class SameDiff {
                 return new SDVariable[]{sameDiff.var("grad", org.nd4j.linalg.api.buffer.DataType.FLOAT, 1)};
             }
         });
+
+        associateSameDiffWithOpsAndVariables();
     }
 
 

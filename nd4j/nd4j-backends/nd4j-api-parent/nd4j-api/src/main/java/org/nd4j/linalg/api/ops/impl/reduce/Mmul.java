@@ -250,7 +250,6 @@ public class Mmul extends DynamicCustomOp {
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 inputs to mmul op, got %s", dataTypes);
         Preconditions.checkState(dataTypes.get(0).isFPType() && dataTypes.get(1).isFPType(), "Inputs to mmul op must both be a floating" +
                 "point type: got %s", dataTypes);
-
         return Collections.singletonList(dataTypes.get(0));
     }
 }

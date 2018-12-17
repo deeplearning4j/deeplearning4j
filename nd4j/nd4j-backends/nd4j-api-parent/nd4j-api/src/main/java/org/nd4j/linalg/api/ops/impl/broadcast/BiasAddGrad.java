@@ -19,10 +19,14 @@ package org.nd4j.linalg.api.ops.impl.broadcast;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class BiasAddGrad extends DynamicCustomOp {
@@ -58,5 +62,11 @@ public class BiasAddGrad extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "BiasAddGrad";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 3, "Expected 3 input data types, got %s", inputDataTypes);
+        return Arrays.asList(inputDataTypes.get(0), inputDataTypes.get(1));
     }
 }

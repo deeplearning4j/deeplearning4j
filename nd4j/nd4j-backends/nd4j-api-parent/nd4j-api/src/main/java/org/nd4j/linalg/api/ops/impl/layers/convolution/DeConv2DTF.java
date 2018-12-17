@@ -24,11 +24,13 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.properties.adapters.*;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
@@ -242,4 +244,10 @@ public class DeConv2DTF extends DynamicCustomOp {
         throw new UnsupportedOperationException("To be implemented yet");
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        int n = args().length;
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types, got %s", n, inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
+    }
 }
