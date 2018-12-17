@@ -32,8 +32,8 @@ namespace nd4j {
     namespace ops {
         DECLARE_TYPES(confusion_matrix) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
         }
 
         CUSTOM_OP_IMPL(confusion_matrix, 2, 1, false, 0, -2) {

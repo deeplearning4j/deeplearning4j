@@ -111,7 +111,7 @@ namespace helpers {
         const int rowNum = input->rows();
         const int columnNum = input->columns();
 
-        T determinant = (T)1.0;
+        NDArray determinant = NDArrayFactory::create<T>(1.f);
         std::unique_ptr<NDArray> compoundMatrix(input->dup()); // copy
         std::unique_ptr<NDArray> permutationMatrix(input->dupUninitialized()); //put identity
         permutationMatrix->setIdentity();
@@ -138,7 +138,6 @@ namespace helpers {
                     swapCount++;
 
                 for( int j = i + 1; j < rowNum; j++ ) {
-
                     compoundMatrix->p(j, i, compoundMatrix->e<T>(j, i) / compoundMatrix->e<T>(i, i));
                     for( int k = i + 1; k < rowNum; k++ ) {
                         T arg = compoundMatrix->e<T>(j, i) * compoundMatrix->e<T>(i, k);
@@ -159,9 +158,7 @@ namespace helpers {
             *compound = *compoundMatrix;
         if (permutation != nullptr)
             *permutation = *permutationMatrix;
-
-
-        return NDArrayFactory::create<T>(determinant, input->getWorkspace());
+        return determinant;
     }
 
     BUILD_SINGLE_TEMPLATE(template NDArray _lup, (NDArray* input, NDArray* output, NDArray* permutation), FLOAT_TYPES);
@@ -174,7 +171,7 @@ namespace helpers {
         Nd4jLong n = input->sizeAt(-1);
         Nd4jLong n2 = n * n;
 
-        auto matrix = NDArrayFactory::create('c', {n, n}, input->dataType(), input->getWorkspace()); //, block.getWorkspace());
+        auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), input->getWorkspace()); //, block.getWorkspace());
 //#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < output->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
@@ -193,6 +190,31 @@ namespace helpers {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _determinant, (input, output), FLOAT_TYPES);
     }
 
+template <typename T>
+    int log_abs_determinant_(NDArray* input, NDArray* output) {
+
+        Nd4jLong n = input->sizeAt(-1);
+        Nd4jLong n2 = n * n;
+
+        NDArray matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), input->getWorkspace()); //, block.getWorkspace());
+//#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        for (int e = 0; e < output->lengthOf(); e++) {
+            for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
+                matrix.p(row, input->e<T>(k));
+            }
+	    NDArray det = _lup<T>(&matrix, (NDArray*)nullptr, (NDArray*)nullptr);
+	    if (det.e<T>(0) != 0.f)
+             	output->p(e, nd4j::math::nd4j_log<T,T>(nd4j::math::nd4j_abs(det.t<T>(0))));
+        }
+
+        return ND4J_STATUS_OK;
+    }
+
+    BUILD_SINGLE_TEMPLATE(template int log_abs_determinant_, (NDArray* input, NDArray* output), FLOAT_TYPES);
+
+    int log_abs_determinant(NDArray* input, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), return log_abs_determinant_, (input, output), FLOAT_TYPES);
+    }
 
     template <typename T>
     static int _inverse(NDArray* input, NDArray* output) {

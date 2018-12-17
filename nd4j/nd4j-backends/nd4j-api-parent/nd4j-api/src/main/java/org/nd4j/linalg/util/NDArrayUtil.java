@@ -71,7 +71,7 @@ public class NDArrayUtil {
         if (n.length() > Integer.MAX_VALUE)
             throw new ND4JIllegalStateException("Can't convert INDArray with length > Integer.MAX_VALUE");
 
-        n = n.linearView();
+        n = n.reshape(-1);
         int[] ret = new int[(int) n.length()];
         for (int i = 0; i < n.length(); i++)
             ret[i] = (int) n.getFloat(i);
@@ -82,7 +82,7 @@ public class NDArrayUtil {
         if (n.length() > Integer.MAX_VALUE)
             throw new ND4JIllegalStateException("Can't convert INDArray with length > Integer.MAX_VALUE");
 
-        n = n.linearView();
+        n = n.reshape(-1);
 
         // FIXME: int cast
         long[] ret = new long[(int) n.length()];

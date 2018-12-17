@@ -18,7 +18,7 @@ You can use Deeplearning4j with Gradle by adding the following to your build.gra
 
     compile "org.deeplearning4j:deeplearning4j-core:{{ page.version }}"
 
-Add a backend by adding the following to your `pom.xml`:
+Add a backend by adding the following:
 
     compile "org.nd4j:nd4j-native-platform:{{ page.version }}"
 
@@ -30,7 +30,7 @@ You can use Deeplearning4j with SBT by adding the following to your build.sbt:
 
     libraryDependencies += "org.deeplearning4j" % "deeplearning4j-core" % "{{ page.version }}"
 
-Add a backend by adding the following to your `pom.xml`:
+Add a backend by adding the following:
 
     libraryDependencies += "org.nd4j" % "nd4j-native-platform" % "{{ page.version }}"
 
@@ -43,7 +43,7 @@ You can use Deeplearning4j with ivy by adding the following to your ivy.xml:
     <dependency org="org.deeplearning4j" name="deeplearning4j-core" rev="{{ page.version }}" conf="build" />
 
 
-Add a backend by adding the following to your `pom.xml`:
+Add a backend by adding the following:
 
     <dependency org="org.nd4j" name="nd4j-native-platform" rev="{{ page.version }}" conf="build" />
 

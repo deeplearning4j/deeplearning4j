@@ -922,18 +922,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
-    @Override
-    @Deprecated
-    public void setWrapAround(boolean wrapAround) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    @Deprecated
-    public boolean isWrapAround() {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * Returns whether the ndarray is valid or not
      * @return true if the ndarray is valid
@@ -949,38 +937,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return true;
     }
 
-    @Override
-    @Deprecated
-    public INDArray linearViewColumnOrder() {
-        return this;
-    }
-
     protected INDArray create(DataBuffer data, int[] shape, long offset) {
         return Nd4j.create(data, shape, offset);
     }
-
-
-
-    /**
-     * Returns a linear view reference of shape
-     * 1,length(ndarray)
-     *
-     * @return the linear view of this ndarray
-     * @deprecated Linear views are not always possible. Use reshape(array.length()) or reshape(1,array.length())
-     */
-    @Deprecated
-    @Override
-    public INDArray linearView() {
-        return reshape(this.ordering(), 1, this.length());
-    }
-
-    @Deprecated
-    @Override
-    public void resetLinearView() {
-
-    }
-
-
 
     @Override
     public int elementWiseStride() {
@@ -996,23 +955,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
         */
         return Shape.elementWiseStride(shapeInfoDataBuffer());
-    }
-
-    @Override
-    public int elementStride() {
-        return 1;
-    }
-
-    @Override
-    @Deprecated
-    public int majorStride() {
-        return stride(-1);
-    }
-
-    @Override
-    @Deprecated
-    public int secondaryStride() {
-        return majorStride();
     }
 
     @Override
@@ -2894,21 +2836,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
-    @Override
-    @Deprecated
-    public boolean isCleanedUp() {
-        return false;
-    }
-
-    @Override
-    @Deprecated
-    public void cleanup() {
-        if (Nd4j.shouldInstrument)
-            Nd4j.getInstrumentation().log(this, Instrumentation.DESTROYED);
-    }
-
-
-
     /**
      * Do a row wise op (a,s,m,d)
      * a : add
@@ -4651,13 +4578,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public int innerMostStride() {
-        if (ordering() == 'c')
-            return stride(-1);
-        return stride(0);
-    }
-
-    @Override
     public INDArray reshape(char order, int rows, int columns) {
         return reshape(order, new long[] {rows, columns});
     }
@@ -5644,7 +5564,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int[] newShape = doPermuteSwap(shapeOf(), rearrange);
         int[] newStride = doPermuteSwap(strideOf(), rearrange);
 
-        char newOrder = Shape.getOrder(newShape, newStride, elementStride());
+        char newOrder = Shape.getOrder(newShape, newStride, 1);
 
         INDArray value = create(data(), newShape, newStride, offset(), newOrder);
         return value;
@@ -5678,7 +5598,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         checkArrangeArray(rearrange);
         val newShape = doPermuteSwap(Shape.shapeOf(shapeInfo), rearrange);
         val newStride = doPermuteSwap(Shape.stride(shapeInfo), rearrange);
-        char newOrder = Shape.getOrder(newShape, newStride, elementStride());
+        char newOrder = Shape.getOrder(newShape, newStride, 1);
 
         //Set the shape information of this array: shape, stride, order.
         //Shape info buffer: [rank, [shape], [stride], offset, elementwiseStride, order]
