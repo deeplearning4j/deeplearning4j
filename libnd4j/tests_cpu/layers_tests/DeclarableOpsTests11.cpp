@@ -2453,6 +2453,33 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test8) {
 }
 
 /////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, Multiply_BP_Test1) {
+
+    NDArray x('c', {3,4,5}, nd4j::DataType::DOUBLE);
+    NDArray y('c', {1,1,1}, nd4j::DataType::DOUBLE);
+
+    NDArray dLdp('c', {3,4,5}, nd4j::DataType::DOUBLE);
+    NDArray dLdpExp('c', {3,4,5}, nd4j::DataType::DOUBLE);
+
+    x.assign(1.0);//linspace(0.1, 0.1);
+    y.assign(1.0);
+    dLdp.assign(1.0);
+    dLdpExp.assign(1.0);
+    nd4j::ops::multiply_bp op;
+
+    auto results = op.execute({&x, &y, &dLdp}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *dLdo = results->at(0);
+    dLdo->printBuffer("Output for multiply_bp op");
+    ASSERT_TRUE(dLdpExp.isSameShape(dLdo));
+    ASSERT_TRUE(dLdpExp.equalsTo(dLdo));
+
+    delete results;
+}
+
+/////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test1) {
 
     NDArray labels('c', {2}, {2,1}, nd4j::DataType::INT64);
