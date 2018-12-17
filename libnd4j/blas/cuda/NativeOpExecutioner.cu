@@ -896,12 +896,12 @@ void NativeOpExecutioner::execReduce3(nd4j::graph::LaunchContext *lc,
     yTad.createOffsets();
 
     auto tadLength = shape::tadLength(hXShapeInfo,dimension,dimensionLength);
-    auto ytadLength = shape::tadLength(hYShapeInfo,dimension,dimensionLength);
+    auto ytadLength = shape::tadLength(hYShapeInfo,dimension,dimensionLength);    
 
 	Nd4jLong* tadOnlyShapeInfo  = xTad.tadOnlyShapeInfo;
 	Nd4jLong* tadOffsets 		= xTad.tadOffsets;
 	Nd4jLong* yTadOnlyShapeInfo = yTad.tadOnlyShapeInfo;
-	Nd4jLong* yTadOffsets 		= yTad.tadOffsets;
+	Nd4jLong* yTadOffsets 		= yTad.tadOffsets;    
 
     // copy tads info into device memory
     Nd4jLong *dTadOnlyShapeInfo(nullptr), *dTadOffsets(nullptr), *dYTadOnlyShapeInfo(nullptr), *dYTadOffsets(nullptr);
@@ -912,20 +912,25 @@ void NativeOpExecutioner::execReduce3(nd4j::graph::LaunchContext *lc,
     if(cudaResult != 0) throw std::runtime_error("NativeOpExecutioner::execReduce3: cudaMalloc can't allocate global device memory!");
     cudaResult = cudaMalloc(reinterpret_cast<void **>(&dYTadOnlyShapeInfo), shape::shapeInfoByteLength(yTadOnlyShapeInfo));
     if(cudaResult != 0) throw std::runtime_error("NativeOpExecutioner::execReduce3: cudaMalloc can't allocate global device memory!");
-    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dTadOffsets), tadLength * sizeof(Nd4jLong));
+    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dTadOffsets), xTad.numTads * sizeof(Nd4jLong));
     if(cudaResult != 0) throw std::runtime_error("NativeOpExecutioner::execReduce3: cudaMalloc can't allocate global device memory!");
-    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dYTadOffsets), ytadLength * sizeof(Nd4jLong));
+    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dYTadOffsets), yTad.numTads * sizeof(Nd4jLong));
     if(cudaResult != 0) throw std::runtime_error("NativeOpExecutioner::execReduce3: cudaMalloc can't allocate global device memory!");
 
     cudaMemcpyAsync(dTadOnlyShapeInfo, tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOnlyShapeInfo), cudaMemcpyHostToDevice, *stream);
     cudaMemcpyAsync(dYTadOnlyShapeInfo, yTadOnlyShapeInfo, shape::shapeInfoByteLength(yTadOnlyShapeInfo), cudaMemcpyHostToDevice, *stream);
-    cudaMemcpyAsync(dTadOffsets, tadOffsets, tadLength * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *stream);
-    cudaMemcpyAsync(dYTadOffsets, yTadOffsets, ytadLength * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *stream);
+    cudaMemcpyAsync(dTadOffsets, tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *stream);
+    cudaMemcpyAsync(dYTadOffsets, yTadOffsets, yTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *stream);
 
     auto numBlocks = shape::length(hZShapeInfo);
     dim3 launchDims(numBlocks, 256, 32768);   
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, 1, allocationPointer, dTadOnlyShapeInfo, dTadOffsets, dYTadOnlyShapeInfo, dYTadOffsets), LIBND4J_TYPES, FLOAT_TYPES)
+
+    cudaFree(dTadOnlyShapeInfo);
+    cudaFree(dTadOffsets); 
+    cudaFree(dYTadOnlyShapeInfo);
+    cudaFree(dYTadOffsets);
 }
 
 ////////////////////////////////////////////////////////////////////////

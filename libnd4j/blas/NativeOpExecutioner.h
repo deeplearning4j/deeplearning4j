@@ -52,6 +52,31 @@ public:
                                     void *extraParams,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo);
+
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParamsVals
+     * @param y
+     * @param yShapeInfo
+     * @param result
+     * @param resultShapeInfoBuffer
+     * @param dimension
+     * @param dimensionLength
+     */
+    static void execReduce3Scalar(nd4j::graph::LaunchContext *lc,
+                            int opNum,
+                            void *hX, Nd4jLong *hXShapeInfo,
+                            void *dX, Nd4jLong *dXShapeInfo,
+                            void *extraParamsVals,
+                            void *hY, Nd4jLong *hYShapeInfo,
+                            void *dY, Nd4jLong *dYShapeInfo,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo);
+    
+
     /**
      *
      * @param opNum
@@ -277,32 +302,7 @@ public:
                                     void *extraParams,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo);
-
-
-    /**
-     *
-     * @param opNum
-     * @param x
-     * @param xShapeInfo
-     * @param extraParamsVals
-     * @param y
-     * @param yShapeInfo
-     * @param result
-     * @param resultShapeInfoBuffer
-     * @param dimension
-     * @param dimensionLength
-     */
-    static void execReduce3Scalar(nd4j::graph::LaunchContext *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParamsVals,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo);
     
-
     static void execReduce3All(nd4j::graph::LaunchContext *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
