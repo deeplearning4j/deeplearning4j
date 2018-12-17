@@ -635,6 +635,7 @@ public class VocabConstructor<T extends SequenceElement> {
             } finally {
                 finalCounter.incrementAndGet();
                 synchronized (this) {
+                    this.done = true;
                     this.notifyAll();
                 }
             }
