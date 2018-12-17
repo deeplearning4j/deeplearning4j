@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -69,6 +70,16 @@ public class CloseableTests extends BaseNd4jTest {
 
         assertFalse(array.closeable());
         assertFalse(view.closeable());
+    }
+
+    @Test
+    public void testAttachedRelease_1() {
+        val wsconf = WorkspaceConfiguration.builder().build();
+
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "haha72yjhfdfs")) {
+            val array = Nd4j.create(5, 5);
+            assertFalse(array.closeable());
+        }
     }
 
     @Override
