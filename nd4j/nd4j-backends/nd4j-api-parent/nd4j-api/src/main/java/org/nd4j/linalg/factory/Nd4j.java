@@ -6620,6 +6620,10 @@ public class Nd4j {
         return INSTANCE.createFromNpyFile(file);
     }
 
+    public static Map<String, INDArray> createFromNpzFile(File file){
+        return INSTANCE.createFromNpzFile(file);
+    }
+
     /**
      * Create a numpy array based on the passed in
      * input stream
