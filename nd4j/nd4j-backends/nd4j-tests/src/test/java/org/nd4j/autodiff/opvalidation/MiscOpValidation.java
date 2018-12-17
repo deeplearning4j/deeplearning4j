@@ -264,8 +264,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
                 SameDiff sd = SameDiff.create();
 
-                SDVariable in3 = sd.var("in1", p.getFirst());
-                SDVariable in2 = sd.var("in2", p.getSecond());
+                SDVariable in3 = sd.var("in1", DataType.DOUBLE, p.getFirst());
+                SDVariable in2 = sd.var("in2", DataType.DOUBLE, p.getSecond());
 
                 String name;
                 SDVariable bcOp;
@@ -316,8 +316,8 @@ public class MiscOpValidation extends BaseOpValidation {
                         + ", array 2 size = " + Arrays.toString(p.getSecond()) + ")";
                 log.info("*** Starting test: " + msg);
 
-                INDArray in3Arr = Nd4j.randn(p.getFirst()).muli(100);
-                INDArray in2Arr = Nd4j.randn(p.getSecond()).muli(100);
+                INDArray in3Arr = Nd4j.rand(DataType.DOUBLE, p.getFirst()).muli(100);
+                INDArray in2Arr = Nd4j.rand(DataType.DOUBLE, p.getSecond()).muli(100);
 
                 sd.associateArrayWithVariable(in3Arr, in3);
                 sd.associateArrayWithVariable(in2Arr, in2);

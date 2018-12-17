@@ -109,13 +109,15 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testReshapeGradient() {
+        //https://github.com/deeplearning4j/deeplearning4j/issues/6873
+
         int[] origShape = new int[]{3, 4, 5};
 
         List<String> failed = new ArrayList<>();
 
         for (int[] toShape : new int[][]{{3, 4 * 5}, {3 * 4, 5}, {1, 3 * 4 * 5}, {3 * 4 * 5, 1}}) {
-            for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, origShape, DataType.DOUBLE)) {
-                INDArray inArr = p.getFirst().muli(100);
+            for(char order : new char[]{'c','f'}){
+                INDArray inArr = Nd4j.rand(DataType.DOUBLE, origShape, order).muli(100);
 
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.var("in", inArr);
@@ -126,7 +128,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 INDArray out = sd.execAndEndResult();
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
 
-                String msg = "toShape=" + Arrays.toString(toShape) + ", source=" + p.getSecond();
+                String msg = "toShape=" + Arrays.toString(toShape) + ", order=" + order;
                 TestCase tc = new TestCase(sd);
                 tc.testName(msg)
                         .expectedOutput("out", expOut);
@@ -1247,6 +1249,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSegmentOps(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/6876
         INDArray s = Nd4j.create(new double[]{0,0,0,1,2,2,3,3}, new long[]{8}).castTo(DataType.INT);
         INDArray d = Nd4j.create(new double[]{5,1,7,2,3,4,1,3}, new long[]{8});
         int numSegments = 4;
@@ -1318,7 +1321,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                     throw new RuntimeException();
             }
 
-            SDVariable loss = sm.std(false);
+            SDVariable loss = sm.std(true);
 
             TestCase tc = new TestCase(sd)
                     .testName(op)
@@ -1582,7 +1585,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testTile2() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4, DataType.DOUBLE));
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1,4));
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.tile(x, new int[]{2, 2});
         assertArrayEquals(new long[]{2, 8}, result.eval().shape());
