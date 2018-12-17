@@ -1017,6 +1017,7 @@ public abstract class NativeOps extends Pointer {
     public abstract Pointer pointerForAddress(long address);
 
 
+    ////// NPZ ///////
     public abstract Pointer mapFromNpzFile(BytePointer path);
 
     public abstract int getNumNpyArraysInMap(Pointer map);
@@ -1032,6 +1033,9 @@ public abstract class NativeOps extends Pointer {
     public abstract int getNpyArrayRank(Pointer npArray);
 
     public abstract char getNpyArrayOrder(Pointer npArray);
+
+    public abstract int getNpyArrayElemSize(Pointer npArray);
+    ///////
 
 
     public abstract void tear(PointerPointer extras,
@@ -1102,7 +1106,13 @@ public abstract class NativeOps extends Pointer {
 
     public abstract void deleteIntArray(Pointer pointer);
 
+    public abstract void deleteLongArray(Pointer pointer);
+
     public abstract void deletePointerArray(Pointer pointer);
+
+    public abstract void deleteNPArrayStruct(Pointer pointer);
+
+    public abstract void deleteNPArrayMap(Pointer pointer);
 
     public abstract void deleteVariablesSet(Pointer pointer);
 

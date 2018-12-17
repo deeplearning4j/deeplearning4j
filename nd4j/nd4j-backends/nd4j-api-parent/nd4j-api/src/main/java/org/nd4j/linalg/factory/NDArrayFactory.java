@@ -1394,7 +1394,7 @@ public interface NDArrayFactory {
      * @param file the file to create the map from
      * @return Map<String, INDArray>
      */
-    public Map<String, INDArray> createFromNpzFile(File file);
+    public Map<String, INDArray> createFromNpzFile(File file) throws Exception;
 
     /**
      * Convert an {@link INDArray}

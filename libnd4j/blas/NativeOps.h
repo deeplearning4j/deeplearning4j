@@ -1378,6 +1378,8 @@ public:
     }
 
 
+    ////// NPZ //////
+
     void* mapFromNpzFile(std::string path){
         cnpy::npz_t* mapPtr = new cnpy::npz_t();
         cnpy::npz_t map = cnpy::npzLoad(path);
@@ -1410,11 +1412,11 @@ public:
         cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
         cnpy::npz_t::iterator it = arrays->begin();
         cnpy::npz_t::iterator end = arrays->end();
-        cnpy::NpyArray *arr;
+        cnpy::NpyArray *arr = new cnpy::NpyArray();
         int cnt = 0;
         for(; it != end; ++it, ++cnt){
             if (cnt == index){
-                arr = &(it->second);
+                *arr = it->second;
                 return arr;
             }
         }
@@ -1447,6 +1449,21 @@ public:
         return (arr->fortranOrder)?'f':'c';
     }
 
+    int getNpyArrayElemSize(void *npArray){
+        cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        return arr->wordSize;
+    }
+
+    void deleteNPArrayStruct(void *npArray){
+        cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        delete arr;
+    }
+
+    void deleteNPArrayMap(void *map){
+        cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
+        delete arrays;
+    }
+    //////
 
 /**
   * Get the element size for a numpy array

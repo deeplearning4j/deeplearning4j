@@ -6620,7 +6620,7 @@ public class Nd4j {
         return INSTANCE.createFromNpyFile(file);
     }
 
-    public static Map<String, INDArray> createFromNpzFile(File file){
+    public static Map<String, INDArray> createFromNpzFile(File file) throws Exception{
         return INSTANCE.createFromNpzFile(file);
     }
 

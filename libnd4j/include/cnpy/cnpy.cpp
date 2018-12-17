@@ -340,7 +340,7 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
  * @param fp FILE pointer
  * @return the arrays
  */
-/*
+
 cnpy::npz_t cnpy::npzLoad(FILE* fp){
     cnpy::npz_t arrays;
 

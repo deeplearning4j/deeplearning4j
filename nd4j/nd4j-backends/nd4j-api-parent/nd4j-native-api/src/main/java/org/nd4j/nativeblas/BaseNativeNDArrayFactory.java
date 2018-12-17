@@ -262,7 +262,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public Map<String, INDArray> createFromNpzFile(File file){
+    public Map<String, INDArray> createFromNpzFile(File file) throws Exception{
         byte[] pathBytes = file.getAbsolutePath().getBytes(Charset.forName("UTF-8"));
         ByteBuffer directBuffer = ByteBuffer.allocateDirect(pathBytes.length).order(ByteOrder.nativeOrder());
         directBuffer.put(pathBytes);
@@ -275,8 +275,57 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         for (int i=0; i<n; i++){
             String arrName = nativeOps.getNpyArrayNameFromMap(pointer, i);
             Pointer arrPtr = nativeOps.getNpyArrayFromMap(pointer, i);
-            INDArray indArray = createFromNpyPointer(arrPtr);
-            map.put(arrName, indArray);
+            int ndim = nativeOps.getNpyArrayRank(arrPtr);
+            long[] shape = new long[ndim];
+            LongPointer shapePtr = nativeOps.getNpyArrayShape(arrPtr);
+
+            long length = 1;
+            for (int j=0; j<ndim; j++){
+                shape[j] = shapePtr.get(j);
+                length *= shape[j];
+            }
+
+            int numBytes = nativeOps.getNpyArrayElemSize(arrPtr);
+
+            int elemSize = numBytes * 8;
+
+            char order = nativeOps.getNpyArrayOrder(arrPtr);
+
+            Pointer dataPointer = nativeOps.dataPointForNumpyStruct(arrPtr);
+
+
+            dataPointer.position(0);
+
+            long size = elemSize * length;
+            dataPointer.limit(size);
+            dataPointer.capacity(size);
+
+            INDArray arr;
+            if (elemSize == Float.SIZE){
+                FloatPointer dPointer = new FloatPointer(dataPointer.limit() / elemSize);
+                DataBuffer data = Nd4j.createBuffer(dPointer,
+                        DataType.FLOAT,
+                        length,
+                        FloatIndexer.create(dPointer));
+
+                arr = Nd4j.create(data, shape, Nd4j.getStrides(shape, order), 0, order, DataType.FLOAT);
+
+            }
+            else if (elemSize == Double.SIZE){
+                DoublePointer dPointer = new DoublePointer(dataPointer.limit() / elemSize);
+                DataBuffer data = Nd4j.createBuffer(dPointer,
+                        DataType.DOUBLE,
+                        length,
+                       DoubleIndexer.create(dPointer));
+                arr = Nd4j.create(data, shape, Nd4j.getStrides(shape, order), 0, order, DataType.DOUBLE);
+            }
+
+            else{
+                throw new Exception("Unsupported data type: " + String.valueOf(elemSize));
+            }
+
+
+            map.put(arrName, arr);
         }
 
         return map;
