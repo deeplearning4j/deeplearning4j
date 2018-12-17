@@ -3354,17 +3354,8 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         // perform calculations
         if(rankOf() == copy.size() && other->rankOf() == copy.size())
             NativeOpExecutioner::execReduce3Scalar(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo());
-        else {
-            shape::TAD tadX(_shapeInfo, copy.data(), copy.size());
-            tadX.createTadOnlyShapeInfo();
-            tadX.createOffsets();
-
-            shape::TAD tadY(other->_shapeInfo, copy.data(), copy.size());
-            tadY.createTadOnlyShapeInfo();
-            tadY.createOffsets();        
-        
+        else         
             NativeOpExecutioner::execReduce3(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), copy.size());
-        }
         
         if(params != extraParams)
             delete [] static_cast<int8_t*>(params);
