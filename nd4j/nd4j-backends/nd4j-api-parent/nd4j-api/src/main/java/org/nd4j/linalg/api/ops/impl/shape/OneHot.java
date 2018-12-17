@@ -23,6 +23,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -148,6 +149,7 @@ public class OneHot extends DynamicCustomOp {
         Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype, got %s", dataTypes);
         //Output type defaults to floats
         //TODO allow configuration + test import of output array dtype: https://github.com/deeplearning4j/deeplearning4j/issues/6854
-        return Collections.singletonList(Nd4j.defaultFloatingPointType());
+        DataType dt = Nd4j.defaultFloatingPointType();
+        return Collections.singletonList(dt);
     }
 }

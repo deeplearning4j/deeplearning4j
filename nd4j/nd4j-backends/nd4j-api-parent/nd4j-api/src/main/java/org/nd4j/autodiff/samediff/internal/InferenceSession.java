@@ -132,12 +132,12 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             return c.outputArguments();
         } else if(op instanceof Op) {
             Op o = (Op) op;
-            if(op.getDimensions() != null){
+            int[] dims = op.getDimensions();
+            if(dims != null && dims.length > 0 && !(dims.length == 1 && dims[0] == Integer.MAX_VALUE)){
                 Nd4j.getExecutioner().exec(o, op.getDimensions());
             } else {
                 Nd4j.getExecutioner().exec(o);
             }
-
 
             return new INDArray[]{o.z()};
         } else {
@@ -207,25 +207,6 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     }
                 }
             }
-
-//            if(opInputs != null) {
-//                for (VarId vid : opInputs) {
-//                    int idx = ArrayUtils.indexOf(argNames, vid.getVariable());
-//                    Preconditions.checkState(idx >= 0, "Variable %s not found in arg names: %s", vid.getVariable(), argNames);
-//                    args[idx] = this.nodeOutputs.get(vid);
-//                }
-//            }
-//            if(constAndPhInputs != null) {
-//                for (String s : constAndPhInputs) {
-//                    int idx = ArrayUtils.indexOf(argNames, s);
-//                    while(repeatedArgs && args[idx] != null){
-//                        idx = ArrayUtils.indexOf(argNames, vid.getVariable(), idx+1);
-//                    }
-//                    Preconditions.checkState(idx >= 0, "Variable %s not found in arg names: %s", s, argNames);
-//                    VarId constPhVarId = newVarId(s, OUTER_FRAME, 0);
-//                    args[idx] = this.nodeOutputs.get(constPhVarId);
-//                }
-//            }
         }
 
         //Set the op inputs and output arguments

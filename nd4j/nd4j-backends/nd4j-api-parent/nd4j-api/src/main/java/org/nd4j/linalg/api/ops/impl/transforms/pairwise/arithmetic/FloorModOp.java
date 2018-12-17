@@ -18,8 +18,12 @@ package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.Shape;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -52,5 +56,13 @@ public class FloorModOp extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return f().floorModBp(larg(), rarg(), f1.get(0));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatypes, got input %s", dataTypes);
+
+        DataType z = Shape.pickPairwiseDataType(dataTypes.get(0), dataTypes.get(1));
+        return Collections.singletonList(z);
     }
 }

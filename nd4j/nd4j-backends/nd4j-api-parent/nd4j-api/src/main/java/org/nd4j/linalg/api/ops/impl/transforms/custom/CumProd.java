@@ -126,8 +126,8 @@ public class CumProd extends DynamicCustomOp {
 
     protected void addArgs() {
         addIArgument(exclusive ? 1 : 0, reverse ? 1 : 0);
-        if (axis != null)
-            for (val a: axis)
+        if (jaxis != null)
+            for (val a: jaxis)
                 addIArgument(a);
     }
 

@@ -18,6 +18,7 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -58,7 +59,6 @@ public class MiscOpValidation extends BaseOpValidation {
     public MiscOpValidation(Nd4jBackend backend) {
         super(backend);
     }
-
 
 
     @Test
@@ -154,7 +154,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
         for (int[] dim_sz1s : new int[][]{{0, 1}, {0, 2}, {1, 2}, {0, 1, 2}}) {
 
-            int[] otherShape = {3, 4, 5};
+            long[] otherShape = {3, 4, 5};
             otherShape[dim_sz1s[0]] = 1;
             otherShape[dim_sz1s[1]] = 1;
             if (dim_sz1s.length == 3) {
@@ -165,8 +165,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
                 SameDiff sd = SameDiff.create();
 
-                SDVariable in3 = sd.var("in3", new int[]{3, 4, 5});
-                SDVariable in2 = sd.var("inToBc", otherShape);
+                SDVariable in3 = sd.var("in3", DataType.DOUBLE, 3, 4, 5);
+                SDVariable in2 = sd.var("inToBc", DataType.DOUBLE, otherShape);
 
                 String name;
                 SDVariable bcOp;
@@ -216,8 +216,8 @@ public class MiscOpValidation extends BaseOpValidation {
                 String msg = "(test " + i + ": " + name + ", dimensions=" + Arrays.toString(dim_sz1s) + ")";
                 log.info("*** Starting test: " + msg);
 
-                INDArray in3Arr = Nd4j.randn(new int[]{3, 4, 5}).muli(100);
-                INDArray in2Arr = Nd4j.randn(otherShape).muli(100);
+                INDArray in3Arr = Nd4j.randn(DataType.DOUBLE, 3, 4, 5).muli(100);
+                INDArray in2Arr = Nd4j.randn(DataType.DOUBLE, otherShape).muli(100);
 
                 sd.associateArrayWithVariable(in3Arr, in3);
                 sd.associateArrayWithVariable(in2Arr, in2);
@@ -1025,7 +1025,12 @@ public class MiscOpValidation extends BaseOpValidation {
         for(char order : new char[]{'c','f'}) {
 
             Nd4j.getRandom().setSeed(12345);
-            INDArray arr = Nd4j.linspace(1, 15, 15, DataType.DOUBLE).reshape(3, 5).dup(order);
+//            INDArray arr = Nd4j.linspace(1, 15, 15, DataType.DOUBLE).reshape('c',3, 5).dup(order);
+
+            INDArray arr = Nd4j.create(new double[][]{
+                    { 1,  2,  3,  4,  5},
+                    { 6,  7,  8,  9, 10},
+                    {11, 12, 13, 14, 15}});
 
             INDArray expFF = Nd4j.create(new double[][]{
                     {1, 2, 6, 24, 120},
@@ -1056,7 +1061,7 @@ public class MiscOpValidation extends BaseOpValidation {
             for (boolean exclusive : new boolean[]{false, true}) {
                 for (boolean reverse : new boolean[]{false, true}) {
 
-                    INDArray out = Nd4j.create(3, 5);
+                    INDArray out = Nd4j.create(DataType.DOUBLE, 3, 5);
                     OpTestCase op = new OpTestCase(new CumProd(arr, out, exclusive, reverse, 1));
                     String msg = order + ", exclusive=" + exclusive + ", reverse=" + reverse;
 
@@ -1072,7 +1077,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
                     String err = OpValidation.validate(op);
                     if(err != null){
-                        failing.add(msg);
+                        failing.add(msg + " - " + err);
                     }
                 }
             }
@@ -1147,10 +1152,12 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testOneHot3() {
+        //https://github.com/deeplearning4j/deeplearning4j/issues/6872
+
         //https://www.tensorflow.org/api_docs/python/tf/one_hot
         //indices = [[0, 2], [1, -1]]
         INDArray indicesArr = Nd4j.create(new double[][]{{0, 2}, {1, -1}});
-        INDArray expectedOut = Nd4j.zeros(new long[]{2, 2, 3});
+        INDArray expectedOut = Nd4j.zeros(DataType.DOUBLE, new long[]{2, 2, 3});
         /*
         # output: [2 x 2 x 3]
         # [[[1.0, 0.0, 0.0],   # one_hot(0)
@@ -1173,6 +1180,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
         SDVariable loss = oneHot.std(true);
 
+        DataType temp = Nd4j.defaultFloatingPointType();
         String err = OpValidation.validate(new TestCase(sd)
                 .expected(oneHot, expectedOut)
                 .gradCheckSkipVariables("indices"));
@@ -1387,9 +1395,9 @@ public class MiscOpValidation extends BaseOpValidation {
                     SDVariable in = sd.var("in", inArr);
                     SDVariable out;
                     if(nonDec){
-                        out = sd.isNonDecreasing(in);
+                        out = sd.isNonDecreasing(in).castTo(DataType.DOUBLE);
                     } else {
-                        out = sd.isStrictlyIncreasing(in);
+                        out = sd.isStrictlyIncreasing(in).castTo(DataType.DOUBLE);
                     }
 
                     if (shape == null) {
