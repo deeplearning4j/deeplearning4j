@@ -446,6 +446,7 @@ TEST_F(GraphTests, IndexReductionsTest1) {
     ASSERT_NEAR(4.0, z->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
     delete graph;
+    delete axis;
 }
 
 #if 0
