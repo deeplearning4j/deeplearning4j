@@ -132,23 +132,26 @@ DECLARE_SHAPE_FN(hinge_loss) {
     REQUIRE_TRUE(shape::shapeEquals(labelsShapeInfo, logitsShapeInfo), 0, "HINGE_LOSS OP: labels and logits arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils::shapeAsString(logitsShapeInfo).c_str());
 
     Nd4jLong* outShapeInfo = nullptr;
-    if(INT_ARG(0) != 0) {			// in this case output is scalar
-    	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2) /*rank=2*/, Nd4jLong);
-    	outShapeInfo[0] = 2;
-    	outShapeInfo[1] = outShapeInfo[2] = outShapeInfo[3] = outShapeInfo[4] = 1;
-    	outShapeInfo[5] = 0;
-    	outShapeInfo[6] = 1;
-    	outShapeInfo[7] = 99;
+    if(INT_ARG(0) != 0) {
+    	// in this case output is scalar
+    	outShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(labelsShapeInfo), block.getWorkspace());
+
+//    	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2) /*rank=2*/, Nd4jLong);
+//    	outShapeInfo[0] = 2;
+//    	outShapeInfo[1] = outShapeInfo[2] = outShapeInfo[3] = outShapeInfo[4] = 1;
+//    	outShapeInfo[5] = 0;
+//    	outShapeInfo[6] = 1;
+//    	outShapeInfo[7] = 99;
     }
     else {							// in this case output has the same shape as labels
     	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(labelsShapeInfo[0]), Nd4jLong);
     	outShapeInfo[0] = labelsShapeInfo[0];
     	for(int i = 1; i <= outShapeInfo[0]; ++i)
     		outShapeInfo[i] = labelsShapeInfo[i];
-    	shape::updateStrides(outShapeInfo, shape::order(labelsShapeInfo));    
+    	shape::updateStrides(outShapeInfo, shape::order(labelsShapeInfo));
+		ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(labelsShapeInfo));
     }
-	ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(labelsShapeInfo));
-    return SHAPELIST(outShapeInfo);    
+    return SHAPELIST(outShapeInfo);
 
 }
 
