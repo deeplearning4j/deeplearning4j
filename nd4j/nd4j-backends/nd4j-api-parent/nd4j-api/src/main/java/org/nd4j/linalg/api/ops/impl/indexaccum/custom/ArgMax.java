@@ -16,7 +16,12 @@
 
 package org.nd4j.linalg.api.ops.impl.indexaccum.custom;
 
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+
+import java.util.Collections;
+import java.util.List;
 
 public class ArgMax extends DynamicCustomOp {
     @Override
@@ -27,5 +32,12 @@ public class ArgMax extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "ArgMax";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected 1 input datatype to argmax, got %s", inputDataTypes);
+        //TODO make this configurable!
+        return Collections.singletonList(DataType.LONG);
     }
 }

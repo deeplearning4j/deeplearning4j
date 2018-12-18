@@ -327,7 +327,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             return true;
 
         boolean endsWithRead = opType.getName().endsWith("/read");
-        boolean isReductionIndices = opType.getOp().endsWith("/reduction_indices");
+        boolean isReductionIndices = opType.getName().endsWith("/reduction_indices");
         return  endsWithRead  || isReductionIndices;
     }
 
@@ -522,26 +522,35 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             }
             try {
                 val newInstance = differentialFunction.getClass().newInstance();
-                val args = new SDVariable[tfNode.getInputCount()];
+                List<SDVariable> args = new ArrayList<>();
                 newInstance.setOwnName(tfNode.getName());
 
+                int x=0;
                 for(int i = 0; i < tfNode.getInputCount(); i++) {
                     String inName = tfNode.getInput(i);
+                    NodeDef inputNode = importState.getVariables().get(inName);
+
+                    //Idea here: skip ".../reduction_indices" and the like that get mapped to properties not variables
+                    if(shouldSkip(inputNode) && !inName.endsWith("/read"))
+                        continue;
+
                     boolean controlDep = isControlDependency(inName);
                     boolean placeholder = isPlaceHolder(tfNode);
                     String name = getNodeName(inName);
-                    args[i] = diff.getVariable(name);
+
+                    SDVariable v = diff.getVariable(name);
 
                     //At this point, all placeholders, variables and constants should have been imported
                     //This: this should be an array type variable (i.e., activations)
-                    if(args[i] == null) {
-                        args[i] = diff.var(name, VariableType.ARRAY, null, dataType, (long[])null);
+                    if(v == null) {
+                        v = diff.var(name, VariableType.ARRAY, null, dataType, (long[])null);
                     }
+                    args.add(v);
                 }
 
 
 
-                diff.addArgsFor(args,newInstance);
+                diff.addArgsFor(args.toArray(new SDVariable[args.size()]),newInstance);
                 newInstance.setSameDiff(importState.getSameDiff());
 
                 newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());

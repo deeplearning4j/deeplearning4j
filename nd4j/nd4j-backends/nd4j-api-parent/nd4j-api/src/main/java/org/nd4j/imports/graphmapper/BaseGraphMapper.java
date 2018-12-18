@@ -189,6 +189,11 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         //map the names of the nodes while accumulating the vertex ids for each variable
         Map<String,Boolean> stringNodes = new HashMap<>();      //Key: name of string variable. Value: if it's a constant
         for (Map.Entry<String, TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
+            if(shouldSkip((NODE_TYPE)entry.getValue())){    //TODO only works for TF
+                //Skip some nodes, for example reduction indices (a lot of ND4J/SameDiff ops use int[] etc, not an INDArray/Variable)
+                continue;
+            }
+
             DataType dt = dataTypeForTensor(entry.getValue());
             INDArray arr = getNDArrayFromTensor(entry.getKey(), entry.getValue(), tfGraph);
             if (dt == DataType.UNKNOWN && !unknownTypeNodeImportable(entry.getValue())) {
