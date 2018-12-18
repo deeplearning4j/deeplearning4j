@@ -112,7 +112,7 @@ namespace ops {
                 };
                 input->applyLambda(norm2Backprop, output);
                 */
-                throw std::runtime_error("Not implemented yet");
+                helpers::reduceNorm2BP_scalar(input, epsilon, tempNorm2, output);
             }
             else {
                 std::vector<int> axesList = *block.getIArguments();

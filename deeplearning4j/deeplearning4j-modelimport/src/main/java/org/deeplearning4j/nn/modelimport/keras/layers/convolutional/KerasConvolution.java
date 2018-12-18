@@ -131,8 +131,12 @@ abstract public class KerasConvolution extends KerasLayer {
         INDArray paramValue;
         switch (this.getDimOrder()) {
             case TENSORFLOW:
-                /* TensorFlow convolutional weights: # rows, # cols, # inputs, # outputs */
-                paramValue = kerasParamValue.permute(3, 2, 0, 1);
+                if (kerasParamValue.rank() == 5)
+                    // CNN 3D case
+                    paramValue = kerasParamValue.permute(4, 3, 0, 1, 2);
+                else
+                    /* TensorFlow convolutional weights: # rows, # cols, # inputs, # outputs */
+                    paramValue = kerasParamValue.permute(3, 2, 0, 1);
                 break;
             case THEANO:
                 /* Theano convolutional weights match DL4J: # outputs, # inputs, # rows, # cols

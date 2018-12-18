@@ -2411,7 +2411,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test1) {
     auto *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 71.5, 1e-5);    
+    ASSERT_NEAR(result->e<double>(0), 78., 1e-5);    
 
     delete results;
 }
@@ -2435,7 +2435,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test2) {
     auto *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 17.875, 1e-5);    
+    ASSERT_NEAR(result->e<double>(0), 19.5, 1e-5);    
 
     delete results;
 }
@@ -2459,7 +2459,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test3) {
     auto *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 23.833324, 1e-5);    
+    ASSERT_NEAR(result->e<double>(0), 26.0, 1e-5);    
 
     delete results;
 }
@@ -2484,7 +2484,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test4) {
     auto *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 5.958331, 1e-5);    
+    ASSERT_NEAR(result->e<double>(0), 6.5, 1e-5);    
 
     delete results;
 }
@@ -2508,7 +2508,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test5) {
     auto *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 5.958331, 1e-5);    
+    ASSERT_NEAR(result->e<double>(0), 6.5, 1e-5);    
 
     delete results;
 }
@@ -2532,7 +2532,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test6) {
     auto *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 17.874992, 1e-5);    
+    ASSERT_NEAR(result->e<double>(0), 19.5, 1e-5);    
 
     delete results;
 }
@@ -2556,37 +2556,13 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test7) {
     auto *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 23.833324, 1e-5);    
+    ASSERT_NEAR(result->e<double>(0), 26., 1e-5);    
 
     delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test8) {
-    
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4});
-    auto predictions = NDArrayFactory::create<double>('c', {2,3,4});
-    auto weights = NDArrayFactory::create<double>('c', {1,3,4});
-                                            
-    predictions.linspace(0.5, 0.5);
-    labels.linspace(1);
-    weights.assign(0.5);    
- 
-    nd4j::ops::mean_pairwssqerr_loss op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    auto *result = results->at(0);            
-
-    ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 71.5, 1e-5);    
-
-    delete results;
-}
-
-///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test9) {
     
     auto labels = NDArrayFactory::create<double>('c', {2,3,4});
     auto predictions = NDArrayFactory::create<double>('c', {2,3,4});
@@ -2598,7 +2574,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test9) {
     weights.p(0, 0.);
     weights.p(1, 0.);
     weights.p(2, 0.);
-    weights.p(3, 0.);
+    weights.p(3, 0.);    
  
     nd4j::ops::mean_pairwssqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {});
@@ -2608,7 +2584,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test9) {
     auto *result = results->at(0);            
 
     ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 8.125, 1e-5);    
+    ASSERT_NEAR(result->e<double>(0), 7.4285583, 1e-4);    
 
     delete results;
 }
@@ -3457,7 +3433,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test2) {
     weights.assign(0.5);    
 
     nd4j::ops::softmax_cross_entropy_loss op;
-    auto results = op.execute({&logits, &weights, &labels}, {5.}, {0});
+    auto results = op.execute({&logits, &weights, &labels}, {5.}, {0}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3744,7 +3720,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test14) {
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *result = results->at(0);            
+    auto *result = results->at(0);
 
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));

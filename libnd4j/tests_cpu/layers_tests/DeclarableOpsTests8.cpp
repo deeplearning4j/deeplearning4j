@@ -3037,8 +3037,8 @@ auto exp = NDArrayFactory::create<double>('c', {3,3,5,5}, {
         
     ASSERT_EQ(Status::OK(), results->status());
 //    ASSERT_TRUE(exp.isSameShape(out));
-//    out->printIndexedBuffer("LRN BP out");
-//    exp.printIndexedBuffer("LRN exp");
+    out->printBuffer("LRN BP out");
+    exp.printBuffer("LRN BP exp");
     ASSERT_TRUE(exp.equalsTo(out));    
     
     delete results;

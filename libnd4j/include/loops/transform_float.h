@@ -104,17 +104,10 @@ namespace functions {
 	static _CUDA_H void executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 #endif
-
-
-			static void exec(int opNum, void *dx, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *extraParams, Nd4jLong n);
-
 			static void exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 			template<typename OpType>
 			static ND4J_EXPORT void exec(void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
-
-			template <typename OpType>
-			static ND4J_EXPORT void exec(void *dx, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *extraParams, Nd4jLong n);
         };
     }
 }

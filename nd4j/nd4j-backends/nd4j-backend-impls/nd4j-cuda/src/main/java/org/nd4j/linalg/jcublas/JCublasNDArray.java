@@ -448,7 +448,11 @@ public class JCublasNDArray extends BaseNDArray {
         
             allocator.getFlowController().registerAction(context, array, this);
             return array;
-        } else */return super.dup();
+        } else */
+
+        val res = super.dup();
+        Nd4j.getExecutioner().commit();
+        return res;
     }
 
     @Override

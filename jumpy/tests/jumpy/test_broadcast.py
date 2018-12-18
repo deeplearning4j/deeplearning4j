@@ -55,7 +55,6 @@ def _test_ufunc_inplace(op, shape1, shape2):
 
 
 def test_broadcast():
-    jp.set_context_dtype('float64')
     shapes = [
         [(2, 3), (3, )],
         [(2, 3, 4), (3, 4)],
