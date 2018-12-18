@@ -1040,6 +1040,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
         List<String> allFailed = new ArrayList<>();
         for (int i = 0; i < 23; i++) {
+//        for (int i = 20; i < 21; i++) {
 
             SameDiff sd = SameDiff.create();
 

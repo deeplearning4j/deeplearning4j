@@ -1253,15 +1253,17 @@ public class SameDiff {
             ops.put(function.getOwnName(), SameDiffOp.builder().name(function.getOwnName()).op(function).build());
         }
 
-        ops.get(function.getOwnName()).setInputsToOp(Arrays.asList(variables));
+        //Update variable 'inputs to op' accounting for repeated inputs (like y = x+x)
+        ops.get(function.getOwnName()).setInputsToOp(Arrays.asList(variables));     //Duplicate variables OK/required here
+
         for (String variableName : variables) {
             List<String> funcs = this.variables.get(variableName).getInputsForOp();
             if (funcs == null) {
                 funcs = new ArrayList<>();
                 this.variables.get(variableName).setInputsForOp(funcs);
             }
-
-            funcs.add(function.getOwnName());
+            if(!funcs.contains(function.getOwnName()))  //Avoid duplicates for function names.
+                funcs.add(function.getOwnName());
         }
     }
 
@@ -11165,7 +11167,6 @@ public class SameDiff {
         for(int i=0; i<numPlaceholders; i++ ){
             ph.add(fg.placeholders(i));
         }
-//        sd.placeHolderVarNames = ph;
 
         //Reconstruct variables:
         Map<Integer,SDVariable> varNodeIds = new HashMap<>();
