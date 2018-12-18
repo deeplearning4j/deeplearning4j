@@ -52,6 +52,20 @@ public class AccountingTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testDetached_2() {
+        val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
+        val before = Nd4j.getMemoryManager().allocatedMemory(deviceId);
+
+        val array = Nd4j.createFromArray(1, 2, 3, 4, 5);
+        assertEquals(DataType.INT, array.dataType());
+
+        val after = Nd4j.getMemoryManager().allocatedMemory(deviceId);
+
+        assertTrue(after > before);
+    }
+
+    @Test
     public void testWorkspaceAccounting_1() {
         val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         val wsConf = WorkspaceConfiguration.builder()

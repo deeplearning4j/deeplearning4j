@@ -322,7 +322,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
                         log.info("deleting external host allocation ");
                 }
 
-                pinnedAllocationsSize.addAndGet(pair.getRequiredMemory() * -1);
+                val sizez = pair.getRequiredMemory() * -1;
+                pinnedAllocationsSize.addAndGet(sizez);
+                //AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, Nd4j.getAffinityManager().getDeviceForCurrentThread(), sizez);
             } else {
                 break;
             }
