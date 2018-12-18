@@ -71,7 +71,7 @@ public class CpuWorkspace extends Nd4jWorkspace {
                     log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
 
                 workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
-                AllocationsTracker.getInstance().markAllocated(AllocationKind.GENERAL, 0, currentSize.get() + SAFETY_OFFSET);
+                AllocationsTracker.getInstance().markAllocated(AllocationKind.WORKSPACE, 0, currentSize.get() + SAFETY_OFFSET);
             }
         } else if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {
             long flen = tempFile.length();
@@ -146,7 +146,7 @@ public class CpuWorkspace extends Nd4jWorkspace {
             if (workspace.getHostPointer() != null) {
                 NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
 
-                AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, 0, sizez);
+                AllocationsTracker.getInstance().markReleased(AllocationKind.WORKSPACE, 0, sizez);
             }
         } else if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {
             if (workspace.getHostPointer() != null)

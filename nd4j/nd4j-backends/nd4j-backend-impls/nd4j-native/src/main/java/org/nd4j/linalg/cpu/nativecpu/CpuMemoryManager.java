@@ -109,6 +109,6 @@ public class CpuMemoryManager extends BasicMemoryManager {
 
     @Override
     public long allocatedMemory(Integer deviceId) {
-        return Pointer.totalBytes() + AllocationsTracker.getInstance().bytesOnDevice(deviceId);
+        return Pointer.totalBytes() + AllocationsTracker.getInstance().bytesOnDevice(AllocationKind.GENERAL, deviceId) + AllocationsTracker.getInstance().bytesOnDevice(AllocationKind.WORKSPACE, deviceId);
     }
 }

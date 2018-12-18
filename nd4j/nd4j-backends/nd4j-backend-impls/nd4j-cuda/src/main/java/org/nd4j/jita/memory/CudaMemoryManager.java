@@ -267,6 +267,6 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
     @Override
     public long allocatedMemory(Integer deviceId) {
-        return AllocationsTracker.getInstance().bytesOnDevice(deviceId);
+        return AllocationsTracker.getInstance().bytesOnDevice(AllocationKind.GENERAL, deviceId) + AllocationsTracker.getInstance().bytesOnDevice(AllocationKind.WORKSPACE, deviceId);
     }
 }

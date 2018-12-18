@@ -30,4 +30,9 @@ public enum AllocationKind {
      * Allocations that will be never released, and reused during session
      */
     CONSTANT,
+
+    /**
+     * Allocations for workspaces
+     */
+    WORKSPACE,
 }
