@@ -23,14 +23,15 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.DeviceAllocationsTracker;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
@@ -70,6 +71,29 @@ public class AccountingTests extends BaseNd4jTest {
 
         assertTrue(middle > before);
         assertTrue(after < middle);
+    }
+
+    @Test
+    public void testTracker_1() {
+        val tracker = new DeviceAllocationsTracker();
+
+        for (val e: AllocationKind.values()) {
+            for (int v = 1; v <= 100; v++) {
+                tracker.updateState(e, v);
+            }
+
+            assertNotEquals(0, tracker.getState(e));
+        }
+
+        for (val e: AllocationKind.values()) {
+            for (int v = 1; v <= 100; v++) {
+                tracker.updateState(e, -v);
+            }
+
+            assertEquals(0, tracker.getState(e));
+        }
+
+
     }
 
     @Override
