@@ -43,7 +43,7 @@ Your local machine will require some essential softwares and environment variabl
 * Java >= 1.7
 * Maven >= 3.3
 * Python Developer Tools
-* CUDA (Optional - For GPU build)
+* CUDA SDK >= 8.0 (Optional - For GPU build)
 
 IDE-specific requirements:
 
@@ -55,7 +55,8 @@ DL4J testing dependencies:
 
 ### Installing Prerequisite Tools
 
-**Linux - Ubuntu**
+#### Ubuntu
+
 Assuming you are using Ubuntu as your flavor of Linux and you are running as a non-root user, follow these steps to install prerequisite software:
 
 ```bash
@@ -128,7 +129,8 @@ This will install the needed dependencies for use in the MSYS2 shell.
 
 You will also need to setup your `PATH` environment variable to include `C:\msys64\mingw64\bin` (or where ever you have decided to install MSYS2). If you have IntelliJ (or another IDE) open, you will have to restart it before this change takes effect for applications started through them. If you don't, you probably will see a "Can't find dependent libraries" error.
 
-**CentOS**
+#### CentOS
+
 Enter the following in your terminal (or ssh session) as a root user:
 
 ```bash
@@ -158,28 +160,83 @@ sudo pip install --upgrade pip
 sudo pip install --upgrade setuptools
 ```
 
-#### CUDA
+#### CUDA (Optional for GPU build)
 
-##### Linux & OS X
+CUDA versions starting from `8.0` would work. To install a specific CUDA version in your specific OS, follow the installation instructions on the following website:
+https://docs.nvidia.com/cuda/index.html#installation-guides
 
-Detailed instructions for installing GPU architectures such as CUDA can be found [here](./deeplearning4j-config-gpu-cpu).
+##### Windows Specific Instructions
 
-##### Windows
+For Windows, the CUDA Backend has some additional requirements before it can be built:
 
-The CUDA Backend has some additional requirements before it can be built:
+1. [CUDA SDK](https://docs.nvidia.com/cuda/index.html#installation-guides) - Any version starting from version `8.0`
+2. [Visual Studio](https://visualstudio.microsoft.com/) - Based on the CUDA SDK version, you'll need different versions of Visual Studio.
 
-* [CUDA SDK](https://developer.nvidia.com/cuda-downloads)
-* [Visual Studio 2012 or 2013](https://www.visualstudio.com/en-us/news/vs2013-community-vs.aspx) (Please note: Visual Studio 2015 is *NOT SUPPORTED* by CUDA 7.5 and below)
+Visit the following link to confirm which version of Visual Studio is supported with the installed CUDA SDK:
+`https://docs.nvidia.com/cuda/archive/`<CUDA_VERSION>`/cuda-toolkit-release-notes/index.html#cuda-compiler-new-features`
 
+Replace `<CUDA_VERSION>` with your installed CUDA_SDK version in the link above. For example, https://docs.nvidia.com/cuda/archive/10.0/cuda-toolkit-release-notes/index.html#cuda-compiler-new-features
+                                                                                              
 In order to build the CUDA backend you will have to setup some more environment variables first, by calling `vcvars64.bat`.
 But first, set the system environment variable `SET_FULL_PATH` to `true`, so all of the variables that `vcvars64.bat` sets up, are passed to the mingw shell.
+Additionally, you need to open the `mingw64.ini` in your msys64 installation folder and add the command: `MSYS2_PATH_TYPE=inherit`. After that, follow the steps below:
 
-1. Inside a normal cmd.exe command prompt, run `C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\amd64\vcvars64.bat`
-2. Run `c:\msys64\mingw64_shell.bat` inside that
-3. Change to your libnd4j folder
-4. `./buildnativeoperations.sh -c cuda`
+1. In your visual studio installation folder, look for the file `vcvars64.bat`. After it's found, go to its location and run it. This will set up some environment variables and open `cmd.exe`.
+2. Inside the console, run `c:\msys64\mingw64.exe`. This will open up the MSYS2 shell with the environment variables set so, you can execute the required maven commands to build the DL4J stack for the GPU architecture.
 
-This builds the CUDA nd4j.dll.
+See the section below for the required build commands.
+
+## Build Instructions
+
+
+First clone the DL4J repository and navigate to the `deeplearning4j` folder 
+
+```bash
+git clone https://github.com/deeplearning4j/deeplearning4j.git
+cd deeplearning4j
+```
+
+If you want to change the Scala, Spark or Cuda versions, you can execute one or more of the following commands:
+```bash
+./change-cuda-versions.sh x.x
+./change-scala-versions.sh 2.xx
+./change-spark-versions.sh x
+```
+
+Now, to build for each architecture, execute the relevant commands:
+
+### Building for CPU
+
+Let's first set some variables for ease:
+
+```bash
+PLATFORM=<YOUR_PLATFORM> # Can be either one of [linux-x86_64, macosx-x86_64, windows-x86_64]
+```
+
+### 
+
+The command is: 
+```bash
+mvn -B -V -U clean install -pl '!deeplearning4j/deeplearning4j-cuda,!nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!jumpy,!pydatavec,!pydl4j' -Dlibnd4j.platform=${PLATFORM} -Djavacpp.platform=${PLATFORM} -P native-snapshots -Dmaven.test.skip=true
+```
+
+### Building for GPU
+
+Let's first set some variables for ease:
+
+```bash
+PLATFORM=<YOUR_PLATFORM> # Can be either one of [linux-x86_64, macosx-x86_64, windows-x86_64]
+CUDA_VERSION=<YOUR_CUDA_SDK_VERSION> # Such as "10.0"
+COMPUTE_CAPABILITY=<COMPUTE_CAPABILITY> # Such as "61" for a compute cabability of '6.1'. Can be found here, depending on your GPU type: https://en.wikipedia.org/wiki/CUDA
+```
+
+#### Note
+ The `COMPUTE_CAPABILITY` variable should be set without any `.` in between. For example, if your GPU has a compute capability of 6.1 then you should set the variable like this:
+`COMPUTE_CAPABILITY=61`
+    
+```bash
+mvn clean install -Dmaven.test.skip -Dlibnd4j.cuda=${CUDA_VERSION} -Dlibnd4j.compute=${COMPUTE_CAPABILITY} -Dlibnd4j.platform=${PLATFORM} -Djavacpp.platform=${PLATFORM}
+```
 
 #### IDE Requirements
 
@@ -206,141 +263,6 @@ mvn clean test -P  testresources,test-nd4j-native
 ```
 
 Running the tests will take a while. To run tests of just a single maven module you can add a module constraint with `-pl deeplearning4j-core` (for details see [here](https://stackoverflow.com/questions/11869762/maven-run-only-single-test-in-multi-module-project))
-
-## Installing the DL4J Stack
-
-## OS X & Linux
-
-### Checking ENV
-
-Before running the DL4J stack build script, you must ensure certain environment variables are defined before running your build. These are outlined below depending on your architecture.
-
-#### LIBND4J_HOME
-
-You will need to know the exact path of the directory where you are running the DL4J build script (you are encouraged to use a clean empty directory). Otherwise, your build will fail. Once you determine this path, add `/libnd4j` to the end of that path and export it to your local environment. This will look like:
-
-```
-export LIBND4J_HOME=/home/user/directory/libnd4j
-```
-
-#### CPU architecture w/ MKL
-
-You can link with MKL either at build time, or at runtime with binaries initially linked with another BLAS implementation such as OpenBLAS. To build against MKL, simply add the path containing `libmkl_rt.so` (or `mkl_rt.dll` on Windows), say `/path/to/intel64/lib/`, to the `LD_LIBRARY_PATH` environment variable on Linux (or `PATH` on Windows) and build like before. On Linux though, to make sure it uses the correct version of OpenMP, we also might need to set these environment variables:
-
-```bash
-export MKL_THREADING_LAYER=GNU
-export LD_PRELOAD=/lib64/libgomp.so.1
-```
-
-When libnd4j cannot be rebuilt, we can use the MKL libraries after the facts and get them loaded instead of OpenBLAS at runtime, but things are a bit trickier. Please additionally follow the instructions below.
-
-1. Make sure that files such as `/lib64/libopenblas.so.0` and `/lib64/libblas.so.3` are not available (or appear after in the `PATH` on Windows), or they will get loaded by libnd4j by their absolute paths, before anything else.
-2. Inside `/path/to/intel64/lib/`, create a symbolic link or copy of `libmkl_rt.so` (or `mkl_rt.dll` on Windows) to the name that libnd4j expect to load, for example:
-
-```bash
-ln -s libmkl_rt.so libopenblas.so.0
-ln -s libmkl_rt.so libblas.so.3
-```
-
-```cmd
-copy mkl_rt.dll libopenblas.dll
-copy mkl_rt.dll libblas3.dll
-```
-
-3. Finally, add `/path/to/intel64/lib/` to the `LD_LIBRARY_PATH` environment variable (or early in the `PATH` on Windows) and run your Java application as usual.
-
-
-### Build Script
-
-You can use the [build-dl4j-stack.sh](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/build-dl4j-stack.sh) script from the deeplearning4j repository to build the whole deeplearning4j stack from source: libndj4, ndj4, datavec, deeplearning4j. It clones the DL4J stack, builds each repository, and installs them locally to Maven. This script will work on both Linux and OS X platforms.
-
-OK, now read the following section carefully. 
-
-Use the build script below for CPU architectures:
-
-```
-./build-dl4j-stack.sh
-```
-Make sure to read this if you are on OS X (ensure gcc 5.x is setup and you aren't using clang):
-https://github.com/deeplearning4j/deeplearning4j/issues/2668
-
-
-If you are using a GPU backend, use this instead:
-
-```
-./build-dl4j-stack.sh -c cuda
-```
-
-You can speed up your CUDA builds by using the `cc` flag as explained in the [libndj4 README](https://github.com/deeplearning4j/libnd4j).
-
-For Scala users, you can pass your binary version for Spark compatibility:
-
-```
-./build-dl4j-stack.sh -c cuda --scalav 2.11
-```
-
-The build script passes all options and flags to the libnd4j `./buildnativeoperations.sh` script. All flags used for those script can be passed via `build-dl4j-stack.sh`.
-
-### Building Manually
-
-If you prefer, you can build each piece in the DL4J stack by hand. The procedure for each piece of software is essentially:
-
-1. Git clone
-2. Build
-3. Install
-
-The overall procedure looks like the following commands below, with the exception that libnd4j's `./buildnativeoperations.sh` accepts parameters based on the backend you are building for. You need to follow these instructions in the order they're given. If you don't, you'll run into errors. The GPU-specific instructions below have been commented out, but should be substituted for the CPU-specific commands when building for a GPU backend. 
-
-``` shell
-# removes any existing repositories to ensure a clean build
-rm -rf libnd4j
-rm -rf nd4j
-rm -rf datavec
-rm -rf deeplearning4j
-
-# compile libnd4j
-git clone https://github.com/deeplearning4j/libnd4j.git
-cd libnd4j
-./buildnativeoperations.sh
-# and/or when using GPU
-# ./buildnativeoperations.sh -c cuda -cc INSERT_YOUR_DEVICE_ARCH_HERE 
-# i.e. if you have GTX 1070 device, use -cc 61
-export LIBND4J_HOME=`pwd`
-cd ..
-
-# build and install nd4j to maven locally
-git clone https://github.com/deeplearning4j/nd4j.git
-cd nd4j
-# cross-build across Scala versions (recommended)
-bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-9.0,!:nd4j-cuda-9.0-platform,!:nd4j-tests'
-# or build for a single scala version
-# mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-9.0,!:nd4j-cuda-9.0-platform,!:nd4j-tests'
-# or when using GPU
-# mvn clean install -DskipTests -Dmaven.javadoc.skip=true -pl '!:nd4j-tests'
-cd ..
-
-# build and install datavec
-git clone https://github.com/deeplearning4j/datavec.git
-cd datavec
-if [ "$SCALAV" == "" ]; then
-  bash buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
-else
-  mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Dscala.binary.version=$SCALAV -Dscala.version=$SCALA
-fi
-cd ..
-
-# build and install deeplearning4j
-git clone https://github.com/deeplearning4j/deeplearning4j.git
-cd deeplearning4j
-# cross-build across Scala versions (recommended)
-./buildmultiplescalaversions.sh clean install -DskipTests -Dmaven.javadoc.skip=true
-# or build for a single scala version
-# mvn clean install -DskipTests -Dmaven.javadoc.skip=true
-# If you skipped CUDA you may need to add
-# -pl '!./deeplearning4j-cuda/'
-# to the mvn clean install command to prevent the build from looking for cuda libs
-cd ..
-```
 
 ## Using Local Dependencies
 
