@@ -163,7 +163,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 //       log.info("Deallocating {} bytes on [DEVICE]", reqMem);
 
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, Nd4j.getAffinityManager().getDeviceForCurrentThread(), reqMem);
+                AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, point.getDeviceId(), reqMem);
 
                 long result = nativeOps.freeDevice(point.getPointers().getDevicePointer(), new CudaPointer(0));
                 if (result == 0)
