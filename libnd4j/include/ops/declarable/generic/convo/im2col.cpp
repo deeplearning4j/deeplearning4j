@@ -132,9 +132,7 @@ namespace nd4j {
 			
             LaunchContext ctx;
             // FIXME:: all helpers should accept NDArray
-			ops::helpers::col2im(ctx, *z, *gradAtOutput, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
-
-            STORE_RESULT(*z);
+			ops::helpers::col2im(ctx, *gradAtOutput, *z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
 
             return Status::OK();
         }

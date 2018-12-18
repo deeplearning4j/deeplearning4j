@@ -30,6 +30,7 @@ namespace helpers {
     T lup(NDArray* input, NDArray* compound, NDArray* permutation);
 
     int determinant(NDArray* input, NDArray* output);
+    int log_abs_determinant(NDArray* input, NDArray* output);
 
     int inverse(NDArray* input, NDArray* output);
 
