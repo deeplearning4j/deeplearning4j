@@ -1275,8 +1275,8 @@ public class DifferentialFunctionFactory {
         return new Concat(sameDiff(), dimension, inputs).outputVariable();
     }
 
-    public SDVariable fill(SDVariable shape, double value) {
-        return new Fill(sameDiff(), shape, value).outputVariable();
+    public SDVariable fill(SDVariable shape, DataType dataType, double value) {
+        return new Fill(sameDiff(), shape, dataType, value).outputVariable();
     }
 
     public SDVariable dot(SDVariable x, SDVariable y, int... dimensions) {

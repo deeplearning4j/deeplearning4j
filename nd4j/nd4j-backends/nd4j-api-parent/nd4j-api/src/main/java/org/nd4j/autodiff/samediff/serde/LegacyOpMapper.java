@@ -394,6 +394,8 @@ public class LegacyOpMapper {
                 return LeakyReLU.class;
             case 37:
                 return ReplaceNans.class;
+            case 38:
+                return LogX.class;
             case 39:
                 return RectifiedLinear.class;
             case 40:

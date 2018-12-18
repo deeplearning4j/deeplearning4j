@@ -2706,9 +2706,9 @@ public class SameDiffTests {
     public void testFill(){
         SameDiff sd = SameDiff.create();
         INDArray arr = Nd4j.create(new double[]{2,2});
-        INDArray expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42);
+        INDArray expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42.0);
         SDVariable x = sd.var(arr);
-        SDVariable result = sd.fill(x, 42);
+        SDVariable result = sd.fill(x, DataType.DOUBLE, 42);
         assertEquals(expOut, result.eval());
     }
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){

@@ -48,15 +48,17 @@ import java.util.Map;
 public class Fill extends DynamicCustomOp {
 
     private double value;
+    private DataType outputDataType;
 
     public Fill() {
     }
 
 
-    public Fill(SameDiff sameDiff, SDVariable shape, double value) {
+    public Fill(SameDiff sameDiff, SDVariable shape, DataType outputDataType, double value) {
         super(null,sameDiff, new SDVariable[] {shape}, false);
         this.value = value;
         val shp = shape.getArr();
+        this.outputDataType = outputDataType;
         addArgs();
     }
 
@@ -162,6 +164,7 @@ public class Fill extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got %s", dataTypes);
-        return dataTypes;
+        Preconditions.checkNotNull(outputDataType, "Output datatype was null (not set)");
+        return Collections.singletonList(outputDataType);
     }
 }

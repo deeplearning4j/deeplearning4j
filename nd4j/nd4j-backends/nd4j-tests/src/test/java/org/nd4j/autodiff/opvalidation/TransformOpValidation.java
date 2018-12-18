@@ -549,8 +549,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
         List<String> allFailed = new ArrayList<>();
         for (int i = 0; i < 80; i++) {
-//        for (int i = 41; i<42; i++) {
-
             SameDiff sd = SameDiff.create();
 
             int nOut = 4;
@@ -563,6 +561,7 @@ public class TransformOpValidation extends BaseOpValidation {
             SDVariable t;
             TestCase tc = new TestCase(sd);
             boolean stdevLoss = false;
+            String opName = null;
             switch (i) {
                 case 0:
                     t = in.add(5.0);
@@ -627,7 +626,8 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 14:
                     t = sd.neg(in);
-                    tc.expectedOutput(t.getVarName(), ia.neg());
+                    INDArray exp14 = ia.neg();
+                    tc.expectedOutput(t.getVarName(), exp14);
                     break;
                 case 15:
                     t = sd.acos(in);
@@ -900,8 +900,9 @@ public class TransformOpValidation extends BaseOpValidation {
 //                    in = sd.var("in", new int[]{1, 2});
                     sd.associateArrayWithVariable(ia, in);
                     double value = 42;
-                    t = sd.fill(in, value);
+                    t = sd.fill(in.castTo(DataType.INT), DataType.DOUBLE, value);
                     tc.expectedOutput(t.getVarName(), Nd4j.valueArrayOf(new int[]{2,2}, 42));
+                    opName = "fill";
                     break;
                 case 62:
                     t = sd.hardSigmoid(in);
@@ -971,8 +972,8 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 77:
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
-                    t = sd.matchCondition(in, Conditions.lessThan(0.5));
-                    INDArray exp = ia.dup().lt(0.5);
+                    t = sd.matchCondition(in, Conditions.lessThan(0.5)).castTo(DataType.DOUBLE);
+                    INDArray exp = ia.dup().lt(0.5).castTo(DataType.DOUBLE);
                     tc.expected(t, exp);
                     break;
                 case 78:
@@ -991,7 +992,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
 
             DifferentialFunction[] funcs = sd.functions();
-            String name = funcs[0].opName();
+            String name = opName == null ? funcs[0].opName() : opName;
 
 
             String msg = "test: " + i + " - " + name;

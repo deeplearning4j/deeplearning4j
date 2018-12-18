@@ -8212,8 +8212,8 @@ public class SameDiff {
      * @param value Value to set all elements to
      * @return Output variable
      */
-    public SDVariable fill(SDVariable shape, double value) {
-        return fill(null, shape, value);
+    public SDVariable fill(SDVariable shape, org.nd4j.linalg.api.buffer.DataType dataType, double value) {
+        return fill(null, shape, dataType, value);
     }
 
     /**
@@ -8224,8 +8224,8 @@ public class SameDiff {
      * @param value Value to set all elements to
      * @return Output variable
      */
-    public SDVariable fill(String name, SDVariable shape, double value) {
-        SDVariable result = functionFactory.fill(shape, value);
+    public SDVariable fill(String name, SDVariable shape, org.nd4j.linalg.api.buffer.DataType dataType, double value) {
+        SDVariable result = functionFactory.fill(shape, dataType, value);
         return updateVariableNameAndReference(result, name);
     }
 
