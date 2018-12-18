@@ -263,4 +263,9 @@ public class CudaMemoryManager extends BasicMemoryManager {
     public Map<Integer, Long> getBandwidthUse() {
         return null;
     }
+
+    @Override
+    public long allocatedMemory(Integer deviceId) {
+        return 0;
+    }
 }
