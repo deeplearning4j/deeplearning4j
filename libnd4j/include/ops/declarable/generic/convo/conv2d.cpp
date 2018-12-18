@@ -63,19 +63,7 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
     if (bias) 
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());                
 
-// #ifdef HAVE_MKLDNN
-//     if (block.isUseMKLDNN() && MKLDNNStream<T>::isSupported()) {
-//         if (block.getMKLDNNStream() == nullptr) {
-//             block.setMKLDNNStream(new MKLDNNStream<T>("conv2d"));
-//         }
-//         ConvolutionUtils<T>::mkldnn_conv2d(*block.getMKLDNNStream(), {input, weights, bias}, output, {kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW});
-//     } else {
-// #endif
-//         nd4j_debug("MKLDNN is not used !\n", 0);
-        ConvolutionUtils::conv2d(input, weights, bias, output, kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW);
-// #ifdef HAVE_MKLDNN
-//     }
-// #endif
+    ConvolutionUtils::conv2d(block, input, weights, bias, output, kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW);
 
     return Status::OK();
 }

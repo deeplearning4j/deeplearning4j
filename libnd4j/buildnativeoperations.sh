@@ -451,8 +451,8 @@ if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
 fi
 
 if [ "$OS" == "$HOST" ]; then
-    MKLDNN_PATH="$HOME/.javacpp/cache/mkl-dnn-0.16-1.4.3-SNAPSHOT-$HOST-x86_64.jar/org/bytedeco/javacpp/$HOST-x86_64/"
-    OPENBLAS_PATH="$HOME/.javacpp/cache/openblas-0.3.3-1.4.3-SNAPSHOT-$HOST-x86_64.jar/org/bytedeco/javacpp/$HOST-x86_64/"
+    MKLDNN_PATH="$HOME/.javacpp/cache/mkl-dnn-0.16-1.4.3-$HOST-x86_64.jar/org/bytedeco/javacpp/$HOST-x86_64/"
+    OPENBLAS_PATH="$HOME/.javacpp/cache/openblas-0.3.3-1.4.3-$HOST-x86_64.jar/org/bytedeco/javacpp/$HOST-x86_64/"
 else
     MKLDNN_PATH=""
     OPENBLAS_PATH=""
@@ -472,12 +472,12 @@ if [[ -n "${BUILD_PATH:-}" ]]; then
     IFS="$PREVIFS"
 fi
 
-if [ ! -d "$MKLDNN_PATH" ]; then
+if [[ ! -f "$MKLDNN_PATH/include/mkldnn.h" ]]; then
     echo "Could not find MKL-DNN, please make sure to run the build with Maven"
     MKLDNN_PATH=""
 fi
 
-if [ ! -d "$OPENBLAS_PATH" ]; then
+if [[ ! -f "$OPENBLAS_PATH/include/openblas_config.h" ]]; then
     echo "Could not find OpenBLAS, please make sure to run the build with Maven"
     OPENBLAS_PATH=""
 fi

@@ -100,9 +100,7 @@ namespace nd4j {
             this->_tArgs.clear();
             this->_inputs.clear();
 #ifdef HAVE_MKLDNN
-            if (_mkldnnStream != nullptr) {
-                delete _mkldnnStream;
-            }
+            this->_mkldnnStreams.clear();
 #endif
         }
 

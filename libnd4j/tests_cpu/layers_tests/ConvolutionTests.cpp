@@ -1156,12 +1156,12 @@ TYPED_TEST(TypedConvolutionTests, conv2d_test1) {
     int paddingMode = 1;             // 1-SAME, 0-VALID;
     int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
 
-    auto input = NDArrayFactory::create<double>('c', {bS, iH, iW, iC});
-    auto weights = NDArrayFactory::create<double>('c', {kH, kW, iC, oC});
-    auto bias = NDArrayFactory::create<double>('c', {oC}, {1,2,3});
+    auto input = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC});
+    auto weights = NDArrayFactory::create<TypeParam>('c', {kH, kW, iC, oC});
+    auto bias = NDArrayFactory::create<TypeParam>('c', {oC}, {1,2,3});
 
     
-    auto expOutput = NDArrayFactory::create<double>('c', {bS, oH, oW, oC},{ 152. , 155.2, 158.4,152. , 155.2, 158.4, 66.4,  68. ,  69.6,170.4, 175.2, 180. ,170.4, 175.2, 180. , 70.8,  73.2,  75.6,
+    auto expOutput = NDArrayFactory::create<TypeParam>('c', {bS, oH, oW, oC},{ 152. , 155.2, 158.4,152. , 155.2, 158.4, 66.4,  68. ,  69.6,170.4, 175.2, 180. ,170.4, 175.2, 180. , 70.8,  73.2,  75.6,
                                                       170.4, 175.2, 180. ,170.4, 175.2, 180. , 70.8,  73.2,  75.6, 75.2,  78.4,  81.6, 75.2,  78.4,  81.6, 28. ,  29.6,  31.2,
                                                       152. , 155.2, 158.4,152. , 155.2, 158.4, 66.4,  68. ,  69.6,170.4, 175.2, 180. ,170.4, 175.2, 180. , 70.8,  73.2,  75.6,
                                                       170.4, 175.2, 180. ,170.4, 175.2, 180. , 70.8,  73.2,  75.6, 75.2,  78.4,  81.6, 75.2,  78.4,  81.6, 28. ,  29.6,  31.2});
@@ -1188,11 +1188,11 @@ TYPED_TEST(TypedConvolutionTests, conv2d_test2) {
     int paddingMode = 0;             // 1-SAME, 0-VALID;
     int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
 
-    auto input = NDArrayFactory::create<double>('c', {bS, iH, iW, iC});
-    auto weights = NDArrayFactory::create<double>('c', {kH, kW, iC, oC});
-    auto bias = NDArrayFactory::create<double>('c', {oC}, {1,2,3});
+    auto input = NDArrayFactory::create<TypeParam>('c', {bS, iH, iW, iC});
+    auto weights = NDArrayFactory::create<TypeParam>('c', {kH, kW, iC, oC});
+    auto bias = NDArrayFactory::create<TypeParam>('c', {oC}, {1,2,3});
     
-    auto expOutput = NDArrayFactory::create<double>('c', {bS, oH, oW, oC},{ 170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.});
+    auto expOutput = NDArrayFactory::create<TypeParam>('c', {bS, oH, oW, oC},{ 170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.,170.4,175.20001,180.});
     
     input = 2.;
     weights.linspace(0.1, 0.1);
@@ -1217,11 +1217,11 @@ TYPED_TEST(TypedConvolutionTests, conv2d_test3) {
     int paddingMode = 0;             // 1-SAME, 0-VALID;
     int dataFormat  = 0;             // 1-NHWC, 0-NCHW    
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});
-    auto weights  = NDArrayFactory::create<double>('c', {oC, iC, kH, kW});
-    auto bias     = NDArrayFactory::create<double>('c', {oC}, {1,2,3});
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
+    auto weights  = NDArrayFactory::create<TypeParam>('c', {oC, iC, kH, kW});
+    auto bias     = NDArrayFactory::create<TypeParam>('c', {oC}, {1,2,3});
     
-    auto expOutput = NDArrayFactory::create<double>('c', {bS, oC, oH, oW}, {61. ,  61. , 61. ,  61. ,177.2, 177.2,177.2, 177.2,293.4, 293.4,293.4, 293.4, 61. ,  61. , 61. ,  61. ,177.2, 177.2,177.2, 177.2,293.4, 293.4,293.4, 293.4});
+    auto expOutput = NDArrayFactory::create<TypeParam>('c', {bS, oC, oH, oW}, {61. ,  61. , 61. ,  61. ,177.2, 177.2,177.2, 177.2,293.4, 293.4,293.4, 293.4, 61. ,  61. , 61. ,  61. ,177.2, 177.2,177.2, 177.2,293.4, 293.4,293.4, 293.4});
     
     input = 2.;
     weights.linspace(0.1, 0.1);
@@ -1947,8 +1947,8 @@ TYPED_TEST(TypedConvolutionTests, conv2d_test4) {
     int paddingMode = 1;             // 1-SAME, 0-VALID;
     int dataFormat  = 0;             // 1-NHWC, 0-NCHW    
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});
-    auto weights  = NDArrayFactory::create<double>('c', {kH, kW, iC, oC});
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
+    auto weights  = NDArrayFactory::create<TypeParam>('c', {kH, kW, iC, oC});
 
     input = 5.;
     weights = 3.;
