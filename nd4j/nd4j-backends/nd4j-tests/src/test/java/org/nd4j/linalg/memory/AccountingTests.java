@@ -121,6 +121,25 @@ public class AccountingTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testManualDeallocation_1() {
+        val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        val before = Nd4j.getMemoryManager().allocatedMemory(deviceId);
+
+        val array = Nd4j.createFromArray(new byte[] {1, 2, 3});
+
+        val middle = Nd4j.getMemoryManager().allocatedMemory(deviceId);
+
+        array.close();
+
+        val after = Nd4j.getMemoryManager().allocatedMemory(deviceId);
+
+        assertTrue(middle > before);
+
+        // <= here just because possible cache activation
+        assertTrue(after <= middle);
+    }
+
+    @Test
     public void testTracker_1() {
         val tracker = new DeviceAllocationsTracker();
 
