@@ -451,8 +451,10 @@ public class TFGraphTestAllHelper {
                     baseDir.mkdirs();
                     baseDir.deleteOnExit();
                     new ClassPathResource(modelDir).copyDirectory(baseDir);
-                } else
-                    throw new IllegalStateException("local directory declared but doesn't exist: " + localPath);
+                } else{
+                    throw new IllegalStateException("local directory declared but could not find files: " + baseDir.getAbsolutePath());
+                }
+
             }
 
             LinkedList<File> queue = new LinkedList<>();
@@ -526,6 +528,8 @@ public class TFGraphTestAllHelper {
 
         }
 
+//        Preconditions.checkState(!dtypes.isEmpty(), "No datatypes file was found");
+
         val dtype = Nd4j.dataType();
         for (int i = 0; i < resources.size(); i++) {
             URI u = resources.get(i).getFirst().getURI();
@@ -537,7 +541,7 @@ public class TFGraphTestAllHelper {
             varName = varName.replaceAll(".prediction.shape","");
             varName = varName.replaceAll(".prediction_inbw.shape","");
 
-            val type = dtypes.get(modelDir + "/" + varName);
+            DataType type = dtypes.get(modelDir + "/" + varName);
 
             List<String> lines; //= FileUtils.readLines(new ClassPathResource(varPath).getFile(), Charset.forName("UTF-8"));
             try(InputStream is = new BufferedInputStream(resources.get(i).getFirst().getInputStream())){
@@ -551,6 +555,12 @@ public class TFGraphTestAllHelper {
                 }
             }
 
+            if(type == null){
+                log.warn("DATATYPE NOT AVAILABLE FOR: {}", varName);
+                //Soon: this will be an exception
+                type = DataType.FLOAT;
+            }
+
             INDArray varValue;
             if(filtered.size() == 0){
                 //Scalar
@@ -560,7 +570,7 @@ public class TFGraphTestAllHelper {
                 }
                 Preconditions.checkState(varContents.length == 1, "Expected length 1 content for scalar shape; got length %s", varContents.length);
                 if (type == null)
-                    varValue = Nd4j.trueScalar(varContents[0]);
+                    varValue = Nd4j.scalar(type, varContents[0]);
                 else
                     varValue = Nd4j.scalar(type, varContents[0]);
             } else {
@@ -593,21 +603,12 @@ public class TFGraphTestAllHelper {
 
                         if (varShape.length == 1) {
                             if (varShape[0] == 0) {
-                                if (type == null)
-                                    varValue = Nd4j.trueScalar(varContents[0]);
-                                else
-                                    varValue = Nd4j.scalar(type, varContents[0]);
+                                varValue = Nd4j.scalar(type, varContents[0]);
                             } else {
-                                if (type == null)
-                                    varValue = Nd4j.trueVector(varContents);
-                                else
-                                    varValue = Nd4j.create(varContents, new long[]{varContents.length}, type);
+                                varValue = Nd4j.create(varContents, new long[]{varContents.length}, type);
                             }
                         } else {
-                            if (type == null)
-                                varValue = Nd4j.create(varContents, varShape);
-                            else
-                                varValue = Nd4j.create(varContents, ArrayUtil.toLongArray(varShape), type);
+                            varValue = Nd4j.create(varContents, ArrayUtil.toLongArray(varShape), type);
                         }
                     }
                 } catch (NumberFormatException e) {

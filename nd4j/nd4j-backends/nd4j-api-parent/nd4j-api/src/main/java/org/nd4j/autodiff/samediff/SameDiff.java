@@ -2189,7 +2189,7 @@ public class SameDiff {
         return var(name, VariableType.VARIABLE, weightInitScheme, dataType, shape);
     }
 
-    protected SDVariable var(@NonNull String name, @NonNull VariableType variableType, WeightInitScheme weightInitScheme,
+    public SDVariable var(@NonNull String name, @NonNull VariableType variableType, WeightInitScheme weightInitScheme,
                              @NonNull org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
         if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
             throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
@@ -2527,6 +2527,10 @@ public class SameDiff {
     public SDVariable getVariable(String name) {
         Variable v = variables.get(name);
         return v == null ? null : v.getVariable();
+    }
+
+    public boolean hasVariable(String name){
+        return variables.containsKey(name);
     }
 
 

@@ -23,6 +23,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
@@ -145,10 +146,11 @@ public class ExpandDims extends DynamicCustomOp {
     }
 
     @Override
-    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
-        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype, got %s", dataTypes);
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //Axis may be defined either as integer or as an array
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2), "Expected list with 1 or 2 datatype, got %s", dataTypes);
         //Output type is same as input type
-        return dataTypes;
+        return Collections.singletonList(dataTypes.get(0));
     }
 
 }

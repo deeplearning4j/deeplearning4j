@@ -24,6 +24,7 @@ import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
@@ -173,7 +174,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             val input = node.getInput(tfMappingIdx);
             val inputNode = TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,input);
             INDArray arr = getArrayFrom(inputNode,graph);
-            if(arr == null) {
+            if(arr == null && sameDiff.hasVariable(input)) {
                 arr = sameDiff.getArrForVarName(input);
             }
 
@@ -465,9 +466,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             return;
         }
 
-        val nodeName = tfNode.getName();
+        String nodeName = tfNode.getName();
 
-        val diff = importState.getSameDiff();
+        org.nd4j.linalg.api.buffer.DataType dataType = dataTypeForTensor(tfNode);
+
+        SameDiff diff = importState.getSameDiff();
         if (isVariableNode(tfNode)) {
             List<Long> dimensions = new ArrayList<>();
             Map<String, AttrValue> attributes = getAttrMap(tfNode);
@@ -525,11 +528,14 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 for(int i = 0; i < tfNode.getInputCount(); i++) {
                     String inName = tfNode.getInput(i);
                     boolean controlDep = isControlDependency(inName);
+                    boolean placeholder = isPlaceHolder(tfNode);
                     String name = getNodeName(inName);
                     args[i] = diff.getVariable(name);
+
+                    //At this point, all placeholders, variables and constants should have been imported
+                    //This: this should be an array type variable (i.e., activations)
                     if(args[i] == null) {
-                        args[i] = diff.var(name, (LongShapeDescriptor) null,new ZeroInitScheme('f'));
-                        //diff.addAsPlaceHolder(args[i].getVarName());
+                        args[i] = diff.var(name, VariableType.ARRAY, null, dataType, (long[])null);
                     }
                 }
 
@@ -976,7 +982,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             if (tfTensor.getDoubleValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
                 if(tfTensor.getDoubleValCount() < 1)
-                    return Nd4j.trueScalar(0.0);
+                    return Nd4j.scalar(org.nd4j.linalg.api.buffer.DataType.DOUBLE, 0.0);
 
                 double val = tfTensor.getDoubleVal(0);
                 INDArray array = Nd4j.trueScalar(val);
