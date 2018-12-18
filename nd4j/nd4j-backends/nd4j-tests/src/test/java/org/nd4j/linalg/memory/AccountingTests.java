@@ -76,6 +76,35 @@ public class AccountingTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testWorkspaceAccounting_2() {
+        val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        val wsConf = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .policyAllocation(AllocationPolicy.STRICT)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .cyclesBeforeInitialization(3)
+                .build();
+
+        val before = Nd4j.getMemoryManager().allocatedMemory(deviceId);
+
+        long middle1 = 0;
+        try (val workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, "random_name_here")) {
+            val array = Nd4j.create(DataType.DOUBLE, 5, 5);
+            middle1 = Nd4j.getMemoryManager().allocatedMemory(deviceId);
+        }
+
+        val middle2 = Nd4j.getMemoryManager().allocatedMemory(deviceId);
+
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+
+        val after = Nd4j.getMemoryManager().allocatedMemory(deviceId);
+
+        log.info("Before: {}; Middle1: {}; Middle2: {}; After: {}", before, middle1, middle2, after);
+        assertTrue(middle1 > before);
+        assertTrue(after < middle1);
+    }
+
+    @Test
     public void testTracker_1() {
         val tracker = new DeviceAllocationsTracker();
 
