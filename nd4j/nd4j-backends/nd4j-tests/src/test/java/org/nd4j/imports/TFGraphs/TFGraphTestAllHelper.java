@@ -569,10 +569,7 @@ public class TFGraphTestAllHelper {
                     varContents = Nd4j.readNumpy(is, ",").data().asFloat();
                 }
                 Preconditions.checkState(varContents.length == 1, "Expected length 1 content for scalar shape; got length %s", varContents.length);
-                if (type == null)
-                    varValue = Nd4j.scalar(type, varContents[0]);
-                else
-                    varValue = Nd4j.scalar(type, varContents[0]);
+                varValue = Nd4j.scalar(type, varContents[0]);
             } else {
                 int[] varShape = new int[filtered.size()];
                 for( int j=0; j<filtered.size(); j++ ){
@@ -592,7 +589,7 @@ public class TFGraphTestAllHelper {
 
                     if (content.isEmpty()) {
                         if (varShape.length == 1 && varShape[0] == 0) {
-                            varValue = Nd4j.empty();
+                            varValue = Nd4j.empty(type);
                         } else {
                             throw new IllegalStateException("Empty data but non-empty shape: " + resources.get(i).getSecond());
                         }

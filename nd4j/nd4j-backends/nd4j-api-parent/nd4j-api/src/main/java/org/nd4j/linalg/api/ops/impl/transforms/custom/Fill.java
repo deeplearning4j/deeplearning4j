@@ -21,6 +21,7 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -85,8 +86,10 @@ public class Fill extends DynamicCustomOp {
             else {
                 throw new ND4JIllegalStateException("Second input to node " + nodeDef + " should be scalar!");
             }
-        }
 
+            org.tensorflow.framework.DataType dt = attributesForNode.get("T").getType();
+            this.outputDataType = DataTypeAdapter.dtypeConv(dt);
+        }
     }
 
     @Override
@@ -163,7 +166,9 @@ public class Fill extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got %s", dataTypes);
+        //1 or 2 possible: 2 for TF import (fill with specified value
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
+                "Expected 1 or 2 input datatypes for %s, got %s", getClass(), dataTypes);
         Preconditions.checkNotNull(outputDataType, "Output datatype was null (not set)");
         return Collections.singletonList(outputDataType);
     }

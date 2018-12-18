@@ -224,14 +224,15 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                 log.trace("SDVariable.getArr(): could not get array for variable {}: shape is null", getVarName());
             }
             return null;
-        } else {
-            long[] shape = sameDiff.getShapeForVarName(getVarName());
-            INDArray newAlloc = getWeightInitScheme().create(dataType(), shape);
-            sameDiff.associateArrayWithVariable(newAlloc,this);
-            if(log.isTraceEnabled()){
-                log.trace("getArr() for variable \"{}\" allocated new array with shape {}", getVarName(), Arrays.toString(getShape()));
-            }
         }
+//        else {
+//            long[] shape = sameDiff.getShapeForVarName(getVarName());
+//            INDArray newAlloc = getWeightInitScheme().create(dataType(), shape);
+//            sameDiff.associateArrayWithVariable(newAlloc,this);
+//            if(log.isTraceEnabled()){
+//                log.trace("getArr() for variable \"{}\" allocated new array with shape {}", getVarName(), Arrays.toString(getShape()));
+//            }
+//        }
 
         return sameDiff.getArrForVarName(getVarName());
     }

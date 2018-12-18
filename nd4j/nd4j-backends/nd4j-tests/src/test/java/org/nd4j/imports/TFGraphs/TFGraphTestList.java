@@ -51,8 +51,8 @@ public class TFGraphTestList {
     public static String[] modelNames = new String[]{
 //            "cnn2d_nn/nhwc_b2_k3_s1_d1_SAME"
 //            "max_pooling1d/channels_first_b2_k2_s1_SAME"
-            "reductions/min_0"
-
+//            "eye/e22_b1",
+                "logsumexp/rank0"
     };
 
     @After
