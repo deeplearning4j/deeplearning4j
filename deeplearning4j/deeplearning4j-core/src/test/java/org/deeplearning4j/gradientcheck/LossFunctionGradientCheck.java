@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
@@ -41,6 +42,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.*;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
@@ -380,6 +382,37 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
         }
 
         assertEquals("Tests failed", 0, failed.size());
+    }
+
+    @Test
+    public void lossMultiLabelEdgeCases(){
+        INDArray labels;
+        Pair<Double, INDArray> gradientAndScore;
+
+        final ActivationIdentity activationFn = new ActivationIdentity();
+        final LossMultiLabel lossMultiLabel = new LossMultiLabel();
+        final INDArray preOutput = Nd4j.rand(3, 3);
+
+        // Base Case: Labels are NOT all 1 or 0
+        labels = Nd4j.diag(Nd4j.ones(3));
+        gradientAndScore = lossMultiLabel.computeGradientAndScore(labels, preOutput, activationFn, null, true);
+
+        assertTrue(!gradientAndScore.getFirst().isNaN());
+        assertTrue(!gradientAndScore.getFirst().isInfinite());
+
+        // Edge Case: Labels are all 1
+        labels = Nd4j.ones(3, 3);
+        gradientAndScore = lossMultiLabel.computeGradientAndScore(labels, preOutput, activationFn, null, true);
+
+        assertTrue(!gradientAndScore.getFirst().isNaN());
+        assertTrue(!gradientAndScore.getFirst().isInfinite());
+
+        // Edge Case: Labels are all 0
+        labels = Nd4j.zeros(3, 3);
+        gradientAndScore = lossMultiLabel.computeGradientAndScore(labels, preOutput, activationFn, null, true);
+
+        assertTrue(!gradientAndScore.getFirst().isNaN());
+        assertTrue(!gradientAndScore.getFirst().isInfinite());
     }
 
     public static INDArray[] getFeaturesAndLabels(ILossFunction l, long minibatch, long nIn, long nOut, long seed) {
