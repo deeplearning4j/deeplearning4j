@@ -14,67 +14,74 @@ weight: 10
 
 For those developers and engineers who prefer to use the most up-to-date version of Deeplearning4j or fork and build their own version, these instructions will walk you through building and installing Deeplearning4j. The preferred installation destination is to your machine's local maven repository.
 
-Building locally requires that you build the entire Deeplearning4j stack which includes:
+Building locally will build the entire Deeplearning4j stack, which is now consolidated inside the Deeplearning4j [monorepo](). The main components of the stack includes:
 
-* [LIBND4J](https://github.com/deeplearning4j/libnd4j)
-* [ND4J](https://github.com/deeplearning4j/nd4j)
-* [Datavec](https://github.com/deeplearning4j/datavec)
-* [Arbiter](https://github.com/deeplearning4j/arbiter)
-* [ND4S](https://github.com/deeplearning4j/nd4s)
-* [Gym Java Client](https://github.com/deeplearning4j/gym-java-client)
-* [RL4J](https://github.com/deeplearning4j/rl4j)
-* [ScalNet](https://github.com/deeplearning4j/scalnet)
-* [PyDL4J](https://github.com/deeplearning4j/pydl4j)
-* [Jumpy](https://github.com/deeplearning4j/jumpy)
-* [PyDatavec](https://github.com/deeplearning4j/pydatavec)
-* [DeepLearning4J](https://github.com/deeplearning4j/deeplearning4j)
+* [LIBND4J](https://github.com/deeplearning4j/deeplearning4j/tree/master/libnd4j)
+* [ND4J](https://github.com/deeplearning4j/deeplearning4j/tree/master/nd4j)
+* [Datavec](https://github.com/deeplearning4j/deeplearning4j/tree/master/datavec)
+* [Arbiter](https://github.com/deeplearning4j/deeplearning4j/tree/master/arbiter)
+* [ND4S](https://github.com/deeplearning4j/deeplearning4j/tree/master/nd4s)
+* [Gym Java Client](https://github.com/deeplearning4j/deeplearning4j/tree/master/gym-java-client)
+* [RL4J](https://github.com/deeplearning4j/deeplearning4j/tree/master/rl4j)
+* [ScalNet](https://github.com/deeplearning4j/deeplearning4j/tree/master/scalnet)
+* [PyDL4J](https://github.com/deeplearning4j/deeplearning4j/tree/master/pydl4j)
+* [Jumpy](https://github.com/deeplearning4j/deeplearning4j/tree/master/jumpy)
+* [PyDatavec](https://github.com/deeplearning4j/deeplearning4j/tree/master/pydatavec)
+* [DeepLearning4J](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j)
 
-Note that Deeplearning4j is designed to work on most platforms (Windows, OS X, and Linux) and it also includes multiple "flavors" depending on the computing architecture you choose to utilize. This includes CPU (OpenBLAS, MKL, ATLAS) and GPU (CUDA). The DL4J stack also supports x86 and PowerPC architectures.
+Note that Deeplearning4j is designed to work on most platforms (Windows, OS X, and Linux) and it also includes multiple "flavors" depending on the computing architecture you choose to utilize, such as CUDA for GPUs.
 
 ## Prerequisites
 
-Your local machine will require some essential software and environment variables set *before* you try to build and install the DL4J stack. Depending on your platform and the version of your operating system, the instructions may vary in getting them to work. This software includes:
+Your local machine will require some essential softwares and environment variables set *before* you try to build and install DL4J. Depending on your platform and the version of your operating system, the instructions may vary in getting them to work. This required softwares include:
 
-* git
-* cmake
-* OpenMP supported compiler (Recommended)
-* gcc >= 4.9
-* g++ >= 4.9
-* maven >= 3.3
-* Python Develper Tools
-
-Architecture-specific software includes:
-
-CPU options:
-
-* Intel MKL
-* OpenBLAS
-* ATLAS
-
-GPU options:
-
-* CUDA
+* Git
+* Cmake
+* OpenMP 4.5 supported compiler (Recommended)
+* GCC >= 4.9
+* G++ >= 4.9
+* Java >= 1.7
+* Maven >= 3.3
+* Python Developer Tools
+* CUDA (Optional - For GPU build)
 
 IDE-specific requirements:
 
-* IntelliJ Lombok plugin
+* Lombok Plugin for IntelliJ or Eclipse
 
 DL4J testing dependencies:
 
-* dl4j-test-resources
+* [dl4j-test-resources](https://github.com/deeplearning4j/dl4j-test-resources) (Needed only for running tests.)
 
 ### Installing Prerequisite Tools
 
-#### Linux
-
-**Ubuntu**
+**Linux - Ubuntu**
 Assuming you are using Ubuntu as your flavor of Linux and you are running as a non-root user, follow these steps to install prerequisite software:
 
 ```bash
-sudo apt-get purge maven maven2 maven3
-sudo add-apt-repository ppa:natecarlson/maven3
-sudo apt-get update
-sudo apt-get install maven build-essentials cmake libgomp1
+# Installing JDK, Cmake, git, GCC and G++
+sudo apt-get clean -y all
+sudo apt-get update -y
+sudo apt-get upgrade -y
+sudo apt-get install -y cmake git openjdk-8-jdk build-essential
+echo 'export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64' >> ~/.profile
+source ~/.profile
+
+# Installing Maven
+MAVEN_VERSION=3.6.0
+cd /usr/local/src
+sudo wget http://www-eu.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz
+sudo tar -xf apache-maven-${MAVEN_VERSION}-bin.tar.gz
+sudo rm -f apache-maven-${MAVEN_VERSION}-bin.tar.gz
+sudo mv apache-maven-${MAVEN_VERSION}/ apache-maven/
+echo 'export PATH=/usr/local/src/apache-maven/bin:${PATH}' >> ~/.profile
+source ~/.profile
+
+# Installing Python Developer Tools
+sudo apt-get upgrade python-setuptools
+sudo apt-get install python-pip python-wheel python-dev
+sudo pip install --upgrade pip
+sudo pip install --upgrade setuptools
 ```
 
 #### OS X
@@ -83,124 +90,72 @@ Homebrew is the accepted method of installing prerequisite software. Assuming yo
 
 First, before using Homebrew we need to ensure an up-to-date version of Xcode is installed (it is used as a primary compiler):
 
-```
+```bash
 xcode-select --install
 ```
 
 Finally, install prerequisite tools:
 
-```
+```bash
 brew update
 brew install maven gcc5
 ```
+
 Note: You can *not* use clang. You also can *not* use a new version of gcc. If you have a newer version of gcc, please
 switch versions with [this link](https://apple.stackexchange.com/questions/190684/homebrew-how-to-switch-between-gcc-versions-gcc49-and-gcc)
 
-
 #### Windows
 
-libnd4j depends on some Unix utilities for compilation. So in order to compile it you will need to install  [Msys2](https://msys2.github.io/).
+1. Download and Install [Git](https://git-scm.com/download/win)
+2. Download and Install `Windows x64` [JDK](https://www.oracle.com/technetwork/java/javase/downloads/index.html) ([Version 8](https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html) is recommended)
+3. Download and extract the `.zip` file for [Maven](https://maven.apache.org/download.cgi)
 
-After you have setup Msys2 by following [their instructions](https://msys2.github.io/), you will have to install some additional development packages. Start the msys2 shell and setup the dev environment with:
+Make sure to set the `JAVA_HOME` environment variable to the root JDK installation folder. Also, add the `bin` folder inside the extracted maven folder to the `PATH` environment variable.
 
-    pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-extra-cmake-modules make pkg-config grep sed gzip tar mingw64/mingw-w64-x86_64-openblas
+`libnd4j` inside the monorepo depends on some Unix utilities for compilation. So in order to compile it you will need to install [Msys2](https://msys2.github.io/).
 
-This will install the needed dependencies for use in the msys2 shell.
+After you have setup Msys2 by following [their instructions](https://msys2.github.io/), you will have to install some additional development packages. To do that, follow the steps below:
 
-You will also need to setup your PATH environment variable to include `C:\msys64\mingw64\bin` (or where ever you have decided to install msys2). If you have IntelliJ (or another IDE) open, you will have to restart it before this change takes effect for applications started through them. If you don't, you probably will see a "Can't find dependent libraries" error.
+1. Open "C:\msys64\mingw64.ini" and add `MSYS2_PATH_TYPE=inherit`
+2. Press `Windows + R` and type `cmd.exe`. Press `Enter` and run the "MSYS2" shell by executing: `c:\msys64\mingw64.exe`
 
-### Installing Prerequisite Architectures
-
-Once you have installed the prerequisite tools, you can now install the required architectures for your platform.
-
-#### Intel MKL
-
-Of all the existing architectures available for CPU, Intel MKL is currently the fastest. However, it requires some "overhead" before you actually install it.
-
-1. Apply for a license at [Intel's site](https://software.intel.com/en-us/intel-mkl)
-2. After a few steps through Intel, you will receive a download link
-3. Download and install Intel MKL using [the setup guide](https://software.intel.com/sites/default/files/managed/94/bf/Install_Guide_0.pdf)
-
-#### OpenBLAS
-
-##### Linux
-
-**Ubuntu**
-Assuming you are using Ubuntu, you can install OpenBLAS via:
-
-```
-sudo apt-get install libopenblas-dev
+```bash
+pacman -Syu # You might have to close the MSYS2 shell and re-run this command, using step 2 above.
+pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-extra-cmake-modules make pkg-config grep sed gzip tar mingw64/mingw-w64-x86_64-openblas mingw-w64-x86_64-lz4 mingw-w64-x86_64-gdb mingw-w64-x86_64-make mingw-w64-x86_64-ninja
 ```
 
-You will also need to ensure that `/opt/OpenBLAS/lib` (or any other home directory for OpenBLAS) is on your `PATH`. In order to get OpenBLAS to work with Apache Spark, you will also need to do the following:
+This will install the needed dependencies for use in the MSYS2 shell.
 
-```
-sudo cp libopenblas.so liblapack.so.3
-sudo cp libopenblas.so libblas.so.3
-```
+You will also need to setup your `PATH` environment variable to include `C:\msys64\mingw64\bin` (or where ever you have decided to install MSYS2). If you have IntelliJ (or another IDE) open, you will have to restart it before this change takes effect for applications started through them. If you don't, you probably will see a "Can't find dependent libraries" error.
 
 **CentOS**
 Enter the following in your terminal (or ssh session) as a root user:
 
-    yum groupinstall 'Development Tools'
-
-After that, you should see a lot of activity and installs on the terminal. To verify that you have, for example, *gcc*, enter this line:
-
-    gcc --version
-
-For more complete instructions, [go here](http://www.cyberciti.biz/faq/centos-linux-install-gcc-c-c-compiler/).
-
-##### OS X
-
-You can install OpenBLAS on OS X with Home
-Science:
-
-```
-brew install homebrew/science/openblas
-```
-
-##### Windows
-
-An OpenBLAS package is available for `msys2`. You can install it using the `pacman` command.
-
-#### ATLAS
-
-##### Linux
-
-**Ubuntu**
-An apt package is available for ATLAS on Ubuntu:
-
-```
-sudo apt-get install libatlas-base-dev libatlas-dev
-```
-
-**CentOS**
-You can install ATLAS on CentOS using:
-
-```
-sudo yum install atlas-devel
-```
-
-##### OS X
-
-Installing ATLAS on OS X is a somewhat complicated and lengthy process. However, the following commands will work on most machines:
-
-```
-wget --content-disposition https://sourceforge.net/projects/math-atlas/files/latest/download?source=files
-tar jxf atlas*.tar.bz2
-mkdir atlas (Creating a directory for ATLAS)
-mv ATLAS atlas/src-3.10.1
-cd atlas/src-3.10.1
-wget http://www.netlib.org/lapack/lapack-3.5.0.tgz (It may be possible that the atlas download already contains this file in which case this command is not needed)
-mkdir intel(Creating a build directory)
-cd intel
-cpufreq-selector -g performance (This command requires root access. It is recommended but not essential)
-../configure --prefix=/path to the directory where you want ATLAS installed/ --shared --with-netlib-lapack-tarfile=../lapack-3.5.0.tgz
-make
-make check
-make ptcheck
-make time
-make install
+```bash
+# Installing Cmake, Git
+sudo yum clean all && sudo yum update -y && sudo yum install -y git cmake
+# Installing JDK
+sudo yum install -y java-1.8.0-openjdk-devel
+echo 'export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk' >> ~/.bash_profile
+source ~/.bash_profile
+# Installing Maven
+MAVEN_VERSION=3.6.0
+cd /usr/local/src
+sudo wget http://www-eu.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz
+sudo tar -xf apache-maven-${MAVEN_VERSION}-bin.tar.gz
+sudo rm -f apache-maven-${MAVEN_VERSION}-bin.tar.gz
+sudo mv apache-maven-${MAVEN_VERSION}/ apache-maven/
+echo 'export PATH=/usr/local/src/apache-maven/bin:${PATH}' >> ~/.bash_profile
+source ~/.bash_profile
+# Installing GCC and G++
+sudo yum install -y centos-release-scl-rh epel-release
+sudo yum install -y devtoolset-3-gcc-c++ cmake3
+scl enable devtoolset-3 bash
+# Installing Python Developer Tools
+sudo yum upgrade python-setuptools
+sudo yum install python-pip python-wheel python-devel
+sudo pip install --upgrade pip
+sudo pip install --upgrade setuptools
 ```
 
 #### CUDA
@@ -237,7 +192,7 @@ If you want to work on ScalNet, the Scala API, or on certain modules such as the
 
 #### Testing
 
-Deeplearning4j uses a separate repository that contains all resources necessary for testing. This is to keep the central DL4J repository lightweight and avoid large blobs in the GIT history. To run the tests you need to install the test-resources from https://github.com/deeplearning4j/dl4j-test-resources (~10gb). If you don't care about history, do a shallow clone only with
+Deeplearning4j uses a separate repository that contains all resources necessary for testing. This is to keep the central DL4J repository lightweight and avoid large blobs in the GIT history. To run the tests you need to install the test-resources from https://github.com/deeplearning4j/dl4j-test-resources (~3.5gb). If you don't care about history, do a shallow clone only with
 ```bash
 git clone --depth 1 --branch master https://github.com/deeplearning4j/dl4j-test-resources
 cd dl4j-test-resources
