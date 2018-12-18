@@ -25,14 +25,14 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void fakeQuantWithMinMaxVars(NDArray<T>* input, T min, T max, int numBits, bool narrowed, NDArray<T>* output) {
+    void fakeQuantWithMinMaxVars_(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
         int lowIntBound = narrowed?1:0;
         int upperIntBound = 1 << numBits - 1;
         
   const float quant_min_float = static_cast<float>(lowIntBound);
   const float quant_max_float = static_cast<float>(upperIntBound);
   float scale = (max - min) / (quant_max_float - quant_min_float);
-  const float zero_point_from_min = quant_min_float - min / scale;
+  const float zero_point_from_min = quant_min_float - min->e<T>(0) / scale;
   const uint16_t nudged_zero_point = [zero_point_from_min, lowIntBound,
                                     quant_min_float, upperIntBound,
                                     quant_max_float] {
@@ -46,14 +46,23 @@ namespace helpers {
   }();
   float nudged_min = (quant_min_float - nudged_zero_point) * (scale);
   float nudged_max = (quant_max_float - nudged_zero_point) * (scale);
+/*
+    const auto nudged_scale_repl = inputs.constant(nudged_scale);
 
-
+    const auto clamped = inputs.cwiseMin(nudged_max).cwiseMax(nudged_min);
+    const auto clamped_shifted = clamped - nudged_min;
+    *output = (clamped_shifted / nudged_scale_repl + 0.5f).floor() *
+                            nudged_scale_repl +
+                        nudged_min;
+*/
 
     }
 
-    template void fakeQuantWithMinMaxVars(NDArray<float>* input, float min, float max, int numBits, bool narrowed, NDArray<float>* output);
-    template void fakeQuantWithMinMaxVars(NDArray<float16>* input, float16 min, float16 max, int numBits, bool narrowed, NDArray<float16>* output);
-    template void fakeQuantWithMinMaxVars(NDArray<double>* input, double min, double max, int numBits, bool narrowed, NDArray<double>* output);
+    void fakeQuantWithMinMaxVars(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), fakeQuantWithMinMaxVars_, (input, min, max, numBits, narrowed, output), LIBND4J_TYPES);
+    }
+    BUILD_SINGLE_TEMPLATE(template void fakeQuantWithMinMaxVars_, (NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output), LIBND4J_TYPES);
+
 }
 }
 }

@@ -76,7 +76,7 @@ namespace nd4j {
             outputShape[3] = height;
             outputShape[4] = in[4];
             shape::updateStrides(outputShape, shape::order(in));
-
+            ArrayOptions::setDataType(outputShape, ArrayOptions::dataType(in));
             shapeList->push_back(outputShape); 
             return shapeList;
         }

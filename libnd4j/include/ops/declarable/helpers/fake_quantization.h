@@ -26,8 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    void fakeQuantWithMinMaxVars(NDArray<T>* input, T min, T max, int numBits, bool narrowed, NDArray<T>* output);
+    void fakeQuantWithMinMaxVars(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output);
 }
 }
 }

@@ -41,18 +41,36 @@ namespace ops {
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
         Nd4jLong maxI = input->argMax();
-        T maxVals = input->getScalar(maxI);
-        input->template reduceAlongDimension<simdOps::LogSumExp<T>>(output, axes, keepDims, false, &maxVals);
-
+        double maxVals = input->e<double>(maxI);
+        //void* whereMax = (void*)();
+        auto internal = (*input);
+        internal -= maxVals;
+        internal.applyTransform(transform::Exp, nullptr, nullptr);
+        internal.reduceAlongDimension(reduce::Sum, output, axes, keepDims, false); //, (void*)&maxVals);
+        output->applyTransform(transform::Log, nullptr, nullptr);
+        (*output) += maxVals;
         return ND4J_STATUS_OK;
     }
-
+    DECLARE_TYPES(reduce_logsumexp) {
+        getOpDescriptor()
+        -> setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+        -> setAllowedOutputTypes({ALL_FLOATS});
+    }
     DECLARE_SHAPE_FN(reduce_logsumexp) {    
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    
-        std::vector<int> dimensions = *block.getIArguments();
-        Nd4jLong* outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
+        auto input = INPUT_VARIABLE(0);
+
+        std::vector<int> axes; // = *block.getIArguments();
+        if (block.width() > 1) {
+            auto axisVector = INPUT_VARIABLE(1);
+            helpers::adjustAxis(input, axisVector, axes );
+        }
+        else if (block.getIArguments()->size() > 0) {
+            axes = *block.getIArguments();
+        }
+
+        Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), axes, inputShape->at(0), keepDims, false, block.getWorkspace());
 
         return SHAPELIST(outShapeInfo);
     }
