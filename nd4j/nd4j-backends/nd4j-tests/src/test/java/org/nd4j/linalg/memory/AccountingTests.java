@@ -23,6 +23,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -45,6 +48,28 @@ public class AccountingTests extends BaseNd4jTest {
         assertEquals(DataType.INT, array.dataType());
 
         assertTrue(Nd4j.getMemoryManager().allocatedMemory(0) > 0L);
+    }
+
+    @Test
+    public void testWorkspaceAccounting_1() {
+        val wsConf = WorkspaceConfiguration.builder()
+                .initialSize(10 * 1024 * 1024)
+                .policyAllocation(AllocationPolicy.STRICT)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .build();
+
+        val before = Nd4j.getMemoryManager().allocatedMemory(0);
+
+        val workspace = Nd4j.getWorkspaceManager().createNewWorkspace(wsConf, "random_name_here");
+
+        val middle = Nd4j.getMemoryManager().allocatedMemory(0);
+
+        Nd4j.getWorkspaceManager().destroyWorkspace(workspace);
+
+        val after = Nd4j.getMemoryManager().allocatedMemory(0);
+
+        assertTrue(middle > before);
+        assertTrue(after < middle);
     }
 
     @Override
