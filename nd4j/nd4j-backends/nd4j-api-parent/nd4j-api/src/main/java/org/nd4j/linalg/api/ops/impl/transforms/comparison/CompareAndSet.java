@@ -231,7 +231,7 @@ public class CompareAndSet extends BaseTransformSameOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
         //Pass through gradient where condition is NOT matched (condition matched: output replaced by scalar)
-        SDVariable maskNotMatched = sameDiff.matchCondition(arg(), condition).rsub(1.0);
+        SDVariable maskNotMatched = sameDiff.matchCondition(arg(), condition).castTo(arg().dataType()).rsub(1.0);
         SDVariable gradAtIn = gradient.get(0).mul(maskNotMatched);
         return Collections.singletonList(gradAtIn);
     }

@@ -1257,8 +1257,8 @@ public class TransformOpValidation extends BaseOpValidation {
     public void testReplaceWhereScalar(){
         for(Condition c : new Condition[]{Conditions.lessThan(0.5), Conditions.greaterThan(0.5), Conditions.equals(0.5)}){
 
-            log.info("Testing condition: " + c.getClass().getName());
-            INDArray inArr = Nd4j.rand(3,4);
+            log.info("Testing condition: " + c.getClass().getSimpleName());
+            INDArray inArr = Nd4j.rand(DataType.DOUBLE, 3,4);
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", inArr);
             SDVariable where = sd.replaceWhere(in, 10, c);

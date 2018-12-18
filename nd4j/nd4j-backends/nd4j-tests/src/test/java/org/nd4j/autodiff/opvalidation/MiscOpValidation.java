@@ -1155,7 +1155,7 @@ public class MiscOpValidation extends BaseOpValidation {
         //https://www.tensorflow.org/api_docs/python/tf/one_hot
         //indices = [[0, 2], [1, -1]]
         INDArray indicesArr = Nd4j.create(new double[][]{{0, 2}, {1, -1}}).castTo(DataType.INT);
-        INDArray expectedOut = Nd4j.zeros(DataType.FLOAT, new long[]{2, 2, 3});
+        INDArray expectedOut = Nd4j.zeros(DataType.DOUBLE, 2, 2, 3);
         /*
         # output: [2 x 2 x 3]
         # [[[1.0, 0.0, 0.0],   # one_hot(0)
@@ -1172,7 +1172,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
         int depth = 3;
         int axis = -1;
-        SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 1.0, 0.0);
+        SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 1.0, 0.0).castTo(DataType.DOUBLE);
 
         SDVariable loss = oneHot.std(true);
 
@@ -1343,7 +1343,7 @@ public class MiscOpValidation extends BaseOpValidation {
                     {0, 0, 1, 0, 0},
                     {0, 0, 1, 0, 0},
                     {0, 0, 0, 0, 0},
-                    {0, 0, 0, 0, 1}}).castTo(dt);
+                    {0, 0, 0, 0, 1}}).castTo(DataType.LONG);
 
             SDVariable confMatrix;
             if(withMax){
@@ -1352,7 +1352,7 @@ public class MiscOpValidation extends BaseOpValidation {
                 confMatrix = sd.confusionMatrix(labels, predictions);
             }
 
-            SDVariable loss = confMatrix.std(true);
+            SDVariable loss = confMatrix.castTo(DataType.DOUBLE).std(true);
 
 
             String err = OpValidation.validate(new TestCase(sd)

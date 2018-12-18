@@ -494,6 +494,8 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "mean";
                         break;
                     case 1:
+                        inputArr.divi(100);
+                        labelArr.divi(100);
                         reduced = sd.sum("reduced", second, reduceDim);
                         name = "sum";
                         break;
@@ -581,7 +583,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                         throw new RuntimeException();
                 }
 
-                SDVariable add = reduced.add(1.0);
+                SDVariable add = reduced.castTo(DataType.DOUBLE).add(1.0);
 
                 SDVariable diff = label.sub(add);
                 SDVariable sqDiff = diff.mul(diff);
