@@ -292,7 +292,7 @@ public:
      * @param result
      * @param resultShapeInfo
      */
-    void   execReduce3(Nd4jPointer *extraPointers,
+    void  execReduce3(Nd4jPointer *extraPointers,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -300,9 +300,7 @@ public:
                             void *hY, Nd4jLong *hYShapeInfo,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
+                            void *dZ, Nd4jLong *dZShapeInfo);
 
     /**
      *

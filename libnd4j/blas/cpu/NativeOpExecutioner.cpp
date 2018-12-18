@@ -427,7 +427,9 @@ void NativeOpExecutioner::execReduce3(nd4j::graph::LaunchContext *lc,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength) {
+                            int *dimension, int dimensionLength,
+                            Nd4jLong *xTadOnlyShapeInfo, Nd4jLong *xTadOffsets,
+                            Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);

@@ -357,9 +357,7 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-	__shared__ int resultScalar;
-	__shared__ int xElementWiseStride;
-	__shared__ int yElementWiseStride;
+	__shared__ int resultScalar;	
 	
 	//shared memory space for storing intermediate results
 	__shared__ Z* sPartials;
@@ -381,8 +379,8 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 	__shared__ int yTadEws;
 
 	Z startingVal = OpType::startingValue(x);
-
 	Z reduction = OpType::startingValue(x);
+	
 	if (threadIdx.x == 0) {
 		
 		if (zShapeInfo != nullptr)

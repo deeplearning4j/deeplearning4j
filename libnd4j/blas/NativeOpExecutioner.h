@@ -120,7 +120,9 @@ public:
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength);
+                            int *dimension, int dimensionLength,
+                            Nd4jLong *xTadOnlyShapeInfo, Nd4jLong *xTadOffsets,
+                            Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
 
     /**
      *

@@ -52,7 +52,7 @@ namespace nd4j {
                         block.getTArguments()->data(),
                         y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
                         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                        dims.data(), dims.size());
+                        dims.data(), dims.size(), nullptr, nullptr, nullptr, nullptr);
             }
 
 

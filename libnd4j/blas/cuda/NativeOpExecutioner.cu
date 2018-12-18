@@ -836,7 +836,7 @@ void NativeOpExecutioner::execReduce3(nd4j::graph::LaunchContext *lc,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo) {
-
+    
 	auto stream = lc->getCudaStream();
     auto reductionPointer = lc->getReductionPointer();
 	auto allocationPointer = lc->getAllocationPointer();
@@ -854,8 +854,7 @@ void NativeOpExecutioner::execReduce3(nd4j::graph::LaunchContext *lc,
 
     if (!DataTypeUtils::isR(zType))
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execReduce3 requires Z operand to have floating point data type", zType);
-
-    // BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 1, 1, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), LIBND4J_TYPES, FLOAT_TYPES)
+    
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execScalar(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, allocationPointer, reductionPointer, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 
     DEBUG_KERNEL(stream, opNum);
@@ -871,7 +870,9 @@ void NativeOpExecutioner::execReduce3(nd4j::graph::LaunchContext *lc,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength) {
+                            int *dimension, int dimensionLength,
+                            Nd4jLong* tadOnlyShapeInfo, Nd4jLong* tadOffsets,
+                            Nd4jLong* yTadOnlyShapeInfo, Nd4jLong* yTadOffsets) {
 
     if(shape::isScalar(hZShapeInfo)) {
         NativeOpExecutioner::execReduce3(lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
@@ -891,51 +892,11 @@ void NativeOpExecutioner::execReduce3(nd4j::graph::LaunchContext *lc,
     if (!DataTypeUtils::isR(zType))
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execReduce3 requires Z operand to have floating point data type", zType);
 
-    // tads evaluation
-    shape::TAD xTad(hXShapeInfo, dimension, dimensionLength);
-    xTad.createTadOnlyShapeInfo();
-    xTad.createOffsets();
-
-    shape::TAD yTad(hYShapeInfo, dimension, dimensionLength);
-    yTad.createTadOnlyShapeInfo();
-    yTad.createOffsets();
-
-    auto tadLength = shape::tadLength(hXShapeInfo,dimension,dimensionLength);
-    auto ytadLength = shape::tadLength(hYShapeInfo,dimension,dimensionLength);    
-
-	Nd4jLong* tadOnlyShapeInfo  = xTad.tadOnlyShapeInfo;
-	Nd4jLong* tadOffsets 		= xTad.tadOffsets;
-	Nd4jLong* yTadOnlyShapeInfo = yTad.tadOnlyShapeInfo;
-	Nd4jLong* yTadOffsets 		= yTad.tadOffsets;    
-
-    // copy tads info into device memory
-    Nd4jLong *dTadOnlyShapeInfo(nullptr), *dTadOffsets(nullptr), *dYTadOnlyShapeInfo(nullptr), *dYTadOffsets(nullptr);
-
-    cudaError_t cudaResult;
-
-    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dTadOnlyShapeInfo), shape::shapeInfoByteLength(tadOnlyShapeInfo));
-    if(cudaResult != 0) throw std::runtime_error("NativeOpExecutioner::execReduce3: cudaMalloc can't allocate global device memory!");
-    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dYTadOnlyShapeInfo), shape::shapeInfoByteLength(yTadOnlyShapeInfo));
-    if(cudaResult != 0) throw std::runtime_error("NativeOpExecutioner::execReduce3: cudaMalloc can't allocate global device memory!");
-    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dTadOffsets), xTad.numTads * sizeof(Nd4jLong));
-    if(cudaResult != 0) throw std::runtime_error("NativeOpExecutioner::execReduce3: cudaMalloc can't allocate global device memory!");
-    cudaResult = cudaMalloc(reinterpret_cast<void **>(&dYTadOffsets), yTad.numTads * sizeof(Nd4jLong));
-    if(cudaResult != 0) throw std::runtime_error("NativeOpExecutioner::execReduce3: cudaMalloc can't allocate global device memory!");
-
-    cudaMemcpyAsync(dTadOnlyShapeInfo, tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOnlyShapeInfo), cudaMemcpyHostToDevice, *stream);
-    cudaMemcpyAsync(dYTadOnlyShapeInfo, yTadOnlyShapeInfo, shape::shapeInfoByteLength(yTadOnlyShapeInfo), cudaMemcpyHostToDevice, *stream);
-    cudaMemcpyAsync(dTadOffsets, tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *stream);
-    cudaMemcpyAsync(dYTadOffsets, yTadOffsets, yTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *stream);
-
+    
     auto numBlocks = shape::length(hZShapeInfo);
-    dim3 launchDims(numBlocks, 256, 32768);   
+    dim3 launchDims(numBlocks, 256, 32768);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, 1, allocationPointer, dTadOnlyShapeInfo, dTadOffsets, dYTadOnlyShapeInfo, dYTadOffsets), LIBND4J_TYPES, FLOAT_TYPES)
-
-    cudaFree(dTadOnlyShapeInfo);
-    cudaFree(dTadOffsets); 
-    cudaFree(dYTadOnlyShapeInfo);
-    cudaFree(dYTadOffsets);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, 1, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

@@ -3355,7 +3355,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         if(rankOf() == copy.size() && other->rankOf() == copy.size())
             NativeOpExecutioner::execReduce3Scalar(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo());
         else         
-            NativeOpExecutioner::execReduce3(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), copy.size());
+            NativeOpExecutioner::execReduce3(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), copy.size(), nullptr, nullptr, nullptr, nullptr);
         
         if(params != extraParams)
             delete [] static_cast<int8_t*>(params);

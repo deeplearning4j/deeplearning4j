@@ -520,13 +520,9 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
                                     void *hY, Nd4jLong *hYShapeInfo,
                                     void *dY, Nd4jLong *dYShapeInfo,
                                     void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
-                                    Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                    Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
+                                    void *dZ, Nd4jLong *dZShapeInfo) {
 
-    NativeOpExecutioner::execReduce3(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams,
-            hY, hYShapeInfo, dY, dYShapeInfo,
-            hZ, hZShapeInfo, dZ, dZShapeInfo);
+    NativeOpExecutioner::execReduce3(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
 }
 
 /**
@@ -577,10 +573,7 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
                                     Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 
     if (extraPointers == nullptr || extraPointers[2] == 0) {
-        NativeOpExecutioner::execReduce3(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams,
-                hY, hYShapeInfo, dY, dYShapeInfo,
-                hZ, hZShapeInfo, dZ, dZShapeInfo,
-                dimension, dimensionLength);
+        NativeOpExecutioner::execReduce3(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
     } else {
         // going tad-way
         auto tadShapeInfo = reinterpret_cast<Nd4jLong *> (extraPointers[0]);
