@@ -23,6 +23,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.DeviceAllocationsTracker;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
@@ -63,6 +64,7 @@ public class AccountingTests extends BaseNd4jTest {
         val after = Nd4j.getMemoryManager().allocatedMemory(deviceId);
 
         assertTrue(after > before);
+        assertTrue(AllocationsTracker.getInstance().bytesOnDevice(AllocationKind.CONSTANT, Nd4j.getAffinityManager().getDeviceForCurrentThread()) > 0);
     }
 
     @Test
