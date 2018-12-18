@@ -28,6 +28,7 @@ import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.DefaultOpConverter;
@@ -35,6 +36,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.*;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.reduce3.EqualsWithEps;
 import org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.*;
@@ -72,6 +74,8 @@ import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.primitives.Pair;
 import org.tensorflow.framework.OpDef;
 
@@ -302,7 +306,28 @@ public class OpValidation {
                 err = f.apply(deser);
             } else {
                 if(!orig.equals(deser)){
-                    err = "INDArray equality failed";
+                    //Edge case: check for NaNs in original and deserialized... might be legitimate test (like replaceNaNs op)
+                    long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(orig, Conditions.isNan())).getFinalResult().longValue();
+                    if(count > 0 && orig.equalShapes(deser)){
+                        long count2 = Nd4j.getExecutioner().execAndReturn(new MatchCondition(deser, Conditions.isNan())).getFinalResult().longValue();
+                        if(count != count2){
+                            err = "INDArray equality failed";
+                        } else {
+                            //TODO is there a better way to do this?
+                            NdIndexIterator iter = new NdIndexIterator(orig.shape());
+                            while(iter.hasNext()){
+                                long[] i = iter.next();
+                                double d1 = orig.getDouble(i);
+                                double d2 = deser.getDouble(i);
+                                if((Double.isNaN(d1) != Double.isNaN(d2)) || (Double.isInfinite(d1) != Double.isInfinite(d2)) || Math.abs(d1 - d2) > 1e-5 ){
+                                    err = "INDArray equality failed";
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        err = "INDArray equality failed";
+                    }
                 }
             }
 

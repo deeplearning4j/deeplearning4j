@@ -105,12 +105,10 @@ public class DynamicStitch extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        //Output type: same as (data) input type
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2*numPartitions, "Expected %s input datatypes for %s partitions, got %s",
+                2*numPartitions, numPartitions, dataTypes);
+        //Output type: same as (data) input type... only 1 output, however
         DataType inputType = dataTypes.get(dataTypes.size()-1);
-        List<DataType> out = new ArrayList<>(numPartitions);
-        for( int i=0; i<numPartitions; i++ ){
-            out.add(inputType);
-        }
-        return out;
+        return Collections.singletonList(inputType);
     }
 }

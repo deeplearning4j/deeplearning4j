@@ -378,15 +378,15 @@ public class TransformOpValidation extends BaseOpValidation {
     public void testDynamicPartition() {
         SameDiff sd = SameDiff.create();
 
-        INDArray ia = Nd4j.create(new float[]{4, 3, 5, 7, 8, 0});
-        INDArray partitions = Nd4j.create(new float[]{1, 0, 1, 0, 0, 1}).castTo(DataType.INT);
+        INDArray ia = Nd4j.create(new double[]{4, 3, 5, 7, 8, 0});
+        INDArray partitions = Nd4j.create(new double[]{1, 0, 1, 0, 0, 1}).castTo(DataType.INT);
         int numPartitions = 2;
 
-        SDVariable in = sd.var("in", DataType.FLOAT, new long[]{6});
+        SDVariable in = sd.var("in", DataType.DOUBLE, new long[]{6});
         SDVariable sdPartitions = sd.var("partitions", DataType.INT, new long[]{6});
 
-        INDArray expOut1 = Nd4j.create(DataType.FLOAT, 3L);
-        INDArray expOut2 = Nd4j.create(DataType.FLOAT, 3L);
+        INDArray expOut1 = Nd4j.create(DataType.DOUBLE, 3L);
+        INDArray expOut2 = Nd4j.create(DataType.DOUBLE, 3L);
         INDArray[] expOut = new INDArray[]{expOut1, expOut2};
 
         DynamicCustomOp dynamicPartition = DynamicCustomOp.builder("dynamic_partition")
@@ -1053,6 +1053,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
             SDVariable t;
             TestCase tc = new TestCase(sd);
+            String opName = null;
             switch (i) {
                 case 0:
                     t = in1.add(in2);
@@ -1080,28 +1081,34 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 6:
                     t = sd.eq(in1, in2).castTo(DataType.DOUBLE);
+                    opName = "eq";
                     tc.expectedOutput(t.getVarName(), ia.eq(ib).castTo(DataType.DOUBLE));
                     break;
                 case 7:
                     t = sd.neq(in1, in2).castTo(DataType.DOUBLE);
+                    opName = "neq";
                     tc.expectedOutput(t.getVarName(), ia.neq(ib).castTo(DataType.DOUBLE));
                     break;
                 case 8:
                     t = sd.gt(in1, in2).castTo(DataType.DOUBLE);
+                    opName = "gt";
                     tc.expectedOutput(t.getVarName(), ia.gt(ib).castTo(DataType.DOUBLE));
                     break;
                 case 9:
                     t = sd.lt(in1, in2).castTo(DataType.DOUBLE);
+                    opName = "lt";
                     tc.expectedOutput(t.getVarName(), ia.lt(ib).castTo(DataType.DOUBLE));
                     break;
                 case 10:
                     t = sd.gte(in1, in2).castTo(DataType.DOUBLE);
+                    opName = "gte";
                     INDArray expOut10 = Nd4j.create(DataType.BOOL, ia.shape());
                     Nd4j.getExecutioner().exec(new GreaterThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut10}));
                     tc.expectedOutput(t.getVarName(), expOut10.castTo(DataType.DOUBLE));
                     break;
                 case 11:
                     t = sd.lte(in1, in2).castTo(DataType.DOUBLE);
+                    opName = "lte";
                     INDArray expOut11 = Nd4j.create(DataType.BOOL, ia.shape());
                     Nd4j.getExecutioner().exec(new LessThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut11}));
                     tc.expectedOutput(t.getVarName(), expOut11.castTo(DataType.DOUBLE));
@@ -1110,6 +1117,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
                     t = sd.or(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL)).castTo(DataType.DOUBLE);
+                    opName = "or";
                     tc.expectedOutput(t.getVarName(), Transforms.or(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL)).castTo(DataType.DOUBLE));
                     break;
                 case 13:
@@ -1129,12 +1137,14 @@ public class TransformOpValidation extends BaseOpValidation {
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
                     t = sd.and(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL)).castTo(DataType.DOUBLE);
+                    opName = "and";
                     tc.expectedOutput(t.getVarName(), Transforms.and(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL)).castTo(DataType.DOUBLE));
                     break;
                 case 17:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
                     t = sd.xor(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL)).castTo(DataType.DOUBLE);
+                    opName = "xor";
                     tc.expectedOutput(t.getVarName(), Transforms.xor(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL)).castTo(DataType.DOUBLE));
                     break;
                 case 18:
@@ -1176,7 +1186,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
 
             DifferentialFunction[] funcs = sd.functions();
-            String name = funcs[0].opName();
+            String name = (opName == null ? funcs[0].opName() : opName);
 
             String msg = "test: " + i + " - " + name;
             log.info("***** Starting test: {} *****", msg);
@@ -1224,8 +1234,9 @@ public class TransformOpValidation extends BaseOpValidation {
                     out = sd.isInfinite(in);
                     break;
                 case 2:
+                    //TODO: IsMax supports both bool and float out: https://github.com/deeplearning4j/deeplearning4j/issues/6872
                     inArr = Nd4j.create(new double[]{-3,5,0,2});
-                    exp = Nd4j.create(new boolean[]{false,true,false,false});
+                    exp = Nd4j.create(new boolean[]{false,true,false,false}).castTo(DataType.DOUBLE);
                     out = sd.isMax(in);
                     break;
                 case 3:
@@ -1238,7 +1249,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     throw new RuntimeException();
             }
 
-            SDVariable loss = out.mean();
+            SDVariable loss = out.castTo(DataType.DOUBLE).mean();
             TestCase tc = new TestCase(sd)
                     .gradientCheck(doGrad)
                     .expected(out, exp);
