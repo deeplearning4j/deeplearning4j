@@ -68,4 +68,13 @@ public class AllocationsTracker {
 
         tracker.updateState(kind, -bytes);
     }
+
+    public long bytesOnDevice(Integer deviceId) {
+        return bytesOnDevice(AllocationKind.GENERAL, deviceId);
+    }
+
+    public long bytesOnDevice(AllocationKind kind, Integer deviceId) {
+        val tracker = trackerForDevice(deviceId);
+        return tracker.getState(kind);
+    }
 }

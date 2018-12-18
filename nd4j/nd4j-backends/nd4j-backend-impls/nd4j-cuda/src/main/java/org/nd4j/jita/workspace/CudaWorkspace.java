@@ -24,6 +24,7 @@ import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
@@ -85,8 +86,10 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
             workspace.setHostPointer(new PagedPointer(ptr));
 
-            if (workspaceConfiguration.getPolicyMirroring() != MirroringPolicy.HOST_ONLY)
+            if (workspaceConfiguration.getPolicyMirroring() != MirroringPolicy.HOST_ONLY) {
                 workspace.setDevicePointer(new PagedPointer(memoryManager.allocate((bytes + SAFETY_OFFSET), MemoryKind.DEVICE, false)));
+                AllocationsTracker.getInstance().markAllocated(AllocationKind.GENERAL, Nd4j.getAffinityManager().getDeviceForCurrentThread(), bytes + SAFETY_OFFSET);
+            }
 
             //log.info("Workspace [{}] initialized successfully", id);
         }
@@ -100,7 +103,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     public synchronized void destroyWorkspace(boolean extended) {
-        currentSize.set(0);
+        val size = currentSize.getAndSet(0);
         reset();
 
         if (extended)
@@ -111,8 +114,10 @@ public class CudaWorkspace extends Nd4jWorkspace {
         if (workspace.getHostPointer() != null)
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
 
-        if (workspace.getDevicePointer() != null)
+        if (workspace.getDevicePointer() != null) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(workspace.getDevicePointer(), null);
+            AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, Nd4j.getAffinityManager().getDeviceForCurrentThread(), size + SAFETY_OFFSET);
+        }
 
         workspace.setDevicePointer(null);
         workspace.setHostPointer(null);

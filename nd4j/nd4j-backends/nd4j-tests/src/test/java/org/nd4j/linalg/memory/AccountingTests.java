@@ -53,22 +53,24 @@ public class AccountingTests extends BaseNd4jTest {
 
     @Test
     public void testWorkspaceAccounting_1() {
+        val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         val wsConf = WorkspaceConfiguration.builder()
                 .initialSize(10 * 1024 * 1024)
                 .policyAllocation(AllocationPolicy.STRICT)
                 .policyLearning(LearningPolicy.FIRST_LOOP)
                 .build();
 
-        val before = Nd4j.getMemoryManager().allocatedMemory(0);
+        val before = Nd4j.getMemoryManager().allocatedMemory(deviceId);
 
         val workspace = Nd4j.getWorkspaceManager().createNewWorkspace(wsConf, "random_name_here");
 
-        val middle = Nd4j.getMemoryManager().allocatedMemory(0);
+        val middle = Nd4j.getMemoryManager().allocatedMemory(deviceId);
 
-        Nd4j.getWorkspaceManager().destroyWorkspace(workspace);
+        workspace.destroyWorkspace(true);
 
-        val after = Nd4j.getMemoryManager().allocatedMemory(0);
+        val after = Nd4j.getMemoryManager().allocatedMemory(deviceId);
 
+        log.info("Before: {}; Middle: {}; After: {}", before, middle, after);
         assertTrue(middle > before);
         assertTrue(after < middle);
     }
@@ -92,8 +94,6 @@ public class AccountingTests extends BaseNd4jTest {
 
             assertEquals(0, tracker.getState(e));
         }
-
-
     }
 
     @Override
