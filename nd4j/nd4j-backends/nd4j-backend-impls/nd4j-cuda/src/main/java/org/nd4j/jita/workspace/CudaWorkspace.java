@@ -218,7 +218,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
                             //pointer.setLeaked(true);
                             pointer.isLeaked();
 
-                            externalAllocations.add(new PointersPair(null, pointer));
+                            val pp = new PointersPair(null, pointer);
+                            pp.setRequiredMemory(requiredMemory);
+                            externalAllocations.add(pp);
 
                             return pointer;
                         } else {
@@ -352,6 +354,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
                     if (isDebug.get())
                         log.info("deleting external device allocation... ");
+
+                    val sizez = pair.getRequiredMemory();
+                    AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, Nd4j.getAffinityManager().getDeviceForCurrentThread(), sizez);
                 }
             }
         } catch (Exception e) {

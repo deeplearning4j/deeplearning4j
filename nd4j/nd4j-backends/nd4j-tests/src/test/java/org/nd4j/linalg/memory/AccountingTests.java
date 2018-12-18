@@ -58,7 +58,7 @@ public class AccountingTests extends BaseNd4jTest {
 
         val before = Nd4j.getMemoryManager().allocatedMemory(deviceId);
 
-        val array = Nd4j.createFromArray(1, 2, 3, 4, 5);
+        val array = Nd4j.createFromArray(1, 2, 3, 4, 5, 6, 7);
         assertEquals(DataType.INT, array.dataType());
 
         val after = Nd4j.getMemoryManager().allocatedMemory(deviceId);
