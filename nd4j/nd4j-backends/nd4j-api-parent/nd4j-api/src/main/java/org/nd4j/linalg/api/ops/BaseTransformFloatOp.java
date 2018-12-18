@@ -114,7 +114,9 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got input %s", dataTypes);
-        //TODO is this correct for all cases?
+        if(dataTypes.get(0).isFPType())
+            return Collections.singletonList(dataTypes.get(0));
+        //TODO is this what we want for all cases?
         return Collections.singletonList(DataType.FLOAT);
     }
 }

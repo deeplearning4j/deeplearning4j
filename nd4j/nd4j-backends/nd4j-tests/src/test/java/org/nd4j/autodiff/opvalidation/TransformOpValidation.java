@@ -547,10 +547,9 @@ public class TransformOpValidation extends BaseOpValidation {
         //Test transforms (non-pairwise)
         Nd4j.getRandom().setSeed(12345);
 
-        List<String> allSkipped = new ArrayList<>();
-
         List<String> allFailed = new ArrayList<>();
         for (int i = 0; i < 80; i++) {
+//        for (int i = 41; i<42; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -748,30 +747,30 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new SELU(ia.dup())));
                     break;
                 case 41:
-                    t = sd.gt(in, 1.0);
-                    tc.expectedOutput(t.getVarName(), ia.gt(1.0));
+                    t = sd.gt(in, 1.0).castTo(DataType.DOUBLE);
+                    tc.expectedOutput(t.getVarName(), ia.gt(1.0).castTo(DataType.DOUBLE));
                     break;
                 case 42:
-                    t = sd.gte(in, 1.0);
-                    tc.expectedOutput(t.getVarName(), ia.gte(1.0));
+                    t = sd.gte(in, 1.0).castTo(DataType.DOUBLE);
+                    tc.expectedOutput(t.getVarName(), ia.gte(1.0).castTo(DataType.DOUBLE));
                     break;
                 case 43:
-                    t = sd.lt(in, 1.0);
-                    tc.expectedOutput(t.getVarName(), ia.lt(1.0));
+                    t = sd.lt(in, 1.0).castTo(DataType.DOUBLE);
+                    tc.expectedOutput(t.getVarName(), ia.lt(1.0).castTo(DataType.DOUBLE));
                     break;
                 case 44:
-                    t = sd.lte(in, 1.0);
-                    tc.expectedOutput(t.getVarName(), ia.lte(1.0));
+                    t = sd.lte(in, 1.0).castTo(DataType.DOUBLE);
+                    tc.expectedOutput(t.getVarName(), ia.lte(1.0).castTo(DataType.DOUBLE));
                     break;
                 case 45:
-                    t = sd.eq(in, 2.0);
+                    t = sd.eq(in, 2.0).castTo(DataType.DOUBLE);
                     ia = Nd4j.linspace(1, minibatch * nOut, minibatch * nOut, DataType.DOUBLE).reshape('c', minibatch, nOut);
-                    tc.expectedOutput(t.getVarName(), ia.eq(2.0));
+                    tc.expectedOutput(t.getVarName(), ia.eq(2.0).castTo(DataType.DOUBLE));
                     break;
                 case 46:
-                    t = sd.neq(in, 2.0);
+                    t = sd.neq(in, 2.0).castTo(DataType.DOUBLE);
                     ia = Nd4j.linspace(1, minibatch * nOut, minibatch * nOut, DataType.DOUBLE).reshape('c', minibatch, nOut);
-                    tc.expectedOutput(t.getVarName(), ia.neq(2.0));
+                    tc.expectedOutput(t.getVarName(), ia.neq(2.0).castTo(DataType.DOUBLE));
                     break;
                 case 47:
                     t = sd.ceil(in);
@@ -1014,11 +1013,6 @@ public class TransformOpValidation extends BaseOpValidation {
             }
         }
 
-        if (allSkipped.size() > 0) {
-            log.info("All backward skipped transforms: " + allSkipped);
-            log.info(allSkipped.size() + " backward passes were skipped.");
-        }
-
         if (allFailed.size() > 0) {
             log.error("All failed transforms: " + allFailed);
             fail(allFailed.size() + " transforms failed");
@@ -1040,7 +1034,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
         List<String> allFailed = new ArrayList<>();
         for (int i = 0; i < 23; i++) {
-//        for (int i = 20; i < 21; i++) {
 
             SameDiff sd = SameDiff.create();
 

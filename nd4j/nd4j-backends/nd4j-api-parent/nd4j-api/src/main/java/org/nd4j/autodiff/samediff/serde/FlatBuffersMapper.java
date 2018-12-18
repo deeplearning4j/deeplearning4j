@@ -364,7 +364,7 @@ public class FlatBuffersMapper {
                 }
                 op.setExtraArgs(extraParamsObj);
             }
-            if(opType == Op.Type.SCALAR){
+            if(opType == Op.Type.SCALAR || opType == Op.Type.SCALAR_BOOL){
                 ScalarOp sOp = (ScalarOp)op;
                 sOp.setScalar(scalar);
             } else if(opType == Op.Type.REDUCE_FLOAT || opType == Op.Type.REDUCE3 || opType == Op.Type.SUMMARYSTATS || opType == Op.Type.VARIANCE
