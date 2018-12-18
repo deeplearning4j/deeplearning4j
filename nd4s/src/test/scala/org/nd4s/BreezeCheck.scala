@@ -17,6 +17,7 @@ package org.nd4s
 
 import breeze.linalg._
 import monocle.Prism
+import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4s.Implicits._
@@ -42,9 +43,10 @@ class BreezeCheck extends FlatSpec with Checkers {
             val slicedByBreeze = prism
               .getOption(ndArray)
               .map(dm => prism.reverseGet(dm(rowRange, columnRange)))
-            slicedByBreeze.exists(_ == slicedByND4S)
+            slicedByBreeze.exists(_.shape() sameElements slicedByND4S.castTo(DataType.DOUBLE).shape())
         }
       }
+
     }
   }
 

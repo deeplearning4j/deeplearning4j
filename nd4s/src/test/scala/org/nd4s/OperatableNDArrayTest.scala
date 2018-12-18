@@ -115,7 +115,7 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
   }
 
   it should "use - prefix for negation" in {
-    val a = Nd4j.create(Array[Double](1, 3))
+    val a = Nd4j.create(Array[Float](1, 3))
     val b = -a
     b.get(0) should be(-1)
     b.get(1) should be(-3)
