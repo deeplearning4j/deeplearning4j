@@ -217,7 +217,7 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 4) {
     auto weightsReshaped = weights->reshape(weights->ordering(),{1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)});    // [kW, iC, oC] -> [1, kW, iC, oC]
     auto gradWReshaped   = gradW  ->reshape(gradW->ordering(),  {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)});    // [kW, iC, oC] -> [1, kW, iC, oC]
 
-    ConvolutionUtils::conv2dBP(inputReshaped, weightsReshaped, bias, gradOReshaped, gradIReshaped, gradWReshaped, gradB, 1,kW,  1,sW,  0,pW,  1,1,  isSameMode,  isNCW);
+    ConvolutionUtils::conv2dBP(block, inputReshaped, weightsReshaped, bias, gradOReshaped, gradIReshaped, gradWReshaped, gradB, 1,kW,  1,sW,  0,pW,  1,1,  isSameMode,  isNCW);
 
     delete inputReshaped;
     delete gradIReshaped;
