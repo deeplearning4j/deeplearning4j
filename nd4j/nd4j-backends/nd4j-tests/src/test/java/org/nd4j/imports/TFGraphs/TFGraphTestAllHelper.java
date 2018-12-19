@@ -556,7 +556,7 @@ public class TFGraphTestAllHelper {
             }
 
             if(type == null){
-                log.warn("DATATYPE NOT AVAILABLE FOR: {}", varName);
+                log.warn("DATATYPE NOT AVAILABLE FOR: {} - {}", modelName, varName);
                 //Soon: this will be an exception
                 type = DataType.FLOAT;
             }

@@ -32,10 +32,7 @@ import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.loss.LossReduce;
-import org.nd4j.autodiff.samediff.internal.InferenceSession;
-import org.nd4j.autodiff.samediff.internal.SameDiffOp;
-import org.nd4j.autodiff.samediff.internal.ShapeSession;
-import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
 import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
@@ -2185,8 +2182,9 @@ public class SameDiff {
         return var(name, VariableType.VARIABLE, weightInitScheme, dataType, shape);
     }
 
+    //TODO only allowing null datatype for TF import (it's fixed in a later step) - don't want this in the public API!
     public SDVariable var(@NonNull String name, @NonNull VariableType variableType, WeightInitScheme weightInitScheme,
-                             @NonNull org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
+                             org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
         if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
             throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
 
@@ -9562,7 +9560,7 @@ public class SameDiff {
      *                 variable names for
      * @return the set of names generated for each output of the function.
      */
-    public SDVariable[] generateOutputVariableForOp(DifferentialFunction function, String baseName) {
+    public SDVariable[] generateOutputVariableForOp(DifferentialFunction function, String baseName, boolean isImport) {
         //xyz ops only have 1 output
         //if there is already a base name defined, use that
         if (baseName == null || baseName.isEmpty() && getBaseNameForFunction(function) != null)
@@ -9572,16 +9570,19 @@ public class SameDiff {
             baseName = function.opName();
 
         //First: calculate output data types. We can always calculate output data types, even if the input arrays
-        //are not available
-        List<org.nd4j.linalg.api.buffer.DataType> inputDataTypes = new ArrayList<>();
-        List<String> fnInputs = ops.get(function.getOwnName()).getInputsToOp();
-        if(fnInputs != null){
-            for(String var : fnInputs){
-                inputDataTypes.add(variables.get(var).getVariable().dataType());
-            }
-        }
+        //are not available - *except for sometimes during import, until all ops/variables have been added*
+        List<org.nd4j.linalg.api.buffer.DataType> outputDataTypes = null;
 
-        List<org.nd4j.linalg.api.buffer.DataType> outputDataTypes = function.calculateOutputDataTypes(inputDataTypes);
+        if(!isImport) {
+            List<org.nd4j.linalg.api.buffer.DataType> inputDataTypes = new ArrayList<>();
+            List<String> fnInputs = ops.get(function.getOwnName()).getInputsToOp();
+            if (fnInputs != null) {
+                for (String var : fnInputs) {
+                    inputDataTypes.add(variables.get(var).getVariable().dataType());
+                }
+            }
+            outputDataTypes = function.calculateOutputDataTypes(inputDataTypes);
+        }
 
         val outputShape = function.calculateOutputShape();
         if (outputShape == null || outputShape.isEmpty()) {
@@ -9608,20 +9609,19 @@ public class SameDiff {
                 SDVariable[] ret = new SDVariable[num_outputs];
 
                 //Infer the output types: we can always determine datatype but not always shapes
-                Preconditions.checkState(num_outputs == 0 || (outputDataTypes != null && outputDataTypes.size() == num_outputs),
+                Preconditions.checkState(isImport || num_outputs == 0 || (outputDataTypes != null && outputDataTypes.size() == num_outputs),
                         "Incorrect number of output datatypes: got %s but expected datatypes for %s outputs - %s (op: %s)",
                         (outputDataTypes == null ? null : outputDataTypes.size()), num_outputs, outputDataTypes, function.getClass().getSimpleName());
 
                 //dynamic shapes
-                //When importing from TF: convention seem to be names like "unstack", "unstack:1", "unstack:2", ...
-                //TODO validate this!
+                //When importing from TF: convention is "unstack", "unstack:1", "unstack:2", ...
                 for (int i = 0; i < ret.length; i++) {
                     SDVariable var = (i == 0 ? getVariable(baseName) : getVariable(baseName + ":" + i));
                     if (var == null) {
                         //Generate new variable name if one with the specified name doesn't exist
                         //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
 
-                        org.nd4j.linalg.api.buffer.DataType dataType  = outputDataTypes.get(i);
+                        org.nd4j.linalg.api.buffer.DataType dataType  = isImport ? null : outputDataTypes.get(i);
                         var = var(generateNewVarName(baseName, i), VariableType.ARRAY, null, dataType, (long[])null);
                     }
                     var.setOutputIndex(i);
@@ -9671,11 +9671,13 @@ public class SameDiff {
         }
 
         //Check that output shapes and output dtypes actually match (they should)
-        for( int i=0; i<outputShape.size(); i++ ){
-            org.nd4j.linalg.api.buffer.DataType shapeDataType = outputShape.get(i).dataType();
-            org.nd4j.linalg.api.buffer.DataType calcType = outputDataTypes.get(i);
-            Preconditions.checkState(calcType == shapeDataType, "Calculated output data types do not match for shape calculation vs. datatype calculation:" +
-                    " %s vs %s for op %s output %s", shapeDataType, calcType, function.getClass().getName(), i);
+        if(!isImport) {
+            for (int i = 0; i < outputShape.size(); i++) {
+                org.nd4j.linalg.api.buffer.DataType shapeDataType = outputShape.get(i).dataType();
+                org.nd4j.linalg.api.buffer.DataType calcType = outputDataTypes.get(i);
+                Preconditions.checkState(calcType == shapeDataType, "Calculated output data types do not match for shape calculation vs. datatype calculation:" +
+                        " %s vs %s for op %s output %s", shapeDataType, calcType, function.getClass().getName(), i);
+            }
         }
 
         char ordering = 'c';
@@ -9730,7 +9732,7 @@ public class SameDiff {
      * @return the set of names generated for each output of the function.
      */
     public SDVariable[] generateOutputVariableForOp(DifferentialFunction function) {
-        return generateOutputVariableForOp(function, function.opName());
+        return generateOutputVariableForOp(function, function.opName(), false);
     }
 
     /**
@@ -11523,5 +11525,21 @@ public class SameDiff {
         }
 
         return sb.toString();
+    }
+
+
+    public Map<String,org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(){
+        List<String> allVars = new ArrayList<>(variables.keySet());
+        DataTypesSession session = new DataTypesSession(this);
+        Map<String,org.nd4j.linalg.api.buffer.DataType> phValues = new HashMap<>();
+        for(Variable v : variables.values()){
+            if(v.getVariable().isPlaceHolder()){
+                org.nd4j.linalg.api.buffer.DataType dt = v.getVariable().dataType();
+                Preconditions.checkNotNull(dt, "Placeholder variable %s has null datatype", v.getName());
+                phValues.put(v.getName(), dt);
+            }
+        }
+        Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues);
+        return out;
     }
 }

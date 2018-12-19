@@ -196,8 +196,10 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
             INDArray arr = getNDArrayFromTensor(entry.getKey(), entry.getValue(), tfGraph);
             long[] shape = hasShape((NODE_TYPE) entry.getValue()) ? getShape((NODE_TYPE) entry.getValue()) : null;   //TODO only works for TF
 
-            Preconditions.checkNotNull(dt, "Data type is null for variable %s", entry.getKey());
-            Preconditions.checkState(dt != DataType.UNKNOWN, "Unknown data type for variable %s", entry.getKey());
+            //Not all variables have datatypes available on import - we have to infer these at a later point
+            // so we'll leave datatypes as null and infer them once all variables/ops have been imported
+            if(dt == DataType.UNKNOWN)
+                dt = null;
 
             if (isPlaceHolder(entry.getValue())) {
                 diff.placeHolder(entry.getKey(), dt, shape);
@@ -227,33 +229,66 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
             }
         }
 
-        //handle mapping vertex ids properly
+        //Map ops
         val tfNodesList = getNodeList(tfGraph);
         for (NODE_TYPE tfNode : tfNodesList) {
             if (!opsToIgnore().contains(getOpType(tfNode)) || isOpIgnoreException(tfNode))
                 mapNodeType(tfNode, importState);
         }
 
-        //Handle edge case until multi datatypes is merged: import String constant variables as fixed value 0 variables
-        // This is used in assertions and the like - the exact String values aren't important for inference, but we
-        // can't perform inference without them
-        //Specifically: any string values that aren't the output of an op get a scalar 0 array
-        if (!stringNodes.isEmpty()) {
-            for (Map.Entry<String, Boolean> e : stringNodes.entrySet()) {
-                if (e.getValue()) {
-                    //Is a constant String node - can't import, but probably need it for execution...
-                    //TODO fix this once dtypes are done
-                    diff.getVariable(e.getKey()).setArray(Nd4j.trueScalar(0));
-                }
+
+        /*
+        At this point, we have a few remaining things to do:
+        1. Make sure all datatypes are set on all variables. TF doesn't have datatype info an all op outputs for some reason, so we have to infer in manually
+        2. Make sure all op output variables have been created
+        3. Make sure all SameDiffOp.outputsOfOp is set
+        4. Make sure all Variable.outputOfOp is set
+         */
+
+        //Make sure Variable.outputOfOp is set
+        for(Variable v : diff.getVariables().values()){
+            if(v.getVariable().isPlaceHolder() || v.getVariable().isConstant())
+                continue;
+
+            //Expect variable names of output variables to be: opName, opName:1, opName:2, etc
+            String n = v.getName();
+            String opName = n;
+            if(v.getName().matches(".*:\\d+")){
+                //i.e., "something:2"
+                int idx = n.lastIndexOf(':');
+                opName = n.substring(0,idx);
+            }
+
+            if(diff.getOps().containsKey(opName)) {
+                //Variable is the output of an op
+                v.setOutputOfOp(opName);
+
+                //Also double check variable type...
+                if(v.getVariable().getVariableType() != VariableType.ARRAY)
+                    v.getVariable().setVariableType(VariableType.ARRAY);
             }
         }
 
-        //Build functionOutputFor - i.e., map from SDVariable -> functions it's an output for (should only ever be 1)
-        //Also build outgoingArgsReverse: map from DifferentialFunction name to SDVariable names that are outputs
-        Map<String, List<DifferentialFunction>> fnOutputsFor = new LinkedHashMap<>();
+        //Initialize any missing output variables
         for (SameDiffOp op : diff.getOps().values()) {
             DifferentialFunction df = op.getOp();
             initOutputVariables(diff, df);
+        }
+
+
+        //Infer variable datatypes to ensure all variables have datatypes...
+        boolean anyUnknown = false;
+        for(SDVariable v : diff.variables()){
+            if(v.dataType() == null)
+                anyUnknown = true;
+        }
+        if(anyUnknown){
+            Map<String,DataType> dataTypes = diff.calculateOutputDataTypes();
+            for(SDVariable v : diff.variables()){
+                if(v.dataType() == null){
+                    v.setDataType(dataTypes.get(v.getVarName()));
+                }
+            }
         }
 
         //Validate the graph structure
@@ -266,7 +301,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
         String[] outNames = sd.getOutputsForFunction(df);
         SDVariable[] outVars;
         if (outNames == null) {
-            outVars = sd.generateOutputVariableForOp(df, df.getOwnName() != null ? df.getOwnName() : df.opName());
+            outVars = sd.generateOutputVariableForOp(df, df.getOwnName() != null ? df.getOwnName() : df.opName(), true);
             outNames = new String[outVars.length];
             for (int i = 0; i < outVars.length; i++) {
                 outNames[i] = outVars[i].getVarName();
