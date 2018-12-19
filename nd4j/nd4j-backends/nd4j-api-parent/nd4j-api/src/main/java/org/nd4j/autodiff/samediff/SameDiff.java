@@ -143,11 +143,6 @@ public class SameDiff {
     private final Map<String,DeviceLocalNDArray> variablesArrays = new ConcurrentHashMap<>();     //TODO issues with DeviceLocal +  mutable / changed during training?
     private final Map<Long,Map<String,INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
-    //TODO these will eventually be merged into Variable class field
-    @Getter
-    private final Map<String,List<String>> opControlDependencies = new HashMap<>();     //Key: op name. Value: control dependencies
-    @Getter
-    private final Map<String,List<String>> variableControlDependencies = new HashMap<>();
     ///////////////////////////////////////
     @Getter
     private TrainingConfig trainingConfig;                          //Configuration for training. Must be set for training/evaluation, but not for other operations
@@ -1480,8 +1475,9 @@ public class SameDiff {
     public List<String> outputs(){
         List<String> out = new ArrayList<>();
         for(Variable v : variables.values()){
-            if(v.getVariable().isConstant() || v.getVariable().isPlaceHolder() || (v.getInputsForOp() != null && !v.getInputsForOp().isEmpty()))
+            if(v.getVariable().isConstant() || v.getVariable().isPlaceHolder() || (v.getInputsForOp() != null && !v.getInputsForOp().isEmpty())) {
                 continue;
+            }
             out.add(v.getName());
         }
         return out;

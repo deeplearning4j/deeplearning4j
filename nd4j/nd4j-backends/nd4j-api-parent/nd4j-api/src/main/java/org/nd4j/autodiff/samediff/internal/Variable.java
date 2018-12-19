@@ -18,7 +18,7 @@ public class Variable {
     protected Object shapeInfo;         //TODO decide type, or if even to include (Variable class should ideally be immutable)
     protected List<String> inputsForOp;
     protected String outputOfOp;        //Null for placeholders/constants. For array type SDVariables, the name of the op it's an output of
-    protected String[] controlDeps;     //Control dependencies: name of variables that must be available before this variable is considered available for execution
+    protected List<String> controlDeps;     //Control dependencies: name of variables that must be available before this variable is considered available for execution
     protected int outputOfOpIdx;        //Index of the output for the op (say, variable is output number 2 of op "outputOfOp")
     protected SDVariable gradient;      //Variable corresponding to the gradient of this variable
     protected int variableIndex = -1;

@@ -426,11 +426,6 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public boolean unknownTypeNodeImportable(OnnxProto3.TypeProto.Tensor tensor) {
-        return false;
-    }
-
-    @Override
     public boolean isStringType(OnnxProto3.TypeProto.Tensor tensor) {
         return tensor.getElemType() == OnnxProto3.TensorProto.DataType.STRING;
     }
