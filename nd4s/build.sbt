@@ -2,7 +2,6 @@ lazy val currentVersion = SettingKey[String]("currentVersion")
 lazy val nd4jVersion = SettingKey[String]("nd4jVersion")
 lazy val publishSomeThing = sys.props.getOrElse("repoType", default = "local").toLowerCase match {
   case repoType if repoType.contains("nexus") => publishNexus
-  case repoType if repoType.contains("jfrog") => publishJfrog
   case repoType if repoType.contains("bintray") => publishBintray
   case repoType if repoType.contains("sonatype") => publishSonatype
   case _ => publishLocalLocal
@@ -28,7 +27,6 @@ update := {
     case _     => { mvnInstall !; update.value }
   }
 }
-
 
 lazy val commonSettings = Seq(
   scalaVersion := "2.11.8",
@@ -63,21 +61,11 @@ lazy val commonSettings = Seq(
 
 lazy val publishNexus = Seq(
   publishTo := {
-    val nexus = "http://master-jenkins.skymind.io:8088/nexus/"
+    val nexus = "https://nexus.ci.skymind.io/"
     if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
+      Some("snapshots" at nexus + "content/repositories/maven-snapshots")
     else
       Some("releases" at nexus + "service/local/staging/" + releaseRepositoryId)
-  }
-)
-
-lazy val publishJfrog = Seq(
-  publishTo := {
-    val jfrog = "http://master-jenkins.skymind.io:8081/artifactory/"
-    if (isSnapshot.value)
-      Some("snapshots" at jfrog + "libs-snapshot-local")
-    else
-      Some("releases" at jfrog + "libs-release-local")
   }
 )
 
@@ -101,13 +89,10 @@ lazy val publishSonatype = Seq(
   }
 )
 
-
-
 lazy val publishLocalLocal = Seq(
   publish := {},
   publishLocal := {}
 )
-
 
 lazy val root = (project in file(".")).settings(
   commonSettings,
