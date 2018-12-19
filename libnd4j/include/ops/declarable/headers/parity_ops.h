@@ -875,6 +875,21 @@ namespace nd4j {
         #endif
 
         /**
+         * log_matrix_determinant op.
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M)
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: *) with log determinant for all
+         * M x M matricies
+         */
+
+        #if NOT_EXCLUDED(OP_log_matrix_determinant)
+        DECLARE_CUSTOM_OP(log_matrix_determinant, 1, 1, false, 0, 0);
+        #endif
+
+        /**
          * matrix_inverse op. - make inverse for all 2D square matricies found in the input tensor
          *
          * input params:
