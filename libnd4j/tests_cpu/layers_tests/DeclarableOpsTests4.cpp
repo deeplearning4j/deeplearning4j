@@ -40,9 +40,25 @@ public:
     }
 };
 
-TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_1) {
-    auto x = NDArrayFactory::create<double>('c', {2, 4, 4, 2});
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 2, 2}, {6.f, 7.f,  10.f,  11.f,  22.f,  23.f,  26.f,  27.f,  38.f,  39.f,  42.f,  43.f,  54.f,  55.f,  58.f, 59.f});
+template <typename T>
+class TypedDeclarableOpsTests4 : public testing::Test {
+public:
+
+    TypedDeclarableOpsTests4() {
+        printf("\n");
+        fflush(stdout);
+
+        nd4j::ops::adjust_hue op0;
+        nd4j::ops::adjust_saturation op1;
+    }
+};
+
+typedef ::testing::Types<double, float> TestingTypes;
+TYPED_TEST_CASE(TypedDeclarableOpsTests4, TestingTypes);
+
+TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_1) {
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 4, 4, 2});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, {6.f, 7.f,  10.f,  11.f,  22.f,  23.f,  26.f,  27.f,  38.f,  39.f,  42.f,  43.f,  54.f,  55.f,  58.f, 59.f});
 
     x.linspace(1);
     
@@ -60,9 +76,9 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_1) {
 }
 
 
-TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_2) {
-    auto x = NDArrayFactory::create<double>('c', {2, 4, 4, 2});
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 2, 2}, {6.f, 7.f,  10.f,  11.f,  22.f,  23.f,  26.f,  27.f,  38.f,  39.f,  42.f,  43.f,  54.f,  55.f,  58.f, 59.f});
+TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_2) {
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 4, 4, 2});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, {6.f, 7.f,  10.f,  11.f,  22.f,  23.f,  26.f,  27.f,  38.f,  39.f,  42.f,  43.f,  54.f,  55.f,  58.f, 59.f});
 
     x.linspace(1);
     
@@ -81,9 +97,9 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_2) {
 }
 
 
-TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_3) {
-    auto x = NDArrayFactory::create<double>('c', {2, 4, 4, 2});
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 2, 2}, {11.f,  12.f,  15.f,  16.f,  27.f,  28.f,  31.f,  32.f,  43.f,  44.f,  47.f,  48.f,  59.f,  60.f,  63.f, 64.f});
+TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_3) {
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 4, 4, 2});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, {11.f,  12.f,  15.f,  16.f,  27.f,  28.f,  31.f,  32.f,  43.f,  44.f,  47.f,  48.f,  59.f,  60.f,  63.f, 64.f});
 
     x.linspace(1);
     
@@ -102,9 +118,9 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_3) {
 }
 
 
-TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_4) {
-    auto x = NDArrayFactory::create<double>('c', {2, 4, 4, 2});
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 2, 2}, {11.f,  12.f,  15.f,  16.f,  27.f,  28.f,  31.f,  32.f,  43.f,  44.f,  47.f,  48.f,  59.f,  60.f,  63.f, 64.f});
+TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_4) {
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 4, 4, 2});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, {11.f,  12.f,  15.f,  16.f,  27.f,  28.f,  31.f,  32.f,  43.f,  44.f,  47.f,  48.f,  59.f,  60.f,  63.f, 64.f});
 
     x.linspace(1);
 
@@ -123,9 +139,9 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_4) {
 }
 
 
-TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_5) {
-    auto x = NDArrayFactory::create<double>('c', {2, 5, 5, 2});
-    auto exp = NDArrayFactory::create<double>('c', {2, 3, 3, 2}, {7.f,    8.f,   11.f,   12.f,   14.f,   15.f,   27.f,   28.f,   31.f,   32.f,   34.f,   35.f, 42.f,   43.f,   46.f,   47.f,   49.f,   50.f,   57.f,   58.f,   61.f,   62.f,   64.f,   65.f, 77.f,   78.f,   81.f,   82.f,   84.f,   85.f,   92.f,   93.f,   96.f,   97.f,   99.f,  100.f,});
+TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_5) {
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 5, 5, 2});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 3, 3, 2}, {7.f,    8.f,   11.f,   12.f,   14.f,   15.f,   27.f,   28.f,   31.f,   32.f,   34.f,   35.f, 42.f,   43.f,   46.f,   47.f,   49.f,   50.f,   57.f,   58.f,   61.f,   62.f,   64.f,   65.f, 77.f,   78.f,   81.f,   82.f,   84.f,   85.f,   92.f,   93.f,   96.f,   97.f,   99.f,  100.f,});
 
     x.linspace(1);
     
@@ -143,9 +159,9 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_5) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_6) {
-    auto x = NDArrayFactory::create<double>('c', {2, 5, 5, 2});
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 2, 2}, {7.f,   8.f,  11.f,  12.f,  27.f,  28.f,  31.f,  32.f,  57.f,  58.f,  61.f,  62.f,  77.f,  78.f,  81.f, 82.f});
+TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_6) {
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 5, 5, 2});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, {7.f,   8.f,  11.f,  12.f,  27.f,  28.f,  31.f,  32.f,  57.f,  58.f,  61.f,  62.f,  77.f,  78.f,  81.f, 82.f});
 
     x.linspace(1);
     
@@ -162,9 +178,9 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_6) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_7) {
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 5, 5});
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 2, 2}, {7.f, 9.f, 17.f, 19.f, 32.f, 34.f, 42.f, 44.f, 57.f, 59.f, 67.f, 69.f, 82.f, 84.f, 92.f, 94.f});
+TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_7) {
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 5, 5});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, {7.f, 9.f, 17.f, 19.f, 32.f, 34.f, 42.f, 44.f, 57.f, 59.f, 67.f, 69.f, 82.f, 84.f, 92.f, 94.f});
 
     x.linspace(1);
 
@@ -182,9 +198,9 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_7) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_8) {
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 5, 5});
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 3, 3}, {1.f, 2.5f, 4.5f, 8.5f, 10.f, 12.f, 18.5f, 20.f, 22.f, 26.f, 27.5f, 29.5f, 33.5f, 35.f, 37.f, 43.5f, 45.f, 47.f,  51.f, 52.5f, 54.5f,  58.5f, 60.f, 62.f, 68.5f, 70.f, 72.f,  76.f, 77.5f, 79.5f, 83.5f, 85.f, 87.f,  93.5f, 95.f, 97.f});
+TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_8) {
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 5, 5});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 3, 3}, {1.f, 2.5f, 4.5f, 8.5f, 10.f, 12.f, 18.5f, 20.f, 22.f, 26.f, 27.5f, 29.5f, 33.5f, 35.f, 37.f, 43.5f, 45.f, 47.f,  51.f, 52.5f, 54.5f,  58.5f, 60.f, 62.f, 68.5f, 70.f, 72.f,  76.f, 77.5f, 79.5f, 83.5f, 85.f, 87.f,  93.5f, 95.f, 97.f});
 
     x.linspace(1);
 
@@ -203,9 +219,9 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_8) {
 }
 
 
-TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_9) {
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 5, 5});
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 3, 3}, {0.25f, 1.25f, 2.25f,  4.25f, 10.f, 12.f, 9.25f, 20.f, 22.f, 6.5f, 13.75f, 14.75, 16.75f, 35.f, 37.f,  21.75f, 45.f, 47.f,  12.75f, 26.25f, 27.25f,  29.25f, 60.f, 62.f, 34.25f, 70.f, 72.f, 19.f, 38.75f, 39.75f, 41.75f, 85.f, 87.f, 46.75f, 95.f, 97.f});
+TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_9) {
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 5, 5});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 3, 3}, {0.25f, 1.25f, 2.25f,  4.25f, 10.f, 12.f, 9.25f, 20.f, 22.f, 6.5f, 13.75f, 14.75, 16.75f, 35.f, 37.f,  21.75f, 45.f, 47.f,  12.75f, 26.25f, 27.25f,  29.25f, 60.f, 62.f, 34.25f, 70.f, 72.f, 19.f, 38.75f, 39.75f, 41.75f, 85.f, 87.f, 46.75f, 95.f, 97.f});
 
     x.linspace(1);
 
@@ -224,9 +240,9 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_9) {
 }
 
 
-TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_10) {
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 5, 5});
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 3, 3}, {4.f, 6.f, 7.5f, 14.f, 16.f, 17.5f,  21.5f, 23.5f, 25.f, 29.f, 31.f, 32.5f, 39.f, 41.f, 42.5f, 46.5f, 48.5f, 50.f, 54.f, 56.f, 57.5f,  64.f, 66.f, 67.5f, 71.5f, 73.5f, 75.f, 79.f, 81.f, 82.5f, 89.f, 91.f, 92.5f,  96.5f, 98.5f, 100.f});
+TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_10) {
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 5, 5});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 3, 3}, {4.f, 6.f, 7.5f, 14.f, 16.f, 17.5f,  21.5f, 23.5f, 25.f, 29.f, 31.f, 32.5f, 39.f, 41.f, 42.5f, 46.5f, 48.5f, 50.f, 54.f, 56.f, 57.5f,  64.f, 66.f, 67.5f, 71.5f, 73.5f, 75.f, 79.f, 81.f, 82.5f, 89.f, 91.f, 92.5f,  96.5f, 98.5f, 100.f});
 
     x.linspace(1);
 
@@ -245,9 +261,9 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_10) {
 }
 
 
-TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_11) {
-    auto x = NDArrayFactory::create<double>('c', {1, 1, 3, 3});
-    auto exp = NDArrayFactory::create<double>('c', {1, 1, 2, 2}, {3, 4, 6, 7});
+TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_11) {
+    auto x = NDArrayFactory::create<TypeParam>('c', {1, 1, 3, 3});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {1, 1, 2, 2}, {3, 4, 6, 7});
 
     x.linspace(1);
 
@@ -265,9 +281,9 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_11) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_12) {
-    auto x = NDArrayFactory::create<double>('c', {1, 1, 3, 3});
-    auto exp = NDArrayFactory::create<double>('c', {1, 1, 3, 3}, {3.f, 4.f, 4.5f, 6.f, 7.f, 7.5f, 7.5f, 8.5f, 9.f});
+TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_12) {
+    auto x = NDArrayFactory::create<TypeParam>('c', {1, 1, 3, 3});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {1, 1, 3, 3}, {3.f, 4.f, 4.5f, 6.f, 7.f, 7.5f, 7.5f, 8.5f, 9.f});
 
     x.linspace(1);
 
@@ -1482,15 +1498,15 @@ TEST_F(DeclarableOpsTests4, relu6_bp_test1) {
 } 
  
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, LrnTest_1) {
+TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_1) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 2}, { 5.5, 0., 0.3, 5.5,
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, { 5.5, 0., 0.3, 5.5,
                                             8.6, 0.,  0., 0.4,
                                             1.5, 1., 1.3, 1.5,
                                             2.6, 2.,  3., 1.4}
     );
 
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 2, 2}, {
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, {
                                             0.98386997,        0.,  0.05358852,  0.9824562,
                                             0.99330735,        0.,          0., 0.37139067,
                                             0.72760683, 0.4850712,   0.5848977, 0.67488194,
@@ -1512,14 +1528,14 @@ TEST_F(DeclarableOpsTests4, LrnTest_1) {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, LrnTest_2) {
+TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_2) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 2}, { 5.5, 0., 0.3, 5.5,
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, { 5.5, 0., 0.3, 5.5,
                                             8.6, 0.,  0., 0.4,
                                             1.5, 1., 1.3, 1.5,
                                             2.6, 2.,  3., 1.4});
 
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 2, 2}, {
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, {
                                             0.98386997,        0.,  0.05358852,  0.9824562,
                                             0.99330735,        0.,          0., 0.37139067,
                                             0.72760683, 0.4850712,   0.5848977, 0.67488194,
@@ -1539,9 +1555,9 @@ TEST_F(DeclarableOpsTests4, LrnTest_2) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, LrnTest_3) {
+TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_3) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4}, {
 
                 5.5, 0., 0.3, 5.5,
                 1.5, 0., 1.3, 6.5,
@@ -1553,7 +1569,7 @@ TEST_F(DeclarableOpsTests4, LrnTest_3) {
                 4.5, 1., 0.3, 0.5}
     );
 
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4}, {
                      0.9824562,          0., 0.03822664, 0.9824562,
                     0.67488194,          0., 0.18924236, 0.96960944,
                     0.99330735,          0.,         0., 0.37139067,
@@ -1578,9 +1594,9 @@ TEST_F(DeclarableOpsTests4, LrnTest_3) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, LrnTest_4) {
+TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_4) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4}, {
 
                     5.5, 0., 0.3, 5.5,
                     1.5, 0., 1.3, 6.5,
@@ -1592,7 +1608,7 @@ TEST_F(DeclarableOpsTests4, LrnTest_4) {
                     4.5, 1., 0.3, 0.5}
     );
 
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4}, {
                     0.70082176,         0., 0.03822664, 0.70082176,
                     0.21835658,         0., 0.18924236,  0.9462118,
                      0.9922489,         0.,         0., 0.04615111,
@@ -1617,9 +1633,9 @@ TEST_F(DeclarableOpsTests4, LrnTest_4) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, LrnTest_5) {
+TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_5) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4}, {
 
                 5.5,0., 0.3, 5.5,
                 1.5,0., 1.3, 6.5,
@@ -1631,7 +1647,7 @@ TEST_F(DeclarableOpsTests4, LrnTest_5) {
                 4.5,1., 0.3, 0.5}
     );
 
-    auto eps = NDArrayFactory::create<double>('c', {2, 2, 2, 4}, {
+    auto eps = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4}, {
                 0.70082176, 0.,         0.03822664, 0.70082176,
                 0.21835658, 0.,         0.18924236,  0.9462118,
 
@@ -1646,7 +1662,7 @@ TEST_F(DeclarableOpsTests4, LrnTest_5) {
                 0.94679165, 0.21039814, 0.06311944, 0.10519907}
     );
 
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 2, 4});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4});
 
     nd4j::ops::lrn_bp op;
     auto  results = op.execute({&x, &eps}, {1.0, 1.0, 0.5}, {5}, {}, false, nd4j::DataType::DOUBLE);
@@ -2147,7 +2163,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test4) {
 }
  
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, maxpool2d_test1) {
+TYPED_TEST(TypedDeclarableOpsTests4, maxpool2d_test1) {
   
     int bS = 3;                 // batch size (number of samples)
     int iC = 3;                 // input channels
@@ -2161,7 +2177,7 @@ TEST_F(DeclarableOpsTests4, maxpool2d_test1) {
     
     int isSameMode = 0;         // 1-SAME,  0-VALID
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iH, iW});
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
     
     nd4j::ops::maxpool2d op;
     auto results = op.execute({&input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, isSameMode, 1, 0});
