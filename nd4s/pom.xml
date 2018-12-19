@@ -55,6 +55,10 @@
             <name>Taisuke Oe</name>
             <email>oeuia.t@gmail.com</email>
         </developer>
+        <developer>
+            <id>maxpumperla</id>
+            <name>Max Pumperla</name>
+        </developer>
     </developers>
 
     <properties>
