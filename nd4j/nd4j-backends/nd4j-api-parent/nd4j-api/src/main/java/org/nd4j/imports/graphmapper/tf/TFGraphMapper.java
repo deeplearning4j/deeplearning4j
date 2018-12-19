@@ -789,27 +789,20 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 .getAttrOrThrow("Tidx").getType();
         switch(type) {
             case DT_DOUBLE: return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
-            case DT_INT32:
-            case DT_INT64: return org.nd4j.linalg.api.buffer.DataType.INT;
             case DT_FLOAT: return org.nd4j.linalg.api.buffer.DataType.FLOAT;
+            case DT_HALF: return org.nd4j.linalg.api.buffer.DataType.HALF;
             case DT_BFLOAT16: return org.nd4j.linalg.api.buffer.DataType.HALF;
+            case DT_INT8: return org.nd4j.linalg.api.buffer.DataType.BYTE;
+            case DT_INT16: return org.nd4j.linalg.api.buffer.DataType.SHORT;
+            case DT_INT32: return org.nd4j.linalg.api.buffer.DataType.INT;
+            case DT_INT64: return org.nd4j.linalg.api.buffer.DataType.LONG;
+            case DT_UINT8: return org.nd4j.linalg.api.buffer.DataType.UBYTE;
+            case DT_STRING: return org.nd4j.linalg.api.buffer.DataType.UTF8;
+            case DT_BOOL: return org.nd4j.linalg.api.buffer.DataType.BOOL;
+
             default: return org.nd4j.linalg.api.buffer.DataType.UNKNOWN;
         }
     }
-
-//    @Override
-//    public boolean unknownTypeNodeImportable(NodeDef tensorProto) {
-//        DataType dt = null;
-//        if(tensorProto.containsAttr("dtype")){
-//            dt = tensorProto.getAttrOrThrow("dtype").getType();
-//        } else if(tensorProto.containsAttr("T")){
-//            dt = tensorProto.getAttrOrThrow("T").getType();
-//        } else if(tensorProto.containsAttr("Tidx")){
-//            dt = tensorProto.getAttrOrThrow("Tidx").getType();
-//        }
-//
-//        return dt == DataType.DT_BOOL;
-//    }
 
     @Override
     public boolean isStringType(NodeDef tensorProto){

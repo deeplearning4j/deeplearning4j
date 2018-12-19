@@ -10,10 +10,7 @@ import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseOp;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
@@ -173,7 +170,6 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         int numArgs = (argNames == null ? 0 : argNames.length);
         int numNonConstIns = (opInputs == null ? 0 : opInputs.size());
         int numConstPhIns = (constAndPhInputs == null ? 0 : constAndPhInputs.size());
-        boolean repeatedArgs = false;
         if(numArgs != (numNonConstIns + numConstPhIns)){
             if(numArgs > 1){
                 //Might be due to repeated inputs
@@ -182,7 +178,6 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 Preconditions.checkState(uniqueArgNames.size() == (numNonConstIns + numConstPhIns),
                         "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
                         opName, uniqueArgNames, opInputs, constAndPhInputs);
-                repeatedArgs = true;
             } else {
                 Preconditions.checkState(numArgs == (numNonConstIns + numConstPhIns),
                         "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
@@ -239,9 +234,41 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
         } else if(df instanceof Op){
             Op op = (Op) df;
+
+            boolean axisArg = false;
+            if(op instanceof ReduceOp && ((ReduceOp) op).getOpType() != Op.Type.REDUCE3 && df.argNames().length == 2){
+                //2nd input should be treated as integer axis arg...
+                SDVariable axisArgVar = df.arg(1);
+                String n = axisArgVar.getVarName();
+                Preconditions.checkState(axisArgVar.dataType() == DataType.INT, "Legacy op %s input 1 (axis) was expected to be integer type, is %s", df.getClass(), axisArgVar.dataType());
+
+                INDArray arr = null;
+                if(axisArgVar.isConstant() || axisArgVar.getVariableType() == VariableType.VARIABLE){
+                    arr = getConstantOrVariable(n);
+                } else if(axisArgVar.isPlaceHolder()){
+                    arr = placeholderValues.get(n);
+                } else {
+                    //Must be array type
+                    for(VarId vid : opInputs){
+                        if(vid.getVariable().equals(n)){
+                            arr = get(vid.getVariable(), vid.getFrame(), vid.getIteration());
+                            break;
+                        }
+                    }
+                }
+                Preconditions.checkState(arr != null, "Could not get axis argument for op %s: %s", df.getOwnName(), df.getClass());
+                if(!arr.isEmpty()){
+                    int[] axis = arr.toIntVector();
+                    df.setDimensions(axis);
+                } else {
+                    df.setDimensions(null);
+                }
+                axisArg = true;
+            }
+
             if(args != null && args.length > 0){
                 op.setX(args[0]);
-                if (args.length == 2)
+                if (args.length == 2 && !axisArg)
                     op.setY(args[1]);
             }
 
@@ -261,6 +288,6 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             }
         }
 
-        return sameDiff.getFunctionById(opName);
+        return df;
     }
 }

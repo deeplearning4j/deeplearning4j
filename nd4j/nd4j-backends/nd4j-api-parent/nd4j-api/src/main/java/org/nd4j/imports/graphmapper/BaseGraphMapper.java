@@ -196,7 +196,8 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
             INDArray arr = getNDArrayFromTensor(entry.getKey(), entry.getValue(), tfGraph);
             long[] shape = hasShape((NODE_TYPE) entry.getValue()) ? getShape((NODE_TYPE) entry.getValue()) : null;   //TODO only works for TF
 
-            Preconditions.checkNotNull(dt, "Adata type is null for variable %s", entry.getKey());
+            Preconditions.checkNotNull(dt, "Data type is null for variable %s", entry.getKey());
+            Preconditions.checkState(dt != DataType.UNKNOWN, "Unknown data type for variable %s", entry.getKey());
 
             if (isPlaceHolder(entry.getValue())) {
                 diff.placeHolder(entry.getKey(), dt, shape);
