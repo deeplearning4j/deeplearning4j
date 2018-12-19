@@ -1256,7 +1256,7 @@ public class TransformProcess implements Serializable {
          * @param dateTimeZone Timezone of the column
          */
         public Builder stringToTimeTransform(String column, String format, DateTimeZone dateTimeZone) {
-            return stringToTimeTransform(column, format, dateTimeZone, null);
+            return transform(new StringToTimeTransform(column, format, dateTimeZone));
         }
 
 
