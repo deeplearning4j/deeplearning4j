@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.dropout.IDropout;
 import java.util.List;
 
 @AllArgsConstructor
+@NoArgsConstructor
 public class DropoutSpace extends AbstractParameterSpace<IDropout> {
 
     private ParameterSpace<Double> dropout;
