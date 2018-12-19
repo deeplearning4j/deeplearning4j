@@ -116,7 +116,11 @@ void  NativeOps::execIndexReduce(Nd4jPointer *extraPointers,int opNum,
                                         void *extraParams,
                                         void *hZ, Nd4jLong *hZShapeInfo,
                                         void *dZ, Nd4jLong *dZShapeInfo,
-                                        int *dimension, int dimensionLength) {
+                                        void *hDimension, Nd4jLong *hDimensionShape,
+                                        void *dDimension, Nd4jLong *dDimensionShape) {
+
+    auto dimension = reinterpret_cast<int *>(hDimension);
+    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     Nd4jLong *hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     Nd4jLong *hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
@@ -155,7 +159,10 @@ void NativeOps::execBroadcast(Nd4jPointer *extraPointers,
                                       void *dY, Nd4jLong *dYShapeInfo,
                                       void *hZ, Nd4jLong *hZShapeInfo,
                                       void *dZ, Nd4jLong *dZShapeInfo,
-                                      int *dimension, int dimensionLength) {
+                                      void *hDimension, Nd4jLong *hDimensionShape,
+                                      void *dDimension, Nd4jLong *dDimensionShape) {
+    auto dimension = reinterpret_cast<int *>(hDimension);
+    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     Nd4jLong *hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     Nd4jLong *hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
@@ -181,7 +188,10 @@ void NativeOps::execBroadcastBool(Nd4jPointer *extraPointers,
                               void *dY, Nd4jLong *dYShapeInfo,
                               void *hZ, Nd4jLong *hZShapeInfo,
                               void *dZ, Nd4jLong *dZShapeInfo,
-                              int *dimension, int dimensionLength) {
+                                  void *hDimension, Nd4jLong *hDimensionShape,
+                                  void *dDimension, Nd4jLong *dDimensionShape) {
+    auto dimension = reinterpret_cast<int *>(hDimension);
+    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     Nd4jLong *hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     Nd4jLong *hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
@@ -354,7 +364,10 @@ void NativeOps::execReduceFloat(Nd4jPointer *extraPointers,
                                    void *extraParams,
                                    void *hZ, Nd4jLong *hZShapeInfo,
                                    void *dZ, Nd4jLong *dZShapeInfo,
-                                   int *dimension, int dimensionLength) {
+                                void *hDimension, Nd4jLong *hDimensionShape,
+                                void *dDimension, Nd4jLong *dDimensionShape) {
+    auto dimension = reinterpret_cast<int *>(hDimension);
+    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
@@ -378,7 +391,10 @@ void NativeOps::execReduceBool(Nd4jPointer *extraPointers,
                                 void *extraParams,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength) {
+                               void *hDimension, Nd4jLong *hDimensionShape,
+                               void *dDimension, Nd4jLong *dDimensionShape) {
+    auto dimension = reinterpret_cast<int *>(hDimension);
+    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
@@ -402,7 +418,10 @@ void NativeOps::execReduceSame(Nd4jPointer *extraPointers,
                                 void *extraParams,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength) {
+                               void *hDimension, Nd4jLong *hDimensionShape,
+                               void *dDimension, Nd4jLong *dDimensionShape) {
+    auto dimension = reinterpret_cast<int *>(hDimension);
+    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
@@ -426,7 +445,10 @@ void NativeOps::execReduceLong(Nd4jPointer *extraPointers,
                                 void *extraParams,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension,int dimensionLength) {
+                               void *hDimension, Nd4jLong *hDimensionShape,
+                               void *dDimension, Nd4jLong *dDimensionShape) {
+    auto dimension = reinterpret_cast<int *>(hDimension);
+    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
     auto hTADOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
@@ -511,10 +533,12 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
                                     void *dY, Nd4jLong *dYShapeInfo,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo,
-                                    int *dimension,
-                                    int dimensionLength,
+                                    void *hDimension, Nd4jLong *hDimensionShape,
+                                    void *dDimension, Nd4jLong *dDimensionShape,
                                     Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                                     Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
+    auto dimension = reinterpret_cast<int *>(hDimension);
+    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     if (extraPointers == nullptr || extraPointers[2] == 0) {
         NativeOpExcutioner::execReduce3(opNum, hX, hXShapeInfo, extraParams, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength);
@@ -649,10 +673,13 @@ void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
                                          void *extraParams,
                                          void *hZ, Nd4jLong *hZShapeInfo,
                                          void *dZ, Nd4jLong *dZShapeInfo,
-                                         int *dimension,
-                                         int dimensionLength,
+                                         void *hDimension, Nd4jLong *hDimensionShape,
+                                         void *dDimension, Nd4jLong *dDimensionShape,
                                          bool biasCorrected,
                                          Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+    auto dimension = reinterpret_cast<int *>(hDimension);
+    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+
     NativeOpExcutioner::execSummaryStats(
             opNum,
             hX,
@@ -793,12 +820,16 @@ void NativeOps::execReduce3All(Nd4jPointer *extraPointers,
                                      void *dY, Nd4jLong *dYShapeInfo,
                                      void *hZ, Nd4jLong *hZShapeInfo,
                                      void *dZ, Nd4jLong *dZShapeInfo,
-                                     int *dimension,
-                                     int dimensionLength,
+                                     void *hDimension, Nd4jLong *hDimensionShape,
+                                     void *dDimension, Nd4jLong *dDimensionShape,
                                      Nd4jLong *xTadShapeInfo,
                                      Nd4jLong *xOffsets,
                                      Nd4jLong *yTadShapeInfo,
                                      Nd4jLong *yOffsets) {
+
+    auto dimension = reinterpret_cast<int *>(hDimension);
+    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+
 
     NativeOpExcutioner::execReduce3All(opNum, hX, hXShapeInfo, extraParamsVals, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
 }
@@ -1491,10 +1522,13 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
                                  void *hScalars, Nd4jLong *hScalarShapeInfo,
                                  void *dScalars, Nd4jLong *dScalarShapeInfo,
                                  void *extraParams,
-                                 int *dimension,
-                                 int dimensionLength,
+                                 void *hDimension, Nd4jLong *hDimensionShape,
+                                 void *dDimension, Nd4jLong *dDimensionShape,
                                  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                                  Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+
+    auto dimension = reinterpret_cast<int *>(hDimension);
+    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     NativeOpExcutioner::execScalar(
             opNum,
@@ -1506,7 +1540,7 @@ void NativeOps::execScalar(Nd4jPointer *extraPointers,
             hScalars,
             hScalarShapeInfo,
             dimension,
-            dimensionLength,
+            shape::length(hDimensionShape),
             tadShapeInfo,
             tadOffsets,
             tadShapeInfoZ,
@@ -1522,10 +1556,13 @@ void NativeOps::execScalarBool(Nd4jPointer *extraPointers,
                            void *hScalars, Nd4jLong *hScalarShapeInfo,
                            void *dScalars, Nd4jLong *dScalarShapeInfo,
                            void *extraParams,
-                           int *dimension,
-                           int dimensionLength,
+                           void *hDimension, Nd4jLong *hDimensionShape,
+                           void *dDimension, Nd4jLong *dDimensionShape,
                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                            Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+
+    auto dimension = reinterpret_cast<int *>(hDimension);
+    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     NativeOpExcutioner::execScalarBool(
             opNum,
