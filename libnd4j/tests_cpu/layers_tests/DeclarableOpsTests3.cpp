@@ -734,6 +734,8 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_7) {
 
     auto exp = MmulHelper::mmul(&x, &y);
 
+    exp->printShapeInfo("exp shape");
+
     nd4j::ops::batched_gemm op;
     auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 112, 2, 3, 5, 5, 3, 2, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -752,6 +754,38 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_7) {
 
     delete exp;
     delete result;
+}
+
+TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_Validation_1) {
+    auto a = NDArrayFactory::create<float>('c', {1, 3}, {1, 1, 1});
+    auto b = NDArrayFactory::create<double>('c', {1, 3}, {0, 0, 0});
+    auto x = NDArrayFactory::create<float16>('c', {2, 5}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    auto y = NDArrayFactory::create<float>('c', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+
+    nd4j::ops::batched_gemm op;
+    try {
+        auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 112, 2, 3, 5, 5, 3, 2, 3});
+        ASSERT_TRUE(false);
+    } catch (std::invalid_argument &e) {
+        //
+    }
+}
+
+TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_Validation_2) {
+    auto a = NDArrayFactory::create<float>('c', {1, 3}, {1, 1, 1});
+    auto b = NDArrayFactory::create<float>('c', {1, 3}, {0, 0, 0});
+    auto x = NDArrayFactory::create<float>('c', {2, 5}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    auto y = NDArrayFactory::create<float>('c', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+
+    auto z = NDArrayFactory::create<double>('c', {2, 3});
+
+    nd4j::ops::batched_gemm op;
+    try {
+        auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {&z}, {}, {112, 112, 2, 3, 5, 5, 3, 2, 3}, {});
+        ASSERT_TRUE(false);
+    } catch (std::invalid_argument &e) {
+        //
+    }
 }
 
 TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_1) {

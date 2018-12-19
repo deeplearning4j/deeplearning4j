@@ -25,6 +25,9 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.memory.MemoryProvider;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
+import org.nd4j.linalg.api.memory.enums.AllocationKind;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
@@ -100,6 +103,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 //                    throw new RuntimeException("Device allocation happened");
 
 
+                AllocationsTracker.getInstance().markAllocated(AllocationKind.GENERAL, deviceId, reqMem);
                 Pointer pointer = nativeOps.mallocDevice(reqMem, null, 0);
                 //log.info("Device [{}] allocation, Thread id: {}, ReqMem: {}, Pointer: {}", AtomicAllocator.getInstance().getDeviceId(), Thread.currentThread().getId(), reqMem, pointer != null ? pointer.address() : null);
 
@@ -159,6 +163,7 @@ public class CudaDirectProvider implements MemoryProvider {
                 //       log.info("Deallocating {} bytes on [DEVICE]", reqMem);
 
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, point.getDeviceId(), reqMem);
 
                 long result = nativeOps.freeDevice(point.getPointers().getDevicePointer(), new CudaPointer(0));
                 if (result == 0)

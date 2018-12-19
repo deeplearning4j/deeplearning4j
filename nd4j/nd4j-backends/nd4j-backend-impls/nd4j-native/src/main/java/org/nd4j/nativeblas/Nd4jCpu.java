@@ -17709,6 +17709,35 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
+         * log_matrix_determinant op.
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M)
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: *) with log determinant for all
+         * M x M matricies
+         */
+
+//         #if NOT_EXCLUDED(OP_log_matrix_determinant)
+        @Namespace("nd4j::ops") public static class log_matrix_determinant extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public log_matrix_determinant(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public log_matrix_determinant(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public log_matrix_determinant position(long position) {
+                return (log_matrix_determinant)super.position(position);
+            }
+        
+                                                                                    public log_matrix_determinant() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
          * matrix_inverse op. - make inverse for all 2D square matricies found in the input tensor
          *
          * input params:

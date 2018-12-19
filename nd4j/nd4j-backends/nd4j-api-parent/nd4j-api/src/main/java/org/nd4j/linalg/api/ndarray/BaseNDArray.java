@@ -112,6 +112,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     //protected transient DataBuffer stride;
     protected transient boolean compressed = false;
 
+    protected transient boolean released = false;
+
     // this field holds jvm copy of shapeInfo
     protected transient JvmShapeInfo jvmShapeInfo;
 
@@ -6462,5 +6464,34 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected void validateNumericalArray(String opName){
         if(dataType() == DataType.BOOL || dataType() == DataType.UTF8)
             throw new IllegalStateException("Cannot apply operation " + opName + " to array with " + dataType() + " datatype. Array shape: " + Arrays.toString(shape()));
+    }
+
+    @Override
+    public boolean closeable() {
+        if (released || isAttached())
+            return false;
+
+        // empty arrays have no buffer at all
+        if (isEmpty())
+            return true;
+
+        if (isView())
+            return false;
+
+        return data.closeable();
+    }
+
+    @Override
+    public void close() {
+        // empty arrays have no buffer at all
+        if (released || isEmpty())
+            return;
+
+        if (!closeable())
+            throw new ND4JIllegalStateException("Can't release this INDArray");
+
+        data.close();
+
+        released = true;
     }
 }
