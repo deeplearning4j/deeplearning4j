@@ -131,7 +131,7 @@ public interface OpExecutioner {
      * @param op the operation to execute
      * @return the accumulated result
      */
-    ReduceOp execAndReturn(Variance op, boolean biasCorrected);
+    ReduceOp execAndReturn(Variance op);
 
     /**Execute and return the result from an index accumulation
      * @param op the index accumulation operation to execute
@@ -154,21 +154,13 @@ public interface OpExecutioner {
      * @param op*/
     INDArray execAndReturn(ShapeOp op);
 
-
-    /**Execute the operation along 1 or more dimensions
-     *
-     * @param op the operation to execute
-     */
-    Op exec(Op op, int... dimension);
-
-
     /**
      * Execute an reduceOp along one or more dimensions
      * @param reduceOp the reduceOp
      * @param dimension the dimension
      * @return the reduceOp op
      */
-    INDArray exec(ReduceOp reduceOp, int... dimension);
+    INDArray exec(ReduceOp reduceOp);
 
     /**
      * Execute an broadcast along one or more dimensions
@@ -176,7 +168,7 @@ public interface OpExecutioner {
      * @param dimension the dimension
      * @return the broadcast op
      */
-    INDArray exec(BroadcastOp broadcast, int... dimension);
+    INDArray exec(BroadcastOp broadcast);
 
     /**
      * Execute an accumulation along one or more dimensions
@@ -184,7 +176,7 @@ public interface OpExecutioner {
      * @param dimension the dimension
      * @return the accmulation op
      */
-    INDArray exec(Variance accumulation, boolean biasCorrected, int... dimension);
+    INDArray exec(Variance accumulation);
 
 
     /** Execute an index accumulation along one or more dimensions
@@ -192,7 +184,7 @@ public interface OpExecutioner {
      * @param dimension the dimension/s to execute along
      * @return result
      */
-    INDArray exec(IndexAccumulation indexAccum, int... dimension);
+    INDArray exec(IndexAccumulation indexAccum);
 
 
 
