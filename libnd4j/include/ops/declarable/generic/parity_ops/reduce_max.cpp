@@ -57,9 +57,14 @@ namespace ops {
             keepDims = B_ARG(0);
         else if (block.getTArguments()->size() > 0)
             keepDims = (bool)T_ARG(0);
-    
-        std::vector<int> dimensions = *block.getIArguments();
-        Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
+
+        auto axes = *block.getIArguments();
+        if (block.width() > 1) {
+            auto axesVector = INPUT_VARIABLE(1);
+            helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, axes);
+        }
+
+        Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), axes, inputShape->at(0), keepDims, false, block.getWorkspace());
         ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
 
         return SHAPELIST(outShapeInfo);

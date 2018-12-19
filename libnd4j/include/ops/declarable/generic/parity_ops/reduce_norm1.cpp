@@ -110,7 +110,7 @@ namespace ops {
 
             auto axes = *block.getIArguments();
             if (block.width() > 2) {
-                auto axesVector = INPUT_VARIABLE(1);
+                auto axesVector = INPUT_VARIABLE(2);
                 helpers::adjustAxis(input, axesVector, axes);
             }
 //            else if (block.getIArguments()->size())

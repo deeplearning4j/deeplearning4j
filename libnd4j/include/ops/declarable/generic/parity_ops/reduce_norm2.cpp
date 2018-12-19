@@ -30,7 +30,7 @@ namespace ops {
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
         auto axes = *block.getIArguments();
-        if (block.width() > 2) {
+        if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
             helpers::adjustAxis(input, axesVector, axes);
         }
@@ -52,7 +52,7 @@ namespace ops {
     DECLARE_SHAPE_FN(reduce_norm2) {
 
         auto axes = *block.getIArguments();
-        if (block.width() > 2) {
+        if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
             helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, axes);
         }
@@ -79,8 +79,6 @@ namespace ops {
 
     DECLARE_SHAPE_FN(reduce_norm2_bp) {    
 
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    
         Nd4jLong* outShapeInfo;// = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
         COPY_SHAPE(inputShape->at(0), outShapeInfo);
 
@@ -111,12 +109,12 @@ namespace ops {
                 keepDims = B_ARG(0);
             else if (block.getTArguments()->size())
                 keepDims = (bool)T_ARG(0);
+
             std::vector<Nd4jLong> axesLong;
             for (size_t i = 0; i < axes.size(); i++)
                 axesLong.emplace_back(axes[i]);
 
 
-            std::vector<NDArray*> inputVec({input});
             nd4j::ops::reduce_norm2 op;
             std::unique_ptr<ResultSet> tmpResult(op.execute({input}, {}, axesLong, {keepDims}, false));
             if (tmpResult->status() != Status::OK())

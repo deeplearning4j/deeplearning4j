@@ -30,7 +30,7 @@ namespace ops {
         auto output = OUTPUT_VARIABLE(0);
         //std::vector<int> axes = *block.getIArguments();
         auto axes = *block.getIArguments();
-        if (block.width() > 2) {
+        if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
             helpers::adjustAxis(input, axesVector, axes);
         }
@@ -53,8 +53,8 @@ namespace ops {
     DECLARE_SHAPE_FN(reduce_sum) {
 
         auto axes = *block.getIArguments();
-        if (block.width() > 2) {
-            auto axesVector = INPUT_VARIABLE(2);
+        if (block.width() > 1) {
+            auto axesVector = INPUT_VARIABLE(1);
             helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, axes);
         }
 //            else if (block.getIArguments()->size())

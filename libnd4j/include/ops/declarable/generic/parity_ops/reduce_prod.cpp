@@ -31,7 +31,7 @@ namespace ops {
         auto output = OUTPUT_VARIABLE(0);
 
         auto axes = *block.getIArguments();
-        if (block.width() > 2) {
+        if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
             helpers::adjustAxis(input, axesVector, axes);
         }
@@ -59,7 +59,7 @@ namespace ops {
     DECLARE_SHAPE_FN(reduce_prod) {
 
         auto axes = *block.getIArguments();
-        if (block.width() > 2) {
+        if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
             helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, axes);
         }
@@ -126,7 +126,6 @@ namespace ops {
         }
         else { // result 
 
-            auto axes = *block.getIArguments();
             helpers::reduceProductBP(input, epsilon, tempProd, output, axes);
         }
 
