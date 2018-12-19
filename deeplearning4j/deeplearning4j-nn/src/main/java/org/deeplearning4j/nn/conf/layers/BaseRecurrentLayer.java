@@ -75,12 +75,6 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
     }
 
-    @Override
-    public boolean isPretrain() {
-        return false;
-    }
-
-
     @NoArgsConstructor
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
         protected List<LayerConstraint> recurrentConstraints;

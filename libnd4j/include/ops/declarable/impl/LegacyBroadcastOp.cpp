@@ -19,18 +19,24 @@
 //
 
 #include <ops/declarable/LegacyBroadcastOp.h>
-
+#include <helpers/TAD.h>
+#include <ops/declarable/helpers/axis.h>
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        Nd4jStatus LegacyBroadcastOp<T>::validateAndExecute(Context<T> &block) {
+        Nd4jStatus LegacyBroadcastOp::validateAndExecute(Context &block) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
 
-            std::vector<int> dims(*block.getIArguments());
+            std::vector<int> dims(*block.getAxis());
+            if (dims.size() == 0 && block.width() > 2) {
+                auto axis = INPUT_VARIABLE(2);
+                helpers::adjustAxis(x, axis, dims);
+                //dims = ShapeUtils::convertAxisToTadTarget(z->rankOf(), dims);
+            }
             if (dims.size() > 0)
                 std::sort(dims.begin(), dims.end());
 
@@ -40,18 +46,18 @@ namespace nd4j {
             shape::TAD tad(x->shapeInfo(), dims.data(), dims.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
-
-            REQUIRE_TRUE(shape::length(tad.tadOnlyShapeInfo) == y->lengthOf(), 0, "Length of broadcast TAD should be equal to length of Y operand, but got [%i] vs [%i]", (int) shape::length(tad.tadOnlyShapeInfo), (int) y->lengthOf());
+            Nd4jLong tadLen = shape::length(tad.tadOnlyShapeInfo);
+            REQUIRE_TRUE(tadLen == y->lengthOf(), 0, "Length of broadcast TAD should be equal to length of Y operand, but got [%i] vs [%i]",tadLen, (int) y->lengthOf());
 
             if (x == z)
-                NativeOpExcutioner<T>::execBroadcast(opNum, x->buffer(), x->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), dims.data(), dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
+                NativeOpExcutioner::execBroadcast(opNum, x->buffer(), x->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), dims.data(), dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
             else {
                 // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare and pass separate TAD info
                 shape::TAD tadZ(z->shapeInfo(), dims.data(), dims.size());
                 tadZ.createTadOnlyShapeInfo();
                 tadZ.createOffsets();
 
-                NativeOpExcutioner<T>::execBroadcast(opNum, x->buffer(), x->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), dims.data(), dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tadZ.tadOnlyShapeInfo, tadZ.tadOffsets);
+                NativeOpExcutioner::execBroadcast(opNum, x->buffer(), x->shapeInfo(), y->buffer(), y->shapeInfo(), z->buffer(), z->shapeInfo(), dims.data(), dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tadZ.tadOnlyShapeInfo, tadZ.tadOffsets);
             }
 
             STORE_RESULT(*z);
@@ -59,26 +65,22 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        template <typename T>
-        LegacyBroadcastOp<T>::LegacyBroadcastOp() : LegacyOp<T>::LegacyOp(2) {
+        LegacyBroadcastOp::LegacyBroadcastOp() : LegacyOp::LegacyOp(2) {
             //
         }
 
-        template <typename T>
-        LegacyBroadcastOp<T>::LegacyBroadcastOp(int opNum) : LegacyOp<T>::LegacyOp(2, opNum) {
+        LegacyBroadcastOp::LegacyBroadcastOp(int opNum) : LegacyOp::LegacyOp(2, opNum) {
             //
         }
 
-        template <typename T>
-        LegacyOp<T>* LegacyBroadcastOp<T>::clone() {
+        LegacyOp* LegacyBroadcastOp::clone() {
             return new LegacyBroadcastOp(this->_opNum);
         }
 
         /**
         *   If external NDArray wasn't specified - the same shape is returned by all broadcast ops.
         */
-        template <typename T>
-        ShapeList* LegacyBroadcastOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
+        ShapeList* LegacyBroadcastOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             // FIXME: remove memcpy
@@ -88,10 +90,5 @@ namespace nd4j {
 
             return SHAPELIST(newShape);
         }
-
-
-        template class ND4J_EXPORT LegacyBroadcastOp<float>;
-        template class ND4J_EXPORT LegacyBroadcastOp<float16>;
-        template class ND4J_EXPORT LegacyBroadcastOp<double>;
     }
 }

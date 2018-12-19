@@ -23,6 +23,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
@@ -92,7 +93,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
     }
 
     @Override
-    public PagedPointer alloc(long requiredMemory, DataBuffer.Type type, boolean initialize) {
+    public PagedPointer alloc(long requiredMemory, DataType type, boolean initialize) {
         return this.alloc(requiredMemory, MemoryKind.DEVICE, type, initialize);
     }
 
@@ -120,8 +121,11 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
 
     @Override
-    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type type, boolean initialize) {
+    public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataType type, boolean initialize) {
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
+
+        if (requiredMemory % 8 != 0)
+            requiredMemory += 8 - (requiredMemory % 8);
 
         if (!isUsed.get()) {
             if (disabledCounter.incrementAndGet() % 10 == 0)
@@ -139,11 +143,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
 
         }
-
-
-        long div = requiredMemory % 8;
-        if (div!= 0)
-            requiredMemory += div;
 
         boolean trimmer = (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && requiredMemory + cycleAllocations.get() > initialBlockSize.get() && initialBlockSize.get() > 0 && kind == MemoryKind.DEVICE) || trimmedMode.get();
 

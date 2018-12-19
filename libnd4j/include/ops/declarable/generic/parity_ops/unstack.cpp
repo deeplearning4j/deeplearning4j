@@ -55,7 +55,7 @@ namespace nd4j {
 
             delete tads;
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(unpack, unstack);
         
@@ -96,13 +96,19 @@ namespace nd4j {
                 Nd4jLong *newShape;
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
                 if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(shape.size(), shape.data(), newShape);
+                    shape::shapeBuffer(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
                 else
-                    shape::shapeBufferFortran(shape.size(), shape.data(), newShape);
+                    shape::shapeBufferFortran(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
                 result->push_back(newShape);
             }
 
             return result;
+        }
+
+        DECLARE_TYPES(unstack) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setSameMode(true);
         }
     }
 }

@@ -28,8 +28,7 @@ namespace nd4j {
 namespace ops  {
 
 CUSTOM_OP_IMPL(svd, 1, 1, false, 0, 3) {
-    
-    NDArray<T>* x = INPUT_VARIABLE(0);    
+    auto x = INPUT_VARIABLE(0);
     
     const int rank =  x->rankOf();
     REQUIRE_TRUE(rank >= 2 , 0, "SVD OP: the rank of input array must be >=2, but got %i instead!", rank);
@@ -43,6 +42,12 @@ CUSTOM_OP_IMPL(svd, 1, 1, false, 0, 3) {
     return Status::OK();;
 }
 
+
+    DECLARE_TYPES(svd) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                ->setSameMode(true);
+    }
 
 DECLARE_SHAPE_FN(svd) {
 
@@ -69,7 +74,7 @@ DECLARE_SHAPE_FN(svd) {
         sShapeInfo[rank-1] = diagSize;
     }
     
-    shape::updateStrides(sShapeInfo, shape::order(inShapeInfo));
+    ShapeUtils::updateStridesAndType(sShapeInfo, inShapeInfo, shape::order(inShapeInfo));
     
     if(calcUV){
 

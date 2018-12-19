@@ -28,8 +28,14 @@ namespace nd4j {
         REDUCTION_OP_IMPL(testreduction, 1, 1, false, 0, -1) {
             auto z = OUTPUT_VARIABLE(0);
 
-            STORE_RESULT(*z);
-            return ND4J_STATUS_OK;
+//            STORE_RESULT(*z);
+            return Status::OK();
+        }
+
+        DECLARE_TYPES(testreduction) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
         }
     }
 }

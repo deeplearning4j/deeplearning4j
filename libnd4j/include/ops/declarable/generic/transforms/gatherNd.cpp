@@ -31,9 +31,9 @@ namespace ops {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
 
-	NDArray<T>* input   = INPUT_VARIABLE(0);
-    NDArray<T>* indices = INPUT_VARIABLE(1);
-    NDArray<T>* output  = OUTPUT_VARIABLE(0);
+	auto input   = INPUT_VARIABLE(0);
+    auto indices = INPUT_VARIABLE(1);
+    auto output  = OUTPUT_VARIABLE(0);
 
     const int rankIn = input->rankOf();
     const int rankInd = indices->rankOf();    
@@ -47,6 +47,12 @@ CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
     return Status::OK();
 }
 
+DECLARE_TYPES(gather_nd) {
+    getOpDescriptor()
+         ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+         ->setAllowedInputTypes(1, {ALL_INTS})
+         ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+}
 
 DECLARE_SHAPE_FN(gather_nd) {
 
@@ -72,8 +78,8 @@ DECLARE_SHAPE_FN(gather_nd) {
     for(int i = 0; i < rankIn-lastIndDim; ++i)
         outShapeInfo[rankInd + i] = inShapeInfoIn[lastIndDim + i + 1];
 
-	shape::updateStrides(outShapeInfo, 'c');
-
+	ShapeUtils::updateStridesAndType(outShapeInfo, inShapeInfoIn, 'c');
+    //ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inShapeInfoIn));
     return SHAPELIST(outShapeInfo);    
 }
 

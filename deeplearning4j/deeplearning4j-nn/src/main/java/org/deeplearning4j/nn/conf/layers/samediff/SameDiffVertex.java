@@ -174,15 +174,9 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
         //Default implementation: no op
     }
 
-
     @Override
     public String getLayerName() {
         return name;
-    }
-
-    @Override
-    public boolean isPretrain() {
-        return false;
     }
 
     @Override
@@ -243,10 +237,5 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
     @Override
     public double getGradientNormalizationThreshold() {
         return gradientNormalizationThreshold;
-    }
-
-    @Override
-    public void setPretrain(boolean pretrain) {
-        //No op
     }
 }

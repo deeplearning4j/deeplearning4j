@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.ops;
 
-import lombok.val;
 import org.apache.commons.math3.util.FastMath;
 import org.junit.After;
 import org.junit.Before;
@@ -24,13 +23,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.scalar.Step;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Sigmoid;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -49,7 +49,7 @@ public class DerivativeTests extends BaseNd4jTest {
     public static final double REL_ERROR_TOLERANCE = 1e-3;
 
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public DerivativeTests(Nd4jBackend backend) {
         super(backend);
@@ -58,7 +58,7 @@ public class DerivativeTests extends BaseNd4jTest {
 
     @Before
     public void before() {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @After
@@ -96,14 +96,13 @@ public class DerivativeTests extends BaseNd4jTest {
 
     @Test
     public void testRectifiedLinearDerivative() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         //ReLU:
         //f(x) = max(0,x)
         //Piecewise differentiable; choose f'(0) = 0
         //f'(x) = 1 if x > 0
         //f'(x) = 0 if x <= 0
 
-        INDArray z = Nd4j.zeros(100);
+        INDArray z = Nd4j.zeros(100).castTo(DataType.DOUBLE);
         double[] expOut = new double[100];
         for (int i = 0; i < 100; i++) {
             double x = 0.1 * (i - 50);
@@ -338,7 +337,7 @@ public class DerivativeTests extends BaseNd4jTest {
     @Test
     public void testSoftSignDerivative() {
         //Derivative: 1 / (1+abs(x))^2
-        INDArray z = Nd4j.zeros(100);
+        INDArray z = Nd4j.zeros(100).castTo(DataType.DOUBLE);
         double[] expOut = new double[100];
         for (int i = 0; i < 100; i++) {
             double x = 0.1 * (i - 50);

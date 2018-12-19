@@ -28,15 +28,15 @@
 #include <vector>
 #include <graph/generated/result_generated.h>
 #include <pointercast.h>
+#include <dll.h>
 
 namespace  nd4j {
 
-    template<typename T> class NDArray; // forward declaration of template class NDArray
+    class NDArray; // forward declaration of template class NDArray
     
-    template<typename T>
-    class ResultSet {
+    class ND4J_EXPORT ResultSet {
     private:
-        std::vector<nd4j::NDArray<T> *> _content;
+        std::vector<nd4j::NDArray *> _content;
         Nd4jStatus _status = ND4J_STATUS_OK;
         bool _removable = true;
 
@@ -46,8 +46,8 @@ namespace  nd4j {
         ~ResultSet();
 
         int size();
-        nd4j::NDArray<T> *at(unsigned long idx);
-        void push_back(nd4j::NDArray<T> *array);
+        nd4j::NDArray* at(unsigned long idx);
+        void push_back(nd4j::NDArray* array);
 
         Nd4jStatus status();
         void setStatus(Nd4jStatus status);

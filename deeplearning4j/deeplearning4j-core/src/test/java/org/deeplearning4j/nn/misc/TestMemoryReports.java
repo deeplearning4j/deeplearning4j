@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -226,36 +227,36 @@ public class TestMemoryReports extends BaseDL4JTest {
         int total15Minibatch = numParams + 15 * actSize;
 
         //Fixed: should be just params
-        long fixedBytes = mr.getTotalMemoryBytes(0, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT);
-        long varBytes = mr.getTotalMemoryBytes(1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT)
+        long fixedBytes = mr.getTotalMemoryBytes(0, MemoryUseMode.INFERENCE, CacheMode.NONE, DataType.FLOAT);
+        long varBytes = mr.getTotalMemoryBytes(1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataType.FLOAT)
                         - fixedBytes;
 
         assertEquals(numParams * 4, fixedBytes);
         assertEquals(actSize * 4, varBytes);
 
-        long minibatch15 = mr.getTotalMemoryBytes(15, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT);
+        long minibatch15 = mr.getTotalMemoryBytes(15, MemoryUseMode.INFERENCE, CacheMode.NONE, DataType.FLOAT);
         assertEquals(total15Minibatch * 4, minibatch15);
 
         //        System.out.println(fixedBytes + "\t" + varBytes);
         //        System.out.println(mr.toString());
 
         assertEquals(actSize * 4, mr.getMemoryBytes(MemoryType.ACTIVATIONS, 1, MemoryUseMode.TRAINING, CacheMode.NONE,
-                        DataBuffer.Type.FLOAT));
+                        DataType.FLOAT));
         assertEquals(actSize * 4, mr.getMemoryBytes(MemoryType.ACTIVATIONS, 1, MemoryUseMode.INFERENCE, CacheMode.NONE,
-                        DataBuffer.Type.FLOAT));
+                        DataType.FLOAT));
 
         int inputActSize = 10 + 20;
         assertEquals(inputActSize * 4, mr.getMemoryBytes(MemoryType.ACTIVATION_GRADIENTS, 1, MemoryUseMode.TRAINING,
-                        CacheMode.NONE, DataBuffer.Type.FLOAT));
+                        CacheMode.NONE, DataType.FLOAT));
         assertEquals(0, mr.getMemoryBytes(MemoryType.ACTIVATION_GRADIENTS, 1, MemoryUseMode.INFERENCE, CacheMode.NONE,
-                        DataBuffer.Type.FLOAT));
+                        DataType.FLOAT));
 
         //Variable working memory - due to preout during backprop. But not it's the MAX value, as it can be GC'd or workspaced
         int workingMemVariable = 27;
         assertEquals(workingMemVariable * 4, mr.getMemoryBytes(MemoryType.WORKING_MEMORY_VARIABLE, 1,
-                        MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT));
+                        MemoryUseMode.TRAINING, CacheMode.NONE, DataType.FLOAT));
         assertEquals(0, mr.getMemoryBytes(MemoryType.WORKING_MEMORY_VARIABLE, 1, MemoryUseMode.INFERENCE,
-                        CacheMode.NONE, DataBuffer.Type.FLOAT));
+                        CacheMode.NONE, DataType.FLOAT));
     }
 
     @Test

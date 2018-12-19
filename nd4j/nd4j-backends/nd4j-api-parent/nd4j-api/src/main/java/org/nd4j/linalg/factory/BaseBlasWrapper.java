@@ -18,6 +18,7 @@ package org.nd4j.linalg.factory;
 
 import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.LinAlgExceptions;
 
@@ -97,7 +98,7 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
     public INDArray scal(double alpha, INDArray x) {
         LinAlgExceptions.assertVector(x);
 
-        if (x.data().dataType() == DataBuffer.Type.FLOAT)
+        if (x.data().dataType() == DataType.FLOAT)
             return scal((float) alpha, x);
         level1().scal(x.length(), alpha, x);
         return x;
@@ -107,7 +108,7 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
     public INDArray scal(float alpha, INDArray x) {
         LinAlgExceptions.assertVector(x);
 
-        if (x.data().dataType() == DataBuffer.Type.DOUBLE)
+        if (x.data().dataType() == DataType.DOUBLE)
             return scal((double) alpha, x);
         level1().scal(x.length(), alpha, x);
         return x;
@@ -124,7 +125,7 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
     public INDArray axpy(double da, INDArray dx, INDArray dy) {
         LinAlgExceptions.assertVector(dx, dy);
 
-        if (dx.data().dataType() == DataBuffer.Type.FLOAT)
+        if (dx.data().dataType() == DataType.FLOAT)
             return axpy((float) da, dx, dy);
         level1().axpy(dx.length(), da, dx, dy);
         return dy;
@@ -134,7 +135,7 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
     public INDArray axpy(float da, INDArray dx, INDArray dy) {
         LinAlgExceptions.assertVector(dx, dy);
 
-        if (dx.data().dataType() == DataBuffer.Type.DOUBLE)
+        if (dx.data().dataType() == DataType.DOUBLE)
             return axpy((double) da, dx, dy);
 
         level1().axpy(dx.length(), da, dx, dy);
@@ -168,8 +169,8 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
         LinAlgExceptions.assertVector(x, y);
         LinAlgExceptions.assertMatrix(a);
 
-        if (a.data().dataType() == DataBuffer.Type.FLOAT) {
-            //            DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, a, x, y);
+        if (a.data().dataType() == DataType.FLOAT) {
+            //            DefaultOpExecutioner.validateDataType(DataType.FLOAT, a, x, y);
             return gemv((float) alpha, a, x, (float) beta, y);
         } else {
             level2().gemv('N', 'N', alpha, a, x, beta, y);
@@ -182,7 +183,7 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
         LinAlgExceptions.assertVector(x, y);
         LinAlgExceptions.assertMatrix(a);
 
-        if (a.data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (a.data().dataType() == DataType.DOUBLE) {
             return gemv((double) alpha, a, x, (double) beta, y);
         }
         level2().gemv('N', 'N', alpha, a, x, beta, y);
@@ -194,7 +195,7 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
         LinAlgExceptions.assertVector(x, y);
         LinAlgExceptions.assertMatrix(a);
 
-        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
+        if (x.data().dataType() == DataType.FLOAT) {
             return ger((float) alpha, x, y, a);
         }
 
@@ -208,7 +209,7 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
         LinAlgExceptions.assertMatrix(a);
 
 
-        if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (x.data().dataType() == DataType.DOUBLE) {
             return ger((double) alpha, x, y, a);
         }
 
@@ -220,7 +221,7 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
     public INDArray gemm(double alpha, INDArray a, INDArray b, double beta, INDArray c) {
         LinAlgExceptions.assertMatrix(a, b, c);
 
-        if (a.data().dataType() == DataBuffer.Type.FLOAT) {
+        if (a.data().dataType() == DataType.FLOAT) {
             return gemm((float) alpha, a, b, (float) beta, c);
         }
 
@@ -235,7 +236,7 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
         LinAlgExceptions.assertMatrix(a, b, c);
 
 
-        if (a.data().dataType() == DataBuffer.Type.DOUBLE) {
+        if (a.data().dataType() == DataType.DOUBLE) {
             return gemm((double) alpha, a, b, (double) beta, c);
         }
 

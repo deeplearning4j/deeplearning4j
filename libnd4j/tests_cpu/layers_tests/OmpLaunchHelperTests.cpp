@@ -80,3 +80,28 @@ TEST_F(OmpLaunchHelperTests, Test_BetterThreads_3) {
     auto n = OmpLaunchHelper::betterThreads(899, 6);
     ASSERT_EQ(1, n);
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(OmpLaunchHelperTests, loop_test1) {
+    
+    const Nd4jLong N = 20010;
+    Nd4jLong desiredNumThreads = 2;
+    int x[N] = {0};
+
+    OmpLaunchHelper info(N, desiredNumThreads);    
+#pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+    {                        
+        auto threadNum = omp_get_thread_num();
+        auto xi = x + info.getThreadOffset(threadNum);
+#pragma omp simd
+        for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)
+            xi[i] = xi[i] + 1;
+    }
+    
+    #ifdef _OPENMP
+        ASSERT_TRUE(info._numThreads == desiredNumThreads);        
+    #else
+        ASSERT_TRUE(info._numThreads == 1);
+    #endif
+    
+}

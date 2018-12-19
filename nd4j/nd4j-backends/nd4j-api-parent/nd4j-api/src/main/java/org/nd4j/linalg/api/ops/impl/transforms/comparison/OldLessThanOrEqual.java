@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
@@ -31,7 +32,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class OldLessThanOrEqual extends BaseTransformOp {
+public class OldLessThanOrEqual extends BaseTransformBoolOp {
     public OldLessThanOrEqual(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
@@ -80,7 +81,7 @@ public class OldLessThanOrEqual extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 12;
+        return 5;
     }
 
     @Override

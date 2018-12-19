@@ -24,11 +24,9 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-    template <typename T>
-    void rollFunctorLinear(NDArray<T>* input, NDArray<T>* output, int shift, bool inplace = false);
+    void rollFunctorLinear(NDArray* input, NDArray* output, int shift, bool inplace = false);
 
-    template <typename T>
-    void rollFunctorFull(NDArray<T>* input, NDArray<T>* output, int shift, std::vector<int> const& axes, bool inplace = false);
+    void rollFunctorFull(NDArray* input, NDArray* output, int shift, std::vector<int> const& axes, bool inplace = false);
 }
 }
 }

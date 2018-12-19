@@ -30,9 +30,9 @@ namespace ops  {
 OP_IMPL(mergemaxindex, -1, 1, false) {
 
     REQUIRE_OK(this->validateInputDimensionsMatch(block));
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
-    std::vector<NDArray<T>*> inArrs(block.width());
+    std::vector<NDArray*> inArrs(block.width());
     
     for(int i = 0; i < block.width(); ++i)
         inArrs[i] = INPUT_VARIABLE(i);
@@ -44,6 +44,10 @@ OP_IMPL(mergemaxindex, -1, 1, false) {
 
 DECLARE_SYN(MergeMaxIndex, mergemaxindex);
 
+    DECLARE_TYPES(mergemaxindex) {
+        getOpDescriptor()
+                ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS});
+    }
 }
 }
 

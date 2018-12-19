@@ -149,11 +149,6 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public boolean isPretrain() {
-        return layer.isPretrain();
-    }
-
-    @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         return layer.getMemoryReport(inputType);
     }

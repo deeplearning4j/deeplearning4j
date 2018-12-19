@@ -25,6 +25,7 @@ import org.junit.rules.ErrorCollector;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -233,7 +234,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testGetRows() {
-        INDArray arr = Nd4j.linspace(1, 9, 9).reshape(3, 3);
+        INDArray arr = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
         INDArray testAssertion = Nd4j.create(new double[][] {{5, 8}, {6, 9}});
 
         INDArray test = arr.get(new SpecifiedIndex(1, 2), new SpecifiedIndex(1, 2));

@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ndarray;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Rule;
@@ -25,6 +26,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -65,7 +67,7 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
     }
 
     public static void compareArrays(int rank, char ordering, TemporaryFolder testDir) throws Exception {
-        List<Pair<INDArray, String>> all = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,ordering);
+        List<Pair<INDArray, String>> all = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,ordering, DataType.FLOAT);
         Iterator<Pair<INDArray,String>> iter = all.iterator();
         int cnt = 0;
         while (iter.hasNext()) {
@@ -90,17 +92,17 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
 
         File dir = testDir.newFolder();
         int count = 0;
-        for(int[] testShape : new int[][]{{1,1}, {3,1}, {4,5}, {1,2,3}, {2,1,3}, {2,3,1}, {2,3,4}, {1,2,3,4}, {2,3,4,2}}){
+        for(val testShape : new long[][]{{1,1}, {3,1}, {4,5}, {1,2,3}, {2,1,3}, {2,3,1}, {2,3,4}, {1,2,3,4}, {2,3,4,2}}){
             List<Pair<INDArray, String>> l = null;
             switch (testShape.length){
                 case 2:
-                    l = NDArrayCreationUtil.getAllTestMatricesWithShape(testShape[0], testShape[1], 12345);
+                    l = NDArrayCreationUtil.getAllTestMatricesWithShape(testShape[0], testShape[1], 12345, DataType.FLOAT);
                     break;
                 case 3:
-                    l = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, testShape);
+                    l = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, testShape, DataType.FLOAT);
                     break;
                 case 4:
-                    l = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, testShape);
+                    l = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, testShape, DataType.FLOAT);
                     break;
                 default:
                     throw new RuntimeException();

@@ -29,11 +29,11 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-void meshgrid(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs, const bool swapFirst2Dims) {
+
+void meshgrid(const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const bool swapFirst2Dims) {
 
     const int rank = inArrs.size();
-    int* inIndices = new int[rank];
+    int inIndices[MAX_RANK];
     std::iota(inIndices, inIndices + rank, 0);
     if(swapFirst2Dims && rank > 1) {
         inIndices[0] = 1;
@@ -41,21 +41,13 @@ void meshgrid(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<
     }
             
     for(int i = 0; i < rank; ++i) {        
-        ResultSet<T>* list = outArrs[i]->allTensorsAlongDimension({inIndices[i]});        
+        auto list = outArrs[i]->allTensorsAlongDimension({inIndices[i]});
         for(int j = 0; j < list->size(); ++j)
             list->at(j)->assign(inArrs[i]);
 
         delete list;
-    }    
-
-    delete []inIndices;
-    
+    }
 }
-
-
-template void meshgrid<float>(const std::vector<NDArray<float>*>& inArrs, const std::vector<NDArray<float>*>& outArrs, const bool swapFirst2Dims);
-template void meshgrid<float16>(const std::vector<NDArray<float16>*>& inArrs, const std::vector<NDArray<float16>*>& outArrs, const bool swapFirst2Dims);
-template void meshgrid<double>(const std::vector<NDArray<double>*>& inArrs, const std::vector<NDArray<double>*>& outArrs, const bool swapFirst2Dims);
 
 }
 }

@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.nio.Buffer;
@@ -42,11 +43,21 @@ import java.nio.Buffer;
 public interface Op {
     enum Type {
         SCALAR,
-        TRANSFORM,
+        SCALAR_BOOL,
+        TRANSFORM_SAME,
+        TRANSFORM_FLOAT,
+        TRANSFORM_ANY,
+        TRANSFORM_BOOL,
+        TRANSFORM_STRICT,
         PAIRWISE,
+        PAIRWISE_BOOL,
         SPECIAL,
         BROADCAST,
-        REDUCE,
+        BROADCAST_BOOL,
+        REDUCE_LONG,
+        REDUCE_SAME,
+        REDUCE_FLOAT,
+        REDUCE_BOOL,
         INDEXREDUCE,
         VARIANCE,
         REDUCE3,
@@ -81,7 +92,7 @@ public interface Op {
      * Returns the extra args as a data buffer
      * @return
      */
-    DataBuffer extraArgsDataBuff();
+    DataBuffer extraArgsDataBuff(DataType bufferType);
 
     /**
      * Returns a buffer of either float

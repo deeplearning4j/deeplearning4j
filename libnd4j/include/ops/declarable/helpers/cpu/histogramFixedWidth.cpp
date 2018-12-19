@@ -24,19 +24,20 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
+
 template <typename T>
-void histogramFixedWidth(const NDArray<T>& input, const NDArray<T>& range, NDArray<T>& output) {
+void histogramFixedWidth_(const NDArray& input, const NDArray& range, NDArray& output) {
 
      const int nbins = output.lengthOf();
 
     // firstly initialize output with zeros 
     if(output.ews() == 1)
-        memset(output.getBuffer(), 0, nbins * output.sizeOfT());
+        memset(output.buffer(), 0, nbins * output.sizeOfT());
     else
-        output = T(0);
+        output = 0;
 
-    const T leftEdge  = range(0.);
-    const T rightEdge = range(1);
+    const T leftEdge  = range.e<double>(0);
+    const T rightEdge = range.e<double>(1);
 
     const T binWidth       = (rightEdge - leftEdge ) / nbins;
     const T secondEdge     = leftEdge + binWidth;
@@ -45,26 +46,27 @@ void histogramFixedWidth(const NDArray<T>& input, const NDArray<T>& range, NDArr
 #pragma omp parallel for schedule(guided)
     for(Nd4jLong i = 0; i < input.lengthOf(); ++i) {
 
-        const T value = input(i);
+        const T value = input.e<T>(i);
 
         if(value < secondEdge)
 #pragma omp critical            
-            ++output(0.);
+            output.p<Nd4jLong>(0, output.e<Nd4jLong>(0) + 1);
         else if(value >= lastButOneEdge)
 #pragma omp critical
-            ++output(nbins-1);
+            output.p<Nd4jLong>(nbins-1, output.e<Nd4jLong>(nbins-1) + 1);
         else {
-#pragma omp critical            
-            ++output(static_cast<Nd4jLong>((value - leftEdge) / binWidth));
+            Nd4jLong currInd = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
+#pragma omp critical
+            output.p<Nd4jLong>(currInd, output.e<Nd4jLong>(currInd) + 1);            
         }
     }
-
 }
 
+void histogramFixedWidth(const NDArray& input, const NDArray& range, NDArray& output) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), histogramFixedWidth_, (input, range, output), LIBND4J_TYPES);
+}
+BUILD_SINGLE_TEMPLATE(template void histogramFixedWidth_, (const NDArray& input, const NDArray& range, NDArray& output), LIBND4J_TYPES);
 
-template void histogramFixedWidth<float16>(const NDArray<float16>& input, const NDArray<float16>& range, NDArray<float16>& output);
-template void histogramFixedWidth<float>(const NDArray<float>& input, const NDArray<float>& range, NDArray<float>& output);
-template void histogramFixedWidth<double>(const NDArray<double>& input, const NDArray<double>& range, NDArray<double>& output);
 
 }
 }

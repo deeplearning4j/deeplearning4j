@@ -20,7 +20,9 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.*;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
 
 /**
@@ -55,6 +57,11 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     public SparseNDArrayCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
 
         super(data, columns, pointerB, pointerE, shape);
+    }
+
+    @Override
+    public String getStringUnsafe(long index) {
+        return null;
     }
 
     @Override
@@ -101,23 +108,13 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     }
 
     @Override
+    public LongShapeDescriptor shapeDescriptor() {
+        return null;
+    }
+
+    @Override
     public int toFlatArray(FlatBufferBuilder builder) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray convertToHalfs() {
-        return null;
-    }
-
-    @Override
-    public INDArray convertToFloats() {
-        return null;
-    }
-
-    @Override
-    public INDArray convertToDoubles() {
-        return null;
     }
 
     /**
@@ -127,6 +124,46 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
      */
     @Override
     public boolean isEmpty() {
+        return false;
+    }
+
+    @Override
+    public boolean isR() {
+        return false;
+    }
+
+    @Override
+    public boolean isZ() {
+        return false;
+    }
+
+    @Override
+    public boolean isB() {
+        return false;
+    }
+
+    @Override
+    public INDArray castTo(DataType dataType) {
+        return null;
+    }
+
+    @Override
+    public boolean all() {
+        return false;
+    }
+
+    @Override
+    public boolean any() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean none() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isS() {
         return false;
     }
 }

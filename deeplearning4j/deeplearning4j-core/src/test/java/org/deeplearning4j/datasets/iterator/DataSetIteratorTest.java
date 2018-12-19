@@ -106,8 +106,8 @@ public class DataSetIteratorTest extends BaseDL4JTest {
             INDArray fAct = dsAct.getFeatures();
             INDArray lAct = dsAct.getLabels();
 
-            assertEquals(fExp, fAct);
-            assertEquals(lExp, lAct);
+            assertEquals(fExp, fAct.castTo(fExp.dataType()));
+            assertEquals(lExp, lAct.castTo(lExp.dataType()));
         }
         assertFalse(iter.hasNext());
     }
@@ -193,12 +193,12 @@ public class DataSetIteratorTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testCifarIterator() throws Exception {
+    public void testCifar10Iterator() throws Exception {
         int numExamples = 1;
-        int row = 28;
-        int col = 28;
-        int channels = 1;
-        CifarDataSetIterator iter = new CifarDataSetIterator(numExamples, numExamples, new int[] {row, col, channels});
+        int row = 32;
+        int col = 32;
+        int channels = 3;
+        Cifar10DataSetIterator iter = new Cifar10DataSetIterator(numExamples);
         assertTrue(iter.hasNext());
         DataSet data = iter.next();
         assertEquals(numExamples, data.getLabels().size(0));
@@ -220,13 +220,11 @@ public class DataSetIteratorTest extends BaseDL4JTest {
         final int width = 32;
         int channels = 3;
         int outputNum = CifarLoader.NUM_LABELS;
-        int numSamples = 10;
         int batchSize = 5;
         int seed = 123;
         int listenerFreq = 1;
 
-        CifarDataSetIterator cifar = new CifarDataSetIterator(batchSize, numSamples,
-                        new int[] {height, width, channels}, preProcessCifar, true);
+        Cifar10DataSetIterator cifar = new Cifar10DataSetIterator(batchSize);
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
@@ -248,7 +246,7 @@ public class DataSetIteratorTest extends BaseDL4JTest {
 
         model.fit(cifar);
 
-        cifar = new CifarDataSetIterator(batchSize, 10, false);
+        cifar = new Cifar10DataSetIterator(batchSize);
         Evaluation eval = new Evaluation(cifar.getLabels());
         while (cifar.hasNext()) {
             DataSet testDS = cifar.next(batchSize);

@@ -86,7 +86,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected StepFunction stepFunction;
     //minimize or maximize objective
     protected boolean minimize = true;
-    protected boolean pretrain;
 
     // this field defines preOutput cache
     protected CacheMode cacheMode;
@@ -141,13 +140,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         variables.clear();
     }
 
-    public void setPretrain(boolean pretrain){
-        this.pretrain = pretrain;
-        if(layer != null){
-            layer.setPretrain(pretrain);
-        }
-    }
-
     /**
      * Fluent interface for building a list of configurations
      */
@@ -164,18 +156,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         public ListBuilder(Builder globalConfig) {
             this(globalConfig, new HashMap<Integer, Builder>());
-        }
-
-        @Deprecated
-        public ListBuilder backprop(boolean backprop) {
-            this.backprop = backprop;
-            return this;
-        }
-
-        @Deprecated
-        public ListBuilder pretrain(boolean pretrain) {
-            this.pretrain = pretrain;
-            return this;
         }
 
         public ListBuilder layer(int ind, @NonNull Layer layer) {
@@ -268,8 +248,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             WorkspaceMode wsmTest = (globalConfig.setIWM ? globalConfig.inferenceWorkspaceMode : inferenceWorkspaceMode);
 
 
-            return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
-                            .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
+            return new MultiLayerConfiguration.Builder().inputPreProcessors(inputPreProcessors)
+                            .backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
                             .trainingWorkspaceMode(wsmTrain).cacheMode(globalConfig.cacheMode)
                             .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputLayerConfig(validateOutputConfig)
@@ -501,7 +481,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected boolean minimize = true;
         protected GradientNormalization gradientNormalization = GradientNormalization.None;
         protected double gradientNormalizationThreshold = 1.0;
-        protected boolean pretrain = false;
         protected List<LayerConstraint> allParamConstraints;
         protected List<LayerConstraint> weightConstraints;
         protected List<LayerConstraint> biasConstraints;
@@ -529,7 +508,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 seed = newConf.seed;
                 stepFunction = newConf.stepFunction;
                 miniBatch = newConf.miniBatch;
-                pretrain = newConf.pretrain;
             }
         }
 
@@ -1059,7 +1037,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.seed = seed;
             conf.stepFunction = stepFunction;
             conf.miniBatch = miniBatch;
-            conf.pretrain = pretrain;
             conf.cacheMode = this.cacheMode;
 
             configureLayer(layer);

@@ -32,11 +32,6 @@ public interface TrainingConfig {
     String getLayerName();
 
     /**
-     * @return True if the layer is set up for layerwise pretraining
-     */
-    boolean isPretrain();
-
-    /**
      * Get the L1 coefficient for the given parameter.
      * Different parameters may have different L1 values, even for a single .l1(x) configuration.
      * For example, biases generally aren't L1 regularized, even if weights are
@@ -85,10 +80,5 @@ public interface TrainingConfig {
      * @return The gradient normalization threshold
      */
     double getGradientNormalizationThreshold();
-
-    /**
-     * @param pretrain Whether the layer is currently undergoing layerwise unsupervised training, or multi-layer backprop
-     */
-    void setPretrain(boolean pretrain);
 
 }

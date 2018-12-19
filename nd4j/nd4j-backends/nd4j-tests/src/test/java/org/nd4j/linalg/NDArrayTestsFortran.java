@@ -19,6 +19,7 @@ package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -97,9 +98,9 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testColumnMmul() {
-        DataBuffer data = Nd4j.linspace(1, 10, 18).data();
+        DataBuffer data = Nd4j.linspace(1, 10, 18, DataType.FLOAT).data();
         INDArray x2 = Nd4j.create(data, new long[] {2, 3, 3});
-        data = Nd4j.linspace(1, 12, 9).data();
+        data = Nd4j.linspace(1, 12, 9, DataType.FLOAT).data();
         INDArray y2 = Nd4j.create(data, new long[] {3, 3});
         INDArray z2 = Nd4j.create(new long[] {3, 2}, 'f');
         z2.putColumn(0, y2.getColumn(0));
@@ -128,8 +129,8 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testRowVectorGemm() {
-        INDArray linspace = Nd4j.linspace(1, 4, 4);
-        INDArray other = Nd4j.linspace(1, 16, 16).reshape(4, 4);
+        INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1, -1).castTo(DataType.DOUBLE);
+        INDArray other = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(4, 4).castTo(DataType.DOUBLE);
         INDArray result = linspace.mmul(other);
         INDArray assertion = Nd4j.create(new double[] {30., 70., 110., 150.});
         assertEquals(assertion, result);
@@ -146,7 +147,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testReadWrite() throws Exception {
-        INDArray write = Nd4j.linspace(1, 4, 4);
+        INDArray write = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         Nd4j.write(write, dos);
@@ -161,7 +162,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testReadWriteDouble() throws Exception {
-        INDArray write = Nd4j.linspace(1, 4, 4);
+        INDArray write = Nd4j.linspace(1, 4, 4, DataType.FLOAT);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         Nd4j.write(write, dos);
@@ -184,7 +185,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
             Future<?> future = ex.submit(new Runnable() {
                 @Override
                 public void run() {
-                    INDArray dot = Nd4j.linspace(1, 8, 8);
+                    INDArray dot = Nd4j.linspace(1, 8, 8, DataType.DOUBLE);
                     System.out.println(Transforms.sigmoid(dot));
                 }
             });
@@ -202,10 +203,10 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         int[][] broadcastShape = NDArrayCreationUtil.getRandomBroadCastShape(7, 6, 10);
         List<List<Pair<INDArray, String>>> broadCastList = new ArrayList<>(broadcastShape.length);
         for (int[] shape : broadcastShape) {
-            List<Pair<INDArray, String>> arrShape = NDArrayCreationUtil.get6dPermutedWithShape(7, shape);
+            List<Pair<INDArray, String>> arrShape = NDArrayCreationUtil.get6dPermutedWithShape(7, shape, DataType.DOUBLE);
             broadCastList.add(arrShape);
-            broadCastList.add(NDArrayCreationUtil.get6dReshapedWithShape(7, shape));
-            broadCastList.add(NDArrayCreationUtil.getAll6dTestArraysWithShape(7, shape));
+            broadCastList.add(NDArrayCreationUtil.get6dReshapedWithShape(7, shape, DataType.DOUBLE));
+            broadCastList.add(NDArrayCreationUtil.getAll6dTestArraysWithShape(7, shape, DataType.DOUBLE));
         }
 
         for (List<Pair<INDArray, String>> b : broadCastList) {
@@ -224,11 +225,11 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testBroadCasting() {
-        INDArray first = Nd4j.arange(0, 3).reshape(3, 1);
+        INDArray first = Nd4j.arange(0, 3).reshape(3, 1).castTo(DataType.DOUBLE);
         INDArray ret = first.broadcast(3, 4);
         INDArray testRet = Nd4j.create(new double[][] {{0, 0, 0, 0}, {1, 1, 1, 1}, {2, 2, 2, 2}});
         assertEquals(testRet, ret);
-        INDArray r = Nd4j.arange(0, 4).reshape(1, 4);
+        INDArray r = Nd4j.arange(0, 4).reshape(1, 4).castTo(DataType.DOUBLE);
         INDArray r2 = r.broadcast(4, 4);
         INDArray testR2 = Nd4j.create(new double[][] {{0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}});
         assertEquals(testR2, r2);
@@ -244,7 +245,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testSortWithIndicesDescending() {
-        INDArray toSort = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray toSort = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         //indices,data
         INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(), 1, false);
         INDArray sorted2 = Nd4j.sort(toSort.dup(), 1, false);
@@ -258,7 +259,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testSortWithIndices() {
-        INDArray toSort = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray toSort = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         //indices,data
         INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(), 1, true);
         INDArray sorted2 = Nd4j.sort(toSort.dup(), 1, true);
@@ -271,14 +272,14 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testNd4jSortScalar() {
-        INDArray linspace = Nd4j.linspace(1, 8, 8);
+        INDArray linspace = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(1, -1);
         INDArray sorted = Nd4j.sort(linspace, 1, false);
         System.out.println(sorted);
     }
 
     @Test
     public void testSwapAxesFortranOrder() {
-        INDArray n = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new long[] {3, 5, 2});
+        INDArray n = Nd4j.create(Nd4j.linspace(1, 30, 30, DataType.DOUBLE).data(), new long[] {3, 5, 2}).castTo(DataType.DOUBLE);
         for (int i = 0; i < n.slices(); i++) {
             INDArray nSlice = n.slice(i);
             for (int j = 0; j < nSlice.slices(); j++) {
@@ -297,7 +298,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testDimShuffle() {
-        INDArray n = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray n = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray twoOneTwo = n.dimShuffle(new Object[] {0, 'x', 1}, new int[] {0, 1}, new boolean[] {false, false});
         assertTrue(Arrays.equals(new long[] {2, 1, 2}, twoOneTwo.shape()));
 
@@ -308,11 +309,11 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testGetVsGetScalar() {
-        INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray a = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         float element = a.getFloat(0, 1);
         double element2 = a.getDouble(0, 1);
         assertEquals(element, element2, 1e-1);
-        INDArray a2 = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray a2 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         float element23 = a2.getFloat(0, 1);
         double element22 = a2.getDouble(0, 1);
         assertEquals(element23, element22, 1e-1);
@@ -392,12 +393,12 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     @Test
     public void testWrap() throws Exception {
         int[] shape = {2, 4};
-        INDArray d = Nd4j.linspace(1, 8, 8).reshape(shape[0], shape[1]);
+        INDArray d = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(shape[0], shape[1]);
         INDArray n = d;
         assertEquals(d.rows(), n.rows());
         assertEquals(d.columns(), n.columns());
 
-        INDArray vector = Nd4j.linspace(1, 3, 3);
+        INDArray vector = Nd4j.linspace(1, 3, 3, DataType.DOUBLE);
         INDArray testVector = vector;
         for (int i = 0; i < vector.length(); i++)
             assertEquals(vector.getDouble(i), testVector.getDouble(i), 1e-1);
@@ -405,8 +406,8 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         assertEquals(true, testVector.isVector());
         assertEquals(true, Shape.shapeEquals(new long[] {3}, testVector.shape()));
 
-        INDArray row12 = Nd4j.linspace(1, 2, 2).reshape(2, 1);
-        INDArray row22 = Nd4j.linspace(3, 4, 2).reshape(1, 2);
+        INDArray row12 = Nd4j.linspace(1, 2, 2, DataType.DOUBLE).reshape(2, 1);
+        INDArray row22 = Nd4j.linspace(3, 4, 2, DataType.DOUBLE).reshape(1, 2);
 
         assertEquals(row12.rows(), 2);
         assertEquals(row12.columns(), 1);
@@ -416,7 +417,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testGetRowFortran() throws Exception {
-        INDArray n = Nd4j.create(Nd4j.linspace(1, 4, 4).data(), new long[] {2, 2});
+        INDArray n = Nd4j.create(Nd4j.linspace(1, 4, 4, DataType.FLOAT).data(), new long[] {2, 2});
         INDArray column = Nd4j.create(new float[] {1, 3});
         INDArray column2 = Nd4j.create(new float[] {2, 4});
         INDArray testColumn = n.getRow(0);
@@ -429,9 +430,9 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testGetColumnFortran() {
-        INDArray n = Nd4j.create(Nd4j.linspace(1, 4, 4).data(), new long[] {2, 2});
-        INDArray column = Nd4j.create(new float[] {1, 2});
-        INDArray column2 = Nd4j.create(new float[] {3, 4});
+        INDArray n = Nd4j.create(Nd4j.linspace(1, 4, 4, DataType.DOUBLE).data(), new long[] {2, 2});
+        INDArray column = Nd4j.create(new double[] {1, 2});
+        INDArray column2 = Nd4j.create(new double[] {3, 4});
         INDArray testColumn = n.getColumn(0);
         INDArray testColumn1 = n.getColumn(1);
         log.info("testColumn shape: {}", Arrays.toString(testColumn.shapeInfoDataBuffer().asInt()));
@@ -443,7 +444,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testGetColumns() {
-        INDArray matrix = Nd4j.linspace(1, 6, 6).reshape(2, 3);
+        INDArray matrix = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3).castTo(DataType.DOUBLE);
         log.info("Original: {}", matrix);
         INDArray matrixGet = matrix.getColumns(new int[] {1, 2});
         INDArray matrixAssertion = Nd4j.create(new double[][] {{3, 5}, {4, 6}});
@@ -457,7 +458,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testVectorInit() {
-        DataBuffer data = Nd4j.linspace(1, 4, 4).data();
+        DataBuffer data = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).data();
         INDArray arr = Nd4j.create(data, new long[] {1, 4});
         assertEquals(true, arr.isRowVector());
         INDArray arr2 = Nd4j.create(data, new long[] {1, 4});
@@ -478,7 +479,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testColumns() {
-        INDArray arr = Nd4j.create(new long[] {3, 2});
+        INDArray arr = Nd4j.create(new long[] {3, 2}).castTo(DataType.DOUBLE);
         INDArray column2 = arr.getColumn(0);
         //assertEquals(true, Shape.shapeEquals(new long[]{3, 1}, column2.shape()));
         INDArray column = Nd4j.create(new double[] {1, 2, 3}, new long[] {1, 3});
@@ -502,7 +503,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         assertEquals(put, testColumn);
 
 
-        INDArray n = Nd4j.create(Nd4j.linspace(1, 4, 4).data(), new long[] {2, 2});
+        INDArray n = Nd4j.create(Nd4j.linspace(1, 4, 4, DataType.DOUBLE).data(), new long[] {2, 2}).castTo(DataType.DOUBLE);
         INDArray column23 = n.getColumn(0);
         INDArray column12 = Nd4j.create(new double[] {1, 2}, new long[] {1, 2});
         assertEquals(column23, column12);
@@ -518,7 +519,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testPutRow() {
-        INDArray d = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray d = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray n = d.dup();
 
         //works fine according to matlab, let's go with it..
@@ -530,7 +531,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         assertEquals(d, n);
         assertEquals(true, Arrays.equals(new long[] {2, 2}, n.shape()));
 
-        INDArray newRow = Nd4j.linspace(5, 6, 2);
+        INDArray newRow = Nd4j.linspace(5, 6, 2, DataType.DOUBLE);
         n.putRow(0, newRow);
         d.putRow(0, newRow);
 
@@ -540,13 +541,13 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         assertEquals(true, Shape.shapeEquals(new long[] {1, 2}, testRow.shape()));
 
 
-        INDArray nLast = Nd4j.create(Nd4j.linspace(1, 4, 4).data(), new long[] {2, 2});
+        INDArray nLast = Nd4j.create(Nd4j.linspace(1, 4, 4, DataType.DOUBLE).data(), new long[] {2, 2}).castTo(DataType.DOUBLE);
         INDArray row = nLast.getRow(1);
         INDArray row1 = Nd4j.create(new double[] {2, 4}, new long[] {1, 2});
         assertEquals(row, row1);
 
 
-        INDArray arr = Nd4j.create(new long[] {3, 2});
+        INDArray arr = Nd4j.create(new long[] {3, 2}).castTo(DataType.DOUBLE);
         INDArray evenRow = Nd4j.create(new double[] {1, 2}, new long[] {1, 2});
         arr.putRow(0, evenRow);
         INDArray firstRow = arr.getRow(0);
@@ -562,7 +563,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         assertEquals(row12, testRow1);
 
 
-        INDArray multiSliceTest = Nd4j.create(Nd4j.linspace(1, 16, 16).data(), new long[] {4, 2, 2});
+        INDArray multiSliceTest = Nd4j.create(Nd4j.linspace(1, 16, 16, DataType.DOUBLE).data(), new long[] {4, 2, 2}).castTo(DataType.DOUBLE);
         INDArray test = Nd4j.create(new double[] {2, 10}, new long[] {1, 2});
         INDArray test2 = Nd4j.create(new double[] {6, 14}, new long[] {1, 2});
 
@@ -594,7 +595,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     @Test
     public void testMmulF() {
 
-        DataBuffer data = Nd4j.linspace(1, 10, 10).data();
+        DataBuffer data = Nd4j.linspace(1, 10, 10, DataType.DOUBLE).data();
         INDArray n = Nd4j.create(data, new long[] {1, 10});
         INDArray transposed = n.transpose();
         assertEquals(true, n.isRowVector());
@@ -613,7 +614,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testRowsColumns() {
-        DataBuffer data = Nd4j.linspace(1, 6, 6).data();
+        DataBuffer data = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).data();
         INDArray rows = Nd4j.create(data, new long[] {2, 3});
         assertEquals(2, rows.rows());
         assertEquals(3, rows.columns());
@@ -629,24 +630,24 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testTranspose() {
-        INDArray n = Nd4j.create(Nd4j.ones(100).data(), new long[] {5, 5, 4});
+        INDArray n = Nd4j.create(Nd4j.ones(100).castTo(DataType.DOUBLE).data(), new long[] {5, 5, 4});
         INDArray transpose = n.transpose();
         assertEquals(n.length(), transpose.length());
         assertEquals(true, Arrays.equals(new long[] {4, 5, 5}, transpose.shape()));
 
-        INDArray rowVector = Nd4j.linspace(1, 10, 10);
+        INDArray rowVector = Nd4j.linspace(1, 10, 10, DataType.DOUBLE).reshape(1, -1);
         assertTrue(rowVector.isRowVector());
         INDArray columnVector = rowVector.transpose();
         assertTrue(columnVector.isColumnVector());
 
 
-        INDArray linspaced = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray transposed = Nd4j.create(new float[] {1, 3, 2, 4}, new long[] {2, 2});
+        INDArray linspaced = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
+        INDArray transposed = Nd4j.create(new double[] {1, 3, 2, 4}, new long[] {2, 2});
         assertEquals(transposed, linspaced.transpose());
 
-        linspaced = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        linspaced = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         //fortran ordered
-        INDArray transposed2 = Nd4j.create(new float[] {1, 3, 2, 4}, new long[] {2, 2});
+        INDArray transposed2 = Nd4j.create(new double[] {1, 3, 2, 4}, new long[] {2, 2});
         transposed = linspaced.transpose();
         assertEquals(transposed, transposed2);
 
@@ -679,8 +680,8 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testPutSlice() {
-        INDArray n = Nd4j.linspace(1, 27, 27).reshape(3, 3, 3);
-        INDArray newSlice = Nd4j.zeros(3, 3);
+        INDArray n = Nd4j.linspace(1, 27, 27, DataType.DOUBLE).reshape(3, 3, 3);
+        INDArray newSlice = Nd4j.create(DataType.DOUBLE, new long[]{3, 3});
         n.putSlice(0, newSlice);
         assertEquals(getFailureMessage(), newSlice, n.slice(0));
 
@@ -688,7 +689,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testRowVectorMultipleIndices() {
-        INDArray linear = Nd4j.create(1, 4);
+        INDArray linear = Nd4j.create(DataType.DOUBLE, 1, 4);
         linear.putScalar(new long[] {0, 1}, 1);
         assertEquals(getFailureMessage(), linear.getDouble(0, 1), 1, 1e-1);
     }
@@ -697,7 +698,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testDim1() {
-        INDArray sum = Nd4j.linspace(1, 2, 2).reshape(2, 1);
+        INDArray sum = Nd4j.linspace(1, 2, 2, DataType.DOUBLE).reshape(2, 1);
         INDArray same = sum.dup();
         assertEquals(same.sum(1), sum);
     }
@@ -705,24 +706,23 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testEps() {
-        INDArray ones = Nd4j.ones(5);
-        double sum = Nd4j.getExecutioner().exec(new Eps(ones, ones, ones, ones.length())).z().sumNumber().doubleValue();
-        assertEquals(5, sum, 1e-1);
+        val ones = Nd4j.ones(5);
+        val res = Nd4j.createUninitialized(DataType.BOOL, new long[]{5});
+        assertTrue(Nd4j.getExecutioner().exec(new Eps(ones, ones, res, ones.length())).z().all());
     }
 
 
     @Test
     public void testLogDouble() {
-        INDArray linspace = Nd4j.linspace(1, 6, 6);
+        INDArray linspace = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).castTo(DataType.DOUBLE);
         INDArray log = Transforms.log(linspace);
-        INDArray assertion = Nd4j.create(new double[] {0, 0.6931471805599453, 1.0986122886681098, 1.3862943611198906,
-                        1.6094379124341005, 1.791759469228055});
+        INDArray assertion = Nd4j.create(new double[] {0, 0.6931471805599453, 1.0986122886681098, 1.3862943611198906, 1.6094379124341005, 1.791759469228055});
         assertEquals(assertion, log);
     }
 
     @Test
     public void testVectorSum() {
-        INDArray lin = Nd4j.linspace(1, 4, 4);
+        INDArray lin = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         assertEquals(10.0, lin.sumNumber().doubleValue(), 1e-1);
 
     }
@@ -754,14 +754,14 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testPermute() {
-        INDArray n = Nd4j.create(Nd4j.linspace(1, 20, 20).data(), new long[] {5, 4});
+        INDArray n = Nd4j.create(Nd4j.linspace(1, 20, 20, DataType.DOUBLE).data(), new long[] {5, 4});
         INDArray transpose = n.transpose();
         INDArray permute = n.permute(1, 0);
         assertEquals(permute, transpose);
         assertEquals(transpose.length(), permute.length(), 1e-1);
 
 
-        INDArray toPermute = Nd4j.create(Nd4j.linspace(0, 7, 8).data(), new long[] {2, 2, 2});
+        INDArray toPermute = Nd4j.create(Nd4j.linspace(0, 7, 8, DataType.DOUBLE).data(), new long[] {2, 2, 2});
         INDArray permuted = toPermute.permute(2, 1, 0);
         assertNotEquals(toPermute, permuted);
 
@@ -782,9 +782,9 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testAppendBias() {
-        INDArray rand = Nd4j.linspace(1, 25, 25).transpose();
+        INDArray rand = Nd4j.linspace(1, 25, 25, DataType.DOUBLE).reshape(1, -1).transpose();
         INDArray test = Nd4j.appendBias(rand);
-        INDArray assertion = Nd4j.toFlattened(rand, Nd4j.scalar(1));
+        INDArray assertion = Nd4j.toFlattened(rand, Nd4j.scalar(DataType.DOUBLE, 1.0)).reshape(-1, 1);
         assertEquals(assertion, test);
     }
 
@@ -834,16 +834,16 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testAssign() {
-        INDArray vector = Nd4j.linspace(1, 5, 5);
+        INDArray vector = Nd4j.linspace(1, 5, 5, DataType.DOUBLE);
         vector.assign(1);
-        assertEquals(Nd4j.ones(5), vector);
+        assertEquals(Nd4j.ones(5).castTo(DataType.DOUBLE), vector);
         INDArray twos = Nd4j.ones(2, 2);
         INDArray rand = Nd4j.rand(2, 2);
         twos.assign(rand);
         assertEquals(rand, twos);
 
-        INDArray tensor = Nd4j.rand(new long[]{3, 3, 3});
-        INDArray ones = Nd4j.ones(3, 3, 3);
+        INDArray tensor = Nd4j.rand(DataType.DOUBLE, new long[]{3, 3, 3});
+        INDArray ones = Nd4j.ones(3, 3, 3).castTo(DataType.DOUBLE);
         assertTrue(Arrays.equals(tensor.shape(), ones.shape()));
         ones.assign(tensor);
         assertEquals(tensor, ones);
@@ -877,7 +877,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testNumVectorsAlongDimension() {
-        INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
+        INDArray arr = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 3, 2);
         assertEquals(12, arr.vectorsAlongDimension(2));
     }
 
@@ -885,7 +885,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testBroadCast() {
-        INDArray n = Nd4j.linspace(1, 4, 4);
+        INDArray n = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1, -1);
         INDArray broadCasted = n.broadcast(5, 4);
         for (int i = 0; i < broadCasted.rows(); i++) {
             assertEquals(n, broadCasted.getRow(i));
@@ -907,8 +907,8 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testMatrix() {
-        INDArray arr = Nd4j.create(new float[] {1, 2, 3, 4}, new long[] {2, 2});
-        INDArray brr = Nd4j.create(new float[] {5, 6}, new long[] {1, 2});
+        INDArray arr = Nd4j.create(new double[] {1, 2, 3, 4}, new long[] {2, 2});
+        INDArray brr = Nd4j.create(new double[] {5, 6}, new long[] {1, 2});
         INDArray row = arr.getRow(0);
         row.subi(brr);
         assertEquals(Nd4j.create(new double[] {-4, -3}), arr.getRow(0));
@@ -917,13 +917,13 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testPutRowGetRowOrdering() {
-        INDArray row1 = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray row1 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray put = Nd4j.create(new double[] {5, 6});
         row1.putRow(1, put);
 
         System.out.println(row1);
 
-        INDArray row1Fortran = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray row1Fortran = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray putFortran = Nd4j.create(new double[] {5, 6});
         row1Fortran.putRow(1, putFortran);
         assertEquals(row1, row1Fortran);
@@ -992,7 +992,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testPutRowFortran() {
-        INDArray row1 = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray row1 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2).castTo(DataType.DOUBLE);
         INDArray put = Nd4j.create(new double[] {5, 6});
         row1.putRow(1, put);
 
@@ -1053,11 +1053,11 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testNegativeShape() {
-        INDArray linspace = Nd4j.linspace(1, 4, 4);
+        INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         INDArray reshaped = linspace.reshape(-1, 2);
         assertArrayEquals(new long[] {2, 2}, reshaped.shape());
 
-        INDArray linspace6 = Nd4j.linspace(1, 6, 6);
+        INDArray linspace6 = Nd4j.linspace(1, 6, 6, DataType.DOUBLE);
         INDArray reshaped2 = linspace6.reshape(-1, 3);
         assertArrayEquals(new long[] {2, 3}, reshaped2.shape());
 
@@ -1065,10 +1065,10 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testGetColumnGetRow() {
-        INDArray row = Nd4j.ones(5);
+        INDArray row = Nd4j.ones(5).reshape(1, -1);
         for (int i = 0; i < 5; i++) {
             INDArray col = row.getColumn(i);
-            assertArrayEquals(col.shape(), new long[] {1, 1});
+            assertArrayEquals(col.shape(), new long[] {});
         }
 
         INDArray col = Nd4j.ones(5, 1);
@@ -1080,7 +1080,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testDupAndDupWithOrder() {
-        List<Pair<INDArray, String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123);
+        List<Pair<INDArray, String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123, DataType.DOUBLE);
         int count = 0;
         for (Pair<INDArray, String> pair : testInputs) {
             String msg = pair.getSecond();
@@ -1102,8 +1102,9 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testToOffsetZeroCopy() {
-        List<Pair<INDArray, String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123);
+        List<Pair<INDArray, String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123, DataType.DOUBLE);
 
+        int cnt = 0;
         for (Pair<INDArray, String> pair : testInputs) {
             String msg = pair.getSecond();
             INDArray in = pair.getFirst();
@@ -1112,7 +1113,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
             INDArray dupf = Shape.toOffsetZeroCopy(in, 'f');
             INDArray dupany = Shape.toOffsetZeroCopyAnyOrder(in);
 
-            assertEquals(msg, in, dup);
+            assertEquals(msg + ": " + cnt, in, dup);
             assertEquals(msg, in, dupc);
             assertEquals(msg, in, dupf);
             assertEquals(msg, dupc.ordering(), 'c');
@@ -1127,6 +1128,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
             assertEquals(dupc.length(), dupc.data().length());
             assertEquals(dupf.length(), dupf.data().length());
             assertEquals(dupany.length(), dupany.data().length());
+            cnt++;
         }
     }
 

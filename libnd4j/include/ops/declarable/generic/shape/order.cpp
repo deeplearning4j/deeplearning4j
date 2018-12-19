@@ -34,6 +34,12 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(order) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_INTS});
+        }
+
         DECLARE_SHAPE_FN(order) {
             auto input = inputShape->at(0);
             Nd4jLong *newShape;
@@ -44,9 +50,9 @@ namespace nd4j {
             );
 
             if (isFOrder)
-                shape::shapeBufferFortran(shape::rank(input), shape::shapeOf(input), newShape);
+                shape::shapeBufferFortran(shape::rank(input), ArrayOptions::dataType(input),  shape::shapeOf(input), newShape);
             else
-                shape::shapeBuffer(shape::rank(input), shape::shapeOf(input), newShape);
+                shape::shapeBuffer(shape::rank(input), ArrayOptions::dataType(input), shape::shapeOf(input), newShape);
 
             return SHAPELIST(newShape);
         }

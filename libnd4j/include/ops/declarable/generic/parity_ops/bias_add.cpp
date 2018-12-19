@@ -25,15 +25,20 @@
 
 namespace nd4j {
     namespace ops {
-        OP_IMPL(biasadd, 2, 1, true) {
-            //REQUIRE_OK(this->validateInput2D(block));
+        DECLARE_TYPES(biasadd) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
-            NDArray<T> *input = INPUT_VARIABLE(0);
-            NDArray<T> *bias = INPUT_VARIABLE(1);
+        CUSTOM_OP_IMPL(biasadd, 2, 1, true, 0, 0) {
+            //REQUIRE_OK(this->validateInput2D(block));
+            auto input = INPUT_VARIABLE(0);
+            auto bias = INPUT_VARIABLE(1);
 
             REQUIRE_TRUE(bias->isRowVector(), 0, "Bias array should be a vector");
 
-            NDArray<T> *z = OUTPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
             if (input->isMatrix())
                 input->addRowVector(bias, z);
@@ -51,10 +56,27 @@ namespace nd4j {
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(bias_add, biasadd);
 
+        DECLARE_SHAPE_FN(biasadd) {
+            auto xShape = inputShape->at(0);
+            auto yShape = inputShape->at(1);
+
+            auto dtype = ArrayOptions::dataType(yShape);
+            Nd4jLong *newShape;
+            COPY_SHAPE(xShape, newShape);
+            ArrayOptions::setDataType(newShape, dtype);
+
+            return SHAPELIST(newShape);
+        }
+
+        DECLARE_TYPES(biasadd_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
         CUSTOM_OP_IMPL(biasadd_bp, 3, 2, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -71,14 +93,14 @@ namespace nd4j {
                 auto epsilonNext2d = epsilonNext->permute({1, 0, 2, 3});
                 epsilonNext2d->reshapei('c', {(int) bias->lengthOf(), -1});
 
-                auto sum = epsilonNext2d->sum({1});
+                auto sum = epsilonNext2d->reduceAlongDimension(reduce::Sum, {1});
                 gradB->assign(sum);
 
                 delete sum;
                 delete epsilonNext2d;
             } else if (input->rankOf() == 2) {
                 // regular fully-connected case
-                auto sum = epsilonNext->sum({0});
+                auto sum = epsilonNext->reduceAlongDimension(reduce::Sum, {0});
                 gradB->assign(sum);
                 
                 delete sum;

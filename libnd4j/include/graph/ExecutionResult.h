@@ -30,50 +30,49 @@
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
         class ExecutionResult {
         private:
-            std::vector<Variable<T> *> _variables;
-            std::map<std::string, Variable<T>*> _stringIdMap;
-            std::map<std::pair<int, int>, Variable<T>*> _pairIdMap;
+            std::vector<Variable *> _variables;
+            std::map<std::string, Variable *> _stringIdMap;
+            std::map<std::pair<int, int>, Variable *> _pairIdMap;
 
             // this flag is used to optionally release variables
             bool _releasable = false;
         public:
             ExecutionResult(const FlatResult* flatResult);
-            ExecutionResult(std::initializer_list<Variable<T> *> variables);
+            ExecutionResult(std::initializer_list<Variable *> variables);
             ExecutionResult() = default;
             ~ExecutionResult();
 
             /**
              * This method adds variable pointer to result
              */
-            void emplace_back(Variable<T> *variable);
+            void emplace_back(Variable *variable);
 
             /**
              * This method returns Variable by its position in output
              */
-            Variable<T>* at(int position);
+            Variable* at(int position);
 
             /**
              * This method returns Variable by its string id
              */
-            Variable<T>* byId(std::string &id);
+            Variable* byId(std::string &id);
 
             /**
              * This method returns Variable by its string id
              */
-            Variable<T>* byId(const char *str);
+            Variable* byId(const char *str);
 
             /**
              * This method returns Variable by its numeric id:index pair
              */
-            Variable<T>* byId(std::pair<int, int> &id);
+            Variable* byId(std::pair<int, int> &id);
 
             /**
              * This method returns Variable by its numeric id with index 0
              */
-            Variable<T>* byId(int id);
+            Variable* byId(int id);
 
             /**
              * This method returns number of elements stored in this entity

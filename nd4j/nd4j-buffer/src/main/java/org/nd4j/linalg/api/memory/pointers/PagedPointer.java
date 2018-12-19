@@ -104,6 +104,14 @@ public class PagedPointer extends Pointer {
         return new BytePointer(this);
     }
 
+    public ShortPointer asShortPointer() {
+        return new ShortPointer(this);
+    }
+
+    public BooleanPointer asBoolPointer() {
+        return new BooleanPointer(this);
+    }
+
     @Override
     public void deallocate() {
         super.deallocate();

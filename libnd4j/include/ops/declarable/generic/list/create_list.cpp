@@ -38,14 +38,14 @@ namespace nd4j {
                 expandable = true;
             }
 
-            auto list = new NDArrayList<T>(height, expandable);
+            auto list = new NDArrayList(height, expandable);
 
             // we recieve input array for graph integrity purposes only
             auto input = INPUT_VARIABLE(0);
+            setupResultList(list, block);
+//            OVERWRITE_RESULT(list);
 
-            OVERWRITE_RESULT(list);
-
-            auto scalar = NDArray<T>::scalar(list->counter());
+            auto scalar = NDArrayFactory::create_(list->counter());
             block.pushNDArrayToVariableSpace(block.getNodeId(), 1, scalar);
 
             return ND4J_STATUS_OK;

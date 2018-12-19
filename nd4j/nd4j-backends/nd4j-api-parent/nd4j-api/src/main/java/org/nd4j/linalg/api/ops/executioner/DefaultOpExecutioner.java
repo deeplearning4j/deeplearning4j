@@ -22,14 +22,17 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
-import org.nd4j.linalg.api.ops.impl.accum.Variance;
+import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -86,18 +89,19 @@ public class DefaultOpExecutioner implements OpExecutioner {
      */
     protected void interceptIntDataType(Op op) {
         // FIXME: Remove this method, after we'll add support for <int> dtype operations
-
-        if (op.x() != null && op.x().data().dataType() == DataBuffer.Type.INT)
+/*
+        if (op.x() != null && op.x().data().dataType() == DataType.INT)
             throw new ND4JIllegalStateException(
                             "Op.X contains INT data. Operations on INT dataType are not supported yet");
 
-        if (op.z() != null && op.z().data().dataType() == DataBuffer.Type.INT)
+        if (op.z() != null && op.z().data().dataType() == DataType.INT)
             throw new ND4JIllegalStateException(
                             "Op.Z contains INT data. Operations on INT dataType are not supported yet");
 
-        if (op.y() != null && op.y().data().dataType() == DataBuffer.Type.INT)
+        if (op.y() != null && op.y().data().dataType() == DataType.INT)
             throw new ND4JIllegalStateException(
                             "Op.Y contains INT data. Operations on INT dataType are not supported yet.");
+        */
     }
 
     @Override
@@ -118,8 +122,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (op instanceof ScalarOp) {
             return execAndReturn((ScalarOp) op);
         }
-        if (op instanceof Accumulation) {
-            return Nd4j.scalar(execAndReturn((Accumulation) op).getFinalResult());
+        if (op instanceof ReduceOp) {
+            return Nd4j.scalar(execAndReturn((ReduceOp) op).getFinalResult());
         }
         if (op instanceof IndexAccumulation) {
             return Nd4j.scalar(execAndReturn((IndexAccumulation) op).getFinalResult());
@@ -200,12 +204,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     @Override
-    public Accumulation execAndReturn(Accumulation op) {
-        return (Accumulation) exec(op);
+    public ReduceOp execAndReturn(ReduceOp op) {
+        return (ReduceOp) exec(op);
     }
 
     @Override
-    public Accumulation execAndReturn(Variance op, boolean biasCorrected) {
+    public ReduceOp execAndReturn(Variance op, boolean biasCorrected) {
         return null;
     }
 
@@ -247,10 +251,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return op;
         }
 
-        if (op instanceof Accumulation || op instanceof IndexAccumulation) {
-            //Overloaded exec(Accumulation,int...) and exec(IndexAccumulation,int...) should always be called instead of this
+        if (op instanceof ReduceOp || op instanceof IndexAccumulation) {
+            //Overloaded exec(ReduceOp,int...) and exec(IndexAccumulation,int...) should always be called instead of this
             throw new IllegalStateException(
-                            "exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
+                            "exec(Op,int...) should never be invoked for ReduceOp/IndexAccumulation");
         }
         if (op instanceof ScalarOp) {
             //Scalar op along dimension should be same as on the entire NDArray
@@ -264,7 +268,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public INDArray exec(Accumulation op, int... dimension) {
+    public INDArray exec(ReduceOp op, int... dimension) {
 
         throw new UnsupportedOperationException("Java computation no longer supported");
     }
@@ -517,7 +521,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         if (Nd4j.getExecutioner().isVerbose()) {
             if (op.z() != null)
-                log.info("Z shapeInfo: {}; Z values: {}", op.z().shapeInfoJava(), firstX(op.z(), 10));
+                log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
 
             System.out.println();
         }
@@ -559,35 +563,45 @@ public class DefaultOpExecutioner implements OpExecutioner {
      * @param expectedType
      * @param op
      */
-    public static void validateDataType(DataBuffer.Type expectedType, Op op) {
-        if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava()) && op.x().data().dataType() == DataBuffer.Type.COMPRESSED) {
+    public static void validateDataType(DataType expectedType, Op op) {
+        if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava()) && op.x().data().dataType() == DataType.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.x());
         }
 
-        if (op.y() != null && !Shape.isEmpty(op.y().shapeInfoJava()) && op.y().data().dataType() == DataBuffer.Type.COMPRESSED) {
+        if (op.y() != null && !Shape.isEmpty(op.y().shapeInfoJava()) && op.y().data().dataType() == DataType.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.y());
         }
 
-        if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava()) && op.z().data().dataType() == DataBuffer.Type.COMPRESSED) {
+        if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava()) && op.z().data().dataType() == DataType.COMPRESSED) {
             Nd4j.getCompressor().decompressi(op.z());
         }
 
+        /*
         if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava())
                 && op.x().data().dataType() != expectedType
-                && op.x().data().dataType() != DataBuffer.Type.COMPRESSED)
+                && op.x().data().dataType() != DataType.COMPRESSED) {
             throw new ND4JIllegalStateException("op.X dataType is [" + op.x().data().dataType()
-                            + "] instead of expected [" + expectedType + "]");
-
+                    + "] instead of expected [" + expectedType + "] - x.shape = " + Arrays.toString(op.x().shape())
+                    + (op.y() != null ? ", y.shape=" + Arrays.toString(op.y().shape()) : "")
+                    + ", z.shape=" + Arrays.toString(op.z().shape()) + " - op: " + op.getClass().getName());
+        }
+        */
+/*
         if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava())
                         && op.z().data().dataType() != expectedType
-                        && op.z().data().dataType() != DataBuffer.Type.COMPRESSED)
+                        && op.z().data().dataType() != DataType.COMPRESSED)
             throw new ND4JIllegalStateException("op.Z dataType is [" + op.z().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
+        */
 
         if (op.y() != null && !Shape.isEmpty(op.y().shapeInfoJava())
-                && op.y().data().dataType() != expectedType)
+                && op.y().data().dataType() != expectedType) {
             throw new ND4JIllegalStateException("op.Y dataType is [" + op.y().data().dataType()
-                            + "] instead of expected [" + expectedType + "]");
+                    + "] instead of expected [" + expectedType + "] - x.shape = " + Arrays.toString(op.x().shape())
+                    + (op.y() != null ? ", y.shape=" + Arrays.toString(op.y().shape()) : "")
+                    + ", z.shape=" + Arrays.toString(op.z().shape()) + " - op: " + op.getClass().getName());
+
+        }
 
 
         if (Nd4j.getExecutioner().isVerbose()) {
@@ -614,7 +628,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return builder.toString();
     }
 
-    public static void validateDataType(DataBuffer.Type expectedType, INDArray... operands) {
+    public static void validateDataType(DataType expectedType, Object op, INDArray... operands) {
         if (operands == null || operands.length == 0)
             return;
 
@@ -623,9 +637,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
             if (operand == null)
                 continue;
 
-            if (operand.data().dataType() != expectedType)
-                throw new ND4JIllegalStateException("INDArray [" + cnt++ + "] dataType is [" + operand.data().dataType()
-                                + "] instead of expected [" + expectedType + "]");
+            if (operand.data().dataType() != expectedType) {
+                throw new ND4JIllegalStateException("INDArray [" + cnt + "] dataType is [" + operand.data().dataType()
+                        + "] instead of expected [" + expectedType + "]" + (op != null ? " op: " + op.getClass().getName() : ""));
+            }
+            cnt++;
         }
     }
 
@@ -717,13 +733,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public List<long[]> calculateOutputShape(CustomOp op) {
+    public List<LongShapeDescriptor> calculateOutputShape(CustomOp op) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray[] allocateOutputArrays(CustomOp op){
-        List<long[]> shapes = calculateOutputShape(op);
+        List<LongShapeDescriptor> shapes = calculateOutputShape(op);
         INDArray[] out = new INDArray[shapes.size()];
         for(int i=0; i<shapes.size(); i++ ){
             out[i] = Nd4j.create(shapes.get(i));
@@ -800,6 +816,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public String getString(Utf8Buffer buffer, long index) {
+        throw new UnsupportedOperationException();
+    }
+
 
     /**
      * Get the information about the op in a String representation, for throwing more useful exceptions (mainly for debugging)
@@ -856,5 +877,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return "(empty NDArray)";
 
         return arr.shapeInfoToString().replaceAll("\n","");
+    }
+
+    @Override
+    public boolean isExperimentalMode() {
+        return false;
     }
 }

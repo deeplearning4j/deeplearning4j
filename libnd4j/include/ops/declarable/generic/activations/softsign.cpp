@@ -22,36 +22,46 @@
 #if NOT_EXCLUDED(OP_softsign)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/legacy_helpers.h>
 
 namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(softsign, 1, 1, true, 0, 0) {
-            NDArray<T> *first = INPUT_VARIABLE(0);
-            auto z = this->getZ(block);
+            auto first = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
-            first->template applyTransform<simdOps::SoftSign<T>>(z, nullptr);
+            first->applyTransform(nd4j::transform::SoftSign, z, nullptr);
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
+        }
+
+        DECLARE_TYPES(softsign) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
         }
 
         CONFIGURABLE_OP_IMPL(softsign_bp, 2, 1, true, 0, 0) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* epsilon = INPUT_VARIABLE(1);
+            auto input = INPUT_VARIABLE(0);
+            auto epsilon = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
 
-            auto lambda = LAMBDA_TT(_x, _e) {
-                T f = (T) 1.0f + nd4j::math::nd4j_abs<T>(_x);
-                return _e * ((T) 1.0f / (f * f));
-            };
+            //input->applyPairwiseTransform(pairwise::SoftsignDerivativeE, epsilon, z, nullptr);
+            helpers::softSignDerivative(input, epsilon, z);
 
-            input->applyPairwiseLambda(epsilon, lambda, z);  
-
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(SoftsignGrad, softsign_bp);
+
+        DECLARE_TYPES(softsign_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+        }
     }
 }
 

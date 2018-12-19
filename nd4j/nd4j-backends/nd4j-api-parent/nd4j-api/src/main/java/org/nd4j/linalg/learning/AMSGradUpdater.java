@@ -20,7 +20,7 @@ import lombok.Data;
 import lombok.val;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Sqrt;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;

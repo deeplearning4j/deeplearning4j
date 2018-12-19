@@ -24,25 +24,24 @@
 #include "../MmulHelper.h"
 #include <helpers/ShapeUtils.h>
 #include <helpers/BlasHelper.h>
+#include <NDArrayFactory.h>
 
 namespace nd4j { 
 
     
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-nd4j::NDArray<T>* nd4j::MmulHelper<T>::tensorDot(const nd4j::NDArray<T>* A, const nd4j::NDArray<T>* B, const std::initializer_list<int>& axesA, const std::initializer_list<int>& axesB) {
+nd4j::NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* A, const nd4j::NDArray* B, const std::initializer_list<int>& axesA, const std::initializer_list<int>& axesB) {
     std::vector<int> aA(axesA);
     std::vector<int> aB(axesB);
     return tensorDot(A, B, aA, aB);
 }
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-nd4j::NDArray<T>* nd4j::MmulHelper<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, const std::vector<int>& axes_0, const std::vector<int>& axes_1) {
+nd4j::NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, const std::vector<int>& axes_0, const std::vector<int>& axes_1) {
     std::vector<int> permutAt, permutBt;
     std::vector<Nd4jLong> shapeAt, shapeBt;        
-    auto outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
-    NDArray<T>* aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b));
+    auto outShape = ShapeUtils::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
+    NDArray* aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
     aPR = a->permute(permutAt);        
     bPR = b->permute(permutBt);
     
@@ -59,7 +58,7 @@ nd4j::NDArray<T>* nd4j::MmulHelper<T>::tensorDot(const nd4j::NDArray<T>* a, cons
         else 
             bPR->reshapei('c', shapeBt);                
     }
-    NDArray<T>* c = mmul(aPR, bPR, nullptr, 1.0, 0.0);
+    NDArray* c = mmul(aPR, bPR, nullptr, 1.0, 0.0);
     c->reshapei('c', outShape);
     
     if(aPR != a)
@@ -71,12 +70,11 @@ nd4j::NDArray<T>* nd4j::MmulHelper<T>::tensorDot(const nd4j::NDArray<T>* a, cons
 
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-void nd4j::MmulHelper<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, const std::vector<int>& axes_a, const std::vector<int>& axes_b, const std::vector<int>& permutForC) {
+void nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, nd4j::NDArray* c, const std::vector<int>& axes_a, const std::vector<int>& axes_b, const std::vector<int>& permutForC) {
     std::vector<int> permutAt, permutBt;
     std::vector<Nd4jLong> shapeAt, shapeBt;
-    auto outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_a, axes_b, permutAt, permutBt, shapeAt, shapeBt);
-    NDArray<T> *aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b)), *cP(c), *cPR(c);
+    auto outShape = ShapeUtils::evalShapeForTensorDot(a, b, axes_a, axes_b, permutAt, permutBt, shapeAt, shapeBt);
+    NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b)), *cP(c), *cPR(c);
     // check whether permutation is required
     if(!permutForC.empty())
         cP = c->permute(permutForC);            
@@ -115,9 +113,8 @@ void nd4j::MmulHelper<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArr
 
 #ifndef __JAVACPP_HACK__
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-void nd4j::MmulHelper<T>::tensorDot(const NDArray<T>* a, const NDArray<T>* b, NDArray<T>* c, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB, const std::vector<std::vector<Nd4jLong>>& modifC) {
-    NDArray<T> *aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b));
+void nd4j::MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB, const std::vector<std::vector<Nd4jLong>>& modifC) {
+    NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
     std::string whatToDoWithA, whatToDoWithB, whatToDoWithC;         // "" - nothing; "p" - permutation; "r" - reshaping; "pr" - permutation+reshaping; "rp" - reshaping/permutation, and so on; if another string is produced - throw exception
     for(const auto& arr : modifA) 
         whatToDoWithA = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithA + "p" : whatToDoWithA + "r";        // when 0 is present in arr then it is permutation array, otherwise - it is reshaping array            
@@ -138,16 +135,16 @@ void nd4j::MmulHelper<T>::tensorDot(const NDArray<T>* a, const NDArray<T>* b, ND
     for(int i = 1; i < whatToDoWithB.size(); ++i)
         if(whatToDoWithB[i] == 'p') bPR->permutei(modifB[i]); else bPR->reshapei(modifB[i]);
     // now work with c array
-    std::vector<NDArray<T>*> cArrs = {c}; 
+    std::vector<NDArray*> cArrs = {c};
     if(!whatToDoWithC.empty()) {
-        cArrs = std::vector<NDArray<T>*>(whatToDoWithC.size()+1, c);
+        cArrs = std::vector<NDArray*>(whatToDoWithC.size()+1, c);
         for(int i = 0; i < cArrs.size()-1; ++i)                               
             cArrs[i+1] = (whatToDoWithC[i] == 'p') ? cArrs[i]->permute(modifC[i]) : cArrs[i]->reshape(c->ordering(), modifC[i]);  // since we ignore first element in cArrs (that is cArrs[0]) then it is always equal to c
     }
     
     mmul(aPR, bPR, cArrs[cArrs.size()-1], 1.0, 0.0);
-    
-    // check whether new buffer allocation was happened for c array        
+
+    // check whether new buffer allocation was happened for c array
     if(!whatToDoWithC.empty()) {
         for(int i = cArrs.size()-1; i > 0; --i) {
             if(cArrs[i]->getBuffer() != cArrs[i-1]->getBuffer())
@@ -163,9 +160,8 @@ void nd4j::MmulHelper<T>::tensorDot(const NDArray<T>* a, const NDArray<T>* b, ND
 }
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-NDArray<T>* nd4j::MmulHelper<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB) {
-    NDArray<T> *aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b));
+NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB) {
+    NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
     std::string whatToDoWithA, whatToDoWithB;         // "" - nothing; "p" - permutation only; "r" - reshaping only; "pr" - permutation+reshaping; "rp" - reshaping/permutation; another string - throw exception
     for(const auto& arr : modifA) 
         whatToDoWithA = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithA + "p" : whatToDoWithA + "r";        // when 0 is present in arr then it is permutation array, otherwise - it is reshaping array            
@@ -184,7 +180,7 @@ NDArray<T>* nd4j::MmulHelper<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j
     for(int i = 1; i < whatToDoWithB.size(); ++i)
         if(whatToDoWithB[i] == 'p') bPR->permutei(modifB[i]); else bPR->reshapei(modifB[i]);
             
-    NDArray<T>* result = mmul(aPR, bPR, nullptr, 1.0, 0.0);
+    NDArray* result = mmul(aPR, bPR, nullptr, 1.0, 0.0);
     
     if(aPR != a)
         delete aPR;
@@ -196,7 +192,7 @@ NDArray<T>* nd4j::MmulHelper<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j
 
 //////////////////////////////////////////////////////////////////////////
 // template<typename T>
-// nd4j::NDArray<T>* MmulHelper<T>::mmulNxN(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C , 
+// nd4j::NDArray<T>* MmulHelper<T>::mmulNxN(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C ,
 //     T alpha, T beta) {
 //        nd4j::NDArray<T>* result = C;
 //         // matmul
@@ -288,7 +284,7 @@ NDArray<T>* nd4j::MmulHelper<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j
 //                 auto aLt = aL->at(e);
 //                 auto bLt = bL->at(e);
 //                 auto cLt = cL->at(e);
-                
+
 //                 auto c_ = mmul(aLt, bLt, cLt);
 //                 if (c_ != cLt) {
 //                     cLt->assign(c_);
@@ -303,77 +299,179 @@ NDArray<T>* nd4j::MmulHelper<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j
 // }
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-nd4j::NDArray<T>* MmulHelper<T>::mmulNxN(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C, T alpha, T beta) {
-    
+// nd4j::NDArray* MmulHelper::mmulNxN(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C , double alpha, double beta) {
+//        nd4j::NDArray* result = C;
+//         // matmul
+//         if (A->rankOf() != B->rankOf()) {
+//             // FIXME (r119): this is temporary fix for @shyrma, proper impl required here
+//             int pRows = A->sizeAt(-2);
+//             int pCols = B->sizeAt(-1);
+//             if (A->sizeAt(-1) != B->sizeAt(-2)) {
+//                 nd4j_printf("Number of A \"columns\" should match number of B \"rows\", but got %i/%i instead",
+//                             A->sizeAt(-1), B->sizeAt(-2))
+//                 throw std::runtime_error("Numbers of rows/columns should match");
+//             }
+//             std::vector<Nd4jLong> newShape;
+//             if (A->rankOf() > B->rankOf())
+//                 for (int e = 0; e < A->rankOf() - 2; e++)
+//                     newShape.emplace_back(A->sizeAt(e));
+//             else
+//                 for (int e = 0; e < B->rankOf() - 2; e++)
+//                     newShape.emplace_back(B->sizeAt(e));
+//             newShape.push_back(pRows);
+//             newShape.push_back(pCols);
+//             if (result == nullptr)
+//                 result = new NDArray('c', newShape);
+//             else if (!result->isSameShape(newShape)) {
+//                 nd4j_printf("Bad result shape for MatMul\n", "");
+//                 throw std::runtime_error("Bad result shape");
+//             }
+//             if (A->rankOf() > B->rankOf()) {
+//                 auto aL = A->allTensorsAlongDimension({A->rankOf() - 2, A->rankOf() - 1});
+//                 auto cL = result->allTensorsAlongDimension({result->rankOf() - 2, result->rankOf() - 1});
+//                 nd4j_debug("NumTads: %i\n", aL->size());
+//                 for (int e = 0; e < aL->size(); e++) {
+//                     auto c_ = mmul(aL->at(e), B, cL->at(e));
+//                     if (c_ != cL->at(e)) {
+//                         cL->at(e)->assign(c_);
+//                         delete c_;
+//                     }
+//                 }
+//                 delete aL;
+//                 delete cL;
+//             } else {
+//                 auto bL = B->allTensorsAlongDimension({B->rankOf() - 2, B->rankOf() - 1});
+//                 auto cL = result->allTensorsAlongDimension({result->rankOf() - 2, result->rankOf() - 1});
+//                 nd4j_debug("NumTads: %i\n", bL->size());
+//                 for (int e = 0; e < bL->size(); e++) {
+//                     auto c_ = mmul(A, bL->at(e), cL->at(e));
+//                     if (cL->at(e) != c_) {
+//                         cL->at(e)->assign(c_);
+//                         delete c_;
+//                     }
+//                 }
+//                 delete bL;
+//                 delete cL;
+//             }
+//         } else {
+//             //int dims = A->rankOf();
+//             std::vector<Nd4jLong> newShape;
+//             for (int e = 0; e < A->rankOf() - 2; e++)
+//                 if (A->sizeAt(e) != B->sizeAt(e)) {
+//                     nd4j_printf("Dimension [%i] differs for A and B: %i vs %i", e, A->sizeAt(e), B->sizeAt(e));
+//                     throw std::runtime_error("Outer dimensions for A & B should be equal");
+//                 } else {
+//                     newShape.push_back(A->sizeAt(e));
+//                 }
+//             int pRows = A->sizeAt(-2);
+//             int pCols = B->sizeAt(-1);
+//             if (A->sizeAt(-1) != B->sizeAt(-2)) {
+//                 nd4j_printf("Number of A \"columns\" should match number of B \"rows\", but got %i/%i instead",
+//                             A->sizeAt(-1), B->sizeAt(-2))
+//                 throw std::runtime_error("Numbers of rows/columns should match");
+//             }
+//             newShape.push_back(pRows);
+//             newShape.push_back(pCols);
+//             //Nd4jLong prod = shape::prodLong(newShape.data(), newShape.size());
+//             if (result == nullptr)
+//                 result = new NDArray('c', newShape);
+//             else if (!result->isSameShape(newShape)) {
+//                 nd4j_printf("Bad result shape for MatMul\n", "");
+//                 throw std::runtime_error("Bad result shape");
+//             }
+//             auto aL = A->allTensorsAlongDimension({A->rankOf() - 2, A->rankOf() - 1});
+//             auto bL = B->allTensorsAlongDimension({B->rankOf() - 2, B->rankOf() - 1});
+//             auto cL = result->allTensorsAlongDimension({result->rankOf() - 2, result->rankOf() - 1});
+//             int aL_size = aL->size();
+//             int bL_size = bL->size();
+//             int cL_size = cL->size();
+//             nd4j_debug("NumTads: %i\n", aL->size());
+//             for (int e = 0; e < aL->size(); e++) {
+//                 auto aLt = aL->at(e);
+//                 auto bLt = bL->at(e);
+//                 auto cLt = cL->at(e);
+
+//                 auto c_ = mmul(aLt, bLt, cLt);
+//                 if (c_ != cLt) {
+//                     cLt->assign(c_);
+//                     delete c_;
+//                 }
+//             }
+//             delete aL;
+//             delete bL;
+//             delete cL;
+//         }
+//     return result;
+// }
+
+//////////////////////////////////////////////////////////////////////////
+NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, double beta) {
+
     const int aRank = A->rankOf();
     const int bRank = B->rankOf();
 
     // input ranks validation
-    if(aRank > bRank && bRank != 2)         
+    if(aRank > bRank && bRank != 2)
         throw std::runtime_error("Rank of B array should be equal 2 !");
-    else if(bRank > aRank && aRank != 2)        
+    else if(bRank > aRank && aRank != 2)
         throw std::runtime_error("Rank of A array should be equal 2 !");
     else if (aRank == bRank ) {
         for(int i = 0; i < aRank - 2; ++i)
             if(A->sizeAt(i) != B->sizeAt(i))
                 throw std::runtime_error("MmulHelper<T>::mmulNxN op: shapes of A and B arrays are not suitable for matrix multiplication !");
     }
-    
+
     if(A->sizeAt(-1) != B->sizeAt(-2))
         throw std::runtime_error("MmulHelper<T>::mmulNxN op: shapes of A and B arrays are not suitable for matrix multiplication !");
 
-    // validation of C array    
+    // validation of C array
     std::vector<Nd4jLong> cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
     cExpectedShape[cExpectedShape.size() - 2] = A->sizeAt(-2);
-    cExpectedShape[cExpectedShape.size() - 1] = B->sizeAt(-1);    
+    cExpectedShape[cExpectedShape.size() - 1] = B->sizeAt(-1);
 
     if(C != nullptr ) {
-        if(!C->isSameShape(cExpectedShape))    
+        if(!C->isSameShape(cExpectedShape))
             throw std::runtime_error("MmulHelper<T>::mmulNxN op: shape of C array is not suitable for AxB matrix multiplication !");
     }
-    else 
-        C = new NDArray<T>('c', cExpectedShape);
-        
+    else
+        C = new NDArray('c', cExpectedShape, B->dataType());
+
     // multiplication
-    std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(C->rankOf(), {-2, -1});
-    const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(C->getShapeInfo(), dimsToExclude);
+    std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(C->rankOf(), {-2, -1});
+    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(C->getShapeInfo(), dimsToExclude);
     std::vector<Nd4jLong> idxRanges(2 * C->rankOf());
 
 #pragma omp parallel for schedule(guided) firstprivate(idxRanges)
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
-            ShapeUtils<T>::evalIdxRangesForSubArr(i, C->getShapeInfo(), dimsToExclude, idxRanges.data());
-            NDArray<T> cSubArr = (*C)(idxRanges);
-            NDArray<T>* c = nullptr;
+            ShapeUtils::evalIdxRangesForSubArr(i, C->getShapeInfo(), dimsToExclude, idxRanges.data());
+            NDArray cSubArr = (*C)(idxRanges);
+            NDArray* c = nullptr;
 
             if(aRank > bRank) {
-                NDArray<T> aSubArr = (*A)(idxRanges);
-                c = mmulMxM(&aSubArr, B, &cSubArr, T(1), T(0));
+                NDArray aSubArr = (*A)(idxRanges);
+                BUILD_TRIPLE_SELECTOR(A->dataType(), B->dataType(), C->dataType(), c = mmulMxM, (&aSubArr, B, &cSubArr, 1., 0.), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
             }
             else if(bRank > aRank) {
-                NDArray<T> bSubArr = (*B)(idxRanges);
-                c = mmulMxM(A, &bSubArr, &cSubArr, T(1), T(0));
+                NDArray bSubArr = (*B)(idxRanges);
+                BUILD_TRIPLE_SELECTOR(A->dataType(), B->dataType(), C->dataType(), c = mmulMxM, (A, &bSubArr, &cSubArr, 1., 0.), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
             }
-            else {                
-                NDArray<T> aSubArr = (*A)(idxRanges);
-                NDArray<T> bSubArr = (*B)(idxRanges);
-                c = mmulMxM(&aSubArr, &bSubArr, &cSubArr, T(1), T(0));
-            }                   
+            else {
+                NDArray aSubArr = (*A)(idxRanges);
+                NDArray bSubArr = (*B)(idxRanges);
+                BUILD_TRIPLE_SELECTOR(A->dataType(), B->dataType(), C->dataType(), c = mmulMxM, (&aSubArr, &bSubArr, &cSubArr, 1., 0.), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+            }
 
             if (c != &cSubArr) { cSubArr.assign(c); delete c; }
         }
 
     return C;
 }
-
-
 //////////////////////////////////////////////////////////////////////////////
 // static
-template<typename T>
-nd4j::NDArray<T>* MmulHelper<T>::mmulMxM(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C , 
-    T alpha, T beta) {
-    nd4j::NDArray<T>* result = C;
+template<typename X, typename Y, typename Z>
+nd4j::NDArray* MmulHelper::mmulMxM(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C , double alpha, double beta) {
+    nd4j::NDArray* result = C;
     bool needAllocA = false;
     bool needAllocB = false;
     if (A->isView()) {
@@ -384,7 +482,7 @@ nd4j::NDArray<T>* MmulHelper<T>::mmulMxM(nd4j::NDArray<T>* A, nd4j::NDArray<T>* 
     }
     if (result == nullptr) {
         nd4j_verbose("mmulMxM: Creating new array: [%i x %i]\n", A->rows(), B->columns());
-        result = new NDArray<T>('f', {A->rows(), B->columns()});
+        result = NDArrayFactory::create_<Z>('f', {A->rows(), B->columns()}, nullptr);
     }
         
     auto aShape = A->shapeOf();
@@ -398,21 +496,21 @@ nd4j::NDArray<T>* MmulHelper<T>::mmulMxM(nd4j::NDArray<T>* A, nd4j::NDArray<T>* 
     N = cShape[1]; // c.columns
     K = aShape[1]; // a.columns
     rOrder = 'f'; //aOrder;
-    nd4j::NDArray<T>* pA = nullptr;
-    nd4j::NDArray<T>* pB = nullptr;
-    nd4j::NDArray<T>* pC = nullptr;;
-    nd4j::NDArray<T>* tA;
-    nd4j::NDArray<T>* tB;
-    nd4j::NDArray<T>* tC = result; 
+    nd4j::NDArray* pA = nullptr;
+    nd4j::NDArray* pB = nullptr;
+    nd4j::NDArray* pC = nullptr;;
+    nd4j::NDArray* tA;
+    nd4j::NDArray* tB;
+    nd4j::NDArray* tC = result;
     
     if (needAllocA) {
-        tA = new nd4j::NDArray<T>(A->getBuffer(), A->getShapeInfo(), A->getWorkspace());
+        tA = new nd4j::NDArray(A->getBuffer(), A->getShapeInfo(), A->getWorkspace());
         nd4j_verbose("Matrix A was recreated from view.\n", "");
     }
     else 
         tA = A; 
     if (needAllocB) {
-        tB = new nd4j::NDArray<T>(B->getBuffer(), B->getShapeInfo(), B->getWorkspace());
+        tB = new nd4j::NDArray(B->getBuffer(), B->getShapeInfo(), B->getWorkspace());
         nd4j_verbose("Matrix B was recreated from view.\n", "");
     }
     else 
@@ -447,20 +545,26 @@ nd4j::NDArray<T>* MmulHelper<T>::mmulMxM(nd4j::NDArray<T>* A, nd4j::NDArray<T>* 
     ldc = pC->rows();
     transA = (pA->ordering() == 'c'? CblasTrans:CblasNoTrans);
     transB = (pB->ordering() == 'c' ? CblasTrans:CblasNoTrans);
+
+    auto xType = A->dataType();
+    auto yType = B->dataType();
+    auto zType = result->dataType();
+
     // we'll use platform-specific gemm here eventually. maybe tomorrow.
     // TODO: put proper _gemm here
-    if (BlasHelper::getInstance()->template hasGEMM<T>()) {
+    if (xType == yType && yType == zType && BlasHelper::getInstance()->template hasGEMM<X>()) {
         nd4j_debug("Using provided GEMM pointer\n","");
-        if (sizeof(T) == 4)
+        if (xType == FLOAT32)
             BlasHelper::getInstance()->sgemm()(CblasColMajor, transA, transB, M, N, K, (float) alpha, reinterpret_cast<float *>(pA->getBuffer()), lda, reinterpret_cast<float *>(pB->getBuffer()), ldb, (float) beta, reinterpret_cast<float *>(pC->getBuffer()), ldc);
-        else if (sizeof(T) == 8)
+        else if (xType == DOUBLE)
             BlasHelper::getInstance()->dgemm()(CblasColMajor, transA, transB, M, N, K, (double) alpha, reinterpret_cast<double *>(pA->getBuffer()), lda, reinterpret_cast<double *>(pB->getBuffer()), ldb, (double) beta, reinterpret_cast<double *>(pC->getBuffer()), ldc);
-        else
-            nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc);
+        else {
+            BUILD_TRIPLE_SELECTOR(xType, yType, zType, nd4j::blas::GEMM, ::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+        }
     } else {
         nd4j_debug("mmulMxM: Using fallback GEMM impl\n","");
        
-        nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc);
+        nd4j::blas::GEMM<X, Y, Z>::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc);
     }
     if (tC != pC) {
         tC->assign(pC);
@@ -480,61 +584,69 @@ nd4j::NDArray<T>* MmulHelper<T>::mmulMxM(nd4j::NDArray<T>* A, nd4j::NDArray<T>* 
 
 ////////////////////////////////////////////////////////////////////////////
 // static
-template<typename T>
-nd4j::NDArray<T>* MmulHelper<T>::mmulMxV(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C , 
-    T alpha, T beta) {
+template <typename X, typename Y, typename Z>
+nd4j::NDArray* MmulHelper::mmulMxV(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C , double alpha, double beta) {
     
-    nd4j::NDArray<T>* result = C;
+    nd4j::NDArray* result = C;
         // gemv
         if (A->columns() != B->lengthOf())
             throw std::runtime_error("A columns != B length");
         if (result == nullptr)
-            result = new NDArray<T>('f', {A->rows(), 1});
+            result = NDArrayFactory::create_<Z>('f', {A->rows(), 1});
+
+        auto xType = A->dataType();
+        auto yType = B->dataType();
+        auto zType = result->dataType();
+
         // TODO: strides!!!
-        if (BlasHelper::getInstance()->hasGEMV<T>()) {
+        if (xType == yType && xType == zType && BlasHelper::getInstance()->hasGEMV<X>()) {
             nd4j_debug("Using provided GEMV pointer\n","");
             auto layout = A->ordering() == 'f' ? CblasColMajor : CblasRowMajor;
-            if (sizeof(T) == 4)
+            if (std::is_same<X, float>::value)
                 BlasHelper::getInstance()->sgemv()(layout, CblasNoTrans, A->rows(), A->columns(), (float) alpha, reinterpret_cast<float *>(A->getBuffer()), layout == CblasColMajor ? A->rows() : A->columns(), reinterpret_cast<float *>(B->getBuffer()), 1, (float) beta, reinterpret_cast<float *>(result->getBuffer()), 1);
-            else if (sizeof(T) == 8)
+            else if (std::is_same<X, double>::value)
                 BlasHelper::getInstance()->dgemv()(layout, CblasNoTrans, A->rows(), A->columns(), (double) alpha, reinterpret_cast<double *>(A->getBuffer()), layout == CblasColMajor ? A->rows() : A->columns(), reinterpret_cast<double *>(B->getBuffer()), 1, (double) beta, reinterpret_cast<double *>(result->getBuffer()), 1);
             else
-                nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0, A->rows(), A->columns(), alpha, A->getBuffer(), B->lengthOf(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
+                nd4j::blas::GEMV<X, Y, Z>::op(A->ordering() == 'f' ? CblasTrans : 0, A->rows(), A->columns(), alpha, A->getBuffer(), B->lengthOf(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
         } else {
             nd4j_debug("Using fallback GEMV impl\n","");
-            nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0, A->rows(), A->columns(), alpha, A->getBuffer(), B->lengthOf(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
+            nd4j::blas::GEMV<X, Y, Z>::op(A->ordering() == 'f' ? CblasTrans : 0, A->rows(), A->columns(), alpha, A->getBuffer(), B->lengthOf(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
         }
     return result;
 }
 
+
+
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-nd4j::NDArray<T>* MmulHelper<T>::mmul(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C , 
-    T alpha, T beta) {
-    nd4j::NDArray<T>* result = C;
+nd4j::NDArray* MmulHelper::mmul(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C , double alpha, double beta) {
+    nd4j::NDArray* result = C;
+    auto xType = A->dataType();
+    auto yType = B->dataType();
+    auto zType = C != nullptr ? C->dataType() : yType;
+
     if (A->rankOf() > 2 || B->rankOf() > 2) {
         return mmulNxN(A, B, C, alpha, beta);
     } else if ((A->isMatrix() && B->isRowVector()) || (A->isMatrix() && B->isColumnVector())) {
-        return mmulMxV(A, B, C, alpha, beta);
+        BUILD_TRIPLE_SELECTOR(xType, yType, zType, return mmulMxV, (A, B, C, alpha, beta), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
     } else if ((A->isRowVector() && B->isRowVector()) || (A->isColumnVector() && B->isColumnVector())) {
         // dot
         if (A->lengthOf() != B->lengthOf())
             throw std::runtime_error("A length != B length");
         if (result == nullptr)
-            result = new NDArray<T>('c', {1, 1});
-        result->putScalar(0, nd4j::math::nd4j_dot(A->getBuffer(), B->getBuffer(), A->lengthOf()));
+            result = NDArrayFactory::create_('c', {1, 1},B->dataType());
+        //result->p(0, nd4j::math::nd4j_dot(A->getBuffer(), B->getBuffer(), A->lengthOf()));
+        BUILD_TRIPLE_SELECTOR(xType, yType, result->dataType(), _dot, (A->buffer(), B->buffer(), result->buffer(), A->lengthOf()), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
         return result;
     } else { //if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix()) || (A->isColumnVector() && B->isRowVector())) {
         // gemm
         // int[] shape = {rows(), other.columns()};
-        return mmulMxM(A, B, C, alpha, beta);
+        BUILD_TRIPLE_SELECTOR(xType, yType, zType, return mmulMxM, (A, B, C, alpha, beta), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
     }
     return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-NDArray<T>* MmulHelper<T>::simpleMMul(const NDArray<T>* a, const NDArray<T>* b, NDArray<T>* c, const T alpha, const T beta) {
+NDArray* MmulHelper::simpleMMul(const NDArray* a, const NDArray* b, NDArray* c, const double alpha, const double beta) {
     
     if(a->rankOf() != 2 || b->rankOf() != 2)
         throw std::runtime_error("NDArrayFactory::simpleMMul static function: some of input arrays has rank not equal to 2 !");
@@ -542,31 +654,33 @@ NDArray<T>* MmulHelper<T>::simpleMMul(const NDArray<T>* a, const NDArray<T>* b, 
     if(a->shapeOf()[1] != b->shapeOf()[0])
         throw std::runtime_error("NDArrayFactory::simpleMMul static function: the number of A columns is not equal to number of B rows !");
 
-    NDArray<T>* dot = c;
+    NDArray* dot = c;
     if(c == nullptr) 
-        c = new NDArray<T>('f', {a->shapeOf()[0], b->shapeOf()[1]}, a->getWorkspace());        
+        c = NDArrayFactory::create_('f', {a->shapeOf()[0], b->shapeOf()[1]}, b->dataType(), a->getWorkspace());
     else {
         if( c->shapeOf()[0] != a->shapeOf()[0] || c->shapeOf()[1] != b->shapeOf()[1])
             throw std::runtime_error("NDArrayFactory::simpleMMul static function: wrong shape of C array !");
-        if(beta != (T)0. ) {
-            dot = new NDArray<T>(c->ordering(), {a->shapeOf()[0], b->shapeOf()[1]},  a->getWorkspace());
-            if( beta != (T)1.)
-                c->template applyScalar<simdOps::Multiply<T>>(beta);            
+        if(beta != 0. ) {
+            dot = NDArrayFactory::create_(c->ordering(), {a->shapeOf()[0], b->shapeOf()[1]}, c->dataType(), a->getWorkspace());
+            if( beta != 1.)
+                c->applyScalar(scalar::Multiply, beta, c, nullptr);
         }        
     }
     int M = a->shapeOf()[0];
     int N = b->shapeOf()[1];
     int K = a->shapeOf()[1];
+
+    // FIXME: double?
     for(int row = 0; row < M; ++row)
         for(int col = 0; col < N; ++col)
             for(int j = 0; j < K; ++j)
-                    (*dot)(row,col) += (*a)(row,j)*(*b)(j,col);
+                    dot->p(row,col, a->e<double>(row,j) * b->e<double>(j,col));
 
-    if(alpha != (T)1.)
-        dot->template applyScalar<simdOps::Multiply<T>>(alpha);
+    if(alpha != 1.)
+        dot->applyScalar(scalar::Multiply, alpha, dot, nullptr);
 
-    if(beta != (T)0.) {
-        c->template applyPairwiseTransform<simdOps::Add<T>>(dot, nullptr);
+    if(beta != 0.) {
+        c->applyPairwiseTransform(pairwise::Add, dot, nullptr);
         delete dot;
     }
     
@@ -574,77 +688,80 @@ NDArray<T>* MmulHelper<T>::simpleMMul(const NDArray<T>* a, const NDArray<T>* b, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-void MmulHelper<T>::matmul(const nd4j::NDArray<T>* x, const nd4j::NDArray<T>* y, nd4j::NDArray<T>* z, const bool transX, const bool transY) {
-   
-    int xRank = x->rankOf();
-    int yRank = y->rankOf();
+    void MmulHelper::matmul(const nd4j::NDArray* x, const nd4j::NDArray* y, nd4j::NDArray* z, const bool transX, const bool transY) {
+        int xRank = x->rankOf();
+        int yRank = y->rankOf();
 
-    std::vector<Nd4jLong> outShape = ShapeUtils<T>::evalShapeForMatmul(x->getShapeInfo(), y->getShapeInfo(), transX, transY);
-    if(!z->isSameShape(outShape)) {
-        nd4j_printf("NDArrayFactory::matmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils<T>::shapeAsString(z).c_str(), ShapeUtils<T>::shapeAsString(outShape).c_str());
-        throw std::invalid_argument("");       
-    }
-        
-    NDArray<T>* xT(const_cast<NDArray<T>*>(x)), *yT(const_cast<NDArray<T>*>(y)), *zT(z);
-    
-    if((transX && xRank > 1) || (transY && yRank > 1)) {
-        
-        const int rank = xRank >= yRank ? xRank : yRank;
-        std::vector<int> permut(rank);
-        for (int i = 0; i < rank-2; ++i)
-            permut[i] = i;        
-        permut[rank-2] = rank - 1;
-        permut[rank-1] = rank - 2;
-        
-        if(transX)
-            xT = x->permute(permut);
-
-        if(transY)
-            yT = y->permute(permut);
-    }
-
-    if(xRank <= 2 && yRank <= 2) {  // dot (1Dx1D), vector-matrix (1Dx2D), matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
-
-        if(xRank == 1 && yRank == 2) {   // reduce vector-matrix to matrix-matrix case
-            xT = x->reshape(x->ordering(), {1, x->lengthOf()}); // please note x is not transposed in this case (since xRank=1)
-            zT = z->reshape(z->ordering(), {1, z->lengthOf()});
+        auto outShape = ShapeUtils::evalShapeForMatmul(x->getShapeInfo(), y->getShapeInfo(), transX, transY);
+        if(!z->isSameShape(outShape)) {
+            nd4j_printf("NDArrayFactory::matmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils::shapeAsString(z).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
+            throw std::invalid_argument("");
         }
         
-        mmul(xT, yT, zT, (T)1., (T)0.);        
-    }
-    else {  // rest cases -  batched mmul
+        NDArray* xT(const_cast<NDArray*>(x)), *yT(const_cast<NDArray*>(y)), *zT(z);
+    
+        if((transX && xRank > 1) || (transY && yRank > 1)) {
+            const int rank = xRank >= yRank ? xRank : yRank;
+            std::vector<int> permut(rank);
+            for (int i = 0; i < rank-2; ++i)
+                permut[i] = i;
+            permut[rank-2] = rank - 1;
+            permut[rank-1] = rank - 2;
         
-        const int batchRank = xRank - 2;    
-        std::vector<int> dimsToExclude(batchRank);
-        for(int i = 0; i < batchRank; ++i)
-            dimsToExclude[i] = i;
+            if(transX)
+                xT = x->permute(permut);
 
-        const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
+            if(transY)
+                yT = y->permute(permut);
+        }
+
+        if(xRank <= 2 && yRank <= 2) {  // dot (1Dx1D), vector-matrix (1Dx2D), matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
+
+            if(xRank == 1 && yRank == 2) {   // reduce vector-matrix to matrix-matrix case
+                xT = x->reshape(x->ordering(), {1, x->lengthOf()}); // please note x is not transposed in this case (since xRank=1)
+                zT = z->reshape(z->ordering(), {1, z->lengthOf()});
+            }
+        
+            mmul(xT, yT, zT, 1., 0.);
+        }
+        else {  // rest cases -  batched mmul
+        
+            const int batchRank = xRank - 2;
+            std::vector<int> dimsToExclude(batchRank);
+            for(int i = 0; i < batchRank; ++i)
+                dimsToExclude[i] = i;
+
+            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
 
 #pragma omp parallel for schedule(guided)
-        for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
-            
-            NDArray<T> xSubArr = (*xT)(i, dimsToExclude);
-            NDArray<T> ySubArr = (*yT)(i, dimsToExclude);
-            NDArray<T> zSubArr = (*zT)(i, dimsToExclude);
-            mmul(&xSubArr, &ySubArr, &zSubArr, (T)1., (T)0.);
+            for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+                auto xSubArr = (*xT)(i, dimsToExclude);
+                auto ySubArr = (*yT)(i, dimsToExclude);
+                auto zSubArr = (*zT)(i, dimsToExclude);
+                mmul(&xSubArr, &ySubArr, &zSubArr, 1., 0.);
+            }
         }
+
+        if(xT != x)
+            delete xT;
+        if(yT != y)
+            delete yT;
+        if(zT != z)
+            delete zT;
     }
 
-    if(xT != x)
-        delete xT;
-    if(yT != y)
-        delete yT;
-    if(zT != z)
-        delete zT;
-}
+    template <typename X, typename Y, typename Z>
+    void MmulHelper::_dot(void* vA, void* vB, void* vC, Nd4jLong length) {
+        auto A = reinterpret_cast<X *>(vA);
+        auto B = reinterpret_cast<Y *>(vB);
+        auto C = reinterpret_cast<Z *>(vC);
 
+        C[0] = nd4j::math::nd4j_dot<X, Y, Z>(A, B, length);
+    }
 
-
-template class ND4J_EXPORT MmulHelper<float>;
-template class ND4J_EXPORT MmulHelper<float16>;
-template class ND4J_EXPORT MmulHelper<double>;
+    BUILD_TRIPLE_TEMPLATE(template nd4j::NDArray* MmulHelper::mmulMxM, (nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha, double beta), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+    BUILD_TRIPLE_TEMPLATE(template nd4j::NDArray* MmulHelper::mmulMxV, (nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha, double beta), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+    BUILD_TRIPLE_TEMPLATE(template void MmulHelper::_dot, (void* vA, void* vB, void* vC, Nd4jLong length), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
 }
 
 

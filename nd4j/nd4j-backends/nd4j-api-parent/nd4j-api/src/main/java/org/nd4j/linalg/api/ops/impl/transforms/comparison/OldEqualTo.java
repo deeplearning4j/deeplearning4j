@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
@@ -31,7 +32,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class OldEqualTo extends BaseTransformOp {
+public class OldEqualTo extends BaseTransformBoolOp {
 
 
 
@@ -69,21 +70,17 @@ public class OldEqualTo extends BaseTransformOp {
         super(x, y, z, n);
     }
 
-    public OldEqualTo(INDArray x) {
-        super(x);
+    public OldEqualTo(INDArray x, INDArray y) {
+        super(x, y, null, x.length());
     }
 
-    public OldEqualTo(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public OldEqualTo(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+    public OldEqualTo(INDArray x, INDArray y, long n) {
+        super(x, y, null, n);
     }
 
     @Override
     public int opNum() {
-        return 3;
+        return 0;
     }
 
     @Override

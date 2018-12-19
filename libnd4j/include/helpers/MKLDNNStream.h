@@ -25,13 +25,13 @@
 #include <mkldnn.hpp>
 
 namespace nd4j {
-    template <typename T> class MKLDNNStream {
+    class MKLDNNStream {
     protected:
         std::string _opName;
 
-        std::vector<NDArray<T>*> _inputs;
-        std::vector<NDArray<T>*> _outputs;
-        std::vector<T> _floatArguments;
+        std::vector<NDArray*> _inputs;
+        std::vector<NDArray*> _outputs;
+        std::vector<float> _floatArguments;
         std::vector<int> _intArguments;
 
         mkldnn::engine _engine = mkldnn::engine(mkldnn::engine::cpu, 0);
@@ -39,12 +39,12 @@ namespace nd4j {
         mkldnn::primitive _operation;
 
     public:
-        static bool isSupported() { return typeid(T) == typeid(float); }
+        static bool isSupported() { return false; }
 
         MKLDNNStream(const std::string &opName) : _opName(opName) { }
 
-        bool checkAndReset(const std::vector<NDArray<T>*> &inputs, const std::vector<NDArray<T>*> &outputs,
-                const std::vector<T> &floatArguments, const std::vector<int> &intArguments) {
+        bool checkAndReset(const std::vector<NDArray*> &inputs, const std::vector<NDArray*> &outputs,
+                const std::vector<float> &floatArguments, const std::vector<int> &intArguments) {
             if (inputs != _inputs || outputs != _outputs || floatArguments != _floatArguments || intArguments != _intArguments) {
                 _inputs = inputs;
                 _outputs = outputs;

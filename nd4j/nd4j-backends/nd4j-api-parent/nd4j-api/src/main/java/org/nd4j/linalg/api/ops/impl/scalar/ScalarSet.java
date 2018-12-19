@@ -63,7 +63,7 @@ public class ScalarSet extends BaseScalarOp {
 
     @Override
     public int opNum() {
-        return 13;
+        return 14;
     }
 
     @Override
