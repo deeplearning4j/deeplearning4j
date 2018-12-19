@@ -85,11 +85,11 @@ public class NoOp extends DynamicCustomOp {
         if(inputArguments != null && !inputArguments.isEmpty()){
             return Collections.singletonList(inputArguments.get(0).shapeDescriptor());
         }
-        return Collections.singletonList(Nd4j.empty().shapeDescriptor());
+        return Collections.singletonList(Nd4j.empty(DataType.BOOL).shapeDescriptor());
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        return inputDataTypes;
+        return Collections.singletonList(DataType.BOOL);
     }
 }
