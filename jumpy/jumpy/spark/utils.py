@@ -21,12 +21,16 @@ from ..java_classes import ArrayDescriptor as getArrayDescriptor
 from ..java_classes import DatasetDescriptor
 import ctypes
 from .dataset import Dataset
+from ..ndarray import array
 
 
 ArrayDescriptor = None
 
 
 def np2desc(nparray):
+    if nparray is None:
+        return None
+    nparray = array(nparray).numpy()
     address = nparray.__array_interface__['data'][0]
     shape = nparray.shape
     stride = nparray.strides
@@ -41,6 +45,8 @@ def np2desc(nparray):
 
 
 def desc2np(desc):
+    if desc is None:
+        return None
     address, shape, stride, dtype = desc
     mapping = {
         'double': ctypes.c_double,
@@ -58,10 +64,14 @@ def desc2np(desc):
 
 
 def desc2ds(desc):
+    if desc is None:
+        return None
     return Dataset(*list(map(desc2np, desc)))
 
 
 def ds2desc(ds):
+    if ds is None:
+        return None
     items = [ds.features, ds.labels, ds.features_mask, ds.labels_mask]
     return tuple(map(np2desc, items))
 
@@ -90,7 +100,7 @@ def py2j_arr_desc(pydesc):
     dtype = {"float": DataType.FLOAT, "double": DataType.DOUBLE}[dtype]
     if ArrayDescriptor is None:
         ArrayDescriptor = getArrayDescriptor()
-    return ArrayDescriptor(address, shape, stride, dtype)
+    return ArrayDescriptor(address, shape, stride, dtype, 'c')
 
 
 def j2py_ds_desc(jdesc):

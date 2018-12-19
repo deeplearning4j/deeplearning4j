@@ -17,6 +17,7 @@
 from ..ndarray import ndarray
 from ..java_classes import JDataset
 
+
 class Dataset(object):
 
     def __init__(self, features, labels, features_mask=None, labels_mask=None):
@@ -33,3 +34,16 @@ class Dataset(object):
 
     def to_java(self):
         return JDataset(self.features.array, self.labels.array, self.features_mask, self.labels_mask)
+
+    def __getstate__(self):
+        return [self.features.numpy(),
+                self.labels.numpy(),
+                self.features_mask.numpy() if self.features_mask is not None else None,
+                self.labels_mask.numpy() if self.labels_mask is not None else None]
+
+    def __setstate__(self, state):
+        ds = Dataset(*state)
+        self.features = ds.features
+        self.labels = ds.labels
+        self.features_mask = ds.features_mask
+        self.labels_mask = ds.labels_mask
