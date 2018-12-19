@@ -23,6 +23,7 @@
 #include <graph/exceptions/datatype_exception.h>
 #include <helpers/CudaLaunchHelper.h>
 #include <helpers/ShapeBuilders.h>
+#include <specials_cuda.h>
 
 #include <loops/transform_float.h>
 #include <loops/transform_bool.h>
@@ -895,8 +896,17 @@ void NativeOpExecutioner::execReduce3(nd4j::graph::LaunchContext *lc,
     
     auto numBlocks = shape::length(hZShapeInfo);
     dim3 launchDims(numBlocks, 256, 32768);
-
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, 1, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
+    
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(launchDims, stream, opNum, 
+                                                                    dX, dXShapeInfo, 
+                                                                    dY, dYShapeInfo, 
+                                                                    extraParams, 
+                                                                    dZ, dZShapeInfo, 
+                                                                    dimension, dimensionLength, 
+                                                                    1, 
+                                                                    allocationPointer, 
+                                                                    tadOnlyShapeInfo, tadOffsets, 
+                                                                    yTadOnlyShapeInfo, yTadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

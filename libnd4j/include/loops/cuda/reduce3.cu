@@ -22,6 +22,7 @@
 #include <loops/reduce3.h>
 #include <loops/legacy_ops.h>
 #include <types/types.h>
+#include <specials_cuda.h>
 
 using namespace simdOps;
 
@@ -70,7 +71,7 @@ __global__ void execGeneric(const int opNum,
 								int *allocationPointer,
 								Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
 								Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
-      
+
     Reduce3<X,Z>::execCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);    
 }
 
@@ -191,8 +192,8 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
             __syncthreads();
 
             if (threadIdx.x == 0) {
-            unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
-            amLast = (ticket == gridDim.x - 1);
+            	unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
+            	amLast = (ticket == gridDim.x - 1);
             }
 
             sPartials[tid] = OpType::startingValue(x);
@@ -531,7 +532,7 @@ __device__ void Reduce3<X,Y>::execCuda(const int opNum,
 									int *allocationPointer,
 									Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
 									Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
-                           
+
 	DISPATCH_BY_OPNUM_TT(transform, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 }
 
@@ -581,7 +582,7 @@ __host__ void Reduce3<X,Z>::exec(dim3 launchDims, cudaStream_t *stream,
 									int *allocationPointer, 
 									Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, 
 									Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
-        
+
     execGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
 }
 

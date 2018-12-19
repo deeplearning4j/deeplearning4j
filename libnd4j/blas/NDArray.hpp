@@ -3293,22 +3293,17 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
         shape::TAD tadY(other->_shapeInfo, copy.data(), copy.size());
         tadY.createTadOnlyShapeInfo();
-        tadY.createOffsets();        
+        tadY.createOffsets();
         // check tads shapes
         if(!shape::equalsSoft(tadX.tadOnlyShapeInfo, tadY.tadOnlyShapeInfo)) 
             throw std::runtime_error("NDArray::applyAllReduce3 method: the shapes of array tads are different !");
-        // evaluate numbers of tads
-        Nd4jLong tadLengthX = shape::tadLength(_shapeInfo, copy.data(), copy.size());
-        Nd4jLong numTadsX = lengthOf() / tadLengthX;
-        
-        Nd4jLong tadLengthY = shape::tadLength(other->_shapeInfo, copy.data(), copy.size());
-        Nd4jLong numTadsY = other->lengthOf() / tadLengthY;
-        // set newShape for output array        
+
+        // set newShape for output array
         Nd4jLong *newShape = nullptr;
         ALLOCATE(newShape, _workspace, 8, Nd4jLong);
         newShape[0] = 2;        // output rank is always equal to 2 for execAll case
-        newShape[1] = numTadsX;
-        newShape[2] = numTadsY;
+        newShape[1] = tadX.numTads;
+        newShape[2] = tadY.numTads;
         ShapeUtils::updateStridesAndType(newShape, DataTypeUtils::pickFloatingType(_dataType), 'c');
         // create output array
         auto result = new NDArray(newShape, true, _workspace, true);

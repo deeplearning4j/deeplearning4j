@@ -22,6 +22,7 @@
 #define LIBND4J_CUDACONTEXT_H
 
 #include <dll.h>
+#include <op_boilerplate.h>
 
 #ifdef __CUDABLAS__
 #include <cuda.h>
@@ -48,13 +49,21 @@ class ND4J_EXPORT LaunchContext {
 		
 		LaunchContext(cudaStream_t* cudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
 		
-		inline void* getReductionPointer () const {return _reductionPointer;};			
+		FORCEINLINE void* getReductionPointer () const {return _reductionPointer;};
 		
-		inline void* getScalarPointer() const {return _scalarPointer;};
+		FORCEINLINE void* getScalarPointer() const {return _scalarPointer;};
 
-		inline int* getAllocationPointer() const {return _allocationPointer;};
+		FORCEINLINE int* getAllocationPointer() const {return _allocationPointer;};
 
-		inline cudaStream_t* getCudaStream() const {return _cudaStream;};
+		FORCEINLINE cudaStream_t* getCudaStream() const {return _cudaStream;};
+
+		FORCEINLINE void setReductionPointer (void* reductionPointer) {_reductionPointer = reductionPointer;};
+		
+		FORCEINLINE void setScalarPointer(void* scalarPointer) {_scalarPointer = scalarPointer;};
+
+		FORCEINLINE void setAllocationPointer(int* allocationPointer) {_allocationPointer = allocationPointer;};
+
+		FORCEINLINE void setCudaStream(cudaStream_t* cudaStream)  {_cudaStream = cudaStream;};
 		
 #endif
 

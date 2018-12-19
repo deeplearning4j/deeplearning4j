@@ -124,6 +124,19 @@ public:
                             Nd4jLong *xTadOnlyShapeInfo, Nd4jLong *xTadOffsets,
                             Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
 
+    static void execReduce3All(nd4j::graph::LaunchContext *lc,
+                            int opNum,
+                            void *hX, Nd4jLong *hXShapeInfo,
+                            void *dX, Nd4jLong *dXShapeInfo,
+                            void *extraParamsVals,
+                            void *hY, Nd4jLong *hYShapeInfo,
+                            void *dY, Nd4jLong *dYShapeInfo,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo,
+                            int *dimension, int dimensionLength,
+                            Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
+                            Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets);
+
     /**
      *
      * @param opNum
@@ -303,20 +316,7 @@ public:
                                     void *dX, Nd4jLong *dXShapeInfo,
                                     void *extraParams,
                                     void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo);
-    
-    static void execReduce3All(nd4j::graph::LaunchContext *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParamsVals,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
-                            Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets);
+                                    void *dZ, Nd4jLong *dZShapeInfo);    
 
     static void execReduce3TAD(nd4j::graph::LaunchContext *lc,
                             int opNum,
