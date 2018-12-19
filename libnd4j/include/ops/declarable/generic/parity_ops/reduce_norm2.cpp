@@ -99,24 +99,26 @@ namespace ops {
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
-            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-
-            // FIXME: double!
-            double keepDimsT = (keepDims ? 1.f : 0.f);
-
             // at first step we build fwd activation
-            nd4j::ops::reduce_norm2 op;
-            std::vector<Nd4jLong> axes;// = *block.getIArguments();
-
-            if (block.numI() > 0) {
-                for (int e = 0; e < block.numI(); e++)
-                    axes.emplace_back(INT_ARG(e));// = *block.getIArguments();
+            auto axes = *block.getIArguments();
+            if (block.width() > 2) {
+                auto axesVector = INPUT_VARIABLE(2);
+                helpers::adjustAxis(input, axesVector, axes);
             }
-            // FIXME: double!
-            std::vector<double> tVec(1);
-            tVec[0] = (keepDims ? 1.0 : 0.0);
+//            else if (block.getIArguments()->size())
+            bool keepDims = false;
+            if (block.getBArguments()->size())
+                keepDims = B_ARG(0);
+            else if (block.getTArguments()->size())
+                keepDims = (bool)T_ARG(0);
+            std::vector<Nd4jLong> axesLong;
+            for (size_t i = 0; i < axes.size(); i++)
+                axesLong.emplace_back(axes[i]);
+
+
             std::vector<NDArray*> inputVec({input});
-            std::unique_ptr<ResultSet> tmpResult(op.execute(inputVec, tVec, axes, {}, false));
+            nd4j::ops::reduce_norm2 op;
+            std::unique_ptr<ResultSet> tmpResult(op.execute({input}, {}, axesLong, {keepDims}, false));
             if (tmpResult->status() != Status::OK())
                 return tmpResult->status();
 
@@ -124,28 +126,9 @@ namespace ops {
 
 
             if (tempNorm2->isScalar()) {
-                // FIXME: lambda
-                /*
-                auto norm2Backprop = LAMBDA_T(_x, epsilon, tempNorm2) {
-                    return (*epsilon)(0.) * _x / (*tempNorm2)(0.);
-                };
-                input->applyLambda(norm2Backprop, output);
-                */
                 helpers::reduceNorm2BP_scalar(input, epsilon, tempNorm2, output);
             }
             else {
-                auto axes = *block.getIArguments();
-                if (block.width() > 2) {
-                    auto axesVector = INPUT_VARIABLE(1);
-                    helpers::adjustAxis(input, axesVector, axes);
-                }
-//            else if (block.getIArguments()->size())
-                bool keepDims = false;
-                if (block.getBArguments()->size())
-                    keepDims = B_ARG(0);
-                else if (block.getTArguments()->size())
-                    keepDims = (bool)T_ARG(0);
-
                 helpers::reduceNorm2BP(input, epsilon, tempNorm2, output, axes, keepDims);
             }
             return Status::OK();
