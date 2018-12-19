@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/reduce_norm.h>
+#include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -28,22 +29,44 @@ namespace ops {
     CUSTOM_OP_IMPL(reduce_norm1, 1, 1, false, 0, 0) {
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
-        std::vector<int> axes = *block.getIArguments();
+            std::vector<int> axes;
+        if (block.width() > 1) {
+            auto axesVector = INPUT_VARIABLE(1);
+            helpers::adjustAxis(input, axesVector, axes);
+        }
+        else if (block.getIArguments()->size())
+            axes = *block.getIArguments();
 
         for(const auto& item : axes)
             REQUIRE_TRUE(item > -input->shapeInfo()[0] || item <input->shapeInfo()[0], 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+        bool keepDims = false;
+        if (block.getBArguments()->size())
+            keepDims = B_ARG(0);
+        else if (block.getTArguments()->size())
+            keepDims = (bool)T_ARG(0);
+
         input->reduceAlongDimension(reduce::Norm1, output, axes, keepDims);
 
         return Status::OK();
     }
 
-    DECLARE_SHAPE_FN(reduce_norm1) {    
+    DECLARE_SHAPE_FN(reduce_norm1) {
 
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    
-        std::vector<int> dimensions = *block.getIArguments();
+        bool keepDims = false;
+        if (block.getBArguments()->size())
+            keepDims = B_ARG(0);
+        else if (block.getTArguments()->size())
+            keepDims = (bool)T_ARG(0);
+
+        std::vector<int> dimensions;
+        if (block.width() > 1) {
+            auto axesVector = INPUT_VARIABLE(1);
+            helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+        }
+        else if (block.getIArguments()->size())
+            dimensions = *block.getIArguments();
+
         Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
         ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
 
@@ -85,8 +108,19 @@ namespace ops {
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
-            std::vector<int> axes = *block.getIArguments();
-            helpers::reduceNorm1BP(input, epsilon, (NDArray*)nullptr, output, axes);
+            auto axes = *block.getIArguments();
+            if (block.width() > 2) {
+                auto axesVector = INPUT_VARIABLE(2);
+                helpers::adjustAxis(input, axesVector, axes);
+            }
+//            else if (block.getIArguments()->size())
+            bool keepDims = false;
+            if (block.getBArguments()->size())
+                keepDims = B_ARG(0);
+            else if (block.getTArguments()->size())
+                keepDims = (bool)T_ARG(0);
+
+            helpers::reduceNorm1BP(input, epsilon, (NDArray*)nullptr, output, axes, keepDims);
 
             //delete tmpResult;
             return Status::OK();
