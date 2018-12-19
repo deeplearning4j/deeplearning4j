@@ -18,6 +18,7 @@ package org.nd4j.linalg.memory;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -38,6 +39,7 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Ignore
 @RunWith(Parameterized.class)
 public class AccountingTests extends BaseNd4jTest {
     public AccountingTests(Nd4jBackend backend) {
