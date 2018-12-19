@@ -2283,10 +2283,15 @@ void NDArray::applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArra
         target = this;
     if(target->_dataType != DataTypeUtils::pickPairwiseResultType(_shapeInfo, scalar->_shapeInfo) && !(target->_dataType == this->_dataType || target->_dataType == scalar->_dataType))
         throw std::invalid_argument("NDArray::applyScalarArr method: wrong type of target array!");
-    if (!Environment::getInstance()->isExperimentalBuild()) {
-        if (scalar->dataType() != this->dataType());
+
+    if (this->dataType() == scalar->dataType() || Environment::getInstance()->isExperimentalBuild())
+        NativeOpExcutioner::execScalar(op, _buffer, _shapeInfo, target->_buffer, target->_shapeInfo, scalar->_buffer, scalar->_shapeInfo, extraParams);
+    else {
+        auto tmp = const_cast<NDArray*>(scalar)->cast(this->dataType());
+        NativeOpExcutioner::execScalar(op, _buffer, _shapeInfo, target->_buffer, target->_shapeInfo, tmp->_buffer, tmp->_shapeInfo, extraParams);
+
+        delete tmp;
     }
-    NativeOpExcutioner::execScalar(op, _buffer, _shapeInfo, target->_buffer, target->_shapeInfo, scalar->_buffer, scalar->_shapeInfo, extraParams);
 }
 
 template <typename T>

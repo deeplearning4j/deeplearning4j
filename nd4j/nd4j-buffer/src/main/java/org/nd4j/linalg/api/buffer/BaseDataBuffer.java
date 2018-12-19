@@ -25,6 +25,7 @@ import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.AtomicDouble;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -35,6 +36,7 @@ import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -94,6 +96,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient Long trackingPoint;
 
     protected transient boolean constant = false;
+    protected transient boolean released = false;
+
+    protected transient AtomicBoolean referenced = new AtomicBoolean(false);
+    protected transient Collection<BaseDataBuffer> references = new ArrayList<>();
 
     public BaseDataBuffer() {}
 
@@ -168,6 +174,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.elementSize = (byte) underlyingBuffer.getElementSize();
         this.underlyingLength = underlyingBuffer.underlyingLength();
         this.wrappedDataBuffer = underlyingBuffer;
+        ((BaseDataBuffer) underlyingBuffer).referenced.compareAndSet(false, true);
+        ((BaseDataBuffer) underlyingBuffer).references.add(this);
 
         // Adding link to original databuffer
         if (underlyingBuffer.originalDataBuffer() == null) {
@@ -2245,5 +2253,41 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public long capacity() {
         return pointer().capacity();
+    }
+
+    @Override
+    public boolean closeable() {
+        if (released || isAttached() || isConstant())
+            return false;
+
+        if (wrappedDataBuffer != null && wrappedDataBuffer != this)
+            return false;
+
+        return true;
+    }
+
+    protected void markReleased() {
+        this.released = true;
+
+        for (val r:references)
+            r.markReleased();
+    }
+
+    @Override
+    public void close()  {
+        if (!closeable())
+            throw new IllegalStateException("Can't release this data buffer");
+
+        // notifying other databuffers that their underlying
+        for (val r:references)
+            r.markReleased();
+
+        release();
+    }
+
+    protected void release() {
+        this.pointer.deallocate();
+        this.indexer = null;
+        this.pointer = null;
     }
 }

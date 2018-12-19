@@ -38,6 +38,22 @@ public:
     }
 };
 
+TEST_F(DeclarableOpsTests14, Test_Validation_Edge_1) {
+    auto x = NDArrayFactory::create<int>('c', {2}, {2, 2});
+    auto exp = NDArrayFactory::create('c', {2, 2}, Environment::getInstance()->defaultFloatDataType());
+    exp.assign(4.0f);
+
+    nd4j::ops::fill op;
+    auto result = op.execute({&x}, {4.0f},{}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(exp, *z);
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_1) {
     auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 1.0/0.0, 5});
     auto y = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 1.0/0.0, 5});

@@ -1309,6 +1309,16 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
+    public boolean closeable() {
+        return false;
+    }
+
+    @Override
+    public void close() {
+
+    }
+
+    @Override
     public boolean isS() {
         return false;
     }

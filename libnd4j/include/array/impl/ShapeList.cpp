@@ -55,10 +55,15 @@ namespace nd4j {
     }
 
     void ShapeList::destroy() {
+        if (_destroyed)
+            return;
+
         if (!_workspace)
             for (auto v:_shapes)
                 if(v != nullptr)
                     delete[] v;
+
+        _destroyed = true;
     }
 
     int ShapeList::size() {
@@ -89,6 +94,8 @@ namespace nd4j {
         for (int e = 0; e < _shapes.size(); e++) {
             _shapes[e] = shape::detachShape(_shapes[e]);
         }
+
+        _autoremovable = true;
         _workspace = false;
     }
 }

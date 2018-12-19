@@ -14,28 +14,25 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.datasets;
+package org.nd4j.linalg.api.memory.enums;
 
-import org.deeplearning4j.datasets.fetchers.Cifar10Fetcher;
-import org.deeplearning4j.datasets.fetchers.TinyImageNetFetcher;
-import org.junit.Test;
+/**
+ * This enum describes different allocation kinds
+ * @author raver119@gmail.com
+ */
+public enum AllocationKind {
+    /**
+     * General allocations
+     */
+    GENERAL,
 
-public class TestDataSets {
+    /**
+     * Allocations that will be never released, and reused during session
+     */
+    CONSTANT,
 
-    @Test
-    public void testTinyImageNetExists() throws Exception {
-        //Simple sanity check on extracting
-        TinyImageNetFetcher f = new TinyImageNetFetcher();
-        f.downloadAndExtract();
-        f.downloadAndExtract();
-    }
-
-    @Test
-    public void testCifar10Exists() throws Exception {
-        //Simple sanity check on extracting
-        Cifar10Fetcher f = new Cifar10Fetcher();
-        f.downloadAndExtract();
-        f.downloadAndExtract();
-    }
-
+    /**
+     * Allocations for workspaces
+     */
+    WORKSPACE,
 }
