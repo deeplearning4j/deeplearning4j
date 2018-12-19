@@ -1869,9 +1869,30 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val t: tArgs1)
                 tArgs.put(cnt++, t);
 
-            val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapes(null,
-                    hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs,
-                    op.numTArguments(), iArgs, op.numIArguments());
+
+            Nd4jCpu.ShapeList ptrptr;
+            try {
+                ptrptr = (Nd4jCpu.ShapeList) loop.calculateOutputShapes(null,
+                        hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs,
+                        op.numTArguments(), iArgs, op.numIArguments());
+            } catch (Throwable t){
+                StringBuilder sb = new StringBuilder();
+                sb.append("Inputs: [(");
+                for( int i=0; i<inputArgs.length; i++ ){
+                    if(i > 0)
+                        sb.append("), (");
+                    sb.append(Shape.shapeToStringShort(inputArgs[i]));
+                }
+                sb.append(")]");
+                log.error("Failed to calculate output shapes for op " + op.opName() + ". Attempted to execute with " +
+                        String.valueOf(op.numInputArguments()) + " inputs, " +
+                        String.valueOf(op.numOutputArguments()) + " outputs, "+
+                        String.valueOf(op.numTArguments()) + " targs and " +
+                        String.valueOf(op.numIArguments()) + " iargs. " +
+                        sb.toString() +
+                        " - Please see above message (printed out from c++) for a possible cause of error.");
+                throw t;
+            }
 
             if (ptrptr == null)
                 throw new RuntimeException();
