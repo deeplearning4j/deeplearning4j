@@ -166,8 +166,9 @@ public class Slice extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
-        //Output type is same as input type
+        Preconditions.checkState(dataTypes != null & (dataTypes.size() == 1 || dataTypes.size() == 3),
+                "Expected list with 1 or 3 datatypes for %s, got %s", getClass(), dataTypes);
+        //Output type is same as input type. 3 inputs for import case
         return dataTypes;
     }
 }
