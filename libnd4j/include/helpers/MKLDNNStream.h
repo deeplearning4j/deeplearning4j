@@ -44,6 +44,15 @@ namespace nd4j {
             return typeid(X) == typeid(float) && typeid(Y) == typeid(float);
         }
 
+        static bool isSupported(const std::vector<const NDArray*> &arrays) {
+            for (auto i = arrays.begin(); i != arrays.end(); i++) {
+                if (*i != nullptr && (*i)->dataType() != nd4j::DataType::FLOAT32) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         MKLDNNStream(const std::string &opName) : _opName(opName) { }
 
         bool checkAndReset(const std::vector<const NDArray*> &inputs, const std::vector<const NDArray*> &outputs,
