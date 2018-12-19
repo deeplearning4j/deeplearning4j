@@ -180,7 +180,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
             if(arr == null && inputNode != null) {
                 sameDiff.addPropertyToResolve(on,name);
-                sameDiff.addVariableMappingForField(on,name,inputNode.getName());
+                sameDiff.addVariableMappingForField(on,name,getNodeName(inputNode.getName()));
                 return;
             } else if(inputNode == null) {
                 //TODO need to do anything here given new design?
