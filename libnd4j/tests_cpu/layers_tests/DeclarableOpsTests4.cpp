@@ -1678,15 +1678,15 @@ TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_5) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, avgpool3d_test1) {
+TYPED_TEST(TypedDeclarableOpsTests4, avgpool3d_test1) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=2,oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, oD, oH, oW}, {10.5, 11.5, 13.5, 14.5, 22.5, 23.5, 25.5, 26.5, 46.5, 47.5, 49.5, 50.5, 58.5, 59.5, 61.5, 62.5,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iD, iH, iW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, oD, oH, oW}, {10.5, 11.5, 13.5, 14.5, 22.5, 23.5, 25.5, 26.5, 46.5, 47.5, 49.5, 50.5, 58.5, 59.5, 61.5, 62.5,
                                                          82.5, 83.5, 85.5, 86.5, 94.5, 95.5, 97.5, 98.5,118.5,119.5,121.5,122.5,130.5,131.5,133.5,134.5,
                                                         154.5,155.5,157.5,158.5,166.5,167.5,169.5,170.5,190.5,191.5,193.5,194.5,202.5,203.5,205.5,206.5});
     input.linspace(1.);
@@ -1703,15 +1703,15 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, avgpool3d_test2) {
+TYPED_TEST(TypedDeclarableOpsTests4, avgpool3d_test2) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
     int oD=3,oH=4,oW=3;
     int paddingMode = 1;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC});
-    auto expected = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, iC}, {  25. , 26. , 27. , 28. , 29. , 30. , 29.5, 30.5, 31.5, 29.5, 30.5, 31.5, 32.5, 33.5, 34.5, 34. , 35. , 36. , 38.5, 39.5, 40.5, 41.5, 42.5, 43.5, 43. , 44. , 45. , 43. , 44. , 45. , 46. , 47. , 48. , 47.5, 48.5, 49.5,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iD, iH, iW, iC});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, oD, oH, oW, iC}, {  25. , 26. , 27. , 28. , 29. , 30. , 29.5, 30.5, 31.5, 29.5, 30.5, 31.5, 32.5, 33.5, 34.5, 34. , 35. , 36. , 38.5, 39.5, 40.5, 41.5, 42.5, 43.5, 43. , 44. , 45. , 43. , 44. , 45. , 46. , 47. , 48. , 47.5, 48.5, 49.5,
                                                            61. , 62. , 63. , 64. , 65. , 66. , 65.5, 66.5, 67.5, 65.5, 66.5, 67.5, 68.5, 69.5, 70.5, 70. , 71. , 72. , 74.5, 75.5, 76.5, 77.5, 78.5, 79.5, 79. , 80. , 81. , 79. , 80. , 81. , 82. , 83. , 84. , 83.5, 84.5, 85.5,
                                                            79. , 80. , 81. , 82. , 83. , 84. , 83.5, 84.5, 85.5, 83.5, 84.5, 85.5, 86.5, 87.5, 88.5, 88. , 89. , 90. , 92.5, 93.5, 94.5, 95.5, 96.5, 97.5, 97. , 98. , 99. , 97. , 98. , 99. ,100. ,101. ,102. ,101.5,102.5,103.5,
                                                           133. ,134. ,135. ,136. ,137. ,138. ,137.5,138.5,139.5,137.5,138.5,139.5,140.5,141.5,142.5,142. ,143. ,144. ,146.5,147.5,148.5,149.5,150.5,151.5,151. ,152. ,153. ,151. ,152. ,153. ,154. ,155. ,156. ,155.5,156.5,157.5,
@@ -1731,15 +1731,15 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, avgpool3d_test3) {
+TYPED_TEST(TypedDeclarableOpsTests4, avgpool3d_test3) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=2,oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC});
-    auto expected = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, iC}, {  29.5, 30.5, 31.5, 32.5, 33.5, 34.5, 38.5, 39.5, 40.5, 41.5, 42.5, 43.5, 65.5, 66.5, 67.5, 68.5, 69.5, 70.5,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iD, iH, iW, iC});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, oD, oH, oW, iC}, {  29.5, 30.5, 31.5, 32.5, 33.5, 34.5, 38.5, 39.5, 40.5, 41.5, 42.5, 43.5, 65.5, 66.5, 67.5, 68.5, 69.5, 70.5,
                                                            74.5, 75.5, 76.5, 77.5, 78.5, 79.5,137.5,138.5,139.5,140.5,141.5,142.5,146.5,147.5,148.5,149.5,150.5,151.5,
                                                           173.5,174.5,175.5,176.5,177.5,178.5,182.5,183.5,184.5,185.5,186.5,187.5});
     input.linspace(1.);    
@@ -1756,15 +1756,15 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test3) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, avgpool3d_test4) {
+TYPED_TEST(TypedDeclarableOpsTests4, avgpool3d_test4) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1, dD=1,dH=1,dW=1;
     int oD=4,oH=4,oW=4;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, oD, oH, oW},{0.416667, 1.00, 1.333333, 0.75, 1.00, 2.25, 2.75, 1.50, 1.75, 3.75, 4.25, 2.25, 1.416667, 3.00, 3.333333, 1.75, 2.833333, 6.00, 6.666667, 3.50, 5.00, 10.50, 11.50, 6.00, 6.50,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iD, iH, iW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, oD, oH, oW},{0.416667, 1.00, 1.333333, 0.75, 1.00, 2.25, 2.75, 1.50, 1.75, 3.75, 4.25, 2.25, 1.416667, 3.00, 3.333333, 1.75, 2.833333, 6.00, 6.666667, 3.50, 5.00, 10.50, 11.50, 6.00, 6.50,
                                                         13.50, 14.50, 7.50, 4.833333, 10.00, 10.666667, 5.50, 6.833333, 14.00, 14.666667, 7.50, 11.00, 22.50, 23.50, 12.00, 12.50, 25.50, 26.50, 13.50, 8.833333, 18.00, 18.666666, 9.50,
                                                         4.416667, 9.00, 9.333333, 4.75, 7.00, 14.25, 14.75, 7.50, 7.75, 15.75, 16.25, 8.25, 5.416667, 11.00, 11.333333, 5.75, 6.416667, 13.00, 13.333333, 6.75, 10.00, 20.25, 20.75, 
                                                         10.50, 10.75, 21.75, 22.25, 11.25, 7.416667, 15.00, 15.333333, 7.75, 14.833333, 30.00, 30.666666, 15.50, 23.00, 46.50, 47.50, 24.00, 24.50, 49.50, 50.50, 25.50, 16.833334, 
@@ -1796,16 +1796,16 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test4) {
 }     
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, avgpool3d_bp_test1) {
+TYPED_TEST(TypedDeclarableOpsTests4, avgpool3d_bp_test1) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=2,oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, oD, oH, oW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW}, {0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.333333, 0.666667, 0.333333,0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.666667, 1.333333, 0.666667,0.666667, 1.333333, 0.666667,0.333333, 0.666667, 0.333333,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iD, iH, iW});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oD, oH, oW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iD, iH, iW}, {0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.333333, 0.666667, 0.333333,0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.666667, 1.333333, 0.666667,0.666667, 1.333333, 0.666667,0.333333, 0.666667, 0.333333,
                                                          0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.333333, 0.666667, 0.333333,0.166667, 0.333333, 0.166667,0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.333333, 0.666667, 0.333333,0.166667, 0.333333, 0.166667,
                                                          0.333333, 0.666667, 0.333333,0.666667, 1.333333, 0.666667,0.666667, 1.333333, 0.666667,0.333333, 0.666667, 0.333333,0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.333333, 0.666667, 0.333333,0.166667, 0.333333, 0.166667,
                                                          0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.333333, 0.666667, 0.333333,0.166667, 0.333333, 0.166667,0.333333, 0.666667, 0.333333,0.666667, 1.333333, 0.666667,0.666667, 1.333333, 0.666667,0.333333, 0.666667, 0.333333,
@@ -1830,16 +1830,16 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test1) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, avgpool3d_bp_test2) {
+TYPED_TEST(TypedDeclarableOpsTests4, avgpool3d_bp_test2) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1, dD=1,dH=1,dW=1;
     int oD=4,oH=4,oW=4;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, oD, oH, oW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW}, {1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iD, iH, iW});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oD, oH, oW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iD, iH, iW}, {1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,
                                                          1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,
                                                          1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,
                                                          1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,1.333333, 1.333333, 1.333333,2. , 2. , 2. ,2. , 2. , 2. ,1.333333, 1.333333, 1.333333,
@@ -1864,16 +1864,16 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test2) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, avgpool3d_bp_test3) {
+TYPED_TEST(TypedDeclarableOpsTests4, avgpool3d_bp_test3) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=3,oH=4,oW=3;
     int paddingMode = 1;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, iC});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC}, {0.41667, 0.41667, 0.41667,0.83333, 0.83333, 0.83333,1.25, 1.25, 1.25 ,0.58333, 0.58333, 0.58333,1.16667, 1.16667, 1.16667,1.75, 1.75, 1.75 ,0.58333, 0.58333, 0.58333,1.16667, 1.16667, 1.16667,1.75, 1.75, 1.75 ,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iD, iH, iW, iC});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, oD, oH, oW, iC});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iD, iH, iW, iC}, {0.41667, 0.41667, 0.41667,0.83333, 0.83333, 0.83333,1.25, 1.25, 1.25 ,0.58333, 0.58333, 0.58333,1.16667, 1.16667, 1.16667,1.75, 1.75, 1.75 ,0.58333, 0.58333, 0.58333,1.16667, 1.16667, 1.16667,1.75, 1.75, 1.75 ,
                                                          0.41667, 0.41667, 0.41667,0.83333, 0.83333, 0.83333,1.25, 1.25, 1.25 ,0.83333, 0.83333, 0.83333,1.66667, 1.66667, 1.66667,2.5 , 2.5 , 2.5  ,1.16667, 1.16667, 1.16667,2.33333, 2.33333, 2.33333,3.5 , 3.5 , 3.5  ,
                                                          1.16667, 1.16667, 1.16667,2.33333, 2.33333, 2.33333,3.5 , 3.5 , 3.5  ,0.83333, 0.83333, 0.83333,1.66667, 1.66667, 1.66667,2.5 , 2.5 , 2.5  ,1.25   , 1.25   , 1.25   ,2.5    , 2.5    , 2.5    ,3.75, 3.75, 3.75 ,
                                                          1.75   , 1.75   , 1.75   ,3.5    , 3.5    , 3.5    ,5.25, 5.25, 5.25 ,1.75   , 1.75   , 1.75   ,3.5    , 3.5    , 3.5    ,5.25, 5.25, 5.25 ,1.25   , 1.25   , 1.25   ,2.5    , 2.5    , 2.5    ,3.75, 3.75, 3.75 ,
@@ -1896,16 +1896,16 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test3) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, avgpool3d_bp_test4) {
+TYPED_TEST(TypedDeclarableOpsTests4, avgpool3d_bp_test4) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=3,oH=4,oW=3;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, iC});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC}, {0.16667, 0.16667, 0.16667,0.33333, 0.33333, 0.33333,0.5 , 0.5  , 0.5  ,0.33333, 0.33333, 0.33333,0.66667, 0.66667, 0.66667,1.  , 1.   , 1.   ,0.58333, 0.58333, 0.58333,1.16667, 1.16667, 1.16667,1.75, 1.75 , 1.75 ,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iD, iH, iW, iC});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, oD, oH, oW, iC});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iD, iH, iW, iC}, {0.16667, 0.16667, 0.16667,0.33333, 0.33333, 0.33333,0.5 , 0.5  , 0.5  ,0.33333, 0.33333, 0.33333,0.66667, 0.66667, 0.66667,1.  , 1.   , 1.   ,0.58333, 0.58333, 0.58333,1.16667, 1.16667, 1.16667,1.75, 1.75 , 1.75 ,
                                                          0.91667, 0.91667, 0.91667,1.83333, 1.83333, 1.83333,2.75, 2.75 , 2.75 ,0.33333, 0.33333, 0.33333,0.66667, 0.66667, 0.66667,1.  , 1.   , 1.   ,0.66667, 0.66667, 0.66667,1.33333, 1.33333, 1.33333,2.  , 2.   , 2.   ,
                                                          1.16667, 1.16667, 1.16667,2.33333, 2.33333, 2.33333,3.5 , 3.5  , 3.5  ,1.83333, 1.83333, 1.83333,3.66667, 3.66667, 3.66667,5.5 , 5.5  , 5.5  ,0.5    , 0.5    , 0.5    ,1.     , 1.     , 1.     ,1.5 , 1.5  , 1.5  ,
                                                          1.     , 1.     , 1.     ,2.     , 2.     , 2.     ,3.  , 3.   , 3.   ,1.75   , 1.75   , 1.75   ,3.5    , 3.5    , 3.5    ,5.25, 5.25 , 5.25 ,2.75   , 2.75   , 2.75   ,5.5    , 5.5    , 5.5    ,8.25, 8.25 , 8.25 ,
@@ -1929,15 +1929,15 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test4) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, maxpool3d_test1) {
+TYPED_TEST(TypedDeclarableOpsTests4, maxpool3d_test1) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=2,oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, oD, oH, oW}, {20., 21., 23., 24., 32., 33., 35., 36., 56., 57., 59., 60., 68., 69., 71., 72., 92., 93., 95., 96.,104.,105.,107.,108.,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iD, iH, iW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, oD, oH, oW}, {20., 21., 23., 24., 32., 33., 35., 36., 56., 57., 59., 60., 68., 69., 71., 72., 92., 93., 95., 96.,104.,105.,107.,108.,
                                                          128.,129.,131.,132.,140.,141.,143.,144.,164.,165.,167.,168.,176.,177.,179.,180.,200.,201.,203.,204.,212.,213.,215.,216.});
     input.linspace(1.);
     
@@ -1953,15 +1953,15 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, maxpool3d_test2) {
+TYPED_TEST(TypedDeclarableOpsTests4, maxpool3d_test2) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=3,oH=4,oW=3;
     int paddingMode = 1;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC});
-    auto expected = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, iC}, { 49.,  50.,  51., 52.,  53.,  54., 52.,  53.,  54., 58.,  59.,  60., 61.,  62.,  63., 61.,  62.,  63., 67.,  68.,  69., 70.,  71.,  72., 70.,  71.,  72., 67.,  68.,  69., 70.,  71.,  72., 70.,  71.,  72.,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iD, iH, iW, iC});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, oD, oH, oW, iC}, { 49.,  50.,  51., 52.,  53.,  54., 52.,  53.,  54., 58.,  59.,  60., 61.,  62.,  63., 61.,  62.,  63., 67.,  68.,  69., 70.,  71.,  72., 70.,  71.,  72., 67.,  68.,  69., 70.,  71.,  72., 70.,  71.,  72.,
                                                           85.,  86.,  87., 88.,  89.,  90., 88.,  89.,  90., 94.,  95.,  96., 97.,  98.,  99., 97.,  98.,  99.,103., 104., 105.,106., 107., 108.,106., 107., 108.,103., 104., 105.,106., 107., 108.,106., 107., 108.,
                                                           85.,  86.,  87., 88.,  89.,  90., 88.,  89.,  90., 94.,  95.,  96., 97.,  98.,  99., 97.,  98.,  99.,103., 104., 105.,106., 107., 108.,106., 107., 108.,103., 104., 105.,106., 107., 108.,106., 107., 108.,
                                                          157., 158., 159.,160., 161., 162.,160., 161., 162.,166., 167., 168.,169., 170., 171.,169., 170., 171.,175., 176., 177.,178., 179., 180.,178., 179., 180.,175., 176., 177.,178., 179., 180.,178., 179., 180.,
@@ -1981,15 +1981,15 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, maxpool3d_test3) {
+TYPED_TEST(TypedDeclarableOpsTests4, maxpool3d_test3) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=2,oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC});
-    auto expected = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, iC}, {58.,  59.,  60., 61.,  62.,  63., 67.,  68.,  69., 70.,  71.,  72., 94.,  95.,  96., 97.,  98.,  99.,103., 104., 105.,106., 107., 108.,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iD, iH, iW, iC});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, oD, oH, oW, iC}, {58.,  59.,  60., 61.,  62.,  63., 67.,  68.,  69., 70.,  71.,  72., 94.,  95.,  96., 97.,  98.,  99.,103., 104., 105.,106., 107., 108.,
                                                          166., 167., 168.,169., 170., 171.,175., 176., 177.,178., 179., 180.,202., 203., 204.,205., 206., 207.,211., 212., 213.,214., 215., 216.});
     input.linspace(1.);    
 
@@ -2005,15 +2005,15 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test3) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, maxpool3d_test4) {
+TYPED_TEST(TypedDeclarableOpsTests4, maxpool3d_test4) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1, dD=1,dH=1,dW=1;
     int oD=4,oH=4,oW=4;
     int paddingMode = 0;             // -SAME,  0-VALID
     int dataFormat  = 0;             // -NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, oD, oH, oW},{  4.,   5.,   6.,   6.,  7.,   8.,   9.,   9., 10.,  11.,  12.,  12., 10.,  11.,  12.,  12., 16.,  17.,  18.,  18., 19.,  20.,  21.,  21., 22.,  23.,  24.,  24., 22.,  23.,  24.,  24., 28.,  29.,  30.,  30., 31.,  32.,  33.,  33., 34.,  35.,  36.,  36., 34.,  35.,  36.,  36.,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iD, iH, iW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, oD, oH, oW},{  4.,   5.,   6.,   6.,  7.,   8.,   9.,   9., 10.,  11.,  12.,  12., 10.,  11.,  12.,  12., 16.,  17.,  18.,  18., 19.,  20.,  21.,  21., 22.,  23.,  24.,  24., 22.,  23.,  24.,  24., 28.,  29.,  30.,  30., 31.,  32.,  33.,  33., 34.,  35.,  36.,  36., 34.,  35.,  36.,  36.,
                                                          28.,  29.,  30.,  30., 31.,  32.,  33.,  33., 34.,  35.,  36.,  36., 34.,  35.,  36.,  36., 40.,  41.,  42.,  42., 43.,  44.,  45.,  45., 46.,  47.,  48.,  48., 46.,  47.,  48.,  48., 52.,  53.,  54.,  54., 55.,  56.,  57.,  57., 58.,  59.,  60.,  60., 58.,  59.,  60.,  60.,
                                                          64.,  65.,  66.,  66., 67.,  68.,  69.,  69., 70.,  71.,  72.,  72., 70.,  71.,  72.,  72., 64.,  65.,  66.,  66., 67.,  68.,  69.,  69., 70.,  71.,  72.,  72., 70.,  71.,  72.,  72., 76.,  77.,  78.,  78., 79.,  80.,  81.,  81., 82.,  83.,  84.,  84., 82.,  83.,  84.,  84.,
                                                          88.,  89.,  90.,  90., 91.,  92.,  93.,  93., 94.,  95.,  96.,  96., 94.,  95.,  96.,  96.,100., 101., 102., 102.,103., 104., 105., 105.,106., 107., 108., 108.,106., 107., 108., 108.,100., 101., 102., 102.,103., 104., 105., 105.,106., 107., 108., 108.,106., 107., 108., 108.,
@@ -2036,16 +2036,16 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test4) {
 
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, maxpool3d_bp_test1) {
+TYPED_TEST(TypedDeclarableOpsTests4, maxpool3d_bp_test1) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=2,oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, oD, oH, oW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW}, {0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.1, 0.2,0. , 0.3, 0.4,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.5, 0.6,0. , 0.7, 0.8,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iD, iH, iW});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oD, oH, oW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iD, iH, iW}, {0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.1, 0.2,0. , 0.3, 0.4,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.5, 0.6,0. , 0.7, 0.8,
                                                          0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.9, 1. ,0. , 1.1, 1.2,0. , 0. , 0. ,0. , 0. , 0. ,0. , 1.3, 1.4,0. , 1.5, 1.6,
                                                          0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 1.7, 1.8,0. , 1.9, 2. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 2.1, 2.2,0. , 2.3, 2.4,
                                                          0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 2.5, 2.6,0. , 2.7, 2.8,0. , 0. , 0. ,0. , 0. , 0. ,0. , 2.9, 3. ,0. , 3.1, 3.2,
@@ -2066,16 +2066,16 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, maxpool3d_bp_test2) {
+TYPED_TEST(TypedDeclarableOpsTests4, maxpool3d_bp_test2) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1, dD=1,dH=1,dW=1;
     int oD=4,oH=4,oW=4;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, oD, oH, oW});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW}, {0.000e+00, 0.000e+00, 0.000e+00,1.000e-01, 2.000e-01, 7.000e-01,5.000e-01, 6.000e-01, 1.500e+00,2.200e+00, 2.400e+00, 5.400e+00,0.000e+00, 0.000e+00, 0.000e+00,1.700e+00, 1.800e+00, 3.900e+00,2.100e+00, 2.200e+00, 4.700e+00,5.400e+00, 5.600e+00, 1.180e+01,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iC, iD, iH, iW});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, iC, oD, oH, oW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iC, iD, iH, iW}, {0.000e+00, 0.000e+00, 0.000e+00,1.000e-01, 2.000e-01, 7.000e-01,5.000e-01, 6.000e-01, 1.500e+00,2.200e+00, 2.400e+00, 5.400e+00,0.000e+00, 0.000e+00, 0.000e+00,1.700e+00, 1.800e+00, 3.900e+00,2.100e+00, 2.200e+00, 4.700e+00,5.400e+00, 5.600e+00, 1.180e+01,
                                                          0.000e+00, 0.000e+00, 0.000e+00,8.200e+00, 8.400e+00, 1.740e+01,9.000e+00, 9.200e+00, 1.900e+01,2.040e+01, 2.080e+01, 4.280e+01,0.000e+00, 0.000e+00, 0.000e+00,6.500e+00, 6.600e+00, 1.350e+01,6.900e+00, 7.000e+00, 1.430e+01,1.500e+01, 1.520e+01, 3.100e+01,
                                                          0.000e+00, 0.000e+00, 0.000e+00,8.100e+00, 8.200e+00, 1.670e+01,8.500e+00, 8.600e+00, 1.750e+01,1.820e+01, 1.840e+01, 3.740e+01,0.000e+00, 0.000e+00, 0.000e+00,2.100e+01, 2.120e+01, 4.300e+01,2.180e+01, 2.200e+01, 4.460e+01,4.600e+01, 4.640e+01, 9.400e+01,
                                                          0.000e+00, 0.000e+00, 0.000e+00,1.290e+01, 1.300e+01, 2.630e+01,1.330e+01, 1.340e+01, 2.710e+01,2.780e+01, 2.800e+01, 5.660e+01,0.000e+00, 0.000e+00, 0.000e+00,1.450e+01, 1.460e+01, 2.950e+01,1.490e+01, 1.500e+01, 3.030e+01,3.100e+01, 3.120e+01, 6.300e+01,
@@ -2099,16 +2099,16 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, maxpool3d_bp_test3) {
+TYPED_TEST(TypedDeclarableOpsTests4, maxpool3d_bp_test3) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=3,oH=4,oW=3;
     int paddingMode = 1;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, iC});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC}, { 0., 0., 0.,  0. ,  0. ,  0. ,  0. ,   0.  ,  0. ,  0. , 0. ,  0. ,  0. ,   0.  ,  0. ,  0. ,   0.     ,  0. ,  0. ,   0.     ,  0. ,  0. ,   0.     ,  0. ,  0. ,   0.     ,  0. ,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iD, iH, iW, iC});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, oD, oH, oW, iC});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iD, iH, iW, iC}, { 0., 0., 0.,  0. ,  0. ,  0. ,  0. ,   0.  ,  0. ,  0. , 0. ,  0. ,  0. ,   0.  ,  0. ,  0. ,   0.     ,  0. ,  0. ,   0.     ,  0. ,  0. ,   0.     ,  0. ,  0. ,   0.     ,  0. ,
                                                           0., 0., 0.,  0. ,  0. ,  0. ,  0. ,   0.  ,  0. ,  0. , 0. ,  0. ,  0. ,   0.  ,  0. ,  0. ,   0.     ,  0. ,  0. ,   0.     ,  0. ,  0.1,   0.2    ,  0.3,  1.1,   1.3    ,  1.5,
                                                           0., 0., 0.,  1. ,  1.1,  1.2,  2.9,   3.1 ,  3.3,  0. , 0. ,  0. ,  4.7,   4.9 ,  5.1, 11.2,  11.6    , 12. ,  0. ,   0.     ,  0. ,  0. ,   0.     ,  0. ,  0. ,   0.     ,  0. ,
                                                           0., 0., 0., 11. , 11.2, 11.4, 23.8,  24.2 , 24.6,  0. , 0. ,  0. , 12.8,  13.  , 13.2, 27.4,  27.8    , 28.2,  0. ,   0.     ,  0. , 31. ,  31.4    , 31.8, 65.6,  66.39999, 67.2,
@@ -2132,16 +2132,16 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test3) {
 
  
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, maxpool3d_bp_test4) {
+TYPED_TEST(TypedDeclarableOpsTests4, maxpool3d_bp_test4) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=3,oH=4,oW=3;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, iC});
-    auto expected = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iD, iH, iW, iC});
+    auto gradO    = NDArrayFactory::create<TypeParam>('c', {bS, oD, oH, oW, iC});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS, iD, iH, iW, iC}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0.2, 0.3, 1.1, 1.3, 1.5, 0, 0, 0, 5.7, 6, 6.3, 
                                                          14.1, 14.7, 15.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 11.2, 11.4, 23.8, 24.2, 
                                                          24.6, 0, 0, 0, 43.8, 44.4, 45, 93, 94.2, 95.4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 

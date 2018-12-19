@@ -1162,8 +1162,8 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool2d(
                        (oW - 1) * sW - iW + kW - pW };
 
     algorithm = poolingMode == 0 ? pooling_max
-                                 : (int)extraParam0 == 0 ? pooling_avg_exclude_padding
-                                                         : pooling_avg_include_padding;
+                                 : extraParam0 == 0 ? pooling_avg_exclude_padding
+                                                    : pooling_avg_include_padding;
     auto type = mkldnn::memory::data_type::f32;
     auto format = isNCHW ? mkldnn::memory::format::nchw : mkldnn::memory::format::nhwc;
 
@@ -1212,8 +1212,8 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
                        (oW - 1) * sW - iW + kW - pW };
 
     algorithm = poolingMode == 0 ? pooling_max
-                                 : (int)extraParam0 == 0 ? pooling_avg_exclude_padding
-                                                         : pooling_avg_include_padding;
+                                 : extraParam0 == 0 ? pooling_avg_exclude_padding
+                                                    : pooling_avg_include_padding;
     auto type = mkldnn::memory::data_type::f32;
     auto format = isNCDHW ? mkldnn::memory::format::ncdhw : mkldnn::memory::format::ndhwc;
 
@@ -1458,7 +1458,7 @@ static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArra
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void pooling3d_(const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
     // input is  [bS, iC, iD, iH, iW]
     // output is [bS, iC, oD, oH, oW]
     T* out = output.bufferAsT<T>();
@@ -1473,9 +1473,45 @@ static void pooling3d_(const NDArray& input, NDArray& output, const int kD, cons
     const Nd4jLong iD = input.sizeAt(2);
     const Nd4jLong iH = input.sizeAt(3);
     const Nd4jLong iW = input.sizeAt(4);
+    const Nd4jLong oC = output.sizeAt(1);
     const Nd4jLong oD = output.sizeAt(2);
     const Nd4jLong oH = output.sizeAt(3);
     const Nd4jLong oW = output.sizeAt(4);
+
+#ifdef HAVE_MKLDNN
+    if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
+        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
+        if (streams.empty()) {
+            streams.push_back(MKLDNNStream("pooling3d"));
+        }
+
+        if (streams[0].checkAndReset({&input}, {&output}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0})) {
+            mkldnn_memory_desc_t empty;
+            mkldnn::memory::desc pool_src_md(empty), pool_dst_md(empty);
+            mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
+            mkldnn::algorithm algorithm;
+
+            ConvolutionUtils::getMKLDNNMemoryDescPool3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0, true,
+                    bS, iC, iD, iH, iW, oC, oD, oH, oW, &input, nullptr, &output,
+                    &pool_src_md, nullptr, &pool_dst_md, algorithm,
+                    pool_strides, pool_kernel, pool_padding, pool_padding_r);
+
+            auto pool_desc = pooling_forward::desc(prop_kind::forward_inference, algorithm, pool_src_md, pool_dst_md,
+                    pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
+
+            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, streams[0].getEngine());
+            auto pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc(), const_cast<NDArray&>(input).buffer());
+            auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc(), output.buffer());
+            streams[0].setMemory({pool_src_memory, pool_dst_memory});
+            streams[0].setOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory));
+        }
+
+        streams[0].submitAndWait();
+        return;
+    }
+#endif
+    nd4j_debug("MKL-DNN is not used for pooling3d!\n", 0);
+
     const Nd4jLong iStride0 = input.stridesOf()[0];
     const Nd4jLong iStride1 = input.stridesOf()[1];
     const Nd4jLong iStride2 = input.stridesOf()[2];
@@ -1718,7 +1754,7 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
             mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
             mkldnn::algorithm algorithm;
 
-            ConvolutionUtils::getMKLDNNMemoryDescPool2d(kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, (int)extraParam0, true,
+            ConvolutionUtils::getMKLDNNMemoryDescPool2d(kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0, true,
                     bS, iC, iH, iW, oC, oH, oW, &input, &gradI, &gradO,
                     &pool_src_md, &pool_diff_src_md, &pool_dst_md, algorithm,
                     pool_strides, pool_kernel, pool_padding, pool_padding_r);
@@ -1925,7 +1961,7 @@ static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, cons
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void pooling3dBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
     // input [bS, iC, iD, iH, iW]
     // gradI [bS, iC, iD, iH, iW] -> gradI is output in this function
     // gradO [bS, iC, oD, oH, oW]
@@ -1960,9 +1996,69 @@ static void pooling3dBP_(const NDArray& input, const NDArray& gradO, NDArray& gr
     const Nd4jLong iD = gradI.sizeAt(2);
     const Nd4jLong iH = gradI.sizeAt(3);
     const Nd4jLong iW = gradI.sizeAt(4);
+    const Nd4jLong oC = gradO.sizeAt(1);
     const Nd4jLong oD = gradO.sizeAt(2);
     const Nd4jLong oH = gradO.sizeAt(3);
     const Nd4jLong oW = gradO.sizeAt(4);
+
+#ifdef HAVE_MKLDNN
+    if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
+        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
+        if (streams.empty()) {
+            streams.push_back(MKLDNNStream("pooling3d_bp"));
+        }
+
+        if (streams[0].checkAndReset({&input, &gradO}, {&gradI}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0})) {
+            mkldnn_memory_desc_t empty;
+            mkldnn::memory::desc pool_src_md(empty), pool_diff_src_md(empty), pool_dst_md(empty);
+            mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
+            mkldnn::algorithm algorithm;
+
+            ConvolutionUtils::getMKLDNNMemoryDescPool3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0, true,
+                    bS, iC, iD, iH, iW, oC, oD, oH, oW, &input, &gradI, &gradO,
+                    &pool_src_md, &pool_diff_src_md, &pool_dst_md, algorithm,
+                    pool_strides, pool_kernel, pool_padding, pool_padding_r);
+
+            // input is sometimes null, so we can't rely on pool_src_md being valid
+            auto pool_desc = pooling_forward::desc(prop_kind::forward, algorithm,
+                    const_cast<NDArray&>(input).buffer() != nullptr ? pool_src_md : pool_diff_src_md,
+                    pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
+
+            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, streams[0].getEngine());
+
+            auto poolB_desc = pooling_backward::desc(algorithm, pool_diff_src_md, pool_dst_md,
+                    pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
+
+            auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, streams[0].getEngine(), pool_prim_desc);
+            auto poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_primitive_desc(), gradI.buffer());
+            auto poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_primitive_desc(), const_cast<NDArray&>(gradO).buffer());
+            if (algorithm == mkldnn::pooling_max) {
+                auto pool_workspace_memory = mkldnn::memory(pool_prim_desc.workspace_primitive_desc());
+                if (streams.size() < 2) {
+                    streams.push_back(MKLDNNStream("pooling3d"));
+                }
+                auto pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc(), const_cast<NDArray&>(input).buffer());
+                auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
+                streams[1].setMemory({pool_src_memory, pool_dst_memory});
+                streams[1].setOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory, pool_workspace_memory));
+
+                streams[0].setMemory({poolB_dst_memory, pool_workspace_memory, poolB_src_memory});
+                streams[0].setOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, pool_workspace_memory, poolB_src_memory));
+            } else {
+                streams[0].setMemory({poolB_dst_memory, poolB_src_memory});
+                streams[0].setOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, poolB_src_memory));
+            }
+        }
+
+        if (streams.size() > 1) {
+            streams[1].submitAndWait();
+        }
+        streams[0].submitAndWait();
+        return;
+    }
+#endif
+    nd4j_debug("MKL-DNN is not used for pooling3d_bp!\n", 0);
+
     const Nd4jLong iStride0 = gradI.stridesOf()[0];
     const Nd4jLong iStride1 = gradI.stridesOf()[1];
     const Nd4jLong iStride2 = gradI.stridesOf()[2];
@@ -2204,14 +2300,14 @@ void ConvolutionUtils::upsampling3dBP(const NDArray& gradO, NDArray& gradI, cons
 void ConvolutionUtils::pooling2d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
     BUILD_SINGLE_SELECTOR(input.dataType(), pooling2d_, (block, input, output, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
 }
-void ConvolutionUtils::pooling3d(const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
-    BUILD_SINGLE_SELECTOR(input.dataType(), pooling3d_, (input, output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+void ConvolutionUtils::pooling3d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), pooling3d_, (block, input, output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
 }
 void ConvolutionUtils::pooling2dBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
     BUILD_SINGLE_SELECTOR(input.dataType(), pooling2dBP_, (block, input, gradO, gradI, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
 }
-void ConvolutionUtils::pooling3dBP(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
-    BUILD_SINGLE_SELECTOR(input.dataType(), pooling3dBP_, (input, gradO, gradI, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+void ConvolutionUtils::pooling3dBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), pooling3dBP_, (block, input, gradO, gradI, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
 }
 
 
@@ -2228,9 +2324,9 @@ BUILD_SINGLE_TEMPLATE(template void upsampling3dBP_, (const NDArray& gradO, NDAr
 BUILD_SINGLE_TEMPLATE(template void vol2col_,        (const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void col2vol_,        (const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void pooling2d_,      (nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void pooling3d_,      (const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void pooling3d_,      (nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void pooling2dBP_,    (nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void pooling3dBP_,    (const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void pooling3dBP_,    (nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
 
 }
 }
