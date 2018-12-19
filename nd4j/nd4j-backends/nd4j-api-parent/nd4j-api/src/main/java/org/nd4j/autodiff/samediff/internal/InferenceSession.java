@@ -154,7 +154,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     }
 
     @Override
-    public DifferentialFunction getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<String> constAndPhInputs) {
+    public DifferentialFunction getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<String> constAndPhInputs, Map<String,INDArray> placeholderValues) {
 
         DifferentialFunction df = sameDiff.getFunctionById(opName);
 
@@ -196,17 +196,23 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             int i = 0;
             for(String s : argNames){
                 SDVariable v = sameDiff.getVariable(s);
-                if(v.isConstant() || v.isPlaceHolder()){
-                    args[i++] = v.getArr();
+                if(v.isConstant()) {
+                    args[i] = v.getArr();
+                } else if(v.isPlaceHolder()){
+                    Preconditions.checkState(placeholderValues != null && placeholderValues.containsKey(s), "No array provided for placeholder %s");
+                    args[i] = placeholderValues.get(s);
                 } else {
                     for(VarId vid : opInputs){
                         if(vid.getVariable().equals(s)){
-                            args[i++] = this.nodeOutputs.get(vid);
+                            args[i] = this.nodeOutputs.get(vid);
                             break;
                         }
                     }
                 }
+                Preconditions.checkNotNull(args[i], "Could not parameterize op %s: array %s (variable %s) is null", opName, i, v.getVarName());
+                i++;
             }
+
         }
 
         //Set the op inputs and output arguments

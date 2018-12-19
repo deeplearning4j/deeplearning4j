@@ -191,7 +191,7 @@ public abstract class AbstractSession<T, O> {
 
                 //Execute op
                 FrameIter frameIter = varToExec.toFrameIter();
-                O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, constPhForVar);
+                O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, constPhForVar, placeholderValues);
                 T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, constPhForVar);
 
 
@@ -479,7 +479,7 @@ public abstract class AbstractSession<T, O> {
      * @param constAndPhInputs The constant and placeholder inputs - used for all frames/iterations
      * @return The parameterized op
      */
-    public abstract O getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> inputs, Set<String> constAndPhInputs);
+    public abstract O getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> inputs, Set<String> constAndPhInputs, Map<String,T> placeholderValues);
 
     /**
      * Execute the op - calculate INDArrays, or shape info, etc
