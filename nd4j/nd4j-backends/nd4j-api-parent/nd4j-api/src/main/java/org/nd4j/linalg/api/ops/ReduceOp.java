@@ -71,6 +71,12 @@ public interface ReduceOp extends Op {
      */
     void setFinalResult(double value);
 
+    /**
+     * This method returns dimensions for this op
+     * @return
+     */
+    INDArray dimensions();
+
 
     /**Initial value (used to initialize the accumulation op)
      * @return the initial value

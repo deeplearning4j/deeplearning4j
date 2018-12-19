@@ -51,19 +51,15 @@ public class Max extends BaseReduceSameOp {
      * @param z the result
      * @param n the number of elements
      */
-    public Max(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public Max(INDArray x, int... axis) {
+        super(x, null, null, axis);
     }
 
-    public Max(INDArray x) {
-        super(x);
+    public Max(INDArray x, INDArray z, int... axis) {
+        super(x, null, z, axis);
     }
 
-    public Max(INDArray x, INDArray z) {
-        super(x, null, z);
-    }
-
-    public Max(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+    public Max(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
         super(x,  z, newFormat, keepDims, dimensions);
     }
 

@@ -26,10 +26,12 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -56,6 +58,8 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     @Setter @Getter
     protected boolean newFormat = false;
     protected boolean isComplex = false;
+
+    protected INDArray dimensionz;
 
 
     public BaseReduceOp(SameDiff sameDiff,
@@ -132,20 +136,6 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
     public BaseReduceOp() {}
 
-    /**
-     * Initialize with the given
-     * input, pairwise transform, result, and number
-     * of elements
-     *
-     * @param x the input
-     * @param y the pairwise transform
-     * @param z the result
-     * @param n the number of elements
-     */
-    public BaseReduceOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        init();
-    }
 
     public BaseReduceOp(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
         super(x, y, z, x.lengthLong());
@@ -153,20 +143,19 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         this.keepDims = keepDims;
         this.dimensions = dimensions;
         init();
+        defineDimensions(dimensions);
     }
 
-    public BaseReduceOp(INDArray x, INDArray y, long n) {
-        this(x, y, x, n);
+    public BaseReduceOp(INDArray x, int... dimensions) {
+        this(x, null, dimensions);
     }
 
-    public BaseReduceOp(INDArray x) {
-        this(x, null, null, x.lengthLong());
+    public BaseReduceOp(INDArray x, INDArray y, int... dimensions) {
+        this(x, y, null, dimensions);
     }
 
-    public BaseReduceOp(INDArray x, INDArray y) {
-        this(x, y, null, x.lengthLong());
-        //if (y != null)
-        //    LinAlgExceptions.assertSameLength(x, y);
+    public BaseReduceOp(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        this(x, y, z, true, false, dimensions);
     }
 
     public BaseReduceOp(SameDiff sameDiff) {
@@ -285,6 +274,18 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     @Override
     public float zeroHalf() {
         return 0;
+    }
+
+    @Override
+    public INDArray dimensions() {
+        return dimensionz;
+    }
+
+    protected void defineDimensions(int... dimensions){
+        if (dimensions == null || dimensions.length == 0)
+            this.dimensionz = Nd4j.empty(DataType.INT);
+        else
+            this.dimensionz = Nd4j.createFromArray(dimensions);
     }
 
     @Override

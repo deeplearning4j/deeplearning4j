@@ -39,19 +39,15 @@ public class AMax extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public AMax(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
-    }
-
-    public AMax(INDArray x, INDArray z) {
-        super(x, null, z);
+    public AMax(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
     public AMax() {}
 
 
-    public AMax(INDArray x) {
-        super(x);
+    public AMax(INDArray x, int... dimensions) {
+        super(x, null, null, dimensions);
     }
 
 

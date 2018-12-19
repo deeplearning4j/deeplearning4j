@@ -43,27 +43,20 @@ public class StandardDeviation extends Variance {
         super(x, biasCorrected);
     }
 
-    public StandardDeviation(INDArray x, INDArray y, INDArray z, long n, boolean biasCorrected) {
-        super(x, y, z, n, biasCorrected);
-    }
 
     public StandardDeviation() {
-    }
-
-    public StandardDeviation(INDArray x, INDArray y, long n) {
-        super(x, y, n);
     }
 
     public StandardDeviation(INDArray x) {
         super(x);
     }
 
-    public StandardDeviation(INDArray x, INDArray y) {
-        super(x, y);
+    public StandardDeviation(INDArray x, INDArray z) {
+        super(x, z, x.length(), true);
     }
 
-    public StandardDeviation(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
-        super(x, y, z, newFormat, keepDims, dimensions);
+    public StandardDeviation(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, z, newFormat, keepDims, dimensions);
     }
 
     @Override

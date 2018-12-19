@@ -41,16 +41,12 @@ public class AMin extends BaseReduceSameOp {
 
     public AMin() {}
 
-    public AMin(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public AMin(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
-    public AMin(INDArray x) {
-        super(x);
-    }
-
-    public AMin(INDArray x, INDArray z) {
-        super(x, null, z);
+    public AMin(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
 

@@ -49,6 +49,7 @@ public class Variance extends BaseReduceOp {
     public Variance(SameDiff sameDiff, SDVariable i_v, boolean biasCorrected, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
         this.biasCorrected = biasCorrected;
+        defineDimensions(dimensions);
     }
 
     public Variance() {
@@ -58,49 +59,27 @@ public class Variance extends BaseReduceOp {
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        init(x, y, z, n);
-    }
-
-    public Variance(INDArray x, INDArray y, long n) {
-        this(x, y, x, n);
-    }
-
     public Variance(INDArray x) {
-        this(x, null, x, x.lengthLong(), true);
+        this(x, true);
     }
 
-    public Variance(INDArray x, INDArray y) {
-        super(x, y);
-    }
-
-    public Variance(INDArray x, INDArray y, INDArray z, long n, boolean biasCorrected) {
-        super(x, y, z, n);
+    public Variance(INDArray x, INDArray z, long n, boolean biasCorrected, int... dimensions) {
+        super(x, null, z, n);
         this.biasCorrected = biasCorrected;
         init(x, y, z, n);
+        defineDimensions(dimensions);
     }
 
-    public Variance(INDArray x, INDArray y, long n, boolean biasCorrected) {
-        super(x, y, n);
-        this.biasCorrected = biasCorrected;
-        init(x, y, z, n);
-    }
-
-    public Variance(INDArray x, boolean biasCorrected) {
+    public Variance(INDArray x, boolean biasCorrected, int... dimensions) {
         super(x);
         this.biasCorrected = biasCorrected;
         init(x, y, z, n);
+        defineDimensions(dimensions);
     }
 
-    public Variance(INDArray x, INDArray y, boolean biasCorrected) {
-        super(x, y);
-        this.biasCorrected = biasCorrected;
-        init(x, y, x, x.lengthLong());
-    }
-
-    public Variance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
-        super(x, y, z, newFormat, keepDims, dimensions);
+    public Variance(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
+        super(x, null, z, newFormat, keepDims, dimensions);
+        defineDimensions(dimensions);
     }
 
     @Override
