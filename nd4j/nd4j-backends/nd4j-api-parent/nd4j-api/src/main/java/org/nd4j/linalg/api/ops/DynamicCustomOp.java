@@ -519,17 +519,17 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public List<LongShapeDescriptor> calculateOutputShape() {
         val descriptor = getDescriptor();
         SDVariable[] args = sameDiff == null ? null : args();
-        if(args != null ) {
-            for (val arg : args) {
-                if (sameDiff.isPlaceHolder(arg.getVarName()) && !sameDiff.shapeAlreadyExistsForVarName(arg.getVarName())) {
-                    if (log.isTraceEnabled()) {
-                        log.trace("Could not calculate output shape for op {}: arg \"{}\" is placeholder", getClass().getName(),
-                                arg.getVarName());
-                    }
-                    return Collections.emptyList();
-                }
-            }
-        }
+//        if(args != null ) {
+//            for (val arg : args) {
+//                if (sameDiff.isPlaceHolder(arg.getVarName()) && !sameDiff.shapeAlreadyExistsForVarName(arg.getVarName())) {
+//                    if (log.isTraceEnabled()) {
+//                        log.trace("Could not calculate output shape for op {}: arg \"{}\" is placeholder", getClass().getName(),
+//                                arg.getVarName());
+//                    }
+//                    return Collections.emptyList();
+//                }
+//            }
+//        }
 
         if (outputShapes != null && !outputShapes.isEmpty())
             return outputShapes;

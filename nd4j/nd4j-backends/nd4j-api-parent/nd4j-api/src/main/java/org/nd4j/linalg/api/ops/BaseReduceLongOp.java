@@ -101,7 +101,8 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
         long[] inputShape = (argShape == null ? x().shape() : argShape);
 
         val ret = new ArrayList<LongShapeDescriptor>(1);
-        val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
+        //Calculate reduction shape. Note that reduction on scalar - returns a scalar
+        val reducedShape = inputShape.length == 0 ? inputShape : Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
         ret.add(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
         return ret;
     }

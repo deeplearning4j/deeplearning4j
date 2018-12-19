@@ -222,7 +222,9 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 customOp.setInputArguments(args);
             }
 
+            df.resolvePropertiesFromSameDiffBeforeExecution();
             List<LongShapeDescriptor> outShape = customOp.calculateOutputShape();
+            Preconditions.checkState(outShape != null && outShape.size() > 0, "Failed to calculate output shapes for op %s (%s) - no shapes were returned by calculateOutputShape()", customOp.opName(), customOp.getOwnName());
             for( int i=0; i<outShape.size(); i++ ){
                 INDArray currOutput = (customOp.numOutputArguments() <= i ? null : customOp.getOutputArgument(i));
                 LongShapeDescriptor reqShape = outShape.get(i);
@@ -286,6 +288,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 z = Nd4j.create(outputShape.get(0), false);
                 op.setZ(z);
             }
+            df.resolvePropertiesFromSameDiffBeforeExecution();
         }
 
         return df;

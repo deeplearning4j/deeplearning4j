@@ -37,7 +37,7 @@ import java.util.*;
 
 @Slf4j
 public class Concat extends DynamicCustomOp {
-    private int concatDimension;
+    private int concatDimension = -1;
 
     public Concat(){
 
@@ -52,32 +52,6 @@ public class Concat extends DynamicCustomOp {
     @Override
     public String opName() {
         return "concat";
-    }
-
-
-    @Override
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
-        val propertiesToResolve = sameDiff.propertiesToResolveForFunction(this);
-        if(!propertiesToResolve.isEmpty()) {
-            val varName = propertiesToResolve.get(0);
-            val var = sameDiff.getVariable(varName);
-            if(var == null) {
-                throw new ND4JIllegalStateException("No variable found with name " +varName);
-            }
-            else if(var.getArr() == null) {
-                throw new ND4JIllegalStateException("Array with variable name " + varName + " unset!");
-            }
-
-            val arr = var.getArr();
-            concatDimension = arr.getInt(0);
-            addIArgument(concatDimension);
-        }
-
-        //don't pass both iArg and last axis down to libnd4j
-        if(inputArguments().length == args().length) {
-            val inputArgs = inputArguments();
-            removeInputArgument(inputArgs[inputArguments().length - 1]);
-        }
     }
 
     @Override

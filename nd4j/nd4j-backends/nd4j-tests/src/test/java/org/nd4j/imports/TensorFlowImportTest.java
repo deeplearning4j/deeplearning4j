@@ -31,6 +31,7 @@ import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.graph.FlatGraph;
 import org.nd4j.graph.FlatNode;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
@@ -1145,12 +1146,11 @@ public class TensorFlowImportTest extends BaseNd4jTest {
             - cond/ones - depends on cond/switch_f
          */
 
-        Map<String,List<String>> varCDs = sd.getVariableControlDependencies();
-        assertEquals(4, varCDs.size());
+        Map<String,Variable> variables = sd.getVariables();
 
-        assertEquals(varCDs.get("cond/LinSpace/start"), Collections.singletonList("cond/switch_t"));
-        assertEquals(varCDs.get("cond/LinSpace/stop"), Collections.singletonList("cond/switch_t"));
-        assertEquals(varCDs.get("cond/LinSpace/num"), Collections.singletonList("cond/switch_t"));
-        assertEquals(varCDs.get("cond/ones"), Collections.singletonList("cond/switch_f"));
+        assertEquals(variables.get("cond/LinSpace/start").getControlDeps(), Collections.singletonList("cond/switch_t"));
+        assertEquals(variables.get("cond/LinSpace/stop"), Collections.singletonList("cond/switch_t"));
+        assertEquals(variables.get("cond/LinSpace/num"), Collections.singletonList("cond/switch_t"));
+        assertEquals(variables.get("cond/ones"), Collections.singletonList("cond/switch_f"));
     }
 }
