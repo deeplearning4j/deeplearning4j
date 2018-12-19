@@ -88,7 +88,7 @@ public class MirrorPad extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatypes, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatypes for %s, got %s", getClass(), dataTypes);
         return Collections.singletonList(dataTypes.get(0));
     }
 }

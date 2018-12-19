@@ -66,7 +66,7 @@ public class InvertPermutation extends BaseDynamicTransformOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got %s", getClass(), dataTypes);
         return dataTypes;
     }
 

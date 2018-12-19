@@ -167,7 +167,7 @@ public class Cast extends BaseDynamicTransformOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //All scalar ops: output type is same as input type
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got input %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
         return Collections.singletonList(typeDst);
     }
 }

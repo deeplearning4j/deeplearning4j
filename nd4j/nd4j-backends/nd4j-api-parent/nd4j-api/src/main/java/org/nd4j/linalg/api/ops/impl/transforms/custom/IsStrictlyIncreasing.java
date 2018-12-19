@@ -63,7 +63,7 @@ public class IsStrictlyIncreasing extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatypes, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatypes for %s, got %s", getClass(), dataTypes);
         return Collections.singletonList(DataType.BOOL);
     }
 }

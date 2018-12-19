@@ -98,7 +98,7 @@ public class ClipByNorm extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected exactly 1 input datatype, got %s", inputDataTypes);
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got %s", getClass(), inputDataTypes);
         return inputDataTypes;
     }
 }

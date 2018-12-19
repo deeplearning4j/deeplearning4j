@@ -86,7 +86,7 @@ public class GreaterThanOrEqual extends BaseDynamicTransformOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatypes, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatypes for %s, got %s", getClass(), dataTypes);
         Preconditions.checkState(dataTypes.get(0) == dataTypes.get(1), "Input datatypes must be same type: got %s", dataTypes);
         return Collections.singletonList(DataType.BOOL);
     }

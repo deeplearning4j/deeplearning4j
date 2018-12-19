@@ -166,7 +166,7 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
     @Override
     public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
         //All scalar bool ops: output type is always bool
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got input %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
         return Collections.singletonList(DataType.BOOL);
     }
 }

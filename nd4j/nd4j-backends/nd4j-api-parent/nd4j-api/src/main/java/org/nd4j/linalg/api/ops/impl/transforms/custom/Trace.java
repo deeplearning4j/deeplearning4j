@@ -57,7 +57,7 @@ public class Trace extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got %s", getClass(), dataTypes);
         return Collections.singletonList(dataTypes.get(0));
     }
 

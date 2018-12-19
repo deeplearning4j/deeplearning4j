@@ -46,7 +46,7 @@ public class SegmentSumBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 3, "Expected exactly 3 input data types, got %s", inputDataTypes);
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 3, "Expected exactly 3 input data types for %s, got %s", getClass(), inputDataTypes);
         return Arrays.asList(inputDataTypes.get(0), inputDataTypes.get(1));
     }
 }

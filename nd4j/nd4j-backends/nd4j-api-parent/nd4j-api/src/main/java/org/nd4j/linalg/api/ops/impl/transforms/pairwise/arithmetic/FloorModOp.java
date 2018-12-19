@@ -60,7 +60,7 @@ public class FloorModOp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatypes, got input %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatypes for %s, got input %s", getClass(), dataTypes);
 
         DataType z = Shape.pickPairwiseDataType(dataTypes.get(0), dataTypes.get(1));
         return Collections.singletonList(z);

@@ -148,7 +148,7 @@ public class ExpandDims extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //Axis may be defined either as integer or as an array
-        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2), "Expected list with 1 or 2 datatype, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2), "Expected list with 1 or 2 datatype for %s, got %s", getClass(), dataTypes);
         //Output type is same as input type
         return Collections.singletonList(dataTypes.get(0));
     }

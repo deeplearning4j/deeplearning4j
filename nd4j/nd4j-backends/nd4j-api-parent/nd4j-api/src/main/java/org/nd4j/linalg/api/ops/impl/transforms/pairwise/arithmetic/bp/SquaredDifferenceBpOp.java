@@ -64,7 +64,7 @@ public class SquaredDifferenceBpOp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 3, "Expected exactly 3 input datatype, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 3, "Expected exactly 3 input datatypes for %s, got %s", getClass(), dataTypes);
         Preconditions.checkState(dataTypes.get(0) == dataTypes.get(1), "Input datatypes 0 and 1 must be the same, got %s", dataTypes);
         return Arrays.asList(dataTypes.get(0), dataTypes.get(1));
     }

@@ -53,7 +53,7 @@ public abstract class BaseArithmeticBackpropOp extends BaseDynamicTransformOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 3, "Expected exactly 3 input datatype, got input %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 3, "Expected exactly 3 input datatypes for %s, got input %s", getClass(), dataTypes);
         //Gradient types: same as input
         return Arrays.asList(arg(0).dataType(), arg(1).dataType());
     }

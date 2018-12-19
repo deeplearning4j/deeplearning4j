@@ -65,7 +65,7 @@ public class Pooling2DDerivative extends Pooling2D {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected 2 input data types, got %s", inputDataTypes);
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected 2 input data types for %s, got %s", getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));
     }
 

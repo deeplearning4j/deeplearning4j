@@ -28,6 +28,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +89,11 @@ public class Svd extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        return Collections.singletonList(dataTypes.get(0));
+        if(computeUv){
+            DataType d = dataTypes.get(0);
+            return Arrays.asList(d, d, d);
+        } else {
+            return Collections.singletonList(dataTypes.get(0));
+        }
     }
 }

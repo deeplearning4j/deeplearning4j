@@ -80,7 +80,7 @@ public class SConv2DDerivative extends SConv2D {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         int n = args().length;  //Original inputs + gradient at
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types, got %s", n, inputDataTypes);
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
         List<DataType> out = new ArrayList<>(n-1);
         for( int i=0; i<n-1; i++ ){
             out.add(inputDataTypes.get(i));

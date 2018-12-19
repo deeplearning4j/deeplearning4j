@@ -146,7 +146,7 @@ public class OneHot extends DynamicCustomOp {
 
     @Override
     public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
-        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype, got %s", dataTypes);
+        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
         //Output type defaults to floats
         //TODO allow configuration + test import of output array dtype: https://github.com/deeplearning4j/deeplearning4j/issues/6854
         DataType dt = Nd4j.defaultFloatingPointType();

@@ -108,7 +108,7 @@ public class StridedSliceBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes.size() == 2, "Expected list with exactly 2 datatypes, got %s", dataTypes);
+        Preconditions.checkState(dataTypes.size() == 2, "Expected list with exactly 2 datatypes for %s, got %s", getClass(), dataTypes);
         //Output type is same as (original) input type
         return Collections.singletonList(arg().dataType());
     }

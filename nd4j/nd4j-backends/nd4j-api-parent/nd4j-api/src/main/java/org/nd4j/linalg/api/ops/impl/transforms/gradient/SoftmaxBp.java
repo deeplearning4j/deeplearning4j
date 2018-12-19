@@ -52,7 +52,7 @@ public class SoftmaxBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 inputs datatype, got %s", dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 inputs datatype for %s, got %s", getClass(), dataTypes);
         Preconditions.checkState(dataTypes.get(0).isFPType(), "Input 0 must be a floating point type, got %s", dataTypes.get(0));
         Preconditions.checkState(dataTypes.get(1).isFPType(), "Input 1 must be a floating point type, got %s", dataTypes.get(1));
         Preconditions.checkState(dataTypes.get(0) == dataTypes.get(1), "Both input must be same type: got %s", dataTypes);
