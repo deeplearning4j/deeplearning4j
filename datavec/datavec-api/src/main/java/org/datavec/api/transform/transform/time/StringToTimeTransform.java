@@ -100,6 +100,15 @@ public class StringToTimeTransform extends BaseColumnTransform {
      * @param columnName Name of the String column
      * @param timeFormat Time format, as per <a href="http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html">http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html</a>
      * @param timeZone   Timezone for time parsing
+     */
+    public StringToTimeTransform(String columnName, String timeFormat, TimeZone timeZone) {
+        this(columnName, timeFormat, timeZone, null, null, null);
+    }
+
+    /**
+     * @param columnName Name of the String column
+     * @param timeFormat Time format, as per <a href="http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html">http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html</a>
+     * @param timeZone   Timezone for time parsing
      * @param locale     Locale for i18n
      */
     public StringToTimeTransform(String columnName, String timeFormat, TimeZone timeZone, Locale locale) {
@@ -122,6 +131,15 @@ public class StringToTimeTransform extends BaseColumnTransform {
         this(columnName, null, timeZone, locale, null, null);
     }
 
+
+    /**
+     * @param columnName Name of the String column
+     * @param timeFormat Time format, as per <a href="http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html">http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html</a>
+     * @param timeZone   Timezone for time parsing
+     */
+    public StringToTimeTransform(String columnName, String timeFormat, DateTimeZone timeZone) {
+        this(columnName, timeFormat, timeZone, null, null, null);
+    }
 
     /**
      * @param columnName Name of the String column
