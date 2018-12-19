@@ -21,9 +21,6 @@ import jumpy as jp
 import numpy as np
 
 
-jp.set_context_dtype('float64')
-
-
 def test_array_creation():
     a = jp.zeros((32, 10))
     assert int(jp.sum(a)) == 0

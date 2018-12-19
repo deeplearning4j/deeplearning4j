@@ -35,17 +35,17 @@ namespace ops {
             axis = INT_ARG(0);
         } else if (block.width() > 2){
             auto _a = INPUT_VARIABLE(2);
-            axis = _a->getScalar(0);
+            axis = _a->e<int>(0);
         } 
 
         if (axis < 0)
             axis += input->rankOf();
 
-        std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
+        std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {axis});
 
         int pos = 0;
         for (int e = 0; e < sizes->lengthOf(); e++) {
-            int c_size = (int) sizes->getScalar(e);
+            int c_size = sizes->e<int>(e);
             IndicesList indices;
 
             for (int d = 0; d < input->rankOf(); d++) {
@@ -56,6 +56,7 @@ namespace ops {
             }
 
             auto output = OUTPUT_VARIABLE(e);
+            REQUIRE_TRUE(output->dataType() == input->dataType(), 0, "SplitV: all outputs must have same data type as input");
 
             auto sub = input->subarray(indices);
 
@@ -66,9 +67,16 @@ namespace ops {
         }
 
         //delete tads;
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 
+    DECLARE_TYPES(split_v) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+                ->setAllowedInputTypes(1, {ALL_INTS})
+                ->setAllowedInputTypes(2, {ALL_INTS})
+                ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+    }
 
     DECLARE_SHAPE_FN(split_v) {
         auto input = inputShape->at(0);
@@ -84,7 +92,7 @@ namespace ops {
             axis = INT_ARG(0);
         else if (block.width() > 2) {
             auto _a = INPUT_VARIABLE(2);
-            axis = _a->getScalar(0);
+            axis = _a->e<int>(0);
         }
 
         if (axis < 0)
@@ -96,7 +104,7 @@ namespace ops {
         auto length = sizes->lengthOf();
         int pos = 0;
         for (int e = 0; e < length; e++) {
-            int c_size = sizes->getScalar(e);
+            int c_size = sizes->e<int>(e);
             Nd4jLong *newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), Nd4jLong);
 
@@ -110,9 +118,9 @@ namespace ops {
             }
 
             if (shape::order(input) == 'c')
-                shape::shapeBuffer(shape.size(), shape.data(), newShape);
+                shape::shapeBuffer(shape.size(), ArrayOptions::dataType(input), shape.data(), newShape);
             else
-                shape::shapeBufferFortran(shape.size(), shape.data(), newShape);
+                shape::shapeBufferFortran(shape.size(), ArrayOptions::dataType(input), shape.data(), newShape);
 
             shapeList->push_back(newShape);
         }

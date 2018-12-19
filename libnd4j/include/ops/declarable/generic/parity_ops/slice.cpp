@@ -44,8 +44,8 @@ namespace nd4j {
             } else {
                 REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead", x_rank * 2, block.numI());
 
-                ShapeUtils<T>::copyVectorPart(begin, *(block.getIArguments()), x_rank, 0);
-                ShapeUtils<T>::copyVectorPart(end, *(block.getIArguments()), x_rank, x_rank);
+                ShapeUtils::copyVectorPart(begin, *(block.getIArguments()), x_rank, 0);
+                ShapeUtils::copyVectorPart(end, *(block.getIArguments()), x_rank, x_rank);
             }
 
             REQUIRE_TRUE(begin.size() == x_rank, 0, "begin array should have length of [%i] but got [%i] instead", x_rank, begin.size());
@@ -77,6 +77,12 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_TYPES(slice) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
         DECLARE_SHAPE_FN(slice) {
             auto inShape = inputShape->at(0);
             auto x_rank = shape::rank(inShape);
@@ -93,8 +99,8 @@ namespace nd4j {
             } else {
                 REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead", x_rank * 2, block.numI());
 
-                ShapeUtils<T>::copyVectorPart(begin, *(block.getIArguments()), x_rank, 0);
-                ShapeUtils<T>::copyVectorPart(end, *(block.getIArguments()), x_rank, x_rank);
+                ShapeUtils::copyVectorPart(begin, *(block.getIArguments()), x_rank, 0);
+                ShapeUtils::copyVectorPart(end, *(block.getIArguments()), x_rank, x_rank);
             }
 
             REQUIRE_TRUE(begin.size() == x_rank, 0, "begin array should have length of [%i] but got [%i] instead", x_rank, begin.size());
@@ -110,11 +116,16 @@ namespace nd4j {
             }
 
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(x_rank), Nd4jLong);
-            shape::shapeBuffer(x_rank, shape.data(), newShape);
+            shape::shapeBuffer(x_rank, ArrayOptions::dataType(inShape), shape.data(), newShape);
 
             return SHAPELIST(newShape);
         }
 
+        DECLARE_TYPES(slice_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
 
         CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -1) {
@@ -137,8 +148,8 @@ namespace nd4j {
             } else {
                 REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead", x_rank * 2, block.numI());
 
-                ShapeUtils<T>::copyVectorPart(begin, *(block.getIArguments()), x_rank, 0);
-                ShapeUtils<T>::copyVectorPart(end, *(block.getIArguments()), x_rank, x_rank);
+                ShapeUtils::copyVectorPart(begin, *(block.getIArguments()), x_rank, 0);
+                ShapeUtils::copyVectorPart(end, *(block.getIArguments()), x_rank, x_rank);
             }
 
             REQUIRE_TRUE(begin.size() == x_rank, 0, "begin array should have length of [%i] but got [%i] instead", x_rank, begin.size());

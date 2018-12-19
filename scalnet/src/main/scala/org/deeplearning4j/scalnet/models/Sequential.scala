@@ -86,7 +86,6 @@ class Sequential(miniBatch: Boolean, biasInit: Double, rngSeed: Long) extends Mo
       logger.info(" size: " + preprocessor.describe())
       listBuilder.inputPreProcessor(layerIndex, preprocessor.asInstanceOf[Preprocessor].compile)
     }
-    listBuilder = listBuilder.pretrain(false).backprop(true)
 
     model = new MultiLayerNetwork(listBuilder.build())
     model.init()

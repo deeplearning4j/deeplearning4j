@@ -25,6 +25,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -119,15 +120,15 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         } else if (op instanceof TransformOp) {
             if (op.y() == null) {
                 if (!op.isExecSpecial())
-                    type = Op.Type.TRANSFORM;
+                    type = Type.TRANSFORM_FLOAT;
                 else
-                    type = Op.Type.SPECIAL;
+                    type = Type.TRANSFORM_STRICT;
             } else {
                 type = Op.Type.PAIRWISE;
             }
-        } else if (op instanceof Accumulation) {
+        } else if (op instanceof ReduceOp) {
             if (op.y() == null)
-                type = Op.Type.REDUCE;
+                type = ((ReduceOp) op).getOpType();
             else
                 type = Op.Type.REDUCE3;
         } else if (op instanceof ScalarOp) {
@@ -157,22 +158,23 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     }
 
     @Override
-    public DataBuffer extraArgsDataBuff() {
+    public DataBuffer extraArgsDataBuff(DataType dtype) {
         if (extraArgz != null)
             return extraArgz;
 
         if (extraArgs != null) {
-            DataBuffer.Type dtype = x != null ? x.data().dataType() : Nd4j.dataType();
-            if (dtype == DataBuffer.Type.FLOAT || dtype == DataBuffer.Type.HALF) {
-                float extraz[] = new float[extraArgs.length];
+            if (Shape.isZ(dtype) || Shape.isB(dtype)) {
+                long extraz[] = new long[extraArgs.length];
                 for (int i = 0; i < extraArgs.length; i++) {
-                    Number arg = (Number) extraArgs[i];
-                    float val = arg.floatValue();
-                    extraz[i] = val;
+                    if (extraArgs[i] instanceof Number) {
+                        Number arg = (Number) extraArgs[i];
+                        long val = arg.longValue();
+                        extraz[i] = val;
+                    }
                 }
-                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz);
+                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz, dtype);
                 return extraArgz;
-            } else if (dtype == DataBuffer.Type.DOUBLE) {
+            } else if (Shape.isR(dtype)) {
                 double extraz[] = new double[extraArgs.length];
                 for (int i = 0; i < extraArgs.length; i++) {
                     if (!(extraArgs[i] instanceof Number))
@@ -183,7 +185,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     double val = arg.doubleValue();
                     extraz[i] = val;
                 }
-                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz);
+                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz, dtype);
                 return extraArgz;
             }
         }
@@ -195,7 +197,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public Buffer extraArgsBuff() {
         if (extraArgs != null) {
             DataBuffer retBuff;
-            if (x.data().dataType() == DataBuffer.Type.FLOAT) {
+            if (x.data().dataType() == DataType.FLOAT) {
                 retBuff = Nd4j.createBuffer(new float[extraArgs.length]);
                 for (int i = 0; i < extraArgs.length; i++) {
                     Number val = (Number) extraArgs[i];
@@ -247,7 +249,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     this.z = getResult.getArr();
                 else if(sameDiff.getShapeForVarName(getResult.getVarName()) != null) {
                     val shape = sameDiff.getShapeForVarName(getResult.getVarName());
-                    sameDiff.putArrayForVarName(getResult.getVarName(),getResult.getWeightInitScheme().create(shape));
+                    sameDiff.putArrayForVarName(getResult.getVarName(),getResult.getWeightInitScheme().create(getResult.dataType(), shape));
                 }
                 else
                     throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");

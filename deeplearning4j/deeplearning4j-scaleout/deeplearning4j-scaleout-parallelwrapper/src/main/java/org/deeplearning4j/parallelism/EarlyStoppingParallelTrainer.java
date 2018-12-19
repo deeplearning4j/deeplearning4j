@@ -290,6 +290,11 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
         }
     }
 
+    @Override
+    public EarlyStoppingResult<T> pretrain() {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
     public void setLatestScore(double latestScore) {
         this.latestScore.set(latestScore);
     }

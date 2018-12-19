@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -59,7 +60,7 @@ public class SlicingTestsC extends BaseNd4jTest {
 
     @Test
     public void testSliceShape() {
-        INDArray arr = Nd4j.linspace(1, 30, 30).reshape(3, 5, 2);
+        INDArray arr = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape(3, 5, 2);
 
         INDArray sliceZero = arr.slice(0);
         for (int i = 0; i < sliceZero.rows(); i++) {
@@ -109,16 +110,16 @@ public class SlicingTestsC extends BaseNd4jTest {
 
     @Test
     public void testGetRow() {
-        INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
+        INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray get = arr.getRow(1);
         INDArray get2 = arr.get(NDArrayIndex.point(1), NDArrayIndex.all());
         INDArray assertion = Nd4j.create(new double[] {4, 5, 6});
         assertEquals(assertion, get);
         assertEquals(get, get2);
-        get2.assign(Nd4j.linspace(1, 3, 3));
-        assertEquals(Nd4j.linspace(1, 3, 3), get2);
+        get2.assign(Nd4j.linspace(1, 3, 3, DataType.DOUBLE));
+        assertEquals(Nd4j.linspace(1, 3, 3, DataType.DOUBLE), get2);
 
-        INDArray threeByThree = Nd4j.linspace(1, 9, 9).reshape(3, 3);
+        INDArray threeByThree = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
         INDArray offsetTest = threeByThree.get(new SpecifiedIndex(1, 2), NDArrayIndex.all());
         INDArray threeByThreeAssertion = Nd4j.create(new double[][] {{4, 5, 6}, {7, 8, 9}});
 

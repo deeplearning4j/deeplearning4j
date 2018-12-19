@@ -38,7 +38,7 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class ExpandDims extends DynamicCustomOp {
-    private int axis;
+    private int jaxis;
 
 
     public ExpandDims() {
@@ -49,8 +49,8 @@ public class ExpandDims extends DynamicCustomOp {
         if (axis == Integer.MAX_VALUE) {
             throw new ND4JIllegalArgumentException("Cannot perform ExpandDims with axis == Integer.MAX_VALUE");
         }
-        this.axis = axis;
-        addIArgument(this.axis);
+        this.jaxis = axis;
+        addIArgument(this.jaxis);
     }
 
     public ExpandDims(SameDiff sameDiff, SDVariable[] args) {
@@ -72,11 +72,11 @@ public class ExpandDims extends DynamicCustomOp {
 
         if (dimArr != null) {
             int axis = dimArr.data().asInt()[0];
-            this.axis = axis;
-            addIArgument(this.axis);
+            this.jaxis = axis;
+            addIArgument(this.jaxis);
         } else {
-            this.axis = Integer.MAX_VALUE;
-            addIArgument(this.axis);
+            this.jaxis = Integer.MAX_VALUE;
+            addIArgument(this.jaxis);
         }
     }
 
@@ -139,7 +139,7 @@ public class ExpandDims extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //Simply need a reshape to remove the dimension...
-        SDVariable ret = sameDiff.squeeze(i_v.get(0), axis);
+        SDVariable ret = sameDiff.squeeze(i_v.get(0), jaxis);
         return Arrays.asList(ret);
     }
 

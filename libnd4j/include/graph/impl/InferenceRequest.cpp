@@ -23,59 +23,49 @@
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
-        InferenceRequest<T>::InferenceRequest(Nd4jLong graphId, ExecutorConfiguration *configuration) {
+        InferenceRequest::InferenceRequest(Nd4jLong graphId, ExecutorConfiguration *configuration) {
             this->_id = graphId;
             this->_configuration = configuration;
         }
 
-        template <typename T>
-        InferenceRequest<T>::~InferenceRequest() {
+        InferenceRequest::~InferenceRequest() {
             for (auto v : _deletables)
                 delete v;
         }
 
-
-        template <typename T>
-        void InferenceRequest<T>::appendVariable(int id, NDArray<T> *array) {
+        void InferenceRequest::appendVariable(int id, NDArray *array) {
             appendVariable(id, 0, array);
         }
 
-        template <typename T>
-        void InferenceRequest<T>::appendVariable(int id, int index, NDArray<T> *array) {
-            auto v = new Variable<T>(array, nullptr, id, index);
+        void InferenceRequest::appendVariable(int id, int index, NDArray *array) {
+            auto v = new Variable(array, nullptr, id, index);
             insertVariable(v);
         }
 
-        template <typename T>
-        void InferenceRequest<T>::appendVariable(std::string &id, NDArray<T> *array) {
-            auto v = new Variable<T>(array, id.c_str());
+        void InferenceRequest::appendVariable(std::string &id, NDArray *array) {
+            auto v = new Variable(array, id.c_str());
             insertVariable(v);
         }
 
-        template <typename T>
-        void InferenceRequest<T>::appendVariable(std::string &name, int id, int index, NDArray<T> *array) {
-            auto v = new Variable<T>(array, name.c_str(), id, index);
+        void InferenceRequest::appendVariable(std::string &name, int id, int index, NDArray *array) {
+            auto v = new Variable(array, name.c_str(), id, index);
             insertVariable(v);
         }
 
-        template <typename T>
-        void InferenceRequest<T>::insertVariable(Variable<T> *variable) {
+        void InferenceRequest::insertVariable(Variable *variable) {
             variable->markRemovable(false);
             variable->markReadOnly(true);
             _variables.emplace_back(variable);
             _deletables.emplace_back(variable);
         }
 
-        template <typename T>
-        void InferenceRequest<T>::appendVariable(Variable<T> *variable) {
+        void InferenceRequest::appendVariable(Variable *variable) {
             _variables.emplace_back(variable);
         }
 
-        template <typename T>
-        flatbuffers::Offset<FlatInferenceRequest> InferenceRequest<T>::asFlatInferenceRequest(flatbuffers::FlatBufferBuilder &builder) {
+        flatbuffers::Offset<FlatInferenceRequest> InferenceRequest::asFlatInferenceRequest(flatbuffers::FlatBufferBuilder &builder) {
             std::vector<flatbuffers::Offset<FlatVariable>> vec;
-            for (Variable<T>* v : _variables) {
+            for (Variable* v : _variables) {
                 vec.emplace_back(v->asFlatVariable(builder));
             }
 
@@ -85,10 +75,5 @@ namespace nd4j {
 
             return CreateFlatInferenceRequest(builder, _id, vecOffset, confOffset);
         }
-
-
-        template class ND4J_EXPORT InferenceRequest<float>;
-        template class ND4J_EXPORT InferenceRequest<float16>;
-        template class ND4J_EXPORT InferenceRequest<double>;
     }
 }

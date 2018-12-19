@@ -27,6 +27,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -39,7 +40,7 @@ public class LargeNetTest {
     @Ignore
     @Test
     public void testLargeMultiLayerNetwork(){
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
 
         //More than 2.1 billion parameters
         //10M classes plus 300 vector size -> 3 billion elements
@@ -71,7 +72,7 @@ public class LargeNetTest {
     @Ignore
     @Test
     public void testLargeCompGraph(){
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataType.FLOAT);
 
         //More than 2.1 billion parameters
         //10M classes plus 300 vector size -> 3 billion elements

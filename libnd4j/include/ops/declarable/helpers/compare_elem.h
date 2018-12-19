@@ -24,8 +24,8 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            template <typename T>
-            void compare_elem(NDArray<T>* input, bool isStrictlyIncreasing, bool& output);
+
+            void compare_elem(NDArray* input, bool isStrictlyIncreasing, bool& output);
         }
     }
 }

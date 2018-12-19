@@ -29,26 +29,34 @@ namespace ops  {
 
 ////////////////////////////////////////////////////////////////////////// 
 CUSTOM_OP_IMPL(diag, 1, 1, false, 0, 0) {
-    
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
     
     // input validation
     REQUIRE_TRUE(input->rankOf() <= 3, 0, "CUSTOM_OP diag: rank of input array must be <= 3 !, but got %i instead", input->rankOf());
-    
+
+    // TODO: still not sure if we really want this
+    output->assign(0);
+
     helpers::diagFunctor(input, output);    
     
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 DECLARE_SYN(MatrixDiag, diag);
 
+
+        DECLARE_TYPES(diag) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
 ////////////////////////////////////////////////////////////////////////// 
 DECLARE_SHAPE_FN(diag) {
-    
     const Nd4jLong* inputShapeInfo = inputShape->at(0);
 
-    return SHAPELIST(ShapeUtils<T>::evalDiagShapeInfo(inputShapeInfo, block.workspace()));
+    return SHAPELIST(ShapeUtils::evalDiagShapeInfo(inputShapeInfo, block.workspace()));
 }
 
 

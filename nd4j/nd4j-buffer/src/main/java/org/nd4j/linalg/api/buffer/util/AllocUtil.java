@@ -68,7 +68,7 @@ public class AllocUtil {
      * @return
      */
     public static DataBuffer.AllocationMode getAllocationModeFromContext() {
-        return DataBuffer.AllocationMode.LONG_SHAPE; //getAllocationModeFromContext(Nd4jContext.getInstance().getConf().getProperty("alloc"));
+        return DataBuffer.AllocationMode.MIXED_DATA_TYPES; //getAllocationModeFromContext(Nd4jContext.getInstance().getConf().getProperty("alloc"));
     }
 
     /**

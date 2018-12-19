@@ -48,7 +48,7 @@ public class BatchedInferenceObservableTest {
         BatchedInferenceObservable observable = new BatchedInferenceObservable();
 
         for (int i = 0; i < 32; i++) {
-            observable.addInput(new INDArray[]{Nd4j.create(100).assign(i)}, null);
+            observable.addInput(new INDArray[]{Nd4j.create(1,100).assign(i)}, null);
         }
 
         assertEquals(1, observable.getInputBatches().size());

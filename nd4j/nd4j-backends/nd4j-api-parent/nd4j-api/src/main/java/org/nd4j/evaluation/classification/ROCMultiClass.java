@@ -144,6 +144,9 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
                             + Arrays.toString(predictions.shape()) + "; require rank 2 array with size(1) == 1 or 2");
         }
 
+        if(labels.dataType() != predictions.dataType())
+            labels = labels.castTo(predictions.dataType());
+
         // FIXME: int cast
         int n = (int) labels.size(1);
         if (underlying == null) {

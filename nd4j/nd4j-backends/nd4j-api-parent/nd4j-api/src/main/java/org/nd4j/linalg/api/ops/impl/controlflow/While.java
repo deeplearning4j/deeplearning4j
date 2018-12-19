@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
@@ -231,7 +232,7 @@ public class While extends DifferentialFunction implements CustomOp {
             val vars = new SDVariable[tfNode.getInputCount()];
             for (int e = 0; e < tfNode.getInputCount(); e++) {
                 val input = TFGraphMapper.getInstance().getNodeName(tfNode.getInput(e));
-                vars[e] = initWith.getVariable(input) == null ? initWith.var(input,null,new ZeroInitScheme()) : initWith.getVariable(input);
+                vars[e] = initWith.getVariable(input) == null ? initWith.var(input, (LongShapeDescriptor) null,new ZeroInitScheme()) : initWith.getVariable(input);
                 scopeCondition.var(vars[e]);
                 scopeLoop.var(vars[e]);
             }
@@ -246,12 +247,12 @@ public class While extends DifferentialFunction implements CustomOp {
             val tfNode = nodes.get(currIndex.get());
 
             if (!tfNode.getOp().equalsIgnoreCase("merge")) {
-                scopeLoop.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()),null,new ZeroInitScheme());
+                scopeLoop.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()), (LongShapeDescriptor) null,new ZeroInitScheme());
                 break;
             }
 
             skipSet.add(tfNode.getName());
-            val var = scopeLoop.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()),null,new ZeroInitScheme());
+            val var = scopeLoop.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()), (LongShapeDescriptor)null,new ZeroInitScheme());
             scopeCondition.var(var);
             initWith.var(var);
             mergedCnt++;
@@ -275,7 +276,7 @@ public class While extends DifferentialFunction implements CustomOp {
 
 
             if (isConst || isVar || isPlaceholder) {
-                val var = scopeCondition.var(tfNode.getName(),null,new ZeroInitScheme());
+                val var = scopeCondition.var(tfNode.getName(), (LongShapeDescriptor) null,new ZeroInitScheme());
                 scopeLoop.var(var);
                 initWith.var(var);
                 log.info("Adding condition var [{}]", var.getVarName());
@@ -326,7 +327,7 @@ public class While extends DifferentialFunction implements CustomOp {
             for(int i = 0; i < tfNode.getInputCount(); i++) {
                 val testVar = initWith.getVariable(TFGraphMapper.getInstance().getNodeName(tfNode.getInput(i)));
                 if(testVar == null) {
-                    variables[i] = initWith.var(tfNode.getInput(i),null,new ZeroInitScheme());
+                    variables[i] = initWith.var(tfNode.getInput(i), (LongShapeDescriptor) null,new ZeroInitScheme());
                     scopeCondition.var(variables[i]);
                     scopeLoop.var(variables[i]);
                     continue;
@@ -372,7 +373,7 @@ public class While extends DifferentialFunction implements CustomOp {
 
 
             if (isConst || isVar || isPlaceholder) {
-                val var = scopeLoop.var(tfNode.getName(), null,new ZeroInitScheme());
+                val var = scopeLoop.var(tfNode.getName(), (LongShapeDescriptor) null,new ZeroInitScheme());
                 log.info("Adding body var [{}]",var.getVarName());
 
             } else {
@@ -429,7 +430,7 @@ public class While extends DifferentialFunction implements CustomOp {
             skipSet.add(tfNode.getName());
 
             val inputName = TFGraphMapper.getInstance().getNodeName(tfNode.getName());
-            val input = initWith.getVariable(inputName) == null ? initWith.var(inputName,null,new ZeroInitScheme()) : initWith.getVariable(inputName) ;
+            val input = initWith.getVariable(inputName) == null ? initWith.var(inputName, (LongShapeDescriptor) null,new ZeroInitScheme()) : initWith.getVariable(inputName) ;
             returnInputs.add(input);
         }
 
@@ -451,7 +452,7 @@ public class While extends DifferentialFunction implements CustomOp {
 
             skipSet.add(tfNode.getName());
             val inputName = TFGraphMapper.getInstance().getNodeName(tfNode.getName());
-            val input = initWith.getVariable(inputName) == null ? initWith.var(inputName,null,new ZeroInitScheme()) : initWith.getVariable(inputName) ;
+            val input = initWith.getVariable(inputName) == null ? initWith.var(inputName, (LongShapeDescriptor) null,new ZeroInitScheme()) : initWith.getVariable(inputName) ;
         }
 
 
@@ -559,6 +560,11 @@ public class While extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public int numBArguments() {
+        return 0;
+    }
+
+    @Override
     public void addInputArgument(INDArray... arg) {
 
     }
@@ -566,6 +572,21 @@ public class While extends DifferentialFunction implements CustomOp {
     @Override
     public void removeInputArgument(INDArray arg) {
 
+    }
+
+    @Override
+    public boolean[] bArgs() {
+        return new boolean[0];
+    }
+
+    @Override
+    public void addBArgument(boolean... arg) {
+
+    }
+
+    @Override
+    public Boolean getBArgument(int index) {
+        return null;
     }
 
     @Override
@@ -598,10 +619,10 @@ public class While extends DifferentialFunction implements CustomOp {
         return 0;
     }
     @Override
-    public List<long[]> calculateOutputShape() {
-        List<long[]> ret =  new ArrayList<>();
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        List<LongShapeDescriptor> ret =  new ArrayList<>();
         for(SDVariable var : args()) {
-            ret.add(sameDiff.getShapeForVarName(var.getVarName()));
+            ret.add(sameDiff.getShapeDescriptorForVarName(var.getVarName()));
         }
         return ret;
     }

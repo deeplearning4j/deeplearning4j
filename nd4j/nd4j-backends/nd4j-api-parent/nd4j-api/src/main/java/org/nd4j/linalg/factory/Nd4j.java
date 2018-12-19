@@ -21,24 +21,23 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import lombok.NonNull;
 import lombok.val;
+import lombok.var;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang3.ArrayUtils;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.HalfIndexer;
-import org.bytedeco.javacpp.indexer.Indexer;
-import org.nd4j.autodiff.samediff.SameDiff;
+import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.graph.FlatArray;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -46,6 +45,7 @@ import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
 import org.nd4j.linalg.api.ndarray.*;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -59,15 +59,17 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
-import org.nd4j.linalg.api.ops.impl.transforms.OldReverse;
-import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
+import org.nd4j.linalg.api.ops.impl.transforms.same.OldReverse;
+import org.nd4j.linalg.api.ops.impl.scalar.ReplaceNans;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
 import org.nd4j.linalg.api.rng.distribution.factory.DistributionFactory;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.cache.BasicConstantHandler;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.compression.BasicNDArrayCompressor;
@@ -77,6 +79,7 @@ import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
 import org.nd4j.linalg.env.EnvironmentalAction;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4JUnknownDataTypeException;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
@@ -99,6 +102,7 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 /**
@@ -145,7 +149,7 @@ public class Nd4j {
     public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
 
     //the datatype used for allocating buffers
-    protected static DataBuffer.Type dtype = DataBuffer.Type.FLOAT;
+    protected static DataType dtype = DataType.FLOAT;
     //the allocation mode for the heap
     public static DataBuffer.AllocationMode alloc = DataBuffer.AllocationMode.HEAP;
     public static char ORDER = 'c';
@@ -165,6 +169,7 @@ public class Nd4j {
     private static MemoryWorkspaceManager workspaceManager;
     private static final AtomicInteger numThreads = new AtomicInteger(-1);
     private static final AtomicBoolean skipTheadSafetyChecks = new AtomicBoolean(false);
+    private static AtomicReference<DataType> defaultFloatingPointDataType;
 
     protected static Class<? extends MemoryWorkspaceManager> workspaceManagerClazz;
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
@@ -370,7 +375,7 @@ public class Nd4j {
         if (axis < 0)
             axis = axis + arr.shape().length;
         paShape[axis] = padAmount;
-        INDArray concatArray = Nd4j.valueArrayOf(paShape, val);
+        INDArray concatArray = Nd4j.valueArrayOf(paShape, val, arr.dataType());
         return Nd4j.concat(axis, arr, concatArray);
     }
 
@@ -392,7 +397,7 @@ public class Nd4j {
         if (axis < 0)
             axis = axis + arr.shape().length;
         paShape[axis] = padAmount;
-        INDArray concatArr = Nd4j.valueArrayOf(paShape, val);
+        INDArray concatArr = Nd4j.valueArrayOf(paShape, val, arr.dataType());
         return Nd4j.concat(axis, concatArr, arr);
     }
 
@@ -621,6 +626,17 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray create(LongShapeDescriptor descriptor) {
+        return create(descriptor, true);
+    }
+
+    public static INDArray create(LongShapeDescriptor descriptor, boolean initialize) {
+        if (initialize)
+            return create(descriptor.dataType(), descriptor.getShape(), descriptor.getStride(), descriptor.getOrder());
+        else
+            return createUninitialized(descriptor.dataType(), descriptor.getShape(), descriptor.getOrder());
+    }
+
     /**
      * Create an ndarray based on the given data
      * @param sliceShape the shape of each slice
@@ -674,7 +690,7 @@ public class Nd4j {
         int index = 0;
         for (Collection<INDArray> matrixCollection : matrices) {
             for (INDArray matrix : matrixCollection) {
-                INDArray linear = matrix.linearView();
+                INDArray linear = matrix.reshape(-1);
                 for (int i = 0; i < matrix.length(); i++) {
                     linear.putScalar(i, theta.getDouble(index));
                     index++;
@@ -994,7 +1010,7 @@ public class Nd4j {
         int index = 0;
         for (Iterator<? extends INDArray> matrixIterator : matrices) {
             while (matrixIterator.hasNext()) {
-                INDArray matrix = matrixIterator.next().linearView();
+                INDArray matrix = matrixIterator.next().reshape(-1);
                 for (int i = 0; i < matrix.length(); i++) {
                     matrix.putScalar(i, theta.getDouble(index));
                     index++;
@@ -1144,9 +1160,9 @@ public class Nd4j {
      * @param type  the opType to create
      * @return the created buffer
      */
-    public static DataBuffer createBuffer(int[] shape, DataBuffer.Type type, long offset) {
+    public static DataBuffer createBuffer(int[] shape, DataType type, long offset) {
         int length = ArrayUtil.prod(shape);
-        return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length], offset)
+        return type == DataType.DOUBLE ? createBuffer(new double[length], offset)
                 : createBuffer(new float[length], offset);
     }
 
@@ -1161,7 +1177,7 @@ public class Nd4j {
      * @param length the length of the buffer
      * @return
      */
-    public static DataBuffer createBuffer(ByteBuffer buffer, DataBuffer.Type type, int length, long offset) {
+    public static DataBuffer createBuffer(ByteBuffer buffer, DataType type, int length, long offset) {
         switch (type) {
             case INT:
                 return DATA_BUFFER_FACTORY_INSTANCE.createInt(offset, buffer, length);
@@ -1183,7 +1199,7 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(byte[] data, int length, long offset) {
         DataBuffer ret;
-        if (dataType() == DataBuffer.Type.DOUBLE)
+        if (dataType() == DataType.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data, length);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data, length);
@@ -1198,8 +1214,7 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(int[] data, long offset) {
-        DataBuffer ret;
-        ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(offset, data);
+        DataBuffer ret = createTypedBuffer(data, DataType.INT, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1212,13 +1227,13 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(int length, long offset) {
         DataBuffer ret;
-        if (dataType() == DataBuffer.Type.FLOAT)
+        if (dataType() == DataType.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, length);
-        else if (dataType() == DataBuffer.Type.INT)
+        else if (dataType() == DataType.INT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(offset, length);
-        else if (dataType() == DataBuffer.Type.DOUBLE)
+        else if (dataType() == DataType.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, length);
-        else if (dataType() == DataBuffer.Type.HALF)
+        else if (dataType() == DataType.HALF)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, length);
         else
             ret = null;
@@ -1228,40 +1243,67 @@ public class Nd4j {
         return ret;
     }
 
-    /**
-     * Create a double data opType buffer
-     * of the specified length
-     * @param doublePointer
-     * @param length
-     * @return
-     */
-    public static DataBuffer createBuffer(DoublePointer doublePointer, long length) {
-        return DATA_BUFFER_FACTORY_INSTANCE.create(doublePointer, length);
+    protected static Indexer getIndexerByType(Pointer pointer, DataType dataType) {
+        switch (dataType) {
+            case LONG:
+                return LongIndexer.create((LongPointer) pointer);
+            case INT:
+                return IntIndexer.create((IntPointer) pointer);
+            case SHORT:
+                return ShortIndexer.create((ShortPointer) pointer);
+            case BYTE:
+                return ByteIndexer.create((BytePointer) pointer);
+            case UBYTE:
+                return UByteIndexer.create((BytePointer) pointer);
+            case BOOL:
+                return BooleanIndexer.create((BooleanPointer) pointer);
+            case FLOAT:
+                return FloatIndexer.create((FloatPointer) pointer);
+            case HALF:
+                return HalfIndexer.create((ShortPointer) pointer);
+            case DOUBLE:
+                return DoubleIndexer.create((DoublePointer) pointer);
+            default:
+                throw new UnsupportedOperationException();
+        }
     }
 
 
-    /**
-     * Create a float opType
-     * data buffer of the given length
-     * @param floatPointer
-     * @param length
-     * @return
-     */
-    public static DataBuffer createBuffer(FloatPointer floatPointer, long length) {
-        return DATA_BUFFER_FACTORY_INSTANCE.create(floatPointer, length);
-    }
+    public static DataBuffer createBuffer(@NonNull Pointer pointer, long length, @NonNull DataType dataType) {
+        Pointer nPointer = null;
+        switch (dataType) {
+            case LONG:
+                nPointer =  new LongPointer(pointer);
+                break;
+            case INT:
+                nPointer =  new IntPointer(pointer);
+                break;
+            case SHORT:
+                nPointer =  new ShortPointer(pointer);
+                break;
+            case BYTE:
+                nPointer =  new BytePointer(pointer);
+                break;
+            case UBYTE:
+                nPointer =  new BytePointer(pointer);
+                break;
+            case BOOL:
+                nPointer =  new BooleanPointer(pointer);
+                break;
+            case FLOAT:
+                nPointer =  new FloatPointer(pointer);
+                break;
+            case HALF:
+                nPointer =  new ShortPointer(pointer);
+                break;
+            case DOUBLE:
+                nPointer =  new DoublePointer(pointer);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType);
+        }
 
-
-    /**
-     * Create an int data buffer
-     * from the given pointer
-     * and the given length
-     * @param intPointer
-     * @param length
-     * @return
-     */
-    public static DataBuffer createBuffer(IntPointer intPointer, long length) {
-        return DATA_BUFFER_FACTORY_INSTANCE.create(intPointer, length);
+        return DATA_BUFFER_FACTORY_INSTANCE.create(nPointer, dataType, length, getIndexerByType(nPointer, dataType));
     }
 
     /**
@@ -1271,13 +1313,8 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(float[] data, long offset) {
-        DataBuffer ret;
-        if (dataType() == DataBuffer.Type.FLOAT)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (dataType() == DataBuffer.Type.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data)) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data), Nd4j.getMemoryManager().getCurrentWorkspace());
+        val ndata = Arrays.copyOfRange(data, (int) offset, data.length);
+        DataBuffer ret = createTypedBuffer(ndata, DataType.FLOAT, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1289,13 +1326,8 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(double[] data, long offset) {
-        DataBuffer ret;
-        if (dataType() == DataBuffer.Type.DOUBLE)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (dataType() == DataBuffer.Type.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
-        else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, ArrayUtil.toFloats(data)) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
+        val ndata = Arrays.copyOfRange(data, (int) offset, data.length);
+        DataBuffer ret = createTypedBuffer(ndata, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1309,60 +1341,74 @@ public class Nd4j {
      * @param type  the opType to create
      * @return the created buffer
      */
-    public static DataBuffer createBuffer(int[] shape, DataBuffer.Type type) {
+    public static DataBuffer createBuffer(int[] shape, DataType type) {
         long length = ArrayUtil.prodLong(shape);
 
-        if (type == DataBuffer.Type.INT)
+        if (type == DataType.INT)
             return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createInt(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createInt(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (type == DataBuffer.Type.LONG)
+        else if (type == DataType.LONG)
             return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createLong(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createLong(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (type == DataBuffer.Type.HALF)
+        else if (type == DataType.HALF)
             return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (type == DataBuffer.Type.DOUBLE)
+        else if (type == DataType.DOUBLE)
             return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
         else
             return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
 
-    public static DataBuffer createBufferDetached(int[] shape, DataBuffer.Type type) {
+    public static DataBuffer createBufferDetached(int[] shape, DataType type) {
         long length = ArrayUtil.prodLong(shape);
-        if (type == DataBuffer.Type.INT)
+        if (type == DataType.INT)
             return DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
-        if (type == DataBuffer.Type.LONG)
+        if (type == DataType.LONG)
             return DATA_BUFFER_FACTORY_INSTANCE.createLong(new long[]{length});
-        else if (type == DataBuffer.Type.HALF)
+        else if (type == DataType.HALF)
             return DATA_BUFFER_FACTORY_INSTANCE.createHalf(length);
 
-        return type == DataBuffer.Type.DOUBLE ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
+        return type == DataType.DOUBLE ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
     }
 
-    public static DataBuffer createBuffer(long[] shape, DataBuffer.Type type) {
+    public static DataBuffer createBuffer(long[] shape, DataType type) {
         long length = ArrayUtil.prodLong(shape);
 
-        if (type == DataBuffer.Type.INT)
+        if (type == DataType.INT)
             return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createInt(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createInt(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (type == DataBuffer.Type.LONG)
+        else if (type == DataType.LONG)
             return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createLong(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createLong(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (type == DataBuffer.Type.HALF)
+        else if (type == DataType.HALF)
             return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (type == DataBuffer.Type.DOUBLE)
+        else if (type == DataType.DOUBLE)
             return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
         else
             return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, true) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, true, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
 
-    public static DataBuffer createBufferDetached(long[] shape, DataBuffer.Type type) {
+    public static DataBuffer createBufferDetached(long[] shape, DataType type) {
         long length = ArrayUtil.prodLong(shape);
-        if (type == DataBuffer.Type.INT)
-            return DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
-        else if (type == DataBuffer.Type.LONG)
-            return DATA_BUFFER_FACTORY_INSTANCE.createLong(length);
-        else if (type == DataBuffer.Type.HALF)
-            return DATA_BUFFER_FACTORY_INSTANCE.createHalf(length);
+        switch (type){
 
-        return type == DataBuffer.Type.DOUBLE ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
+            case DOUBLE:
+                DATA_BUFFER_FACTORY_INSTANCE.createDouble(length);
+            case FLOAT:
+                DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
+            case HALF:
+                return DATA_BUFFER_FACTORY_INSTANCE.createHalf(length);
+            case LONG:
+                return DATA_BUFFER_FACTORY_INSTANCE.createLong(length);
+            case INT:
+                return DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
+            case SHORT:
+            case UBYTE:
+            case BYTE:
+            case BOOL:
+            case UTF8:
+            case COMPRESSED:
+            case UNKNOWN:
+            default:
+                throw new UnsupportedOperationException("Cannot create type: " + type);
+        }
     }
 
     /**
@@ -1376,7 +1422,7 @@ public class Nd4j {
      * @param length the length of the buffer
      * @return
      */
-    public static DataBuffer createBuffer(ByteBuffer buffer, DataBuffer.Type type, int length) {
+    public static DataBuffer createBuffer(ByteBuffer buffer, DataType type, int length) {
         switch (type) {
             case INT:
                 return DATA_BUFFER_FACTORY_INSTANCE.createInt(buffer, length);
@@ -1402,9 +1448,9 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(byte[] data, int length) {
         DataBuffer ret;
-        if (dataType() == DataBuffer.Type.DOUBLE)
+        if (dataType() == DataType.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data, length);
-        else if (dataType() == DataBuffer.Type.HALF)
+        else if (dataType() == DataType.HALF)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data, length);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data, length);
@@ -1484,7 +1530,7 @@ public class Nd4j {
      * @param  indexer the indexer to use
      * @return the data buffer based on the given parameters
      */
-    public static DataBuffer createBuffer(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer) {
+    public static DataBuffer createBuffer(Pointer pointer, DataType type, long length, Indexer indexer) {
         return DATA_BUFFER_FACTORY_INSTANCE.create(pointer, type, length, indexer);
     }
 
@@ -1495,18 +1541,18 @@ public class Nd4j {
      * @return
      */
     public static DataBuffer createBuffer(long length, boolean initialize) {
-        DataBuffer ret;
-        if (dataType() == DataBuffer.Type.FLOAT)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (dataType() == DataBuffer.Type.INT)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(length, initialize);
-        else if (dataType() == DataBuffer.Type.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
+        DataBuffer ret = createBuffer(Nd4j.dataType(), length, initialize);
 
         logCreationIfNecessary(ret);
         return ret;
+    }
+
+    public static DataBuffer createBuffer(DataType dataType, long length, boolean initialize) {
+        return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType,length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+    public static DataBuffer createBuffer(DataType dataType, long length, boolean initialize, MemoryWorkspace workspace) {
+        return workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType,length, initialize, workspace);
     }
 
     /**
@@ -1517,36 +1563,36 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(float[] data) {
         DataBuffer ret;
-        if (dataType() == DataBuffer.Type.FLOAT)
+        //if (dataType() == DataType.FLOAT)
             ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(data) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (dataType() == DataBuffer.Type.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data): DATA_BUFFER_FACTORY_INSTANCE.createHalf(data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data)) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data), Nd4j.getMemoryManager().getCurrentWorkspace()) ;
+        //else if (dataType() == DataType.HALF)
+//            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data): DATA_BUFFER_FACTORY_INSTANCE.createHalf(data, Nd4j.getMemoryManager().getCurrentWorkspace());
+//        else
+//            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data)) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data), Nd4j.getMemoryManager().getCurrentWorkspace()) ;
         logCreationIfNecessary(ret);
         return ret;
     }
 
     public static DataBuffer createBufferDetached(float[] data) {
         DataBuffer ret;
-        if (dataType() == DataBuffer.Type.FLOAT)
+        //if (dataType() == DataType.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data);
-        else if (dataType() == DataBuffer.Type.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data);
-        else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data));
+        //else if (dataType() == DataType.HALF)
+//            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data);
+//        else
+//            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data));
         logCreationIfNecessary(ret);
         return ret;
     }
 
     public static DataBuffer createBufferDetached(double[] data) {
         DataBuffer ret;
-        if (dataType() == DataBuffer.Type.DOUBLE)
+        //if (dataType() == DataType.DOUBLE)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
-        else if (dataType() == DataBuffer.Type.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data));
-        else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data));
+        //else if (dataType() == DataType.HALF)
+//            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data));
+//        else
+//            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data));
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1559,16 +1605,151 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(double[] data) {
         DataBuffer ret;
-        if (dataType() == DataBuffer.Type.DOUBLE)
+        //if (dataType() == DataType.DOUBLE)
             ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(data) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (dataType() == DataBuffer.Type.HALF)
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
-        else
-            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data)) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
-        logCreationIfNecessary(ret);
+        //else if (dataType() == DataType.HALF)
+//            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
+//        else
+//            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data)) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
+//        logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     * This method creates
+     * @param data
+     * @param dataType
+     * @return
+     */
+    public static DataBuffer createTypedBuffer(double[] data, DataType dataType) {
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(float[] data, DataType dataType) {
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(int[] data, DataType dataType) {
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(long[] data, DataType dataType) {
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(short[] data, DataType dataType) {
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(byte[] data, DataType dataType) {
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(boolean[] data, DataType dataType) {
+        val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        buffer.setData(data);
+        return buffer;
+    }
+
+    ////////////////
+
+    public static DataBuffer createTypedBuffer(double[] data, DataType dataType, MemoryWorkspace workspace) {
+        val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(float[] data, DataType dataType, MemoryWorkspace workspace) {
+        val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(int[] data, DataType dataType, MemoryWorkspace workspace) {
+        val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(long[] data, DataType dataType, MemoryWorkspace workspace) {
+        val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(short[] data, DataType dataType, MemoryWorkspace workspace) {
+        val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(byte[] data, DataType dataType, MemoryWorkspace workspace) {
+        val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(boolean[] data, DataType dataType, MemoryWorkspace workspace) {
+        val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    ////////////////
+
+    public static DataBuffer createTypedBufferDetached(double[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBufferDetached(float[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBufferDetached(int[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBufferDetached(long[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBufferDetached(short[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBufferDetached(byte[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBufferDetached(boolean[] data, DataType dataType) {
+        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        buffer.setData(data);
+        return buffer;
+    }
 
     public static void setFactory(NDArrayFactory factory) {
         INSTANCE = factory;
@@ -1592,16 +1773,37 @@ public class Nd4j {
      *
      * @return the datatype used for the runtime
      */
-    public static DataBuffer.Type dataType() {
+    public static DataType dataType() {
         return DataTypeUtil.getDtypeFromContext();
     }
 
     /**
-     * This method sets dataType for the current JVM runtime
-     * @param dType
+     * DEPRECATED - use {@link #setDefaultDataTypes(DataType, DataType)}
+     * This method sets dataType for the current JVM.
+     * @param dType Data type to set
+     * @deprecated use {@link #setDefaultDataTypes(DataType, DataType)}. Equivalent to {@code setDefaultDataTypes(dtype, (dtype.isFPType() ? dtype : defaultFloatingPointType()))}
      */
-    public static void setDataType(@NonNull DataBuffer.Type dType) {
-        DataTypeUtil.setDTypeForContext(dType);
+    @Deprecated
+    public static void setDataType(@NonNull DataType dtype) {
+        setDefaultDataTypes(dtype, (dtype.isFPType() ? dtype : defaultFloatingPointType()));
+    }
+
+    /**
+     * Set the default data types.<br>
+     * The default data types are used for array creation methods where no data type is specified.<br>
+     * When the user explicitly provides a datatype (such as in Nd4j.ones(DataType.FLOAT, 1, 10)) these default values
+     * will not be used.<br>
+     * defaultType: used in methods such as Nd4j.ones(1,10) and Nd4j.zeros(10).<br>
+     * defaultFloatingPointType: used internally where a floating point array needs to be created, but no datatype is specified.
+     * defaultFloatingPointType must be one of DOUBLE, FLOAT or HALF
+     *
+     * @param defaultType              Default datatype for new arrays (used when no type is specified).
+     * @param defaultFloatingPointType Default datatype for new floating point arrays (used when no type is specified. Must be one of DOUBLE, FLOAT or HALF
+     */
+    public static void setDefaultDataTypes(@NonNull DataType defaultType, @NonNull DataType defaultFloatingPointType){
+        Preconditions.checkArgument(defaultFloatingPointType.isFPType(), "Invalid default floating point type: %s is not a floating point type", defaultFloatingPointType);
+        DataTypeUtil.setDTypeForContext(defaultType);
+        Nd4j.defaultFloatingPointDataType.set(defaultFloatingPointType);
     }
 
     /**
@@ -1832,7 +2034,7 @@ public class Nd4j {
      * @param num   the step size
      * @return the linearly spaced vector
      */
-    public static INDArray linspace(long lower, long upper, long num) {
+    public static INDArray linspace(long lower, long upper, long num, @NonNull DataType dtype) {
         // for now we'll temporarily keep original impl
         if(lower == upper && num == 1) {
             return Nd4j.scalar(lower);
@@ -1842,15 +2044,19 @@ public class Nd4j {
         double approx = (double) num / ((double) (upper - lower) + 1);
         if (approx % 1 <= EPS_THRESHOLD) {
             // FIXME: int cast
-            return INSTANCE.linspace((int) lower, (int) upper, (int) num);
+            return INSTANCE.linspace((int) lower, (int) upper, (int) num, dtype);
         } else {
-            return linspace((double) lower, (double) upper, (int) num);
+            return linspace((double) lower, (double) upper, (int) num, dtype);
         }
     }
 
 
+    public static INDArray linspace(long lower, long upper, long num) {
+        return linspace(lower, upper, num, Nd4j.dataType());
+    }
+
     /**
-     * Generate a linearly spaced vector
+     * Generate a linearly spaced 1d vector of the default floating point datatype
      *
      * @param lower upper bound
      * @param upper lower bound
@@ -1858,8 +2064,21 @@ public class Nd4j {
      * @return the linearly spaced vector
      */
     public static INDArray linspace(double lower, double upper, long num) {
+        return linspace(lower, upper, num, Nd4j.defaultFloatingPointType());
+    }
+
+
+    /**
+     * Generate a linearly spaced 1d vector of the specified datatype
+     *
+     * @param lower upper bound
+     * @param upper lower bound
+     * @param num   the step size
+     * @return the linearly spaced vector
+     */
+    public static INDArray linspace(double lower, double upper, long num, DataType dataType) {
         // FIXME: int cast
-        return Nd4j.getExecutioner().exec(new Linspace(lower, upper, (int) num));
+        return Nd4j.getExecutioner().exec(new Linspace(lower, upper, (int) num, dataType));
     }
 
     /**
@@ -1870,8 +2089,8 @@ public class Nd4j {
      * @param num   the step size
      * @return the linearly spaced vector
      */
-    public static INDArray linspace(float lower, float upper, long num) {
-        return linspace((double) lower, (double) upper, num);
+    public static INDArray linspace(float lower, float upper, long num, DataType dataType) {
+        return linspace((double) lower, (double) upper, num, dataType);
     }
 
     /**
@@ -2199,16 +2418,31 @@ public class Nd4j {
 
 
         }
-        ret = Nd4j.create(data2.size(), numColumns);
-        for (int i = 0; i < data2.size(); i++)
-            ret.putRow(i, Nd4j.create(Nd4j.createBuffer(data2.get(i))));
+        ret = Nd4j.create(Nd4j.defaultFloatingPointType(), data2.size(), numColumns);
+        for (int i = 0; i < data2.size(); i++) {
+            float[] row = data2.get(i);
+            INDArray arr = Nd4j.create(row, new long[]{1, row.length}, Nd4j.defaultFloatingPointType());
+            ret.putRow(i, arr);
+        }
         return ret;
     }
 
     private static float[] readSplit(String[] split) {
         float[] ret = new float[split.length];
         for (int i = 0; i < split.length; i++) {
-            ret[i] = Float.parseFloat(split[i]);
+            try {
+                ret[i] = Float.parseFloat(split[i]);
+            } catch (NumberFormatException e) {
+                if (split[i].equalsIgnoreCase("inf")) {
+                    ret[i] = Float.POSITIVE_INFINITY;
+                } else if (split[i].equalsIgnoreCase("-inf")) {
+                    ret[i] = Float.NEGATIVE_INFINITY;
+                } else if (split[i].equalsIgnoreCase("nan")) {
+                    ret[i] = Float.NaN;
+                } else
+                    throw new RuntimeException(e);
+
+            }
         }
         return ret;
     }
@@ -2224,7 +2458,9 @@ public class Nd4j {
      * @return the read txt method
      */
     public static INDArray readNumpy(String filePath, String split) throws IOException {
-        return readNumpy(new FileInputStream(filePath), split);
+        try(InputStream is = new FileInputStream(filePath)) {
+            return readNumpy(is, split);
+        }
     }
 
     /**
@@ -2275,7 +2511,7 @@ public class Nd4j {
             int tensorNum = 0;
             char theOrder = 'c';
             int rank = 0;
-            int[] theShape = null;
+            long[] theShape = null;
             double[] subsetArr = null;
             while (it.hasNext()) {
                 String line = it.nextLine();
@@ -2300,22 +2536,22 @@ public class Nd4j {
                 if (lineNum == 4) {
                     String shapeString = line.split(":")[1].replace("[", "").replace("],", "");
                     if (shapeString.isEmpty()) {
-                        newArr = Nd4j.trueScalar(0);
+                        newArr = Nd4j.scalar(Nd4j.defaultFloatingPointType(), 0);
                     } else {
                         String[] shapeArr = shapeString.split(",");
                         rank = shapeArr.length;
-                        theShape = new int[rank];
+                        theShape = new long[rank];
                         for (int i = 0; i < rank; i++) {
                             theShape[i] = Integer.parseInt(shapeArr[i]);
                         }
                         if (theOrder == 'f' && theShape[rank-1] == 1) {
                             //Hack fix for tad issue with 'f' order and rank-1 dim shape == 1
-                            newArr = Nd4j.zeros(theShape, 'c');
+                            newArr = Nd4j.create(Nd4j.defaultFloatingPointType(), theShape, 'c');
                         }
                         else {
-                            newArr = Nd4j.zeros(theShape, theOrder);
+                            newArr = Nd4j.create(Nd4j.defaultFloatingPointType(), theShape, theOrder);
                         }
-                        subsetArr = new double[theShape[rank - 1]];
+                        subsetArr = new double[(int) theShape[rank - 1]];
                     }
                     continue;
                 }
@@ -2339,7 +2575,7 @@ public class Nd4j {
                                 e.printStackTrace();
                             }
                         }
-                        INDArray subTensor = Nd4j.create(subsetArr);
+                        INDArray subTensor = Nd4j.create(subsetArr, new long[]{subsetArr.length}, Nd4j.defaultFloatingPointType());
                         newArr.tensorAlongDimension(tensorNum, rank - 1).addi(subTensor);
                         tensorNum++;
                     }
@@ -2401,10 +2637,14 @@ public class Nd4j {
      * @return
      */
     public static INDArray createArrayFromShapeBuffer(DataBuffer data, DataBuffer shapeInfo) {
-        int rank = Shape.rank(shapeInfo);
+        val jvmShapeInfo = shapeInfo.asLong();
+        val rank = Shape.rank(jvmShapeInfo);
+        val dataType = ArrayOptionsHelper.dataType(jvmShapeInfo);
+        val shape = Shape.shape(jvmShapeInfo);
+        val strides = Shape.stridesOf(jvmShapeInfo);
+        val order = Shape.order(jvmShapeInfo);
         long offset = 0;
-        INDArray result = Nd4j.create(data, toIntArray(rank, Shape.shapeOf(shapeInfo)),
-                toIntArray(rank, Shape.stride(shapeInfo)), offset, Shape.order(shapeInfo));
+        INDArray result = Nd4j.create(data, shape, strides, 0, order, dataType);
         if (data instanceof CompressedDataBuffer)
             result.markAsCompressed(true);
 
@@ -2438,10 +2678,27 @@ public class Nd4j {
      * @throws IOException
      */
     public static INDArray read(DataInputStream dis) throws IOException {
-        DataBuffer shapeInformation = Nd4j.createBufferDetached(new long[1], DataBuffer.Type.LONG);
-        shapeInformation.read(dis);
+        val headerShape = BaseDataBuffer.readHeader(dis);
+
+        var shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle().longValue()}, headerShape.getRight());
+        shapeInformation.read(dis, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getThird());
         val length = Shape.length(shapeInformation);
-        DataBuffer data = CompressedDataBuffer.readUnknown(dis, length);
+        DataType type = null;
+        DataBuffer data = null;
+
+        val headerData = BaseDataBuffer.readHeader(dis);
+        try {
+            // current version contains dtype in extras
+            data = CompressedDataBuffer.readUnknown(dis, headerData.getFirst(), headerData.getMiddle(), headerData.getRight());
+            type = ArrayOptionsHelper.dataType(shapeInformation.asLong());
+        } catch (ND4JUnknownDataTypeException e) {
+            // manually setting data type
+            type = headerData.getRight();
+            long extras = ArrayOptionsHelper.setOptionBit(0L, type);
+            shapeInformation.put(shapeInformation.length() - 3, extras);
+        }
+
+
         return createArrayFromShapeBuffer(data, shapeInformation);
     }
 
@@ -2693,6 +2950,12 @@ public class Nd4j {
         return rand(ret);
     }
 
+    public static INDArray rand(DataType dataType, long... shape) {
+        INDArray ret = createUninitialized(dataType, shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
+        logCreationIfNecessary(ret);
+        return rand(ret);
+    }
+
     /**
      * Create a random ndarray with the given shape and array order
      *
@@ -2702,6 +2965,24 @@ public class Nd4j {
      */
     public static INDArray rand(char order, int[] shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order); //INSTANCE.rand(order, shape);
+        logCreationIfNecessary(ret);
+        return rand(ret);
+    }
+
+    public static INDArray rand(DataType dataType, char order, int[] shape) {
+        INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), order); //INSTANCE.rand(order, shape);
+        logCreationIfNecessary(ret);
+        return rand(ret);
+    }
+
+    public static INDArray rand(DataType dataType, int[] shape, char order) {
+        INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), order); //INSTANCE.rand(order, shape);
+        logCreationIfNecessary(ret);
+        return rand(ret);
+    }
+
+    public static INDArray rand(DataType dataType, int[] shape) {
+        INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), Nd4j.order()); //INSTANCE.rand(order, shape);
         logCreationIfNecessary(ret);
         return rand(ret);
     }
@@ -2889,7 +3170,13 @@ public class Nd4j {
         return randn(ret);
     }
 
-    public static INDArray randn(long[] shape) {
+    public static INDArray randn(DataType dataType, long... shape) {
+        INDArray ret = Nd4j.createUninitialized(dataType, shape, order());
+        logCreationIfNecessary(ret);
+        return randn(ret);
+    }
+
+    public static INDArray randn(long... shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order());
         logCreationIfNecessary(ret);
         return randn(ret);
@@ -2915,6 +3202,12 @@ public class Nd4j {
      */
     public static INDArray randn(char order, long[] shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order);
+        logCreationIfNecessary(ret);
+        return randn(ret);
+    }
+
+    public static INDArray randn(DataType dataType, char order, long[] shape) {
+        INDArray ret = Nd4j.createUninitialized(dataType, shape, order);
         logCreationIfNecessary(ret);
         return randn(ret);
     }
@@ -3193,6 +3486,10 @@ public class Nd4j {
         return create(data, order());
     }
 
+    public static INDArray create(boolean[] data) {
+        return INSTANCE.create(data, new long[]{data.length}, new long[]{1}, DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
 
     /**
      * Creates a row vector with the data
@@ -3203,7 +3500,7 @@ public class Nd4j {
     public static INDArray create(List<? extends Number> list) {
         INDArray array = create(list.size());
         int cnt = 0;
-        if (dataType() == DataBuffer.Type.DOUBLE) {
+        if (dataType() == DataType.DOUBLE) {
             for (Number element: list) {
                 array.putScalar(cnt++,element.doubleValue());
             }
@@ -3255,6 +3552,19 @@ public class Nd4j {
         return INSTANCE.create(data);
     }
 
+    public static INDArray create(long[][] data) {
+        val shape = new long[]{data.length, data[0].length};
+        return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.LONG, Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+    public static INDArray create(boolean[][] data) {
+        val shape = new long[]{data.length, data[0].length};
+        return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+    public static INDArray create(boolean[][] data, long[] shape) {
+        return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
 
     public static INDArray create(double[][][] data) {
         return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length});
@@ -3335,14 +3645,100 @@ public class Nd4j {
         if (columns < 1)
             throw new ND4JIllegalStateException("Number of columns should be positive for new INDArray");
 
-        INDArray ret = INSTANCE.create(new int[] {1, columns}, Nd4j.getStrides(new int[] {1, columns}, order), 0,
-                order);
+        INDArray ret = INSTANCE.create(new long[] {columns}, Nd4j.getStrides(new long[] {columns}, order), 0, order);
         logCreationIfNecessary(ret);
         return ret;
     }
 
     public static INDArray zeros(int columns, char order) {
         return Nd4j.create(columns, order);
+    }
+
+
+    public static INDArray create(int[] data, long[] shape, DataType type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(long[] data, long[] shape, DataType type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(double[] data, long[] shape, DataType type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(float[] data, long[] shape, DataType type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(short[] data, long[] shape, DataType type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(byte[] data, long[] shape, DataType type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(boolean[] data, long[] shape, DataType type) {
+        val ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    ////////////////////////////////////////////////
+
+    public static INDArray create(int[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(long[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(double[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(float[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(short[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(byte[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(boolean[] data, long[] shape, long[]strides, char order, DataType type) {
+        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
     }
 
     /**
@@ -3354,6 +3750,24 @@ public class Nd4j {
      */
     public static INDArray trueScalar(Number scalar) {
         val ret = INSTANCE.trueScalar(scalar);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray trueVector(boolean[] data) {
+        val ret = INSTANCE.trueVector(data);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray trueVector(long[] data) {
+        val ret = INSTANCE.trueVector(data);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray trueVector(int[] data) {
+        val ret = INSTANCE.trueVector(data);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3380,7 +3794,7 @@ public class Nd4j {
         return empty(Nd4j.dataType());
     }
 
-    public static INDArray empty(DataBuffer.Type type) {
+    public static INDArray empty(DataType type) {
         val ret = INSTANCE.empty(type);
         logCreationIfNecessary(ret);
         return ret;
@@ -3426,7 +3840,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape);
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, Nd4j.order()), DataType.FLOAT, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3445,7 +3859,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape);
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, Nd4j.order()), DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3467,7 +3881,8 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape);
+        val lshape = ArrayUtil.toLongArray(shape);
+        INDArray ret = INSTANCE.create(data, lshape, Nd4j.getStrides(lshape, Nd4j.order()), DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3493,7 +3908,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape, stride, offset);
+        INDArray ret = INSTANCE.create(data, ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3504,7 +3919,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape, stride, offset, order);
+        INDArray ret = INSTANCE.create(data, shape, stride, order, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3810,6 +4225,10 @@ public class Nd4j {
         return create(shape, order());
     }
 
+    public static INDArray create(DataType type, long... shape) {
+        return create(type, shape, order());
+    }
+
     /**
      *
      * @param data
@@ -3947,6 +4366,15 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering, DataType dataType) {
+        checkShapeValues(newShape);
+
+        INDArray ret = INSTANCE.create(data, newShape, newStride, offset, ordering, dataType);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+
     /**
      *
      * @param data
@@ -4007,17 +4435,17 @@ public class Nd4j {
      * @param dataType
      * @return
      */
-    public static INDArray create(int[] shape, DataBuffer.Type dataType) {
+    public static INDArray create(int[] shape, DataType dataType) {
         shape = getEnsuredShape(shape);
 
         checkShapeValues(shape);
 
-        INDArray ret = INSTANCE.create(shape, dataType);
+        INDArray ret = INSTANCE.create(shape, dataType, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
 
-    public static INDArray zeros(int[] shape, DataBuffer.Type dataType) {
+    public static INDArray zeros(int[] shape, DataType dataType) {
         return create(shape, dataType);
     }
 
@@ -4068,7 +4496,8 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape, ordering);
+        val lshape = ArrayUtil.toLongArray(shape);
+        INDArray ret = INSTANCE.create(data, lshape, Nd4j.getStrides(lshape, ordering), ordering, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4103,7 +4532,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape, 0, ordering);
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, ordering), ordering, DataType.FLOAT);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4113,7 +4542,7 @@ public class Nd4j {
 
         checkShapeValues(data.length, shape);
 
-        INDArray ret = INSTANCE.create(data, shape, 0, ordering);
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, ordering), ordering, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4376,6 +4805,29 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray create(DataType dataType, @NonNull long[] shape, long[] strides, char ordering) {
+        if(shape.length == 0)
+            return Nd4j.trueScalar(0.0);
+
+        checkShapeValues(shape);
+
+        INDArray ret = INSTANCE.create(dataType, shape, strides, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(@NonNull DataType dataType, @NonNull long[] shape, char ordering) {
+        if(shape.length == 0)
+            return Nd4j.scalar(dataType, 0.0);
+        //ensure shapes that wind up being scalar end up with the write shape
+
+        checkShapeValues(shape);
+
+        INDArray ret = INSTANCE.create(dataType, shape, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
 
     /**
      *
@@ -4444,6 +4896,27 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray createUninitialized(DataType type, long... shape) {
+        return createUninitialized(type, shape, Nd4j.order());
+    }
+
+    public static INDArray createUninitialized(DataType type, long[] shape, char ordering) {
+        if (shape.length == 0)
+            return scalar(type, 0);
+
+        shape = getEnsuredShape(shape);
+        // now we allow 1D vectors
+        /*else if (shape.length == 1) {
+            shape = new int[] {1, shape[0]};
+        }
+        */
+
+        checkShapeValues(shape);
+
+        INDArray ret = INSTANCE.createUninitialized(type, shape, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
 
     public static INDArray createUninitialized(long[] shape, char ordering) {
         if (shape.length == 0)
@@ -4785,6 +5258,14 @@ public class Nd4j {
         return INSTANCE.zeros(columns);
     }
 
+    public static INDArray zeros(DataType dataType, int columns) {
+        return INSTANCE.create(dataType, new long[]{columns}, 'c', Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+    public static INDArray zeros(DataType dataType, long... shape) {
+        return INSTANCE.create(dataType, shape, 'c', Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
     /**
      * Creates an ndarray with the specified value
      * as the  only value in the ndarray.
@@ -4822,6 +5303,30 @@ public class Nd4j {
 
         INDArray ret = INSTANCE.valueArrayOf(shape, value);
         logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray valueArrayOf(long[] shape, double value, DataType type) {
+        if (shape.length == 0)
+            return scalar(type, value);
+
+        checkShapeValues(shape);
+
+        INDArray ret = createUninitialized(type, shape);
+        logCreationIfNecessary(ret);
+        ret.assign(value);
+        return ret;
+    }
+
+    public static INDArray valueArrayOf(long[] shape, long value, DataType type) {
+        if (shape.length == 0)
+            return scalar(type, value);
+
+        checkShapeValues(shape);
+
+        INDArray ret = createUninitialized(type, shape);
+        logCreationIfNecessary(ret);
+        ret.assign(value);
         return ret;
     }
 
@@ -4873,6 +5378,13 @@ public class Nd4j {
         return ret;
     }
 
+    public static INDArray ones(DataType dataType, int rows, int columns) {
+        INDArray ret = INSTANCE.createUninitialized(dataType, new long[]{rows, columns}, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        ret.assign(1);
+        return ret;
+    }
+
     /**
      * Empty like
      *
@@ -4909,8 +5421,10 @@ public class Nd4j {
      * @param columns the columns of the ndarray
      * @return the created ndarray
      */
-    public static INDArray ones(int columns) {
-        INDArray ret = INSTANCE.ones(columns);
+
+    public static INDArray ones(DataType dataType, long... columns) {
+        INDArray ret = INSTANCE.createUninitialized(dataType, columns, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
+        ret.assign(1);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5295,49 +5809,17 @@ public class Nd4j {
     /**
      * Create a scalar ndarray with the specified offset
      *
-     * @param value  the value to initialize the scalar with
-     * @param offset the offset of the ndarray
-     * @return the created ndarray
-     */
-    public static INDArray scalar(Number value, long offset) {
-        return INSTANCE.scalar(value, offset);
-    }
-
-    /**
-     * Create a scalar nd array with the specified value and offset
-     *
-     * @param value  the value of the scalar
-     * @param offset the offset of the ndarray
-     * @return the scalar nd array
-     */
-    public static INDArray scalar(double value, long offset) {
-        INDArray ret = INSTANCE.scalar(value, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create a scalar nd array with the specified value and offset
-     *
-     * @param value  the value of the scalar
-     * @param offset the offset of the ndarray
-     * @return the scalar nd array
-     */
-    public static INDArray scalar(float value, long offset) {
-        INDArray ret = INSTANCE.scalar(value, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-
-    }
-
-    /**
-     * Create a scalar ndarray with the specified offset
-     *
      * @param value the value to initialize the scalar with
      * @return the created ndarray
      */
     public static INDArray scalar(Number value) {
-        INDArray ret = INSTANCE.scalar(value);
+        INDArray ret = INSTANCE.trueScalar(value);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray scalar(DataType dataType, Number value) {
+        INDArray ret = INSTANCE.trueScalar(dataType, value);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5349,7 +5831,7 @@ public class Nd4j {
      *              =     * @return the scalar nd array
      */
     public static INDArray scalar(double value) {
-        INDArray ret = INSTANCE.scalar(value);
+        INDArray ret = INSTANCE.trueScalar(value);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5361,9 +5843,13 @@ public class Nd4j {
      *              =     * @return the scalar nd array
      */
     public static INDArray scalar(float value) {
-        INDArray ret = INSTANCE.scalar(value);
+        INDArray ret = INSTANCE.trueScalar(value);
         logCreationIfNecessary(ret);
         return ret;
+    }
+
+    public static INDArray scalar(boolean value) {
+        return INSTANCE.trueScalar(DataType.BOOL, value ? 1 : 0);
     }
 
     /**
@@ -5478,6 +5964,8 @@ public class Nd4j {
      */
     public synchronized void initContext() {
         try {
+            defaultFloatingPointDataType = new AtomicReference<>();
+            defaultFloatingPointDataType.set(DataType.FLOAT);
             Nd4jBackend backend = Nd4jBackend.load();
             initWithBackend(backend);
         } catch (NoAvailableBackendException e) {
@@ -5509,10 +5997,10 @@ public class Nd4j {
             PropertyParser pp = new PropertyParser(props);
 
             String otherDtype = pp.toString(ND4JSystemProperties.DTYPE);
-            dtype = otherDtype.equalsIgnoreCase("float") ? DataBuffer.Type.FLOAT
-                    : otherDtype.equalsIgnoreCase("half") ? DataBuffer.Type.HALF : DataBuffer.Type.DOUBLE;
+            dtype = otherDtype.equalsIgnoreCase("float") ? DataType.FLOAT
+                    : otherDtype.equalsIgnoreCase("half") ? DataType.HALF : DataType.DOUBLE;
 
-            if (dtype == DataBuffer.Type.HALF && backend.getClass().getName().equals("CpuBackend")) {
+            if (dtype == DataType.HALF && backend.getClass().getName().equals("CpuBackend")) {
                 showAttractiveMessage(getMessageForNativeHalfPrecision());
             }
 
@@ -5585,7 +6073,7 @@ public class Nd4j {
 
             instrumentation = instrumentationClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
-            Constructor c2 = ndArrayFactoryClazz.getConstructor(DataBuffer.Type.class, char.class);
+            Constructor c2 = ndArrayFactoryClazz.getConstructor(DataType.class, char.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
             SPARSE_INSTANCE = sparseNDArrayClazz.newInstance();
             CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
@@ -5772,7 +6260,7 @@ public class Nd4j {
         return memoryManager;
     }
 
-    public static INDArray typeConversion(INDArray array, DataBuffer.TypeEx targetType) {
+    public static INDArray typeConversion(INDArray array, DataTypeEx targetType) {
         return null;
     }
 
@@ -5791,17 +6279,23 @@ public class Nd4j {
      * @param dtype number of bytes per element
      * @return
      */
-    public static int sizeOfDataType(DataBuffer.Type dtype) {
+    public static int sizeOfDataType(DataType dtype) {
         switch (dtype) {
-            case FLOAT:
-                return 4;
+            case BYTE:
+            case BOOL:
+            case UBYTE:
+                return 1;
+            case SHORT:
             case HALF:
                 return 2;
+            case FLOAT:
             case INT:
                 return 4;
-            default:
+            case LONG:
             case DOUBLE:
                 return 8;
+            default:
+                throw new ND4JIllegalStateException("Unsupported data type: [" + dtype +"]" );
         }
     }
 
@@ -5843,17 +6337,11 @@ public class Nd4j {
      */
     public static INDArray pile(INDArray... arrays) {
         // if we have vectors as input, it's just vstack use case
-        if (arrays[0].isRowVector() && arrays[0].rank() == 2) {
-            return Nd4j.vstack(arrays);
-        }
-
 
         long[] shape = arrays[0].shape();
         long[] newShape = ArrayUtils.add(shape, 0, 1);
 
         boolean shouldReshape = true;
-        if (arrays[0].size(0) == 1)
-            shouldReshape = false;
 
         List<INDArray> reshaped = new ArrayList<>();
         for(INDArray array: arrays) {
@@ -6026,7 +6514,7 @@ public class Nd4j {
                 "null, or neither must be null");
         INDArray out;
         DynamicCustomOp.DynamicCustomOpsBuilder op = DynamicCustomOp.builder("where_np");
-        List<long[]> outShapes;
+        List<LongShapeDescriptor> outShapes;
         if(x == null){
             //First case: condition only...
             op.addInputs(condition);
@@ -6040,7 +6528,7 @@ public class Nd4j {
         outShapes = Nd4j.getExecutioner().calculateOutputShape(o);
         INDArray[] outputs = new INDArray[outShapes.size()];
 
-        if(x == null && (outShapes.get(0) == null || outShapes.get(0).length == 0 || outShapes.get(0)[0] == 0)){
+        if(x == null && (outShapes.get(0) == null || outShapes.get(0).getShape().length == 0 || outShapes.get(0).getShape()[0] == 0)){
             //Empty: no conditions match
             for( int i=0; i<outputs.length; i++ ){
                 outputs[i]  = Nd4j.empty();
@@ -6049,7 +6537,7 @@ public class Nd4j {
         }
 
         for(int i=0; i<outputs.length; i++){
-            outputs[i] = Nd4j.createUninitialized(outShapes.get(i));
+            outputs[i] = Nd4j.create(outShapes.get(i), false);
         }
         op.addOutputs(outputs);
 
@@ -6197,33 +6685,77 @@ public class Nd4j {
         val _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
         val _order = FlatBuffersMapper.getOrderFromByte(order);
         val prod = rank > 0 ? ArrayUtil.prod(shapeOf) : 1;
-        val doubles = new double[prod];
 
         val bb = array.bufferAsByteBuffer();
         switch (_dtype) {
             case DOUBLE: {
+                val doubles = new double[prod];
                 val db = bb.order(_order).asDoubleBuffer();
                 for (int e = 0; e < prod; e++)
                     doubles[e] = db.get(e);
+
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.DOUBLE);
             }
-            break;
             case FLOAT: {
+                val doubles = new float[prod];
                 val fb = bb.order(_order).asFloatBuffer();
                 for (int e = 0; e < prod; e++)
-                    doubles[e] = (double) fb.get(e);
+                    doubles[e] = fb.get(e);
+
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.FLOAT);
             }
-            break;
             case HALF: {
+                val doubles = new float[prod];
                 val sb = bb.order(_order).asShortBuffer();
                 for (int e = 0; e < prod; e++)
-                    doubles[e] = (double) HalfIndexer.toFloat((int) sb.get(e));
+                    doubles[e] = HalfIndexer.toFloat((int) sb.get(e));
+
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.HALF);
             }
-            break;
+            case INT: {
+                val doubles = new int[prod];
+                val sb = bb.order(_order).asIntBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = sb.get(e);
+
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.INT);
+            }
+            case LONG: {
+                val doubles = new long[prod];
+                val sb = bb.order(_order).asLongBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = sb.get(e);
+
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.LONG);
+            }
+            case SHORT: {
+                val doubles = new short[prod];
+                val sb = bb.order(_order).asShortBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = sb.get(e);
+
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.SHORT);
+            }
+            case BYTE: {
+                val doubles = new byte[prod];
+                val sb = bb.order(_order).asReadOnlyBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = (byte) sb.get(e + sb.position());
+
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.BYTE);
+            }
+            case BOOL: {
+                val doubles = new boolean[prod];
+                val sb = bb.order(_order).asReadOnlyBuffer();
+                for (int e = 0; e < prod; e++)
+                    doubles[e] = sb.get(e + sb.position()) == 1;
+
+                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.BOOL);
+            }
             default:
                 throw new UnsupportedOperationException("Unknown datatype: [" + _dtype + "]");
         }
 
-        return Nd4j.create(doubles, shapeOf, stridesOf, 0, ordering);
     }
 
     /**
@@ -6253,5 +6785,554 @@ public class Nd4j {
 
     public static boolean areThreadSafetyChecksSkipped() {
         return skipTheadSafetyChecks.get();
+    }
+
+    public static DataType defaultFloatingPointType() {
+        return defaultFloatingPointDataType.get();
+    }
+
+    public static boolean isPrecisionBoostAllowed() {
+        return false;
+    }
+
+
+    public static INDArray scalar(@NonNull String string) {
+        return create(Collections.singletonList(string), new long[0]);
+    }
+
+    public static INDArray create(@NonNull String... strings) {
+        return create(Arrays.asList(strings), new long[]{strings.length});
+    }
+
+    public static INDArray create(@NonNull Collection<String> strings, long... shape) {
+        return create(strings, shape, Nd4j.order());
+    }
+
+    public static INDArray create(@NonNull Collection<String> strings, long[] shape, char order) {
+        return INSTANCE.create(strings, shape, order);
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(double[] array) {
+        return create(array, new long[]{array.length}, DataType.DOUBLE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(float[] array) {
+        return create(array, new long[]{array.length}, DataType.FLOAT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(int[] array) {
+        return create(array, new long[]{array.length}, DataType.INT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(short[] array) {
+        return create(array, new long[]{array.length}, DataType.SHORT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(byte[] array) {
+        return create(array, new long[]{array.length}, DataType.BYTE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(long[] array) {
+        return create(array, new long[]{array.length}, DataType.LONG);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(boolean[] array) {
+        return create(array, new long[]{array.length}, DataType.BOOL);
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(double[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.DOUBLE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(float[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.FLOAT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(long[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.LONG);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(int[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.INT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(short[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.SHORT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(byte[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.BYTE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(boolean[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.BOOL);
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(double[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.DOUBLE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(float[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.FLOAT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(long[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.LONG);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(int[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.INT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(short[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.SHORT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(byte[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.BYTE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(boolean[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.BOOL);
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(double[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.DOUBLE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(float[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.FLOAT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(long[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.LONG);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(int[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.INT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(short[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.SHORT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(byte[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.BYTE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(boolean[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.BOOL);
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(Double[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(Float[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(Integer[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(Short[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(Byte[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(Long[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(Boolean[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(Double[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(Float[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(Integer[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(Short[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(Byte[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(Long[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(Boolean[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(Double[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(Float[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(Integer[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(Short[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(Byte[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(Long[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(Boolean[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(Double[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(Float[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(Integer[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(Short[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(Byte[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(Long[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(Boolean[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    public static boolean isExperimentalMode() {
+        return getExecutioner().isExperimentalMode();
     }
 }

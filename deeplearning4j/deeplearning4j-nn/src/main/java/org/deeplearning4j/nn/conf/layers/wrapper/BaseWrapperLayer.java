@@ -106,9 +106,4 @@ public abstract class BaseWrapperLayer extends Layer {
             underlying.setLayerName(layerName);
         }
     }
-
-    @Override
-    public boolean isPretrain() {
-        return underlying.isPretrain();
-    }
 }

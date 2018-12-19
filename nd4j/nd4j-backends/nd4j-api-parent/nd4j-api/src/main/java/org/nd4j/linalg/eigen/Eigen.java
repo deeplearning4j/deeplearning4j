@@ -38,7 +38,7 @@ public class Eigen {
      * @return a vector of eigenvalues L.
      */
     public static INDArray symmetricGeneralizedEigenvalues(INDArray A) {
-        INDArray eigenvalues = Nd4j.create(A.rows());
+        INDArray eigenvalues = Nd4j.create(A.dataType(), A.rows());
         Nd4j.getBlasWrapper().syev('V', 'L', A, eigenvalues);
         return eigenvalues;
     }

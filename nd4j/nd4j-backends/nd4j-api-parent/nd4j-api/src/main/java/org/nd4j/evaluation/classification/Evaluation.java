@@ -16,18 +16,18 @@
 
 package org.nd4j.evaluation.classification;
 
-import com.google.common.base.Preconditions;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.EvaluationAveraging;
 import org.nd4j.evaluation.EvaluationUtils;
 import org.nd4j.evaluation.meta.Prediction;
 import org.nd4j.evaluation.serde.ConfusionMatrixDeserializer;
 import org.nd4j.evaluation.serde.ConfusionMatrixSerializer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
-import org.nd4j.linalg.api.ops.impl.transforms.Not;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
@@ -328,8 +328,13 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      */
     @Override
-    public void eval(final INDArray realOutcomes, final INDArray guesses,
+    public void eval(INDArray realOutcomes, final INDArray guesses,
                      final List<? extends Serializable> recordMetaData) {
+        Preconditions.checkArgument(realOutcomes.rank() == 2, "Expected rank 2 labels for evaluation." +
+                " Got labels array with shape %ndShape. For time series, use evalTimeSeries", realOutcomes);
+        Preconditions.checkArgument(guesses.rank() == 2, "Expected rank 2 network predictions for evaluation." +
+                " Got predictions array with shape %ndShape. For time series, use evalTimeSeries", guesses);
+
 
         //Check for NaNs in predictions - without this, evaulation could silently be intepreted as class 0 prediction due to argmax
         long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(guesses, Conditions.isNan())).getFinalResult().longValue();
@@ -338,6 +343,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
         // Add the number of rows to numRowCounter
         numRowCounter += realOutcomes.size(0);
+
+        if(realOutcomes.dataType() != guesses.dataType())
+            realOutcomes = realOutcomes.castTo(guesses.dataType());
 
         // If confusion is null, then Evaluation was instantiated without providing the classes -> infer # classes from
         if (confusion == null) {
@@ -363,16 +371,16 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         final int nRows = realOutcomes.rows();
 
         if (nCols == 1) {
-            INDArray binaryGuesses = guesses.gt(binaryDecisionThreshold == null ? 0.5 : binaryDecisionThreshold);
+            INDArray binaryGuesses = guesses.gt(binaryDecisionThreshold == null ? 0.5 : binaryDecisionThreshold).castTo(Nd4j.defaultFloatingPointType());
 
-            INDArray notLabel = Nd4j.getExecutioner().execAndReturn(new Not(realOutcomes.dup()));
-            INDArray notGuess = Nd4j.getExecutioner().execAndReturn(new Not(binaryGuesses.dup()));
+            INDArray notLabel = realOutcomes.rsub(1.0); //Invert entries (assuming 1 and 0)
+            INDArray notGuess = binaryGuesses.rsub(1.0);
             //tp: predicted = 1, actual = 1
-            int tp = binaryGuesses.mul(realOutcomes).sumNumber().intValue();
+            int tp = realOutcomes.mul(binaryGuesses).castTo(DataType.INT).sumNumber().intValue();
             //fp: predicted = 1, actual = 0
-            int fp = binaryGuesses.mul(notLabel).sumNumber().intValue();
+            int fp = notLabel.mul(binaryGuesses).castTo(DataType.INT).sumNumber().intValue();
             //fn: predicted = 0, actual = 1
-            int fn = notGuess.mul(realOutcomes).sumNumber().intValue();
+            int fn = notGuess.mul(realOutcomes).castTo(DataType.INT).sumNumber().intValue();
             int tn = nRows - tp - fp - fn;
 
             confusion().add(1, 1, tp);

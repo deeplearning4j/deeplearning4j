@@ -17,6 +17,7 @@
 package org.nd4j.weightinit.impl;
 
 import lombok.Builder;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,8 +36,8 @@ public class OneInitScheme extends BaseWeightInitScheme {
     }
 
     @Override
-    public INDArray doCreate(long[] shape, INDArray paramsView) {
-       return Nd4j.createUninitialized(shape, order()).assign(1.0);
+    public INDArray doCreate(DataType dataType, long[] shape, INDArray paramsView) {
+       return Nd4j.createUninitialized(dataType, shape, order()).assign(1.0f);
     }
 
 

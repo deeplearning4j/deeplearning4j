@@ -22,32 +22,43 @@
 #if NOT_EXCLUDED(OP_lrelu)
 
 #include <ops/declarable/CustomOperations.h>
-
+#include <ops/declarable/helpers/legacy_helpers.h>
 namespace nd4j {
     namespace ops {
         CONFIGURABLE_OP_IMPL(lrelu, 1, 1, true, 1, 0) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            input->template applyTransform<simdOps::LeakyRELU<T>>(output, block.getTArguments()->data());
+            float t = block.numT() > 0 ? T_ARG(0) : 0.0f;
+
+            input->applyScalar(nd4j::scalar::LeakyRELU, t, output);
             STORE_RESULT(output);
             
-            return ND4J_STATUS_OK;
+            return Status::OK();
+        }
+
+        DECLARE_TYPES(lrelu) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
         }
         
         CONFIGURABLE_OP_IMPL(lrelu_bp, 2, 1, true, 0, 0) {
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            NDArray<T>* epsilon = INPUT_VARIABLE(1);
+            auto input = INPUT_VARIABLE(0);
+            auto epsilon = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
 
-            auto lambda = LAMBDA_TT(_x, _e) {
-                return _x >= (T) 0.0f ? _e : (T) 0.0f;
-            };
+            //input->applyPairwiseTransform(pairwise::LRELUDerivativeE, epsilon, z, nullptr);
+            helpers::leakyReluDerivative(input, epsilon, z);
+            return Status::OK();
+        }
 
-            input->applyPairwiseLambda(epsilon, lambda, z);  
-
-            return ND4J_STATUS_OK;
+        DECLARE_TYPES(lrelu_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
         }
     }
 }

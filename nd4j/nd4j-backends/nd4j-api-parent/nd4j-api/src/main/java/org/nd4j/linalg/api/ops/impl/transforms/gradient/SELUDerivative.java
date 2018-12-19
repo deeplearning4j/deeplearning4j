@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -32,7 +33,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class SELUDerivative extends BaseTransformOp {
+public class SELUDerivative extends BaseTransformStrictOp {
 
     private static final double SELU_ALPHA = 1.6732632423543772848170429916717;
     private static final double SELU_LAMBDA = 1.0507009873554804934193349852946;
@@ -65,7 +66,7 @@ public class SELUDerivative extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 68;
+        return 9;
     }
 
     @Override

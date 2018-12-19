@@ -16,46 +16,19 @@
 
 package org.nd4j.autodiff.validation;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
-import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.accum.All;
-import org.nd4j.linalg.api.ops.impl.accum.Any;
-import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
-import org.nd4j.linalg.api.ops.impl.broadcast.*;
-import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
-import org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
-import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
-import org.nd4j.linalg.api.ops.impl.shape.Eye;
-import org.nd4j.linalg.api.ops.impl.shape.OneHot;
-import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
-import org.nd4j.linalg.api.ops.impl.transforms.BinaryMinimalRelativeError;
-import org.nd4j.linalg.api.ops.impl.transforms.Histogram;
-import org.nd4j.linalg.api.ops.impl.transforms.LegacyDropOut;
-import org.nd4j.linalg.api.ops.impl.transforms.LegacyDropOutInverted;
-import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
-import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
-import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.*;
 
 /**
@@ -98,11 +71,11 @@ public class GradCheckUtil {
         if (maxRelError <= 0.0 || maxRelError > 0.25)
             throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
 
-        DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
-        if (dataType != DataBuffer.Type.DOUBLE) {
+        DataType dataType = DataTypeUtil.getDtypeFromContext();
+        if (dataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
                     + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                    + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+                    + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
         /**
@@ -221,7 +194,7 @@ public class GradCheckUtil {
         }
 
         //Check data type:
-        if(Nd4j.dataType() != DataBuffer.Type.DOUBLE){
+        if(Nd4j.dataType() != DataType.DOUBLE){
             throw new IllegalStateException("Data type must be set to double");
         }
 

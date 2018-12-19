@@ -30,20 +30,26 @@ endif()
 # -fsanitize=address
 # -fsanitize=leak
 if (APPLE)
-    set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
+    set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -D__APPLE_OS__=true")
 elseif(WIN32)
-    set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+    set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -Wa,-mbig-obj")
 else()
     if ("${_RELEASE}")
-        set(CMAKE_CXX_FLAGS  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+        set(CMAKE_CXX_FLAGS  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations")
         if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
             set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -mcpu=native")
         else()
             set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
         endif()
     else()
-        set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
+        set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fsanitize=address")
     endif()
+endif()
+
+if ("${EXPERIMENTAL}" STREQUAL "yes")
+    message("Experimental mode ENABLED")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
 endif()
 
 # tests are always compiled with all ops included
@@ -51,7 +57,10 @@ SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -Wno-logical-op-parentheses -Wno-inconsistent-missing-override -Wno-implicit-conversion-floating-point-to-bool -Wno-delete-non-virtual-dtor")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    message("AppleClang used")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -Wno-logical-op-parentheses -Wno-inconsistent-missing-override -Wno-implicit-conversion-floating-point-to-bool -Wno-delete-non-virtual-dtor")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     # using Intel C++
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -fp-model fast")
@@ -60,7 +69,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fmax-errors=2")
 endif()
 
 
@@ -97,6 +106,8 @@ add_definitions(-D__CPUBLAS__=true)
 
 
 file(GLOB_RECURSE TEST_SOURCES false ../layers_tests/*.cpp ../layers_tests/*.h)
+# file(GLOB_RECURSE TEST_SOURCES false ../layers_tests/DeclarableOpsTests6.cpp ../layers_tests/*.h)
+
 
 # Filter out any source files from */CMakeFiles/* paths. these tend to cause problems such a multiple main definitions.
 set (EXCLUDE_DIR "/CMakeFiles/")
@@ -108,13 +119,12 @@ foreach (TMP_PATH ${TEST_SOURCES})
 endforeach(TMP_PATH)
 
 
-add_executable(runtests ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
-    ../../blas/cpu/NativeOpExcutioner.cpp ../../blas/cpu/NDArray.cpp
+add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
+    ../../blas/cpu/NativeOpExcutioner.cpp ../../blas/cpu/NDArray.cpp ../../blas/cpu/NDArrayFactory.cpp
     ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
-    ../../blas/Environment.cpp ../../blas/Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
+    ../../blas/Environment.cpp ../../blas/Environment.h  ${ARRAY_SOURCES} ${TYPES_SOURCES}
     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES})
 
 target_link_libraries(runtests gtest gtest_main)
-
 

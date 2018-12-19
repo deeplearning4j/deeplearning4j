@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.jcublas;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.jita.constant.ProtectedCudaShapeInfoProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -37,24 +38,14 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
     }
 
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order) {
-        return provider.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType type) {
+        return provider.createShapeInformation(shape, stride, elementWiseStride, order, type);
     }
 
-    @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride,
-                                                          char order) {
-        return provider.createShapeInformation(shape, stride, offset, elementWiseStride, order);
-    }
 
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order, long extras) {
-        return provider.createShapeInformation(shape, stride, offset, elementWiseStride, order, extras);
-    }
-
-    @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order, long extras) {
-        return provider.createShapeInformation(shape, stride, offset, elementWiseStride, order, extras);
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras) {
+        return provider.createShapeInformation(shape, stride, elementWiseStride, order, extras);
     }
 
     /**

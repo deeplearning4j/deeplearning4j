@@ -328,10 +328,10 @@ public class KerasLSTM extends KerasLayer {
             U_f = U.get(NDArrayIndex.all(), NDArrayIndex.interval(sliceInterval, 2 * sliceInterval));
             U_c = U.get(NDArrayIndex.all(), NDArrayIndex.interval(2 * sliceInterval, 3 * sliceInterval));
             U_o = U.get(NDArrayIndex.all(), NDArrayIndex.interval(3 * sliceInterval, 4 * sliceInterval));
-            b_i = b.get(NDArrayIndex.all(), NDArrayIndex.interval(0, sliceInterval));
-            b_f = b.get(NDArrayIndex.all(), NDArrayIndex.interval(sliceInterval, 2 * sliceInterval));
-            b_c = b.get(NDArrayIndex.all(), NDArrayIndex.interval(2 * sliceInterval, 3 * sliceInterval));
-            b_o = b.get(NDArrayIndex.all(), NDArrayIndex.interval(3 * sliceInterval, 4 * sliceInterval));
+            b_i = b.get(NDArrayIndex.interval(0, sliceInterval));
+            b_f = b.get(NDArrayIndex.interval(sliceInterval, 2 * sliceInterval));
+            b_c = b.get(NDArrayIndex.interval(2 * sliceInterval, 3 * sliceInterval));
+            b_o = b.get(NDArrayIndex.interval(3 * sliceInterval, 4 * sliceInterval));
         } else {
             if (weights.containsKey(KERAS_PARAM_NAME_W_C))
                 W_c = weights.get(KERAS_PARAM_NAME_W_C);

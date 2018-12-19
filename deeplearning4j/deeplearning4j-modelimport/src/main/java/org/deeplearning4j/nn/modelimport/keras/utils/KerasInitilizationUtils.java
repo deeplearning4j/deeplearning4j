@@ -48,21 +48,28 @@ public class KerasInitilizationUtils {
                                                                          int kerasMajorVersion)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
 
+
         // TODO: Identity and VarianceScaling need "scale" factor
         WeightInit init = null;
         Distribution dist = null;
         if (kerasInit != null) {
-            if (kerasInit.equals(conf.getINIT_GLOROT_NORMAL())) {
+            if (kerasInit.equals(conf.getINIT_GLOROT_NORMAL()) ||
+                    kerasInit.equals(conf.getINIT_GLOROT_NORMAL_ALIAS())) {
                 init = WeightInit.XAVIER;
-            } else if (kerasInit.equals(conf.getINIT_GLOROT_UNIFORM())) {
+            } else if (kerasInit.equals(conf.getINIT_GLOROT_UNIFORM()) ||
+                    kerasInit.equals(conf.getINIT_GLOROT_UNIFORM_ALIAS())) {
                 init = WeightInit.XAVIER_UNIFORM;
-            } else if (kerasInit.equals(conf.getINIT_LECUN_NORMAL())) {
+            } else if (kerasInit.equals(conf.getINIT_LECUN_NORMAL()) ||
+                    kerasInit.equals(conf.getINIT_LECUN_NORMAL_ALIAS())) {
                 init = WeightInit.LECUN_NORMAL;
-            } else if (kerasInit.equals(conf.getINIT_LECUN_UNIFORM())) {
+            } else if (kerasInit.equals(conf.getINIT_LECUN_UNIFORM()) ||
+                    kerasInit.equals(conf.getINIT_LECUN_UNIFORM_ALIAS())) {
                 init = WeightInit.LECUN_UNIFORM;
-            } else if (kerasInit.equals(conf.getINIT_HE_NORMAL())) {
+            } else if (kerasInit.equals(conf.getINIT_HE_NORMAL()) ||
+                    kerasInit.equals(conf.getINIT_HE_NORMAL_ALIAS())) {
                 init = WeightInit.RELU;
-            } else if (kerasInit.equals(conf.getINIT_HE_UNIFORM())) {
+            } else if (kerasInit.equals(conf.getINIT_HE_UNIFORM()) ||
+                    kerasInit.equals(conf.getINIT_HE_UNIFORM_ALIAS())) {
                 init = WeightInit.RELU_UNIFORM;
             } else if (kerasInit.equals(conf.getINIT_ONE()) ||
                     kerasInit.equals(conf.getINIT_ONES()) ||

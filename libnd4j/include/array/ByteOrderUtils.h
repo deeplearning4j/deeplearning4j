@@ -23,9 +23,10 @@
 
 #include <graph/generated/array_generated.h>
 #include "ByteOrder.h"
+#include <dll.h>
 
 namespace nd4j {
-    class ByteOrderUtils {
+    class ND4J_EXPORT  ByteOrderUtils {
     public:
         static ByteOrder fromFlatByteOrder(nd4j::graph::ByteOrder order);
     };

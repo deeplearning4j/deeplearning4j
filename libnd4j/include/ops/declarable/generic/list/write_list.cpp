@@ -27,7 +27,8 @@ namespace nd4j {
     namespace ops {
         LIST_OP_IMPL(write_list, 2, 1, 0, -2) {
             auto list = INPUT_LIST(0);
-
+            auto output = OUTPUT_VARIABLE(0);
+            //output->printShapeInfo("Write_list default output shape");
             // nd4j mode
             if (block.getIArguments()->size() == 1) {
                 auto input = INPUT_VARIABLE(1);
@@ -35,9 +36,10 @@ namespace nd4j {
 
                 Nd4jStatus result = list->write(idx, input->dup());
 
-                auto res = NDArray<T>::scalar(list->counter());
-                OVERWRITE_RESULT(res);
-
+                auto res = NDArrayFactory::create_(list->counter(), block.workspace());
+                res->printShapeInfo("Write_list 1 output shape");
+                //OVERWRITE_RESULT(res);
+                setupResult(res, block);
                 return result;
             } else if (block.width() >= 3) {
                 auto input = INPUT_VARIABLE(block.width() - 2);
@@ -45,10 +47,13 @@ namespace nd4j {
 
                 REQUIRE_TRUE(idx->isScalar(), 0, "Index should be Scalar");
 
-                Nd4jStatus result = list->write(idx->getScalar(0), input->dup());
+                Nd4jStatus result = list->write(idx->e<int>(0), input->dup());
 
-                auto res = NDArray<T>::scalar(list->counter());
-                OVERWRITE_RESULT(res);
+                auto res = NDArrayFactory::create_(list->counter(), block.workspace());
+                res->printShapeInfo("Write_list 2 output shape");
+
+                setupResult(res, block);
+//                OVERWRITE_RESULT(res);
 
                 return result;
             } else return ND4J_STATUS_BAD_INPUT;

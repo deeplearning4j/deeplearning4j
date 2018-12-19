@@ -28,7 +28,7 @@ public class FFTUtils {
      * @return the plan for the given buffer
      */
     public static int getPlanFor(DataBuffer buff) {
-        /*   if(buff.dataType() == DataBuffer.Type.FLOAT)
+        /*   if(buff.dataType() == DataType.FLOAT)
             return cufftType.CUFFT_C2C;
         else
             return cufftType.CUFFT_Z2Z;

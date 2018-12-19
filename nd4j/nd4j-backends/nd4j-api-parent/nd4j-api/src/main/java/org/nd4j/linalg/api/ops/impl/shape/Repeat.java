@@ -38,30 +38,30 @@ import java.util.*;
  */
 @NoArgsConstructor
 public class Repeat extends DynamicCustomOp {
-    private int axis;
+    private int jaxis;
 
     public Repeat(int axis) {
-        this.axis = axis;
+        this.jaxis = axis;
     }
 
     public Repeat(SameDiff sameDiff, SDVariable[] args, int axis) {
         super(null, sameDiff, args);
-        this.axis = axis;
+        this.jaxis = axis;
     }
 
     public Repeat(INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments, int axis) {
         super(null, inputs, outputs, tArguments, iArguments);
-        this.axis = axis;
+        this.jaxis = axis;
     }
 
     public Repeat(INDArray[] inputs, INDArray[] outputs, int axis) {
         super(null, inputs, outputs);
-        this.axis = axis;
+        this.jaxis = axis;
     }
 
     public Repeat(SameDiff sameDiff, SDVariable[] args, boolean inPlace, int axis) {
         super(null, sameDiff, args, inPlace);
-        this.axis = axis;
+        this.jaxis = axis;
     }
 
 
@@ -100,7 +100,7 @@ public class Repeat extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-        addIArgument(axis);
+        addIArgument(jaxis);
     }
 
     @Override

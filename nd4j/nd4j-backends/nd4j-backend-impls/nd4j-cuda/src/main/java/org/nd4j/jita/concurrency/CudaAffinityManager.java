@@ -259,6 +259,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
         val elementWiseStride = array.elementWiseStride();
         val ordering = array.ordering();
         val length = array.length();
+        val dtype = array.dataType();
 
         // we use this call to get device memory updated
         AtomicAllocator.getInstance().getPointer(array,
@@ -271,8 +272,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
 
         DataBuffer newDataBuffer = replicateToDevice(deviceId, array.data());
-        DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0,
-                        elementWiseStride, ordering).getFirst();
+        DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, elementWiseStride, ordering, dtype).getFirst();
         INDArray result = Nd4j.createArrayFromShapeBuffer(newDataBuffer, newShapeBuffer);
 
         attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);

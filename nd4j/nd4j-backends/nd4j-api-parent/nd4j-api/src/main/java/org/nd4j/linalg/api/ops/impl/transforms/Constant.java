@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,7 +30,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public class Constant extends BaseTransformOp {
+public class Constant extends BaseTransformSameOp {
 
 
     public Constant() {
@@ -69,7 +70,7 @@ public class Constant extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 0;
+        return 15;
     }
 
     @Override

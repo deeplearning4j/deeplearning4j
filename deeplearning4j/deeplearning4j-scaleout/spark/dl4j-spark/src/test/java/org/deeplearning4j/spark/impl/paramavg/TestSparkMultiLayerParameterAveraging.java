@@ -151,7 +151,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                                                         LossFunctions.LossFunction.MCXENT).nIn(100).nOut(3)
                                                                         .activation(Activation.SOFTMAX)
                                                                         .weightInit(WeightInit.XAVIER).build())
-                                        .backprop(false).build();
+                                        .build();
 
 
 
@@ -804,7 +804,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                                         .decoderLayerSizes(13).reconstructionDistribution(
                                                         new GaussianReconstructionDistribution(Activation.IDENTITY))
                                         .build())
-                        .pretrain(true).backprop(false).build();
+                        .build();
 
         //Do training on Spark with one executor, for 3 separate minibatches
         int rddDataSetNumExamples = 10;
@@ -839,7 +839,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                                         .decoderLayerSizes(13).reconstructionDistribution(
                                                         new GaussianReconstructionDistribution(Activation.IDENTITY))
                                         .build(), "in")
-                        .setOutputs("0").pretrain(true).backprop(false).build();
+                        .setOutputs("0").build();
 
         //Do training on Spark with one executor, for 3 separate minibatches
         int rddDataSetNumExamples = 10;

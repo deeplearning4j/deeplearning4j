@@ -18,6 +18,7 @@ package org.nd4j.linalg;
 
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -48,7 +49,7 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
     public static final int SEED = 123;
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public Nd4jTestsComparisonFortran(Nd4jBackend backend) {
         super(backend);
@@ -59,7 +60,7 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     @Before
     public void before() throws Exception {
         super.before();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(SEED);
 
     }
@@ -87,8 +88,8 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
     @Test
     public void testMmulWithOpsCommonsMath() {
-        List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
-        List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED);
+        List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
+        List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED, DataType.DOUBLE);
 
         for (int i = 0; i < first.size(); i++) {
             for (int j = 0; j < second.size(); j++) {
@@ -102,10 +103,10 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
     @Test
     public void testGemmWithOpsCommonsMath() {
-        List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
-        List<Pair<INDArray, String>> firstT = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 3, SEED);
-        List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED);
-        List<Pair<INDArray, String>> secondT = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, SEED);
+        List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
+        List<Pair<INDArray, String>> firstT = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 3, SEED, DataType.DOUBLE);
+        List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED, DataType.DOUBLE);
+        List<Pair<INDArray, String>> secondT = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, SEED, DataType.DOUBLE);
         double[] alpha = {1.0, -0.5, 2.5};
         double[] beta = {0.0, -0.25, 1.5};
         INDArray cOrig = Nd4j.create(new int[] {3, 4});
@@ -166,8 +167,8 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
             int rows = rowsArr[x];
             int cols = colsArr[x];
 
-            List<Pair<INDArray, String>> matrices = NDArrayCreationUtil.getAllTestMatricesWithShape(rows, cols, 12345);
-            List<Pair<INDArray, String>> vectors = NDArrayCreationUtil.getAllTestMatricesWithShape(cols, 1, 12345);
+            List<Pair<INDArray, String>> matrices = NDArrayCreationUtil.getAllTestMatricesWithShape(rows, cols, 12345, DataType.DOUBLE);
+            List<Pair<INDArray, String>> vectors = NDArrayCreationUtil.getAllTestMatricesWithShape(cols, 1, 12345, DataType.DOUBLE);
 
             for (int i = 0; i < matrices.size(); i++) {
                 for (int j = 0; j < vectors.size(); j++) {
@@ -213,8 +214,8 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
     @Test
     public void testAddSubtractWithOpsCommonsMath() {
-        List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
-        List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
+        List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
+        List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         for (int i = 0; i < first.size(); i++) {
             for (int j = 0; j < second.size(); j++) {
                 Pair<INDArray, String> p1 = first.get(i);
@@ -231,8 +232,8 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
     @Test
     public void testMulDivOnCheckUtilMatrices() {
-        List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
-        List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
+        List<Pair<INDArray, String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
+        List<Pair<INDArray, String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED, DataType.DOUBLE);
         for (int i = 0; i < first.size(); i++) {
             for (int j = 0; j < second.size(); j++) {
                 Pair<INDArray, String> p1 = first.get(i);

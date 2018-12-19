@@ -1440,7 +1440,7 @@ public class TestTransforms {
 
         List<Writable> out = t.map(l);
 
-        assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[]{2,3,0}))), out);
+        assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[]{2,3,0}, new long[]{1,3}, Nd4j.dataType()))), out);
 
         String json = JsonMappers.getMapper().writeValueAsString(t);
         Transform transform2 = JsonMappers.getMapper().readValue(json, StringListToCountsNDArrayTransform.class);
@@ -1461,7 +1461,7 @@ public class TestTransforms {
 
         List<Writable> out = t.map(l);
 
-        assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[]{1,2,2,2}))), out);
+        assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[]{1,2,2,2}, new long[]{1,4}, Nd4j.dataType()))), out);
 
         String json = JsonMappers.getMapper().writeValueAsString(t);
         Transform transform2 = JsonMappers.getMapper().readValue(json, StringListToIndicesNDArrayTransform.class);

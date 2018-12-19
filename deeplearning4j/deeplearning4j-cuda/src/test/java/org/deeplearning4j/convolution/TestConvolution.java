@@ -286,8 +286,6 @@ public class TestConvolution extends BaseDL4JTest {
                             .nOut(numLabels)
                             .activation(Activation.SOFTMAX)
                             .build())
-                    .backprop(true)
-                    .pretrain(false)
                     .setInputType(InputType.convolutional(height, width, channels))
                     .build();
 

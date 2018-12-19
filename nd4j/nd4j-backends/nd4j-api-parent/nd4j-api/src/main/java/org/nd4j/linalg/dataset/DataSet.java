@@ -371,7 +371,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         Map<Integer, Double> ret = new HashMap<>();
         if (labels == null)
             return ret;
-        long nTensors = labels.tensorssAlongDimension(1);
+        long nTensors = labels.tensorsAlongDimension(1);
         for (int i = 0; i < nTensors; i++) {
             INDArray row = labels.tensorAlongDimension(i, 1);
             INDArray javaRow = labels.javaTensorAlongDimension(i, 1);
@@ -559,7 +559,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void binarize(double cutoff) {
-        INDArray linear = getFeatures().linearView();
+        INDArray linear = getFeatures().reshape(-1);
         for (int i = 0; i < getFeatures().length(); i++) {
             double curr = linear.getDouble(i);
             if (curr > cutoff)

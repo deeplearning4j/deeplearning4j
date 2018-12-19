@@ -316,9 +316,9 @@ namespace nd4j {
 
                 REQUIRE_TRUE(delta == 0, 0, "StridedSlice: Number of Integer arguments should be equal to input rank x 3 = %i, but got %i instead", (x->rankOf() * 3), dim_values);
 
-                ShapeUtils<T>::copyVectorPart(begin, args, elements, 0);
-                ShapeUtils<T>::copyVectorPart(end, args, elements, elements);
-                ShapeUtils<T>::copyVectorPart(strides, args, elements, elements * 2);
+                ShapeUtils::copyVectorPart(begin, args, elements, 0);
+                ShapeUtils::copyVectorPart(end, args, elements, elements);
+                ShapeUtils::copyVectorPart(strides, args, elements, elements * 2);
 
             } else if (block.width() > 1) {
                 isLive = true;
@@ -331,10 +331,10 @@ namespace nd4j {
                 REQUIRE_TRUE(v_begin->lengthOf() == v_end->lengthOf(), 0, "StridedSlice: Length of begin/end should match, but got %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf());
 
                 for (int e = 0; e < v_begin->lengthOf(); e++)
-                    begin.emplace_back((int) v_begin->getIndexedScalar(e));
+                    begin.emplace_back(v_begin->e<int>(e));
 
                 for (int e = 0; e < v_end->lengthOf(); e++)
-                    end.emplace_back((int) v_end->getIndexedScalar(e));
+                    end.emplace_back(v_end->e<int>(e));
 
                 if (block.width() > 3) {
                     auto v_stride = INPUT_VARIABLE(3);
@@ -342,7 +342,7 @@ namespace nd4j {
                     REQUIRE_TRUE(v_stride->lengthOf() == v_begin->lengthOf(), 0, "StridedSlice: Length of begin/end/stride should match, but got %i vs %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf(), (int) v_stride->lengthOf());
 
                     for (int e = 0; e < v_stride->lengthOf(); e++)
-                        strides.emplace_back((int) v_stride->getIndexedScalar(e));
+                        strides.emplace_back(v_stride->e<int>(e));
                 } else {
                     for (int e = 0; e < v_begin->lengthOf(); e++)
                         strides.emplace_back(1);
@@ -428,9 +428,10 @@ namespace nd4j {
                 for (int e = 5; e < block.getIArguments()->size(); e++)
                     args.emplace_back(INT_ARG(e));
 
-                ShapeUtils<T>::copyVectorPart(begin, args, elements, 0);
-                ShapeUtils<T>::copyVectorPart(end, args, elements, elements);
-                ShapeUtils<T>::copyVectorPart(strides, args, elements, elements * 2);
+                // FIXME: propably template required here
+                ShapeUtils::copyVectorPart(begin, args, elements, 0);
+                ShapeUtils::copyVectorPart(end, args, elements, elements);
+                ShapeUtils::copyVectorPart(strides, args, elements, elements * 2);
             }
 
             REQUIRE_TRUE(begin.size() > 0 && end.size() > 0 && strides.size() > 0, 0, "Strided_Slice: empty arguments");
@@ -474,7 +475,7 @@ namespace nd4j {
             bool result = _preprocess_strided_slice(nullptr, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
 
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-            shape::shapeBuffer(shape.size(), shape.data(), newShape);
+            shape::shapeBuffer(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
 
             return SHAPELIST(newShape);
         }
@@ -514,9 +515,9 @@ namespace nd4j {
 
                 REQUIRE_TRUE(delta == 0, 0, "StridedSliceBP: Number of Integer arguments should be equal to input rank x 3 = %i, but got %i instead", (x->rankOf() * 3), dim_values);
 
-                ShapeUtils<T>::copyVectorPart(begin, args, elements, 0);
-                ShapeUtils<T>::copyVectorPart(end, args, elements, elements);
-                ShapeUtils<T>::copyVectorPart(strides, args, elements, elements * 2);
+                ShapeUtils::copyVectorPart(begin, args, elements, 0);
+                ShapeUtils::copyVectorPart(end, args, elements, elements);
+                ShapeUtils::copyVectorPart(strides, args, elements, elements * 2);
 
             } else if (block.width() >= 3) {
                 isLive = true;
@@ -529,10 +530,10 @@ namespace nd4j {
                 REQUIRE_TRUE(v_begin->lengthOf() == v_end->lengthOf(), 0, "StridedSliceBP: Length of begin/end should match, but got %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf());
 
                 for (int e = 0; e < v_begin->lengthOf(); e++)
-                    begin.emplace_back((int) v_begin->getIndexedScalar(e));
+                    begin.emplace_back(v_begin->e<int>(e));
 
                 for (int e = 0; e < v_end->lengthOf(); e++)
-                    end.emplace_back((int) v_end->getIndexedScalar(e));
+                    end.emplace_back(v_end->e<int>(e));
 
                 if (block.width() >= 4) {
                     auto v_stride = INPUT_VARIABLE(3);
@@ -540,7 +541,7 @@ namespace nd4j {
                     REQUIRE_TRUE(v_stride->lengthOf() == v_begin->lengthOf(), 0, "StridedSliceBP: Length of begin/end/stride should match, but got %i vs %i vs %i instead", (int) v_begin->lengthOf(), (int) v_end->lengthOf(), (int) v_stride->lengthOf());
 
                     for (int e = 0; e < v_stride->lengthOf(); e++)
-                        strides.emplace_back((int) v_stride->getIndexedScalar(e));
+                        strides.emplace_back(v_stride->e<int>(e));
                 } else {
                     for (int e = 0; e < v_begin->lengthOf(); e++)
                         strides.emplace_back(1);
@@ -596,6 +597,18 @@ namespace nd4j {
             COPY_SHAPE(inShape, newShape);
 
             return SHAPELIST(newShape);
+        }
+
+        DECLARE_TYPES(strided_slice) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
+        }
+
+        DECLARE_TYPES(strided_slice_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }
 }

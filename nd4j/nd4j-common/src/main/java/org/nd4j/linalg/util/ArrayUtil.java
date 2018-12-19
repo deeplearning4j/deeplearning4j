@@ -225,6 +225,38 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static long[] toLongs(byte[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = (long) data[i];
+        }
+        return ret;
+    }
+
+    public static long[] toLongs(short[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = (long) data[i];
+        }
+        return ret;
+    }
+
+    public static long[] toLongs(float[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = (long) data[i];
+        }
+        return ret;
+    }
+
+    public static long[] toLongs(double[] data) {
+        val ret = new long[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = (long) data[i];
+        }
+        return ret;
+    }
+
     public static short[] toHalfs(double[] data) {
         short[] ret = new short[data.length];
         for (int i = 0; i < ret.length; i++) {
@@ -271,6 +303,38 @@ public class ArrayUtil {
         for (int i = 0; i < ret.length; i++)
             ret[i] = (int) data[i];
         return ret;
+    }
+
+    public static byte[] toBytes(int[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte) array[i];
+        }
+        return retVal;
+    }
+
+    public static byte[] toBytes(float[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte) array[i];
+        }
+        return retVal;
+    }
+
+    public static byte[] toBytes(double[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte) array[i];
+        }
+        return retVal;
+    }
+
+    public static byte[] toBytes(long[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte) array[i];
+        }
+        return retVal;
     }
 
     public static int[] toInts(long[] array) {
@@ -965,6 +1029,33 @@ public class ArrayUtil {
         return toDoubles(Ints.concat(ints));
     }
 
+    public static short[] toShorts(long[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) ints[i];
+        return ret;
+    }
+
+    public static short[] toShorts(int[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) ints[i];
+        return ret;
+    }
+
+    public static short[] toShorts(float[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) ints[i];
+        return ret;
+    }
+
+    public static short[] toShorts(double[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) ints[i];
+        return ret;
+    }
 
     public static float[] toFloats(int[] ints) {
         float[] ret = new float[ints.length];
@@ -1352,6 +1443,14 @@ public class ArrayUtil {
         long[] ret = new long[intArray.length];
         for (int i = 0; i < intArray.length; i++) {
             ret[i] = intArray[i];
+        }
+        return ret;
+    }
+
+    public static long[] toLongArray(float[] array) {
+        val ret = new long[array.length];
+        for (int i = 0; i < array.length; i++) {
+            ret[i] = (long) array[i];
         }
         return ret;
     }
@@ -1945,6 +2044,85 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static short[] flatten(short[][][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
+            return new short[0];
+        val ret = new short[arr.length * arr[0].length * arr[0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    ret[count++] = arr[i][j][k];
+                }
+        return ret;
+    }
+
+    public static byte[] flatten(byte[][][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
+            return new byte[0];
+        val ret = new byte[arr.length * arr[0].length * arr[0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    ret[count++] = arr[i][j][k];
+                }
+        return ret;
+    }
+
+    public static long[] flatten(long[][][][] arr) {
+        val ret = new long[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++)
+                    for (int m = 0; m < arr[0][0][0].length; m++)
+                        ret[count++] = arr[i][j][k][m];
+
+        return ret;
+    }
+
+    public static short[] flatten(short[][][][] arr) {
+        val ret = new short[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++)
+                    for (int m = 0; m < arr[0][0][0].length; m++)
+                        ret[count++] = arr[i][j][k][m];
+
+        return ret;
+    }
+
+    public static byte[] flatten(byte[][][][] arr) {
+        val ret = new byte[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++)
+                    for (int m = 0; m < arr[0][0][0].length; m++)
+                        ret[count++] = arr[i][j][k][m];
+
+        return ret;
+    }
+
+    public static boolean[] flatten(boolean[][][][] arr) {
+        val ret = new boolean[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++)
+                    for (int m = 0; m < arr[0][0][0].length; m++)
+                        ret[count++] = arr[i][j][k][m];
+
+        return ret;
+    }
 
     public static float[] flatten(float[][][][] arr) {
         float[] ret = new float[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
@@ -1996,6 +2174,39 @@ public class ArrayUtil {
                 ret[count++] = arr[i][j];
         return ret;
     }
+
+    public static short[] flatten(short[][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 )
+            return new short[0];
+        val ret = new short[arr.length * arr[0].length];
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[i].length; j++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
+
+    public static byte[] flatten(byte[][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 )
+            return new byte[0];
+        val ret = new byte[arr.length * arr[0].length];
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[i].length; j++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
+
+    /*
+    public static boolean[] flatten(boolean[][] arr) {
+        boolean[] ret = new boolean[arr.length * arr[0].length];
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[i].length; j++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
+    */
 
     public static long[] flatten(long[][] arr) {
         if(arr.length == 0 || arr[0].length == 0 )
@@ -2806,5 +3017,271 @@ public class ArrayUtil {
      */
     public static int fromBoolean(boolean bool) {
         return bool ? 1 : 0;
+    }
+
+    public static long[] toPrimitives(Long[] array) {
+        val res = new long[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
+
+    public static int[] toPrimitives(Integer[] array) {
+        val res = new int[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
+
+    public static short[] toPrimitives(Short[] array) {
+        val res = new short[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
+
+    public static byte[] toPrimitives(Byte[] array) {
+        val res = new byte[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
+
+    public static float[] toPrimitives(Float[] array) {
+        val res = new float[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
+
+    public static double[] toPrimitives(Double[] array) {
+        val res = new double[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
+
+    public static boolean[] toPrimitives(Boolean[] array) {
+        val res = new boolean[array.length];
+        for (int e = 0; e < array.length; e++)
+            res[e] = array[e];
+
+        return res;
+    }
+
+    public static long[][] toPrimitives(Long[][] array) {
+        val res = new long[array.length][array[0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                res[i][j] = array[i][j];
+
+        return res;
+    }
+
+    public static int[][] toPrimitives(Integer[][] array) {
+        val res = new int[array.length][array[0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                res[i][j] = array[i][j];
+
+        return res;
+    }
+
+    public static short[][] toPrimitives(Short[][] array) {
+        val res = new short[array.length][array[0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                res[i][j] = array[i][j];
+
+        return res;
+    }
+
+    public static byte[][] toPrimitives(Byte[][] array) {
+        val res = new byte[array.length][array[0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                res[i][j] = array[i][j];
+
+        return res;
+    }
+
+    public static double[][] toPrimitives(Double[][] array) {
+        val res = new double[array.length][array[0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                res[i][j] = array[i][j];
+
+        return res;
+    }
+
+    public static float[][] toPrimitives(Float[][] array) {
+        val res = new float[array.length][array[0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                res[i][j] = array[i][j];
+
+        return res;
+    }
+
+    public static boolean [][] toPrimitives(Boolean[][] array) {
+        val res = new boolean[array.length][array[0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                res[i][j] = array[i][j];
+
+        return res;
+    }
+
+    public static long[][][] toPrimitives(Long[][][] array) {
+        val res = new long[array.length][array[0].length][array[0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    res[i][j][k] = array[i][j][k];
+
+        return res;
+    }
+
+    public static int[][][] toPrimitives(Integer[][][] array) {
+        val res = new int[array.length][array[0].length][array[0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    res[i][j][k] = array[i][j][k];
+
+        return res;
+    }
+
+    public static short[][][] toPrimitives(Short[][][] array) {
+        val res = new short[array.length][array[0].length][array[0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    res[i][j][k] = array[i][j][k];
+
+        return res;
+    }
+
+    public static byte[][][] toPrimitives(Byte[][][] array) {
+        val res = new byte[array.length][array[0].length][array[0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    res[i][j][k] = array[i][j][k];
+
+        return res;
+    }
+
+    public static double[][][] toPrimitives(Double[][][] array) {
+        val res = new double[array.length][array[0].length][array[0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    res[i][j][k] = array[i][j][k];
+
+        return res;
+    }
+
+    public static float[][][] toPrimitives(Float[][][] array) {
+        val res = new float[array.length][array[0].length][array[0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    res[i][j][k] = array[i][j][k];
+
+        return res;
+    }
+
+    public static boolean[][][] toPrimitives(Boolean[][][] array) {
+        val res = new boolean[array.length][array[0].length][array[0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    res[i][j][k] = array[i][j][k];
+
+        return res;
+    }
+
+    public static long[][][][] toPrimitives(Long[][][][] array) {
+        val res = new long[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    for (int l = 0; l < array[0][0][0].length; l++)
+                        res[i][j][k][l] = array[i][j][k][l];
+
+        return res;
+    }
+
+    public static int[][][][] toPrimitives(Integer[][][][] array) {
+        val res = new int[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    for (int l = 0; l < array[0][0][0].length; l++)
+                        res[i][j][k][l] = array[i][j][k][l];
+
+        return res;
+    }
+
+    public static short[][][][] toPrimitives(Short[][][][] array) {
+        val res = new short[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    for (int l = 0; l < array[0][0][0].length; l++)
+                        res[i][j][k][l] = array[i][j][k][l];
+
+        return res;
+    }
+
+    public static byte[][][][] toPrimitives(Byte[][][][] array) {
+        val res = new byte[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    for (int l = 0; l < array[0][0][0].length; l++)
+                        res[i][j][k][l] = array[i][j][k][l];
+
+        return res;
+    }
+
+    public static double[][][][] toPrimitives(Double[][][][] array) {
+        val res = new double[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    for (int l = 0; l < array[0][0][0].length; l++)
+                        res[i][j][k][l] = array[i][j][k][l];
+
+        return res;
+    }
+
+    public static float[][][][] toPrimitives(Float[][][][] array) {
+        val res = new float[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    for (int l = 0; l < array[0][0][0].length; l++)
+                        res[i][j][k][l] = array[i][j][k][l];
+
+        return res;
+    }
+
+    public static boolean[][][][] toPrimitives(Boolean[][][][] array) {
+        val res = new boolean[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        for (int i = 0; i < array.length; i++)
+            for (int j = 0; j < array[0].length; j++)
+                for (int k = 0; j < array[0][0].length; k++)
+                    for (int l = 0; l < array[0][0][0].length; l++)
+                        res[i][j][k][l] = array[i][j][k][l];
+
+        return res;
     }
 }

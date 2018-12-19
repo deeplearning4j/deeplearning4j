@@ -94,7 +94,7 @@ public class TestDL4JLocalExecution {
                                     .build()) //1-2 identical layers (except nIn)
                     .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                             .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                    .numEpochs(3).pretrain(false).backprop(true).build();
+                    .numEpochs(3).build();
 
             DataProvider dp = null;
             Class<? extends DataSource> ds = null;
@@ -224,7 +224,7 @@ public class TestDL4JLocalExecution {
                                         new IntegerParameterSpace(1, 2)) //1-2 identical layers (except nIn)
                         .addLayer(new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .numEpochs(3).pretrain(false).backprop(true).build();
+                        .numEpochs(3).build();
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
@@ -280,7 +280,7 @@ public class TestDL4JLocalExecution {
                                         new IntegerParameterSpace(1, 2)) //1-2 identical layers (except nIn)
                         .addLayer(new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
+                        .earlyStoppingConfiguration(esConf).build();
 
         //Define configuration:
 
@@ -335,7 +335,7 @@ public class TestDL4JLocalExecution {
                         .activation(Activation.HARDSIGMOID)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .setInputType(InputType.convolutionalFlat(28,28,1))
-                .pretrain(false).backprop(true).build();
+                .build();
 
         //Define configuration:
 

@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class HardSigmoidDerivative extends BaseTransformOp {
+public class HardSigmoidDerivative extends BaseTransformStrictOp {
     public HardSigmoidDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -53,17 +54,13 @@ public class HardSigmoidDerivative extends BaseTransformOp {
         super(x, z, n);
     }
 
-    public HardSigmoidDerivative(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public HardSigmoidDerivative(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 52;
+        return 10;
     }
 
     @Override

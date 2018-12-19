@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.datasets;
 
+import org.deeplearning4j.datasets.fetchers.Cifar10Fetcher;
 import org.deeplearning4j.datasets.fetchers.TinyImageNetFetcher;
 import org.junit.Test;
 
@@ -25,6 +26,14 @@ public class TestDataSets {
     public void testTinyImageNetExists() throws Exception {
         //Simple sanity check on extracting
         TinyImageNetFetcher f = new TinyImageNetFetcher();
+        f.downloadAndExtract();
+        f.downloadAndExtract();
+    }
+
+    @Test
+    public void testCifar10Exists() throws Exception {
+        //Simple sanity check on extracting
+        Cifar10Fetcher f = new Cifar10Fetcher();
         f.downloadAndExtract();
         f.downloadAndExtract();
     }

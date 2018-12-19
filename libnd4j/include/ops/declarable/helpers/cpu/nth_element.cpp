@@ -25,29 +25,45 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void nthElementFunctor(NDArray<T>* input, int n, NDArray<T>* output) {
+    void nthElementFunctor_(NDArray* input, NDArray* nVal, NDArray* output) {
+        Nd4jLong n = nVal->e<Nd4jLong>(0);
+        // TODO: fix using std::nth_element to use typename T instead float or avoid use double with this op.
         if (input->isVector()) {
-            std::vector<T> data(input->lengthOf());
-            memcpy(&data[0], input->getBuffer(), sizeof(T) * data.size());
-            std::nth_element(data.begin(), data.begin() + n, data.end());
-            output->putScalar(0, data[n]);
+            std::vector<float> data(input->lengthOf());
+            //memcpy(&data[0], input->getBuffer(), sizeof(T) * data.size());
+            size_t l = 0;
+            for (size_t l = 0; l < data.size(); ++l)
+                data[l] = input->e<float>(l);
+            auto nthPos = data.begin();
+            nthPos += n;
+            std::nth_element(data.begin(), nthPos, data.end());
+            output->p<float>(0, data[n]);
         }
         else { // rank greater than 1
             std::vector<int> lastDims({input->rankOf() - 1});
-            std::unique_ptr<ResultSet<T>> rows(input->allTensorsAlongDimension(lastDims));
+            std::unique_ptr<ResultSet> rows(input->allTensorsAlongDimension(lastDims));
+#pragma omp parallel for
             for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
                 auto row = rows->at(e);
-                std::vector<T> data(row->lengthOf());
-                memcpy(&data[0], row->getBuffer(), sizeof(T) * data.size());
-                std::nth_element(data.begin(), data.begin() + n, data.end());
-                output->putScalar(e, data[n]);
+                std::vector<float> internalData(row->lengthOf());
+                //T* internalP = const_cast<T*>(internalData.data());
+                for (size_t l = 0; l < internalData.size(); ++l)
+                    internalData[l] = row->e<float>(l);
+
+                //memcpy(&internalData[0], row->getBuffer(), sizeof(T) * internalData.size());
+                auto nthPos = internalData.begin();
+                nthPos += n;
+                std::nth_element(internalData.begin(), nthPos, internalData.end());
+                output->p<float>(e, internalData[n]);
             }
         }
     }
+    void nthElementFunctor(NDArray* input, NDArray* n, NDArray* output) {
+    BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output), LIBND4J_TYPES);
 
-    template void nthElementFunctor(NDArray<float>* input, int n, NDArray<float>* output);
-    template void nthElementFunctor(NDArray<float16>* input, int n, NDArray<float16>* output);
-    template void nthElementFunctor(NDArray<double>* input, int n, NDArray<double>* output);
+    }
+    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (NDArray* input, NDArray* n, NDArray* output), LIBND4J_TYPES);
+    
 }
 }
 }

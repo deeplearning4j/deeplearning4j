@@ -22,14 +22,11 @@ import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.eval.EvaluationBinary;
 import org.deeplearning4j.gradientcheck.LossFunctionGradientCheck;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.graph.StackVertex;
 import org.deeplearning4j.nn.conf.graph.UnstackVertex;
-import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
-import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
@@ -39,26 +36,20 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Not;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.*;
-import org.nd4j.linalg.schedule.ISchedule;
-import org.nd4j.linalg.schedule.MapSchedule;
-import org.nd4j.linalg.schedule.ScheduleType;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -68,7 +59,7 @@ import static org.junit.Assert.*;
 public class TestMasking extends BaseDL4JTest {
 
     static {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
     @Test
@@ -85,7 +76,7 @@ public class TestMasking extends BaseDL4JTest {
             net.init();
 
             DataSet data = new DataSet(Nd4j.linspace(1, 10, 10).reshape(1, 1, 10),
-                            Nd4j.linspace(2, 20, 10).reshape(1, 1, 10), Nd4j.ones(10), Nd4j.ones(10));
+                            Nd4j.linspace(2, 20, 10).reshape(1, 1, 10), Nd4j.ones(1, 10), Nd4j.ones(1, 10));
 
             net.fit(data);
             for (Layer l : net.getLayers()) {
@@ -114,7 +105,7 @@ public class TestMasking extends BaseDL4JTest {
         int nIn = 6;
         int layerSize = 4;
 
-        INDArray mask1 = Nd4j.create(new double[] {1, 0, 0, 1, 0});
+        INDArray mask1 = Nd4j.create(new double[] {1, 0, 0, 1, 0}, new long[]{1,5});
         INDArray mask3 = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {0, 1, 0, 1, 0}, {1, 0, 0, 1, 1}});
         INDArray[] labelMasks = new INDArray[] {mask1, mask3};
 
@@ -185,7 +176,7 @@ public class TestMasking extends BaseDL4JTest {
 
                 //Now: change the label values for the masked steps. The
 
-                INDArray maskZeroLocations = Nd4j.getExecutioner().execAndReturn(new Not(labelMask.dup()));
+                INDArray maskZeroLocations = labelMask.rsub(1.0);   //rsub(1): swap 0s and 1s
                 INDArray rand = Nd4j.rand(maskZeroLocations.shape()).muli(0.5);
 
                 INDArray newLabels = labels.add(rand.muli(maskZeroLocations)); //Only the masked values are changed

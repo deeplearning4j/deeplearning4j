@@ -28,6 +28,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -142,25 +143,25 @@ public class Nd4jTest extends BaseNd4jTest {
         INDArray data = Nd4j.create(new double[] {4., 4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8., 4.,
                         4., 4., 4., 8., 8., 8., 8., 4., 4., 4., 4., 8., 8., 8., 8, 2., 2., 2., 2., 4., 4., 4., 4., 2.,
                         2., 2., 2., 4., 4., 4., 4., 2., 2., 2., 2., 4., 4., 4., 4., 2., 2., 2., 2., 4., 4., 4., 4.},
-                new int[] {2, 2, 4, 4});
+                new long[] {2, 2, 4, 4});
 
         INDArray actualResult = data.var(false, 0);
         INDArray expectedResult = Nd4j.create(new double[] {1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4.,
-                4., 1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4., 4.}, new int[] {2, 4, 4});
+                4., 1., 1., 1., 1., 4., 4., 4., 4., 1., 1., 1., 1., 4., 4., 4., 4.}, new long[] {2, 4, 4});
         assertEquals(getFailureMessage(), expectedResult, actualResult);
     }
 
     @Test
     public void testVar2() {
-        INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
+        INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray var = arr.var(false, 0);
         assertEquals(Nd4j.create(new double[] {2.25, 2.25, 2.25}), var);
     }
 
     @Test
     public void testExpandDims(){
-        final List<Pair<INDArray, String>> testMatricesC = NDArrayCreationUtil.getAllTestMatricesWithShape('c', 3, 5, 0xDEAD);
-        final List<Pair<INDArray, String>> testMatricesF = NDArrayCreationUtil.getAllTestMatricesWithShape('f', 7, 11, 0xBEEF);
+        final List<Pair<INDArray, String>> testMatricesC = NDArrayCreationUtil.getAllTestMatricesWithShape('c', 3, 5, 0xDEAD, DataType.DOUBLE);
+        final List<Pair<INDArray, String>> testMatricesF = NDArrayCreationUtil.getAllTestMatricesWithShape('f', 7, 11, 0xBEEF, DataType.DOUBLE);
 
         final ArrayList<Pair<INDArray, String>> testMatrices = new ArrayList<>(testMatricesC);
         testMatrices.addAll(testMatricesF);
@@ -176,19 +177,21 @@ public class Nd4jTest extends BaseNd4jTest {
 
                 final String message = "Expanding in Dimension " + i + "; Shape before expanding: " + Arrays.toString(shape) + " "+ordering+" Order; Shape after expanding: " + Arrays.toString(expanded.shape()) +  " "+expanded.ordering()+"; Input Created via: " + recreation;
 
+                val tmR = testMatrix.ravel();
+                val expR = expanded.ravel();
                 assertEquals(message, 1, expanded.shape()[i < 0 ? i + rank : i]);
-                assertEquals(message, testMatrix.ravel(), expanded.ravel());
+                assertEquals(message, tmR, expR);
                 assertEquals(message, ordering,  expanded.ordering());
 
-                testMatrix.assign(Nd4j.rand(shape));
+                testMatrix.assign(Nd4j.rand(DataType.DOUBLE, shape));
                 assertEquals(message, testMatrix.ravel(), expanded.ravel());
             }
         }
     }
     @Test
     public void testSqueeze(){
-        final List<Pair<INDArray, String>> testMatricesC = NDArrayCreationUtil.getAllTestMatricesWithShape('c', 3, 1, 0xDEAD);
-        final List<Pair<INDArray, String>> testMatricesF = NDArrayCreationUtil.getAllTestMatricesWithShape('f', 7, 1, 0xBEEF);
+        final List<Pair<INDArray, String>> testMatricesC = NDArrayCreationUtil.getAllTestMatricesWithShape('c', 3, 1, 0xDEAD, DataType.DOUBLE);
+        final List<Pair<INDArray, String>> testMatricesF = NDArrayCreationUtil.getAllTestMatricesWithShape('f', 7, 1, 0xBEEF, DataType.DOUBLE);
 
         final ArrayList<Pair<INDArray, String>> testMatrices = new ArrayList<>(testMatricesC);
         testMatrices.addAll(testMatricesF);
@@ -233,8 +236,8 @@ public class Nd4jTest extends BaseNd4jTest {
         Assert.assertArrayEquals(originalData,dataTwo);
         floatBuffer.position(0);
 
-        DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(floatBuffer.asFloatBuffer()),linspace.length());
-        assertEquals(Nd4j.createBuffer(new float[]{1,2,3,4}),dataBuffer);
+        DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(floatBuffer.asFloatBuffer()),linspace.length(), DataType.FLOAT);
+        assertArrayEquals(new float[]{1,2,3,4}, dataBuffer.asFloat(), 1e-5f);
 
         INDArray convertedFrom = Nd4j.getNDArrayFactory().createFromNpyHeaderPointer(convert);
         assertEquals(linspace,convertedFrom);

@@ -18,70 +18,114 @@
 // Created by raver119 on 18.12.17.
 //
 
+#include <types/types.h>
 #include <op_boilerplate.h>
 #include <loops/summarystatsreduce.h>
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
 
+using namespace simdOps;
+
 namespace functions {
     namespace summarystats {
 
 
-        template <typename T>
-        T SummaryStatsReduce<T>::execScalar(const int opNum, const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams) {
-            RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
+        template <typename X, typename Y>
+        Y SummaryStatsReduce<X,Y>::execScalar(const int opNum,
+                const bool biasCorrected,
+                void *x,
+                Nd4jLong *xShapeInfo,
+                void *extraParams) {
+            RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
         }
 
-        template <typename T>
-        void SummaryStatsReduce<T>::exec(const int opNum, const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
-            DISPATCH_BY_OPNUM(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, result, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
+        template <typename X, typename Y>
+        void SummaryStatsReduce<X,Y>::execScalar(const int opNum,
+                                              const bool biasCorrected,
+                                              void *x,
+                                              Nd4jLong *xShapeInfo,
+                                              void *extraParams,
+                                              void *z,
+                                              Nd4jLong *resultShapeInfoBuffer) {
+            DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, resultShapeInfoBuffer), SUMMARY_STATS_OPS);
         }
 
-        template <typename T>
+        template <typename X, typename Y>
+        void SummaryStatsReduce<X,Y>::exec(const int opNum,
+                const bool biasCorrected,
+                void *x,
+                Nd4jLong *xShapeInfo,
+                void *extraParams,
+                void *z,
+                Nd4jLong *resultShapeInfoBuffer,
+                int *dimension,
+                int dimensionLength) {
+            DISPATCH_BY_OPNUM_TT(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, resultShapeInfoBuffer, dimension, dimensionLength), SUMMARY_STATS_OPS);
+        }
+
+        template <typename X, typename Z>
         template <typename OpType >
-        T SummaryStatsReduce<T>::execScalar(const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams) {
-            SummaryStatsData<T> startingIndex;
-            startingIndex.initialize();
-            Nd4jLong length = shape::length(xShapeInfo);
-            int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-            if (xElementWiseStride == 1) {
-                for (Nd4jLong i = 0; i < length; i++) {
-                    SummaryStatsData<T> curr;
-                    curr.initWithValue(x[i]);
-                    startingIndex = update(startingIndex, curr,
-                                           extraParams);
-                }
-                T finalVal = (T) OpType::getValue(biasCorrected, startingIndex);
+        void SummaryStatsReduce<X,Z>::execScalar(const bool biasCorrected,
+                                              void *vx,
+                                              Nd4jLong *xShapeInfo,
+                                              void *vextraParams,
+                                              void *vz,
+                                              Nd4jLong *resultShapeInfoBuffer) {
+            auto z = reinterpret_cast<Z*>(vz);
+            z[0] = execScalar<OpType>(biasCorrected, vx, xShapeInfo, vextraParams);
+        }
 
-                return finalVal;
+        template <typename X, typename Z>
+        template <typename OpType >
+        Z SummaryStatsReduce<X,Z>::execScalar(const bool biasCorrected, void *vx, Nd4jLong *xShapeInfo, void *vextraParams) {
+
+            auto x = reinterpret_cast<X *>(vx);
+            auto extraParams = reinterpret_cast<Z *>(vextraParams);
+
+            SummaryStatsData<X> startingIndex;
+            startingIndex.initialize();
+            auto length = shape::length(xShapeInfo);
+            auto xEws = shape::elementWiseStride(xShapeInfo);
+            if (xEws == 1) {
+                for (Nd4jLong i = 0; i < length; i++) {
+                    SummaryStatsData<X> curr;
+                    curr.initWithValue(x[i]);
+                    startingIndex = update(startingIndex, curr, extraParams);
+                }
+
+                return OpType::getValue(biasCorrected, startingIndex);
             }
             else {
-                Nd4jLong xCoords[MAX_RANK];
-
-                auto xShape = shape::shapeOf(xShapeInfo);
-                auto xStride = shape::stride(xShapeInfo);
-                int xRank = shape::rank(xShapeInfo);
-
 
                 for (Nd4jLong i = 0; i < length; i++) {
-                    shape::ind2subC(xRank, xShape, i, length, xCoords);
-                    auto xOffset = shape::getOffset(0, xShape, xStride, xCoords, xRank);
+                                        
+                    auto xOffset = shape::getIndexOffset(i, xShapeInfo, length);
 
-                    SummaryStatsData<T> curr;
+                    SummaryStatsData<X> curr;
                     curr.initWithValue(x[xOffset]);
                     startingIndex = update(startingIndex, curr, extraParams);
                 }
 
-                T finalVal = (T)OpType::getValue(biasCorrected, startingIndex);
-                return finalVal;
+                return OpType::getValue(biasCorrected, startingIndex);
             }
         }
 
-        template <typename T>
+        template <typename X, typename Z>
         template <typename OpType >
-        void SummaryStatsReduce<T>::exec(const bool biasCorrected, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength) {
+        void SummaryStatsReduce<X,Z>::exec(const bool biasCorrected,
+                void *vx,
+                Nd4jLong *xShapeInfo,
+                void *vextraParams,
+                void *vresult,
+                Nd4jLong *resultShapeInfoBuffer,
+                int *dimension,
+                int dimensionLength) {
+            auto x = reinterpret_cast<X *>(vx);
+            auto z = reinterpret_cast<Z *>(vresult);
+            auto extraParams = reinterpret_cast<Z *>(vextraParams);
+
             if (shape::isScalar(resultShapeInfoBuffer)) {
-                result[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
+                z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
                 return;
             }
 
@@ -100,7 +144,7 @@ namespace functions {
             //the squeezed information doesn't render the right strides for
             //tad offset
             if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tad.wholeThing) {
-                result[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
+                z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
                 return;
             }
 
@@ -130,10 +174,10 @@ namespace functions {
                     int dim;
                     int rankIter = rank;
                     Nd4jLong xStridesIter[MAX_RANK];
-                    T *xPointer = x + offset;
-                    SummaryStatsData<T> comp;
+                    auto xPointer = x + offset;
+                    SummaryStatsData<X> comp;
                     comp.initWithValue(0.0);
-                    if (PrepareOneRawArrayIter<T>(rankIter,
+                    if (PrepareOneRawArrayIter<X>(rankIter,
                                                   xShape,
                                                   xPointer,
                                                   xStride,
@@ -143,7 +187,7 @@ namespace functions {
                                                   xStridesIter) >= 0) {
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
                                 /* Process the innermost dimension */
-                                SummaryStatsData<T> comp2;
+                                SummaryStatsData<X> comp2;
                                 comp2.initWithValue(xPointer[0]);
                                 comp = update(comp, comp2, extraParams);
                             } ND4J_RAW_ITER_ONE_NEXT(dim,
@@ -157,7 +201,7 @@ namespace functions {
                         printf("Unable to prepare array\n");
                     }
 
-                    result[i] = OpType::getValue(biasCorrected, comp);
+                    z[i] = OpType::getValue(biasCorrected, comp);
                 }
             }
             else {
@@ -168,52 +212,45 @@ namespace functions {
 #pragma omp parallel for schedule(guided) default(shared)
                     for (int i = 0; i < resultLength; i++) {
                         Nd4jLong baseOffset = tad.tadOffsets[i];
-                        SummaryStatsData<T> comp;
+                        SummaryStatsData<X> comp;
                         comp.initWithValue(x[baseOffset]);
 // FIXME: reduction to be used here
                         for (int j = 1; j < tadLength; j++) {
-                            SummaryStatsData<T> comp2;
+                            SummaryStatsData<X> comp2;
                             comp2.initWithValue(x[baseOffset + (tadElementWiseStride * j)]);
                             comp = update(comp, comp2, extraParams);
                         }
 
-                        result[i] = OpType::getValue(biasCorrected, comp);
+                        z[i] = OpType::getValue(biasCorrected, comp);
                     }
                 } else {
                     auto tadShapeShapeInfo = tad.tadOnlyShapeInfo;
-
-                    auto tadShape = shape::shapeOf(tadShapeShapeInfo);
-                    auto tadStride = shape::stride(tadShapeShapeInfo);
-                    auto tadRank = shape::rank(tadShapeShapeInfo);
                     auto tadLength = shape::length(tad.tadOnlyShapeInfo);
 
 #pragma omp parallel for schedule(guided) default(shared)
                     for (int r = 0; r < resultLength; r++) {
-                        Nd4jLong xCoord[MAX_RANK];
+                        
                         auto tadOffsetForBlock = tad.tadOffsets[r];
-
-                        SummaryStatsData<T> comp;
+                        SummaryStatsData<X> comp;
                         comp.initWithValue(x[tadOffsetForBlock]);
 
 // FIXME: reduction should be fixed
-                        for (int i = 1; i < tadLength; i ++) {
-                            shape::ind2subC(tadRank, tadShape, i, tadLength, xCoord);
-                            auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+                        for (int i = 1; i < tadLength; i ++) {                            
+                            
+                            auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadShapeShapeInfo, tadLength);
 
-                            SummaryStatsData <T> indexVal2;
+                            SummaryStatsData <X> indexVal2;
                             indexVal2.initWithValue(x[xOffset]);
 
                             comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
                         }
-                        result[r] = OpType::getValue(biasCorrected, comp);
+                        z[r] = OpType::getValue(biasCorrected, comp);
                     }
                 }
             }
         }
 
 
-        template class ND4J_EXPORT SummaryStatsReduce<float>;
-        template class ND4J_EXPORT SummaryStatsReduce<float16>;
-        template class ND4J_EXPORT SummaryStatsReduce<double>;
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT SummaryStatsReduce, , LIBND4J_TYPES, FLOAT_TYPES);
     }
 }

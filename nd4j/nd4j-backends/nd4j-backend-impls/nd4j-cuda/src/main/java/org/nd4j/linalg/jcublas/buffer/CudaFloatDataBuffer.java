@@ -16,9 +16,11 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -76,7 +78,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     @Override
     protected void initTypeAndSize() {
         elementSize = 4;
-        type = Type.FLOAT;
+        type = DataType.FLOAT;
     }
 
     public CudaFloatDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
@@ -128,54 +130,17 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     }
 
     public CudaFloatDataBuffer(byte[] data, long length) {
-        super(data, length);
+        super(data, length, DataType.FLOAT);
     }
 
     public CudaFloatDataBuffer(ByteBuffer buffer, long length) {
-        super(buffer, (int) length);
+        super(buffer, (int) length, DataType.FLOAT);
     }
 
     public CudaFloatDataBuffer(ByteBuffer buffer, long length, long offset) {
-        super(buffer, length, offset);
+        super(buffer, length, offset, DataType.FLOAT);
     }
 
-
-    @Override
-    public void assign(long[] indices, float[] data, boolean contiguous, long inc) {
-        if (indices.length != data.length)
-            throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
-
-        if (contiguous) {
-            /*   long offset = indices[0];
-            Pointer p = Pointer.to(data);
-            set(offset, data.length, p, inc);
-            */
-            throw new UnsupportedOperationException();
-        } else
-            throw new UnsupportedOperationException("Only contiguous supported");
-    }
-
-    @Override
-    public void assign(long[] indices, double[] data, boolean contiguous, long inc) {
-
-        if (indices.length != data.length)
-            throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
-
-        if (contiguous) {
-            /*long offset = indices[0];
-            Pointer p = Pointer.to(data);
-            set(offset, data.length, p, inc);
-            */
-            throw new UnsupportedOperationException();
-        } else
-            throw new UnsupportedOperationException("Only contiguous supported");
-    }
 
     @Override
     protected DataBuffer create(long length) {
@@ -216,7 +181,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
-    public Type dataType() {
+    public DataType dataType() {
         return type;
     }
 

@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.List;
 
@@ -29,7 +30,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class OldMax extends BaseTransformOp {
+public class OldMax extends BaseTransformSameOp {
     public OldMax(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
@@ -78,7 +79,7 @@ public class OldMax extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 13;
+        return 7;
     }
 
     @Override

@@ -20,6 +20,7 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
+import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.spark.api.TrainingMaster;
@@ -82,5 +83,10 @@ public class SparkEarlyStoppingGraphTrainer extends BaseSparkEarlyStoppingTraine
     @Override
     protected double getScore() {
         return sparkNet.getScore();
+    }
+
+    @Override
+    public EarlyStoppingResult<ComputationGraph> pretrain() {
+        throw new UnsupportedOperationException("Not supported");
     }
 }

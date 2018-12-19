@@ -36,6 +36,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationELU;
 import org.nd4j.linalg.activations.impl.ActivationRationalTanh;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -50,6 +51,11 @@ import static org.junit.Assert.*;
  */
 
 public class ActivationLayerTest extends BaseDL4JTest {
+
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
 
     @Test
     public void testInputTypes() {

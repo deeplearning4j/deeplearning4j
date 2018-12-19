@@ -36,7 +36,7 @@ public class DoublesTests {
     @Before
     public void setUp() throws Exception {
         System.out.println("----------------------");
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
 
 
         CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(true).allowMultiGPU(false);
