@@ -87,7 +87,11 @@ namespace ops {
             }
             else {
                 auto axes = *block.getIArguments();
-                helpers::reduceSquareNormBP(input, epsilon, (NDArray*)nullptr, output, axes);
+                bool keepDims = false;
+                if (block.getBArguments()->size())
+                    keepDims = B_ARG(0);
+
+                helpers::reduceSquareNormBP(input, epsilon, (NDArray*)nullptr, output, axes, keepDims);
             }
             return Status::OK();
     }

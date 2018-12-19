@@ -116,7 +116,11 @@ namespace ops {
             }
             else {
                 std::vector<int> axesList = *block.getIArguments();
-                helpers::reduceNorm2BP(input, epsilon, tempNorm2, output, axesList);
+                bool keepDims = false;
+                if (block.getBArguments()->size())
+                    keepDims = B_ARG(0);
+
+                helpers::reduceNorm2BP(input, epsilon, tempNorm2, output, axesList, keepDims);
             }
             return Status::OK();
     }
