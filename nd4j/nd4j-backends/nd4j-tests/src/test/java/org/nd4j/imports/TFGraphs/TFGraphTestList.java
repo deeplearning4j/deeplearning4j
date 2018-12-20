@@ -49,10 +49,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-//            "cnn2d_nn/nhwc_b2_k3_s1_d1_SAME"
-//            "max_pooling1d/channels_first_b2_k2_s1_SAME"
-//            "eye/e22_b1",
-                "logsumexp/rank0"
+            "reduce_dynamic_axis/sum_rank2_argmax_shape"
     };
 
     @After

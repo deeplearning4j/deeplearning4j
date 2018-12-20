@@ -251,7 +251,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 //2nd input should be treated as integer axis arg...
                 SDVariable axisArgVar = df.arg(1);
                 String n = axisArgVar.getVarName();
-                Preconditions.checkState(axisArgVar.dataType() == DataType.INT, "Legacy op %s input 1 (axis) was expected to be integer type, is %s", df.getClass(), axisArgVar.dataType());
+                Preconditions.checkState(axisArgVar.dataType().isIntType(), "Legacy op %s input 1 (axis) was expected to be an integer type, is %s", df.getClass(), axisArgVar.dataType());
 
                 INDArray arr = null;
                 if(axisArgVar.isConstant() || axisArgVar.getVariableType() == VariableType.VARIABLE){

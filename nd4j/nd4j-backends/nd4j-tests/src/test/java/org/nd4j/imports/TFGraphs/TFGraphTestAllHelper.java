@@ -200,7 +200,7 @@ public class TFGraphTestAllHelper {
                     assertTrue("Predictions do not match on " + modelName + ", node " + outputNode, eq);
                 } else {
                     INDArray diff = Transforms.abs(tfPred.sub(nd4jPred), false);
-                    INDArray absErrorMask = diff.gte(minAbsErrorOverride);   //value 1 if x[i] > minAbsError; value 0 otherwise. Used to get rid of 1e-30 vs. 1e-29 type failures
+                    INDArray absErrorMask = diff.gte(minAbsErrorOverride).castTo(Nd4j.defaultFloatingPointType());   //value 1 if x[i] > minAbsError; value 0 otherwise. Used to get rid of 1e-30 vs. 1e-29 type failures
                     INDArray sumAbs = Transforms.abs(tfPred, true).addi(Transforms.abs(nd4jPred, true));
                     BooleanIndexing.replaceWhere(sumAbs, 1.0, Conditions.equals(0.0));  //Can only get 0.0 if both are zeros - need to avoid 0/0=NaN
                     INDArray relError = diff.divi(sumAbs);
@@ -212,8 +212,9 @@ public class TFGraphTestAllHelper {
                     The idea: suppose all values are small, and are excluded due to minAbsError threshold
                     i.e., all 1e-5 vs. -1e-5 with min abs error of 1e-4
                     */
-                    INDArray maxAbs = Transforms.max(Transforms.abs(tfPred, true), Transforms.abs(tfPred, true), true);
-                    long countMaxAbsGTThreshold = maxAbs.gte(minAbsErrorOverride).sumNumber().intValue();
+                    //TODO FIX ME
+                    INDArray maxAbs = Transforms.max(Transforms.abs(tfPred.castTo(DataType.DOUBLE), true), Transforms.abs(nd4jPred.castTo(DataType.DOUBLE), true), true);
+                    long countMaxAbsGTThreshold = maxAbs.gte(minAbsErrorOverride).castTo(DataType.INT).sumNumber().intValue();
                     long countNotMasked = absErrorMask.sumNumber().intValue();  //Values are 0 or 1... if all 0s -> nothing being tested
                     if(countNotMasked == 0 && countMaxAbsGTThreshold == 0){
                         fail("All values for node " + outputNode + " are masked out due to minAbsError=" + minAbsErrorOverride +
