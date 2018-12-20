@@ -96,7 +96,9 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
             return Collections.emptyList();
 
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
-        long[] reducedShape = x.length() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims(), newFormat);
+        boolean scalar = x.isScalar();
+        long length = x.length();
+        long[] reducedShape = x.isScalar() ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims(), newFormat);
         return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, this.resultType()));
     }
 
@@ -106,8 +108,8 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
         //Note TF uses 2 inputs - i.e., axis arg is a variable or constant
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
                 "Expected 1 or 2 input datatypes for %s, got %s", getClass(), dataTypes);
-        Preconditions.checkState(dataTypes.size() == 1 || dataTypes.get(1) == DataType.INT, "When executing reductinos" +
-                "with 2 inputs, second input (axis) must be integer datatype for %s, got %s", getClass(), dataTypes);
+        Preconditions.checkState(dataTypes.size() == 1 || dataTypes.get(1).isIntType(), "When executing reductions" +
+                "with 2 inputs, second input (axis) must be an integer datatype for %s, got %s", getClass(), dataTypes);
         return Collections.singletonList(dataTypes.get(0));
     }
 }

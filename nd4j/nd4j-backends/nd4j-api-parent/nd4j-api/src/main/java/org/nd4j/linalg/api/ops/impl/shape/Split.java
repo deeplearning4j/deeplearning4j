@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.val;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -90,10 +91,22 @@ public class Split extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && !dataTypes.isEmpty(), "No datatypes were provided for %s: %s", getClass(), dataTypes);
+        DataType dt;
+        if(dataTypes.size() == 1){
+            dt = dataTypes.get(0);
+        } else {
+            //Order seems to usually be axis first for TF import? libnd4j supports both...
+            if(dataTypes.get(0).isIntType()){
+                dt = dataTypes.get(1);
+            } else {
+                dt = dataTypes.get(0);
+            }
+        }
         //Output types are same as first input type - just numSplits of them...
         List<DataType> out = new ArrayList<>(numSplit);
         for( int i=0; i<numSplit; i++ ){
-            out.add(dataTypes.get(0));
+            out.add(dt);
         }
         return out;
     }

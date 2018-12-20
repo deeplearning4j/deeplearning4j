@@ -10249,17 +10249,6 @@ public class SameDiff {
             setArrayForVariable(entry.getKey(), entry.getValue());
         }
 
-        if(resolveProperties) {
-            for (val funcName : propertiesToResolve.keySet()) {
-                DifferentialFunction func = ops.get(funcName).getOp();
-
-                if (func instanceof CustomOp) {
-                    CustomOp customOp = (CustomOp) func;
-                    customOp.populateInputsAndOutputsFromSameDiff();
-                }
-            }
-        }
-
         //declare resolved
         resolvedVariables = true;
     }

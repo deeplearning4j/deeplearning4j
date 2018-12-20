@@ -81,11 +81,6 @@ public class Tile extends DynamicCustomOp {
         }
     }
 
-    @Override
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
-        populateInputsAndOutputsFromSameDiff();
-    }
-
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
@@ -162,8 +157,10 @@ public class Tile extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
+        //2nd isput is dynamic repeat
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
+                "Expected 1 or 2 input datatypes for %s, got %s", getClass(), dataTypes);
         //Output type is same as input type
-        return dataTypes;
+        return Collections.singletonList(dataTypes.get(0));
     }
 }

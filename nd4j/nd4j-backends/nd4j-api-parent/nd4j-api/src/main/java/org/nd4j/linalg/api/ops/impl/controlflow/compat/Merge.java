@@ -18,12 +18,15 @@ package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +86,9 @@ public class Merge extends BaseCompatOp {
     }
 
     @Override
-    public void populateInputsAndOutputsFromSameDiff(){
-        //No op
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected 2 input dataypes for %s, got %s", getClass(), inputDataTypes);
+        Preconditions.checkState(inputDataTypes.get(0) == inputDataTypes.get(1), "Input datatypes must be the same for %s, got %s", getClass(), inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

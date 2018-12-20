@@ -605,69 +605,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
-    public void populateInputsAndOutputsFromSameDiff() {
-        val descriptor = getDescriptor();
-        if (descriptor == null)
-            throw new ND4JIllegalStateException("No custom op descriptor found for op name \"" + opName() + "\"");
-
-        log.debug("Op <{}>, isInplace: {}", opName(), isInplaceCall());
-
-        //Always update the inputs, if possible - they may have changed in SameDiff since last execution
-        //(example: different minibatch size since last execution)
-        inputArguments.clear();
-        boolean nullArr = false;
-        for (val arg : args()) {
-            //we should not attempt to resolve
-            //outputs when null inputs exist
-            if (arg.getArr() == null) {
-                nullArr = true;
-                log.warn("No input found for " + arg.getVarName() + " and op name " + opName());
-            }
-        }
-        if (!nullArr) {
-            for (val arg : args()) {
-                inputArguments.add(arg.getArr());
-            }
-        }
-
-
-        //Always update output arrays - checking shape
-        //Note that any time the input changes (not just shapes - but content also) the output array shape could change
-        outputArguments.clear();
-        if(!nullArr){
-            List<LongShapeDescriptor> shapes = calculateOutputShape();
-            SDVariable[] outputVars = outputVariables();
-            Preconditions.checkState(shapes.size() == outputVars.length, "Mismatch between number of shapes (%s)" +
-                    " and number of output variables (%s) - these must match", shapes.size(), outputVars.length);
-
-            outputArguments.clear();
-            for( int i=0; i<outputVars.length; i++ ){
-                INDArray currArr = outputVars[i].getArr();
-                val calculatedShape = shapes.get(i).getShape();
-
-                if(currArr == null && calculatedShape == null){
-                    throw new ND4JIllegalStateException("Unable to resolve shape for variable " + outputVars[i].getVarName());
-                }
-
-                //Generate a new output array if:
-                //(a) No array exists, OR
-                //(b) The output shape doesn't match what we need at present
-                if(currArr == null || !Arrays.equals(currArr.shape(), calculatedShape)){
-                    sameDiff.putOrUpdateShapeForVarName(outputVars[i].getVarName(), shapes.get(i).getShape(), true);
-                    currArr = outputVars[i].storeAndAllocateNewArray();
-                }
-
-                outputArguments.add(currArr);
-            }
-        }
-
-        if(log.isTraceEnabled()){
-            log.trace("Populating inputs and outputs for op {}: {}", opName, (nullArr ? "Unsuccessful" : "Successful"));
-        }
-    }
-
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         throw new UnsupportedOperationException("Please extend DynamicCustomOp.doDiff to support SameDiff backprop " +
                 "operations. Op: " + getClass().getName());

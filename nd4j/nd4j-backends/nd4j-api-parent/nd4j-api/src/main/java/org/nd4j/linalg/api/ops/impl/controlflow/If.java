@@ -388,11 +388,6 @@ public class If extends DifferentialFunction implements CustomOp {
 
     }
 
-    @Override
-    public void populateInputsAndOutputsFromSameDiff() {
-
-    }
-
 
 
     @Override

@@ -636,11 +636,6 @@ public class While extends DifferentialFunction implements CustomOp {
 
     }
 
-    @Override
-    public void populateInputsAndOutputsFromSameDiff() {
-
-    }
-
 
     @Override
     public String onnxName() {

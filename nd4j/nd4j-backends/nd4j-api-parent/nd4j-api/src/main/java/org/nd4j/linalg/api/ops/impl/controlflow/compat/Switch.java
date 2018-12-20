@@ -19,6 +19,8 @@ package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.tensorflow.framework.AttrValue;
@@ -81,5 +83,12 @@ public class Switch extends BaseCompatOp {
     @Override
     public int getNumOutputs(){
         return 2;   //2 outputs - 2 branches
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected 2 input dataypes for %s, got %s", getClass(), inputDataTypes);
+        Preconditions.checkState(inputDataTypes.get(1) == DataType.BOOL, "Input datatype 1 (predicate) should be bool for %s, got %s", getClass(), inputDataTypes);
+        return Arrays.asList(inputDataTypes.get(0), inputDataTypes.get(0));
     }
 }

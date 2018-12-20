@@ -3356,6 +3356,15 @@ public class Shape {
         if (axis == null || axis.length == 0)
             return new int[] {Integer.MAX_VALUE};
 
+        if(rank == 0){
+            if(axis.length != 1 || (axis[0] != 0 && axis[0] != Integer.MAX_VALUE)){
+                throw new ND4JIllegalStateException("Array axis for scalar (rank 0) array invalid: rank " + Arrays.toString(axis));
+            }
+            if(axis[0] == Integer.MAX_VALUE)
+                return axis;
+            return new int[]{Integer.MAX_VALUE};
+        }
+
         // first we should get rid of all negative axis
         int[] tmp = new int[axis.length];
 
