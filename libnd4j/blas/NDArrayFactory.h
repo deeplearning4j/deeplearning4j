@@ -61,7 +61,7 @@ namespace nd4j {
 
 
         template <typename T>
-        static NDArray* vector(Nd4jLong length, T startingValue = (T) 0, nd4j::memory::Workspace *workspace = nullptr);
+        static NDArray* vector(Nd4jLong length, T startingValue = (T) 0, nd4j::graph::LaunchContext* context = nullptr);
 
         template <typename T>
         static NDArray* create_(char order, const std::vector<Nd4jLong> &shape, nd4j::graph::LaunchContext* context = nullptr);
