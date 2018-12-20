@@ -47,20 +47,15 @@ public class EqualsWithEps extends BaseReduceFloatOp {
 
     public EqualsWithEps() {}
 
-    public EqualsWithEps(INDArray x, INDArray y, INDArray z, long n, double eps) {
-        super(x, y, z, n);
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, double eps, int... dimensions) {
+        super(x, y, z,true, false, dimensions);
         this.extraArgs = new Object[] {eps};
     }
 
-    public EqualsWithEps(INDArray x, INDArray y, long n, double eps) {
-        super(x, y, null, n);
-        this.extraArgs = new Object[] {eps};
+    public EqualsWithEps(INDArray x, INDArray y, double eps, int... dimensions) {
+        this(x, y, null, eps, dimensions);
     }
 
-    public EqualsWithEps(INDArray x, INDArray y, double eps) {
-        super(x, y, null);
-        this.extraArgs = new Object[] {eps};
-    }
 
     @Override
     public int opNum() {

@@ -39,20 +39,12 @@ public class Dot extends BaseReduceFloatOp {
 
     public Dot() {}
 
-    public Dot(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public Dot(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        this(x, y, z, true, false, dimensions);
     }
 
-    public Dot(INDArray x, INDArray y, long n) {
-        super(x, y, null, n);
-    }
-
-    public Dot(INDArray x) {
-        super(x);
-    }
-
-    public Dot(INDArray x, INDArray y) {
-        super(x, y, null);
+    public Dot(INDArray x, INDArray y,  int... dimensions) {
+        super(x, y, dimensions);
     }
 
     public Dot(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){

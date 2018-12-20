@@ -53,20 +53,8 @@ public class CosineSimilarity extends BaseReduceFloatOp {
         passThrough = true;
     }
 
-    public CosineSimilarity(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public CosineSimilarity(INDArray x, INDArray y, long n) {
-        super(x, y, null, n);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public CosineSimilarity(INDArray x) {
-        super(x);
+    public CosineSimilarity(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
         extraArgs = new Object[]{0.0f, 0.0f};
     }
@@ -77,14 +65,13 @@ public class CosineSimilarity extends BaseReduceFloatOp {
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public CosineSimilarity(INDArray x, INDArray y, INDArray z, boolean allDistances) {
-        this(x, y, z, x.lengthLong());
+    public CosineSimilarity(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimension) {
+        this(x, y, z, dimension);
         this.isComplex = allDistances;
     }
 
-    public CosineSimilarity(INDArray x, INDArray y, boolean allDistances) {
-        this(x, y);
-        this.isComplex = allDistances;
+    public CosineSimilarity(INDArray x, INDArray y, boolean allDistances, int... dimension) {
+        this(x, y, null, allDistances, dimension);
     }
 
     public CosineSimilarity(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){

@@ -46,29 +46,19 @@ public class EuclideanDistance extends BaseReduceFloatOp {
 
     public EuclideanDistance() {}
 
-    public EuclideanDistance(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public EuclideanDistance(INDArray x, INDArray y, long n) {
-        super(x, y,null, n);
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
 
 
-    public EuclideanDistance(INDArray x, INDArray y) {
+    public EuclideanDistance(INDArray x, INDArray y, int... dimensions) {
         super(x, y, null);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public EuclideanDistance(INDArray x, INDArray y, boolean allDistances) {
-        this(x, y);
-        this.isComplex = allDistances;
+    public EuclideanDistance(INDArray x, INDArray y, boolean allDistances, int... dimensions) {
+        this(x, y, null, allDistances, dimensions);
     }
 
-    public EuclideanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
-        this(x, y, z, x.lengthLong());
+    public EuclideanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
+        this(x, y, z, true, false, dimensions);
         this.isComplex = allDistances;
     }
 
