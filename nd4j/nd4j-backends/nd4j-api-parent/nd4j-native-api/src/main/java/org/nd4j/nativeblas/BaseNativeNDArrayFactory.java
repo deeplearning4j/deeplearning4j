@@ -331,24 +331,12 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             int numBytes = (int)(size * elemSize);
             byte[] data = new byte[numBytes];
             is.read(data);
-
+            ByteBuffer bb = ByteBuffer.wrap(data);
 
             if (elemSize == 8){
                 double[] doubleData = new double[(int)size];
                 for (int i=0; i<size; i++){
-                    ByteBuffer buff = ByteBuffer.allocate(8);
-                    buff.order(ByteOrder.LITTLE_ENDIAN);
-                    for (int j=0; j < 8; j ++){
-                        buff.put(data[i * 8 + j]);
-                    }
-
-                    doubleData[i] = buff.getDouble(0);
-                    System.out.println("=====");
-                    for (int j=0; j<8;j++){
-                        System.out.println((int)data[i * 8 + j]);
-                    }
-                    System.out.println("=====");
-                    System.out.println(doubleData[i]);
+                    doubleData[i] = bb.getDouble(i);
                 }
                 map.put(fName, Nd4j.create(doubleData, shape, order));
 
@@ -356,23 +344,12 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             else{
                 double[] floatData = new double[(int)size];
                 for (int i=0; i<size; i++){
-                    ByteBuffer buff = ByteBuffer.allocate(4);
-                    buff.order(ByteOrder.LITTLE_ENDIAN);
-                    for (int j=0; j < 4; j ++){
-                        buff.put(data[i * 4 + j]);
-                    }
-                    floatData[i] = buff.getFloat();
+                    floatData[i] = bb.getFloat(i);
                 }
                 map.put(fName, Nd4j.create(floatData, shape, order));
 
             }
 
-
-            System.out.println(order);
-            System.out.println(typeStr);
-            System.out.println(shapeStr);
-            System.out.println(ArrayUtils.toString(shape));
-            System.out.println(headerStr);
         }
 
         return map;
