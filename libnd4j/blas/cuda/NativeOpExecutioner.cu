@@ -372,6 +372,7 @@ void NativeOpExecutioner::execIndexReduce(nd4j::graph::LaunchContext *lc,
         throw datatype_exception::build("NativeOpExecutioner::execIndexReduce requires Z operand to have INT64 type", zType);
 
 	auto dz = reinterpret_cast<Nd4jLong*>(dZ);
+    
 	BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce,  ::executeIndexReduce(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz, dZShapeInfo, shape::rank(hZShapeInfo), dimension, dimensionLength, 1, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
 }
 
