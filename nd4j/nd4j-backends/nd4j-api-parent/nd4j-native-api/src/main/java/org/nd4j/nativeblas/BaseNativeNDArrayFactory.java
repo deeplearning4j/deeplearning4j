@@ -289,9 +289,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                 is.read(new byte[extraFieldLength]);
             }
             is.read(new byte[11]);
-
-
-
+            
             String headerStr = "";
             int b;
             while((b = is.read()) != ((int)'\n')){
