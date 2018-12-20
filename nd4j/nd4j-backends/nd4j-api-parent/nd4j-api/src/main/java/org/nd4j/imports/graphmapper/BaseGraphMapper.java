@@ -21,7 +21,6 @@ import com.github.os72.protobuf351.TextFormat;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.builder.Diff;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -31,17 +30,12 @@ import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.io.*;
-import java.lang.reflect.Field;
 import java.util.*;
 
 /**
@@ -180,7 +174,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
         importState.setSameDiff(diff);
         importState.setGraph(tfGraph);
 
-        val variablesForGraph = variablesForGraph(tfGraph);
+        Map<String,TENSOR_TYPE> variablesForGraph = variablesForGraph(tfGraph);
         importState.setVariables(variablesForGraph);
 
 
@@ -192,7 +186,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
                 continue;
             }
 
-            DataType dt = dataTypeForTensor(entry.getValue());
+            DataType dt = dataTypeForTensor(entry.getValue(), 0);
             INDArray arr = getNDArrayFromTensor(entry.getKey(), entry.getValue(), tfGraph);
             long[] shape = hasShape((NODE_TYPE) entry.getValue()) ? getShape((NODE_TYPE) entry.getValue()) : null;   //TODO only works for TF
 
@@ -317,7 +311,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
 
     @Override
     public boolean validTensorDataType(TENSOR_TYPE tensorType) {
-        return dataTypeForTensor(tensorType) != DataType.UNKNOWN;
+        return dataTypeForTensor(tensorType, 0) != DataType.UNKNOWN;
     }
 
     public void validateGraphStructure(SameDiff sameDiff) {

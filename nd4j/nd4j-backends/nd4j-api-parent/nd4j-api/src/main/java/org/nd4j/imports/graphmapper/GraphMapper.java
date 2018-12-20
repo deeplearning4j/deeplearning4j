@@ -20,7 +20,6 @@ import com.github.os72.protobuf351.Message;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -213,17 +212,10 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
     /**
      *
      * @param tensorType
+     * @param outputNum
      * @return
      */
-    DataType dataTypeForTensor(TENSOR_TYPE tensorType);
-
-//    /**
-//     * If {@link #dataTypeForTensor(Object)} return UNKNOWN we *might* still be able
-//     * to import it. This method will return true if it is importable in spite of unknown type
-//     * @param tensor
-//     * @return
-//     */
-//    boolean unknownTypeNodeImportable(TENSOR_TYPE tensor);
+    DataType dataTypeForTensor(TENSOR_TYPE tensorType, int outputNum);
 
     boolean isStringType(TENSOR_TYPE tensor);
 

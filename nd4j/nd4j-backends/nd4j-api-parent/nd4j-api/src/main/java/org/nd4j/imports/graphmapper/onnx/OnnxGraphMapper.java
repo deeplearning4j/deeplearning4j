@@ -421,7 +421,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
-    public DataType dataTypeForTensor(onnx.OnnxProto3.TypeProto.Tensor tensorProto) {
+    public DataType dataTypeForTensor(OnnxProto3.TypeProto.Tensor tensorProto, int outputNum) {
        return nd4jTypeFromOnnxType(tensorProto.getElemType());
     }
 
@@ -476,7 +476,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
     @Override
     public INDArray getNDArrayFromTensor(String tensorName, OnnxProto3.TypeProto.Tensor tensorProto, OnnxProto3.GraphProto graph) {
-        DataType type = dataTypeForTensor(tensorProto);
+        DataType type = dataTypeForTensor(tensorProto, 0);
         if(!tensorProto.isInitialized()) {
             throw new ND4JIllegalStateException("Unable to retrieve ndarray. Tensor was not initialized");
         }

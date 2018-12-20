@@ -29,17 +29,15 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.imports.graphmapper.BaseGraphMapper;
 import org.nd4j.imports.graphmapper.ImportState;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.IfImportState;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.*;
 
 import java.io.*;
@@ -445,6 +443,14 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         return varName.substring(0, idx);
     }
 
+    public static int varNameToOpOutputNumber(String varName){
+        int idx = varName.lastIndexOf(':');
+        if(idx < 0)
+            return 0;
+        String n = varName.substring(idx+1);
+        return Integer.parseInt(n);
+    }
+
 
     @Override
     public Message.Builder getNewGraphBuilder() {
@@ -474,7 +480,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             return;
         }
 
-        org.nd4j.linalg.api.buffer.DataType dataType = dataTypeForTensor(tfNode);
+        org.nd4j.linalg.api.buffer.DataType dataType = dataTypeForTensor(tfNode, 0);
         if(dataType == org.nd4j.linalg.api.buffer.DataType.UNKNOWN)
             dataType = null;    //Infer it later
 
@@ -553,7 +559,14 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     //At this point, all placeholders, variables and constants should have been imported
                     //This: this should be an array type variable (i.e., activations)
                     if(v == null) {
-                        v = diff.var(name, VariableType.ARRAY, null, dataType, (long[])null);
+                        //First: try to work out the datatype of this input node
+                        //Given we haven't already imported it at this point, it must be the 2nd or later output of an op
+
+                        NodeDef inputOp = importState.getVariables().get(inputOpName);
+                        int outputIdx = varNameToOpOutputNumber(name);
+                        org.nd4j.linalg.api.buffer.DataType dt = dataTypeForTensor(inputOp, outputIdx);
+
+                        v = diff.var(name, VariableType.ARRAY, null, dt, (long[])null);
                     }
                     args.add(v);
                 }
@@ -790,14 +803,72 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
 
     @Override
-    public org.nd4j.linalg.api.buffer.DataType dataTypeForTensor(NodeDef tensorProto) {
-        if(!tensorProto.containsAttr("dtype") && !tensorProto.containsAttr("Tidx") && !tensorProto.containsAttr("T"))
-            return org.nd4j.linalg.api.buffer.DataType.UNKNOWN;
+    public org.nd4j.linalg.api.buffer.DataType dataTypeForTensor(NodeDef tensorProto, int outNum) {
+        //First: work out what attribute we should be looking at to determine output type
+        String opName = tensorProto.getOp();
 
-        val type = tensorProto.containsAttr("dtype") ? tensorProto.getAttrOrThrow("dtype").getType()
-                : tensorProto.containsAttr("T") ? tensorProto.getAttrOrThrow("T").getType() : tensorProto
-                .getAttrOrThrow("Tidx").getType();
-        switch(type) {
+        OpDef opDef = TensorflowDescriptorParser.opDescs().get(opName);
+
+        org.tensorflow.framework.DataType tfType;
+        /*
+        Note: "OutputArgCount" doesn't account for repeated or variable length outputs.
+        For example: "ShapeN" op has 1 for getOutputArgCount but output_arg has attribute "number_attr" that specifies number
+        of actual variables
+         */
+        int outputArgCount = opDef == null ? 0 : opDef.getOutputArgCount();
+        int[] outVarsPerOutputArg = outputArgCount == 0 ? null : new int[outputArgCount];
+        int actualOutputCount = 0;
+        if(outputArgCount > 0){
+            for(int i=0; i<outputArgCount; i++ ){
+                OpDef.ArgDef argDef = opDef.getOutputArg(i);
+                String numAttr = argDef.getNumberAttr();
+                if(numAttr != null && !numAttr.isEmpty()){
+                    //has a number_attr that specifies the actual number of outputs...
+                    String numAttrName = argDef.getNumberAttr();
+                    int n = (int)tensorProto.getAttrOrThrow(numAttrName).getI();
+                    outVarsPerOutputArg[i] = n;
+                } else {
+                    outVarsPerOutputArg[i] = 1;
+                }
+                actualOutputCount += outVarsPerOutputArg[i];
+            }
+        }
+
+        if(opDef != null && outputArgCount > 0){    //Looks like a few OpDef instances have outputs but don't actually list them... example: NoOp
+            Preconditions.checkState(outNum < actualOutputCount, "Cannot get output argument %s from op %s with %s output variables - variable %s", outNum, actualOutputCount, tensorProto.getName(), tensorProto.getName());
+
+            int argIdx = outNum;
+            if(outputArgCount != actualOutputCount){
+                //Map backwards accunting for fact that each output arg might correspond to multiple variables: for output variable x, which argument is this?
+                int idx = 0;
+                int soFar = 0;
+                while(soFar + outVarsPerOutputArg[idx] <= outNum){
+                    soFar += outVarsPerOutputArg[idx++];
+                }
+                argIdx = idx;
+            }
+
+            OpDef.ArgDef argDef = opDef.getOutputArg(argIdx);
+            String typeAttr = argDef.getTypeAttr();
+            if(typeAttr != null && tensorProto.containsAttr(typeAttr)){
+                tfType = tensorProto.getAttrOrThrow(typeAttr).getType();
+            } else {
+                return org.nd4j.linalg.api.buffer.DataType.UNKNOWN;
+            }
+
+        } else {
+            log.warn("No TensorFlow descriptor found for tensor \"%s\", op \"%s\"", tensorProto.getName(), tensorProto.getOp());
+
+            //No descriptor... try to fall back on common type attribute names
+            if(!tensorProto.containsAttr("dtype") && !tensorProto.containsAttr("Tidx") && !tensorProto.containsAttr("T"))
+                return org.nd4j.linalg.api.buffer.DataType.UNKNOWN;
+
+            tfType = tensorProto.containsAttr("dtype") ? tensorProto.getAttrOrThrow("dtype").getType()
+                    : tensorProto.containsAttr("T") ? tensorProto.getAttrOrThrow("T").getType() : tensorProto
+                    .getAttrOrThrow("Tidx").getType();
+        }
+
+        switch(tfType) {
             case DT_DOUBLE: return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
             case DT_FLOAT: return org.nd4j.linalg.api.buffer.DataType.FLOAT;
             case DT_HALF: return org.nd4j.linalg.api.buffer.DataType.HALF;
