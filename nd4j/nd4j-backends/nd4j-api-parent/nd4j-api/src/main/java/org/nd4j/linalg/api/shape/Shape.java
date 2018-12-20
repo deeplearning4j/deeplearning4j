@@ -600,8 +600,8 @@ public class Shape {
      */
     public static INDArray toOffsetZero(INDArray arr) {
         if (arr.offset() < 1 && arr.data().length() == arr.length())
-            if (arr.ordering() == 'f' && arr.stride(-1) != arr.elementStride()
-                    || arr.ordering() == 'c' && arr.stride(0) != arr.elementStride())
+            if (arr.ordering() == 'f' && arr.stride(-1) != 1
+                    || arr.ordering() == 'c' && arr.stride(0) != 1)
                 return arr;
 
         if (arr.isRowVector()) {
@@ -2035,7 +2035,7 @@ public class Shape {
         if (ni >= 1) {
             last_stride = newStrides[ni - 1];
         } else {
-            last_stride = arr.elementStride();
+            last_stride = 1;
         }
         if (isFOrder && ni >= 1) {
             last_stride *= newShape[ni - 1];
@@ -2214,7 +2214,7 @@ public class Shape {
      * @return the ordering for the given array
      */
     public static char getOrder(INDArray arr) {
-        return getOrder(arr.shape(), arr.stride(), arr.elementStride());
+        return getOrder(arr.shape(), arr.stride(), 1);
     }
 
     /**
@@ -3624,6 +3624,9 @@ public class Shape {
     }
 
     public static DataType pickPairwiseDataType(@NonNull DataType typeX, @NonNull Number number) {
+        if (!Nd4j.isExperimentalMode())
+            return typeX;
+
         if (number instanceof Double) {
             return pickPairwiseDataType(typeX, DataType.DOUBLE);
         } else if (number instanceof Float) {
@@ -3642,6 +3645,9 @@ public class Shape {
     }
 
     public static DataType pickPairwiseDataType(@NonNull DataType typeX, @NonNull DataType typeY) {
+        if (!Nd4j.isExperimentalMode())
+            return typeX;
+
         if (typeX == typeY)
             return typeX;
 

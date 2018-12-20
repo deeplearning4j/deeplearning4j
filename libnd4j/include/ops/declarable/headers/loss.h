@@ -300,6 +300,7 @@ namespace ops {
        */         
         #if NOT_EXCLUDED(OP_cosine_distance_loss)
         DECLARE_CUSTOM_OP(cosine_distance_loss, 3, 1, false, 0, 2);
+        DECLARE_CUSTOM_OP(cosine_distance_loss_grad, 3, 3, false, 0, 2);
         #endif
 
         //////////////////////////////////////////////////////////////////////////
@@ -318,7 +319,8 @@ namespace ops {
        *    0: loss values, type float. An array with shape resulting from reducing of logits shape along dimension with classes
        */      
         #if NOT_EXCLUDED(OP_softmax_cross_entropy_loss_with_logits)
-        DECLARE_CUSTOM_OP(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0);  
+        DECLARE_CUSTOM_OP(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0);
         #endif
 
         //////////////////////////////////////////////////////////////////////////
@@ -335,6 +337,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_sparse_softmax_cross_entropy_loss_with_logits)
         DECLARE_CUSTOM_OP(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 0, 0);
         #endif
 
 

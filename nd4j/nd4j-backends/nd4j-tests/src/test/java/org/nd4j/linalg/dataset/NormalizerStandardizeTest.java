@@ -218,7 +218,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         DataSet sampleDataSet = new DataSet(featureSet, labelSet);
         DataSetIterator sampleIter = new TestDataSetIterator(sampleDataSet, bSize);
 
-        INDArray theoreticalMean = Nd4j.create(new double[] {x, y, z}).reshape(1, -1);
+        INDArray theoreticalMean = Nd4j.create(new float[] {x, y, (float) z}).reshape(1, -1);
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fit(sampleIter);

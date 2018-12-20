@@ -53,9 +53,9 @@ public class LinAlgExceptions {
     }
 
     public static void assertSameShape(INDArray n, INDArray n2) {
-        if (!Shape.shapeEquals(n.shape(), n2.shape()))
-            throw new IllegalStateException("Mis matched shapes: " + Arrays.toString(n.shape()) + ", "
-                    + Arrays.toString(n2.shape()));
+        if (!Shape.isVector(n.shape()) && ! Shape.isVector(n2.shape()))
+            if (!Shape.shapeEquals(n.shape(), n2.shape()))
+                throw new IllegalStateException("Mis matched shapes: " + Arrays.toString(n.shape()) + ", " + Arrays.toString(n2.shape()));
     }
 
     public static void assertRows(INDArray n, INDArray n2) {
@@ -115,7 +115,7 @@ public class LinAlgExceptions {
     }
 
     public static void assertValidNum(INDArray n) {
-        INDArray linear = n.linearView();
+        INDArray linear = n.reshape(-1);
         for (int i = 0; i < linear.length(); i++) {
             double d = linear.getDouble(i);
             if (Double.isNaN(d) || Double.isInfinite(d))

@@ -135,9 +135,15 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
         INDArray dLdIn;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
             sameDiff.clearExecutionCache();
-            sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
+            INDArray castInput = input.castTo(Nd4j.defaultFloatingPointType());
+            if(castInput.isAttached())
+                castInput = castInput.dup();
+            sameDiff.associateArrayWithVariable(castInput, sameDiff.getVariable(INPUT_KEY));
             if(layerConf().labelsRequired()) {
-                sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));
+                INDArray castLabels = labels.castTo(Nd4j.defaultFloatingPointType());
+                if(castLabels.isAttached())
+                    castLabels = castLabels.dup();
+                sameDiff.associateArrayWithVariable(castLabels, sameDiff.getVariable(LABELS_KEY));
             }
 
             for(String s : paramTable.keySet() ){

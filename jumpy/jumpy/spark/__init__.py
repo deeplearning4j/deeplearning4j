@@ -15,5 +15,6 @@
 ################################################################################
 
 
-from .fast_impl import py2javaRDD, java2pyRDD
+from .fast_impl import py2javaArrayRDD, java2pyArrayRDD
+from .fast_impl import py2javaDatasetRDD, java2pyDatasetRDD
 # from .naive_impl import py2javaRDD, java2pyRDD

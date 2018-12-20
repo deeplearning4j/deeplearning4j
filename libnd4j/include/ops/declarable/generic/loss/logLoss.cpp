@@ -29,9 +29,11 @@ namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
+  	
   	auto predictions = INPUT_VARIABLE(0);
     auto weights     = INPUT_VARIABLE(1);
     auto labels      = INPUT_VARIABLE(2);
+    
     auto output      = OUTPUT_VARIABLE(0);
 
     int reductionMode = INT_ARG(0);			// 0 - "none"; 1 - "weighted_sum";  2 - "weighted_mean";  3 - "weighted_sum_by_nonzero_weights"
@@ -42,12 +44,12 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
     REQUIRE_TRUE(labels->isSameShape(predictions), 0, "LOG_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(labels).c_str(), ShapeUtils::shapeAsString(predictions).c_str());
     // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
     REQUIRE_TRUE(weights->isScalar() || weights->rankOf() == labels->rankOf(), 0, "LOG_LOSS OP: weights array should be scalar or have the same rank as labels array, but got %i and %i correspondingly!", weights->rankOf(), labels->rankOf());
-    // check whether broadcast operation is possible for weights array    
+    // check whether broadcast operation is possible for weights array
     REQUIRE_TRUE(weights->isScalar() || ShapeUtils::areShapesBroadcastable(*weights, *labels), 0, "LOG_LOSS OP: shapes of weights and labels arrays should be broadcastable, but got weights = %s and labels = %s instead!", ShapeUtils::shapeAsString(weights).c_str(), ShapeUtils::shapeAsString(labels).c_str());
     // only 4 possible reduction modes exist
     REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "LOG_LOSS_GRAD OP: reduction mode value is not acceptable, possible values are 0, 1, 2, 3, but got %i instead!", reductionMode);
     
-	// perform weights broadcasting/tile to labels if needed	
+	// perform weights broadcasting/tile to predictions if needed
 	auto weightsBroad = weights;
 	if(!weights->isScalar() && !weights->isSameShape(predictions))
 		weightsBroad = new NDArray(weights->tileToShape(predictions->getShapeInfo()));
@@ -69,7 +71,7 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of all elements of weightsBroad array
 			NDArray sum;
 			if (weights->isScalar())
-				sum = (*weights) * E.lengthOf();
+				sum = *weights * E.lengthOf();
 			else 
 				sum = weightsBroad->reduceNumber(reduce::Sum);
 			
@@ -179,7 +181,7 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
 	// dE_i/dp_i = (1-y_i)/(1-p_i+eps) - y_i/(p_i+eps)
 	dLdp->assign(oneMinusLabels / onePlusEpsMinusPredict - *labels / predictPlusEps);	// dE/dp	
 	// dE_i/dy_i = log((1+2eps)/(p_i+eps) - 1)
-	((1. + 2*epsilon) / predictPlusEps  - 1).applyTransform(transform::Log, dLdl);		// dE/dy
+	((1. + 2. * epsilon) / predictPlusEps  - 1.).applyTransform(transform::Log, dLdl);		// dE/dy
 
 	NDArray E = -(*labels) * predictPlusEps.transform(transform::Log) - oneMinusLabels * onePlusEpsMinusPredict.transform(transform::Log);
 	
@@ -247,17 +249,18 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
 				*dLdw = 0.;
 			}
 			else {
+				auto numOfNonZeroWeightsScalar = NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.getWorkspace());
 				if(weights->isScalar())
 					dLdw->assign(E.reduceNumber(reduce::Sum) / numOfNonZeroWeights);
 				else if(weights != weightsBroad) {
 					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
 					E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
-					*dLdw /= numOfNonZeroWeights;
+					*dLdw /= numOfNonZeroWeightsScalar;
 				}
 				else
-					dLdw->assign(E / numOfNonZeroWeights);
+					dLdw->assign(E / numOfNonZeroWeightsScalar);
 				
-				NDArray temp = *weightsBroad / numOfNonZeroWeights;
+				NDArray temp = *weightsBroad / numOfNonZeroWeightsScalar;
 				*dLdp *= temp;
 				*dLdl *= temp;
 			}
