@@ -442,6 +442,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public INDArray getInputArgument(int index) {
+        if(inputArguments == null || index >= inputArguments.size())
+            return null;
         return inputArguments.get(index);
     }
 
@@ -484,6 +486,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public INDArray getOutputArgument(int index) {
+        if(outputArguments == null || index >= outputArguments.size())
+            return null;
         return outputArguments.get(index);
     }
 

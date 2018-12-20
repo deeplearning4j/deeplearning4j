@@ -437,6 +437,14 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         return stringBuilder.toString();
     }
 
+    //Strip the variable suffix to give the node name: "Unique:1" -> "Unique"
+    public String varNameToOpName(String varName){
+        int idx = varName.lastIndexOf(':');
+        if(idx < 0)
+            return varName;
+        return varName.substring(0, idx);
+    }
+
 
     @Override
     public Message.Builder getNewGraphBuilder() {
@@ -466,9 +474,10 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             return;
         }
 
-        String nodeName = tfNode.getName();
-
         org.nd4j.linalg.api.buffer.DataType dataType = dataTypeForTensor(tfNode);
+        if(dataType == org.nd4j.linalg.api.buffer.DataType.UNKNOWN)
+            dataType = null;    //Infer it later
+
 
         SameDiff diff = importState.getSameDiff();
         if (isVariableNode(tfNode)) {
@@ -528,7 +537,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 int x=0;
                 for(int i = 0; i < tfNode.getInputCount(); i++) {
                     String inName = tfNode.getInput(i);
-                    NodeDef inputNode = importState.getVariables().get(inName);
+                    String inputOpName = varNameToOpName(inName);
+                    NodeDef inputNode = importState.getVariables().get(inputOpName);
 
                     //Idea here: skip ".../reduction_indices" and the like that get mapped to properties not variables
                     if(shouldSkip(inputNode) && !inName.endsWith("/read"))

@@ -225,9 +225,18 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             df.resolvePropertiesFromSameDiffBeforeExecution();
             List<LongShapeDescriptor> outShape = customOp.calculateOutputShape();
             Preconditions.checkState(outShape != null && outShape.size() > 0, "Failed to calculate output shapes for op %s (%s) - no shapes were returned by calculateOutputShape()", customOp.opName(), customOp.getOwnName());
+            String[] outNames = df.outputVariablesNames();
             for( int i=0; i<outShape.size(); i++ ){
                 INDArray currOutput = (customOp.numOutputArguments() <= i ? null : customOp.getOutputArgument(i));
                 LongShapeDescriptor reqShape = outShape.get(i);
+
+                //Issue: many ops have multiple valid output datatypes, and output shape calc can't at present know which: https://github.com/deeplearning4j/deeplearning4j/issues/6872
+                //As a workaround, we'll use the output variable datatype instead.
+                DataType dt = sameDiff.getVariable(outNames[i]).dataType();
+                if(dt != reqShape.dataType()){
+                    reqShape = reqShape.asDataType(dt);
+                }
+
                 if(currOutput == null || !currOutput.shapeDescriptor().equals(reqShape) || isLoop){
                     INDArray out = Nd4j.create(reqShape, false);
                     customOp.setOutputArgument(i, out);

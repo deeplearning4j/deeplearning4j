@@ -152,7 +152,9 @@ public class Transpose extends DynamicCustomOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        if (args().length > 1) {
+        if(numInputArguments() > 1){
+            return super.calculateOutputShape();
+        } else if (args().length > 1) {
             if (args()[0].getArr() != null && args()[1].getArr() != null) {
                 return super.calculateOutputShape();
             }
