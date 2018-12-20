@@ -211,9 +211,6 @@ public class MaxPooling2D extends DynamicCustomOp {
                 .build();
         this.config = pooling2DConfig;
         addArgs();
-        log.debug("Pooling: k: [{},{}]; s: [{}, {}], padding: {}", kH, kW, sH, sW, aPadding);
-
-
     }
 
     @Override

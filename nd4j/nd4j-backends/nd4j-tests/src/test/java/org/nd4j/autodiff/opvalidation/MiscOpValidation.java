@@ -1097,7 +1097,7 @@ public class MiscOpValidation extends BaseOpValidation {
             SDVariable indices = sd.var(indicesArr);
             SDVariable oneHot = sd.oneHot(indices, depth, i, 1.0, 0.0);
 
-            INDArray exp = Nd4j.eye(3).castTo(DataType.FLOAT);
+            INDArray exp = Nd4j.eye(3).castTo(DataType.DOUBLE);
 
             String msg = "Axis: " + i;
             log.info("Test case: " + msg);
@@ -1139,7 +1139,7 @@ public class MiscOpValidation extends BaseOpValidation {
         int axis = -1;
         SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 5.0, 0.0);
 
-        INDArray exp = Nd4j.create(new double[][]{{5, 0, 0}, {0,0,5}, {0,0,0}, {0, 5, 0}}).castTo(DataType.FLOAT);
+        INDArray exp = Nd4j.create(new double[][]{{5, 0, 0}, {0,0,5}, {0,0,0}, {0, 5, 0}});
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expected(oneHot, exp)
@@ -1343,7 +1343,7 @@ public class MiscOpValidation extends BaseOpValidation {
                     {0, 0, 1, 0, 0},
                     {0, 0, 1, 0, 0},
                     {0, 0, 0, 0, 0},
-                    {0, 0, 0, 0, 1}}).castTo(DataType.LONG);
+                    {0, 0, 0, 0, 1}}).castTo(DataType.FLOAT);
 
             SDVariable confMatrix;
             if(withMax){

@@ -105,7 +105,7 @@ public class BatchNorm extends DynamicCustomOp {
         //Switch order: TF uses [input, gamma, beta, mean, variance]; libnd4j expects [input, mean, variance, gamma, beta]
         SameDiffOp op = initWith.getOps().get(this.getOwnName());
         List<String> list = op.getInputsToOp();
-        List<String> newList = Arrays.asList(list.get(3), list.get(4), list.get(1), list.get(2));
+        List<String> newList = Arrays.asList(list.get(0), list.get(3), list.get(4), list.get(1), list.get(2));
         op.setInputsToOp(newList);
 
         this.applyGamma = true;
