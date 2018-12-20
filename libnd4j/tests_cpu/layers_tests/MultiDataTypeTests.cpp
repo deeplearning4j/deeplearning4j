@@ -1605,7 +1605,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test1) {
 
     NDArray* vec2 = x1.applyIndexReduce(nd4j::indexreduce::IndexMax, {0});
     ASSERT_EQ(*vec2, exp3);
-
+    
     delete scalar;
     delete vec1;
     delete vec2;
@@ -1614,7 +1614,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test1) {
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test2) {
 
-    NDArray x1('c', {2,3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::DOUBLE);   
+    NDArray x1('c', {2,3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::DOUBLE);
     NDArray scalar('c', {0}, {5}, nd4j::DataType::INT64);
     NDArray vec1('c', {2}, {2,2}, nd4j::DataType::INT64);
     NDArray vec2('c', {3}, {1,1,1}, nd4j::DataType::INT64);
