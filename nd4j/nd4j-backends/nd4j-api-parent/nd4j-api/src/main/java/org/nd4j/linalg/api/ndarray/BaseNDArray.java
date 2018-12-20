@@ -3781,7 +3781,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if(!Shape.shapeEquals(this.shape(),other.shape())) {
             int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
-            Nd4j.getExecutioner().exec(new BroadcastDivOp(this,other,result,broadcastDimensions),broadcastDimensions);
+            Nd4j.getExecutioner().exec(new BroadcastDivOp(this,other,result,broadcastDimensions));
             return result;
         }
 
@@ -3827,7 +3827,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if(!Shape.shapeEquals(this.shape(),other.shape())) {
             int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(this,other,result,broadcastDimensions),broadcastDimensions);
+            Nd4j.getExecutioner().exec(new BroadcastMulOp(this,other,result,broadcastDimensions));
             return result;
         }
 
@@ -3872,7 +3872,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if(!Shape.shapeEquals(this.shape(),other.shape())) {
             int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
-            Nd4j.getExecutioner().exec(new BroadcastSubOp(this,other,result,broadcastDimensions),broadcastDimensions);
+            Nd4j.getExecutioner().exec(new BroadcastSubOp(this,other,result,broadcastDimensions));
             return result;
         }
 
@@ -3920,7 +3920,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!Shape.shapeEquals(this.shape(),other.shape())) {
             int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
             result = Nd4j.createUninitialized(Shape.broadcastOutputShape(this.shape(),other.shape()));
-            Nd4j.getExecutioner().exec(new BroadcastAddOp(this,other,result,broadcastDimensions),broadcastDimensions);
+            Nd4j.getExecutioner().exec(new BroadcastAddOp(this,other,result,broadcastDimensions));
             return result;
         }
 
@@ -3944,7 +3944,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray normmax(int... dimension) {
         validateNumericalArray("normmax");
-        return Nd4j.getExecutioner().exec(new NormMax(this), dimension);
+        return Nd4j.getExecutioner().exec(new NormMax(this, dimension));
     }
 
     /**
@@ -4615,7 +4615,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray prod(int... dimension) {
         validateNumericalArray("prod");
-        return Nd4j.getExecutioner().exec(new Prod(this), dimension);
+        return Nd4j.getExecutioner().exec(new Prod(this, dimension));
     }
 
     /**
@@ -4627,19 +4627,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray mean(int... dimension) {
         validateNumericalArray("mean");
-        return Nd4j.getExecutioner().exec(new Mean(this), dimension);
+        return Nd4j.getExecutioner().exec(new Mean(this, dimension));
     }
 
     @Override
     public INDArray amean(int... dimension) {
         validateNumericalArray("amean");
-        return Nd4j.getExecutioner().exec(new AMean(this), dimension);
+        return Nd4j.getExecutioner().exec(new AMean(this, dimension));
     }
 
     @Override
     public INDArray mean(@NonNull INDArray result, int... dimension) {
         validateNumericalArray("mean");
-        return Nd4j.getExecutioner().exec(new Mean(this, result), dimension);
+        return Nd4j.getExecutioner().exec(new Mean(this, result, dimension));
     }
 
     /**
@@ -4651,7 +4651,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray var(int... dimension) {
         validateNumericalArray("var");
-        return Nd4j.getExecutioner().exec(new Variance(this), dimension);
+        return Nd4j.getExecutioner().exec(new Variance(this, dimension));
     }
 
     /**
@@ -4775,8 +4775,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray std(int... dimension) {
-        validateNumericalArray("std");
-        return Nd4j.getExecutioner().exec(new StandardDeviation(this, dimension));
+        return std(true, dimension);
     }
 
     @Override

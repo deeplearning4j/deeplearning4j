@@ -59,12 +59,12 @@ public class Variance extends BaseReduceOp {
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(INDArray x) {
-        this(x, true);
+    public Variance(INDArray x, int... dimension) {
+        this(x, true, dimension);
     }
 
-    public Variance(INDArray x, INDArray z, long n, boolean biasCorrected, int... dimensions) {
-        super(x, null, z, n);
+    public Variance(INDArray x, INDArray z, boolean biasCorrected, int... dimensions) {
+        this(x, z, true, false, dimensions);
         this.biasCorrected = biasCorrected;
         init(x, y, z, n);
         defineDimensions(dimensions);
@@ -79,6 +79,7 @@ public class Variance extends BaseReduceOp {
 
     public Variance(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
         super(x, null, z, newFormat, keepDims, dimensions);
+        this.biasCorrected = true;
         defineDimensions(dimensions);
     }
 
