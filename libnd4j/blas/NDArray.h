@@ -117,10 +117,9 @@ namespace nd4j {
         Nd4jLong *_shapeInfo = nullptr;
 
         /**
-        *  pointer on externally allocated memory where _buffer and _shapeInfo are stored
+        *  pointer on device launch context (with all data needed there).
         */  
-        nd4j::memory::Workspace* _workspace = nullptr;
-        
+        nd4j::graph::LaunchContext* _context = nullptr;
         /**
         *  alternative buffers for special computational devices (like GPUs for CUDA)
         */  
@@ -240,7 +239,7 @@ namespace nd4j {
         void operator delete(void* p);
 
 
-        void setWorkspace(memory::Workspace* workspace);
+        void setContext(graph::LaunchContext* context);
 
         /**
         *  method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
@@ -300,10 +299,10 @@ namespace nd4j {
         void cast(NDArray* target, DataType dtype);
 
         /**
-        *   returns _workspace
+        *   returns _context
         */
-        nd4j::memory::Workspace* getWorkspace() const {
-            return _workspace;
+        nd4j::graph::LaunchContext* getContext() const {
+            return _context;
         }
 
         /**
@@ -1421,7 +1420,7 @@ namespace nd4j {
 ///// IMLEMENTATION OF INLINE METHODS ///// 
 //////////////////////////////////////////////////////////////////////////
     bool NDArray::isAttached() {
-        return this->_workspace != nullptr;
+        return this->_context->getWorkspace() != nullptr;
     }
 
     template <typename T, typename R>
@@ -1433,7 +1432,7 @@ namespace nd4j {
 
     //////////////////////////////////////////////////////////////////////////
     void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
-        if(_isShapeAlloc && _workspace == nullptr)
+        if(_isShapeAlloc && _context->getWorkspace() == nullptr)
             delete []_shapeInfo;
 
         _shapeInfo = shapeInfo;
@@ -1448,7 +1447,7 @@ namespace nd4j {
 
     //////////////////////////////////////////////////////////////////////////
     void NDArray::setBuffer(void* buffer) {
-        if(_isBuffAlloc && _workspace == nullptr)
+        if(_isBuffAlloc && _context->getWorkspace() == nullptr)
             delete []_buffer;
  
         _buffer = reinterpret_cast<int8_t *>(buffer);
