@@ -82,8 +82,9 @@ public class TestNDArrayCreation extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testCreateNpz() throws Exception {
-        Map<String, INDArray> map = Nd4j.createFromNpzFile(new File("C:\\users\\fariz\\code\\test.npz"));
+        Map<String, INDArray> map = Nd4j.createFromNpzFile(new ClassPathResource("nd4j-tests/test.npz").getFile());
         assertEquals(true, map.containsKey("x"));
         assertEquals(true, map.containsKey("y"));
         INDArray arrX = map.get("x");
