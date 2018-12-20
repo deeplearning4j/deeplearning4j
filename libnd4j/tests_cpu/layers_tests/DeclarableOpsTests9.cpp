@@ -69,6 +69,35 @@ TEST_F(DeclarableOpsTests9, reduceStDevBP_test3) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, reduceStDevBP_test03) {
+
+    auto x = NDArrayFactory::create<double>('c', {3,4});
+    auto gradO1 = NDArrayFactory::create<double>('c', {3,1}, {1.,2.,3.});
+    auto gradO2 = NDArrayFactory::create<double>('c', {3}, {1.,2.,3.});
+    auto exp = NDArrayFactory::create<double>('c', {3,4}, {-0.335410, -0.111803, 0.111803, 0.335410, -0.670820, -0.223607, 0.223607, 0.670820, -1.006231, -0.335410, 0.335410, 1.006231});
+    auto axis = NDArrayFactory::create<int>('c', {1}, {1});
+    x.linspace(1);
+
+    nd4j::ops::reduce_stdev_bp op;
+
+    auto result = op.execute({&x, &gradO2, &axis}, {}, {}, {false, false});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+    // output->printIndexedBuffer();
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO1}, {1,0}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    output = result->at(0);
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
     
     const int N = 50000;

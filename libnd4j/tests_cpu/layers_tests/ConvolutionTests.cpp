@@ -2669,5 +2669,23 @@ TEST_F(ConvolutionTests, sconv2d_bp_test2) {
     }   
 }
 
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, im2col_bp_1) {
+
+    int bS=3, iH=12,iW=12,  iC=6,oC=3,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
+    int       oH=12,oW=12;    
+
+    // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
+    NDArray input('c', {bS, iC, iH, iW}, nd4j::DataType::DOUBLE);
+    NDArray gradO('c', {bS, iC, kH, kW, oH, oW}, nd4j::DataType::DOUBLE);
+    NDArray gradI('c', {bS, iC, iH, iW}, nd4j::DataType::DOUBLE);           // output
+
+    nd4j::ops::im2col_bp op; 
+    Nd4jStatus status = op.execute({&input, &gradO}, {&gradI}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, 1}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);    
+
+}
 #endif //LIBND4J_CONVOLUTIONTESTS_H
 

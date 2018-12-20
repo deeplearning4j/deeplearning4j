@@ -29,8 +29,6 @@ namespace helpers {
 template <typename T>
 static void im2col_(graph::LaunchContext& context, const NDArray& input,  NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const NDArray& arrZeroPadVal) {
 
-	// [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
-   		
 	auto imBuff         = static_cast<T*>(input.getBuffer());
 	auto colBuff        = static_cast<T*>(output.getBuffer());
 	auto imShapeBuffer  = input.getShapeInfo();

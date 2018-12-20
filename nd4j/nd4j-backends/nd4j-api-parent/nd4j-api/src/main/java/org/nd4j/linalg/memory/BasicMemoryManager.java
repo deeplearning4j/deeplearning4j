@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,7 +57,6 @@ public abstract class BasicMemoryManager implements MemoryManager {
     private ThreadLocal<MemoryWorkspace> workspace = new ThreadLocal<>();
 
     private ThreadLocal<MemoryWorkspace> tempWorkspace = new ThreadLocal<>();
-
 
     /**
      * This method returns

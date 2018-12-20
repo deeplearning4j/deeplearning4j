@@ -19,6 +19,8 @@ package org.nd4j.linalg.cpu.nativecpu;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
+import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -49,7 +51,6 @@ public class CpuMemoryManager extends BasicMemoryManager {
             throw new OutOfMemoryError("Failed to allocate [" + bytes + "] bytes");
 
         //log.info("Allocating {} bytes at MemoryManager", bytes);
-
 
         if (initialize)
             Pointer.memset(ptr, 0, bytes);
@@ -104,5 +105,10 @@ public class CpuMemoryManager extends BasicMemoryManager {
     @Override
     public Map<Integer, Long> getBandwidthUse() {
         return null;
+    }
+
+    @Override
+    public long allocatedMemory(Integer deviceId) {
+        return Pointer.totalBytes() + AllocationsTracker.getInstance().bytesOnDevice(AllocationKind.GENERAL, deviceId) + AllocationsTracker.getInstance().bytesOnDevice(AllocationKind.WORKSPACE, deviceId);
     }
 }
