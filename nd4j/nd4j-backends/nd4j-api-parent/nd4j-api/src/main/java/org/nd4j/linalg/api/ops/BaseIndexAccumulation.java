@@ -46,6 +46,8 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     protected boolean keepDims = false;
     protected boolean newFormat = false;
 
+    protected INDArray dimensionz;
+
     public BaseIndexAccumulation(SameDiff sameDiff,
                                  SDVariable i_v,
                                  boolean keepDims,
@@ -98,31 +100,15 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
 
     public BaseIndexAccumulation() {}
 
-    /**
-     * Initialize with the given
-     * input, pairwise transform, result, and number
-     * of elements
-     *
-     * @param x the input
-     * @param y the pairwise transform
-     * @param z the result
-     * @param n the number of elements
-     */
-    public BaseIndexAccumulation(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        init(x,y,z,n);
+
+    public BaseIndexAccumulation(INDArray x, int[] dimensions) {
+        this(x, null, dimensions);
     }
 
-    public BaseIndexAccumulation(INDArray x, INDArray y, long n) {
-        this(x, y, x, n);
-    }
-
-    public BaseIndexAccumulation(INDArray x) {
-        this(x, null, x, x.lengthLong());
-    }
-
-    public BaseIndexAccumulation(INDArray x, INDArray y) {
-        this(x, y, x, x.lengthLong());
+    public BaseIndexAccumulation(INDArray x, INDArray z, int[] dimensions) {
+        super(x, z, x.length());
+        init(x, null, z, x.length());
+        defineDimensions(dimensions);
     }
 
     @Override
@@ -193,5 +179,17 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
                     "got result array of type %s for op %s", z.dataType(), getClass());
 
         return true;
+    }
+
+    protected void defineDimensions(int... dimensions){
+        if (dimensions == null || dimensions.length == 0)
+            this.dimensionz = Nd4j.empty(DataType.INT);
+        else
+            this.dimensionz = Nd4j.createFromArray(dimensions);
+    }
+
+    @Override
+    public INDArray dimensions() {
+        return dimensionz;
     }
 }

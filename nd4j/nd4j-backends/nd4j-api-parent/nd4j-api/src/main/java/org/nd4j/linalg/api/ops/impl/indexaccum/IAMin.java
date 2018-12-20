@@ -37,16 +37,12 @@ public class IAMin extends BaseIndexAccumulation {
 
     public IAMin() {}
 
-    public IAMin(INDArray x, INDArray y, long n) {
-        super(x, y, n);
+    public IAMin(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
-    public IAMin(INDArray x) {
-        super(x);
-    }
-
-    public IAMin(INDArray x, INDArray y) {
-        super(x, y);
+    public IAMin(INDArray x, INDArray z, int... dimensions) {
+        super(x, z, dimensions);
     }
 
 

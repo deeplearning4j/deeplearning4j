@@ -53,17 +53,18 @@ public class FirstIndex extends BaseIndexAccumulation {
     public FirstIndex() {}
 
 
-    public FirstIndex(INDArray x, @NonNull Condition condition) {
-        this(x, condition, Nd4j.EPS_THRESHOLD);
+    public FirstIndex(INDArray x, @NonNull Condition condition, int... dimension) {
+        this(x, condition, Nd4j.EPS_THRESHOLD, dimension);
     }
 
-    public FirstIndex(INDArray x, @NonNull Condition condition, double eps) {
+    public FirstIndex(INDArray x, @NonNull Condition condition, double eps, int... dimension) {
         super(x);
         this.condition = condition;
         this.compare = condition.getValue();
         this.mode = condition.condtionNum();
         this.eps = eps;
         this.extraArgs = new Object[] {compare, eps, (double) mode};
+        defineDimensions(dimensions);
     }
 
 

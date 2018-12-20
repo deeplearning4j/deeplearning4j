@@ -52,7 +52,7 @@ public class BooleanIndexing {
      */
     public static boolean and(final INDArray n, final Condition cond) {
         if (cond instanceof BaseCondition) {
-            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond), Integer.MAX_VALUE).getDouble(0);
+            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond)).getDouble(0);
 
             if (val == n.lengthLong())
                 return true;
@@ -86,8 +86,8 @@ public class BooleanIndexing {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
-        MatchCondition op = new MatchCondition(n, condition);
-        INDArray arr = Nd4j.getExecutioner().exec(op, dimension);
+        MatchCondition op = new MatchCondition(n, condition, dimension);
+        INDArray arr = Nd4j.getExecutioner().exec(op);
         boolean[] result = new boolean[(int) arr.length()];
 
         long tadLength = Shape.getTADLength(n.shape(), dimension);
@@ -115,8 +115,8 @@ public class BooleanIndexing {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
-        MatchCondition op = new MatchCondition(n, condition);
-        INDArray arr = Nd4j.getExecutioner().exec(op, dimension);
+        MatchCondition op = new MatchCondition(n, condition, dimension);
+        INDArray arr = Nd4j.getExecutioner().exec(op);
 
         // FIXME: int cast
 
@@ -141,7 +141,7 @@ public class BooleanIndexing {
      */
     public static boolean or(final INDArray n, final Condition cond) {
         if (cond instanceof BaseCondition) {
-            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond), Integer.MAX_VALUE).getDouble(0);
+            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond)).getDouble(0);
 
             if (val > 0)
                 return true;
@@ -401,7 +401,7 @@ public class BooleanIndexing {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
-        return Nd4j.getExecutioner().exec(new FirstIndex(array, condition), dimension);
+        return Nd4j.getExecutioner().exec(new FirstIndex(array, condition, dimension));
     }
 
 

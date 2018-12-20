@@ -39,12 +39,12 @@ public class IMax extends BaseIndexAccumulation {
     public IMax() {
     }
 
-    public IMax(INDArray x, INDArray y, long n) {
-        super(x, y, null, n);
+    public IMax(INDArray x, INDArray z, int... dimensions) {
+        super(x, z, dimensions);
     }
 
-    public IMax(INDArray x) {
-        super(x, null, null, x.length());
+    public IMax(INDArray x, int... dimensions) {
+        super(x, null, dimensions);
     }
 
 

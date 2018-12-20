@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
 /**An index accumulation is an operation that returns an index within
@@ -78,4 +79,10 @@ public interface IndexAccumulation extends Op {
      * @return
      */
     boolean isKeepDims();
+
+    /**
+     * This method returns dimensions for this op
+     * @return
+     */
+    INDArray dimensions();
 }
