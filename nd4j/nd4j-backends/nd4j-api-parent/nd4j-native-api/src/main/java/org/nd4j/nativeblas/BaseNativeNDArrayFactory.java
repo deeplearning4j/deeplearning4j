@@ -17,6 +17,7 @@
 package org.nd4j.nativeblas;
 
 import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
@@ -29,8 +30,11 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
@@ -263,6 +267,120 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public Map<String, INDArray> createFromNpzFile(File file) throws Exception{
+
+        // TODO error checks
+        HashMap<String, INDArray> map = new HashMap<>();
+        InputStream is = new FileInputStream(file);
+        while(true){
+            byte[] localHeader = new byte[30];
+            is.read(localHeader);
+            if ((int)localHeader[2] != 3 || (int)localHeader[3] != 4){
+                break;
+            }
+            int fNameLength = localHeader[26];
+            byte[] fNameBytes = new byte[fNameLength];
+            is.read(fNameBytes);
+            String fName = "";
+            for (int i=0; i < fNameLength - 4; i++){
+                fName += (char)fNameBytes[i];
+            }
+            int extraFieldLength = localHeader[28];
+            if (extraFieldLength > 0){
+                is.read(new byte[extraFieldLength]);
+            }
+            is.read(new byte[11]);
+
+
+
+            String headerStr = "";
+            int b;
+            while((b = is.read()) != ((int)'\n')){
+                headerStr += (char)b;
+            }
+
+            int idx = headerStr.indexOf("'<") + 2;
+            String typeStr = headerStr.substring(idx, idx + 2);
+            int elemSize;
+            if (typeStr.equals("f8")){
+                elemSize = 8;
+            }
+            else if (typeStr.equals("f4")){
+                elemSize = 4;
+            }
+            else{
+                throw new Exception("Unsupported data type: " + typeStr);
+            }
+            idx = headerStr.indexOf("'fortran_order': ");
+            char order = (headerStr.charAt(idx + "'fortran_order': ".length()) == 'F')? 'c' : 'f';
+
+            String shapeStr = headerStr.substring(headerStr.indexOf("(") + 1, headerStr.indexOf(")"));
+
+            shapeStr = shapeStr.replace(" ", "");
+            String[] dims = shapeStr.split(",");
+            long[] shape = new long[dims.length];
+            long size = 1;
+            for (int i =0; i < dims.length; i++){
+                long d = Long.parseLong(dims[i]);
+                shape[i] = d;
+                size *= d;
+            }
+
+
+            // TODO support long shape
+
+            int numBytes = (int)(size * elemSize);
+            byte[] data = new byte[numBytes];
+            is.read(data);
+
+
+            if (elemSize == 8){
+                double[] doubleData = new double[(int)size];
+                for (int i=0; i<size; i++){
+                    ByteBuffer buff = ByteBuffer.allocate(8);
+                    buff.order(ByteOrder.LITTLE_ENDIAN);
+                    for (int j=0; j < 8; j ++){
+                        buff.put(data[i * 8 + j]);
+                    }
+
+                    doubleData[i] = buff.getDouble(0);
+                    System.out.println("=====");
+                    for (int j=0; j<8;j++){
+                        System.out.println((int)data[i * 8 + j]);
+                    }
+                    System.out.println("=====");
+                    System.out.println(doubleData[i]);
+                }
+                map.put(fName, Nd4j.create(doubleData, shape, order));
+
+            }
+            else{
+                double[] floatData = new double[(int)size];
+                for (int i=0; i<size; i++){
+                    ByteBuffer buff = ByteBuffer.allocate(4);
+                    buff.order(ByteOrder.LITTLE_ENDIAN);
+                    for (int j=0; j < 4; j ++){
+                        buff.put(data[i * 4 + j]);
+                    }
+                    floatData[i] = buff.getFloat();
+                }
+                map.put(fName, Nd4j.create(floatData, shape, order));
+
+            }
+
+
+            System.out.println(order);
+            System.out.println(typeStr);
+            System.out.println(shapeStr);
+            System.out.println(ArrayUtils.toString(shape));
+            System.out.println(headerStr);
+        }
+
+        return map;
+
+    }
+    public Map<String, INDArray> _createFromNpzFile(File file) throws Exception{
+
+        // TODO: Fix libnd4j implementation
         byte[] pathBytes = file.getAbsolutePath().getBytes(Charset.forName("UTF-8"));
         ByteBuffer directBuffer = ByteBuffer.allocateDirect(pathBytes.length).order(ByteOrder.nativeOrder());
         directBuffer.put(pathBytes);
