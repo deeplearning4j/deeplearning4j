@@ -28,15 +28,28 @@ namespace graph {
 LaunchContext::LaunchContext(cudaStream_t *cudaStream, void* reductionPointer, void* scalarPointer, int* allocationPointer)  {
 	
 	_cudaStream 	   = cudaStream;
+	_cudaSpecialStream = nullptr;
 	_reductionPointer  = reductionPointer;	
 	_scalarPointer     = scalarPointer;
-	_allocationPointer = allocationPointer;	
+	_allocationPointer = allocationPointer;
+	_workspace = nullptr;
 }	
+////////////////////////////////////////////////////////////////////////
+LaunchContext::LaunchContext(cudaStream_t *cudaStream, cudaStream* specialCudaStream, void* reductionPointer, void* scalarPointer, int* allocationPointer)  {
+
+	_cudaStream 	   = cudaStream;
+	_cudaSpecialStream = specialCudaStream;
+	_reductionPointer  = reductionPointer;
+	_scalarPointer     = scalarPointer;
+	_allocationPointer = allocationPointer;
+	_workspace = nullptr;
+}
 #endif
 
 ////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext() {
             // default constructor, just to make clang/ranlib happy
+            _workspace = nullptr;
 }
 
 

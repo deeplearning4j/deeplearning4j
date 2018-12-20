@@ -23,6 +23,7 @@
 
 #include <dll.h>
 #include <op_boilerplate.h>
+#include <memory/Workspace.h>
 
 #ifdef __CUDABLAS__
 #include <cuda.h>
@@ -42,13 +43,16 @@ class ND4J_EXPORT LaunchContext {
 		void* _scalarPointer;
 		int* _allocationPointer;		
 		cudaStream_t *_cudaStream;
+		cudaStream_t* _cudaSpecialStream;
 #endif		
-	
+	nd4j::memory::Workspace* _workspace;
+
 	public:
 #ifdef __CUDABLAS__
 		
 		LaunchContext(cudaStream_t* cudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
-		
+		LaunchContext(cudaStream_t* cudaStream, cudaStream_t* specialCudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
+
 		FORCEINLINE void* getReductionPointer () const {return _reductionPointer;};
 		
 		FORCEINLINE void* getScalarPointer() const {return _scalarPointer;};
@@ -56,6 +60,7 @@ class ND4J_EXPORT LaunchContext {
 		FORCEINLINE int* getAllocationPointer() const {return _allocationPointer;};
 
 		FORCEINLINE cudaStream_t* getCudaStream() const {return _cudaStream;};
+		FORCEINLINE cudaStream_t* getCudaSpecialStream() const {return _cudaSpecialStream;};
 
 		FORCEINLINE void setReductionPointer (void* reductionPointer) {_reductionPointer = reductionPointer;};
 		
@@ -64,11 +69,14 @@ class ND4J_EXPORT LaunchContext {
 		FORCEINLINE void setAllocationPointer(int* allocationPointer) {_allocationPointer = allocationPointer;};
 
 		FORCEINLINE void setCudaStream(cudaStream_t* cudaStream)  {_cudaStream = cudaStream;};
-		
+		FORCEINLINE void setCudaSpecialStream(cudaStream_t* cudaStream)  {_cudaSpecialStream = cudaStream;};
+
 #endif
 
     	LaunchContext();
     	~LaunchContext() = default;
+    	nd4j::memory::Workspace* getWorkspace() const { return _workspace; }
+    	void setWorkspace(nd4j::memory::Workspace* theWorkspace) { _workspace = theWorkspace; }
 };
 
 }
