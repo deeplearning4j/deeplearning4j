@@ -136,7 +136,7 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void *vx, Nd4jLong *xS
                                                         void *vscalars, 
                                                         int *dimension, int dimensionLength, 
                                                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, 
-                                                        Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+                                                        Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {    
     auto x = reinterpret_cast<X*>(vx);
     auto scalars = reinterpret_cast<X*>(vscalars);
     auto z = reinterpret_cast<Z*>(vz);
@@ -149,25 +149,23 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void *vx, Nd4jLong *xS
 
     // tad preparation
     auto tadEWS = shape::elementWiseStride(tadShapeInfo);
-    auto zEWS = shape::elementWiseStride(tadShapeInfo);
+    auto zEWS = shape::elementWiseStride(tadShapeInfoZ);
     auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
     auto numTads =shape::length(xShapeInfo) / tadLength;
 
+     if(tadEWS < 1 || zEWS < 1) {
+        printf("ScalarBoolTransform<X,Y,Z>::transformCuda: super-bad loop visited. Shouldn't ever happen\n");
+        return;
+    }
+
     // main loop, rolling over tads
     for (int r = blockIdx.x; r < numTads; r+=gridDim.x) {
-        auto offset = tadOffsets[r];
-        auto offsetZ = tadOffsetsZ[r];
-        X scalar = scalars[r];
+        
+        Z *oZ = z + tadOffsetsZ[r];
+        X *oX = x + tadOffsets[r];
 
-        if (tadEWS >= 1 && zEWS >= 1) {
-            Z *oZ = z + offsetZ;
-            X *oX = x + offset;
-
-            for (int f = threadIdx.x; f < tadLength; f+= blockDim.x)
-                oZ[f] = OpType::op(oX[f], scalar, extraParams);
-        } 
-        else        
-            printf("Super-bad loop visited. Shouldn't ever happen\n");
+        for (int f = threadIdx.x; f < tadLength; f+= blockDim.x)            
+            oZ[f * zEWS] = OpType::op(oX[f * tadEWS], scalars[r], extraParams);
     }
 }
 

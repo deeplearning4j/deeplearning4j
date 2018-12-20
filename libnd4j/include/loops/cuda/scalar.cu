@@ -89,7 +89,7 @@ __global__ static void scalarAlongDimension(void *vx, Nd4jLong *xShapeInfo,
 
     // tad preparation
     auto tadEws = shape::elementWiseStride(tadShapeInfo);
-    auto zEws = shape::elementWiseStride(tadShapeInfo);
+    auto zEws = shape::elementWiseStride(tadShapeInfoZ);
     auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
     auto numTads =shape::length(xShapeInfo) / tadLength;
 
@@ -104,8 +104,8 @@ __global__ static void scalarAlongDimension(void *vx, Nd4jLong *xShapeInfo,
         Z *oZ = z + tadOffsetsZ[r];
         X *oX = x + tadOffsets[r];
 
-        for (int f = threadIdx.x; f < tadLength; f+= blockDim.x)
-            oZ[f] = OpType::op(oX[f], scalars[r], extraParams);         
+        for (int f = threadIdx.x; f < tadLength; f+= blockDim.x)            
+            oZ[f * zEws] = OpType::op(oX[f * tadEws], scalars[r], extraParams);
     }
 }
 

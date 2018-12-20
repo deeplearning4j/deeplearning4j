@@ -162,6 +162,94 @@ public:
      *
      * @param opNum
      * @param x
+     * @param xStride
+     * @param result
+     * @param resultStride
+     * @param scalar
+     * @param extraParams
+     * @param n
+     */
+    static void execScalar(nd4j::graph::LaunchContext *lc,
+                            int opNum,
+                            void *hX, Nd4jLong *hXShapeInfo,
+                            void *dX, Nd4jLong *dXShapeInfo,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo,
+                            void *hScalar, Nd4jLong *hSscalarShapeInfo,
+                            void *dScalar, Nd4jLong *dSscalarShapeInfo,
+                            void *extraParams);
+
+static void execScalarBool(nd4j::graph::LaunchContext *lc,
+                            int opNum,
+                            void *hX, Nd4jLong *hXShapeInfo,
+                            void *dX, Nd4jLong *dXShapeInfo,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo,
+                            void *hScalar, Nd4jLong *hSscalarShapeInfo,
+                            void *dScalar, Nd4jLong *dSscalarShapeInfo,
+                            void *extraParams);
+
+ static void execScalar(nd4j::graph::LaunchContext *lc,
+                            int opNum,
+                            void *hX, Nd4jLong *hXShapeInfo,
+                            void *dX, Nd4jLong *dXShapeInfo,
+                            void *extraParams,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo,
+                            void *hScalars, Nd4jLong *hScalarShapeInfo,
+                            void *dScalars, Nd4jLong *dScalarShapeInfo,
+                            int *dimension, int dimensionLength,
+                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                            Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+
+ static void execScalarBool(nd4j::graph::LaunchContext *lc,
+                            int opNum,
+                            void *hX, Nd4jLong *hXShapeInfo,
+                            void *dX, Nd4jLong *dXShapeInfo,
+                            void *extraParams,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo,
+                            void *hScalars, Nd4jLong *hScalarShapeInfo,
+                            void *dScalars, Nd4jLong *dScalarShapeInfo,
+                            int *dimension, int dimensionLength,
+                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                            Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     *
+     * @param opNum
+     * @param x
      * @param xShapeInfo
      * @param y
      * @param yShapeInfo
@@ -328,66 +416,7 @@ public:
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             int *dimension, int dimensionLength, 
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
-
-
-    /**
-     *
-     * @param opNum
-     * @param x
-     * @param xStride
-     * @param result
-     * @param resultStride
-     * @param scalar
-     * @param extraParams
-     * @param n
-     */
-    static void execScalar(nd4j::graph::LaunchContext *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *hScalar, Nd4jLong *hSscalarShapeInfo,
-                            void *dScalar, Nd4jLong *dSscalarShapeInfo,
-                            void *extraParams);
-
-    static void execScalarBool(nd4j::graph::LaunchContext *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *hScalar, Nd4jLong *hSscalarShapeInfo,
-                            void *dScalar, Nd4jLong *dSscalarShapeInfo,
-                            void *extraParams);
-
-
-    static void execScalar(nd4j::graph::LaunchContext *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParams,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *hScalars, Nd4jLong *hScalarShapeInfo,
-                            void *dScalars, Nd4jLong *dScalarShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
-
-    static void execScalarBool(nd4j::graph::LaunchContext *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParams,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *hScalars, Nd4jLong *hScalarShapeInfo,
-                            void *dScalars, Nd4jLong *dScalarShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);   
 
     /**
      *

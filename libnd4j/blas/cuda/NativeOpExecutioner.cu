@@ -1002,7 +1002,7 @@ void NativeOpExecutioner::execScalarBool(nd4j::graph::LaunchContext *lc,
 	if (!DataTypeUtils::isB(zType) )
 		throw std::runtime_error("NativeOpExecutioner::execScalarBool requires Z operand to have BOOL type");
 
-	BUILD_DOUBLE_SELECTOR(xType, yType, functions::scalar::ScalarBoolTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, BOOL_TYPES);
+	BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
 
 	DEBUG_KERNEL(stream, opNum);
 }
