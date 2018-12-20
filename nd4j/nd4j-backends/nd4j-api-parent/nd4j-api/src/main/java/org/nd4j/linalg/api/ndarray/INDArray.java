@@ -35,7 +35,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public interface INDArray extends Serializable {
+public interface INDArray extends Serializable, AutoCloseable {
     /**
      * Returns the shape information debugging
      * information
@@ -2686,4 +2686,18 @@ public interface INDArray extends Serializable {
      * @return
      */
     boolean none();
+
+    /**
+     * This method checks, if this INDArray instalce can use close() method
+     * @return true if array can be released, false otherwise
+     */
+    boolean closeable();
+
+    /**
+     * This method releases exclusive off-heap resources uses by this INDArray instance.
+     * If INDArray relies on shared resources, exception will be thrown instead
+     *
+     * PLEASE NOTE: This method is NOT safe by any means
+     */
+    void close();
 }

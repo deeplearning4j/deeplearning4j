@@ -103,9 +103,24 @@ def py2javaArrayRDD(py_rdd, java_sc):
 
 
 def java2pyDatasetRDD(java_rdd, py_sc):
-    global spark_utils
+    global spark_utils, JDatasetDescriptor
     if spark_utils is None:
         spark_utils = get_spark_utils()
+    if JDatasetDescriptor is None:
+        JDatasetDescriptor = getDatasetDescriptor()
+    jdatasets = java_rdd.collect()
+    num_ds = jdatasets.size()
+    pydatasets = []
+    for i in range(num_ds):
+        jds = jdatasets.get(i)
+        jdesc = JDatasetDescriptor(jds)
+        pydesc = j2py_ds_desc(jdesc)
+        pyds = desc2ds(pydesc)
+        pydatasets.append(pyds)
+    return py_sc.parallelize(pydatasets)
+
+
+    ####
     desc_rdd = spark_utils.getDataSetDescriptorRDD(java_rdd)
     descriptors = desc_rdd.collect()
     num_descriptors = descriptors.size()
@@ -123,6 +138,18 @@ def py2javaDatasetRDD(py_rdd, java_sc):
     global spark_utils
     if spark_utils is None:
         spark_utils = get_spark_utils()
+    
+    ###
+    pydatasets = py_rdd.collect()
+    jdatasets = ArrayList()
+    for pyds in pydatasets:
+        pydesc = ds2desc(pyds)
+        jdesc = py2j_ds_desc(pydesc)
+        jds = jdesc.getDataSet()
+        jdatasets.add(jds)
+    return java_sc.parallelize(jdatasets)
+
+    ###
     desc_rdd = py_rdd.map(ds2desc)
     pydescriptors = desc_rdd.collect()
     jdescriptors = ArrayList()

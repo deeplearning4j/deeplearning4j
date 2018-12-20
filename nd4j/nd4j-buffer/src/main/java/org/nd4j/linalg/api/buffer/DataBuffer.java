@@ -32,7 +32,7 @@ import java.util.Collection;
  *
  * @author Adam Gibson
  */
-public interface DataBuffer extends Serializable {
+public interface DataBuffer extends Serializable, AutoCloseable {
     enum TypeEx {
 
     }
@@ -681,4 +681,18 @@ public interface DataBuffer extends Serializable {
      * @return the capacity of the databuffer
      * */
     long capacity();
+
+    /**
+     * This method checks, if this DataBuffer instalce can use close() method
+     * @return true if DataBuffer can be released, false otherwise
+     */
+    boolean closeable();
+
+    /**
+     * This method releases exclusive off-heap resources uses by this DataBuffer instance.
+     * If DataBuffer relies on shared resources, exception will be thrown instead
+     *
+     * PLEASE NOTE: This method is NOT safe by any means
+     */
+    void close();
 }

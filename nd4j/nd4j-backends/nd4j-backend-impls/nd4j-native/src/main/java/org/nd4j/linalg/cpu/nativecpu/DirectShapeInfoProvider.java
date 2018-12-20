@@ -18,6 +18,8 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
+import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.primitives.Pair;
@@ -60,8 +62,8 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
                         Pair<DataBuffer, long[]> buffer = super.createShapeInformation(shape, stride, elementWiseStride, order, extras);
                         longCache.put(descriptor, buffer);
 
-                        bytes.addAndGet(buffer.getFirst().length() * 4 * 2);
-
+                        bytes.addAndGet(buffer.getFirst().length() * 8 * 2);
+                        AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT,0, buffer.getFirst().length() * 8 * 2);
                         return buffer;
                     } else
                         return longCache.get(descriptor);

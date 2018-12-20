@@ -6823,7 +6823,7 @@ public class Nd4j {
      * @param array
      * @return 1D INDArray with DOUBLE data type
      */
-    public static INDArray createFromArray(double[] array) {
+    public static INDArray createFromArray(double... array) {
         return create(array, new long[]{array.length}, DataType.DOUBLE);
     }
 
@@ -6832,7 +6832,7 @@ public class Nd4j {
      * @param array
      * @return 1D INDArray with FLOAT data type
      */
-    public static INDArray createFromArray(float[] array) {
+    public static INDArray createFromArray(float... array) {
         return create(array, new long[]{array.length}, DataType.FLOAT);
     }
 
@@ -6841,7 +6841,7 @@ public class Nd4j {
      * @param array
      * @return 1D INDArray with INT32 data type
      */
-    public static INDArray createFromArray(int[] array) {
+    public static INDArray createFromArray(int... array) {
         return create(array, new long[]{array.length}, DataType.INT);
     }
 
@@ -6850,7 +6850,7 @@ public class Nd4j {
      * @param array
      * @return 1D INDArray with INT16 data type
      */
-    public static INDArray createFromArray(short[] array) {
+    public static INDArray createFromArray(short... array) {
         return create(array, new long[]{array.length}, DataType.SHORT);
     }
 
@@ -6859,7 +6859,7 @@ public class Nd4j {
      * @param array
      * @return 1D INDArray with INT8 data type
      */
-    public static INDArray createFromArray(byte[] array) {
+    public static INDArray createFromArray(byte... array) {
         return create(array, new long[]{array.length}, DataType.BYTE);
     }
 
@@ -6868,7 +6868,7 @@ public class Nd4j {
      * @param array
      * @return 1D INDArray with INT64 data type
      */
-    public static INDArray createFromArray(long[] array) {
+    public static INDArray createFromArray(long... array) {
         return create(array, new long[]{array.length}, DataType.LONG);
     }
 
@@ -6877,7 +6877,7 @@ public class Nd4j {
      * @param array
      * @return 1D INDArray with BOOL data type
      */
-    public static INDArray createFromArray(boolean[] array) {
+    public static INDArray createFromArray(boolean... array) {
         return create(array, new long[]{array.length}, DataType.BOOL);
     }
 

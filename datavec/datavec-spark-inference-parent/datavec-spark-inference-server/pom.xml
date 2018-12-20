@@ -131,7 +131,16 @@
                     <groupId>com.google.code.findbugs</groupId>
                     <artifactId>jsr305</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>net.jodah</groupId>
+                    <artifactId>typetools</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>net.jodah</groupId>
+            <artifactId>typetools</artifactId>
+            <version>${jodah.typetools.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
