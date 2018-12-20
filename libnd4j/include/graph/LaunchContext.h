@@ -46,7 +46,7 @@ class ND4J_EXPORT LaunchContext {
 		cudaStream_t* _cudaSpecialStream;
 #endif		
 	nd4j::memory::Workspace* _workspace;
-
+    int _deviceID = 0;
 	public:
 #ifdef __CUDABLAS__
 		
@@ -77,6 +77,8 @@ class ND4J_EXPORT LaunchContext {
     	~LaunchContext() = default;
     	nd4j::memory::Workspace* getWorkspace() const { return _workspace; }
     	void setWorkspace(nd4j::memory::Workspace* theWorkspace) { _workspace = theWorkspace; }
+    	int getDeviceID() const {return _deviceID;}
+    	void setDeviceID(int deviceID) { _deviceID = deviceID; }
 };
 
 }
