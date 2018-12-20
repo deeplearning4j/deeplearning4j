@@ -108,10 +108,10 @@ public class DefaultOpFactory implements OpFactory {
         switch (name) {
             case "mmul":
             case "std":
-                ret = new StandardDeviation(x, y,z, x.length(),(boolean) extraArgs[0]);
+                ret = new StandardDeviation(x, z,(boolean) extraArgs[0]);
                 break;
             case "var":
-                ret = new Variance(x, y, z, x.length(),(boolean) extraArgs[0]);
+                ret = new Variance(x, z, (boolean) extraArgs[0]);
                 break;
             default:
                 try {

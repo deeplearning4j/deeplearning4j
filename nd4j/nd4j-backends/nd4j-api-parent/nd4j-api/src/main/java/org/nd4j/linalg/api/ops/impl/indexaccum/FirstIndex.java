@@ -58,13 +58,12 @@ public class FirstIndex extends BaseIndexAccumulation {
     }
 
     public FirstIndex(INDArray x, @NonNull Condition condition, double eps, int... dimension) {
-        super(x);
+        super(x, dimension);
         this.condition = condition;
         this.compare = condition.getValue();
         this.mode = condition.condtionNum();
         this.eps = eps;
         this.extraArgs = new Object[] {compare, eps, (double) mode};
-        defineDimensions(dimensions);
     }
 
 

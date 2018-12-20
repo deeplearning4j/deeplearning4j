@@ -437,6 +437,6 @@ public class BooleanIndexing {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
-        return Nd4j.getExecutioner().exec(new LastIndex(array, condition), dimension);
+        return Nd4j.getExecutioner().exec(new LastIndex(array, condition, dimension));
     }
 }
