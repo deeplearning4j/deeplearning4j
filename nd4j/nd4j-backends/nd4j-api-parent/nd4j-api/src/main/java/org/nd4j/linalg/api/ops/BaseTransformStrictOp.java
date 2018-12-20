@@ -110,17 +110,11 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        val ret = new ArrayList<LongShapeDescriptor>(1);
-        if(arg() == null)
-            throw new ND4JIllegalStateException("No arg found for op!");
-
-        val arr = sameDiff.getArrForVarName(arg().getVarName());
-        if(arr == null)
+        if(x == null)
             return Collections.emptyList();
 
-        ret.add(LongShapeDescriptor.fromShape(arr.shape(), arr.dataType()));
-        this.n = arr.length();
-        return ret;
+        this.n = x.length();
+        return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), x.dataType()));
     }
 
     @Override

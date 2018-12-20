@@ -114,24 +114,15 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        if(args().length < 1) {
-            throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
-        }
-
-        long[] argShape = arg().getShape();
-        if (argShape == null && x() == null) {
+        if(x == null)
             return Collections.emptyList();
-        }
-        long[] inputShape = (argShape == null ? x().shape() : argShape);
 
-        val ret = new ArrayList<LongShapeDescriptor>(1);
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
-        val reducedShape = inputShape.length == 0 ? inputShape : Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
+        long[] reducedShape = x.length() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims(), newFormat);
         DataType retType = arg().dataType();
         if(!retType.isFPType())
             retType = Nd4j.defaultFloatingPointType();
-        ret.add(LongShapeDescriptor.fromShape(reducedShape, retType));
-        return ret;
+        return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, retType));
     }
 
     @Override

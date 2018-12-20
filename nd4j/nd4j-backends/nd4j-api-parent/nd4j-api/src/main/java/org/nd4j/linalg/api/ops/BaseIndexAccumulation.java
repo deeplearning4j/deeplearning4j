@@ -120,13 +120,11 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        if(arg().getShape() == null)
+        if(x == null)
             return Collections.emptyList();
 
-        List<LongShapeDescriptor> ret = new ArrayList<>(1);
-        val reducedShape = Shape.getReducedShape(arg().getShape(), dimensions, keepDims, newFormat);
-        ret.add(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
-        return ret;
+        long[] reducedShape = Shape.getReducedShape(x.shape(), dimensions, keepDims, newFormat);
+        return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
     }
 
     @Override

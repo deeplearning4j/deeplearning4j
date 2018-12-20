@@ -522,19 +522,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
         val descriptor = getDescriptor();
-        SDVariable[] args = sameDiff == null ? null : args();
-//        if(args != null ) {
-//            for (val arg : args) {
-//                if (sameDiff.isPlaceHolder(arg.getVarName()) && !sameDiff.shapeAlreadyExistsForVarName(arg.getVarName())) {
-//                    if (log.isTraceEnabled()) {
-//                        log.trace("Could not calculate output shape for op {}: arg \"{}\" is placeholder", getClass().getName(),
-//                                arg.getVarName());
-//                    }
-//                    return Collections.emptyList();
-//                }
-//            }
-//        }
-
         if (outputShapes != null && !outputShapes.isEmpty())
             return outputShapes;
 
@@ -572,11 +559,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             return Collections.emptyList();
         }
 
-
-        /**
-         * Note that we are currently getting shape errors
-         * because the input and output arguments are not specified.
-         */
         List<LongShapeDescriptor> ret = Nd4j.getExecutioner().calculateOutputShape(this);
         return ret;
     }
