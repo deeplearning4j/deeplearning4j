@@ -49,31 +49,43 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        val args = args();
-        if(args.length < 2) {
-            if(args[0] == null || args[0].getShape() == null) {
+        long[] firstArgShape;
+        long[] secondArgShape;
+        DataType dtypeZ;
+
+        if(numInputArguments() == 2){
+            firstArgShape = inputArguments.get(0).shape();
+            secondArgShape = inputArguments.get(1).shape();
+            dtypeZ = Shape.pickPairwiseDataType(inputArguments.get(0).dataType(), inputArguments.get(1).dataType());
+        } else {
+
+            val args = args();
+            if (args.length < 2) {
+                if (args[0] == null || args[0].getShape() == null) {
+                    return Collections.emptyList();
+                }
+                val dtypeX = args[0].getArr() != null ? args[0].getArr().dataType() : args[0].dataType();
+
+                return Collections.singletonList(LongShapeDescriptor.fromShape(args[0].getShape(), dtypeX));
+            }
+
+            firstArgShape = args[0].getShape();
+            secondArgShape = args[1].getShape();
+            if (args[0] == null || args[0].getShape() == null) {
                 return Collections.emptyList();
             }
+
+            if (args[1] == null || args[1].getShape() == null) {
+                return Collections.emptyList();
+            }
+
+            // detecting datatype based on both args
             val dtypeX = args[0].getArr() != null ? args[0].getArr().dataType() : args[0].dataType();
-
-            return Collections.singletonList(LongShapeDescriptor.fromShape(args[0].getShape(), dtypeX));
+            val dtypeY = args[1].getArr() != null ? args[1].getArr().dataType() : args[1].dataType();
+            dtypeZ = Shape.pickPairwiseDataType(dtypeX, dtypeY);
         }
 
-        val firstArgShape = args[0].getShape();
-        val secondArgShape = args[1].getShape();
-        if(args[0] == null || args[0].getShape() == null) {
-            return Collections.emptyList();
-        }
 
-        if(args[1] == null || args[1].getShape() == null) {
-            return Collections.emptyList();
-        }
-
-        // detecting datatype based on both args
-        val dtypeX = args[0].getArr() != null ? args[0].getArr().dataType() : args[0].dataType();
-        val dtypeY = args[1].getArr() != null ? args[1].getArr().dataType() : args[1].dataType();
-
-        val dtypeZ = Shape.pickPairwiseDataType(dtypeX, dtypeY);
 
         if(Arrays.equals(firstArgShape, secondArgShape)){
             try {
