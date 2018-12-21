@@ -337,7 +337,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
         if (excludeEmptyBins) {
             val condition = new MatchCondition(totalCountBins, Conditions.equals(0));
-            int numZeroBins = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+            int numZeroBins = Nd4j.getExecutioner().exec(condition).getInt(0);
             if (numZeroBins != 0) {
                 double[] mpb = meanPredictionBins;
                 double[] fp = fracPositives;

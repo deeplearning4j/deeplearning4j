@@ -155,7 +155,7 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @return the accumulated result
      */
     @Override
-    public ReduceOp execAndReturn(Variance op, boolean biasCorrected) {
+    public ReduceOp execAndReturn(Variance op) {
         return (ReduceOp) processOp(op);
     }
 
@@ -202,17 +202,6 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     }
 
     /**
-     * Execute the operation along 1 or more dimensions
-     *
-     * @param op        the operation to execute
-     * @param dimension
-     */
-    @Override
-    public Op exec(Op op, int... dimension) {
-        return processOp(op);
-    }
-
-    /**
      * Execute an reduceOp along one or more dimensions
      *
      * @param reduceOp the reduceOp
@@ -220,7 +209,7 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @return the reduceOp op
      */
     @Override
-    public INDArray exec(ReduceOp reduceOp, int... dimension) {
+    public INDArray exec(ReduceOp reduceOp) {
         return processOp(reduceOp).z();
     }
 
@@ -232,7 +221,7 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @return the broadcast op
      */
     @Override
-    public INDArray exec(BroadcastOp broadcast, int... dimension) {
+    public INDArray exec(BroadcastOp broadcast) {
         return processOp(broadcast).z();
     }
 
@@ -244,7 +233,7 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @param dimension     the dimension  @return the accmulation op
      */
     @Override
-    public INDArray exec(Variance accumulation, boolean biasCorrected, int... dimension) {
+    public INDArray exec(Variance accumulation) {
         return processOp(accumulation).z();
     }
 
@@ -256,7 +245,7 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @return result
      */
     @Override
-    public INDArray exec(IndexAccumulation indexAccum, int... dimension) {
+    public INDArray exec(IndexAccumulation indexAccum) {
         return processOp(indexAccum).z();
     }
 

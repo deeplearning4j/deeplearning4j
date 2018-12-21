@@ -231,7 +231,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         labelsSumPerColumn.addi(labels.sum(0));
 
         INDArray error = predictions.sub(labels);
-        INDArray absErrorSum = Nd4j.getExecutioner().exec(new ASum(error), 0);
+        INDArray absErrorSum = Nd4j.getExecutioner().exec(new ASum(error, 0));
         INDArray squaredErrorSum = error.mul(error).sum(0);
 
         sumAbsErrorsPerColumn.addi(absErrorSum);

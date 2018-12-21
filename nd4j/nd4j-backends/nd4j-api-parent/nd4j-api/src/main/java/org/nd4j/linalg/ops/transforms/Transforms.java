@@ -63,39 +63,39 @@ public class Transforms {
      *
      */
     public static double cosineSim(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(d1, d2, d1.length())).getFinalResult()
+        return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(d1, d2)).getFinalResult()
                         .doubleValue();
     }
 
     public static double cosineDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().execAndReturn(new CosineDistance(d1, d2, d1.length())).getFinalResult()
+        return Nd4j.getExecutioner().execAndReturn(new CosineDistance(d1, d2)).getFinalResult()
                         .doubleValue();
     }
 
     public static double hammingDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().execAndReturn(new HammingDistance(d1, d2, d1.length())).getFinalResult()
+        return Nd4j.getExecutioner().execAndReturn(new HammingDistance(d1, d2)).getFinalResult()
                         .doubleValue();
     }
 
     public static double jaccardDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().execAndReturn(new JaccardDistance(d1, d2, d1.length())).getFinalResult()
+        return Nd4j.getExecutioner().execAndReturn(new JaccardDistance(d1, d2)).getFinalResult()
                         .doubleValue();
     }
 
     public static INDArray allCosineSimilarities(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
-        return Nd4j.getExecutioner().exec(new CosineSimilarity(d1, d2, true), dimensions);
+        return Nd4j.getExecutioner().exec(new CosineSimilarity(d1, d2, true, dimensions));
     }
 
     public static INDArray allCosineDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
-        return Nd4j.getExecutioner().exec(new CosineDistance(d1, d2, true), dimensions);
+        return Nd4j.getExecutioner().exec(new CosineDistance(d1, d2, true, dimensions));
     }
 
     public static INDArray allEuclideanDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
-        return Nd4j.getExecutioner().exec(new EuclideanDistance(d1, d2, true), dimensions);
+        return Nd4j.getExecutioner().exec(new EuclideanDistance(d1, d2, true, dimensions));
     }
 
     public static INDArray allManhattanDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
-        return Nd4j.getExecutioner().exec(new ManhattanDistance(d1, d2, true), dimensions);
+        return Nd4j.getExecutioner().exec(new ManhattanDistance(d1, d2, true, dimensions));
     }
 
 
@@ -715,7 +715,7 @@ public class Transforms {
      * @return
      */
     public static INDArray log(INDArray ndArray, double base, boolean duplicate) {
-        return Nd4j.getExecutioner().exec(new LogX(duplicate ? ndArray.dup(ndArray.ordering()) : ndArray, base)).z();
+        return Nd4j.getExecutioner().exec(new LogX(duplicate ? ndArray.dup(ndArray.ordering()) : ndArray, base));
     }
 
     public static INDArray log(INDArray ndArray) {
@@ -1087,7 +1087,7 @@ public class Transforms {
      * @return the new ndarray
      */
     private static INDArray exec(ScalarOp op) {
-        return Nd4j.getExecutioner().exec(op).z();
+        return Nd4j.getExecutioner().exec(op);
     }
 
     /**

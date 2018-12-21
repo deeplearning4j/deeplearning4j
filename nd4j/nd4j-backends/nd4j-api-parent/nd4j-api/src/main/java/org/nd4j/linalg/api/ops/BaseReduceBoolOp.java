@@ -48,16 +48,12 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
         super(x, null, z, newFormat, keepDims, dimensions);
     }
 
-    public BaseReduceBoolOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public BaseReduceBoolOp(INDArray x, int... dimensions) {
+        this(x, null, true, false, dimensions);
     }
 
-    public BaseReduceBoolOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
-    }
-
-    public BaseReduceBoolOp(INDArray x) {
-        super(x);
+    public BaseReduceBoolOp(INDArray x, INDArray z, int... dimensions) {
+        this(x, z, true, false, dimensions);
     }
 
     protected BaseReduceBoolOp() {

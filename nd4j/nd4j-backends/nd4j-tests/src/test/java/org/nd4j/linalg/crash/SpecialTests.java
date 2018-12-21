@@ -664,7 +664,7 @@ public class SpecialTests extends BaseNd4jTest {
     public void testMatchCondition(){
         INDArray x = Nd4j.valueArrayOf(new long[]{10,10}, 2.0, DataType.DOUBLE);
         val op = new MatchCondition(x, Conditions.equals(2));
-        INDArray z = Nd4j.getExecutioner().exec(op).z();
+        INDArray z = Nd4j.getExecutioner().exec(op);
         int count = z.getInt(0);
         assertEquals(100, count);
     }
