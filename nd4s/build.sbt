@@ -1,8 +1,7 @@
 lazy val currentVersion = SettingKey[String]("currentVersion")
 lazy val nd4jVersion = SettingKey[String]("nd4jVersion")
 lazy val publishSomeThing = sys.props.getOrElse("repoType", default = "local").toLowerCase match {
-  case repoType if repoType.contains("nexus") => publisNexus
-  case repoType if repoType.contains("jfrog") => publishJfrog
+  case repoType if repoType.contains("nexus") => publishNexus
   case repoType if repoType.contains("bintray") => publishBintray
   case repoType if repoType.contains("sonatype") => publishSonatype
   case _ => publishLocalLocal
@@ -13,6 +12,20 @@ lazy val releaseRepositoryId = sys.props.getOrElse("stageRepoId", default = "dep
   case stageRepoId if stageRepoId.equals("") => "deploy/maven2"
   case stageRepoId if stageRepoId.equals("deploy/maven2") => "deploy/maven2"
   case _ => "deployByRepositoryId/" + nexusStagingRepoId
+}
+
+resolvers in ThisBuild ++= Seq(
+  Resolver.sonatypeRepo("snapshots")
+)
+
+cleanFiles += baseDirectory.value / "lib"
+val mvnInstall = Seq("mvn", "install", "-q", "-f", "sbt-pom.xml")
+val operatingSystem = sys.props("os.name").toLowerCase.substring(0, 3)
+update := {
+  operatingSystem match {
+    case "win" => { Seq("cmd", "/C") ++ mvnInstall !; update.value }
+    case _     => { mvnInstall !; update.value }
+  }
 }
 
 lazy val commonSettings = Seq(
@@ -26,8 +39,8 @@ lazy val commonSettings = Seq(
   nd4jVersion := sys.props.getOrElse("nd4jVersion", default = "1.0.0-SNAPSHOT"),
   libraryDependencies ++= Seq(
     "com.nativelibs4java" %% "scalaxy-loops" % "0.3.4",
-    "org.nd4j" % "nd4j-api" % nd4jVersion.value,
-    "org.nd4j" % "nd4j-native-platform" % nd4jVersion.value % Test,
+//    "org.nd4j" % "nd4j-api" % nd4jVersion.value,
+//    "org.nd4j" % "nd4j-native-platform" % nd4jVersion.value % Test,
     "org.scalatest" %% "scalatest" % "2.2.6" % Test,
     "ch.qos.logback" % "logback-classic" % "1.2.1" % Test,
     "org.scalacheck" %% "scalacheck" % "1.12.5" % Test,
@@ -38,34 +51,6 @@ lazy val commonSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
-  pomExtra := {
-    <url>http://nd4j.org/</url>
-      <licenses>
-        <license>
-          <name>Apache License, Version 2.0</name>
-          <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
-          <distribution>repo</distribution>
-        </license>
-      </licenses>
-      <scm>
-        <connection>scm:git@github.com:SkymindIO/deeplearning4j.git</connection>
-        <developerConnection>scm:git:git@github.com:SkymindIO/deeplearning4j.git</developerConnection>
-        <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
-        <tag>HEAD</tag>
-      </scm>
-      <developers>
-        <developer>
-          <id>agibsonccc</id>
-          <name>Adam Gibson</name>
-          <email>adam@skymind.io</email>
-        </developer>
-        <developer>
-          <id>taisukeoe</id>
-          <name>Taisuke Oe</name>
-          <email>oeuia.t@gmail.com</email>
-        </developer>
-      </developers>
-  },
   useGpg := true,
   pgpPassphrase := Some(Array()),
   credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
@@ -74,23 +59,13 @@ lazy val commonSettings = Seq(
   initialCommands in console := "import org.nd4j.linalg.factory.Nd4j; import org.nd4s.Implicits._"
 )
 
-lazy val publisNexus = Seq(
+lazy val publishNexus = Seq(
   publishTo := {
-    val nexus = "http://master-jenkins.skymind.io:8088/nexus/"
+    val nexus = "https://nexus.ci.skymind.io/"
     if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
+      Some("snapshots" at nexus + "content/repositories/maven-snapshots")
     else
       Some("releases" at nexus + "service/local/staging/" + releaseRepositoryId)
-  }
-)
-
-lazy val publishJfrog = Seq(
-  publishTo := {
-    val jfrog = "http://master-jenkins.skymind.io:8081/artifactory/"
-    if (isSnapshot.value)
-      Some("snapshots" at jfrog + "libs-snapshot-local")
-    else
-      Some("releases" at jfrog + "libs-release-local")
   }
 )
 
@@ -114,13 +89,10 @@ lazy val publishSonatype = Seq(
   }
 )
 
-
-
 lazy val publishLocalLocal = Seq(
   publish := {},
   publishLocal := {}
 )
-
 
 lazy val root = (project in file(".")).settings(
   commonSettings,

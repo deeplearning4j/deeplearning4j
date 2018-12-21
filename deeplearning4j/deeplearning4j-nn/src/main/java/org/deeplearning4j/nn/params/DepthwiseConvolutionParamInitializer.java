@@ -206,7 +206,7 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
         } else {
             int[] kernel = layerConf.getKernelSize();
             return WeightInitUtil.reshapeWeights(
-                            new long[] {depthMultiplier, layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
+                            new long[] {kernel[0], kernel[1], layerConf.getNIn(), depthMultiplier}, weightView, 'c');
         }
     }
 }
