@@ -66,6 +66,7 @@ import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
+import org.nd4j.linalg.api.ops.impl.transforms.Assert;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
@@ -1472,8 +1473,19 @@ public class SameDiff {
     public List<String> outputs(){
         List<String> out = new ArrayList<>();
         for(Variable v : variables.values()){
-            if(v.getVariable().isConstant() || v.getVariable().isPlaceHolder() || (v.getInputsForOp() != null && !v.getInputsForOp().isEmpty())) {
+            if(v.getVariable().isConstant() || v.getVariable().isPlaceHolder() ||               //Exclude constants and placeholders
+                    (v.getInputsForOp() != null && !v.getInputsForOp().isEmpty()) ||            //Exclude variables that are inputs to ops
+                    (v.getControlDepsForOp() != null && !v.getControlDepsForOp().isEmpty())) {  //Exclude variables are control dependency inputs to ops
                 continue;
+            }
+
+            //Also exclude assert etc ops - doesn't make sense to return these "outputs" to user
+            if(v.getOutputOfOp() != null){
+                String opName = v.getOutputOfOp();
+                SameDiffOp o = ops.get(opName);
+                if(o.getOp() instanceof Assert){
+                    continue;
+                }
             }
             out.add(v.getName());
         }

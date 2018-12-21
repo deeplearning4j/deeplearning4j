@@ -25,6 +25,8 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
@@ -515,22 +517,6 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         } else {
             val opName = tfNode.getOp();
 
-            // FIXME: early draft
-            // conditional import
-            /*
-            if (nodeName.startsWith("cond") && nodeName.contains("/")) {
-                val str = nodeName.replaceAll("/.*$","");
-                importCondition(str, tfNode, importState);
-
-                seenNodes.add(nodeName);
-                return;
-            } else if (nodeName.startsWith("while")) {
-                // while loop import
-
-                return;
-            }
-            */
-
             val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
             if(differentialFunction == null) {
                 throw new ND4JIllegalStateException("No tensorflow op found for " + opName + " possibly missing operation class?");
@@ -538,6 +524,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             try {
                 val newInstance = differentialFunction.getClass().newInstance();
                 List<SDVariable> args = new ArrayList<>();
+                List<String> controlDeps = null;
                 newInstance.setOwnName(tfNode.getName());
 
                 int x=0;
@@ -568,13 +555,38 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
                         v = diff.var(name, VariableType.ARRAY, null, dt, (long[])null);
                     }
-                    args.add(v);
+
+                    if(controlDep){
+                        //Is only a control dependency input to op, not a real data input
+                        if(controlDeps == null)
+                            controlDeps = new ArrayList<>();
+                        if(!controlDeps.contains(name))
+                            controlDeps.add(name);
+                    } else {
+                        //Is a standard/"real" op input
+                        args.add(v);
+                    }
                 }
 
 
 
                 diff.addArgsFor(args.toArray(new SDVariable[args.size()]),newInstance);
                 newInstance.setSameDiff(importState.getSameDiff());
+
+                if(controlDeps != null) {
+                    SameDiffOp op = diff.getOps().get(newInstance.getOwnName());
+                    op.setControlDeps(controlDeps);
+
+                    //Also record this on the variables:
+                    for(String s : controlDeps){
+                        Variable v = diff.getVariables().get(s);
+                        if(v.getControlDepsForOp() == null)
+                            v.setControlDeps(new ArrayList<String>());
+                        List<String> l = v.getControlDepsForOp();
+                        if(!l.contains(op.getName()))
+                            l.add(op.getName());
+                    }
+                }
 
                 newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
                 mapProperties(newInstance,tfNode,importState.getGraph(),importState.getSameDiff(),newInstance.mappingsForFunction());
@@ -857,7 +869,10 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             }
 
         } else {
-            log.warn("No TensorFlow descriptor found for tensor \"%s\", op \"%s\"", tensorProto.getName(), tensorProto.getOp());
+            if(tensorProto.getOp().equals("NoOp")){
+                return org.nd4j.linalg.api.buffer.DataType.UNKNOWN;
+            }
+            log.warn("No TensorFlow descriptor found for tensor \"{}\", op \"{}\"", tensorProto.getName(), tensorProto.getOp());
 
             //No descriptor... try to fall back on common type attribute names
             if(!tensorProto.containsAttr("dtype") && !tensorProto.containsAttr("Tidx") && !tensorProto.containsAttr("T"))

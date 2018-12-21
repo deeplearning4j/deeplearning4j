@@ -17,6 +17,7 @@ public class Variable {
     protected SDVariable variable;
     protected Object shapeInfo;         //TODO decide type, or if even to include (Variable class should ideally be immutable)
     protected List<String> inputsForOp;
+    protected List<String> controlDepsForOp;    //if a control dependency (x -> opY) exists, then "opY" will be in this list
     protected String outputOfOp;        //Null for placeholders/constants. For array type SDVariables, the name of the op it's an output of
     protected List<String> controlDeps;     //Control dependencies: name of variables that must be available before this variable is considered available for execution
     protected int outputOfOpIdx;        //Index of the output for the op (say, variable is output number 2 of op "outputOfOp")

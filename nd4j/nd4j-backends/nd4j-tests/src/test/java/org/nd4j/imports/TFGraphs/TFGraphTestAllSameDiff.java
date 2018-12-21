@@ -164,11 +164,11 @@ public class TFGraphTestAllSameDiff {
 
 
             //NEW TESTS - enable later
-            "assert_.*",
-            "cond/.*",
-            "case/.*",
-            "while1/.*",
-            "while2/.*",
+//            "assert_.*",
+//            "cond/.*",
+//            "case/.*",
+//            "while1/.*",
+//            "while2/.*",
 
             //TODO re-enable these - currently crashing...
             "tensor_dot_misc"
