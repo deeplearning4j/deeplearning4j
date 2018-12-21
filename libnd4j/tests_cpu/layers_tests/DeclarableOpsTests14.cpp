@@ -54,6 +54,32 @@ TEST_F(DeclarableOpsTests14, Test_Validation_Edge_1) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests14, Test_Reshape_CF_1) {
+    auto x = NDArrayFactory::create<double>('f', {2, 3}, {1.0, 4.0, 2.0, 5.0, 3.0, 6.0});
+    auto e = NDArrayFactory::create<double>('f', {3, 2}, {1.0, 3.0, 5.0, 2.0, 4.0, 6.0});
+
+    x.printShapeInfo("x shape");
+    x.printBuffer("x buffr");
+    x.printIndexedBuffer("x indxd");
+
+    auto r = x.reshape('c', {3, 2});
+    r->printIndexedBuffer("r pre-s");
+    r->streamline('f');
+
+    nd4j::ops::reshape op;
+    auto result = op.execute({&x}, {}, {3, 2}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    z->printShapeInfo("z shape");
+    z->printBuffer("z buffr");
+    z->printIndexedBuffer("z indxd");
+    printf("------------------\n");
+    r->printShapeInfo("r shape");
+    r->printBuffer("r buffr");
+    r->printIndexedBuffer("r indxd");
+}
+
 TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_1) {
     auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 1.0/0.0, 5});
     auto y = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 1.0/0.0, 5});
