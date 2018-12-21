@@ -1259,6 +1259,19 @@ public class TransformProcess implements Serializable {
             return transform(new StringToTimeTransform(column, format, dateTimeZone));
         }
 
+
+        /**
+         * Convert a String column (containing a date/time String) to a time column (by parsing the date/time String)
+         *
+         * @param column       String column containing the date/time Strings
+         * @param format       Format of the strings. Time format is specified as per http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
+         * @param dateTimeZone Timezone of the column
+         * @param locale       Locale of the column
+         */
+        public Builder stringToTimeTransform(String column, String format, DateTimeZone dateTimeZone, Locale locale) {
+            return transform(new StringToTimeTransform(column, format, dateTimeZone, locale));
+        }
+
         /**
          * Append a String to a specified column
          *
