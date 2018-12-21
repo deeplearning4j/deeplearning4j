@@ -31,6 +31,15 @@ public interface ScalarOp extends BroadcastOp {
      */
     INDArray scalar();
 
-
+    /**
+     * This method allows to set scalar
+     * @param scalar
+     */
     void setScalar(Number scalar);
+
+    /**
+     * This method returns target dimensions for this op
+     * @return
+     */
+    INDArray dimensions();
 }

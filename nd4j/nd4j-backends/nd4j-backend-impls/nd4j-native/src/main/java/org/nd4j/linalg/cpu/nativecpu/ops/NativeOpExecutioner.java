@@ -406,7 +406,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             getPointerForExtraArgs(op, op.z().dataType()),
                                 op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                 null, null,
-                            (IntPointer) dimensionAddress, dimension.length, var.isBiasCorrected(), null, null);} catch (Throwable t){
+                                op.dimensions().data().addressPointer(),
+                                (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                null,
+                                null,
+                                var.isBiasCorrected(), null, null);} catch (Throwable t){
                         String str = opInfoString(op, Optional.of(dimension));
                         throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
                     }
@@ -425,8 +429,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 null, null,
                                  op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                 null, null,
-                                (IntPointer) dimensionAddress,
-                                dimension.length,
+                                op.dimensions().data().addressPointer(),
+                                (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                null,
+                                null,
                                 (LongPointer) tadBuffers.getFirst().addressPointer(),
                                 new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
                                 (LongPointer) yTadBuffers.getFirst().addressPointer(),
@@ -455,8 +461,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 null, null,
                                 op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                 null, null,
-                                (IntPointer) dimensionAddress,
-                                dimension.length,
+                                op.dimensions().data().addressPointer(),
+                                (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                null,
+                                null,
                                 null, null, null, null);
                     } catch (Throwable t){
                         String str = opInfoString(op, Optional.of(dimension));
@@ -511,8 +519,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 getPointerForExtraArgs(op, op.z().dataType()),
                                 op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
-                                (IntPointer) dimensionAddress,
-                                    dimension.length);
+                                    op.dimensions().data().addressPointer(),
+                                    (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                    null,
+                                    null);
                         break;
                         case REDUCE_LONG:
                             loop.execReduceLong(dummy, op.opNum(),
@@ -521,8 +531,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     getPointerForExtraArgs(op, op.x().dataType()),
                                     op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
-                                    (IntPointer) dimensionAddress,
-                                    dimension.length);
+                                    op.dimensions().data().addressPointer(),
+                                    (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                    null,
+                                    null);
                             break;
                         case REDUCE_SAME:
                             loop.execReduceSame(dummy, op.opNum(),
@@ -531,8 +543,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     getPointerForExtraArgs(op, op.z().dataType()),
                                     op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
-                                    (IntPointer) dimensionAddress,
-                                    dimension.length);
+                                    op.dimensions().data().addressPointer(),
+                                    (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                    null,
+                                    null);
                             break;
                         case REDUCE_BOOL:
                             loop.execReduceBool(dummy, op.opNum(),
@@ -541,8 +555,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     getPointerForExtraArgs(op, op.x().dataType()),
                                     op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
-                                    (IntPointer) dimensionAddress,
-                                    dimension.length);
+                                    op.dimensions().data().addressPointer(),
+                                    (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                    null,
+                                    null);
                             break;
                         default:
                             throw new UnsupportedOperationException("Unsupported op used in reduce: "+ op.getOpType());
@@ -558,8 +574,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * @param op
      * @param dimension
      */
-    private void invoke(ScalarOp op, int[] dimension) {
-        dimension = Shape.normalizeAxis(op.x().rank(), dimension);
+    private void invokeScalarAlongDimension(ScalarOp op) {
+        //dimension = Shape.normalizeAxis(op.x().rank(), dimension);
         // do tad magic
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
@@ -604,8 +620,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         op.y().data().addressPointer(), (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
                         null, null,
                         getPointerForExtraArgs(op, op.z().dataType()),
-                        (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.INT).addressPointer(),
-                        dimension.length,
+                        op.dimensions().data().addressPointer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                        null,
+                        null,
                         (LongPointer) hostTadShapeInfo, (LongPointer) hostTadOffsets,
                         (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
                 break;
@@ -618,8 +636,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         op.y().data().addressPointer(), (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
                         null, null,
                         getPointerForExtraArgs(op, op.z().dataType()),
-                        (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.INT).addressPointer(),
-                        dimension.length,
+                        op.dimensions().data().addressPointer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                        null,
+                        null,
                         (LongPointer) hostTadShapeInfo, (LongPointer) hostTadOffsets,
                         (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
                 break;
@@ -643,8 +663,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "], z shape info = ["
                         + Arrays.toString(op.z().shapeInfoDataBuffer().asInt()) + "]");
 
-            if (op.getDimension() != null) {
-                invoke(op, op.getDimension());
+            if (op.dimensions() != null) {
+                invokeScalarAlongDimension(op);
                 return;
             }
 
@@ -873,21 +893,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         profilingHookOut(op, st);
     }
 
-    @Override
-    public INDArray exec(BroadcastOp op, int... dimension) {
+    public INDArray exec(BroadcastOp op) {
         long st = profilingHookIn(op);
-        if(dimension == null)
-            dimension = new int[] {Integer.MAX_VALUE};
-        dimension = Shape.normalizeAxis(op.x().rank(), dimension);
-
-        //validateDataType(Nd4j.dataType(), op);
 
         op.validateDataTypes(experimentalMode.get());
 
-        for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
-                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
-                        + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
          * and the associated offsets for each {@link INDArray#tensorAlongDimension(int, int...)}
@@ -932,8 +942,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         null, null,
                     op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                         null, null,
-                    (IntPointer) dimensionAddress,
-                    dimension.length);
+                        op.dimensions().data().addressPointer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                        null,
+                        null);
                 break;
             case BROADCAST_BOOL:
                 loop.execBroadcastBool(dummy, op.opNum(),
@@ -943,8 +955,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         null, null,
                         op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                         null, null,
-                        (IntPointer) dimensionAddress,
-                        dimension.length);
+                        op.dimensions().data().addressPointer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                        null,
+                        null);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");
