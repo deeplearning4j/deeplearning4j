@@ -482,10 +482,6 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             return;
         }
 
-        org.nd4j.linalg.api.buffer.DataType dataType = dataTypeForTensor(tfNode, 0);
-        if(dataType == org.nd4j.linalg.api.buffer.DataType.UNKNOWN)
-            dataType = null;    //Infer it later
-
 
         SameDiff diff = importState.getSameDiff();
         if (isVariableNode(tfNode)) {
@@ -552,6 +548,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                         NodeDef inputOp = importState.getVariables().get(inputOpName);
                         int outputIdx = varNameToOpOutputNumber(name);
                         org.nd4j.linalg.api.buffer.DataType dt = dataTypeForTensor(inputOp, outputIdx);
+                        if(dt == org.nd4j.linalg.api.buffer.DataType.UNKNOWN)
+                            dt = null;    //Infer it later
+
 
                         v = diff.var(name, VariableType.ARRAY, null, dt, (long[])null);
                     }

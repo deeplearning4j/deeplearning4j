@@ -49,7 +49,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "reduce_dynamic_axis/sum_rank2_argmax_shape"
+            "identity_n_2"
     };
 
     @After
@@ -100,7 +100,7 @@ public class TFGraphTestList {
                 TFGraphTestAllHelper.LOADER, maxRE, minAbs);
     }
 
-    @Test
+    @Test @Ignore
     public void testAlsoIntermediate() throws IOException {
         File dir = testDir.newFolder();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);

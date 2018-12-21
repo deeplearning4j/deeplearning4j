@@ -63,8 +63,7 @@ public class Identity extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //TODO can we skip the identity here?
-        return Collections.singletonList(sameDiff.identity(i_v.get(0)));
+        return i_v;
     }
 
     @Override
