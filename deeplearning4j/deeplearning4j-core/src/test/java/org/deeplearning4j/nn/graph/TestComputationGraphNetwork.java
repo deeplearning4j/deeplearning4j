@@ -1880,4 +1880,20 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         assertEquals(outMap.get("1"), outSpecific[0]);
         assertEquals(outMap.get("3"), outSpecific[1]);
     }
+
+    @Test
+    public void singleInputElemVertex() {
+        final InputType inputType = InputType.convolutional(10, 10, 2);
+        final ComputationGraph graph = new ComputationGraph(new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .setInputTypes(inputType)
+                .addInputs("input")
+                .setOutputs("output")
+                .addLayer("0", new ConvolutionLayer.Builder().nOut(5).convolutionMode(ConvolutionMode.Same).build(),"input" )
+                .addVertex("dummyAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "0")
+                .addLayer("output", new CnnLossLayer(), "dummyAdd")
+                .build());
+        graph.init();
+        graph.outputSingle(Nd4j.randn(1, 2, 10, 10));
+    }
 }
