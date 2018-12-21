@@ -321,10 +321,10 @@ public class PlayUIServer extends UIServer {
             Pair<StatsStorage, StatsStorageListener> p = iterator.next();
             if (p.getFirst() == statsStorage) { //Same object, not equality
                 statsStorage.deregisterStatsStorageListener(p.getSecond());
-                iterator.remove();
                 found = true;
             }
         }
+        statsStorageInstances.remove(statsStorage);
         for (UIModule uiModule : uiModules) {
             uiModule.onDetach(statsStorage);
         }
