@@ -6549,20 +6549,18 @@ public class Nd4j {
 
 
     /**
-     * Write an {@link INDArray}
-     * to a {@link File}
-     * @param arr the array to write
-     * @param file the file to write
+     * Write an {@link INDArray} to a {@link File} in Numpy .npy format, which can then be loaded with numpy.load
+     * @param arr the array to write in Numpy .npy format
+     * @param file the file to write to
      * @throws IOException if an error occurs when writing the file
      */
-    public static void writeAsNumpy(INDArray arr,File file) throws IOException {
+    public static void writeAsNumpy(INDArray arr, File file) throws IOException {
         writeAsNumpy(arr, new FileOutputStream(file));
     }
 
 
     /**
-     * Converts an {@link INDArray}
-     * to a numpy struct.
+     * Converts an {@link INDArray} to a numpy struct.
      * @param arr the array to convert
      * @return a pointer to the numpy struct
      */
@@ -6577,7 +6575,7 @@ public class Nd4j {
      * @param writeTo the output stream to write to
      * @throws IOException
      */
-    public static void writeAsNumpy(INDArray arr,OutputStream writeTo) throws IOException {
+    public static void writeAsNumpy(INDArray arr, OutputStream writeTo) throws IOException {
         try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(writeTo)) {
             Pointer asNumpy = convertToNumpy(arr);
             WritableByteChannel channel = Channels.newChannel(bufferedOutputStream);
@@ -6607,7 +6605,7 @@ public class Nd4j {
     }
 
     /**
-     * Create from a given numpy file.
+     * Create from a given Numpy .npy file.
      *
      * @param file the file to create the ndarray from
      * @return the created ndarray
@@ -6617,8 +6615,7 @@ public class Nd4j {
     }
 
     /**
-     * Create a numpy array based on the passed in
-     * input stream
+     * Create a numpy array based on the passed in input stream
      * @param is the input stream to read
      * @return the loaded ndarray
      * @throws IOException
@@ -6630,8 +6627,7 @@ public class Nd4j {
 
 
     /**
-     * Create an {@link INDArray} from
-     * the given numpy input.
+     * Create an {@link INDArray} from the given numpy input.<br>
      * The numpy input follows the format:
      * https://docs.scipy.org/doc/numpy-1.14.0/neps/npy-format.html
      *
@@ -6647,8 +6643,7 @@ public class Nd4j {
     }
 
     /**
-     * Converts an {@link INDArray}
-     * to a byte array
+     * Converts an {@link INDArray} to a byte array
      * @param input the input array
      * @return the {@link INDArray} as a byte array
      * with the numpy format.
@@ -6663,8 +6658,7 @@ public class Nd4j {
 
 
     /**
-     * Create an {@link INDArray}
-     * from a flatbuffers {@link FlatArray}
+     * Create an {@link INDArray} from a flatbuffers {@link FlatArray}
      * @param array the array to create the {@link INDArray} from
      * @return the created {@link INDArray}
      */
