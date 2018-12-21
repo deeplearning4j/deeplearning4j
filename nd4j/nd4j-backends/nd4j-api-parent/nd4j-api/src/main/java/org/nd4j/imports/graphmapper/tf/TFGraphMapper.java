@@ -1141,10 +1141,10 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 val array = Nd4j.create(Nd4j.createTypedBuffer(fa, org.nd4j.linalg.api.buffer.DataType.LONG), arrayShape, Nd4j.getStrides(arrayShape, 'c'),  0, 'c', org.nd4j.linalg.api.buffer.DataType.LONG);
                 return array;
             }
-        } else if (tfTensor.getDtype() == DataType.DT_BOOL){
-            if (tfTensor.getBoolValCount() == 1 || ArrayUtil.prod(arrayShape) == 1){
+        } else if (tfTensor.getDtype() == DataType.DT_BOOL) {
+            if (tfTensor.getBoolValCount() == 1 || ArrayUtil.prod(arrayShape) == 1) {
                 //straight zero case
-                if(tfTensor.getBoolValCount() < 1)
+                if (tfTensor.getBoolValCount() < 1)
                     return Nd4j.scalar(false);
 
                 val val = tfTensor.getBoolVal(0);
@@ -1157,10 +1157,29 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 }
 
                 // TF arrays are always C
-                INDArray array = Nd4j.create(Nd4j.createTypedBuffer(jArray, org.nd4j.linalg.api.buffer.DataType.BOOL), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0,  'c', org.nd4j.linalg.api.buffer.DataType.BOOL);
+                INDArray array = Nd4j.create(Nd4j.createTypedBuffer(jArray, org.nd4j.linalg.api.buffer.DataType.BOOL), arrayShape, Nd4j.getStrides(arrayShape, 'c'), 0, 'c', org.nd4j.linalg.api.buffer.DataType.BOOL);
                 return array;
             } else if (tfTensor.getTensorContent().size() > 0) {
                 throw new UnsupportedOperationException("Not yet implemented for DataType.DT_BOOL");
+            }
+        } else if(tfTensor.getDtype() == DataType.DT_STRING){
+            if (tfTensor.getStringValCount() <= 1 || ArrayUtil.prod(arrayShape) == 1) {
+                //straight zero case
+                if (tfTensor.getStringValCount() < 1)
+                    return Nd4j.empty(org.nd4j.linalg.api.buffer.DataType.UTF8);
+
+                String val = tfTensor.getStringVal(0).toStringUtf8();
+                INDArray arr = Nd4j.scalar(val);
+                return arr;
+            } else if (tfTensor.getStringValCount() > 0) {
+                String[] sArr = new String[tfTensor.getStringValCount()];
+                for (int e = 0; e < sArr.length; e++) {
+                    sArr[e] = tfTensor.getStringVal(e).toStringUtf8();
+                }
+
+                // TF arrays are always C
+                INDArray array = Nd4j.create(sArr).reshape(arrayShape);
+                return array;
             }
         }  else {
             throw new UnsupportedOperationException("Unknown dataType found: [" + tfTensor.getDtype() + "]");
