@@ -446,7 +446,7 @@ TEST_F(DeclarableOpsTests12, TestReverseDivideBP_1) {
     eps.linspace(1.);
 
     nd4j::ops::reversedivide_bp op;
-    Nd4jStatus status = op.execute({&y, &x, &eps}, {&output1, &output2}, {}, {}, {});
+    Nd4jStatus status = op.execute({&y, &x, &eps}, {&output2, &output1}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
     output1.printIndexedBuffer("RDivideBP X out");
@@ -480,3 +480,28 @@ TEST_F(DeclarableOpsTests12, TestReverseDivideBP_2) {
     ASSERT_TRUE(output1.equalsTo(exp1));
     ASSERT_TRUE(output2.equalsTo(exp2));
 }
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestSliceBP_1) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray eps('c', {2,2}, nd4j::DataType::DOUBLE);
+    //NDArray exp1('c', {3,4}, nd4j::DataType::DOUBLE);
+    //NDArray exp2('c', {3,4}, nd4j::DataType::DOUBLE);
+
+    NDArray output('c', {3, 4}, nd4j::DataType::DOUBLE);
+    //NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
+
+    x.linspace(1.);
+    eps.assign(1.);
+    //exp1.assign(1.);
+    //exp2.assign(-2.);
+    nd4j::ops::slice_bp op;
+    Nd4jStatus status = op.execute({&x, &eps}, {&output}, {}, {1,1,2,2}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output.printIndexedBuffer("SLICE_BP out");
+    //ASSERT_TRUE(output1.equalsTo(exp1));
+    //ASSERT_TRUE(output2.equalsTo(exp2));
+}
+
