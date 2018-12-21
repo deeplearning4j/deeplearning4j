@@ -150,26 +150,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public INDArray exec(IndexAccumulation op, int... dimension) {
-        if (dimension == null || dimension.length == 0)
-            dimension = new int[] {Integer.MAX_VALUE};
-
+    public INDArray exec(IndexAccumulation op) {
         checkForCompression(op);
-
-//        validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
-        dimension = Shape.normalizeAxis(op.x().rank(), dimension);
-
-        for (int i = 0; i < dimension.length; i++) {
-            if (dimension[i] < 0)
-                dimension[i] += op.x().rank();
-        }
-        //do op along all dimensions
-        if (dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
+        val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
 
         boolean keepDims;
         boolean newFormat;
@@ -182,7 +169,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
         long[] retShape = reductionShape(op.x(), dimension, newFormat, keepDims);
 
-
         if(op.z() == null || op.x() == op.z()) {
             val ret = Nd4j.createUninitialized(DataType.LONG, retShape);
 
@@ -191,7 +177,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new IllegalStateException("Z array shape does not match expected return type for op " + op
                     + ": expected shape " + Arrays.toString(retShape) + ", z.shape()=" + Arrays.toString(op.z().shape()));
         }
-
 
         //do op along all dimensions
         if (dimension.length == op.x().rank())
@@ -231,8 +216,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         getPointerForExtraArgs(op, op.x().dataType()),
                         z, (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                         null, null,
-                        (IntPointer) dimensionAddress,
-                        dimension.length);
+                        op.dimensions().data().addressPointer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                        null,
+                        null);
             }
 
         profilingHookOut(op, st);
@@ -242,10 +229,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public INDArray exec(ReduceOp op, int... dimension) {
+    public INDArray exec(ReduceOp op) {
         Preconditions.checkNotNull(op.x(), "Op.x() cannot be null: Was null for op %s", op);
-        dimension = Shape.normalizeAxis(op.x().rank(), dimension);
-
+        val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
 
         //validateDataType(Nd4j.dataType(), op);
 
@@ -253,18 +239,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             extraz.set(new PointerPointer(32));
 
         long[] maxShape = Shape.getMaxShape(op.x(),op.y());
-        for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] >= maxShape.length && dimension[i] != Integer.MAX_VALUE)
-                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
-                        + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
-
-        for (int i = 0; i < dimension.length; i++) {
-            if (dimension[i] < 0)
-                dimension[i] += op.x().rank();
-        }
-        //do op along all dimensions
-        if (dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
 
         boolean keepDims;
         boolean newFormat;
@@ -361,7 +335,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
 
-
         if (op.isComplexAccumulation()) {
             yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
 
@@ -370,7 +343,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         "x TAD length = " + op.x().tensorAlongDimension(0, dimension).lengthLong() + ", y TAD length " +
                         op.y().tensorAlongDimension(0, dimension).lengthLong());
         }
-
 
         /**
          * This is a pointer to a pointer in c.
@@ -575,6 +547,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * @param dimension
      */
     private void invokeScalarAlongDimension(ScalarOp op) {
+        val dimension = op.dimensions().toIntVector();
         //dimension = Shape.normalizeAxis(op.x().rank(), dimension);
         // do tad magic
         /**
@@ -898,6 +871,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         op.validateDataTypes(experimentalMode.get());
 
+        val dimension = op.dimensions().toIntVector();
+
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
          * and the associated offsets for each {@link INDArray#tensorAlongDimension(int, int...)}
@@ -962,41 +937,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");
-
         }
 
 
         return op.z();
     }
 
-    private void exec(IndexAccumulation op) {
-        if (executionMode() == ExecutionMode.JAVA) {
-            super.exec(op);
-
-        } else {
-            if(op.z() == op.x() || op.z() == null) {
-                op.setZ(Nd4j.scalar(DataType.LONG, 0.0));
-            }
-
-            long st = profilingHookIn(op);
-
-            //validateDataType(Nd4j.dataType(), op);
-            op.validateDataTypes();
-
-            loop.execIndexReduceScalar(null, op.opNum(),
-                        op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                    null, null,
-                        getPointerForExtraArgs(op, op.x().dataType()),
-                        op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                    null, null);
-
-            op.setFinalResult(op.z().getInt(0));
-
-            profilingHookOut(op, st);
-        }
-    }
-
-    private void exec(ReduceOp op) {
+    private void execTBR(ReduceOp op) {
         if (executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         }
