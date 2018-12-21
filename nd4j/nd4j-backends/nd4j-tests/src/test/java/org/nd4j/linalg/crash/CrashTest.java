@@ -121,7 +121,7 @@ public class CrashTest extends BaseNd4jTest {
         float sum = x.sumNumber().floatValue();
 
         // index reduction
-        Nd4j.getExecutioner().exec(new IMax(x), Integer.MAX_VALUE);
+        Nd4j.getExecutioner().exec(new IMax(x));
 
         // casual transform
         Nd4j.getExecutioner().exec(new Sqrt(x, x));
