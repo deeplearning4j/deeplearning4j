@@ -412,10 +412,12 @@ TEST_F(DeclarableOpsTests12, TestDivideBP_2) {
     NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
     NDArray y = NDArrayFactory::create<double>('c', {3,4});
     NDArray eps('c', {3,4}, nd4j::DataType::DOUBLE);
-
+    NDArray exp1('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {3,4}, nd4j::DataType::DOUBLE);
     NDArray output1('c', {3, 4}, nd4j::DataType::DOUBLE);
     NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
-
+    exp1.assign(1.);
+    exp2.assign(-2.);
     x.linspace(2., 2.);
     y.linspace(1.);
     eps.linspace(1.);
@@ -426,5 +428,55 @@ TEST_F(DeclarableOpsTests12, TestDivideBP_2) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     output1.printIndexedBuffer("2DivideBP X out");
     output2.printIndexedBuffer("2DivideBP Y out");
+    ASSERT_TRUE(output1.equalsTo(exp1));
+    ASSERT_TRUE(output2.equalsTo(exp2));
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestReverseDivideBP_1) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray y = NDArrayFactory::create<double>(2.);
+    NDArray eps('c', {3,4}, nd4j::DataType::DOUBLE);
+
+    NDArray output1('c', {3, 4}, nd4j::DataType::DOUBLE);
+    NDArray output2(nd4j::DataType::DOUBLE);
+
+    x.linspace(2., 2.);
+    eps.linspace(1.);
+
+    nd4j::ops::reversedivide_bp op;
+    Nd4jStatus status = op.execute({&y, &x, &eps}, {&output1, &output2}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output1.printIndexedBuffer("RDivideBP X out");
+    output2.printIndexedBuffer("RDivideBP Y out");
     //ASSERT_TRUE(output.e<double>(0) == 47.);
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestReverseDivideBP_2) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray y = NDArrayFactory::create<double>('c', {3,4});
+    NDArray eps('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {3,4}, nd4j::DataType::DOUBLE);
+
+    NDArray output1('c', {3, 4}, nd4j::DataType::DOUBLE);
+    NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
+
+    x.linspace(2., 2.);
+    y.linspace(1.);
+    eps.linspace(1.);
+    exp1.assign(1.);
+    exp2.assign(-2.);
+    nd4j::ops::reversedivide_bp op;
+    Nd4jStatus status = op.execute({&y, &x, &eps}, {&output2, &output1}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output1.printIndexedBuffer("2RDivideBP X out");
+    output2.printIndexedBuffer("2RDivideBP Y out");
+    ASSERT_TRUE(output1.equalsTo(exp1));
+    ASSERT_TRUE(output2.equalsTo(exp2));
 }
