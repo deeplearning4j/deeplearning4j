@@ -383,3 +383,48 @@ TEST_F(DeclarableOpsTests12, hinge_loss_14) {
 
     ASSERT_TRUE(output.e<double>(0) == 47.);
 }
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestDivideBP_1) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray y = NDArrayFactory::create<double>(2.);
+    NDArray eps('c', {3,4}, nd4j::DataType::DOUBLE);
+
+    NDArray output1('c', {3, 4}, nd4j::DataType::DOUBLE);
+    NDArray output2(nd4j::DataType::DOUBLE);
+
+    x.linspace(2., 2.);
+    eps.linspace(1.);
+
+    nd4j::ops::divide_bp op;
+    Nd4jStatus status = op.execute({&x, &y, &eps}, {&output1, &output2}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output1.printIndexedBuffer("DivideBP X out");
+    output2.printIndexedBuffer("DivideBP Y out");
+    //ASSERT_TRUE(output.e<double>(0) == 47.);
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestDivideBP_2) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray y = NDArrayFactory::create<double>('c', {3,4});
+    NDArray eps('c', {3,4}, nd4j::DataType::DOUBLE);
+
+    NDArray output1('c', {3, 4}, nd4j::DataType::DOUBLE);
+    NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
+
+    x.linspace(2., 2.);
+    y.linspace(1.);
+    eps.linspace(1.);
+
+    nd4j::ops::divide_bp op;
+    Nd4jStatus status = op.execute({&x, &y, &eps}, {&output1, &output2}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output1.printIndexedBuffer("2DivideBP X out");
+    output2.printIndexedBuffer("2DivideBP Y out");
+    //ASSERT_TRUE(output.e<double>(0) == 47.);
+}
