@@ -529,3 +529,61 @@ TEST_F(DeclarableOpsTests12, TestConfusionZero_1) {
     ASSERT_TRUE(output.equalsTo(exp));
     //ASSERT_TRUE(output2.equalsTo(exp2));
 }
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestMaximumBP_1) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray y('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray eps('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {3,4}, {0, 0, 0, 0, 0, 0, 7, 8, 9, 10, 11, 12}, nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {3,4}, {1, 2, 3, 4, 5, 6, 0, 0, 0,  0,  0,  0}, nd4j::DataType::DOUBLE);
+
+    NDArray output1('c', {3, 4}, nd4j::DataType::DOUBLE);
+    NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
+    output1.assign(119);
+    x.linspace(1.);
+    y.linspace(12., -1.);
+    x.printBuffer("X");
+    y.printBuffer("Y");
+    eps.linspace(1.);
+    //exp1.assign(1.);
+    //exp2.assign(-2.);
+    nd4j::ops::maximum_bp op;
+    Nd4jStatus status = op.execute({&x, &y, &eps}, {&output1, &output2}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output1.printIndexedBuffer("X max");
+    output2.printIndexedBuffer("Y max");
+    ASSERT_TRUE(output1.equalsTo(exp1));
+    ASSERT_TRUE(output2.equalsTo(exp2));
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestMinimumBP_1) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray y('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray eps('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {3,4}, {0, 0, 0, 0, 0, 0, 7, 8, 9, 10, 11, 12}, nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {3,4}, {1, 2, 3, 4, 5, 6, 0, 0, 0,  0,  0,  0}, nd4j::DataType::DOUBLE);
+
+    NDArray output1('c', {3, 4}, nd4j::DataType::DOUBLE);
+    NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
+    output1.assign(119);
+    x.linspace(1.);
+    y.linspace(12., -1.);
+    x.printBuffer("X");
+    y.printBuffer("Y");
+    eps.linspace(1.);
+    //exp1.assign(1.);
+    //exp2.assign(-2.);
+    nd4j::ops::minimum_bp op;
+    Nd4jStatus status = op.execute({&x, &y, &eps}, {&output2, &output1}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output2.printIndexedBuffer("X min");
+    output1.printIndexedBuffer("Y min");
+    ASSERT_TRUE(output1.equalsTo(exp1));
+    ASSERT_TRUE(output2.equalsTo(exp2));
+}
