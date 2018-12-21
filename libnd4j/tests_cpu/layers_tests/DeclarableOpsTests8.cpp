@@ -164,6 +164,24 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test7) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceVariance_test8) {
+
+    auto x = NDArrayFactory::create<double>('c', {2,3,4}, {27.f,34.f,5.f,4.f,54.f,6.f,65.f,8.f,37.f,45.f,8.f,67.f,96.f,10.f,65.f,41.f,33.f,85.f,92.f,24.f,25.f,55.f,49.f,76.});
+    auto exp = NDArrayFactory::create<double>('c', {1,1,1}, {788.6927f});
+    auto axes = NDArrayFactory::create<int>({0, 1, 2});
+    nd4j::ops::reduce_variance op;
+    auto result = op.execute({&x, &axes}, {}, {}, {true});
+    auto output = result->at(0);
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, reduceStDev_test1) {
 
     auto x = NDArrayFactory::create<double>('c', {2,3,4}, {27.f,34.f,5.f,4.f,54.f,6.f,65.f,8.f,37.f,45.f,8.f,67.f,96.f,10.f,65.f,41.f,33.f,85.f,92.f,24.f,25.f,55.f,49.f,76.});
@@ -300,7 +318,25 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test8) {
     auto output = result->at(0);    
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    output->printBuffer("Reduced STDDEV");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
 
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceStDev_test08) {
+
+    auto x = NDArrayFactory::create<double>('c', {2,3,4}, {27.f,34.f,5.f,4.f,54.f,6.f,65.f,8.f,37.f,45.f,8.f,67.f,96.f,10.f,65.f,41.f,33.f,85.f,92.f,24.f,25.f,55.f,49.f,76.});
+    auto exp = NDArrayFactory::create<double>('c', {4}, {26.88246f, 29.53924f, 34.52921f, 30.11755f});
+    auto axes = NDArrayFactory::create<int>({0,1});
+    nd4j::ops::reduce_stdev op;
+    auto result = op.execute({&x, &axes}, {}, {}, {false, true});
+    auto output = result->at(0);
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    output->printBuffer("Reduced STDDEV08");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -394,46 +430,92 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test2) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests8, reduceVarianceBP_test3) {
+TEST_F(DeclarableOpsTests8, reduceVarianceBP_test02) {
 
     auto x = NDArrayFactory::create<double>('c', {3,4});
-    auto gradO1 = NDArrayFactory::create<double>('c', {3,1}, {1.f,2.f,3.f});
-    auto gradO2 = NDArrayFactory::create<double>('c', {3}, {1.f,2.f,3.f});
-    auto exp12 = NDArrayFactory::create<double>('c', {3,4}, {-0.750000f, -0.250000f, 0.250000f, 0.750000f, -1.500000f, -0.500000f, 0.500000f, 1.500000f, -2.250000f, -0.750000f, 0.750000f, 2.250000f});
-    auto exp34 = NDArrayFactory::create<double>('c', {3,4}, {-1.000000f, -0.333333f, 0.333333f, 1.000000f, -2.000000f, -0.666667f, 0.666667f, 2.000000f, -3.000000f, -1.000000f, 1.000000f, 3.000000f});
-
+    auto gradO1 = NDArrayFactory::create<double>('c', {1,4}, {1.f,2.f,3.f,4.f});
+    auto gradO2 = NDArrayFactory::create<double>('c', {4}, {1.f,2.f,3.f,4.f});
+    auto exp12 = NDArrayFactory::create<double>('c', {3,4}, {-2.666667f, -5.333333f, -8.000000f,  -10.666667f, 0.000000f, 0.000000f, 0.000000f, 0.000000f, 2.666667f, 5.333333f,  8.000000f, 10.666667f});
+    auto exp34 = NDArrayFactory::create<double>('c', {3,4}, {-4.000000f, -8.000000f, -12.000000f, -16.000000f, 0.000000f, 0.000000f, 0.000000f, 0.000000f, 4.000000f, 8.000000f, 12.000000f, 16.000000f});
+    auto axes = NDArrayFactory::create<int>('c', {1}, 0);
     x.linspace(1);
-            
+
     nd4j::ops::reduce_variance_bp op;
 
-    auto result = op.execute({&x, &gradO2}, {0,0}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
-    auto output = result->at(0);    
+    auto result = op.execute({&x, &gradO2, &axes}, {}, {}, {false, false});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
     ASSERT_TRUE(exp12.isSameShape(output));
     ASSERT_TRUE(exp12.equalsTo(output));
     delete result;
 
-    result = op.execute({&x, &gradO1}, {1,0}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
-    output = result->at(0);        
+    result = op.execute({&x, &gradO1, &axes}, {}, {}, {true, false});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    output = result->at(0);
     ASSERT_TRUE(exp12.isSameShape(output));
-    ASSERT_TRUE(exp12.equalsTo(output)); 
-    delete result;    
+    ASSERT_TRUE(exp12.equalsTo(output));
+    delete result;
 
-    result = op.execute({&x, &gradO2}, {0,1}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
-    output = result->at(0);    
-    ASSERT_TRUE(exp34.isSameShape(output));
-    ASSERT_TRUE(exp34.equalsTo(output));
-    delete result;    
-
-    result = op.execute({&x, &gradO1}, {1,1}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    result = op.execute({&x, &gradO2, &axes}, {}, {}, {false, true});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
     output = result->at(0);
     ASSERT_TRUE(exp34.isSameShape(output));
     ASSERT_TRUE(exp34.equalsTo(output));
-    delete result;   
+    delete result;
 
+    result = op.execute({&x, &gradO1, &axes}, {}, {}, {true, true});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    output = result->at(0);
+    ASSERT_TRUE(exp34.isSameShape(output));
+    ASSERT_TRUE(exp34.equalsTo(output));
+    delete result;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceVarianceBP_test3) {
+
+    auto x = NDArrayFactory::create<double>('c', {3, 4});
+    auto gradO1 = NDArrayFactory::create<double>('c', {3, 1}, {1.f, 2.f, 3.f});
+    auto gradO2 = NDArrayFactory::create<double>('c', {3}, {1.f, 2.f, 3.f});
+    auto exp12 = NDArrayFactory::create<double>('c', {3, 4},
+                                                {-0.750000f, -0.250000f, 0.250000f, 0.750000f, -1.500000f, -0.500000f,
+                                                 0.500000f, 1.500000f, -2.250000f, -0.750000f, 0.750000f, 2.250000f});
+    auto exp34 = NDArrayFactory::create<double>('c', {3, 4},
+                                                {-1.000000f, -0.333333f, 0.333333f, 1.000000f, -2.000000f, -0.666667f,
+                                                 0.666667f, 2.000000f, -3.000000f, -1.000000f, 1.000000f, 3.000000f});
+
+    x.linspace(1);
+
+    nd4j::ops::reduce_variance_bp op;
+
+    auto result = op.execute({&x, &gradO2}, {0, 0}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+    ASSERT_TRUE(exp12.isSameShape(output));
+    ASSERT_TRUE(exp12.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO1}, {1, 0}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    output = result->at(0);
+    ASSERT_TRUE(exp12.isSameShape(output));
+    ASSERT_TRUE(exp12.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO2}, {0, 1}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    output = result->at(0);
+    ASSERT_TRUE(exp34.isSameShape(output));
+    ASSERT_TRUE(exp34.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO1}, {1, 1}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    output = result->at(0);
+    ASSERT_TRUE(exp34.isSameShape(output));
+    ASSERT_TRUE(exp34.equalsTo(output));
+    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -522,6 +604,48 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test2) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceStDevBP_test02) {
+
+    auto x = NDArrayFactory::create<double>('c', {3,4});
+    auto gradO1 = NDArrayFactory::create<double>('c', {1,4}, {1.f,2.f,3.f,4.f});
+    auto gradO2 = NDArrayFactory::create<double>('c', {4}, {1.f,2.f,3.f,4.f});
+    auto exp12 = NDArrayFactory::create<double>('c', {3,4}, {-0.4082483f, -0.8164966f, -1.2247449f, -1.6329932f, 0.0, 0.0, 0.0, 0.0, 0.4082483f, 0.8164966f, 1.2247449f, 1.6329932f});
+    auto exp34 = NDArrayFactory::create<double>('c', {3,4}, {-0.5f, -1.0f, -1.5f, -2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f, 1.5f, 2.0f});
+    auto axis = NDArrayFactory::create<int>('c', {1}, 0);
+    x.linspace(1);
+
+    nd4j::ops::reduce_stdev_bp op;
+
+    auto result = op.execute({&x, &gradO2, &axis}, {}, {}, {false, false});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+    ASSERT_TRUE(exp12.isSameShape(output));
+    ASSERT_TRUE(exp12.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO1, &axis}, {}, {}, {true, false});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    output = result->at(0);
+    ASSERT_TRUE(exp12.isSameShape(output));
+    ASSERT_TRUE(exp12.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO2, &axis}, {}, {}, {false, true});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    output = result->at(0);
+    ASSERT_TRUE(exp34.isSameShape(output));
+    ASSERT_TRUE(exp34.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO1, &axis}, {}, {}, {true, true});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    output = result->at(0);
+    ASSERT_TRUE(exp34.isSameShape(output));
+    ASSERT_TRUE(exp34.equalsTo(output));
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, reduceStDevBP_test3) {
 
     auto x = NDArrayFactory::create<double>('c', {3,4});
@@ -595,6 +719,24 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_2) {
     ASSERT_EQ(Status::OK(), result->status());
     auto z = result->at(0);    
 //    z->printIndexedBuffer("Result is ");
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_03) {
+
+    auto input = NDArrayFactory::create<double>('c', {3, 5},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});
+    auto exp = NDArrayFactory::create<double>({15.f, 40.f, 65.f});
+    auto axis = NDArrayFactory::create<int>('c', {1}, {1});
+    //************************************//
+
+    nd4j::ops::reduce_sum op;
+    auto result = op.execute({&input, &axis}, {}, {}, {false});
+
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);
+    z->printIndexedBuffer("Result is ");
     ASSERT_TRUE(exp.equalsTo(z));
     delete result;
 }
@@ -852,6 +994,27 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_4) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_04) {
+
+    auto x = NDArrayFactory::create<double>('c', {2,3,2});
+    auto exp = NDArrayFactory::create<double>('c', {1,3,1}, {112.f, 1080.f, 3960.f});
+    auto axes = NDArrayFactory::create<int>({0, 2});
+    x.linspace(1);
+
+    nd4j::ops::reduce_prod op;
+    auto result = op.execute({&x, &axes}, {}, {}, {true});
+    auto output = result->at(0);
+//    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_5) {
 
     auto x = NDArrayFactory::create<double>('c', {2,3,2});
@@ -983,6 +1146,27 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_4) {
     // output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Reduce_Min_04) {
+
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
+    auto exp = NDArrayFactory::create<double>('c', {1,3,1}, {1.f, 5.f, 9.f});
+    auto axes = NDArrayFactory::create<int>({0, 2});
+    x.linspace(1);
+
+    nd4j::ops::reduce_min op;
+    auto result = op.execute({&x, &axes}, {}, {}, {true});
+    auto output = result->at(0);
+    // output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1131,6 +1315,27 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_4) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Reduce_Max_04) {
+
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
+    auto exp = NDArrayFactory::create<double>('c', {1,3,1}, {16.f, 20.f, 24.f});
+    auto axes = NDArrayFactory::create<int>({0, 2});
+    x.linspace(1);
+
+    nd4j::ops::reduce_max op;
+    auto result = op.execute({&x, &axes}, {}, {}, {true});
+    auto output = result->at(0);
+    // output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, Test_Reduce_Max_5) {
 
     auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
@@ -1261,6 +1466,27 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_4) {
 //    output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_04) {
+
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
+    auto exp = NDArrayFactory::create<double>('c', {1,3,1}, {68.f, 100.f, 132.f});
+    auto axes = NDArrayFactory::create<int>({0, 2});
+    x.linspace(1);
+
+    nd4j::ops::reduce_norm1 op;
+    auto result = op.execute({&x, &axes}, {}, {}, {true});
+    auto output = result->at(0);
+//    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1407,6 +1633,27 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_4) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_04) {
+
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
+    auto exp = NDArrayFactory::create<double>('c', {1,3,1}, {29.597298f, 39.344631f, 49.759422f});
+    auto axes = NDArrayFactory::create<int>({0,2});
+    x.linspace(1);
+
+    nd4j::ops::reduce_norm2 op;
+    auto result = op.execute({&x, &axes}, {}, {}, {true});
+    auto output = result->at(0);
+//    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_5) {
 
     auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
@@ -1535,6 +1782,26 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_4) {
     auto output = result->at(0);
 //    output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_04) {
+
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
+    auto exp = NDArrayFactory::create<double>('c', {1, 3, 1}, {16.f, 20.f, 24.f});
+    auto axes = NDArrayFactory::create<int>({0,2});
+    x.linspace(1);
+
+    nd4j::ops::reduce_norm_max op;
+    auto result = op.execute({&x, &axes}, {}, {}, {true});
+    auto output = result->at(0);
+//    output->printIndexedBuffer("Result is");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1679,6 +1946,26 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_4) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_04) {
+
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
+    auto exp = NDArrayFactory::create<double>('c', {1, 3, 1}, {876.f, 1548.f, 2476.f});
+    auto axes = NDArrayFactory::create<int>({0, 2});
+    x.linspace(1);
+
+    nd4j::ops::reduce_sqnorm op;
+    auto result = op.execute({&x, &axes}, {}, {}, {true});
+    auto output = result->at(0);
+//    output->printIndexedBuffer("Result is");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_5) {
 
     auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
@@ -1814,6 +2101,28 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_BP_4) {
 
     ASSERT_EQ(Status::OK(), result->status());
     auto z = result->at(0);    
+//    z->printIndexedBuffer("Result is ");
+//    z->printShapeInfo();
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_BP_04) {
+
+    auto input = NDArrayFactory::create<double>('c', {3, 4},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.});
+    auto eps = NDArrayFactory::create<double>('c', {1, 4}, {1.f, 2.f, 3.f, 4.f});
+    auto exp = NDArrayFactory::create<double>('c', {3, 4}, {1.f, 2.f, 3.f, 4.f,
+                                                            1.f, 2.f, 3.f, 4.f,
+                                                            1.f, 2.f, 3.f, 4.f});
+    auto axis = NDArrayFactory::create<int>('c', {1}, 0);
+    //************************************//
+
+    nd4j::ops::reduce_sum_bp op;
+    auto result = op.execute({&input, &eps, &axis}, {}, {}, {true});
+
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);
 //    z->printIndexedBuffer("Result is ");
 //    z->printShapeInfo();
     ASSERT_TRUE(exp.equalsTo(z));
@@ -1984,6 +2293,26 @@ TEST_F(DeclarableOpsTests8, reduceMean_test7) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceMean_test8) {
+
+    auto x = NDArrayFactory::create<double>('c', {2,3,4});
+    auto exp = NDArrayFactory::create<double>('c', {1,1,1}, {12.5f});
+    auto axes = NDArrayFactory::create<int>({0, 1, 2});
+    x.linspace(1);
+
+    nd4j::ops::reduce_mean op;
+    auto result = op.execute({&x, &axes}, {}, {}, {true});
+    auto output = result->at(0);
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, reduceMeanBP_test1) {
 
     auto x = NDArrayFactory::create<double>('c', {3,4});
@@ -2035,6 +2364,33 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test2) {
 
     result = op.execute({&x, &gradO2}, {1}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    output = result->at(0);
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceMeanBP_test02) {
+
+    auto x = NDArrayFactory::create<double>('c', {3,4});
+    auto gradO1 = NDArrayFactory::create<double>('c', {4},  {1.f, 2.f, 3.f, 4.f});
+    auto gradO2 = NDArrayFactory::create<double>('c', {1,4}, {1.f, 2.f, 3.f, 4.f});
+    auto exp = NDArrayFactory::create<double>('c', {3,4}, {1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f, 1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f, 1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f});
+    auto axis = NDArrayFactory::create<int>('c', {1}, 0);
+    x.linspace(1);
+
+    nd4j::ops::reduce_mean_bp op;
+
+    auto result = op.execute({&x, &gradO1, &axis}, {}, {}, {false});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO2, &axis}, {}, {}, {true});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
     output = result->at(0);
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));

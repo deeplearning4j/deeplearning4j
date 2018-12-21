@@ -1648,6 +1648,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         return pointer.capacity();
     }
 
+    @Override
+    protected void release() {
+        AtomicAllocator.getInstance().freeMemory(allocationPoint);
+    }
+
     /*
     protected short fromFloat( float fval ) {
         int fbits = Float.floatToIntBits( fval );

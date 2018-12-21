@@ -64,10 +64,14 @@ namespace nd4j {
             std::vector<NDArray*> vB(batchSize);
             std::vector<NDArray*> vC(batchSize);
 
+            auto firstType = INPUT_VARIABLE(0)->dataType();
             for(int e = 0; e < batchSize; e++) {
                 vA[e] = INPUT_VARIABLE(e+2);
                 vB[e] = INPUT_VARIABLE(e+2+batchSize);
                 vC[e] = OUTPUT_VARIABLE(e);
+
+
+                REQUIRE_TRUE(firstType == vC[e]->dataType(), 0, "BatchedGemm: all inputs and outputs must have same data type");
 
                 REQUIRE_TRUE(vA[e]->rankOf() == 2, 0, "BatchedGemm: batch %i, rank of A should be equal to 2", e);
                 REQUIRE_TRUE(vB[e]->rankOf() == 2, 0, "BatchedGemm: batch %i, rank of B should be equal to 2", e);
@@ -97,6 +101,11 @@ namespace nd4j {
             int ldB = INT_ARG(6);
             int ldC = INT_ARG(7);
             int batchSize = INT_ARG(8);
+
+            auto firstType = ArrayOptions::dataType(inputShape->at(0));
+            for (int e = 1; e < block.width(); e++) {
+                REQUIRE_TRUE(firstType == ArrayOptions::dataType(inputShape->at(1)), 0, "BatchedGemm: all inputs must have same data type");
+            }
 
             if (!(M > 0 && N > 0 && K > 0 && ldA > 0 && ldB > 0 && ldC > 0 && batchSize > 0)) {
                 Nd4jLong *newShape;
