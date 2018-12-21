@@ -486,12 +486,12 @@ TEST_F(DeclarableOpsTests12, TestSliceBP_1) {
 
     NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
     NDArray eps('c', {2,2}, nd4j::DataType::DOUBLE);
-    //NDArray exp1('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {3,4}, {0., 0., 0., 0., 0., 1.,1., 0., 0., 1., 1., 0.});
     //NDArray exp2('c', {3,4}, nd4j::DataType::DOUBLE);
 
     NDArray output('c', {3, 4}, nd4j::DataType::DOUBLE);
     //NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
-
+    output.assign(119.113);
     x.linspace(1.);
     eps.assign(1.);
     //exp1.assign(1.);
@@ -501,7 +501,7 @@ TEST_F(DeclarableOpsTests12, TestSliceBP_1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
     output.printIndexedBuffer("SLICE_BP out");
-    //ASSERT_TRUE(output1.equalsTo(exp1));
+    ASSERT_TRUE(output.equalsTo(exp));
     //ASSERT_TRUE(output2.equalsTo(exp2));
 }
 
