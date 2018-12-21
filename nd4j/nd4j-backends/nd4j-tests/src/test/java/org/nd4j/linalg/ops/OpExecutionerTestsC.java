@@ -393,8 +393,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         Min min = new Min(row);
         double min2 = Nd4j.getExecutioner().execAndReturn(min).getFinalResult().doubleValue();
         assertEquals(1.0, min2, 1e-1);
-        Max matrixMax = new Max(linspace);
-        INDArray exec2 = Nd4j.getExecutioner().exec(matrixMax, 1);
+        Max matrixMax = new Max(linspace, 1);
+        INDArray exec2 = Nd4j.getExecutioner().exec(matrixMax);
         assertEquals(Nd4j.create(new double[] {3, 6}), exec2);
     }
 
@@ -442,8 +442,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testDimensionSoftMax() {
         INDArray linspace = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
-        OldSoftMax max = new OldSoftMax(linspace);
-        Nd4j.getExecutioner().exec(max, 1);
+        OldSoftMax max = new OldSoftMax(linspace, 1);
+        Nd4j.getExecutioner().exec(max);
         linspace.assign(max.z());
         assertEquals(getFailureMessage(), linspace.getRow(0).sumNumber().doubleValue(), 1.0, 1e-1);
     }
@@ -961,7 +961,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
             assertEquals(secondOrig, second);
 
 
-            INDArray out = Nd4j.getExecutioner().exec(new EuclideanDistance(first, second), 1, 2, 3);
+            INDArray out = Nd4j.getExecutioner().exec(new EuclideanDistance(first, second, 1, 2, 3));
             for (int i = 0; i < first.tensorsAlongDimension(1, 2, 3); i++) {
                 val j = first.javaTensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer().asLong();
                 val t = first.tensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer().asLong();
@@ -980,7 +980,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
                                 secondTadInfo.getSecond().getLong(i));
             }
 
-            INDArray outManhattan = Nd4j.getExecutioner().exec(new ManhattanDistance(first, second), 1, 2, 3);
+            INDArray outManhattan = Nd4j.getExecutioner().exec(new ManhattanDistance(first, second, 1, 2, 3));
 
             System.out.println("\n\nOrder: " + order);
             System.out.println("Euclidean:");

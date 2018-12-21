@@ -110,7 +110,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
         INDArray distanceComp = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1, -1).add(1);
         INDArray result = Nd4j.createUninitialized(DataType.DOUBLE, new long[]{4});
         Nd4j.getExecutioner().exec(
-                new EuclideanDistance(distanceInputRow, distanceComp, result, distanceInputRow.length()), 0);
+                new EuclideanDistance(distanceInputRow, distanceComp, result, 0));
         INDArray euclideanAssertion = Nd4j.ones(4).castTo(DataType.DOUBLE);
         assertEquals(euclideanAssertion, result);
         System.out.println(result);
@@ -128,8 +128,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
         executor.execute(new Runnable() {
             @Override
             public void run() {
-                Nd4j.getExecutioner().exec(new EuclideanDistance(matrix, rowVector, resultArr, matrix.lengthLong()),
-                        -1);
+                Nd4j.getExecutioner().exec(new EuclideanDistance(matrix, rowVector, resultArr, -1));
                 System.out.println("Ran!");
             }
         });

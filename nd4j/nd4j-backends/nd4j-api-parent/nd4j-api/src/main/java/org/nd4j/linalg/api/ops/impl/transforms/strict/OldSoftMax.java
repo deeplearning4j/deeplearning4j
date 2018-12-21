@@ -63,12 +63,11 @@ public class OldSoftMax extends BaseTransformStrictOp {
     public OldSoftMax() {
     }
 
-    public OldSoftMax(INDArray x, INDArray z) {
+    public OldSoftMax(INDArray x, INDArray z, int... axis) {
         this(x, z, x.length());
-
     }
 
-    public OldSoftMax(INDArray x, INDArray z, long n) {
+    private OldSoftMax(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
@@ -85,7 +84,7 @@ public class OldSoftMax extends BaseTransformStrictOp {
     }
     */
 
-    public OldSoftMax(INDArray x) {
+    public OldSoftMax(INDArray x, int... dimensions) {
         super(x);
         Preconditions.checkArgument(x != null && x.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only");
     }
