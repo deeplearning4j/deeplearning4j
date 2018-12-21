@@ -44,8 +44,8 @@ public class HammingDistance extends BaseReduceFloatOp {
         passThrough = true;
     }
 
-    public HammingDistance(INDArray x, INDArray y) {
-        this(x, y, null, false);
+    public HammingDistance(INDArray x, INDArray y, int... dimensions) {
+        this(x, y, null, false, dimensions);
     }
 
     public HammingDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {

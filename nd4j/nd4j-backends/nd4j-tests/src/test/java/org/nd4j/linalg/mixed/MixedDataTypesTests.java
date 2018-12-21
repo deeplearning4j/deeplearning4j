@@ -185,7 +185,7 @@ public class MixedDataTypesTests {
     public void testBasicOps_6() throws Exception {
         val arrayX = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.INT);
 
-        val z = Nd4j.getExecutioner().exec(new CountNonZero(arrayX)).z();
+        val z = Nd4j.getExecutioner().exec(new CountNonZero(arrayX));
 
         assertEquals(DataType.LONG, z.dataType());
         val result = z.getInt(0);
@@ -197,12 +197,12 @@ public class MixedDataTypesTests {
     public void testBasicOps_7() throws Exception {
         val arrayX = Nd4j.create(new float[]{1, 0, Float.NaN, 4}, new  long[]{4}, DataType.FLOAT);
 
-        val z = Nd4j.getExecutioner().exec(new IsInf(arrayX)).z();
+        val z = Nd4j.getExecutioner().exec(new IsInf(arrayX));
 
         assertEquals(DataType.BOOL, z.dataType());
         val result = z.getInt(0);
 
-        val z2 = Nd4j.getExecutioner().exec(new IsNaN(arrayX)).z();
+        val z2 = Nd4j.getExecutioner().exec(new IsNaN(arrayX));
         assertEquals(DataType.BOOL, z2.dataType());
         val result2 = z2.getInt(0);
 
@@ -229,7 +229,7 @@ public class MixedDataTypesTests {
         val exp = new long[]{1, 0, 0, 1};
 
         val op = new CosineSimilarity(arrayX, arrayY);
-        val result = Nd4j.getExecutioner().exec(op).z();
+        val result = Nd4j.getExecutioner().exec(op);
         val arr = result.getDouble(0);
 
         assertEquals(1.0, arr, 1e-5);
@@ -305,7 +305,7 @@ public class MixedDataTypesTests {
         val exp = new long[]{1, 0, 0, 1};
 
         val op = new CosineSimilarity(arrayX, arrayY);
-        val result = Nd4j.getExecutioner().exec(op).z();
+        val result = Nd4j.getExecutioner().exec(op);
     }
 
     @Test(expected = IllegalArgumentException.class)

@@ -135,7 +135,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             exec(iac); //Currently using DefaultOpExecutioner
         } else if (op instanceof BroadcastOp) {
             BroadcastOp broadcastOp = (BroadcastOp) op;
-            exec(broadcastOp, broadcastOp.getDimension());
+            exec(broadcastOp);
         }
         else if(op instanceof ShapeOp) {
             ShapeOp shapeOp = (ShapeOp) op;
@@ -177,10 +177,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new IllegalStateException("Z array shape does not match expected return type for op " + op
                     + ": expected shape " + Arrays.toString(retShape) + ", z.shape()=" + Arrays.toString(op.z().shape()));
         }
-
-        //do op along all dimensions
-        if (dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
 
         op.validateDataTypes();
 
@@ -1739,8 +1735,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
             outputShapes.put(cnt++, out.shapeInfoDataBuffer().addressPointer());
         }
-
-
 
         val iArgs = op.numIArguments() > 0 ? new LongPointer(op.numIArguments()) : null;
         cnt = 0;

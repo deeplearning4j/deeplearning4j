@@ -39,7 +39,7 @@ import java.util.Map;
 @NoArgsConstructor
 @Slf4j
 public abstract class BaseBroadcastBoolOp extends BaseOp implements BroadcastOp {
-
+    protected INDArray dimensionz;
     protected int[] dimension;
 
 
@@ -219,5 +219,10 @@ public abstract class BaseBroadcastBoolOp extends BaseOp implements BroadcastOp 
     @Override
     public Type getOpType() {
         return Type.BROADCAST_BOOL;
+    }
+
+    @Override
+    public INDArray dimensions() {
+        return dimensionz;
     }
 }

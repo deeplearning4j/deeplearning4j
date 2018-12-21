@@ -36,7 +36,7 @@ import java.util.List;
  */
 @Slf4j
 public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
-
+    protected INDArray dimensionz;
     public BaseScalarBoolOp() {}
 
     public BaseScalarBoolOp(INDArray x, INDArray y, INDArray z, long n, Number num) {
@@ -168,6 +168,11 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
     @Override
     public Type getOpType() {
         return Type.SCALAR_BOOL;
+    }
+
+    @Override
+    public INDArray dimensions() {
+        return dimensionz;
     }
 
 }

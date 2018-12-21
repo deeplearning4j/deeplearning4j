@@ -38,6 +38,7 @@ import java.util.List;
  */
 @Slf4j
 public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
+    private INDArray dimensionz;
 
     public BaseScalarOp() {
         this.scalarValue = Nd4j.scalar(0.f);
@@ -200,4 +201,8 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         return Type.SCALAR;
     }
 
+    @Override
+    public INDArray dimensions() {
+        return dimensionz;
+    }
 }

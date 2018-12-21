@@ -59,8 +59,8 @@ public class CosineSimilarity extends BaseReduceFloatOp {
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public CosineSimilarity(INDArray x, INDArray y) {
-        super(x, y, null);
+    public CosineSimilarity(INDArray x, INDArray y, int... dimensions) {
+        super(x, y, dimensions);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
         extraArgs = new Object[]{0.0f, 0.0f};
     }

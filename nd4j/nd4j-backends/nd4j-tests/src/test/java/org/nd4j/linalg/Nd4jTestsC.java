@@ -502,7 +502,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray expected = Nd4j.repeat(Nd4j.scalar(DataType.DOUBLE, 2).reshape(1, 1), 2).reshape(2, 1);
 
         val accum = Nd4j.getOpFactory().createAccum("euclidean", values, values2);
-        INDArray results = Nd4j.getExecutioner().exec(accum, 1);
+
+        INDArray results = null; //Nd4j.getExecutioner().exec(accum, 1);
         assertEquals(expected, results);
 
     }
@@ -1000,7 +1001,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         System.out.println(expAllZeros);
         System.out.println(expAllOnes);
 
-        val allones = Nd4j.getExecutioner().exec(new All(expAllOnes)).z().getDouble(0);
+        val allones = Nd4j.getExecutioner().exec(new All(expAllOnes)).getDouble(0);
 
         assertTrue(expAllZeros.none());
         assertTrue(expAllOnes.all());
@@ -4019,7 +4020,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(slices[i]));
         }
 
-        INDArray out = Nd4j.getExecutioner().exec(new IMax(arr), 1, 2);
+        INDArray out = Nd4j.getExecutioner().exec(new IMax(arr, 1,2));
 
         assertEquals(DataType.LONG, out.dataType());
 
@@ -4061,8 +4062,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
             }
         }
 
-        INDArray actC = Nd4j.getExecutioner().exec(new IMax(arr.dup('c')), 0, 1);
-        INDArray actF = Nd4j.getExecutioner().exec(new IMax(arr.dup('f')), 0, 1);
+        INDArray actC = Nd4j.getExecutioner().exec(new IMax(arr.dup('c'), 0,1));
+        INDArray actF = Nd4j.getExecutioner().exec(new IMax(arr.dup('f'),  0,1));
         //
         assertEquals(exp, actC);
         assertEquals(exp, actF);
@@ -4095,8 +4096,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
             }
         }
 
-        actC = Nd4j.getExecutioner().exec(new IMax(arr.dup('c')), 2, 3);
-        actF = Nd4j.getExecutioner().exec(new IMax(arr.dup('f')), 2, 3);
+        actC = Nd4j.getExecutioner().exec(new IMax(arr.dup('c'), 2, 3));
+        actF = Nd4j.getExecutioner().exec(new IMax(arr.dup('f'), 2, 3));
 
         assertEquals(exp, actC);
         assertEquals(exp, actF);
@@ -4551,7 +4552,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray needle = Nd4j.create(new double[] {-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130,
                 -1.25485503673});
 
-        INDArray reduced = Nd4j.getExecutioner().exec(new CosineDistance(haystack, needle), 1);
+        INDArray reduced = Nd4j.getExecutioner().exec(new CosineDistance(haystack, needle, 1));
         log.info("Reduced: {}", reduced);
 
 
@@ -4575,7 +4576,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             initial.getRow(i).assign(i + 1);
         }
         INDArray needle = Nd4j.create(new double[] {0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9});
-        INDArray reduced = Nd4j.getExecutioner().exec(new CosineSimilarity(initial, needle), 1);
+        INDArray reduced = Nd4j.getExecutioner().exec(new CosineSimilarity(initial, needle, 1));
 
         log.warn("Reduced: {}", reduced);
 
@@ -4593,7 +4594,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             initial.getRow(i).assign(i + 1);
         }
         INDArray needle = Nd4j.create(10).assign(1.0);
-        INDArray reduced = Nd4j.getExecutioner().exec(new ManhattanDistance(initial, needle), 1);
+        INDArray reduced = Nd4j.getExecutioner().exec(new ManhattanDistance(initial, needle, 1));
 
         log.warn("Reduced: {}", reduced);
 
@@ -4611,7 +4612,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             initial.getRow(i).assign(i + 1);
         }
         INDArray needle = Nd4j.create(10).assign(1.0);
-        INDArray reduced = Nd4j.getExecutioner().exec(new EuclideanDistance(initial, needle), 1);
+        INDArray reduced = Nd4j.getExecutioner().exec(new EuclideanDistance(initial, needle, 1));
 
         log.warn("Reduced: {}", reduced);
 
@@ -4632,7 +4633,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             initial.getRow(i).assign(i + 1);
         }
         INDArray needle = Nd4j.create(10).assign(1.0);
-        INDArray reduced = Nd4j.getExecutioner().exec(new EuclideanDistance(initial, needle), -1);
+        INDArray reduced = Nd4j.getExecutioner().exec(new EuclideanDistance(initial, needle, -1));
 
         log.warn("Reduced: {}", reduced);
 
@@ -4654,7 +4655,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
         INDArray needle = Nd4j.create(10).assign(1.0);
         INDArray reduced = Nd4j.create(5);
-        Nd4j.getExecutioner().exec(new CosineSimilarity(initial, needle, reduced, initial.lengthLong()), -1);
+        Nd4j.getExecutioner().exec(new CosineSimilarity(initial, needle, reduced, -1));
 
         log.warn("Reduced: {}", reduced);
 
@@ -4675,7 +4676,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             initial.getRow(i).assign(i + 1);
         }
         INDArray needle = Nd4j.create(2, 10).assign(1.0);
-        INDArray reduced = Nd4j.getExecutioner().exec(new EuclideanDistance(initial, needle), 1);
+        INDArray reduced = Nd4j.getExecutioner().exec(new EuclideanDistance(initial, needle, 1));
 
     }
 
@@ -4686,7 +4687,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             initial.tensorAlongDimension(i, 1, 2).assign(i + 1);
         }
         INDArray needle = Nd4j.create(6, 7).assign(1.0);
-        INDArray reduced = Nd4j.getExecutioner().exec(new ManhattanDistance(initial, needle), 1, 2);
+        INDArray reduced = Nd4j.getExecutioner().exec(new ManhattanDistance(initial, needle,  1,2));
 
         log.warn("Reduced: {}", reduced);
 
@@ -4777,7 +4778,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         log.info("X: {}", x);
         INDArray y = Nd4j.create(new double[] {0, 0, 0, 0, 1, 0});
 
-        INDArray res = Nd4j.getExecutioner().exec(new HammingDistance(x, y), 1);
+        INDArray res = Nd4j.getExecutioner().exec(new HammingDistance(x, y, 1));
         assertEquals(10, res.length());
 
         for (int r = 0; r < x.rows(); r++) {
@@ -5532,7 +5533,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             matrix.getRow(r).assign(Nd4j.create(new double[]{1, 2, 3}));
         }
 
-        INDArray res = Nd4j.getExecutioner().exec(new LogSumExp(matrix), 1);
+        INDArray res = Nd4j.getExecutioner().exec(new LogSumExp(matrix, 1));
 
         for (int e = 0; e < res.length(); e++) {
             assertEquals(3.407605, res.getDouble(e), 1e-5);
@@ -5544,7 +5545,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testLogExpSum2() throws Exception {
         INDArray row = Nd4j.create(new double[]{1, 2, 3});
 
-        double res = Nd4j.getExecutioner().exec(new LogSumExp(row)).z().getDouble(0);
+        double res = Nd4j.getExecutioner().exec(new LogSumExp(row)).getDouble(0);
 
         assertEquals(3.407605, res, 1e-5);
     }
@@ -6117,7 +6118,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testReduce3AlexBug() {
         val arr = Nd4j.linspace(1,100,100, DataType.DOUBLE).reshape('f', 10, 10).dup('c');
         val arr2 = Nd4j.linspace(1,100,100, DataType.DOUBLE).reshape('c', 10, 10);
-        val out = Nd4j.getExecutioner().exec(new EuclideanDistance(arr, arr2), 1);
+        val out = Nd4j.getExecutioner().exec(new EuclideanDistance(arr, arr2, 1));
         val exp = Nd4j.create(new double[] {151.93748, 128.86038, 108.37435, 92.22256, 82.9759, 82.9759, 92.22256, 108.37435, 128.86038, 151.93748});
 
         assertEquals(exp, out);
