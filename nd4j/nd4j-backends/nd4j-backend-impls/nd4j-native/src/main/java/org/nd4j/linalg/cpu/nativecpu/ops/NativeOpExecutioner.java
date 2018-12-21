@@ -2062,7 +2062,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val addr = ((LongIndexer) buffer.indexer()).get(index);
         val ptr = new PagedPointer(addr);
         val str = new Nd4jCpu.utf8string(ptr);
-        return str._buffer().substring(0, str._length());
+        return str._buffer().capacity(str._length()).getString();
     }
 
     @Override
