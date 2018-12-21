@@ -1880,7 +1880,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
      */
     @Override
     public INDArray entropy(int... dimension) {
-        return Nd4j.getExecutioner().exec(new Entropy(this), dimension);
+        return Nd4j.getExecutioner().exec(new Entropy(this, dimension));
     }
 
     /**
@@ -1890,7 +1890,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
      */
     @Override
     public INDArray shannonEntropy(int... dimension) {
-        return Nd4j.getExecutioner().exec(new ShannonEntropy(this), dimension);
+        return Nd4j.getExecutioner().exec(new ShannonEntropy(this, dimension));
     }
 
     /**
@@ -1900,7 +1900,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
      */
     @Override
     public INDArray logEntropy(int... dimension) {
-        return Nd4j.getExecutioner().exec(new LogEntropy(this), dimension);
+        return Nd4j.getExecutioner().exec(new LogEntropy(this, dimension));
     }
 
     @Override

@@ -726,12 +726,8 @@ public class Nd4j {
      * @return
      */
     public static INDArray argMax(INDArray arr, int... dimension) {
-        IMax imax = new IMax(arr);
-        if(dimension == null || dimension.length == 0){
-            return Nd4j.getExecutioner().exec(imax, Integer.MAX_VALUE);
-        } else {
-            return Nd4j.getExecutioner().exec(imax, dimension);
-        }
+        IMax imax = new IMax(arr, dimension);
+        return Nd4j.getExecutioner().exec(imax);
     }
 
     /**
@@ -741,12 +737,8 @@ public class Nd4j {
      * @return
      */
     public static INDArray argMin(INDArray arr, int... dimension) {
-        IMin imin = new IMin(arr);
-        if(dimension == null || dimension.length == 0){
-            return Nd4j.getExecutioner().exec(imin, Integer.MAX_VALUE);
-        } else {
-            return Nd4j.getExecutioner().exec(imin, dimension);
-        }
+        IMin imin = new IMin(arr, dimension);
+        return Nd4j.getExecutioner().exec(imin);
     }
 
     /**
