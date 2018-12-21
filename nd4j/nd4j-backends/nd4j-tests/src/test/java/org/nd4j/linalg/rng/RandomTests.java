@@ -453,7 +453,7 @@ public class RandomTests extends BaseNd4jTest {
         log.info("Sum2: {}", z2.sumNumber().doubleValue());
 
 
-        INDArray match = Nd4j.getExecutioner().exec(new MatchCondition(z1, Conditions.isNan()), Integer.MAX_VALUE);
+        INDArray match = Nd4j.getExecutioner().exec(new MatchCondition(z1, Conditions.isNan()));
         log.info("NaNs: {}", match);
         assertEquals(0.0f, match.getFloat(0), 0.01f);
 

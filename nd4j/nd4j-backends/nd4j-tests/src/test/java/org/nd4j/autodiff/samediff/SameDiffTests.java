@@ -1973,7 +1973,7 @@ public class SameDiffTests {
         INDArray a = Nd4j.rand(new long[]{3, 4, 5});
         INDArray b = Nd4j.rand(new long[]{3, 4, 5});
 
-        INDArray expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a, b), 0);
+        INDArray expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a, b, 0));
 
         val expShape = new long[]{4, 5};
 
