@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNot;
+import org.nd4j.linalg.api.ops.impl.shape.Cross;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.BooleanNot;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
@@ -41,8 +42,11 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
 import org.nd4j.linalg.api.ops.impl.transforms.same.*;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.inverse.InvertMatrix;
+
+import java.util.List;
 
 /**
  * Functional interface for the different op classes
@@ -102,6 +106,19 @@ public class Transforms {
     public static INDArray reverse(INDArray x, boolean dup) {
         return Nd4j.getExecutioner().exec(new OldReverse(x, dup ? Nd4j.createUninitialized(x.shape(), x.ordering()) : x))
                         .z();
+    }
+
+    public static INDArray dot(INDArray x, INDArray y){
+        return Nd4j.getExecutioner().exec(new Dot(x,y)).z();
+    }
+
+    public static INDArray cross(INDArray x, INDArray y){
+        Cross c = new Cross(x,y,null);
+        List<LongShapeDescriptor> shape = c.calculateOutputShape();
+        INDArray out = Nd4j.create(shape.get(0));
+        c.addOutputArgument(out);
+        Nd4j.getExecutioner().exec(c);
+        return out;
     }
 
     /**
