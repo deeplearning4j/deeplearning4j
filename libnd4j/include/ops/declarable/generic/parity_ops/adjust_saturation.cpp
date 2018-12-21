@@ -60,7 +60,7 @@ namespace ops {
 
         REQUIRE_TRUE(numChannels == 3, 0, "AdjustSaturation: this operation expects image with 3 channels (R, G, B), but got % instead", numChannels);
 
-        auto ts = NDArrayFactory::create(delta, block.getWorkspace());
+        auto ts = NDArrayFactory::create(delta, block.getVariableSpace()->launchContext());
         // FIXME: delta should be NDArray scalar
         helpers::_adjust_saturation(input, output, &ts, isNHWC);
 

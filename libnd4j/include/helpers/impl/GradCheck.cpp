@@ -64,7 +64,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 	// beck prop pass	
 	ResultSet* outArrsBP = opBP.execute(argsHolderBP);		// number of output arrays in back prop = numInArrsFF;
 
-	NDArray tmpScalar(nd4j::DataType::DOUBLE, inArrsFF[0]->getWorkspace()); // scalar = 0
+	NDArray tmpScalar(nd4j::DataType::DOUBLE, inArrsFF[0]->getContext()); // scalar = 0
 	for(int i = 0; i < numInArrsFF; ++i) {							// loop through input array
 
 		if(!whatArrsToCheck.empty() && static_cast<bool>(whatArrsToCheck[i]) == false)

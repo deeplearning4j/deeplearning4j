@@ -72,7 +72,7 @@ namespace helpers {
 
             // check dims to fit input
             REQUIRE_TRUE(fit, 0, "dropout: Noise shape should fit to input rank.");
-            std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), output->getWorkspace()));
+            std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), output->getContext()));
             chunk->assign(1.f);
             //chunk->applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, chunk.get(), &probValue);
             //NativeOpExecutioner::execRandom(random::DropOutInverted, rng, chunk->buffer(), chunk->shapeInfo(), chunk->buffer(), chunk->shapeInfo(), &prob);

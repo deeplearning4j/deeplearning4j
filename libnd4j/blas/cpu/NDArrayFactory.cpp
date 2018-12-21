@@ -166,7 +166,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     template <typename T>
     NDArray NDArrayFactory::create(DataType type, const T scalar, nd4j::graph::LaunchContext* context) {
 
-        NDArray res(type, context->getWorkspace());
+        NDArray res(type, context);
 
         //int8_t *buffer;
         //ALLOCATE(buffer, workspace, 1 * sizeof(T), int8_t);
@@ -434,7 +434,7 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
     NDArray* NDArrayFactory::empty(nd4j::graph::LaunchContext* context) {
         auto shapeInfo = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace());
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
-        auto result = new NDArray(nullptr, shapeInfo, context->getWorkspace());
+        auto result = new NDArray(nullptr, shapeInfo, context);
         result->triggerAllocationFlag(false, true);
 
         return result;
@@ -451,7 +451,7 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
 ////////////////////////////////////////////////////////////////////////
     NDArray* NDArrayFactory::create_( const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dataType, nd4j::graph::LaunchContext* context) {
         
-        return new NDArray(order, shape, dataType, context->getWorkspace());
+        return new NDArray(order, shape, dataType, context);
     }
 
 ////////////////////////////////////////////////////////////////////////

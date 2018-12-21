@@ -161,7 +161,7 @@ namespace helpers {
             *permutation = *permutationMatrix;
 
 
-        return NDArrayFactory::create<T>(determinant, input->getWorkspace());
+        return NDArrayFactory::create<T>(determinant, input->getContext());
     }
 
     BUILD_SINGLE_TEMPLATE(template NDArray _lup, (NDArray* input, NDArray* output, NDArray* permutation), FLOAT_TYPES);
@@ -174,7 +174,7 @@ namespace helpers {
         Nd4jLong n = input->sizeAt(-1);
         Nd4jLong n2 = n * n;
 
-        auto matrix = NDArrayFactory::create('c', {n, n}, input->dataType(), input->getWorkspace()); //, block.getWorkspace());
+        auto matrix = NDArrayFactory::create('c', {n, n}, input->dataType(), input->getContext()); //, block.getWorkspace());
 //#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < output->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
@@ -202,11 +202,11 @@ namespace helpers {
         auto totalCount = output->lengthOf() / n2;
         
         output->assign(0.f); // fill up output tensor with zeros
-        auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getWorkspace()); //, block.getWorkspace());
-        auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getWorkspace()); //, block.getWorkspace());
-        auto permutation = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getWorkspace());
-        auto lowerMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getWorkspace());
-        auto upperMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getWorkspace());
+        auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext()); //, block.getWorkspace());
+        auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext()); //, block.getWorkspace());
+        auto permutation = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext());
+        auto lowerMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext());
+        auto upperMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext());
 
         for (int e = 0; e < totalCount; e++) {
             if (e)

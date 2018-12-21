@@ -41,7 +41,7 @@ namespace nd4j {
         class ND4J_EXPORT VariableSpace {
         protected:
 
-            nd4j::memory::Workspace _workspace;
+            LaunchContext _context;
             nd4j::random::RandomBuffer* _rng = nullptr;
 
             // stash is NOT cloned
@@ -81,7 +81,7 @@ namespace nd4j {
             virtual void setRNG(nd4j::random::RandomBuffer* rng);
             virtual void setWorkspace(nd4j::memory::Workspace *workspace);
             
-            virtual nd4j::memory::Workspace *workspace();
+            virtual LaunchContext* launchContext();
 
             virtual bool hasExternalVariable(int it);
             virtual bool hasExternalVariable(std::pair<int,int>& pair);

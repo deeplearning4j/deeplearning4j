@@ -335,8 +335,8 @@ namespace nd4j {
             }
         }
 
-        nd4j::memory::Workspace * nd4j::graph::VariableSpace::workspace() {
-            return &_workspace;
+        LaunchContext* nd4j::graph::VariableSpace::launchContext() {
+            return &_context;
         }
 
         std::vector<Variable*>* nd4j::graph::VariableSpace::handles() {

@@ -49,11 +49,11 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
         if(numInArrs == 1) {
                 //limit = (*INPUT_VARIABLE(0))(0.);
                 if (output->isR()) {
-                    s = NDArrayFactory::create_(0.0f, block.workspace());
-                    d = NDArrayFactory::create_(1.0f, block.workspace());
+                    s = NDArrayFactory::create_(0.0f, block.getVariableSpace()->launchContext());
+                    d = NDArrayFactory::create_(1.0f, block.getVariableSpace()->launchContext());
                 } else {
-                    s = NDArrayFactory::create_(0, block.workspace());
-                    d = NDArrayFactory::create_(1, block.workspace());
+                    s = NDArrayFactory::create_(0, block.getVariableSpace()->launchContext());
+                    d = NDArrayFactory::create_(1, block.getVariableSpace()->launchContext());
                 }
                 localS = true;
                 localD = true;
@@ -61,9 +61,9 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
                 s = INPUT_VARIABLE(0);
                 //limit = (*INPUT_VARIABLE(1))(0.);
                 if (output->isR()) {
-                    d = NDArrayFactory::create_(1.0f, block.workspace());
+                    d = NDArrayFactory::create_(1.0f, block.getVariableSpace()->launchContext());
                 } else {
-                    d = NDArrayFactory::create_(1, block.workspace());
+                    d = NDArrayFactory::create_(1, block.getVariableSpace()->launchContext());
                 }
                 localD = true;
         } else {
@@ -76,14 +76,14 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
         if(numIArgs == 1) {
           //  limit = INT_ARG(0);
         } else if(numIArgs == 2) {
-            s = NDArrayFactory::create_(INT_ARG(0), block.workspace());
+            s = NDArrayFactory::create_(INT_ARG(0), block.getVariableSpace()->launchContext());
             //limit = INT_ARG(1);
-            d = NDArrayFactory::create_(1, block.workspace());
+            d = NDArrayFactory::create_(1, block.getVariableSpace()->launchContext());
         }
         else {
-            s = NDArrayFactory::create_(INT_ARG(0), block.workspace());
+            s = NDArrayFactory::create_(INT_ARG(0), block.getVariableSpace()->launchContext());
             //limit = INT_ARG(1);
-            d = NDArrayFactory::create_(INT_ARG(2), block.workspace());
+            d = NDArrayFactory::create_(INT_ARG(2), block.getVariableSpace()->launchContext());
         }
 
         localS = true;
@@ -93,17 +93,17 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
 
         if(numTArgs == 1) {
             //limit = T_ARG(0);
-            s = NDArrayFactory::create_(0.0f, block.workspace());
-            d = NDArrayFactory::create_(1.0f, block.workspace());
+            s = NDArrayFactory::create_(0.0f, block.getVariableSpace()->launchContext());
+            d = NDArrayFactory::create_(1.0f, block.getVariableSpace()->launchContext());
         } else if(numTArgs == 2) {
-            s = NDArrayFactory::create_(T_ARG(0), block.workspace());
+            s = NDArrayFactory::create_(T_ARG(0), block.getVariableSpace()->launchContext());
             //limit = T_ARG(1);
-            d = NDArrayFactory::create_(1.0f, block.workspace());
+            d = NDArrayFactory::create_(1.0f, block.getVariableSpace()->launchContext());
         }
         else {
-            s = NDArrayFactory::create_(T_ARG(0), block.workspace());
+            s = NDArrayFactory::create_(T_ARG(0), block.getVariableSpace()->launchContext());
             //limit = T_ARG(1);
-            d = NDArrayFactory::create_(T_ARG(2), block.workspace());
+            d = NDArrayFactory::create_(T_ARG(2), block.getVariableSpace()->launchContext());
         }
 
         localS = true;

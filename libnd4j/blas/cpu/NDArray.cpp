@@ -71,11 +71,15 @@ namespace nd4j {
 NDArray::NDArray(const NDArray& other) {
 
     _length = other._length;
-    _workspace = other._workspace;
+    _context = other._context;
     _dataType = other._dataType;
-
-    ALLOCATE(_buffer, other._workspace, _length * other.sizeOfT(), int8_t);
-    _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _workspace);
+    _isContextAlloc = other._isContextAlloc;
+    if (other._isContextAlloc) {
+        _context = new graph::LaunchContext;
+        _isContextAlloc = true;
+    }
+    ALLOCATE(_buffer, other._context->getWorkspace(), _length * other.sizeOfT(), int8_t);
+    _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace());
 
     _isBuffAlloc = true;
     _isShapeAlloc = true;
@@ -85,12 +89,12 @@ NDArray::NDArray(const NDArray& other) {
 
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
-NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, nd4j::memory::Workspace* workspace, const bool isBuffAlloc, const bool isShapeAlloc) {
+NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isShapeAlloc) {
     _buffer    = reinterpret_cast<int8_t *>(buffer);
     _shapeInfo = shapeInfo;
     _isBuffAlloc = isBuffAlloc;                                  // indicate that memory for array is passed from outside
     _isShapeAlloc = isShapeAlloc;
-    _workspace = workspace;
+    _context = context;
 
     if (shapeInfo != nullptr) {
         _length = shape::length(shapeInfo);
@@ -100,15 +104,15 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, nd4j::memory::Workspace* wor
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
+NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
 
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
-    setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, workspace));
-    ALLOCATE(_buffer, workspace, _length * DataTypeUtils::sizeOf(dtype), int8_t);
+    setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, context->getWorkspace()));
+    ALLOCATE(_buffer, context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
     memset(_buffer, 0, _length * DataTypeUtils::sizeOf(dtype));
-    _workspace = workspace;
+    _context = context;
     triggerAllocationFlag(true, true);
 }
 
@@ -163,7 +167,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             throw std::runtime_error("NDArray::applyTrueBroadcast bool method: target or other = nullptr !");
         
         if (isScalar()) {
-            NDArray temp(target->_shapeInfo, _dataType, false, _workspace);
+            NDArray temp(target->_shapeInfo, _dataType, false, _context);
             temp.assign(this);
             temp.applyPairwiseTransform(op.p, other, target,  extraArgs);
             return;
@@ -185,7 +189,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         if(checkTargetShape) {
             Nd4jLong* newShapeInfo = nullptr;
-            if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _workspace))          // the rank of target array must be equal to max->rankOf)()
+            if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _context->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
             if(!shape::equalsSoft(target->_shapeInfo, newShapeInfo) || target->_dataType != DataType::BOOL)
                 throw std::runtime_error("NDArray::applyTrueBroadcast bool method: the shape or type of target array is wrong !");
@@ -193,11 +197,11 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
                 throw std::invalid_argument("NDArray::applyTrueBroadcast bool method: this and other arrays must have the same type !");
 
             // if workspace is not null - do not call delete.
-            if (_workspace == nullptr)
+            if (_context->getWorkspace() == nullptr)
                 delete[] newShapeInfo;
         }
 
-        NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_workspace);
+        NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_context);
         // check whether max array has to be tiled
         if(!max->isSameShape(target)) {
             // evaluate repeating dimensions for tile operation
@@ -280,17 +284,17 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         if(checkTargetShape) {
             Nd4jLong* newShapeInfo = nullptr;
-            if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _workspace))          // the rank of target array must be equal to max->rankOf)()
+            if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _context->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
             if(!shape::equalsTypesAndShapesSoft(target->getShapeInfo(), newShapeInfo))
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
 
             // if workspace is not null - do not call delete.
-            if (_workspace == nullptr)
+            if (_context->getWorkspace() == nullptr)
                 delete[] newShapeInfo;
         }
 
-        NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_workspace);
+        NDArray* pTarget = (max->_dataType == target->_dataType) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->_dataType, target->_context);
         // check whether max array has to be tiled
         if(!max->isSameShape(target)) {
             // evaluate repeating dimensions for tile operation
@@ -380,7 +384,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 		    if(shapeInfoNew[diff+i] == 1 || smallerShapeInfo[i] == 1)
 			    shapeInfoNew[diff+i] *= smallerShapeInfo[i];
 
-	    auto ret = new NDArray(shapeInfoNew, true, _workspace);
+	    auto ret = new NDArray(shapeInfoNew, true, _context);
         ShapeUtils::updateStridesAndType(ret->getShapeInfo(), DataTypeUtils::pickPairwiseResultType(_dataType, other._dataType), order);
 	    delete []shapeInfoNew;
 
@@ -506,7 +510,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     ////////////////////////////////////////////////////////////////////////
     // default destructor
     NDArray::~NDArray() noexcept {
-        if (_isBuffAlloc && _workspace == nullptr && _buffer != nullptr) {
+        if (_isBuffAlloc && _context->getWorkspace() == nullptr && _buffer != nullptr) {
             if (!isS()) {
                 delete[] _buffer;
             } else {
@@ -519,8 +523,11 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             }
         }
 
-        if (_isShapeAlloc  && _workspace == nullptr && _shapeInfo != nullptr)
+        if (_isShapeAlloc  && _context->getWorkspace() == nullptr && _shapeInfo != nullptr)
             delete[] _shapeInfo;
+
+        if (_isContextAlloc) // context only
+            delete _context;
     }
 
 
@@ -596,19 +603,19 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         // we can do this only if there was no permute applied, or there are no weird strides
         if (shape::canReshape(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f')) {
             Nd4jLong *shapeInfoNew;
-            ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
+            ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
             shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew);
 
             if (_isShapeAlloc)
-                RELEASE(_shapeInfo, _workspace);
+                RELEASE(_shapeInfo, _context->getWorkspace());
 
             ArrayOptions::setDataType(shapeInfoNew, this->dataType());
             _shapeInfo = shapeInfoNew;
             _isShapeAlloc = true;
         } else {
             Nd4jLong *shapeInfoNew;
-            ALLOCATE(shapeInfoNew, _workspace, shape::shapeInfoLength(rank), Nd4jLong);
+            ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
             if (order == 'c')
                 shape::shapeBuffer(shape.size(), dataType(), shape.data(), shapeInfoNew);
@@ -616,16 +623,16 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
                 shape::shapeBufferFortran(shape.size(), dataType(), shape.data(), shapeInfoNew);
 
             int8_t *newBuffer;
-            ALLOCATE(newBuffer, _workspace, this->lengthOf() * sizeOfT(), int8_t);
+            ALLOCATE(newBuffer, _context->getWorkspace(), this->lengthOf() * sizeOfT(), int8_t);
 
             NativeOpExecutioner::execTransformSame(nullptr, transform::Copy, _buffer, _shapeInfo, _bufferD, _shapeInfoD, newBuffer, shapeInfoNew, nullptr, nullptr, nullptr, nullptr, nullptr);
 
             if (_isBuffAlloc)
-                RELEASE(_buffer, _workspace);
+                RELEASE(_buffer, _context->getWorkspace());
 
 
             if (_isShapeAlloc)
-                RELEASE(_shapeInfo, _workspace);
+                RELEASE(_shapeInfo, _context->getWorkspace());
 
             _buffer = newBuffer;
             _shapeInfo = shapeInfoNew;
@@ -713,7 +720,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         const char order = ordering();
         const int  rank  = rankOf();
         Nd4jLong *outShapeInfo;
-        ALLOCATE(outShapeInfo, _workspace, 8, Nd4jLong);
+        ALLOCATE(outShapeInfo, _context->getWorkspace(), 8, Nd4jLong);
         outShapeInfo[0] = 2;
         outShapeInfo[5] = 0;
 
@@ -753,7 +760,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         ArrayOptions::setDataType(outShapeInfo, this->dataType());
 
-        auto result = new NDArray(this->_buffer, outShapeInfo, this->_workspace);
+        auto result = new NDArray(this->_buffer, outShapeInfo, this->_context);
         result->_isShapeAlloc = true;
         return result;
     }
@@ -762,10 +769,10 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         char order = o == 'a' ? this->ordering() : o;
 
         Nd4jLong *newShape;
-        ALLOCATE(newShape, this->_workspace, shape::shapeInfoLength(this->rankOf()), Nd4jLong);
+        ALLOCATE(newShape, this->_context->getWorkspace(), shape::shapeInfoLength(this->rankOf()), Nd4jLong);
 
         int8_t *newBuffer;
-        ALLOCATE(newBuffer, this->_workspace, this->lengthOf() * sizeOfT(), int8_t);
+        ALLOCATE(newBuffer, this->_context->getWorkspace(), this->lengthOf() * sizeOfT(), int8_t);
 
         std::vector<Nd4jLong> shape(this->rankOf());
         for (int e = 0; e < this->rankOf(); e++)
@@ -783,12 +790,12 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             //if (_isBuffAlloc)
             //    RELEASE(this->_buffer, this->_workspace);
             if (_isShapeAlloc)
-                RELEASE(this->_shapeInfo, this->_workspace);
+                RELEASE(this->_shapeInfo, this->_context->getWorkspace());
 
             //this->_buffer = newBuffer;
             //this->_isBuffAlloc = true;
 
-            RELEASE(newBuffer, this->_workspace);
+            RELEASE(newBuffer, this->_context->getWorkspace());
 
             this->_shapeInfo = newShape;
             this->_isShapeAlloc = true;
@@ -796,9 +803,9 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             NativeOpExecutioner::execTransformSame(nullptr, transform::Copy, _buffer, _shapeInfo, nullptr, nullptr, newBuffer, newShape, nullptr, nullptr, nullptr, nullptr, nullptr);
 
             if (_isBuffAlloc)
-                RELEASE(this->_buffer, this->_workspace);
+                RELEASE(this->_buffer, this->_context->getWorkspace());
             if (_isShapeAlloc)
-                RELEASE(this->_shapeInfo, this->_workspace);
+                RELEASE(this->_shapeInfo, this->_context->getWorkspace());
 
             this->_buffer = newBuffer;
             this->_isBuffAlloc = true;

@@ -37,15 +37,15 @@ namespace nd4j {
                     CBLAS_TRANSPOSE *tA, *tB;
                     int *tM, *tN, *tK, *tldA, *tldB, *tldC, *tsize;
                     // mkl requires mnk etc as arrays, cuda doesn't
-                    ALLOCATE(tA, arr->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
-                    ALLOCATE(tB, arr->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
-                    ALLOCATE(tM, arr->getWorkspace(), batchSize, int);
-                    ALLOCATE(tN, arr->getWorkspace(), batchSize, int);
-                    ALLOCATE(tK, arr->getWorkspace(), batchSize, int);
-                    ALLOCATE(tldA, arr->getWorkspace(), batchSize, int);
-                    ALLOCATE(tldB, arr->getWorkspace(), batchSize, int);
-                    ALLOCATE(tldC, arr->getWorkspace(), batchSize, int);
-                    ALLOCATE(tsize, arr->getWorkspace(), batchSize, int);
+                    ALLOCATE(tA, arr->getContext()->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
+                    ALLOCATE(tB, arr->getContext()->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
+                    ALLOCATE(tM, arr->getContext()->getWorkspace(), batchSize, int);
+                    ALLOCATE(tN, arr->getContext()->getWorkspace(), batchSize, int);
+                    ALLOCATE(tK, arr->getContext()->getWorkspace(), batchSize, int);
+                    ALLOCATE(tldA, arr->getContext()->getWorkspace(), batchSize, int);
+                    ALLOCATE(tldB, arr->getContext()->getWorkspace(), batchSize, int);
+                    ALLOCATE(tldC, arr->getContext()->getWorkspace(), batchSize, int);
+                    ALLOCATE(tsize, arr->getContext()->getWorkspace(), batchSize, int);
 
                     shape::fill(tA, (CBLAS_TRANSPOSE) transA, batchSize);
                     shape::fill(tB, (CBLAS_TRANSPOSE) transB, batchSize);
@@ -75,15 +75,15 @@ namespace nd4j {
                     }
 
                     // release temporary arrays
-                    RELEASE(tA, arr->getWorkspace());
-                    RELEASE(tB, arr->getWorkspace());
-                    RELEASE(tM, arr->getWorkspace());
-                    RELEASE(tN, arr->getWorkspace());
-                    RELEASE(tK, arr->getWorkspace());
-                    RELEASE(tldA, arr->getWorkspace());
-                    RELEASE(tldB, arr->getWorkspace());
-                    RELEASE(tldC, arr->getWorkspace());
-                    RELEASE(tsize, arr->getWorkspace());
+                    RELEASE(tA, arr->getContext()->getWorkspace());
+                    RELEASE(tB, arr->getContext()->getWorkspace());
+                    RELEASE(tM, arr->getContext()->getWorkspace());
+                    RELEASE(tN, arr->getContext()->getWorkspace());
+                    RELEASE(tK, arr->getContext()->getWorkspace());
+                    RELEASE(tldA, arr->getContext()->getWorkspace());
+                    RELEASE(tldB, arr->getContext()->getWorkspace());
+                    RELEASE(tldC, arr->getContext()->getWorkspace());
+                    RELEASE(tsize, arr->getContext()->getWorkspace());
                 } else {
                     CBLAS_TRANSPOSE tA = (CBLAS_TRANSPOSE) transA;
                     CBLAS_TRANSPOSE tB = (CBLAS_TRANSPOSE) transB;

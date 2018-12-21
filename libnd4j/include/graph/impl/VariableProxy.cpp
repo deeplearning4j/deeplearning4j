@@ -288,7 +288,7 @@ namespace nd4j {
 
         
         nd4j::memory::Workspace * nd4j::graph::VariableProxy::workspace() {
-            return &this->_workspace;
+            return this->_context.getWorkspace();
         }
     }
 }

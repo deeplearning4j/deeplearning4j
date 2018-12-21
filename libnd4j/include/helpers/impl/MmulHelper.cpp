@@ -504,13 +504,13 @@ nd4j::NDArray* MmulHelper::mmulMxM(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDA
     nd4j::NDArray* tC = result;
     
     if (needAllocA) {
-        tA = new nd4j::NDArray(A->getBuffer(), A->getShapeInfo(), A->getWorkspace());
+        tA = new nd4j::NDArray(A->getBuffer(), A->getShapeInfo(), A->getContext());
         nd4j_verbose("Matrix A was recreated from view.\n", "");
     }
     else 
         tA = A; 
     if (needAllocB) {
-        tB = new nd4j::NDArray(B->getBuffer(), B->getShapeInfo(), B->getWorkspace());
+        tB = new nd4j::NDArray(B->getBuffer(), B->getShapeInfo(), B->getContext());
         nd4j_verbose("Matrix B was recreated from view.\n", "");
     }
     else 
@@ -656,12 +656,12 @@ NDArray* MmulHelper::simpleMMul(const NDArray* a, const NDArray* b, NDArray* c, 
 
     NDArray* dot = c;
     if(c == nullptr) 
-        c = NDArrayFactory::create_('f', {a->shapeOf()[0], b->shapeOf()[1]}, b->dataType(), a->getWorkspace());
+        c = NDArrayFactory::create_('f', {a->shapeOf()[0], b->shapeOf()[1]}, b->dataType(), a->getContext());
     else {
         if( c->shapeOf()[0] != a->shapeOf()[0] || c->shapeOf()[1] != b->shapeOf()[1])
             throw std::runtime_error("NDArrayFactory::simpleMMul static function: wrong shape of C array !");
         if(beta != 0. ) {
-            dot = NDArrayFactory::create_(c->ordering(), {a->shapeOf()[0], b->shapeOf()[1]}, c->dataType(), a->getWorkspace());
+            dot = NDArrayFactory::create_(c->ordering(), {a->shapeOf()[0], b->shapeOf()[1]}, c->dataType(), a->getContext());
             if( beta != 1.)
                 c->applyScalar(scalar::Multiply, beta, c, nullptr);
         }        

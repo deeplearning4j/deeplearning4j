@@ -83,7 +83,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_1)
         
     ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));    
 
-    RELEASE(newShapeInfo, x.getWorkspace());
+    RELEASE(newShapeInfo, x.getContext()->getWorkspace());
 }
 
 //////////////////////////////////////////////////////////////////
@@ -102,7 +102,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_2)
         
     ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));    
 
-    RELEASE(newShapeInfo, x.getWorkspace());
+    RELEASE(newShapeInfo, x.getContext()->getWorkspace());
 }
 
 //////////////////////////////////////////////////////////////////
@@ -121,7 +121,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_3)
 
     ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));    
 
-    RELEASE(newShapeInfo, x.getWorkspace());
+    RELEASE(newShapeInfo, x.getContext()->getWorkspace());
 }
 
 //////////////////////////////////////////////////////////////////
@@ -143,7 +143,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_4)
 
     ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));
 
-    RELEASE(newShapeInfo, x.getWorkspace());
+    RELEASE(newShapeInfo, x.getContext()->getWorkspace());
 }
 
 //////////////////////////////////////////////////////////////////

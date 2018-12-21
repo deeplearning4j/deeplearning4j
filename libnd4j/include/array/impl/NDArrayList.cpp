@@ -139,8 +139,8 @@ namespace nd4j {
         return _name;
     }
 
-    nd4j::memory::Workspace* NDArrayList::workspace() {
-        return _workspace;
+    nd4j::graph::LaunchContext* NDArrayList::context() {
+        return _context;
     }
 
     int NDArrayList::elements() {
@@ -172,7 +172,7 @@ namespace nd4j {
         //shape.insert(shape.begin() + _axis, indices.size());
         shape[_axis] = indices.size();
         // do we have to enforce C order here?
-        auto array = new NDArray('c', shape, _chunks[0]->dataType(), _workspace);
+        auto array = new NDArray('c', shape, _chunks[0]->dataType(), _context);
         std::vector<int> axis = ShapeUtils::convertAxisToTadTarget(shape.size(), {_axis});
         auto tads = array->allTensorsAlongDimension(axis);
 

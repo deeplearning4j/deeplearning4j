@@ -148,7 +148,7 @@ namespace nd4j {
                 allAxes = true;
 
             // in this case we're building proper shape for reduction
-            auto array = new NDArray(nullptr, inShape, block.getWorkspace());
+            auto array = new NDArray(nullptr, inShape, block.getVariableSpace()->launchContext());
             array->triggerAllocationFlag(false, false);
             newShape = ShapeUtils::evalReduceShapeInfo(shape::order(inShape), axis, *array, keepDims, !newFormat, block.workspace());
             delete array;

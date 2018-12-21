@@ -94,7 +94,7 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     }
     else if (x->isSameShape(dLdz)) {
         
-        auto yTiled = NDArray(dLdz, false, block.getWorkspace());
+        auto yTiled = NDArray(dLdz, false, block.getVariableSpace()->launchContext());
         y->tile(yTiled);
         std::vector<int> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
         
@@ -103,7 +103,7 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     } 
     else if (y->isSameShape(dLdz)) {
 
-        auto xTiled = NDArray(dLdz, false, block.getWorkspace());
+        auto xTiled = NDArray(dLdz, false, block.getVariableSpace()->launchContext());
         x->tile(xTiled);
         std::vector<int> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
         
@@ -112,8 +112,8 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     }
     else {
 
-        auto xTiled = NDArray(dLdz, false, block.getWorkspace());
-        auto yTiled = NDArray(dLdz, false, block.getWorkspace());
+        auto xTiled = NDArray(dLdz, false, block.getVariableSpace()->launchContext());
+        auto yTiled = NDArray(dLdz, false, block.getVariableSpace()->launchContext());
         x->tile(xTiled);
         y->tile(yTiled);
         std::vector<int> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());

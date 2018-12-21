@@ -57,8 +57,8 @@ namespace nd4j {
             }
 
 
-            if (variableSpace != nullptr && variableSpace->workspace() != nullptr)
-                    this->_workspace = variableSpace->workspace();
+            if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
+                    this->_workspace = variableSpace->launchContext()->getWorkspace();
         }
         nd4j::DataType Context::dataType(int index) {
 
@@ -87,8 +87,8 @@ namespace nd4j {
             if (variableSpace != nullptr)
                 this->_rng = variableSpace->getRNG();
 
-            if (variableSpace != nullptr && variableSpace->workspace() != nullptr)
-                this->_workspace = variableSpace->workspace();
+            if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
+                this->_workspace = variableSpace->launchContext()->getWorkspace();
         }
 
         Context::Context(int nodeId, VariableSpace *variableSpace, bool isInplace) : Context(nodeId, variableSpace) {

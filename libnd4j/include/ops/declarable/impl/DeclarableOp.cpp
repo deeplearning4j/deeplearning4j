@@ -184,7 +184,7 @@ namespace nd4j {
                         if (Environment::getInstance()->isDebugAndVerbose())
                             shape::printShapeInfoLinear("Going to create variable with shape", out);
                         
-                        auto outArr = new NDArray(out, true, workspace);
+                        auto outArr = new NDArray(out, true, ctx.getVariableSpace()->launchContext());
 
                         ctx.pushNDArrayToVariableSpace(pair, outArr);
                     } else {
@@ -243,7 +243,7 @@ namespace nd4j {
                 int8_t * buffer;
                 ALLOCATE(buffer, workspace, len, int8_t);
 
-                var->setNDArray(new NDArray(buffer, __shape, workspace));
+                var->setNDArray(new NDArray(buffer, __shape, block.getVariableSpace()->launchContext()));
                 var->getNDArray()->triggerAllocationFlag(true, true);
             } else if(var->getNDArray()->lengthOf() != len) {
                 // if length not match - lets reallocate array
@@ -251,7 +251,7 @@ namespace nd4j {
                 int8_t * buffer;
                 ALLOCATE(buffer, workspace, len, int8_t);
 
-                var->setNDArray(new NDArray(buffer, __shape, workspace));
+                var->setNDArray(new NDArray(buffer, __shape, block.getVariableSpace()->launchContext()));
                 var->getNDArray()->triggerAllocationFlag(true, true);
             }
 
@@ -266,12 +266,12 @@ namespace nd4j {
             Nd4jLong len = shape::length(shape);
             // if that's first run - we probably have nothing here
             if (var->getNDArray() == nullptr) {
-                var->setNDArray(NDArrayFactory::create_(order, shape, block.dataType(), workspace));
+                var->setNDArray(NDArrayFactory::create_(order, shape, block.dataType(), block.getVariableSpace()->launchContext()));
                 var->getNDArray()->triggerAllocationFlag(true, true);
             } else if(var->getNDArray()->lengthOf() != len) {
                 // if length not match - lets reallocate array
                 delete var->getNDArray();
-                var->setNDArray(NDArrayFactory::create_(order, shape, block.dataType(), workspace));
+                var->setNDArray(NDArrayFactory::create_(order, shape, block.dataType(), block.getVariableSpace()->launchContext()));
                 var->getNDArray()->triggerAllocationFlag(true, true);
             }
 

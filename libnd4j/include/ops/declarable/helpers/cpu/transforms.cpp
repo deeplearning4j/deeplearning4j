@@ -538,7 +538,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
     auto innerMostIn = input.allTensorsAlongDimension(tadDims);
 
     Nd4jLong* outerShapeInfo = nullptr;
-    ALLOCATE(outerShapeInfo, input.getWorkspace(), shape::shapeInfoLength(lastIndDim), Nd4jLong);
+    ALLOCATE(outerShapeInfo, input.getContext()->getWorkspace(), shape::shapeInfoLength(lastIndDim), Nd4jLong);
     outerShapeInfo[0] = lastIndDim;
     for(int i = 1; i <= lastIndDim; ++i)
         outerShapeInfo[i] = input.sizeAt(i-1);
@@ -569,7 +569,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
     delete innerMostInd;
     delete innerMostIn;
     delete innerMostOut;
-    RELEASE(outerShapeInfo, input.getWorkspace());    
+    RELEASE(outerShapeInfo, input.getContext()->getWorkspace());
 }
 
     void gatherND(NDArray& input, NDArray& indices, NDArray& output) {
@@ -602,7 +602,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
             shape::TAD tad(input->getShapeInfo(), dimensions.data(), dimensions.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
-            auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tad.tadOffsets[indices->e<Nd4jLong>(0)]), tad.tadOnlyShapeInfo, output->getWorkspace());
+            auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tad.tadOffsets[indices->e<Nd4jLong>(0)]), tad.tadOnlyShapeInfo, output->getContext());
             output->assign(&tadArr);
         }
         else if (input->rankOf() == 1 && indices->isVector()) {
@@ -914,7 +914,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
 
     template <typename T>
     static void clipByGlobalNorm_(std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
-        NDArray globalNorm = NDArrayFactory::create<T>(0, workspace); //sqrt(sum([l2norm(t)**2 for t in t_list]))
+        NDArray globalNorm = NDArrayFactory::create<T>(0, (nd4j::graph::LaunchContext*)nullptr); //sqrt(sum([l2norm(t)**2 for t in t_list]))
 
         for (auto input: inputs) {
             auto l2norm = input->reduceNumber(reduce::Norm2);

@@ -201,7 +201,7 @@ namespace nd4j {
             }
 
             // this is the only place where we deallocate shapes.
-            if (_variableSpace->workspace() == nullptr)
+            if (_variableSpace->launchContext()->getWorkspace() == nullptr)
                 for (auto v: shapes)
                     delete[] v;
 
@@ -877,7 +877,7 @@ namespace nd4j {
 
             // if memory reqs were set - initialize workspace
             if (_configuration->_footprintForward > 0) {
-                nd4j::memory::Workspace *workspace = this->_variableSpace->workspace();
+                nd4j::memory::Workspace *workspace = this->_variableSpace->launchContext()->getWorkspace();
                 workspace->expandBy(_configuration->_footprintForward);
             }
 

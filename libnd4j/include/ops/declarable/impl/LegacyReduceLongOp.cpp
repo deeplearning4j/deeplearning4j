@@ -117,14 +117,14 @@ namespace nd4j {
                     tad.createOffsets();
 
                     auto newShape = ShapeUtils::evalReduceShapeInfo(x->ordering(), axis, *x);
-                    auto z = new NDArray(newShape, x->getWorkspace());
+                    auto z = new NDArray(newShape, x->getContext());
 
                     NativeOpExecutioner::execReduceLong(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                             block.getTArguments()->data(),
                             z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                             axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
 
-                    RELEASE(newShape, x->getWorkspace());
+                    RELEASE(newShape, x->getContext()->getWorkspace());
 
 
                     // keepDims processing, for TF compatibility
@@ -166,7 +166,7 @@ namespace nd4j {
                 allAxes = true;
 
             // in this case we're building proper shape for reduction
-            auto array = new NDArray(nullptr, inShape, block.getWorkspace());
+            auto array = new NDArray(nullptr, inShape, block.getVariableSpace()->launchContext());
             array->triggerAllocationFlag(false, false);
             newShape = ShapeUtils::evalReduceShapeInfo(shape::order(inShape), axis, *array, keepDims, !newFormat, block.workspace());
             ArrayOptions::setDataType(newShape, DataType::INT64);

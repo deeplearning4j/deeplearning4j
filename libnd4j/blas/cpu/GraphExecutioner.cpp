@@ -219,10 +219,10 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
 
     auto footprintForward = nd4j::memory::MemoryRegistrator::getInstance()->getGraphMemoryFootprint(graph->hashCode());
     if (footprintForward > 0) {
-        if (__variableSpace->workspace() != nullptr) {
+        if (__variableSpace->launchContext()->getWorkspace() != nullptr) {
             // this method will work only if current workspace size is smaller then proposed value
             nd4j_debug("Setting workspace to %lld bytes\n", footprintForward);
-            __variableSpace->workspace()->expandTo(footprintForward);
+            __variableSpace->launchContext()->getWorkspace()->expandTo(footprintForward);
         }
     }
 
@@ -488,8 +488,8 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
     }
 
     // saving memory footprint for current run
-    if (__variableSpace->workspace() != nullptr) {
-        auto m = __variableSpace->workspace()->getAllocatedSize();
+    if (__variableSpace->launchContext()->getWorkspace() != nullptr) {
+        auto m = __variableSpace->launchContext()->getWorkspace()->getAllocatedSize();
         auto h = graph->hashCode();
         nd4j::memory::MemoryRegistrator::getInstance()->setGraphMemoryFootprintIfGreater(h, m);
     }

@@ -251,8 +251,8 @@ TEST_F(NDArrayTest2, mmul_test3) {
 
     auto x = NDArrayFactory::create<float>('c', {4, 1}, {1, 2, 3, 4});
     auto exp = NDArrayFactory::create<float>('c', {4, 4}, {1. ,0.2 ,0.3 ,0.4 ,0.2,0.04,0.06,0.08,0.3,0.06,0.09,0.12,0.4,0.08,0.12,0.16});
-    auto w = NDArrayFactory::create<float>( x.ordering(), {(int)x.lengthOf(), 1},  x.getWorkspace());                            // column-vector
-    auto wT = NDArrayFactory::create<float>(x.ordering(), {1, (int)x.lengthOf()}, x.getWorkspace());                            // row-vector (transposed w)
+    auto w = NDArrayFactory::create<float>( x.ordering(), {(int)x.lengthOf(), 1},  x.getContext());                            // column-vector
+    auto wT = NDArrayFactory::create<float>(x.ordering(), {1, (int)x.lengthOf()}, x.getContext());                            // row-vector (transposed w)
 
     w = x / (float)10.;         
     w.p(0, 1.);

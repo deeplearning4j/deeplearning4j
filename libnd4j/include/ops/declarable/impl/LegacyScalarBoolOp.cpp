@@ -64,11 +64,11 @@ namespace nd4j {
                         z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
                         block.getTArguments()->data() + offset);
             } else if (block.getTArguments()->size() > 0) {
-                auto y = NDArrayFactory::create(T_ARG(0), block.getWorkspace());
+                auto y = NDArrayFactory::create(T_ARG(0), block.getVariableSpace()->launchContext());
                 offset++;
                 NativeOpExecutioner::execScalarBool(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),z->getBuffer(), z->getShapeInfo(),z->specialBuffer(), z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),block.getTArguments()->data() + offset);
             } else {
-                auto y = NDArrayFactory::create(_scalar, block.getWorkspace());
+                auto y = NDArrayFactory::create(_scalar, block.getVariableSpace()->launchContext());
 
                 NativeOpExecutioner::execScalarBool(nullptr, opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),z->getBuffer(), z->getShapeInfo(),z->specialBuffer(), z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),block.getTArguments()->data() + offset);
             }

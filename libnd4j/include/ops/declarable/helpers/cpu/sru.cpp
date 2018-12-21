@@ -31,7 +31,7 @@ namespace helpers {
 static FORCEINLINE NDArray activation(const NDArray& arr) {
     
     // return (const_cast<NDArray<T>&>(arr)).template transform<simdOps::Tanh<T>>();    
-    auto result = NDArray(&arr, false, arr.getWorkspace());
+    auto result = NDArray(&arr, false, arr.getContext());
     (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh, &result);
     return result;
 }
@@ -287,8 +287,8 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
 
     // U = x * w
     NDArray wi = mmul(*x, *w);                    //  [time x bS x 2*inSize] * [2*inSize x 6*inSize] = [time x bS x 6*inSize]
-    NDArray gradBias(x->ordering(), {bS, 4*inSize}, x->dataType(), x->getWorkspace());
-    NDArray gradWi  (x->ordering(), {time, bS, 6*inSize}, x->dataType(), x->getWorkspace());
+    NDArray gradBias(x->ordering(), {bS, 4*inSize}, x->dataType(), x->getContext());
+    NDArray gradWi  (x->ordering(), {time, bS, 6*inSize}, x->dataType(), x->getContext());
     
     const Nd4jLong d2      = 2*inSize;
     const Nd4jLong ncols   = bS*d2;     

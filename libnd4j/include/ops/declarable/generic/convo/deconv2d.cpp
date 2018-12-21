@@ -69,7 +69,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
     if(isSameMode)                       // SAME
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(),  block.getWorkspace());
+    NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(),  block.getVariableSpace()->launchContext());
 
     //----- calculation of output -----//
     // NHWC: [kH, kW, oC, iC] x [bS, iH, iW, iC] = [kH, kW, oC, bS, iH, iW]
@@ -224,10 +224,10 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
         inputAxesForDot = {0, 2, 3};                                            // bS, iH, iW
 
     // ----- calculation of gradW ----- //
-    NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(), block.getWorkspace());
+    NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(), block.getVariableSpace()->launchContext());
 
     LaunchContext ctx;
-    helpers::im2col(ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getWorkspace()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
+    helpers::im2col(ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
     MmulHelper::tensorDot(input, &columns, gradW, inputAxesForDot, {0, 4, 5}, {3, 2, 0, 1});     // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]
 
     // ----- calculation of gradB ----- //

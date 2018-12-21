@@ -2007,7 +2007,7 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
 
     auto shapeList = op->calculateOutputShape(&inShapes, block);
 
-    if (varSpace.workspace() != nullptr)
+    if (varSpace.launchContext() != nullptr)
         shapeList->detach();
 
     return shapeList;
@@ -2271,7 +2271,7 @@ Nd4jStatus execCustomOpWithScope_(Nd4jPointer *extraPointers, nd4j::graph::Graph
         auto buffer = inputBuffers[e];
         auto shapeInfo = reinterpret_cast<Nd4jLong *>(inputShapes[e]);
 
-        auto array = new nd4j::NDArray(buffer, shapeInfo, varSpace->workspace());
+        auto array = new nd4j::NDArray(buffer, shapeInfo, varSpace->launchContext());
 
         // now we just put array to VarSpace
         varSpace->putVariable(0, e, array);
@@ -2299,7 +2299,7 @@ Nd4jStatus execCustomOpWithScope_(Nd4jPointer *extraPointers, nd4j::graph::Graph
         auto buffer = outputBuffers[e];
         auto shapeInfo = reinterpret_cast<Nd4jLong *>(outputShapes[e]);
 
-        NDArray array(buffer, shapeInfo, varSpace->workspace());
+        NDArray array(buffer, shapeInfo, varSpace->launchContext());
 
         // now we just put array to VarSpace to the same ID
         //varSpace->putVariable(0, e, array);
