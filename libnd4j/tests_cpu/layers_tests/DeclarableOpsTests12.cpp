@@ -505,3 +505,27 @@ TEST_F(DeclarableOpsTests12, TestSliceBP_1) {
     //ASSERT_TRUE(output2.equalsTo(exp2));
 }
 
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestConfusionZero_1) {
+
+    NDArray x('c', {2}, {1,2}, nd4j::DataType::INT64);
+    NDArray i('c', {2}, {0,2}, nd4j::DataType::INT64);
+    //NDArray eps('c', {2,2}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {4,4}, {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0}, nd4j::DataType::INT64);
+    //NDArray exp2('c', {3,4}, nd4j::DataType::DOUBLE);
+
+    NDArray output('c', {4, 4}, nd4j::DataType::INT64);
+    //NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
+    output.assign(119.113);
+    x.linspace(1.);
+    //eps.assign(1.);
+    //exp1.assign(1.);
+    //exp2.assign(-2.);
+    nd4j::ops::confusion_matrix op;
+    Nd4jStatus status = op.execute({&x, &i}, {&output}, {}, {4}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output.printIndexedBuffer("Confusion out");
+    ASSERT_TRUE(output.equalsTo(exp));
+    //ASSERT_TRUE(output2.equalsTo(exp2));
+}

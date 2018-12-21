@@ -46,7 +46,7 @@ namespace nd4j {
                 REQUIRE_TRUE(weights->isSameShape(predictions),0, "CONFUSION_MATRIX: Weights and predictions should have equal shape");
             }
             auto output = OUTPUT_VARIABLE(0);
-
+            output->assign(0.);
             int minPrediction = predictions->reduceNumber(reduce::Min).e<int>(0);
             int minLabel = labels->reduceNumber(reduce::Min).e<int>(0);
 
