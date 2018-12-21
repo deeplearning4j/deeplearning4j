@@ -82,8 +82,11 @@ public class BatchNorm extends DynamicCustomOp {
         addIArgument(ArrayUtil.fromBoolean(applyBeta));
         if(jaxis != null) {
             //If null: op defaults to last dimension
-            for (val v:jaxis)
+            axis.clear();
+            for (val v:jaxis) {
                 axis.add(v);
+            }
+            addIArgument(jaxis);
         }
         addTArgument(epsilon);
     }
