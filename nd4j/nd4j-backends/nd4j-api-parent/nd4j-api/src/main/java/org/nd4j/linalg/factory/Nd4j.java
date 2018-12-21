@@ -2787,11 +2787,12 @@ public class Nd4j {
     }
 
     /**
-     * Array of evenly spaced values.
+     * Create a 1D array of evenly spaced values between {@code begin} (inclusive) and {@code end} (exclusive)
+     * with a step size of 1
      *
-     * @param begin the begin of the range
-     * @param end   the end of the range
-     * @return the range vector
+     * @param begin the begin of the range (inclusive)
+     * @param end   the end of the range (exclusive)
+     * @return the 1D range vector
      */
     public static INDArray arange(double begin, double end) {
         INDArray ret = INSTANCE.arange(begin, end);
@@ -2801,10 +2802,11 @@ public class Nd4j {
 
 
     /**
-     * Array of evenly spaced values.
+     * Create a 1D array of evenly spaced values between 0 (inclusive) and {@code end} (exclusive)
+     * with a step size of 1
      *
-     * @param end   the end of the range
-     * @return the range vector
+     * @param end   the end of the range (exclusive)
+     * @return the 1D range vector
      */
     public static INDArray arange(double end) {
         return arange(0, end);
