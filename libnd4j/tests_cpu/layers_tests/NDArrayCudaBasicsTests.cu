@@ -25,6 +25,7 @@
 #include <Node.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
+#include <graph/LaunchContext.h>
 #include <specials_cuda.h>
 #include <TAD.h>
 
