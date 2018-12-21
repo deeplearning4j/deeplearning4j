@@ -765,6 +765,7 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_Validation_1) {
     nd4j::ops::batched_gemm op;
     try {
         auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 112, 2, 3, 5, 5, 3, 2, 3});
+        delete result;
         ASSERT_TRUE(false);
     } catch (std::invalid_argument &e) {
         //
