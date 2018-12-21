@@ -79,6 +79,16 @@ class ND4J_EXPORT LaunchContext {
     	void setWorkspace(nd4j::memory::Workspace* theWorkspace) { _workspace = theWorkspace; }
     	int getDeviceID() const {return _deviceID;}
     	void setDeviceID(int deviceID) { _deviceID = deviceID; }
+
+public:
+	static LaunchContext* defaultContext() {
+    		if (!LaunchContext::sDefaultContext)
+    			LaunchContext::sDefaultContext = new LaunchContext;
+
+    		return LaunchContext::sDefaultContext;
+    	}
+private:
+	static LaunchContext* sDefaultContext;
 };
 
 }

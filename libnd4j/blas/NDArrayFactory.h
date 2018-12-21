@@ -36,50 +36,50 @@ namespace nd4j {
         static void memcpyFromVector(void *ptr, const std::vector<T> &vector);
     public:
         template <typename T>
-        static NDArray* empty(nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray* empty(nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         template <typename T>
-        static NDArray* valueOf(const std::initializer_list<Nd4jLong>& shape, T value, char order = 'c',  nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray* valueOf(const std::initializer_list<Nd4jLong>& shape, T value, char order = 'c',  nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         template <typename T>
-        static NDArray* valueOf(const std::vector<Nd4jLong>& shape, T value, char order = 'c',  nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray* valueOf(const std::vector<Nd4jLong>& shape, T value, char order = 'c',  nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
-        static NDArray* valueOf(const std::vector<Nd4jLong>& shape, const NDArray& value, char order = 'c',  nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray* valueOf(const std::vector<Nd4jLong>& shape, const NDArray& value, char order = 'c',  nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         template <typename T>
         static NDArray* linspace(T from, T to, Nd4jLong numElements);
 
 
         template <typename T>
-        static NDArray* create_(const T value, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray* create_(const T value, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         template <typename T>
-        static NDArray create(const T value, nd4j::graph::LaunchContext* context = nullptr);
-        static NDArray create(nd4j::DataType dtype, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray create(const T value, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
+        static NDArray create(nd4j::DataType dtype, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
         template <typename T>
-        static NDArray create(DataType type, const T scalar, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray create(DataType type, const T scalar, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
-
-        template <typename T>
-        static NDArray* vector(Nd4jLong length, T startingValue = (T) 0, nd4j::graph::LaunchContext* context = nullptr);
 
         template <typename T>
-        static NDArray* create_(char order, const std::vector<Nd4jLong> &shape, nd4j::graph::LaunchContext* context = nullptr);
-
-        static NDArray* create_( char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dataType, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray* vector(Nd4jLong length, T startingValue = (T) 0, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         template <typename T>
-        static NDArray* create_(char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray* create_(char order, const std::vector<Nd4jLong> &shape, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
+
+        static NDArray* create_( char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dataType, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         template <typename T>
-        static NDArray create(char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray* create_(char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         template <typename T>
-        static NDArray create(char order, const std::vector<Nd4jLong> &shape, nd4j::graph::LaunchContext* context = nullptr);
-        static NDArray create(char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray create(char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         template <typename T>
-        static NDArray create(const std::vector<T> &values, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray create(char order, const std::vector<Nd4jLong> &shape, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
+        static NDArray create(char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
+
+        template <typename T>
+        static NDArray create(const std::vector<T> &values, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
 #ifndef __JAVACPP_HACK__
         // this method only available out of javacpp
@@ -90,33 +90,33 @@ namespace nd4j {
          */
 
         template <typename T>
-        static NDArray create(char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray create(char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         template <typename T>
-        static NDArray create(T* buffer, char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray create(T* buffer, char order, const std::initializer_list<Nd4jLong>& shape, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         template <typename T>
-        static NDArray create(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<T>& data, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray create(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<T>& data, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
-        static NDArray string(const char *string, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray string(const char *string, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
-        static NDArray* string_(const char *string, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray* string_(const char *string, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
-        static NDArray string(const std::string &string, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray string(const std::string &string, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
-        static NDArray* string_(const std::string &string, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray* string_(const std::string &string, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
-        static NDArray string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::graph::LaunchContext* context = nullptr);
-        static NDArray string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
+        static NDArray string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
-        static NDArray string(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::graph::LaunchContext* context = nullptr);
-        static NDArray string(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray string(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
+        static NDArray string(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
-        static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::graph::LaunchContext* context = nullptr);
-        static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
+        static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
-        static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::graph::LaunchContext* context = nullptr);
-        static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::graph::LaunchContext* context = nullptr);
+        static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
+        static NDArray* string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
 #endif
     };

@@ -25,11 +25,11 @@ namespace nd4j {
 
     NDArray NDArrayFactory::string(const char *str, nd4j::graph::LaunchContext* context) {
         std::string s(str);
-        return string(s, workspace);
+        return string(s, context);
     }
 
     NDArray* NDArrayFactory::string_(const char *str, nd4j::graph::LaunchContext* context) {
-        return string_(std::string(str), workspace);
+        return string_(std::string(str), context);
     }
 
     NDArray NDArrayFactory::string(const std::string &str, nd4j::graph::LaunchContext* context) {
@@ -42,7 +42,7 @@ namespace nd4j {
         us[0] = new utf8string(str);
 
         res.setBuffer(buffer);
-        res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, workspace));
+        res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataType::UTF8, context->getWorkspace()));
         res.setWorkspace(workspace);
 
         res.triggerAllocationFlag(true, true);
@@ -71,15 +71,15 @@ namespace nd4j {
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
 NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &shape, nd4j::graph::LaunchContext* context) {
-    return create_(order, shape, DataTypeUtils::fromT<T>(), workspace);
+    return create_(order, shape, DataTypeUtils::fromT<T>(), context);
 }
 BUILD_SINGLE_TEMPLATE(template NDArray* NDArrayFactory::create_, (const char order, const std::vector<Nd4jLong> &shape, nd4j::graph::LaunchContext* context), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<T> &vector) {
-    //memcpy(ptr, vector.data(), vector.size() * sizeof(T));
-    cudaMemcpy(ptr, vector.data(), vector.size() * sizeof(T));
+    memcpy(ptr, vector.data(), vector.size() * sizeof(T));
+    //cudaMemcpy(ptr, vector.data(), vector.size() * sizeof(T));
 }
 
 template <>
@@ -144,7 +144,7 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         int8_t *buffer;
         ALLOCATE(buffer, workspace, 1 * sizeof(T), int8_t);        
 
-        res->setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), workspace));
+        res->setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace()));
         res->setBuffer(buffer);
         res->triggerAllocationFlag(true, true);
         res->setWorkspace(workspace);
@@ -201,10 +201,10 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         int8_t *buffer;
         ALLOCATE(buffer, workspace, 1 * sizeof(T), int8_t);
 
-        res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), workspace));
+        res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace()));
         res.setBuffer(buffer);
         res.triggerAllocationFlag(true, true);
-        res.setWorkspace(workspace);
+        res.setContext(context);
 
         res.bufferAsT<T>()[0] = scalar;
 
@@ -239,7 +239,7 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &
     }
         
     int8_t* buffer(nullptr);
-    ALLOCATE(buffer, workspace, result->lengthOf() * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>()), int8_t);        
+    ALLOCATE(buffer, context->getWorkspace(), result->lengthOf() * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>()), int8_t);
     result->setBuffer(buffer);
     result->setWorkspace(workspace);
     result->triggerAllocationFlag(true, true);

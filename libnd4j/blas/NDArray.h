@@ -119,8 +119,7 @@ namespace nd4j {
         /**
         *  pointer on device launch context (with all data needed there).
         */  
-        nd4j::graph::LaunchContext* _context = nullptr;
-        bool _isContextAlloc = false;
+        nd4j::graph::LaunchContext* _context = graph::LaunchContext::defaultContext();
         /**
         *  alternative buffers for special computational devices (like GPUs for CUDA)
         */  
@@ -152,7 +151,7 @@ namespace nd4j {
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
-        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::graph::LaunchContext* context = nullptr, const bool isBuffAlloc = false, const bool isShapeAlloc = false);
+        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext(), const bool isBuffAlloc = false, const bool isShapeAlloc = false);
 
         /**
         *  copy constructor
@@ -174,38 +173,38 @@ namespace nd4j {
         /**
 		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
         */
-		NDArray(Nd4jLong* shapeInfo, const bool copyStrides = false, nd4j::graph::LaunchContext* context = nullptr, const bool isShapeAlloc = false);
+		NDArray(Nd4jLong* shapeInfo, const bool copyStrides = false, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext(), const bool isShapeAlloc = false);
 
         /**
         *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         *  set dtype as array type
         */
-        NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides = false, nd4j::graph::LaunchContext* context = nullptr, const bool isShapeAlloc = false);
+        NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides = false, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext(), const bool isShapeAlloc = false);
 
         /**
         *  this constructor creates new array using shape information contained in vector argument
         */
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::graph::LaunchContext* context = nullptr);
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
         */
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype = DOUBLE, nd4j::graph::LaunchContext* context = nullptr);
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype = DOUBLE, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         /**
         *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
         */
-        NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::graph::LaunchContext* context = nullptr);
+        NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         /**
         *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
         */
-        NDArray(const NDArray *other, const bool copyStrides = false, nd4j::graph::LaunchContext* context = nullptr);
+        NDArray(const NDArray *other, const bool copyStrides = false, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
         /**
         *  this constructor creates scalar and set its value = 0
         */
-        NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context = nullptr);
+        NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
 
         /**

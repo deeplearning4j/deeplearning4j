@@ -814,9 +814,6 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
         _dataType = other._dataType;
 
         _context= other._context;
-        _isContextAlloc = other._isContextAlloc;
-        if (_isContextAlloc)
-            _context = new graph::LaunchContext;
 
         _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace());
         ALLOCATE(_buffer, _context->getWorkspace(), _length * sizeOfT(), int8_t);
@@ -846,10 +843,6 @@ NDArray& NDArray::operator=(NDArray&& other) noexcept {
     _buffer       = other._buffer; 
     _shapeInfo    = other._shapeInfo;
     _context      = other._context;
-    _isContextAlloc = other._isContextAlloc;
-    if (_isContextAlloc)
-        _context = new graph::LaunchContext;
-
     _bufferD      = other._bufferD;
     _shapeInfoD   = other._shapeInfoD;
     _isShapeAlloc = other._isShapeAlloc;
@@ -1145,14 +1138,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
 
     void NDArray::setContext(nd4j::graph::LaunchContext *context) {
-        if (_context) {
-            if (this->_isContextAlloc)
-                delete _context;
-        }
 
         this->_context= context;
         if (_context == nullptr)
-            _context = new nd4j::graph::LaunchContext; // empty context for default cases
+            _context = nd4j::graph::LaunchContext::defaultContext(); // empty context for default cases
     }
 
     void* NDArray::bufferWithOffset(Nd4jLong offset) const {

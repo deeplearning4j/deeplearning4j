@@ -73,11 +73,6 @@ NDArray::NDArray(const NDArray& other) {
     _length = other._length;
     _context = other._context;
     _dataType = other._dataType;
-    _isContextAlloc = other._isContextAlloc;
-    if (other._isContextAlloc) {
-        _context = new graph::LaunchContext;
-        _isContextAlloc = true;
-    }
     ALLOCATE(_buffer, other._context->getWorkspace(), _length * other.sizeOfT(), int8_t);
     _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace());
 
@@ -526,8 +521,6 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         if (_isShapeAlloc  && _context->getWorkspace() == nullptr && _shapeInfo != nullptr)
             delete[] _shapeInfo;
 
-        if (_isContextAlloc) // context only
-            delete _context;
     }
 
 
