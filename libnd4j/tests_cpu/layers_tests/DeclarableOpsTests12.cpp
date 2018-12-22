@@ -383,3 +383,207 @@ TEST_F(DeclarableOpsTests12, hinge_loss_14) {
 
     ASSERT_TRUE(output.e<double>(0) == 47.);
 }
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestDivideBP_1) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray y = NDArrayFactory::create<double>(2.);
+    NDArray eps('c', {3,4}, nd4j::DataType::DOUBLE);
+
+    NDArray output1('c', {3, 4}, nd4j::DataType::DOUBLE);
+    NDArray output2(nd4j::DataType::DOUBLE);
+
+    x.linspace(2., 2.);
+    eps.linspace(1.);
+
+    nd4j::ops::divide_bp op;
+    Nd4jStatus status = op.execute({&x, &y, &eps}, {&output1, &output2}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output1.printIndexedBuffer("DivideBP X out");
+    output2.printIndexedBuffer("DivideBP Y out");
+    //ASSERT_TRUE(output.e<double>(0) == 47.);
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestDivideBP_2) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray y = NDArrayFactory::create<double>('c', {3,4});
+    NDArray eps('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray output1('c', {3, 4}, nd4j::DataType::DOUBLE);
+    NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
+    exp1.assign(1.);
+    exp2.assign(-2.);
+    x.linspace(2., 2.);
+    y.linspace(1.);
+    eps.linspace(1.);
+
+    nd4j::ops::divide_bp op;
+    Nd4jStatus status = op.execute({&x, &y, &eps}, {&output1, &output2}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output1.printIndexedBuffer("2DivideBP X out");
+    output2.printIndexedBuffer("2DivideBP Y out");
+    ASSERT_TRUE(output1.equalsTo(exp1));
+    ASSERT_TRUE(output2.equalsTo(exp2));
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestReverseDivideBP_1) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray y = NDArrayFactory::create<double>(2.);
+    NDArray eps('c', {3,4}, nd4j::DataType::DOUBLE);
+
+    NDArray output1('c', {3, 4}, nd4j::DataType::DOUBLE);
+    NDArray output2(nd4j::DataType::DOUBLE);
+
+    x.linspace(2., 2.);
+    eps.linspace(1.);
+
+    nd4j::ops::reversedivide_bp op;
+    Nd4jStatus status = op.execute({&y, &x, &eps}, {&output2, &output1}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output1.printIndexedBuffer("RDivideBP X out");
+    output2.printIndexedBuffer("RDivideBP Y out");
+    //ASSERT_TRUE(output.e<double>(0) == 47.);
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestReverseDivideBP_2) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray y = NDArrayFactory::create<double>('c', {3,4});
+    NDArray eps('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {3,4}, nd4j::DataType::DOUBLE);
+
+    NDArray output1('c', {3, 4}, nd4j::DataType::DOUBLE);
+    NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
+
+    x.linspace(2., 2.);
+    y.linspace(1.);
+    eps.linspace(1.);
+    exp1.assign(1.);
+    exp2.assign(-2.);
+    nd4j::ops::reversedivide_bp op;
+    Nd4jStatus status = op.execute({&y, &x, &eps}, {&output2, &output1}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output1.printIndexedBuffer("2RDivideBP X out");
+    output2.printIndexedBuffer("2RDivideBP Y out");
+    ASSERT_TRUE(output1.equalsTo(exp1));
+    ASSERT_TRUE(output2.equalsTo(exp2));
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestSliceBP_1) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray eps('c', {2,2}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {3,4}, {0., 0., 0., 0., 0., 1.,1., 0., 0., 1., 1., 0.});
+    //NDArray exp2('c', {3,4}, nd4j::DataType::DOUBLE);
+
+    NDArray output('c', {3, 4}, nd4j::DataType::DOUBLE);
+    //NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
+    output.assign(119.113);
+    x.linspace(1.);
+    eps.assign(1.);
+    //exp1.assign(1.);
+    //exp2.assign(-2.);
+    nd4j::ops::slice_bp op;
+    Nd4jStatus status = op.execute({&x, &eps}, {&output}, {}, {1,1,2,2}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output.printIndexedBuffer("SLICE_BP out");
+    ASSERT_TRUE(output.equalsTo(exp));
+    //ASSERT_TRUE(output2.equalsTo(exp2));
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestConfusionZero_1) {
+
+    NDArray x('c', {2}, {1,2}, nd4j::DataType::INT64);
+    NDArray i('c', {2}, {0,2}, nd4j::DataType::INT64);
+    //NDArray eps('c', {2,2}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {4,4}, {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0}, nd4j::DataType::INT64);
+    //NDArray exp2('c', {3,4}, nd4j::DataType::DOUBLE);
+
+    NDArray output('c', {4, 4}, nd4j::DataType::INT64);
+    //NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
+    output.assign(119.113);
+    x.linspace(1.);
+    //eps.assign(1.);
+    //exp1.assign(1.);
+    //exp2.assign(-2.);
+    nd4j::ops::confusion_matrix op;
+    Nd4jStatus status = op.execute({&x, &i}, {&output}, {}, {4}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output.printIndexedBuffer("Confusion out");
+    ASSERT_TRUE(output.equalsTo(exp));
+    //ASSERT_TRUE(output2.equalsTo(exp2));
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestMaximumBP_1) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray y('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray eps('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {3,4}, {0, 0, 0, 0, 0, 0, 7, 8, 9, 10, 11, 12}, nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {3,4}, {1, 2, 3, 4, 5, 6, 0, 0, 0,  0,  0,  0}, nd4j::DataType::DOUBLE);
+
+    NDArray output1('c', {3, 4}, nd4j::DataType::DOUBLE);
+    NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
+    output1.assign(119);
+    x.linspace(1.);
+    y.linspace(12., -1.);
+    x.printBuffer("X");
+    y.printBuffer("Y");
+    eps.linspace(1.);
+    //exp1.assign(1.);
+    //exp2.assign(-2.);
+    nd4j::ops::maximum_bp op;
+    Nd4jStatus status = op.execute({&x, &y, &eps}, {&output1, &output2}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output1.printIndexedBuffer("X max");
+    output2.printIndexedBuffer("Y max");
+    ASSERT_TRUE(output1.equalsTo(exp1));
+    ASSERT_TRUE(output2.equalsTo(exp2));
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TestMinimumBP_1) {
+
+    NDArray x('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray y('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray eps('c', {3,4}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {3,4}, {0, 0, 0, 0, 0, 0, 7, 8, 9, 10, 11, 12}, nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {3,4}, {1, 2, 3, 4, 5, 6, 0, 0, 0,  0,  0,  0}, nd4j::DataType::DOUBLE);
+
+    NDArray output1('c', {3, 4}, nd4j::DataType::DOUBLE);
+    NDArray output2('c', {3, 4}, nd4j::DataType::DOUBLE);
+    output1.assign(119);
+    x.linspace(1.);
+    y.linspace(12., -1.);
+    x.printBuffer("X");
+    y.printBuffer("Y");
+    eps.linspace(1.);
+    //exp1.assign(1.);
+    //exp2.assign(-2.);
+    nd4j::ops::minimum_bp op;
+    Nd4jStatus status = op.execute({&x, &y, &eps}, {&output2, &output1}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    output2.printIndexedBuffer("X min");
+    output1.printIndexedBuffer("Y min");
+    ASSERT_TRUE(output1.equalsTo(exp1));
+    ASSERT_TRUE(output2.equalsTo(exp2));
+}
