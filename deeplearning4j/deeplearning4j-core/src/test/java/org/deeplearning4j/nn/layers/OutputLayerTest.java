@@ -111,7 +111,7 @@ public class OutputLayerTest extends BaseDL4JTest {
         INDArray out = mln.output(input);
         assertArrayEquals(out.shape(), new long[] {miniBatchSize * timeSeriesLength, nOut});
 
-        INDArray preout = mln.activate(input);
+        INDArray preout = mln.output(input);
         assertArrayEquals(preout.shape(), new long[] {miniBatchSize * timeSeriesLength, nOut});
 
         //As above, but for RnnOutputLayer. Expect all activations etc. to be 3d
@@ -135,7 +135,7 @@ public class OutputLayerTest extends BaseDL4JTest {
         INDArray outRnn = mlnRnn.output(input);
         assertArrayEquals(outRnn.shape(), new long[] {miniBatchSize, nOut, timeSeriesLength});
 
-        INDArray preoutRnn = mlnRnn.activate(input);
+        INDArray preoutRnn = mlnRnn.output(input);
         assertArrayEquals(preoutRnn.shape(), new long[] {miniBatchSize, nOut, timeSeriesLength});
     }
 
@@ -243,7 +243,7 @@ public class OutputLayerTest extends BaseDL4JTest {
             INDArray out = mln.output(input);
             assertArrayEquals(out.shape(), new long[] {miniBatchSize * timeSeriesLength, nOut});
 
-            INDArray preout = mln.activate(input);
+            INDArray preout = mln.output(input);
             assertArrayEquals(preout.shape(), new long[] {miniBatchSize * timeSeriesLength, nOut});
 
 
@@ -253,7 +253,7 @@ public class OutputLayerTest extends BaseDL4JTest {
             INDArray outRnn2 = mlnRnn.output(input);
             assertArrayEquals(outRnn2.shape(), new long[] {miniBatchSize, nOut, timeSeriesLength});
 
-            INDArray preoutRnn = mlnRnn.activate(input);
+            INDArray preoutRnn = mlnRnn.output(input);
             assertArrayEquals(preoutRnn.shape(), new long[] {miniBatchSize, nOut, timeSeriesLength});
         }
     }

@@ -50,6 +50,7 @@ public class DefaultI18N implements I18N {
     public static final String FALLBACK_LANGUAGE = "en"; //use this if the specified language doesn't have the requested message
 
     private static DefaultI18N instance;
+    private static Throwable languageLoadingException = null;
 
     private Map<String, Map<String, String>> messagesByLanguage = new HashMap<>();
 
@@ -61,8 +62,6 @@ public class DefaultI18N implements I18N {
 
 
     private String currentLanguage = DEFAULT_LANGUAGE;
-
-    private Set<String> loadedLanguages = Collections.synchronizedSet(new HashSet<>());
 
     private DefaultI18N() {
         loadLanguages();
@@ -88,9 +87,14 @@ public class DefaultI18N implements I18N {
                     parseFile(r, map);
                 } catch (Throwable t){
                     log.warn("Error parsing UI I18N content file; skipping: {}", r.getResource(), t);
+                    languageLoadingException = t;
                 }
             }
         }
+    }
+
+    public Throwable getLanguageLoadingException(){
+        return languageLoadingException;
     }
 
     public boolean noI18NData(){

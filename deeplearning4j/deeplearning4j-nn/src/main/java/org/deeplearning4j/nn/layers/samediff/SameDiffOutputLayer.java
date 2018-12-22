@@ -324,11 +324,6 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
     }
 
     @Override
-    public INDArray labelProbabilities(INDArray examples) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
     public void fit(INDArray examples, INDArray labels) {
         throw new UnsupportedOperationException("Not supported");
     }

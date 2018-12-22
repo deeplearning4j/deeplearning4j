@@ -54,7 +54,9 @@ public interface Classifier extends Model {
     /**
      * Returns the number of possible labels
      * @return the number of possible labels for this classifier
+     * @deprecated Will be removed in a future release
      */
+    @Deprecated
     int numLabels();
 
     /**
@@ -78,14 +80,6 @@ public interface Classifier extends Model {
      * @return the labels for each example
      */
     List<String> predict(DataSet dataSet);
-
-    /**
-     * Returns the probabilities for each label
-     * for each example row wise
-     * @param examples the examples to classify (one example in each row)
-     * @return the likelihoods of each example and each label
-     */
-    INDArray labelProbabilities(INDArray examples);
 
 
     /**

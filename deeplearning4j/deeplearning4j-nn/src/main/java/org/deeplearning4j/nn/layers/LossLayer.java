@@ -238,7 +238,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     @Override
     public double f1Score(INDArray examples, INDArray labels) {
         Evaluation eval = new Evaluation();
-        eval.eval(labels, labelProbabilities(examples));
+        eval.eval(labels, activate(examples, false, LayerWorkspaceMgr.noWorkspacesImmutable()));
         return eval.f1();
     }
 
@@ -286,18 +286,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             ret.add(i, dataSet.getLabelName(i));
         }
         return ret;
-    }
-
-    /**
-     * Returns the probabilities for each label
-     * for each example row wise
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @return the likelihoods of each example and each label
-     */
-    @Override
-    public INDArray labelProbabilities(INDArray examples) {
-        return activate(examples, false, LayerWorkspaceMgr.noWorkspacesImmutable());
     }
 
     /**

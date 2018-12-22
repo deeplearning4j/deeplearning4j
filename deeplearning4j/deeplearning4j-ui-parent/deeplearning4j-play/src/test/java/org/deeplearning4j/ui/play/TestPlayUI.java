@@ -41,6 +41,8 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 08/10/2016.
@@ -199,4 +201,14 @@ public class TestPlayUI {
         Thread.sleep(100000);
     }
 
+    @Test
+    public void testUIAttachDetach() throws Exception {
+        StatsStorage ss = new InMemoryStatsStorage();
+
+        UIServer uiServer = UIServer.getInstance();
+        uiServer.attach(ss);
+        assertFalse(uiServer.getStatsStorageInstances().isEmpty());
+        uiServer.detach(ss);
+        assertTrue(uiServer.getStatsStorageInstances().isEmpty());
+    }
 }
