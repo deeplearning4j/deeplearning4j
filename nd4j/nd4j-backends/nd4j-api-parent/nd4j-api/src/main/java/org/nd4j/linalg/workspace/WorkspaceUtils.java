@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 
 import java.util.ArrayList;
@@ -43,7 +44,22 @@ public class WorkspaceUtils {
      * @param msg Message to include in the exception, if required
      */
     public static void assertNoWorkspacesOpen(String msg) throws ND4JWorkspaceException {
+        assertNoWorkspacesOpen(msg, false);
+    }
+
+    /**
+     * Assert that no workspaces are currently open
+     *
+     * @param msg Message to include in the exception, if required
+     * @param allowScopedOut If true: don't fail if we have an open workspace but are currently scoped out
+     */
+    public static void assertNoWorkspacesOpen(String msg, boolean allowScopedOut) throws ND4JWorkspaceException {
         if (Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()) {
+
+            MemoryWorkspace currWs = Nd4j.getMemoryManager().getCurrentWorkspace();
+            if(allowScopedOut && (currWs == null || currWs instanceof DummyWorkspace))
+                return; //Open WS but we've scoped out
+
             List<MemoryWorkspace> l = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
             List<String> workspaces = new ArrayList<>(l.size());
             for (MemoryWorkspace ws : l) {

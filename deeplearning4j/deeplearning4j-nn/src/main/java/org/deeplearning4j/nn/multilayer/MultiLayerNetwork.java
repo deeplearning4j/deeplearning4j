@@ -1162,7 +1162,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         Additionally, we'll reconfigure the workspace manager for the *final* layer, so that we don't have to detach
          */
         if(outputWorkspace == null || outputWorkspace instanceof DummyWorkspace) {
-            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in outputOfLayerDetached");
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in outputOfLayerDetached", true);
         } else {
             Preconditions.checkState(outputWorkspace.isScopeActive(), "Workspace \"" + outputWorkspace.getId() +
                     "\" was provided for the network/layer outputs. When provided, this workspace must be opened before " +
@@ -1297,7 +1297,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
 
             if(outputWorkspace == null || outputWorkspace instanceof DummyWorkspace) {
-                WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
+                WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached", true);
             } else {
                 Preconditions.checkState(outputWorkspace.isScopeActive(), "Expected output workspace to still be open" +
                         "at end of outputOfLayerDetached, but it is closed. This suggests an implementation or layer workspace problem");
