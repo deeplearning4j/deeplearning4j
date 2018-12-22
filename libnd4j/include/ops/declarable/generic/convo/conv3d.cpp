@@ -28,6 +28,9 @@
 namespace nd4j {
 namespace ops  {
 
+#ifdef HAVE_MKLDNN
+using namespace mkldnn;
+#endif
 
 CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
     
@@ -63,15 +66,60 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
     if (bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV3D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
+    if(isSameMode)                       // SAME
+        ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
+
+#ifdef HAVE_MKLDNN
+    if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, weights, bias, output})) {
+        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
+        if (streams.empty()) {
+            streams.push_back(MKLDNNStream("conv3dnew"));
+        }
+
+        if (streams[0].checkAndReset({input, weights, bias}, {output}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, isSameMode, isNCDHW})) {
+            mkldnn_memory_desc_t empty;
+            mkldnn::memory::desc conv_src_md(empty), conv_weights_md(empty), conv_bias_md(empty), conv_dst_md(empty);
+            mkldnn::memory::dims conv_strides, conv_padding, conv_padding_r;
+
+            ConvolutionUtils::getMKLDNNMemoryDescConv3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, isSameMode, isNCDHW,
+                    bS, iC, iD, iH, iW, oC, oD, oH, oW, input, nullptr, weights, nullptr, bias, output,
+                    &conv_src_md, nullptr, &conv_weights_md, nullptr, &conv_bias_md, &conv_dst_md,
+                    conv_strides, conv_padding, conv_padding_r);
+
+            auto conv_desc = bias != nullptr
+                    ? convolution_forward::desc(prop_kind::forward,
+                            convolution_direct, conv_src_md, conv_weights_md, conv_bias_md,
+                            conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero)
+                    : convolution_forward::desc(prop_kind::forward,
+                            convolution_direct, conv_src_md, conv_weights_md,
+                            conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
+
+            auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc, streams[0].getEngine());
+            auto conv_src_memory = mkldnn::memory(conv_prim_desc.src_primitive_desc(), input->buffer());
+            auto conv_weights_memory = mkldnn::memory(conv_prim_desc.weights_primitive_desc(), weights->buffer());
+            auto conv_dst_memory = mkldnn::memory(conv_prim_desc.dst_primitive_desc(), output->buffer());
+            if (bias != nullptr) {
+                auto conv_bias_memory = mkldnn::memory(conv_prim_desc.bias_primitive_desc(), bias->buffer());
+                streams[0].setMemory({conv_src_memory, conv_weights_memory, conv_bias_memory, conv_dst_memory});
+                streams[0].setOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_bias_memory, conv_dst_memory));
+            } else {
+                streams[0].setMemory({conv_src_memory, conv_weights_memory, conv_dst_memory});
+                streams[0].setOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_dst_memory));
+            }
+        }
+
+        streams[0].submitAndWait();
+        return Status::OK();
+    }
+#endif
+    nd4j_debug("MKL-DNN is not used for conv3dnew!\n", 0);
+
     std::vector<int> permutForOutput;
 
     if(!isNCDHW)
-        input = input->permute({0,4,1,2,3});                                    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]                        
+        input = input->permute({0,4,1,2,3});                                    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
     else
         permutForOutput    = {0,2,3,4,1};                                        // [bS, oC, oD, oH, oW] -> [bS, oD, oH, oW, oC]
-    
-    if(isSameMode)                       // SAME
-        ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
 
     NDArray columns(input->ordering(), {bS, iC, kD, kH, kW, oD, oH, oW}, input->dataType(), block.getWorkspace());
     ConvolutionUtils::vol2col(*input, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);                 // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]
@@ -211,6 +259,89 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     if(bias)        
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV3D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
     
+    if(isSameMode)                       // SAME        
+        ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
+    
+#ifdef HAVE_MKLDNN
+    if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB})) {
+        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
+        if (streams.empty()) {
+            streams.push_back(MKLDNNStream("conv3dnew_bp_weights"));
+            streams.push_back(MKLDNNStream("conv3dnew_bp_data"));
+        }
+
+        bool resetW = streams[0].checkAndReset({input, weights, bias, gradO}, {gradI, gradW, gradB}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, isSameMode, isNDHWC});
+        bool resetI = streams[1].checkAndReset({input, weights, bias, gradO}, {gradI, gradW, gradB}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, isSameMode, isNDHWC});
+        if (resetW || resetI) {
+            mkldnn_memory_desc_t empty;
+            mkldnn::memory::desc conv_src_md(empty), conv_diff_src_md(empty), conv_weights_md(empty),
+                                 conv_diff_weights_md(empty), conv_bias_md(empty), conv_dst_md(empty);
+            mkldnn::memory::dims conv_strides, conv_padding, conv_padding_r;
+
+            ConvolutionUtils::getMKLDNNMemoryDescConv3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, isSameMode, isNDHWC,
+                    bS, iC, iD, iH, iW, oC, oD, oH, oW, input, gradI, weights, gradW, gradB, gradO,
+                    &conv_src_md, &conv_diff_src_md, &conv_weights_md, &conv_diff_weights_md, &conv_bias_md, &conv_dst_md,
+                    conv_strides, conv_padding, conv_padding_r);
+
+            auto conv_desc = gradB != nullptr
+                    ? convolution_forward::desc(prop_kind::forward,
+                            convolution_direct, conv_src_md, conv_weights_md, conv_bias_md,
+                            conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero)
+                    : convolution_forward::desc(prop_kind::forward,
+                            convolution_direct, conv_src_md, conv_weights_md,
+                            conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
+
+            auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc, streams[0].getEngine());
+
+            if (gradW != nullptr) {
+                auto convW_desc = gradB != nullptr
+                        ? convolution_backward_weights::desc(
+                                convolution_direct, conv_src_md, conv_diff_weights_md, conv_bias_md,
+                                conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero)
+                        : convolution_backward_weights::desc(
+                                convolution_direct, conv_src_md, conv_diff_weights_md,
+                                conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
+
+                auto convW_prim_desc = convolution_backward_weights::primitive_desc(convW_desc, streams[0].getEngine(), conv_prim_desc);
+                auto convW_src_memory = mkldnn::memory(convW_prim_desc.src_primitive_desc(), input->buffer());
+                auto convW_weights_memory = mkldnn::memory(convW_prim_desc.diff_weights_primitive_desc(), gradW->buffer());
+                auto convW_dst_memory = mkldnn::memory(convW_prim_desc.diff_dst_primitive_desc(), gradO->buffer());
+                if (gradB != nullptr) {
+                    auto convW_bias_memory = mkldnn::memory(convW_prim_desc.diff_bias_primitive_desc(), gradB->buffer());
+                    streams[0].setMemory({convW_src_memory, convW_dst_memory, convW_weights_memory, convW_bias_memory});
+                    streams[0].setOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory, convW_bias_memory));
+                } else {
+                    streams[0].setMemory({convW_src_memory, convW_dst_memory, convW_weights_memory});
+                    streams[0].setOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory));
+                }
+            }
+
+            if (gradI != nullptr) {
+                auto convI_desc =
+                        convolution_backward_data::desc(
+                                convolution_direct, conv_diff_src_md, conv_weights_md,
+                                conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
+
+                auto convI_prim_desc = convolution_backward_data::primitive_desc(convI_desc, streams[1].getEngine(), conv_prim_desc);
+                auto convI_src_memory = mkldnn::memory(convI_prim_desc.diff_src_primitive_desc(), gradI->buffer());
+                auto convI_weights_memory = mkldnn::memory(convI_prim_desc.weights_primitive_desc(), weights->buffer());
+                auto convI_dst_memory = mkldnn::memory(convI_prim_desc.diff_dst_primitive_desc(), gradO->buffer());
+                streams[1].setMemory({convI_dst_memory, convI_weights_memory, convI_src_memory});
+                streams[1].setOperation(convolution_backward_data(convI_prim_desc, convI_dst_memory, convI_weights_memory, convI_src_memory));
+            }
+        }
+
+        if (gradW != nullptr) {
+            streams[0].submitAndWait();
+        }
+        if (gradI != nullptr) {
+            streams[1].submitAndWait();
+        }
+        return Status::OK();
+    }
+#endif
+    nd4j_debug("MKL-DNN is not used for conv3dnew_bp!\n", 0);
+
     std::vector<int> gradOaxesForDot;
 
     if(!isNDHWC) {
@@ -221,9 +352,6 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     else
         gradOaxesForDot  = {0,2,3,4};                                           // bS, oD, oH, oW
 
-    if(isSameMode)                       // SAME        
-        ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
-    
     // ----- calculation of gradW and gradB ----- //                
     NDArray columns(input->ordering(), {bS, iC, kD, kH, kW, oD, oH, oW}, input->dataType(), block.getWorkspace());
     ConvolutionUtils::vol2col(*input, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);                   // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]

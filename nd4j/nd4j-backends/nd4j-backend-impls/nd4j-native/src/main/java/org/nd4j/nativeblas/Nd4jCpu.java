@@ -246,6 +246,76 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
 
 // #endif
 
+// Parsed from Environment.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// Created by raver119 on 06.10.2017.
+//
+
+// #ifndef LIBND4J_ENVIRONMENT_H
+// #define LIBND4J_ENVIRONMENT_H
+
+// #include <atomic>
+// #include <dll.h>
+// #include <stdexcept>
+// #include <array/DataType.h>
+    @Namespace("nd4j") @NoOffset public static class Environment extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public Environment(Pointer p) { super(p); }
+    
+        public static native Environment getInstance();
+
+        public native @Cast("bool") boolean isVerbose();
+        public native void setVerbose(@Cast("bool") boolean reallyVerbose);
+        public native @Cast("bool") boolean isDebug();
+        public native @Cast("bool") boolean isProfiling();
+        public native @Cast("bool") boolean isDebugAndVerbose();
+        public native void setDebug(@Cast("bool") boolean reallyDebug);
+        public native void setProfiling(@Cast("bool") boolean reallyProfile);
+        
+        public native int tadThreshold();
+        public native void setTadThreshold(int threshold);
+
+        public native int elementwiseThreshold();
+        public native void setElementwiseThreshold(int threshold);
+
+        public native int maxThreads();
+        public native void setMaxThreads(int max);
+
+        public native @Cast("bool") boolean isUseMKLDNN();
+        public native void setUseMKLDNN(@Cast("bool") boolean useMKLDNN);
+
+        public native @Cast("nd4j::DataType") int defaultFloatDataType();
+        public native void setDefaultFloatDataType(@Cast("nd4j::DataType") int dtype);
+
+        public native @Cast("bool") boolean precisionBoostAllowed();
+        public native void allowPrecisionBoost(@Cast("bool") boolean reallyAllow);
+
+        public native @Cast("bool") boolean isExperimentalBuild();
+    }
+
+
+
+// #endif //LIBND4J_ENVIRONMENT_H
+
+
 // Parsed from types/utf8string.h
 
 /*******************************************************************************
