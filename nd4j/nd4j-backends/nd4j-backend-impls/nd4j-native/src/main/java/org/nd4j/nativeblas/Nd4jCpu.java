@@ -2415,6 +2415,24 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native @Cast("Nd4jPointer") Pointer numpyFromFile(@StdString String path);
 
 
+    public native Pointer mapFromNpzFile(@StdString BytePointer path);
+    public native Pointer mapFromNpzFile(@StdString String path);
+
+    public native int getNumNpyArraysInMap(Pointer map);
+
+    public native @Cast("char*") String getNpyArrayNameFromMap(Pointer map, int index);
+
+    public native Pointer getNpyArrayFromMap(Pointer map, int index);
+
+    public native Pointer getNpyArrayData(Pointer npArray);
+
+    public native int getNpyArrayRank(Pointer npArray);
+
+    public native @Cast("Nd4jLong*") LongPointer getNpyArrayShape(Pointer npArray);
+
+    public native char getNpyArrayOrder(Pointer npArray);
+
+
 /**
   * Get the element size for a numpy array
   * @param npyArray  the numpy array's address

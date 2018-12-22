@@ -1378,6 +1378,93 @@ public:
     }
 
 
+    ////// NPZ //////
+
+    void* mapFromNpzFile(std::string path){
+        cnpy::npz_t* mapPtr = new cnpy::npz_t();
+        cnpy::npz_t map = cnpy::npzLoad(path);
+        mapPtr->insert(map.begin(), map.end());
+        return reinterpret_cast<void*>(mapPtr);
+    }
+
+
+    int getNumNpyArraysInMap(void *map){
+        cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
+        int n = arrays->size();
+        return n;
+    }
+
+    char* getNpyArrayNameFromMap(void *map, int index){
+        cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
+        cnpy::npz_t::iterator it = arrays->begin();
+        cnpy::npz_t::iterator end = arrays->end();
+        int cnt = 0;
+        for(; it != end; ++it, ++cnt){
+            if (cnt == index){
+
+                return strdup(it->first.c_str());
+            }
+        }
+        throw std::runtime_error("No array at index.");
+    }
+
+    void* getNpyArrayFromMap(void *map, int index){
+        cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
+        cnpy::npz_t::iterator it = arrays->begin();
+        cnpy::npz_t::iterator end = arrays->end();
+        cnpy::NpyArray *arr = new cnpy::NpyArray();
+        int cnt = 0;
+        for(; it != end; ++it, ++cnt){
+            if (cnt == index){
+                *arr = it->second;
+                return arr;
+            }
+        }
+        throw std::runtime_error("No array at index.");
+    }
+
+    void* getNpyArrayData(void *npArray){
+        cnpy::NpyArray* npyArray2 = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        return reinterpret_cast<void*>(npyArray2->data);
+    }
+
+    int getNpyArrayRank(void *npArray){
+        cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        int rank = arr->shape.size();
+        return rank;
+    }
+
+    Nd4jLong* getNpyArrayShape(void *npArray){
+        cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        int ndim = arr->shape.size();
+        Nd4jLong* shape = new Nd4jLong[ndim];
+        for (int i=0; i<ndim; i++){
+            shape[i] = arr->shape.at(i);
+        }
+        return shape;
+    }
+
+    char getNpyArrayOrder(void *npArray){
+        cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        return (arr->fortranOrder)?'f':'c';
+    }
+
+    int getNpyArrayElemSize(void *npArray){
+        cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        return arr->wordSize;
+    }
+
+    void deleteNPArrayStruct(void *npArray){
+        cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        delete arr;
+    }
+
+    void deleteNPArrayMap(void *map){
+        cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
+        delete arrays;
+    }
+    //////
+
 /**
   * Get the element size for a numpy array
   * @param npyArray  the numpy array's address

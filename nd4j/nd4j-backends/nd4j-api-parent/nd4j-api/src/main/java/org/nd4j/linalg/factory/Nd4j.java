@@ -6614,6 +6614,10 @@ public class Nd4j {
         return INSTANCE.createFromNpyFile(file);
     }
 
+    public static Map<String, INDArray> createFromNpzFile(File file) throws Exception{
+        return INSTANCE.createFromNpzFile(file);
+    }
+
     /**
      * Create a numpy array based on the passed in input stream
      * @param is the input stream to read
