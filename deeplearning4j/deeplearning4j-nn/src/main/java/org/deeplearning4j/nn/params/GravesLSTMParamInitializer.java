@@ -19,12 +19,10 @@ package org.deeplearning4j.nn.params;
 import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -99,8 +97,6 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
                         (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
         double forgetGateInit = layerConf.getForgetGateBiasInit();
 
-        Distribution dist = Distributions.createDistribution(layerConf.getDist());
-
         val nL = layerConf.getNOut(); //i.e., n neurons in this layer
         val nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
 
@@ -128,21 +124,17 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
             val inputWShape = new long[] {nLast, 4 * nL};
             val recurrentWShape = new long[] {nL, 4 * nL + 3};
 
-            WeightInit rwInit;
-            Distribution rwDist = dist;
-            if(layerConf.getWeightInitRecurrent() != null){
-                rwInit = layerConf.getWeightInitRecurrent();
-                if(layerConf.getDistRecurrent() != null) {
-                    rwDist = Distributions.createDistribution(layerConf.getDistRecurrent());
-                }
+            IWeightInit rwInit;
+            if(layerConf.getWeightInitFnRecurrent() != null){
+                rwInit = layerConf.getWeightInitFnRecurrent();
             } else {
-                rwInit = layerConf.getWeightInit();
+                rwInit = layerConf.getWeightInitFn();
             }
 
-            params.put(INPUT_WEIGHT_KEY, WeightInitUtil.initWeights(fanIn, fanOut, inputWShape,
-                            layerConf.getWeightInit(), dist, inputWeightView));
-            params.put(RECURRENT_WEIGHT_KEY, WeightInitUtil.initWeights(fanIn, fanOut, recurrentWShape,
-                            rwInit, rwDist, recurrentWeightView));
+            params.put(INPUT_WEIGHT_KEY,layerConf.getWeightInitFn().init(fanIn, fanOut, inputWShape,
+                            IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, inputWeightView));
+            params.put(RECURRENT_WEIGHT_KEY, rwInit.init(fanIn, fanOut, recurrentWShape,
+                            IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, recurrentWeightView));
             biasView.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)},
                             Nd4j.valueArrayOf(new long[]{1, nL}, forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG}
             /*The above line initializes the forget gate biases to specified value.

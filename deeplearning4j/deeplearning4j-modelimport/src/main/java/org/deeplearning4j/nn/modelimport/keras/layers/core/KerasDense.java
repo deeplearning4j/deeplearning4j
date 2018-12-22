@@ -38,9 +38,7 @@ import java.util.Map;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getIActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.removeDefaultWeights;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.*;
 
 /**
  * Imports a Dense layer from Keras.
@@ -105,12 +103,10 @@ public class KerasDense extends KerasLayer {
         DenseLayer.Builder builder = new DenseLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout).activation(getIActivationFromConfig(layerConfig, conf))
-                .weightInit(weightInit)
+                .weightInit(weightInit.getWeightInitFunction(distribution))
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .hasBias(hasBias);
-        if (distribution != null)
-            builder.dist(distribution);
         if (biasConstraint != null)
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)

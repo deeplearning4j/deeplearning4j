@@ -28,21 +28,24 @@ import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
-import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
-import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
-import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
+import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyGraphVertexDeserializer;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializer;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyPreprocessorDeserializer;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyReconstructionDistributionDeserializer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitDistribution;
+import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -461,9 +464,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     @Data
     public static class Builder implements Cloneable {
         protected IActivation activationFn = new ActivationSigmoid();
-        protected WeightInit weightInit = WeightInit.XAVIER;
+        protected IWeightInit weightInitFn = new WeightInitXavier();
         protected double biasInit = 0.0;
-        protected Distribution dist = null;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
         protected double l1Bias = Double.NaN;
@@ -711,22 +713,40 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return activation(activation.getActivationFunction());
         }
 
+
         /**
-         * Weight initialization scheme.<br>
+         * Weight initialization scheme to use, for initial weight values
          * Note: values set by this method will be applied to all applicable layers in the network, unless a different
          * value is explicitly set on a given layer. In other words: values set via this method are used as the default
          * value, and can be overridden on a per-layer basis.
          *
-         * @see org.deeplearning4j.nn.weights.WeightInit
+         * @see IWeightInit
+         */
+        public Builder weightInit(IWeightInit weightInit) {
+            this.weightInitFn = weightInit;
+            return this;
+        }
+
+        /**
+         * Weight initialization scheme to use, for initial weight values
+         * Note: values set by this method will be applied to all applicable layers in the network, unless a different
+         * value is explicitly set on a given layer. In other words: values set via this method are used as the default
+         * value, and can be overridden on a per-layer basis.
+         *
+         * @see WeightInit
          */
         public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
+            if(weightInit == WeightInit.DISTRIBUTION) {
+             //   throw new UnsupportedOperationException("Not supported!, Use weightInit(Distribution distribution) instead!");
+            }
+
+            this.weightInitFn = weightInit.getWeightInitFunction();
             return this;
         }
 
         /**
          * Set weight initialization scheme to random sampling via the specified distribution.
-         * Equivalent to: {@code .weightInit(WeightInit.DISTRIBUTION).dist(distribution)}<br>
+         * Equivalent to: {@code .weightInit(new WeightInitDistribution(distribution))}
          * Note: values set by this method will be applied to all applicable layers in the network, unless a different
          * value is explicitly set on a given layer. In other words: values set via this method are used as the default
          * value, and can be overridden on a per-layer basis.
@@ -734,8 +754,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param distribution Distribution to use for weight initialization
          */
         public Builder weightInit(Distribution distribution){
-            weightInit(WeightInit.DISTRIBUTION);
-            return dist(distribution);
+            return weightInit(new WeightInitDistribution(distribution));
         }
 
         /**
@@ -752,17 +771,17 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Distribution to sample initial weights from. Used in conjunction with
-         * .weightInit(WeightInit.DISTRIBUTION).<br>
+         * Distribution to sample initial weights from.
+         * Equivalent to: {@code .weightInit(new WeightInitDistribution(distribution))}.<br>
          * Note: values set by this method will be applied to all applicable layers in the network, unless a different
          * value is explicitly set on a given layer. In other words: values set via this method are used as the default
          * value, and can be overridden on a per-layer basis.
          *
          * @see #weightInit(Distribution)
          */
+        @Deprecated
         public Builder dist(Distribution dist) {
-            this.dist = dist;
-            return this;
+            return weightInit(dist);
         }
 
         /**
@@ -1101,7 +1120,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     sl.setConvolutionMode(convolutionMode);
                 }
             }
-            LayerValidation.generalValidation(layerName, layer, idropOut, l2, l2Bias, l1, l1Bias, dist,
+            LayerValidation.generalValidation(layerName, layer, idropOut, l2, l2Bias, l1, l1Bias,
                     allParamConstraints, weightConstraints, biasConstraints);
         }
 
@@ -1120,8 +1139,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     bLayer.setL2(l2);
                 if (bLayer.getActivationFn() == null)
                     bLayer.setActivationFn(activationFn);
-                if (bLayer.getWeightInit() == null)
-                    bLayer.setWeightInit(weightInit);
+                if (bLayer.getWeightInitFn() == null)
+                    bLayer.setWeightInitFn(weightInitFn);
                 if (Double.isNaN(bLayer.getBiasInit()))
                     bLayer.setBiasInit(biasInit);
 

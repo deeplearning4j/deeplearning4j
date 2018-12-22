@@ -23,7 +23,9 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -38,9 +40,8 @@ import java.io.Serializable;
 @NoArgsConstructor
 public abstract class BaseLayer extends Layer implements Serializable, Cloneable {
     protected IActivation activationFn;
-    protected WeightInit weightInit;
+    protected IWeightInit weightInitFn;
     protected double biasInit;
-    protected Distribution dist;
     protected double l1;
     protected double l2;
     protected double l1Bias;
@@ -56,9 +57,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         super(builder);
         this.layerName = builder.layerName;
         this.activationFn = builder.activationFn;
-        this.weightInit = builder.weightInit;
+        this.weightInitFn = builder.weightInitFn;
         this.biasInit = builder.biasInit;
-        this.dist = builder.dist;
         this.l1 = builder.l1;
         this.l2 = builder.l2;
         this.l1Bias = builder.l1Bias;
@@ -78,9 +78,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     public void resetLayerDefaultConfig() {
         //clear the learning related params for all layers in the origConf and set to defaults
         this.setIUpdater(null);
-        this.setWeightInit(null);
+        this.setWeightInitFn(null);
         this.setBiasInit(Double.NaN);
-        this.setDist(null);
         this.setL1(Double.NaN);
         this.setL2(Double.NaN);
         this.setGradientNormalization(GradientNormalization.None);
@@ -91,10 +90,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
 
     @Override
     public BaseLayer clone() {
-        BaseLayer clone = (BaseLayer) super.clone();
-        if (clone.dist != null)
-            clone.dist = clone.dist.clone();
-        return clone;
+        return (BaseLayer) super.clone();
     }
 
     /**
@@ -120,9 +116,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
         protected IActivation activationFn = null;
-        protected WeightInit weightInit = null;
+        protected IWeightInit weightInitFn = null;
         protected double biasInit = Double.NaN;
-        protected Distribution dist = null;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
         protected double l1Bias = Double.NaN;
@@ -155,22 +150,35 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         /**
          * Weight initialization scheme to use, for initial weight values
          *
+         * @see IWeightInit
+         */
+        public T weightInit(IWeightInit weightInit) {
+            this.weightInitFn = weightInit;
+            return (T) this;
+        }
+
+        /**
+         * Weight initialization scheme to use, for initial weight values
+         *
          * @see WeightInit
          */
         public T weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
+            if(weightInit == WeightInit.DISTRIBUTION) {
+                throw new UnsupportedOperationException("Not supported!, Use weightInit(Distribution distribution) instead!");
+            }
+
+            this.weightInitFn = weightInit.getWeightInitFunction();
             return (T) this;
         }
 
         /**
          * Set weight initialization scheme to random sampling via the specified distribution.
-         * Equivalent to: {@code .weightInit(WeightInit.DISTRIBUTION).dist(distribution)}
+         * Equivalent to: {@code .weightInit(new WeightInitDistribution(distribution))}
          *
          * @param distribution Distribution to use for weight initialization
          */
         public T weightInit(Distribution distribution){
-            weightInit(WeightInit.DISTRIBUTION);
-            return dist(distribution);
+            return weightInit(new WeightInitDistribution(distribution));
         }
 
         /**
@@ -184,12 +192,12 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         }
 
         /**
-         * Distribution to sample initial weights from. Used in conjunction with
-         * .weightInit(WeightInit.DISTRIBUTION).
+         * Distribution to sample initial weights from.
+         * Equivalent to: {@code .weightInit(new WeightInitDistribution(distribution))}
          */
+        @Deprecated
         public T dist(Distribution dist) {
-            this.dist = dist;
-            return (T) this;
+            return weightInit(dist);
         }
 
         /**

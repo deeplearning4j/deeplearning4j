@@ -44,7 +44,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -111,7 +110,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
 
                     MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                                     .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                                    .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-1, 1))
+                                    .dist(new UniformDistribution(-1, 1))
                                     .updater(new NoOp()).seed(12345L).list()
                                     .layer(0, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(1, 1).nOut(3)
                                                     .activation(afn).build())
@@ -203,7 +202,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                 }
 
                 MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-1, 1))
+                        .dist(new UniformDistribution(-1, 1))
                         .updater(new NoOp()).seed(12345L)
                         .list()
                         .layer(0, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(1, 1).nOut(3)
@@ -266,7 +265,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
-                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
                                         .activation(Activation.IDENTITY).build())
@@ -324,7 +323,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
-                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new ConvolutionLayer.Builder().nOut(6).kernelSize(2, 2).stride(1, 1)
                                         .activation(Activation.TANH).build())
@@ -381,7 +380,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                        .updater(new NoOp()).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .updater(new NoOp()).seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
@@ -438,7 +437,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                        .updater(new NoOp()).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .updater(new NoOp()).seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
@@ -590,7 +589,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
 
             NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
                     .seed(12345)
-                    .weightInit(WeightInit.DISTRIBUTION)
+
                     .dist(new NormalDistribution(0, 1))
                     .convolutionMode(ConvolutionMode.Same)
                     .dropOut(dropout)

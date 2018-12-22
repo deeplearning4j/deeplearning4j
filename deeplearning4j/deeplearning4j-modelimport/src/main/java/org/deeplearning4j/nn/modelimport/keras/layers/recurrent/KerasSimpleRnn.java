@@ -154,15 +154,11 @@ public class KerasSimpleRnn extends KerasLayer {
                 .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
-                .weightInit(weightInit)
-                .weightInitRecurrent(recurrentWeightInit)
+                .weightInit(weightInit.getWeightInitFunction(distribution))
+                .weightInitRecurrent(recurrentWeightInit.getWeightInitFunction(recurrentDistribution))
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization);
-        if (distribution != null)
-            builder.dist(distribution);
-        if (recurrentDistribution != null)
-            builder.dist(recurrentDistribution);
         if (biasConstraint != null)
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
