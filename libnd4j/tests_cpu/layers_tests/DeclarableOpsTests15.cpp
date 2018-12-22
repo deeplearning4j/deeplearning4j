@@ -38,6 +38,20 @@ public:
     }
 };
 
+TEST_F(DeclarableOpsTests15, Test_NormalizeMoments_1) {
+    auto d = NDArrayFactory::create<double>('c', {10, 10});
+    auto w = NDArrayFactory::create<int>(10);
+    auto x = NDArrayFactory::create<double>('c', {10});
+    auto y = NDArrayFactory::create<double>('c', {10});
+
+    auto z0 = NDArrayFactory::create<double>('c', {10});
+    auto z1 = NDArrayFactory::create<double>('c', {10});
+
+    nd4j::ops::normalize_moments op;
+    auto result = op.execute({&w, &x, &y}, {&z0, &z1}, {1e-4}, {}, {});
+    ASSERT_EQ(Status::OK(), result);
+}
+
 TEST_F(DeclarableOpsTests15, Test_Half_assign_1) {
     auto x = NDArrayFactory::create<float16>('c', {2, 5});
     int y = 1;

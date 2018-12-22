@@ -789,6 +789,9 @@ TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_float) {
 }
 
 TEST_F(JavaInteropTests, Test_Mixed_Add_1) {
+    if (!Environment::getInstance()->isExperimentalBuild())
+        return;
+
     auto arrayX = NDArrayFactory::create<int>({1, 2, 3, 4});
     auto arrayY = NDArrayFactory::create<double>({1, 2, 3, 4});
     auto arrayZ = NDArrayFactory::create<double>({0, 0, 0, 0});

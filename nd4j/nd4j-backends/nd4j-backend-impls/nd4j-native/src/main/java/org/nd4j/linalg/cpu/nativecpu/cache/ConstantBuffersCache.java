@@ -18,6 +18,8 @@ package org.nd4j.linalg.cpu.nativecpu.cache;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
+import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.cache.ArrayDescriptor;
 import org.nd4j.linalg.cache.BasicConstantHandler;
 import org.nd4j.linalg.factory.Nd4j;
@@ -56,6 +58,7 @@ public class ConstantBuffersCache extends BasicConstantHandler {
                 buffersCache.put(descriptor, buffer);
 
                 bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
+                AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;
         }
@@ -75,6 +78,7 @@ public class ConstantBuffersCache extends BasicConstantHandler {
                 buffersCache.put(descriptor, buffer);
 
                 bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
+                AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;
         }
@@ -94,6 +98,7 @@ public class ConstantBuffersCache extends BasicConstantHandler {
                 buffersCache.put(descriptor, buffer);
 
                 bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
+                AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;
         }
@@ -112,7 +117,8 @@ public class ConstantBuffersCache extends BasicConstantHandler {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
 
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
+                AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;
         }
@@ -131,7 +137,8 @@ public class ConstantBuffersCache extends BasicConstantHandler {
                 counter.incrementAndGet();
                 buffersCache.put(descriptor, buffer);
 
-                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType(dataType));
+                AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, 0, array.length * Nd4j.sizeOfDataType(dataType));
             }
             return buffer;
         }

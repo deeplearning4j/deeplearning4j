@@ -177,13 +177,13 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         }
 
         for (int j = 0; j < reliabilityDiagNumBins; j++) {
-            INDArray geqBinLower = p.gte(j * reliabilityBinSize).castTo(DataType.FLOAT);
+            INDArray geqBinLower = p.gte(j * reliabilityBinSize).castTo(Nd4j.defaultFloatingPointType());
             INDArray ltBinUpper;
             if (j == reliabilityDiagNumBins - 1) {
                 //Handle edge case
-                ltBinUpper = p.lte(1.0).castTo(DataType.FLOAT);
+                ltBinUpper = p.lte(1.0).castTo(Nd4j.defaultFloatingPointType());
             } else {
-                ltBinUpper = p.lt((j + 1) * reliabilityBinSize).castTo(DataType.FLOAT);
+                ltBinUpper = p.lt((j + 1) * reliabilityBinSize).castTo(Nd4j.defaultFloatingPointType());
             }
 
             //Calculate bit-mask over each entry - whether that entry is in the current bin or not
@@ -240,17 +240,17 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
         INDArray notLabels = Transforms.not(labels);
         for (int j = 0; j < histogramNumBins; j++) {
-            INDArray geqBinLower = labelsSubPredicted.gte(j * histogramBinSize).castTo(DataType.FLOAT);
+            INDArray geqBinLower = labelsSubPredicted.gte(j * histogramBinSize).castTo(Nd4j.defaultFloatingPointType());
             INDArray ltBinUpper;
-            INDArray geqBinLowerProbs = maskedProbs.gte(j * histogramBinSize).castTo(DataType.FLOAT);
+            INDArray geqBinLowerProbs = maskedProbs.gte(j * histogramBinSize).castTo(Nd4j.defaultFloatingPointType());
             INDArray ltBinUpperProbs;
             if (j == histogramNumBins - 1) {
                 //Handle edge case
-                ltBinUpper = labelsSubPredicted.lte(1.0).castTo(DataType.FLOAT);
-                ltBinUpperProbs = maskedProbs.lte(1.0).castTo(DataType.FLOAT);
+                ltBinUpper = labelsSubPredicted.lte(1.0).castTo(Nd4j.defaultFloatingPointType());
+                ltBinUpperProbs = maskedProbs.lte(1.0).castTo(Nd4j.defaultFloatingPointType());
             } else {
-                ltBinUpper = labelsSubPredicted.lt((j + 1) * histogramBinSize).castTo(DataType.FLOAT);
-                ltBinUpperProbs = maskedProbs.lt((j + 1) * histogramBinSize).castTo(DataType.FLOAT);
+                ltBinUpper = labelsSubPredicted.lt((j + 1) * histogramBinSize).castTo(Nd4j.defaultFloatingPointType());
+                ltBinUpperProbs = maskedProbs.lt((j + 1) * histogramBinSize).castTo(Nd4j.defaultFloatingPointType());
             }
 
             INDArray currBinBitMask = geqBinLower.muli(ltBinUpper);

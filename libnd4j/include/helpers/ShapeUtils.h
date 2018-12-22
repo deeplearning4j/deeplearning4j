@@ -119,7 +119,6 @@ namespace nd4j {
         *  possible cases: dot product (xRank=yRank=1), matrix-vector product (xRank=2, yRank=1), vector-matrix product (xRank=1, yRank=2), matrix-matrix product (xRank=yRank and rank >=2)
         */
         static std::vector<Nd4jLong> evalShapeForMatmul(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const bool transX, const bool transY);
-
         
         /**
         *  evaluate number of sub-arrays along dimensions stored in dimsToExclude

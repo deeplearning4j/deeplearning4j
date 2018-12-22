@@ -44,11 +44,11 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
-import org.nd4j.linalg.api.ops.impl.transforms.floating.SetRange;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SetRange;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
-import org.nd4j.linalg.api.ops.impl.transforms.floating.Exp;
-import org.nd4j.linalg.api.ops.impl.transforms.floating.Log;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Exp;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Log;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
@@ -800,7 +800,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testPile3() throws Exception {
         List<INDArray> arrays = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            arrays.add(Nd4j.create(1, 10, 10).assign(i));
+            arrays.add(Nd4j.create( 10, 10).assign(i));
         }
 
         INDArray pile = Nd4j.pile(arrays);
@@ -809,6 +809,17 @@ public class OpExecutionerTests extends BaseNd4jTest {
         for (int i = 0; i < 10; i++) {
             assertEquals((float) i, pile.tensorAlongDimension(i, 1, 2).getDouble(0), 0.01);
         }
+    }
+
+    @Test
+    public void testPile4() throws Exception {
+        val arrayW = Nd4j.create(1, 5);
+        val arrayX = Nd4j.create(1, 5);
+        val arrayY = Nd4j.create(1, 5);
+
+        val arrayZ = Nd4j.pile(arrayW, arrayX, arrayY);
+
+        assertArrayEquals(new long[]{3, 1, 5}, arrayZ.shape());
     }
 
     @Test

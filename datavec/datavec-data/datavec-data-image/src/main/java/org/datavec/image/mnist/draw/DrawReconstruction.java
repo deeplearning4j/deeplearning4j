@@ -66,7 +66,7 @@ public class DrawReconstruction {
     public void draw() {
         WritableRaster r = img.getRaster();
         int[] equiv = new int[(int) data.length()];
-        INDArray dataLinear = data.linearView();
+        INDArray dataLinear = data.reshape(-1);
         for (int i = 0; i < equiv.length; i++)
             equiv[i] = Math.round(dataLinear.getInt(i));
 

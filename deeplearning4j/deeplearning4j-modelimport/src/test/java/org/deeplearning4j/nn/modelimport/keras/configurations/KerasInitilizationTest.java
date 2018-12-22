@@ -65,7 +65,7 @@ public class KerasInitilizationTest {
     private String[] initializers(KerasLayerConfiguration conf) {
         return new String[]{
                 conf.getINIT_GLOROT_NORMAL(),
-                conf.getINIT_GLOROT_UNIFORM(),
+                conf.getINIT_GLOROT_UNIFORM_ALIAS(),
                 conf.getINIT_LECUN_NORMAL(),
                 conf.getINIT_LECUN_UNIFORM(),
                 conf.getINIT_RANDOM_UNIFORM(),

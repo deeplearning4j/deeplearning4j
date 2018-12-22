@@ -257,6 +257,19 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_1) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_int_1) {
+    auto x = NDArrayFactory::create<double>('c', {1, 2, 2, 1}, {1, 2, 3, 4});
+    auto blocks = NDArrayFactory::create<int>('c', {2, 1}, {2, 2});
+    auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 0, 0});
+
+    auto exp = NDArrayFactory::create<double>('c', {4, 1, 1, 1}, {1, 2, 3, 4});
+    auto z = NDArrayFactory::create<double>('c', {4, 1, 1, 1});
+
+    nd4j::ops::space_to_batch op;
+    auto result = op.execute({&x, &blocks, &paddings}, {&z}, {}, {}, {});
+    ASSERT_EQ(Status::OK(), result);
+}
+
 TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_1_1) {
     auto x = NDArrayFactory::create<double>('c', {1, 2, 2, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
     auto exp = NDArrayFactory::create<double>('c', {4, 1, 1, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});

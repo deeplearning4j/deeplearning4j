@@ -75,16 +75,20 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
 
     const Nd4jLong xLen = x->lengthOf();
     const Nd4jLong yLen = y->lengthOf();
-    
-    if(xLen == 1 && yLen == 1) {    // both are scalars
+
+    if(x->isScalar() && y->isScalar()) {    // both are scalars
         y->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx, nullptr);
         x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy, nullptr);
+        //dLdx->assign((*y) * (*dLdz));
+        //dLdy->assign((*x) * (*dLdz));
+
     }
-    else if(xLen == 1) {            // x is scalar and y is not
-        (*dLdx) = (*y * *dLdz).reduceNumber(reduce::Sum);
+    else if(x->isScalar()) {            // x is scalar and y is not
+        dLdx->assign((*y * *dLdz).reduceNumber(reduce::Sum));
         dLdz->applyScalarArr(scalar::Multiply, x, dLdy, nullptr);
+        //dLdz->applyTrueBroadcast(broadcast::Multiply, x, dLdy, true);
     }
-    else if(yLen == 1) {            // y is scalar and x is not
+    else if(y->isScalar()) {            // y is scalar and x is not
         dLdy->assign((*x * *dLdz).reduceNumber(reduce::Sum));
         dLdz->applyScalarArr(scalar::Multiply, y, dLdx);
     }    

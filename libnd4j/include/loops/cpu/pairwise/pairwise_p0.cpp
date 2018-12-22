@@ -18,7 +18,7 @@
 // Created by raver119 on 23/09/18.
 //
 
-#include "../pairwise.hpp"
+#include "loops/cpu/pairwise.hpp"
 
 namespace functions {
     namespace pairwise_transforms {

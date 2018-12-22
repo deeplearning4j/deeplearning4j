@@ -2669,5 +2669,52 @@ TEST_F(ConvolutionTests, sconv2d_bp_test2) {
     }   
 }
 
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, im2col_bp_1) {
+
+    int bS=3, iH=12,iW=12,  iC=6,oC=3,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
+    int       oH=12,oW=12;    
+
+    // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
+    NDArray input('c', {bS, iC, iH, iW}, nd4j::DataType::DOUBLE);
+    NDArray gradO('c', {bS, iC, kH, kW, oH, oW}, nd4j::DataType::DOUBLE);
+    NDArray gradI('c', {bS, iC, iH, iW}, nd4j::DataType::DOUBLE);           // output
+
+    nd4j::ops::im2col_bp op; 
+    Nd4jStatus status = op.execute({&input, &gradO}, {&gradI}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, 1}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);    
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, depthwise_conv2d_test5) {
+
+    int bS=1, iH=111,iW=111,  iC=32,mC=1,  kH=7,kW=7,  sH=2,sW=2,  pH=0,pW=0,  dH=1,dW=1;    
+    int       oC=iC*mC;
+    int       oH=56,oW=56; 
+    
+    int paddingMode = 1;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
+
+    const float unique = -1000000;
+
+    NDArray input('c', {bS, iH, iW, iC}, nd4j::DataType::FLOAT32);
+    NDArray weights('c', {kH, kW, iC, mC}, nd4j::DataType::FLOAT32);
+    NDArray output('c', {bS, oH, oW, oC}, nd4j::DataType::FLOAT32);
+    input.linspace(0.1, 0.0001);
+    weights = 0.5;
+    output = unique;
+            
+    nd4j::ops::depthwise_conv2d op;
+    Nd4jStatus status = op.execute({&input, &weights}, {&output} , {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat}, {});        
+
+    ASSERT_EQ(Status::OK(), status);    
+
+    for(Nd4jLong i=output.lengthOf()/1.5; i < output.lengthOf(); ++i)
+        ASSERT_EQ(output.e<float>(i) != unique, true);
+}
+
 #endif //LIBND4J_CONVOLUTIONTESTS_H
 
