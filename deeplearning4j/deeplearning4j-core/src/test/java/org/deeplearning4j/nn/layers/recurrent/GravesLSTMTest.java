@@ -25,7 +25,7 @@ import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,7 +35,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -103,7 +102,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn)
-                                        .nOut(lstmNHiddenUnits).weightInit(WeightInit.DISTRIBUTION)
+                                        .nOut(lstmNHiddenUnits)
                                         .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build())
                         .build();
 
@@ -154,7 +153,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
+                                        .dist(new UniformDistribution(0, 1))
                                         .activation(Activation.TANH).build())
                         .build();
 

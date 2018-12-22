@@ -19,13 +19,9 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.nd4j.util.OneTimeLogger;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -81,30 +77,30 @@ public class LayerValidation {
 
     public static void generalValidation(String layerName, Layer layer, IDropout iDropOut,
                                          Double l2, Double l2Bias, Double l1, Double l1Bias,
-                                         Distribution dist, List<LayerConstraint> allParamConstraints,
+                                         List<LayerConstraint> allParamConstraints,
                                          List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
         generalValidation(layerName, layer, iDropOut,
                         l2 == null ? Double.NaN : l2, l2Bias == null ? Double.NaN : l2Bias,
-                        l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, dist, allParamConstraints, weightConstraints, biasConstraints);
+                        l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, allParamConstraints, weightConstraints, biasConstraints);
     }
 
     public static void generalValidation(String layerName, Layer layer, IDropout iDropout,
                                          double l2, double l2Bias, double l1, double l1Bias,
-                                         Distribution dist, List<LayerConstraint> allParamConstraints,
+                                         List<LayerConstraint> allParamConstraints,
                                          List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
 
         if (layer != null) {
             if (layer instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) layer;
-                configureBaseLayer(layerName, bLayer, iDropout, l2, l2Bias, l1, l1Bias, dist);
+                configureBaseLayer(layerName, bLayer, iDropout, l2, l2Bias, l1, l1Bias);
             } else if (layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
-                configureBaseLayer(layerName, bLayer, iDropout, l2, l2Bias, l1, l1Bias, dist);
+                configureBaseLayer(layerName, bLayer, iDropout, l2, l2Bias, l1, l1Bias);
             } else if (layer instanceof Bidirectional){
                 Bidirectional l = (Bidirectional)layer;
-                generalValidation(layerName, l.getFwd(), iDropout, l2, l2Bias, l1, l1Bias, dist, allParamConstraints,
+                generalValidation(layerName, l.getFwd(), iDropout, l2, l2Bias, l1, l1Bias, allParamConstraints,
                         weightConstraints, biasConstraints);
-                generalValidation(layerName, l.getBwd(), iDropout, l2, l2Bias, l1, l1Bias, dist, allParamConstraints,
+                generalValidation(layerName, l.getBwd(), iDropout, l2, l2Bias, l1, l1Bias, allParamConstraints,
                         weightConstraints, biasConstraints);
             }
 
@@ -144,8 +140,7 @@ public class LayerValidation {
     }
 
     private static void configureBaseLayer(String layerName, BaseLayer bLayer, IDropout iDropout, Double l2, Double l2Bias,
-                                           Double l1, Double l1Bias,
-                    Distribution dist) {
+                                           Double l1, Double l1Bias) {
 
         if (!Double.isNaN(l1) && Double.isNaN(bLayer.getL1())) {
             bLayer.setL1(l1);
@@ -175,20 +170,6 @@ public class LayerValidation {
 
         if(bLayer.getIDropout() == null){
             bLayer.setIDropout(iDropout);
-        }
-
-
-        if (bLayer.getWeightInit() == WeightInit.DISTRIBUTION) {
-            if (dist != null && bLayer.getDist() == null)
-                bLayer.setDist(dist);
-            else if (dist == null && bLayer.getDist() == null) {
-                bLayer.setDist(new NormalDistribution(0, 1));
-                OneTimeLogger.warn(log, "Layer \"" + layerName
-                                + "\" distribution is automatically set to normalize distribution with mean 0 and variance 1.");
-            }
-        } else if ((dist != null || bLayer.getDist() != null)) {
-            OneTimeLogger.warn(log, "Layer \"" + layerName
-                            + "\" distribution is set but will not be applied unless weight init is set to WeighInit.DISTRIBUTION.");
         }
     }
 }

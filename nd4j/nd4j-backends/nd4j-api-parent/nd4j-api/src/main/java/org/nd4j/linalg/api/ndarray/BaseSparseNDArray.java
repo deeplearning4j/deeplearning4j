@@ -528,6 +528,17 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return null;
     }
 
+
+    @Override
+    public INDArray isInfinite() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray isNaN() {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public void setStride(long... stride) {
         throw new UnsupportedOperationException();
@@ -829,11 +840,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public INDArray cond(Condition condition) {
-        return null;
-    }
-
-    @Override
-    public INDArray condi(Condition condition) {
         return null;
     }
 

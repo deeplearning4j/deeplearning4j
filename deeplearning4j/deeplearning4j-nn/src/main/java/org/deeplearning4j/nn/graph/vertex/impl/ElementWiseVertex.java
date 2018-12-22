@@ -78,7 +78,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
         nInForwardPass = inputs.length;
         if (inputs.length == 1)
-            return inputs[0];
+            return workspaceMgr.dup(ArrayType.ACTIVATIONS, inputs[0]);
 
         switch (op) {
             case Add:
@@ -124,7 +124,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
             throw new IllegalStateException("Cannot do backward pass: errors not set");
 
         if (nInForwardPass == 1)
-            return new Pair<>(null, new INDArray[] {epsilon});
+            return new Pair<>(null, new INDArray[] {workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon)});
 
         switch (op) {
             case Add:

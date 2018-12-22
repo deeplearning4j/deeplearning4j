@@ -21,14 +21,15 @@
 #define __LRN_H_HELPERS__
 #include <op_boilerplate.h>
 #include <NDArray.h>
+#include <graph/Context.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    int lrnFunctor(NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta);
+    int lrnFunctor(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta);
 
-    int lrnFunctorEx(NDArray* input, NDArray* output, NDArray* unitScale, NDArray* scale, int depth, double bias, double alpha, double beta);
+    int lrnFunctorEx(nd4j::graph::Context& block, NDArray* input, NDArray* output, NDArray* unitScale, NDArray* scale, int depth, double bias, double alpha, double beta);
 
 }
 }

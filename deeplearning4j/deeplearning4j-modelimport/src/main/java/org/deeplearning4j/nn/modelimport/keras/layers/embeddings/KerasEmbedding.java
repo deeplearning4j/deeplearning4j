@@ -121,13 +121,11 @@ public class KerasEmbedding extends KerasLayer {
                 .inferInputLength(inferInputLength)
                 .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout).activation(Activation.IDENTITY)
-                .weightInit(weightInit)
+                .weightInit(weightInit.getWeightInitFunction(distribution))
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization)
                 .hasBias(false);
-        if (distribution != null)
-            builder.dist(distribution);
         if (embeddingConstraint != null)
             builder.constrainWeights(embeddingConstraint);
         this.layer = builder.build();

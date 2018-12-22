@@ -31,7 +31,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Absolute sum the components
+ * Match condition transform
  *
  * @author raver119@gmail.com
  */

@@ -16,20 +16,19 @@
 
 package org.deeplearning4j.nn.layers.ocnn;
 
-import static  org.nd4j.linalg.indexing.NDArrayIndex.*;
-
 import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
+
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
+import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 /**
  * Param initializer for {@link OCNNOutputLayer}
@@ -160,12 +159,12 @@ public class OCNNParamInitializer extends DefaultParamInitializer {
                                           boolean initializeParameters) {
 
         org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = ( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) configuration.getLayer();
-        WeightInit weightInit = ocnnOutputLayer.getWeightInit();
-        Distribution dist = Distributions.createDistribution(ocnnOutputLayer.getDist());
+        IWeightInit weightInit = ocnnOutputLayer.getWeightInitFn();
         if (initializeParameters) {
-            INDArray ret = WeightInitUtil.initWeights(weightParamView.size(0), //Fan in
+            INDArray ret = weightInit.init(weightParamView.size(0), //Fan in
                     weightParamView.size(1), //Fan out
-                    weightParamView.shape(), weightInit, dist, weightParamView);
+                    weightParamView.shape(),
+                    IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, weightParamView);
             return ret;
         } else {
             return WeightInitUtil.reshapeWeights(weightParamView.shape(), weightParamView);
