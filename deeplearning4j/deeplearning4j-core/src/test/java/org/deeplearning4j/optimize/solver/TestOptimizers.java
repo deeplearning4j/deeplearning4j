@@ -40,6 +40,7 @@ import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Cos;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Sin;
@@ -521,7 +522,7 @@ public class TestOptimizers extends BaseDL4JTest {
                 }
             });
 
-            int nExceeds512 = paramExceeds512.sum(Integer.MAX_VALUE).getInt(0);
+            int nExceeds512 = paramExceeds512.castTo(DataType.DOUBLE).sum(Integer.MAX_VALUE).getInt(0);
             if (nExceeds512 > 0)
                 this.score = Double.POSITIVE_INFINITY;
 
@@ -719,7 +720,7 @@ public class TestOptimizers extends BaseDL4JTest {
                 }
             });
 
-            int nExceeds5 = paramExceeds5.sum(Integer.MAX_VALUE).getInt(0);
+            int nExceeds5 = paramExceeds5.castTo(DataType.DOUBLE).sum(Integer.MAX_VALUE).getInt(0);
             if (nExceeds5 > 0)
                 this.score = Double.POSITIVE_INFINITY;
             else {
