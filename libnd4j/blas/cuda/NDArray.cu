@@ -466,30 +466,6 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             throw std::runtime_error("NDArray::setValueInDiagMatrix: you can't use this method on String array!");
         if(rankOf() != 2)
            throw std::string("NDArray::setValueInDiagMatrix method: array must have rank = 2, but got " + toStringValue(rankOf()) + " instead !");
-
-        const auto rows = sizeAt(0);
-        const auto cols = sizeAt(1);
-
-        switch(direction) {
-
-            case 'u':                           // fill upper triangular block
-#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
-                for(Nd4jLong i = 0; i < rows; ++i)
-                    for(Nd4jLong j = 0; j < cols; ++j)
-                        if (i + diag <= j)
-                            p<T>(i, j, value);
-                break;
-
-            case 'l':                           // fill lower triangular block
-#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
-                for(Nd4jLong i = 0; i < rows; ++i)
-                    for(Nd4jLong j = 0; j < cols; ++j)
-                        if (i + diag >= j)
-                            p<T>(i, j, value);
-                break;
-            default:
-                throw std::string("NDArray::setValueInDiagMatrix method: wrong value of direction argument, expected is 'u' or 'l', but got " + std::string(1,direction) + " instead !");
-        }
     }
     template void NDArray::setValueInDiagMatrix(const double& value, const int diag, const char direction);
     template void NDArray::setValueInDiagMatrix(const float& value, const int diag, const char direction);
