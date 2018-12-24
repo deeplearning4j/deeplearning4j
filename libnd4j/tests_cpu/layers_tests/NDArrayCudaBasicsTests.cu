@@ -72,10 +72,10 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_1) {
     auto res = cudaStreamSynchronize(*stream);
     ASSERT_EQ(0, res);
 
-    //cudaMemcpyAsync(z.buffer(), devBufferPtrZ, z.lengthOf() * x.sizeOfT(), cudaMemcpyDeviceToHost, *stream);
+    cudaMemcpy(z.buffer(), z.specialBuffer(), z.lengthOf() * z.sizeOfT(), cudaMemcpyDeviceToHost);
     res = cudaStreamSynchronize(*stream);
     ASSERT_EQ(0, res);
-
+    z.printBuffer("Result out");
     //cudaFree(devBufferPtrX);
     //cudaFree(devBufferPtrZ);
     //cudaFree(devShapePtrX);
