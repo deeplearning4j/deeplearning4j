@@ -307,7 +307,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             ((Variance) op).isBiasCorrected());
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
-                    op.setFinalResult(op.z().getDouble(0));
                 } else {
                     nativeOps.execSummaryStats(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
@@ -350,8 +349,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.y(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context),
                             null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context));
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
-
-                    op.setFinalResult(op.z().getDouble(0));
                 } else {
                     nativeOps.execReduce3(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
@@ -398,7 +395,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     }
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
-                    op.setFinalResult(op.z().getDouble(0));
                 } else {
                     switch (op.getOpType()) {
                         case REDUCE_FLOAT:
@@ -627,7 +623,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public Op exec(Op op) {
+    public INDArray exec(Op op) {
         checkForCompression(op);
 
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpreted as vectors)
@@ -663,17 +659,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             IndexAccumulation indexAccumulation = (IndexAccumulation) op;
             invoke(indexAccumulation, null);
         }
-        return op;
+
+        return op.z();
     }
 
 
 
     @Override
-    public INDArray execAndReturn(TransformOp op) {
+    public TransformOp execAndReturn(TransformOp op) {
         checkForCompression(op);
-
         invoke(op);
-        return op.z();
+        return op;
     }
 
 
@@ -833,8 +829,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo);
 
             AtomicAllocator.getInstance().registerAction(context, null, op.x(), op.y());
-
-            op.setFinalResult(op.z().getInt(0));
         } else {
             Arrays.sort(dimension);
 
@@ -932,9 +926,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape)) {
-            if (op.x().isScalar()) {
-                op.setFinalResult(op.x().getDouble(0));
-            }
             return null;
         }
 
@@ -984,8 +975,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
                             ((Variance) op).isBiasCorrected());
                 AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
-
-                op.setFinalResult(op.z().getDouble(0));
             } else if (op.y() != null) {
                 Pointer y = AtomicAllocator.getInstance().getPointer(op.y(), context);
                 Pointer yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
@@ -996,8 +985,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo);
 
                 AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
-
-                op.setFinalResult(op.z().getDouble(0));
             } else {
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
@@ -1029,8 +1016,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 }
 
                 AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
-
-                op.setFinalResult(op.z().getDouble(0));
             }
         } else {
             Pointer dimensionPointer = AtomicAllocator.getInstance()
@@ -2231,7 +2216,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
      * PLEASE NOTE: right now this operations are executing on CPU
      * @param op
      */
-    public void exec(CustomOp op) {
+    @Override
+    public INDArray[] exec(CustomOp op) {
 
         Nd4j.getExecutioner().commit();
 
@@ -2298,7 +2284,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             Nd4j.getExecutioner().commit();
 
-            return;
+            return op.outputArguments();
         } else if (op.opName().equalsIgnoreCase("col2im")) {
             val dtype = Nd4j.dataType();
 
@@ -2345,7 +2331,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             AtomicAllocator.getInstance().getFlowController().registerAction(context, zArr, xArr);
 
             //Nd4j.getExecutioner().commit();
-            return;
+            return op.outputArguments();
         } else if (op.opName().equalsIgnoreCase("pooling2d")) {
             val dtype = Nd4j.dataType();
 
@@ -2392,9 +2378,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             // AtomicAllocator.getInstance().getAllocationPoint(zArr).tickDeviceWrite();
             AtomicAllocator.getInstance().getFlowController().registerAction(context, zArr, xArr);
 
-            //Nd4j.getExecutioner().commit();
-
-            return;
+            return op.outputArguments();
         }
 
         Nd4j.getExecutioner().commit();
@@ -2484,6 +2468,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         //AtomicAllocator.getInstance().getFlowController().prepareActionAllWrite(op.outputArguments());
 
         profilingHookOut(op, st);
+        return op.outputArguments();
     }
 
     @Override

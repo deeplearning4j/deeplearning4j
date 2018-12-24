@@ -110,7 +110,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      * @return
      */
     @Override
-    public Op exec(Op op) {
+    public INDArray exec(Op op) {
         /*
             We pass this op to GridProcessor through check for possible MetaOp concatenation
             Also, it's the GriOp entry point
@@ -136,7 +136,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             pushToGrid(new OpDescriptor(op));
         }
 
-        return op;
+        return op.z();
     }
 
 
@@ -606,11 +606,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         if(op.z() == null || op.z() == op.x()){
             INDArray ret = null;
-            if (Math.abs(op.zeroDouble()) < Nd4j.EPS_THRESHOLD) {
-                ret = Nd4j.zeros(retShape);
-            } else {
-                ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-            }
+            ret = Nd4j.createUninitialized(retShape);
+
 
             op.setZ(ret);
         } else if(!Arrays.equals(retShape, op.z().shape())){
@@ -657,11 +654,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
                 ret = Nd4j.create(xT, yT);
             } else {
-                if (Math.abs(op.zeroDouble()) < Nd4j.EPS_THRESHOLD) {
                     ret = Nd4j.zeros(retShape);
-                } else {
-                    ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-                }
             }
 
             op.setZ(ret);
