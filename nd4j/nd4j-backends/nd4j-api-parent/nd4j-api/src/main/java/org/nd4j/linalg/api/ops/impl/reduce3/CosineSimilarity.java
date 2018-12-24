@@ -63,6 +63,10 @@ public class CosineSimilarity extends BaseReduceFloatOp {
         this(x, y, null, dimensions);
     }
 
+    public CosineSimilarity(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, null);
+    }
+
     public CosineSimilarity(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimension) {
         this(x, y, z, dimension);
         this.isComplex = allDistances;

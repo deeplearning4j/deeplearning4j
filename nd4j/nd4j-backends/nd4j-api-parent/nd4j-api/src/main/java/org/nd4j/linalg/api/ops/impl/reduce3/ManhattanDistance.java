@@ -56,6 +56,10 @@ public class ManhattanDistance extends BaseReduceFloatOp {
         this.isComplex = allDistances;
     }
 
+    public ManhattanDistance(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, false, null);
+    }
+
     public ManhattanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
         this(x, y, z, true, false, dimensions);
         this.isComplex = allDistances;

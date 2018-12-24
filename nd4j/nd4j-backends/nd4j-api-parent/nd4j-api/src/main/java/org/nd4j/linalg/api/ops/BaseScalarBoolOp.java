@@ -153,7 +153,7 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
 
     @Override
     public void setDimension(int... dimension) {
-        this.dimensions = dimension;
+        defineDimensions(dimension);
     }
 
     @Override

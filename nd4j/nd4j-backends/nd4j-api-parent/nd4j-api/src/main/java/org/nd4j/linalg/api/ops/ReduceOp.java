@@ -95,4 +95,6 @@ public interface ReduceOp extends Op {
     boolean validateDataTypes();
 
     Number getFinalResult();
+
+    void setDimensions(int... dimensions);
 }

@@ -57,6 +57,10 @@ public class HammingDistance extends BaseReduceFloatOp {
         this(x, y, null, allDistances, dimensions);
     }
 
+    public HammingDistance(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, false, null);
+    }
+
     public HammingDistance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
         super(x, y, z, newFormat, keepDims, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};

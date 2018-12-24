@@ -253,4 +253,9 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     public boolean isComplexAccumulation() {
         return isComplex;
     }
+
+    @Override
+    public void setDimensions(int... dimensions) {
+        defineDimensions(dimensions);
+    }
 }

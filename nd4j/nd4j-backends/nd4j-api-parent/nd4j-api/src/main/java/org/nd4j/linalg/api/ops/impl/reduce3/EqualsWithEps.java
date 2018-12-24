@@ -56,6 +56,9 @@ public class EqualsWithEps extends BaseReduceFloatOp {
         this(x, y, null, eps, dimensions);
     }
 
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, Nd4j.EPS_THRESHOLD, null);
+    }
 
     @Override
     public int opNum() {

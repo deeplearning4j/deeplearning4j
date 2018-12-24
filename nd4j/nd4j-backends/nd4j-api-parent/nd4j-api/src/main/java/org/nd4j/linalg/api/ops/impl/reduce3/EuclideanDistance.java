@@ -52,6 +52,10 @@ public class EuclideanDistance extends BaseReduceFloatOp {
         this(x, y, null, dimensions);
     }
 
+    public EuclideanDistance(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, null);
+    }
+
     public EuclideanDistance(INDArray x, INDArray y, INDArray z, int... dimensions) {
         super(x, y, z,dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};

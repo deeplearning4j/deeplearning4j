@@ -53,6 +53,10 @@ public class JaccardDistance extends BaseReduceFloatOp {
         this.isComplex = allDistances;
     }
 
+    public JaccardDistance(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, false, null);
+    }
+
     public JaccardDistance(INDArray x, INDArray y, boolean allDistances) {
         this(x, y);
         this.isComplex = allDistances;

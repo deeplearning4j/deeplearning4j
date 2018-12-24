@@ -502,8 +502,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray expected = Nd4j.repeat(Nd4j.scalar(DataType.DOUBLE, 2).reshape(1, 1), 2).reshape(2, 1);
 
         val accum = Nd4j.getOpFactory().createAccum("euclidean", values, values2);
+        accum.setDimensions(1);
 
-        INDArray results = null; //Nd4j.getExecutioner().exec(accum, 1);
+        INDArray results = Nd4j.getExecutioner().exec(accum);
         assertEquals(expected, results);
 
     }

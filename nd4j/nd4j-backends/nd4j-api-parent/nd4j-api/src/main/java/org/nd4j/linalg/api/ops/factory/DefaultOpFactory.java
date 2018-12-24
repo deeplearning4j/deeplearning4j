@@ -115,7 +115,7 @@ public class DefaultOpFactory implements OpFactory {
                 break;
             default:
                 try {
-                    ret = (ReduceOp)  DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getConstructor(INDArray.class, INDArray.class, INDArray.class, long.class).newInstance(x, y, z, x.length());
+                    ret = (ReduceOp)  DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getConstructor(INDArray.class, INDArray.class, INDArray.class).newInstance(x, y, z);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -187,7 +187,7 @@ public class DefaultOpFactory implements OpFactory {
 
     @Override
     public ReduceOp createAccum(String name, INDArray x, INDArray y) {
-        return createAccum(name,x,y,x,null);
+        return createAccum(name,x,y, null,null);
     }
 
     /**
