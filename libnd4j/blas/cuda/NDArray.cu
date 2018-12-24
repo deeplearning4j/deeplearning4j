@@ -496,7 +496,10 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         if (_isShapeAlloc  && _context->getWorkspace() == nullptr && _shapeInfo != nullptr)
             delete[] _shapeInfo;
-
+        if (_shapeInfoD)
+            cudaFree(_shapeInfoD);
+        if (_bufferD)
+            cudaFree(_bufferD);
     }
 
 

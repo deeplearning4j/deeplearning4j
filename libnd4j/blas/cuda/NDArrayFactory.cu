@@ -337,11 +337,12 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
     template <typename T>
     NDArray* NDArrayFactory::linspace(const T from, const T to, const Nd4jLong numElements) {
         auto result = NDArrayFactory::vector<T>(numElements);
-
+//TO DO: linspace should be executed on DEVICE, but only CPU version implemnted!
         for (Nd4jLong e = 0; e < numElements; e++) {
             T step = (T) e / ((T) numElements - (T) 1);
             reinterpret_cast<T *>(result->getBuffer())[e] = (from * ((T) 1 - step) + step * to);            
         }
+        cudaMemcpy(result.spcialBuffer(), result.buffer(), numElements * sizeof(T), cudaMemcpyHostToDevice);
         return result;
     }
     template NDArray* NDArrayFactory::linspace(const double from, const double to, const Nd4jLong numElements);
