@@ -164,10 +164,12 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
 
     private void init() {
-        if (z == null || x == z)
-            init(x, y, x, x.lengthLong());
-        else
-            init(x, y, z, x.lengthLong());
+        /*
+            if (z == null || x == z)
+                init(x, y, x, x.lengthLong());
+            else
+                init(x, y, z, x.lengthLong());
+        */
     }
 
     @Override

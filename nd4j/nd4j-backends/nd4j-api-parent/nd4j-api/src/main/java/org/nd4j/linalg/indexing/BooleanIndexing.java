@@ -421,7 +421,7 @@ public class BooleanIndexing {
 
         LastIndex idx = new LastIndex(array, condition);
         Nd4j.getExecutioner().exec(idx);
-        return Nd4j.scalar((double) idx.getFinalResult());
+        return Nd4j.scalar(DataType.LONG, idx.getFinalResult().longValue());
     }
 
     /**

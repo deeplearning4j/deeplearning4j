@@ -984,17 +984,17 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
             System.out.println("\n\nOrder: " + order);
             System.out.println("Euclidean:");
-            System.out.println(Arrays.toString(out.getRow(0).dup().data().asDouble()));
-            System.out.println(Arrays.toString(out.getRow(1).dup().data().asDouble()));
+            //System.out.println(Arrays.toString(out.getRow(0).dup().data().asDouble()));
+            //System.out.println(Arrays.toString(out.getRow(1).dup().data().asDouble()));
 
-            assertEquals(out.getRow(0), out.getRow(1));
+            assertEquals(out.getDouble(0), out.getDouble(1), 1e-5);
 
             System.out.println("Manhattan:");
-            System.out.println(Arrays.toString(outManhattan.getRow(0).dup().data().asDouble()));
-            System.out.println(Arrays.toString(outManhattan.getRow(1).dup().data().asDouble()));
+            //System.out.println(Arrays.toString(outManhattan.getRow(0).dup().data().asDouble()));
+            //System.out.println(Arrays.toString(outManhattan.getRow(1).dup().data().asDouble()));
 
-            assertEquals(expManhattanDistance, outManhattan.getRow(0).getDouble(0), 1e-5);
-            assertEquals(expectedEuclidean, out.getRow(0).getDouble(0), 1e-5);
+            assertEquals(expManhattanDistance, outManhattan.getDouble(0), 1e-5);
+            assertEquals(expectedEuclidean, out.getDouble(0), 1e-5);
         }
 
         DataTypeUtil.setDTypeForContext(initialType);

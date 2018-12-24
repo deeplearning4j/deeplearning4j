@@ -572,7 +572,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
 
         arr.muli(-1);
         imax = new IMax(arr);
-        int maxIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imax)).getFinalResult().intValue();
+        int maxIdx = Nd4j.getExecutioner().execAndReturn(imax).getFinalResult().intValue();
         assertEquals(0, maxIdx);
     }
 

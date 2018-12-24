@@ -230,6 +230,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(ReduceOp op) {
         Preconditions.checkNotNull(op.x(), "Op.x() cannot be null: Was null for op %s", op);
+        op.validateDataTypes();
         val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
 
         //validateDataType(Nd4j.dataType(), op);
@@ -1982,7 +1983,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
     private static long[] reductionShape(INDArray x, int[] dimension, boolean newFormat, boolean keepDims){
-        boolean wholeArray = Shape.wholeArrayDimension(dimension);
+        boolean wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == x.rank();
         long[] retShape;
         if(!newFormat) {
             retShape = wholeArray ? new long[] {1, 1} : ArrayUtil.removeIndex(x.shape(), dimension);
