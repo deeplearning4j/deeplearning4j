@@ -490,7 +490,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
         arr.muli(-1);
         imax = new IMax(arr);
-        int maxIdx = ((IndexAccumulation) Nd4j.getExecutioner().execAndReturn(imax)).getFinalResult();
+        int maxIdx = ((IndexAccumulation) Nd4j.getExecutioner().execAndReturn(imax)).getFinalResult().intValue();
         assertEquals(0, maxIdx);
     }
 
@@ -502,7 +502,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
         arr.muli(-1);
         imin = new IMin(arr);
-        int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().execAndReturn(imin)).getFinalResult();
+        int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().execAndReturn(imin)).getFinalResult().intValue();
         assertEquals(9, minIdx);
     }
 
@@ -637,7 +637,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testLogSoftmaxVector() {
         INDArray temp = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0});
-        INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(temp.dup()));
+        INDArray logsoftmax = Nd4j.getExecutioner().exec(new LogSoftMax(temp.dup()));
         INDArray assertion = Nd4j.create(new double[] {-3.4401898, -2.4401898, -1.4401897, -0.44018975});
         assertEquals(assertion, logsoftmax);
 

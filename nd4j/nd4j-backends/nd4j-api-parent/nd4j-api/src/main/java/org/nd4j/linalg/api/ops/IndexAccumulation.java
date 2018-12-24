@@ -63,4 +63,6 @@ public interface IndexAccumulation extends Op {
      * @return
      */
     INDArray dimensions();
+
+    Number getFinalResult();
 }

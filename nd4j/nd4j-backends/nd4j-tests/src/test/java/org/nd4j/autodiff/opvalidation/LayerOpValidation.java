@@ -453,7 +453,7 @@ public class LayerOpValidation extends BaseOpValidation {
         assertEquals(1, outSizesBP.size());
         assertArrayEquals(inSize, outSizesBP.get(0).getShape());
 
-        Nd4j.getExecutioner().exec(avg2dDeriv);
+        Nd4j.getExecutioner().execAndReturn(avg2dDeriv);
     }
 
 

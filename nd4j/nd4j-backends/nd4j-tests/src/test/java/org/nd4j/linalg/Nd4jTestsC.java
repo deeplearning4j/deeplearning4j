@@ -249,7 +249,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testIsMaxVectorCase() {
         INDArray arr = Nd4j.create(new double[] {1, 2, 4, 3}, new long[] {2, 2});
         INDArray assertion = Nd4j.create(new boolean[] {false, false, true, false}, new long[] {2, 2}, DataType.BOOL);
-        INDArray test = Nd4j.getExecutioner().exec(new IsMax(arr)).z();
+        INDArray test = Nd4j.getExecutioner().exec(new IsMax(arr));
         assertEquals(assertion, test);
     }
 
@@ -429,7 +429,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
           .build();
 
         DynamicCustomOp op = new Mmul(arr, arr, z, mMulTranspose);
-        Nd4j.getExecutioner().exec(op);
+        Nd4j.getExecutioner().execAndReturn(op);
         
         assertEquals(getFailureMessage(), assertion, z);
     }
@@ -768,8 +768,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray exp2d = Nd4j.create(new boolean[][] {{false, false, false}, {false, true, false}});
 
         INDArray f = arr2d.dup('f');
-        INDArray out2dc = Nd4j.getExecutioner().execAndReturn(new IsMax(arr2d.dup('c')));
-        INDArray out2df = Nd4j.getExecutioner().execAndReturn(new IsMax(arr2d.dup('f')));
+        INDArray out2dc = Nd4j.getExecutioner().exec(new IsMax(arr2d.dup('c')));
+        INDArray out2df = Nd4j.getExecutioner().exec(new IsMax(arr2d.dup('f')));
         assertEquals(exp2d, out2dc);
         assertEquals(exp2d, out2df);
     }
@@ -839,8 +839,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         //1d: row vector
         INDArray orig = Nd4j.create(new double[] {1, 2, 3, 1}).reshape(1,4 );
 
-        INDArray alongDim0 = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup(), Nd4j.createUninitialized(DataType.BOOL, orig.shape()), 0));
-        INDArray alongDim1 = Nd4j.getExecutioner().execAndReturn(new IsMax(orig.dup(), Nd4j.createUninitialized(DataType.BOOL, orig.shape()), 1));
+        INDArray alongDim0 = Nd4j.getExecutioner().exec(new IsMax(orig.dup(), Nd4j.createUninitialized(DataType.BOOL, orig.shape()), 0));
+        INDArray alongDim1 = Nd4j.getExecutioner().exec(new IsMax(orig.dup(), Nd4j.createUninitialized(DataType.BOOL, orig.shape()), 1));
 
         INDArray expAlong0 = Nd4j.create(new boolean[]{true, true, true, true});
         INDArray expAlong1 = Nd4j.create(new boolean[] {false, false, true, false});
@@ -852,8 +852,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         //1d: col vector
         System.out.println("----------------------------------");
         INDArray col = Nd4j.create(new double[] {1, 2, 3, 1}, new long[] {4, 1});
-        INDArray alongDim0col = Nd4j.getExecutioner().execAndReturn(new IsMax(col.dup(), Nd4j.createUninitialized(DataType.BOOL, col.shape()), 0));
-        INDArray alongDim1col = Nd4j.getExecutioner().execAndReturn(new IsMax(col.dup(), Nd4j.createUninitialized(DataType.BOOL, col.shape()),1));
+        INDArray alongDim0col = Nd4j.getExecutioner().exec(new IsMax(col.dup(), Nd4j.createUninitialized(DataType.BOOL, col.shape()), 0));
+        INDArray alongDim1col = Nd4j.getExecutioner().exec(new IsMax(col.dup(), Nd4j.createUninitialized(DataType.BOOL, col.shape()),1));
 
         INDArray expAlong0col = Nd4j.create(new boolean[] {false, false, true, false});
         INDArray expAlong1col = Nd4j.create(new boolean[] {true, true, true, true});
@@ -888,10 +888,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
         //[0 1 0]
         System.out.println("---------------------");
         INDArray orig2d = Nd4j.create(new double[][] {{1, 0, 2}, {2, 3, 1}});
-        INDArray alongDim0c_2d = Nd4j.getExecutioner().execAndReturn(new IsMax(orig2d.dup('c'), Nd4j.createUninitialized(DataType.BOOL, orig2d.shape()), 0));
-        INDArray alongDim0f_2d = Nd4j.getExecutioner().execAndReturn(new IsMax(orig2d.dup('f'), Nd4j.createUninitialized(DataType.BOOL, orig2d.shape(), 'f'), 0));
-        INDArray alongDim1c_2d = Nd4j.getExecutioner().execAndReturn(new IsMax(orig2d.dup('c'), Nd4j.createUninitialized(DataType.BOOL, orig2d.shape()), 1));
-        INDArray alongDim1f_2d = Nd4j.getExecutioner().execAndReturn(new IsMax(orig2d.dup('f'), Nd4j.createUninitialized(DataType.BOOL, orig2d.shape(), 'f'), 1));
+        INDArray alongDim0c_2d = Nd4j.getExecutioner().exec(new IsMax(orig2d.dup('c'), Nd4j.createUninitialized(DataType.BOOL, orig2d.shape()), 0));
+        INDArray alongDim0f_2d = Nd4j.getExecutioner().exec(new IsMax(orig2d.dup('f'), Nd4j.createUninitialized(DataType.BOOL, orig2d.shape(), 'f'), 0));
+        INDArray alongDim1c_2d = Nd4j.getExecutioner().exec(new IsMax(orig2d.dup('c'), Nd4j.createUninitialized(DataType.BOOL, orig2d.shape()), 1));
+        INDArray alongDim1f_2d = Nd4j.getExecutioner().exec(new IsMax(orig2d.dup('f'), Nd4j.createUninitialized(DataType.BOOL, orig2d.shape(), 'f'), 1));
 
         INDArray expAlong0_2d = Nd4j.create(new boolean[][] {{false, false, true}, {true, true, false}});
         INDArray expAlong1_2d = Nd4j.create(new boolean[][] {{false, false, true}, {false, true, false}});
@@ -915,7 +915,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testIsMaxSingleDim1() {
         INDArray orig2d = Nd4j.create(new double[][] {{1, 0, 2}, {2, 3, 1}});
-        INDArray alongDim0c_2d = Nd4j.getExecutioner().execAndReturn(new IsMax(orig2d.dup('c'), Nd4j.createUninitialized(DataType.BOOL, orig2d.shape()), 0));
+        INDArray alongDim0c_2d = Nd4j.getExecutioner().exec(new IsMax(orig2d.dup('c'), Nd4j.createUninitialized(DataType.BOOL, orig2d.shape()), 0));
         INDArray expAlong0_2d = Nd4j.create(new boolean[][] {{false, false, true}, {true, true, false}});
 
         System.out.println("Original shapeInfo: " + orig2d.dup('c').shapeInfoDataBuffer());
@@ -995,8 +995,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray first = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         INDArray second = Nd4j.linspace(20, 30, 10, DataType.DOUBLE);
 
-        INDArray expAllZeros = Nd4j.getExecutioner().execAndReturn(new Eps(first, second, Nd4j.create(DataType.BOOL, 10), 10));
-        INDArray expAllOnes = Nd4j.getExecutioner().execAndReturn(new Eps(first, first, Nd4j.create(DataType.BOOL, 10), 10));
+        INDArray expAllZeros = Nd4j.getExecutioner().exec(new Eps(first, second, Nd4j.create(DataType.BOOL, 10), 10));
+        INDArray expAllOnes = Nd4j.getExecutioner().exec(new Eps(first, first, Nd4j.create(DataType.BOOL, 10), 10));
 
         System.out.println(expAllZeros);
         System.out.println(expAllOnes);
@@ -1082,8 +1082,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
                         + Arrays.toString(shape) + ")");
                 INDArray arrC = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', shape);
                 INDArray arrF = arrC.dup('f');
-                val resC = Nd4j.getExecutioner().execAndReturn(new IsMax(arrC, alongDimension));
-                val resF = Nd4j.getExecutioner().execAndReturn(new IsMax(arrF, alongDimension));
+                val resC = Nd4j.getExecutioner().exec(new IsMax(arrC, alongDimension));
+                val resF = Nd4j.getExecutioner().exec(new IsMax(arrF, alongDimension));
 
 
                 double[] cBuffer = resC.data().asDouble();
@@ -2116,10 +2116,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray first = Nd4j.valueArrayOf(10, 1e-2); //0.01
         INDArray second = Nd4j.zeros(10); //0.0
 
-        INDArray expAllZeros1 = Nd4j.getExecutioner()
-                .execAndReturn(new Eps(first, second, Nd4j.create(DataType.BOOL, new long[] {1, 10}, 'f'), 10));
-        INDArray expAllZeros2 = Nd4j.getExecutioner()
-                .execAndReturn(new Eps(second, first, Nd4j.create(DataType.BOOL, new long[] {1, 10}, 'f'), 10));
+        INDArray expAllZeros1 = Nd4j.getExecutioner().exec(new Eps(first, second, Nd4j.create(DataType.BOOL, new long[] {1, 10}, 'f'), 10));
+        INDArray expAllZeros2 = Nd4j.getExecutioner().exec(new Eps(second, first, Nd4j.create(DataType.BOOL, new long[] {1, 10}, 'f'), 10));
 
         System.out.println(expAllZeros1);
         System.out.println(expAllZeros2);
@@ -2725,7 +2723,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
                         -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1.,},
                 new long[] {2, 16});
 
-        INDArray actual = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(num, denom, num.dup(), -1));
+        INDArray actual = Nd4j.getExecutioner().exec(new BroadcastDivOp(num, denom, num.dup(), -1));
         assertEquals(expected, actual);
     }
 
@@ -2740,7 +2738,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray expected = Nd4j.create(new double[] {1, 4, 9, 16, 25, 36, 49, 64, -1, -4, -9, -16, -25, -36, -49, -64},
                 new long[] {2, 8});
 
-        INDArray actual = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(num, denom, num.dup(), -1));
+        INDArray actual = Nd4j.getExecutioner().exec(new BroadcastMulOp(num, denom, num.dup(), -1));
         assertEquals(expected, actual);
     }
 
@@ -2754,7 +2752,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray expected = Nd4j.create(new double[] {0, 0, 0, 0, 0, 0, 0, 0, -2, -4, -6, -8, -10, -12, -14, -16},
                 new long[] {2, 8});
 
-        INDArray actual = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(num, denom, num.dup(), -1));
+        INDArray actual = Nd4j.getExecutioner().exec(new BroadcastSubOp(num, denom, num.dup(), -1));
         assertEquals(expected, actual);
     }
 
@@ -2768,7 +2766,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray expected = Nd4j.create(new double[] {2, 4, 6, 8, 10, 12, 14, 16, 0, 0, 0, 0, 0, 0, 0, 0,},
                 new long[] {2, 8});
         INDArray dup = num.dup();
-        INDArray actual = Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(num, denom, dup, -1));
+        INDArray actual = Nd4j.getExecutioner().exec(new BroadcastAddOp(num, denom, dup, -1));
         assertEquals(expected, actual);
     }
 
@@ -3143,7 +3141,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             expected[i] = (in <= 0.0 ? 0.01 * in : in);
         }
 
-        INDArray out = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(arr, 0.01));
+        INDArray out = Nd4j.getExecutioner().exec(new LeakyReLU(arr, 0.01));
 
         INDArray exp = Nd4j.create(expected);
         assertEquals(exp, out);
@@ -3167,7 +3165,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             expected[i] = (in <= 0.0 ? 0.01 * in : in);
         }
 
-        INDArray out = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(arr, 0.01));
+        INDArray out = Nd4j.getExecutioner().exec(new LeakyReLU(arr, 0.01));
 
         System.out.println("Expected: " + Arrays.toString(expected));
         System.out.println("Actual:   " + Arrays.toString(out.data().asDouble()));
@@ -3725,8 +3723,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray abs = Transforms.abs(arr);
         IAMin iaMin = new IAMin(abs);
         IMin iMin = new IMin(arr.dup());
-        double imin = Nd4j.getExecutioner().execAndReturn(iMin).getFinalResult();
-        double iamin = Nd4j.getExecutioner().execAndReturn(iaMin).getFinalResult();
+        double imin = Nd4j.getExecutioner().execAndReturn(iMin).getFinalResult().doubleValue();
+        double iamin = Nd4j.getExecutioner().execAndReturn(iaMin).getFinalResult().doubleValue();
         System.out.println("IMin: " + imin);
         System.out.println("IAMin: " + iamin);
         assertEquals(3, iamin, 1e-12);
@@ -3962,8 +3960,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
             }
         }
 
-        INDArray actC = Nd4j.getExecutioner().execAndReturn(new IsMax(arr.dup('c'), Nd4j.createUninitialized(DataType.BOOL, arr.shape()),0, 1));
-        INDArray actF = Nd4j.getExecutioner().execAndReturn(new IsMax(arr.dup('f'), Nd4j.createUninitialized(DataType.BOOL, arr.shape(), 'f'), 0, 1));
+        INDArray actC = Nd4j.getExecutioner().exec(new IsMax(arr.dup('c'), Nd4j.createUninitialized(DataType.BOOL, arr.shape()),0, 1));
+        INDArray actF = Nd4j.getExecutioner().exec(new IsMax(arr.dup('f'), Nd4j.createUninitialized(DataType.BOOL, arr.shape(), 'f'), 0, 1));
 
         assertEquals(exp, actC);
         assertEquals(exp, actF);
@@ -3997,8 +3995,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
             }
         }
 
-        actC = Nd4j.getExecutioner().execAndReturn(new IsMax(arr.dup('c'), 2, 3));
-        actF = Nd4j.getExecutioner().execAndReturn(new IsMax(arr.dup('f'), 2, 3));
+        actC = Nd4j.getExecutioner().exec(new IsMax(arr.dup('c'), 2, 3));
+        actF = Nd4j.getExecutioner().exec(new IsMax(arr.dup('f'), 2, 3));
 
         assertEquals(exp, actC);
         assertEquals(exp, actF);
@@ -5182,7 +5180,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray array = Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
         INDArray exp = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
 
-        INDArray rev = Nd4j.getExecutioner().exec(new OldReverse(array, Nd4j.createUninitialized(array.length()))).z();
+        INDArray rev = Nd4j.getExecutioner().exec(new OldReverse(array, Nd4j.createUninitialized(array.length())));
 
         assertEquals(exp, rev);
     }
@@ -5192,7 +5190,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray array = Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
         INDArray exp = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
 
-        INDArray rev = Nd4j.getExecutioner().exec(new OldReverse(array, Nd4j.createUninitialized(array.length()))).z();
+        INDArray rev = Nd4j.getExecutioner().exec(new OldReverse(array, Nd4j.createUninitialized(array.length())));
 
         assertEquals(exp, rev);
     }
@@ -6042,7 +6040,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         //http://www.wolframalpha.com/input/?i=acosh(x)
 
         INDArray in = Nd4j.linspace(1, 3, 20, DataType.DOUBLE);
-        INDArray out = Nd4j.getExecutioner().execAndReturn(new ACosh(in.dup()));
+        INDArray out = Nd4j.getExecutioner().exec(new ACosh(in.dup()));
 
         INDArray exp = Nd4j.create(in.shape());
         for( int i=0; i<in.length(); i++ ){

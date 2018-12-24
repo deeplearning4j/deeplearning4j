@@ -599,4 +599,9 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     public boolean isExperimentalMode() {
         return backendExecutioner.isExperimentalMode();
     }
+
+    @Override
+    public INDArray[] exec(CustomOp op) {
+        return backendExecutioner.exec(op);
+    }
 }

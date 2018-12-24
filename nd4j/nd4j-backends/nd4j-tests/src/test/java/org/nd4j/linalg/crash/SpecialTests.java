@@ -593,7 +593,7 @@ public class SpecialTests extends BaseNd4jTest {
         val op = DynamicCustomOp.builder("space_to_batch")
                 .addInputs(input, blocks, padding)
                 .addOutputs(expOut).build();
-        Nd4j.getExecutioner().exec(op);
+        Nd4j.getExecutioner().execAndReturn(op);
     }
 
     @Test
@@ -615,7 +615,7 @@ public class SpecialTests extends BaseNd4jTest {
         DynamicCustomOp op = DynamicCustomOp.builder("batch_to_space")
                 .addInputs(input, blocks, crops)
                 .addOutputs(expOut).build();
-        Nd4j.getExecutioner().exec(op);
+        Nd4j.getExecutioner().execAndReturn(op);
     }
 
     @Test

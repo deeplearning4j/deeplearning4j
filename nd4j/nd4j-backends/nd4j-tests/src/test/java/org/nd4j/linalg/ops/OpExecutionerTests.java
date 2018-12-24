@@ -285,7 +285,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
         assertEquals(getFailureMessage(), 3, Nd4j.getBlasWrapper().iamax(linspace));
         val op = new IAMax(linspace);
 
-        int iamax = Nd4j.getExecutioner().execAndReturn(op).getFinalResult();
+        int iamax = Nd4j.getExecutioner().execAndReturn(op).getFinalResult().intValue();
         assertEquals(3, iamax);
     }
 
@@ -572,7 +572,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
 
         arr.muli(-1);
         imax = new IMax(arr);
-        int maxIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imax)).getFinalResult();
+        int maxIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imax)).getFinalResult().intValue();
         assertEquals(0, maxIdx);
     }
 
@@ -584,7 +584,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
 
         arr.muli(-1);
         imin = new IMin(arr);
-        int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult();
+        int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult().intValue();
         assertEquals(9, minIdx);
     }
 

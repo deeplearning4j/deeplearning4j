@@ -215,7 +215,7 @@ public class MixedDataTypesTests {
         val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.INT);
         val exp = new long[]{1, 0, 0, 1};
 
-        val result = Nd4j.getExecutioner().exec(new OldEqualTo(arrayX, arrayY)).z();
+        val result = Nd4j.getExecutioner().exec(new OldEqualTo(arrayX, arrayY));
         assertEquals(DataType.BOOL, result.dataType());
         val arr = result.data().asLong();
 
@@ -314,7 +314,7 @@ public class MixedDataTypesTests {
         val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.LONG);
         val exp = new long[]{1, 0, 0, 1};
 
-        val result = Nd4j.getExecutioner().exec(new OldEqualTo(arrayX, arrayY)).z();
+        val result = Nd4j.getExecutioner().exec(new OldEqualTo(arrayX, arrayY));
         val arr = result.data().asLong();
 
         assertArrayEquals(exp, arr);
@@ -324,7 +324,7 @@ public class MixedDataTypesTests {
     public void testTypesValidation_3() throws Exception {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
 
-        val result = Nd4j.getExecutioner().exec(new OldSoftMax(arrayX)).z();
+        val result = Nd4j.getExecutioner().exec(new OldSoftMax(arrayX));
     }
 
     public void testTypesValidation_4() throws Exception {

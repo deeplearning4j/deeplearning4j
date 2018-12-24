@@ -235,6 +235,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return op;
     }
 
+    @Override
+    public INDArray[] exec(CustomOp op) {
+        return execAndReturn(op).outputArguments();
+    }
+
     /**
      * Execute and return the result from a vector op
      *

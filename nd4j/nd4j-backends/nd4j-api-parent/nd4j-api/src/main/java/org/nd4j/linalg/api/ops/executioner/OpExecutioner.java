@@ -381,6 +381,8 @@ public interface OpExecutioner {
      */
     CustomOp execAndReturn(CustomOp op);
 
+    INDArray[] exec(CustomOp op);
+
     List<LongShapeDescriptor> calculateOutputShape(CustomOp op);
 
     /**

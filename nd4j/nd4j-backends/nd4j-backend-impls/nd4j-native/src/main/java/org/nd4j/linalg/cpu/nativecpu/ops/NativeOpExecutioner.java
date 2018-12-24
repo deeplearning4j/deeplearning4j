@@ -1675,7 +1675,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * PLEASE NOTE: You're responsible for input/output validation
      * @param op
      */
-    public void exec(@NonNull CustomOp op) {
+    @Override
+    public INDArray[] exec(@NonNull CustomOp op) {
         long st = profilingHookIn(op);
 
         if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
@@ -1696,7 +1697,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val hash = op.opHash();
 
         if (name.equals("noop")) {
-            return;
+            return op.outputArguments();
         }
 
         val inputShapes = getInputShapes(op.numInputArguments());
@@ -1783,6 +1784,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         profilingHookOut(op, st);
+        return op.outputArguments();
     }
 
     protected LongShapeDescriptor getShapeFromPointer(LongPointer ptr) {
