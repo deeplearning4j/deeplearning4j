@@ -110,22 +110,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public INDArray exec(BroadcastOp op, int... dimension) {
+    public INDArray exec(BroadcastOp op) {
         long st = profilingHookIn(op);
 
         checkForCompression(op);
+
+        val dimension = op.dimensions().toIntVector();
 
 //        validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
-
-        Arrays.sort(dimension);
-
-        for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
-                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
-                        + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
@@ -179,14 +174,20 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.x().shapeInfoDataBuffer()), x, (LongPointer) xShapeInfo,
                         null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.y().shapeInfoDataBuffer()), y, (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),context),
                         null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.z().shapeInfoDataBuffer()), z, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                        (IntPointer) dimensionPointer, dimension.length);
+                        null,
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                        AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
+                        null);
                 break;
             case BROADCAST_BOOL:
                 nativeOps.execBroadcastBool(xShapeInfoHostPointer, op.opNum(),
                         null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.x().shapeInfoDataBuffer()), x, (LongPointer) xShapeInfo,
                         null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.y().shapeInfoDataBuffer()), y, (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),context),
                         null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(op.z().shapeInfoDataBuffer()), z, (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
-                        (IntPointer) dimensionPointer, dimension.length);
+                        null,
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                        AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
+                        null);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown op type: " + op.getOpType());
@@ -335,7 +336,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null,
                             (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                             AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
-                            null
+                            null,
                             (LongPointer) devTadShapeInfo,
                             dT,
                             (LongPointer) yDevTadShapeInfo,
@@ -454,34 +455,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public INDArray exec(ReduceOp op, int... dimension) {
+    public INDArray exec(ReduceOp op) {
         long st = profilingHookIn(op);
         checkForCompression(op);
 
-        if (dimension == null || dimension.length == 0)
-            dimension = new int[]{Integer.MAX_VALUE};
-        //validateDataType(Nd4j.dataType(), op);
-
-        if (dimension != null && dimension.length > 1)
-            Arrays.sort(dimension);
+        val dimension = op.dimensions().toIntVector();
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
         val maxShape = Shape.getMaxShape(op.x(),op.y());
-        for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] >= maxShape.length && dimension[i] != Integer.MAX_VALUE)
-                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
-                        + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
-
-        for (int i = 0; i < dimension.length; i++) {
-            if (dimension[i] < 0)
-                dimension[i] += op.x().rank();
-        }
-        //do op along all dimensions
-        if (dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
-
 
         long[] retShape;
         if (Shape.wholeArrayDimension(dimension))
@@ -549,7 +532,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public INDArray exec(IndexAccumulation op, int... dimension) {
+    public INDArray exec(IndexAccumulation op) {
         long st = profilingHookIn(op);
 
         checkForCompression(op);
@@ -559,22 +542,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
-        Arrays.sort(dimension);
+        val dimension = op.dimensions().toIntVector();
 
-        for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
-                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
-                        + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
-
-        for (int i = 0; i < dimension.length; i++) {
-            if (dimension[i] < 0)
-                dimension[i] += op.x().rank();
-        }
-        //do op along all dimensions
-        if (dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
-
-        long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {1, 1}
+        long[] retShape = Shape.wholeArrayDimension(dimension) ? (op.isNewFormat() ? new long[]{} : new long[] {1, 1})
                 : ArrayUtil.removeIndex(op.x().shape(), dimension);
 
 
@@ -594,12 +564,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
 
-        INDArray ret = Nd4j.create(DataType.LONG, retShape);
+        INDArray ret = Nd4j.createUninitialized(DataType.LONG, retShape);
 
         op.setZ(ret);
-        //do op along all dimensions
-        if (dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
 
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             lastOp.set(op.opName());

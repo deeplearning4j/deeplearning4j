@@ -209,7 +209,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected float hasum(long N, INDArray X, int incX) {
 
         val asum = new ASum(X);
-        Nd4j.getExecutioner().exec(asum, Integer.MAX_VALUE);
+        Nd4j.getExecutioner().exec(asum);
 
         float ret = asum.getFinalResult().floatValue();
 
@@ -219,7 +219,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected float sasum(long N, INDArray X, int incX) {
         ASum asum = new ASum(X);
-        Nd4j.getExecutioner().exec(asum, Integer.MAX_VALUE);
+        Nd4j.getExecutioner().exec(asum);
 
         float ret = asum.getFinalResult().floatValue();
 
@@ -292,7 +292,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected double dasum(long N, INDArray X, int incX) {
         ASum asum = new ASum(X);
-        Nd4j.getExecutioner().exec(asum, Integer.MAX_VALUE);
+        Nd4j.getExecutioner().exec(asum);
 
         double ret = asum.getFinalResult().doubleValue();
 
