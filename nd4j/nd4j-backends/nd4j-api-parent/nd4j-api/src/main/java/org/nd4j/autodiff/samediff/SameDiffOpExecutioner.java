@@ -101,8 +101,8 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @param op the operation to execute
      */
     @Override
-    public Op exec(Op op) {
-        return processOp(op);
+    public INDArray exec(Op op) {
+        return processOp(op).z();
     }
 
     /**
@@ -131,8 +131,9 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @param op the operation to execute
      */
     @Override
-    public INDArray execAndReturn(TransformOp op) {
-        return processOp(op).z();
+    public TransformOp execAndReturn(TransformOp op) {
+        processOp(op);
+        return op;
 
     }
 
@@ -155,8 +156,9 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @return the accumulated result
      */
     @Override
-    public ReduceOp execAndReturn(Variance op) {
-        return (ReduceOp) processOp(op);
+    public Variance execAndReturn(Variance op) {
+        processOp(op);
+        return op;
     }
 
     /**
@@ -177,13 +179,14 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @return the accumulated result
      */
     @Override
-    public INDArray execAndReturn(ScalarOp op) {
-        return processOp(op).z();
+    public ScalarOp execAndReturn(ScalarOp op) {
+        processOp(op);
+        return op;
     }
 
     @Override
     public INDArray exec(ScalarOp op) {
-        return execAndReturn(op);
+        return execAndReturn(op).z();
     }
     /**
      * Execute and return the result from a vector op
@@ -191,8 +194,9 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @param op
      */
     @Override
-    public INDArray execAndReturn(BroadcastOp op) {
-        return processOp(op).z();
+    public BroadcastOp execAndReturn(BroadcastOp op) {
+        processOp(op);
+        return op;
     }
 
     /**
@@ -201,7 +205,7 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @param op
      */
     @Override
-    public INDArray execAndReturn(ShapeOp op) {
+    public ShapeOp execAndReturn(ShapeOp op) {
         return backendExecutioner.execAndReturn(op);
     }
 
@@ -261,8 +265,8 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @return the result from the operation
      */
     @Override
-    public INDArray execAndReturn(Op op) {
-        return processOp(op).z();
+    public Op execAndReturn(Op op) {
+        return processOp(op);
     }
 
     /**
@@ -315,8 +319,8 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @param op
      */
     @Override
-    public void exec(ShapeOp op) {
-        backendExecutioner.exec(op);
+    public INDArray exec(ShapeOp op) {
+        return backendExecutioner.exec(op);
     }
 
     /**
@@ -504,8 +508,8 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
      * @param op
      */
     @Override
-    public void exec(CustomOp op) {
-        backendExecutioner.exec(op);
+    public CustomOp execAndReturn(CustomOp op) {
+        return backendExecutioner.execAndReturn(op);
     }
 
     @Override

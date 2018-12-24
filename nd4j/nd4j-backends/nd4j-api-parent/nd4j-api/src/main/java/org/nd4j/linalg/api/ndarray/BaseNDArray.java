@@ -1599,7 +1599,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray eps(INDArray other) {
         validateNumericalArray("eps");
-        return Nd4j.getExecutioner().exec(new Eps(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
+        return Nd4j.getExecutioner().exec(new Eps(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length()));
     }
 
     @Override
@@ -1636,7 +1636,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray lt(INDArray other) {
         validateNumericalArray("less than (lt)");
-        return Nd4j.getExecutioner().exec(new OldLessThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
+        return Nd4j.getExecutioner().exec(new OldLessThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length()));
     }
 
     @Override
@@ -1647,18 +1647,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray neq(INDArray other) {
-        return Nd4j.getExecutioner().exec(new OldNotEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
+        return Nd4j.getExecutioner().exec(new OldNotEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length()));
     }
 
     @Override
     public INDArray eq(INDArray other) {
-        return Nd4j.getExecutioner().exec(new OldEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
+        return Nd4j.getExecutioner().exec(new OldEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length()));
     }
 
     @Override
     public INDArray gt(INDArray other) {
         validateNumericalArray("greater than (gt)");
-        return Nd4j.getExecutioner().exec(new OldGreaterThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
+        return Nd4j.getExecutioner().exec(new OldGreaterThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length()));
     }
 
     /**
@@ -1667,8 +1667,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray neg() {
         validateNumericalArray("negatiwe (neg)");
-        return Nd4j.getExecutioner().exec(new Negative(this, Nd4j.createUninitialized(this.shape(), this.ordering())))
-                .z();
+        return Nd4j.getExecutioner().exec(new Negative(this, Nd4j.createUninitialized(this.shape(), this.ordering())));
     }
 
     /**
@@ -1971,12 +1970,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray match(INDArray comp, Condition condition) {
-        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this,comp,condition)).z();
+        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this,comp,condition));
     }
 
     @Override
     public INDArray match(Number comp, Condition condition) {
-        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this,comp.doubleValue(), condition)).z();
+        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this,comp.doubleValue(), condition));
     }
 
     @Override
@@ -2011,7 +2010,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray putWhereWithMask(INDArray mask, INDArray put) {
         INDArray output = dup();
-        Nd4j.getExecutioner().exec(new Where(new INDArray[]{mask,this,put},new INDArray[]{output}));
+        Nd4j.getExecutioner().execAndReturn(new Where(new INDArray[]{mask,this,put},new INDArray[]{output}));
         return output;
     }
 
@@ -2353,7 +2352,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                             currSlice = currSlice.slice(curr[j]);
                         }
 
-                        Nd4j.getExecutioner().exec(new Assign(new INDArray[]{currSlice,element},new INDArray[]{currSlice}));
+                        Nd4j.getExecutioner().execAndReturn(new Assign(new INDArray[]{currSlice,element},new INDArray[]{currSlice}));
 
                     }
                     catch(NoSuchElementException e) {
@@ -2392,7 +2391,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     INDArray row = indices.getRow(i);
                     for(int j = 0; j < row.length(); j++) {
                         INDArray slice = slice(row.getInt(j));
-                        Nd4j.getExecutioner().exec(new Assign(new INDArray[]{slice,element},new INDArray[]{slice}));
+                        Nd4j.getExecutioner().execAndReturn(new Assign(new INDArray[]{slice,element},new INDArray[]{slice}));
                         arrList.add(slice(row.getInt(j)));
                     }
 
@@ -5396,9 +5395,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
 
             if (this.isView()) {
-                Nd4j.getExecutioner().exec(new Tile(new INDArray[]{this.dup(this.ordering())},new INDArray[]{result},repeat));
+                Nd4j.getExecutioner().execAndReturn(new Tile(new INDArray[]{this.dup(this.ordering())},new INDArray[]{result},repeat));
             } else
-                Nd4j.getExecutioner().exec(new Tile(new INDArray[]{this},new INDArray[]{result},repeat));
+                Nd4j.getExecutioner().execAndReturn(new Tile(new INDArray[]{this},new INDArray[]{result},repeat));
 
             //result = Nd4j.tile(this,repeat);
         }

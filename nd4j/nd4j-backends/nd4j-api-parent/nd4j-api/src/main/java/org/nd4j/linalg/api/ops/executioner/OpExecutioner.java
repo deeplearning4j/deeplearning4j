@@ -237,7 +237,7 @@ public interface OpExecutioner {
      *
      * @param op
      */
-    void exec(ShapeOp op);
+    INDArray exec(ShapeOp op);
 
     /**
      * This method executes previously built batch
@@ -379,7 +379,7 @@ public interface OpExecutioner {
      * PLEASE NOTE: You're responsible for input/output validation
      * @param op
      */
-    void exec(CustomOp op);
+    CustomOp execAndReturn(CustomOp op);
 
     List<LongShapeDescriptor> calculateOutputShape(CustomOp op);
 

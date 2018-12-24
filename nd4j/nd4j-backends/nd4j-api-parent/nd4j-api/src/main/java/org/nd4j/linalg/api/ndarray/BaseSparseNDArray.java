@@ -294,7 +294,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
                     List<Integer> row = indices.get(i);
                     for(int j = 0; j < row.size(); j++) {
                         INDArray slice = slice(row.get(j));
-                        Nd4j.getExecutioner().exec(new Assign(new INDArray[]{slice,element},new INDArray[]{slice}));
+                        Nd4j.getExecutioner().execAndReturn(new Assign(new INDArray[]{slice,element},new INDArray[]{slice}));
                         arrList.add(slice(row.get(j)));
                     }
 

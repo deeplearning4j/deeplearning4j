@@ -394,7 +394,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         double min2 = Nd4j.getExecutioner().execAndReturn(min).getFinalResult().doubleValue();
         assertEquals(1.0, min2, 1e-1);
         Max matrixMax = new Max(linspace, 1);
-        INDArray exec2 = Nd4j.getExecutioner().exec(matrixMax);
+        INDArray exec2 = Nd4j.getExecutioner().execAndReturn(matrixMax).z();
         assertEquals(Nd4j.create(new double[] {3, 6}), exec2);
     }
 
@@ -486,11 +486,11 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testIMax() {
         INDArray arr = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         IMax imax = new IMax(arr);
-        assertEquals(9, ((IndexAccumulation) Nd4j.getExecutioner().exec(imax)).getFinalResult());
+        assertEquals(9, ((IndexAccumulation) Nd4j.getExecutioner().execAndReturn(imax)).getFinalResult());
 
         arr.muli(-1);
         imax = new IMax(arr);
-        int maxIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imax)).getFinalResult();
+        int maxIdx = ((IndexAccumulation) Nd4j.getExecutioner().execAndReturn(imax)).getFinalResult();
         assertEquals(0, maxIdx);
     }
 
@@ -498,11 +498,11 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testIMin() {
         INDArray arr = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         IMin imin = new IMin(arr);
-        assertEquals(0, ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult());
+        assertEquals(0, ((IndexAccumulation) Nd4j.getExecutioner().execAndReturn(imin)).getFinalResult());
 
         arr.muli(-1);
         imin = new IMin(arr);
-        int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult();
+        int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().execAndReturn(imin)).getFinalResult();
         assertEquals(9, minIdx);
     }
 
@@ -614,7 +614,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testOneMinus() {
         INDArray in = Nd4j.linspace(1, 3, 3, DataType.DOUBLE);
-        INDArray out = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", in));
+        INDArray out = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", in)).z();
 
         //Expect: 0, -2, -6 -> from 1*(1-1), 2*(1-2), 3*(1-3). Getting: [0,0,0]
         INDArray exp = Nd4j.create(new double[] {0, -2.0, -6.0});

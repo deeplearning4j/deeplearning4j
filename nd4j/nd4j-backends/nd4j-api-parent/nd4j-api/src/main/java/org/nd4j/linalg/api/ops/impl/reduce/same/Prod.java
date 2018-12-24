@@ -64,22 +64,6 @@ public class Prod extends BaseReduceSameOp {
         return "reduce_prod";
     }
 
-
-    @Override
-    public double zeroDouble() {
-        return 1.0;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return 1.0f;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return zeroFloat();
-    }
-
     @Override
     public String onnxName() {
         return "ReduceProd";

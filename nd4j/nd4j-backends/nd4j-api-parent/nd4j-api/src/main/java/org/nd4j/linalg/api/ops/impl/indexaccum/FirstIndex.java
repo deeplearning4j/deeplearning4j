@@ -78,21 +78,6 @@ public class FirstIndex extends BaseIndexAccumulation {
     }
 
     @Override
-    public float zeroFloat() {
-        return 0.0f;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return zeroFloat();
-    }
-
-    @Override
-    public double zeroDouble() {
-        return 0.0;
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.singletonList(sameDiff.zerosLike(arg()));
     }

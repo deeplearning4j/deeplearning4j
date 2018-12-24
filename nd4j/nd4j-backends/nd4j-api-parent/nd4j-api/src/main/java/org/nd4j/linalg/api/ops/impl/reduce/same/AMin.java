@@ -67,22 +67,6 @@ public class AMin extends BaseReduceSameOp {
     }
 
     @Override
-    public double zeroDouble() {
-        return Double.MAX_VALUE;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return Float.MAX_VALUE;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return 65503.0f;
-    }
-
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         SDVariable sgn = sameDiff.sign(arg());
         SDVariable minBp = f().minBp(sameDiff.abs(arg()), f1.get(0), false, dimensions);

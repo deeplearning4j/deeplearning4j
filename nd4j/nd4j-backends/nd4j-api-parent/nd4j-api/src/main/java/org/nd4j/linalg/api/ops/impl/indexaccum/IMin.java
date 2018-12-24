@@ -57,23 +57,6 @@ public class IMin extends BaseIndexAccumulation {
         return "imin";
     }
 
-
-    @Override
-    public float zeroFloat() {
-        return Float.MAX_VALUE;
-    }
-
-    @Override
-    public double zeroDouble() {
-        return Double.MAX_VALUE;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return 65503.0f;
-    }
-
-
     @Override
     public String onnxName() {
         return "ArgMin";

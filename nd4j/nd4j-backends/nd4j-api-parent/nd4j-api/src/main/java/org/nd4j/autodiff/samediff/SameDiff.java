@@ -11239,7 +11239,7 @@ public class SameDiff {
                 }
                 customOp.assertValidForExecution();
 
-                Nd4j.getExecutioner().exec(customOp);
+                Nd4j.getExecutioner().execAndReturn(customOp);
 
                 /*
                 if (customOp instanceof LessThanOrEqual) {

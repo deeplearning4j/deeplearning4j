@@ -42,10 +42,10 @@ public class Broadcast {
     public static INDArray add(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldAddOp(x,y,z));
+            return Nd4j.getExecutioner().exec(new OldAddOp(x,y,z));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastAddOp(x,y,z,dimensions));
     }
 
     /**
@@ -54,10 +54,10 @@ public class Broadcast {
     public static INDArray copy(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new CopyOp(x,y,z));
+            return Nd4j.getExecutioner().exec(new CopyOp(x,y,z));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastCopyOp(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastCopyOp(x,y,z,dimensions));
     }
 
     /**
@@ -66,10 +66,10 @@ public class Broadcast {
     public static INDArray div(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldDivOp(x,y,z));
+            return Nd4j.getExecutioner().exec(new OldDivOp(x,y,z));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastDivOp(x,y,z,dimensions));
     }
 
     /**
@@ -78,9 +78,9 @@ public class Broadcast {
     public static INDArray eq(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldEqualTo(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new OldEqualTo(x,y,z,x.length()));
         }
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastEqualTo(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastEqualTo(x,y,z,dimensions));
     }
 
     /**
@@ -89,10 +89,10 @@ public class Broadcast {
     public static INDArray gt(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldGreaterThan(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new OldGreaterThan(x,y,z,x.length()));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastGreaterThan(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastGreaterThan(x,y,z,dimensions));
     }
 
     /**
@@ -101,10 +101,10 @@ public class Broadcast {
     public static INDArray gte(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldGreaterThanOrEqual(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new OldGreaterThanOrEqual(x,y,z,x.length()));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastGreaterThanOrEqual(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastGreaterThanOrEqual(x,y,z,dimensions));
     }
 
     /**
@@ -113,10 +113,10 @@ public class Broadcast {
     public static INDArray lt(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldLessThan(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new OldLessThan(x,y,z,x.length()));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastLessThan(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastLessThan(x,y,z,dimensions));
     }
 
     /**
@@ -125,10 +125,10 @@ public class Broadcast {
     public static INDArray lte(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldLessThanOrEqual(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new OldLessThanOrEqual(x,y,z,x.length()));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastLessThanOrEqual(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastLessThanOrEqual(x,y,z,dimensions));
     }
 
     /**
@@ -137,10 +137,10 @@ public class Broadcast {
     public static INDArray mul(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldMulOp(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new OldMulOp(x,y,z,x.length()));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastMulOp(x,y,z,dimensions));
     }
 
     /**
@@ -149,10 +149,10 @@ public class Broadcast {
     public static INDArray neq(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldNotEqualTo(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new OldNotEqualTo(x,y,z,x.length()));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastNotEqual(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastNotEqual(x,y,z,dimensions));
     }
 
     /**
@@ -161,10 +161,10 @@ public class Broadcast {
     public static INDArray rdiv(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldRDivOp(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new OldRDivOp(x,y,z,x.length()));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastRDivOp(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastRDivOp(x,y,z,dimensions));
     }
 
     /**
@@ -173,10 +173,10 @@ public class Broadcast {
     public static INDArray rsub(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldSubOp(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new OldSubOp(x,y,z,x.length()));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastRSubOp(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastRSubOp(x,y,z,dimensions));
     }
 
     /**
@@ -185,10 +185,10 @@ public class Broadcast {
     public static INDArray sub(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldSubOp(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new OldSubOp(x,y,z,x.length()));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastSubOp(x,y,z,dimensions));
     }
 
     /**
@@ -197,11 +197,11 @@ public class Broadcast {
     public static INDArray max(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldMax(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new OldMax(x,y,z,x.length()));
         }
 
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastMax(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastMax(x,y,z,dimensions));
     }
 
     /**
@@ -210,11 +210,11 @@ public class Broadcast {
     public static INDArray min(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new OldMin(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new OldMin(x,y,z,x.length()));
         }
 
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastMin(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastMin(x,y,z,dimensions));
     }
 
     /**
@@ -223,10 +223,10 @@ public class Broadcast {
     public static INDArray amax(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new AMax(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new AMax(x,y,z,x.length()));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastAMax(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastAMax(x,y,z,dimensions));
     }
 
     /**
@@ -235,10 +235,10 @@ public class Broadcast {
     public static INDArray amin(INDArray x, INDArray y, INDArray z, int... dimensions) {
         if(dimensions == null || dimensions.length == 0) {
             validateShapesNoDimCase(x,y,z);
-            return Nd4j.getExecutioner().execAndReturn(new AMin(x,y,z,x.length()));
+            return Nd4j.getExecutioner().exec(new AMin(x,y,z,x.length()));
         }
 
-        return Nd4j.getExecutioner().execAndReturn(new BroadcastAMin(x,y,z,dimensions));
+        return Nd4j.getExecutioner().exec(new BroadcastAMin(x,y,z,dimensions));
     }
 
     public static void validateShapesNoDimCase(INDArray x, INDArray y, INDArray z){

@@ -61,21 +61,6 @@ public class Min extends BaseReduceSameOp {
     }
 
     @Override
-    public double zeroDouble() {
-        return Double.MAX_VALUE;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return Float.MAX_VALUE;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return 65503.0f;
-    }
-
-    @Override
     public String onnxName() {
         return "ReduceMin";
     }

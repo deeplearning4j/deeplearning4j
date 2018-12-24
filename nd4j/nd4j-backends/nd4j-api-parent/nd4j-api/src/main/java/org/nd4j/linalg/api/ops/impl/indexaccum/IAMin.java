@@ -58,21 +58,6 @@ public class IAMin extends BaseIndexAccumulation {
     }
 
     @Override
-    public double zeroDouble() {
-        return 0.0;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return 0.0f;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return zeroFloat();
-    }
-
-    @Override
     public String onnxName() {
         return "AbsArgMin";
     }

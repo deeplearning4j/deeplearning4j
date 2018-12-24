@@ -308,12 +308,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
      * @param op
      */
     @Override
-    public void exec(ShapeOp op) {
+    public INDArray exec(ShapeOp op) {
         if(!op.isExecSpecial()) {
             throw new IllegalArgumentException("Only special execution supported right now.");
         }
 
         op.exec();
+        return op.z();
     }
 
     @Override
@@ -700,7 +701,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public void exec(CustomOp op) {
+    public CustomOp execAndReturn(CustomOp op) {
         throw new UnsupportedOperationException();
     }
 

@@ -75,22 +75,6 @@ public class Max extends BaseReduceSameOp {
     }
 
     @Override
-    public double zeroDouble() {
-        return -Double.MAX_VALUE;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return -65503.0f;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return -Float.MAX_VALUE;
-    }
-
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         return Collections.singletonList(f().maxBp(arg(), grad.get(0), keepDims, dimensions));
     }

@@ -103,9 +103,4 @@ public class LastIndex extends BaseIndexAccumulation {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
-
-    @Override
-    public float zeroHalf() {
-        return 0;
-    }
 }

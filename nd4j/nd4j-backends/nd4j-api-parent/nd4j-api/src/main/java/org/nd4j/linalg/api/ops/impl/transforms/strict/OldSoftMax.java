@@ -141,9 +141,9 @@ public class OldSoftMax extends BaseTransformStrictOp {
 
             INDArray exp;
             if (z != null) {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax, z));
+                exp = Nd4j.getExecutioner().exec(new Exp(xMinusMax, z));
             } else {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax));
+                exp = Nd4j.getExecutioner().exec(new Exp(xMinusMax));
             }
 
             INDArray sum = exp.sum(dimensions);
@@ -155,9 +155,9 @@ public class OldSoftMax extends BaseTransformStrictOp {
             double max = x.maxNumber().doubleValue();
             INDArray exp;
             if (z != null) {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(x.sub(max), z));
+                exp = Nd4j.getExecutioner().exec(new Exp(x.sub(max), z));
             } else {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(x.sub(max)));
+                exp = Nd4j.getExecutioner().exec(new Exp(x.sub(max)));
             }
             exp.divi(exp.sumNumber().doubleValue());
             this.z = exp;

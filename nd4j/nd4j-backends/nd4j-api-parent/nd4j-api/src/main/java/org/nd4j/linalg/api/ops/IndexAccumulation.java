@@ -43,34 +43,6 @@ import org.nd4j.linalg.primitives.Pair;
  */
 public interface IndexAccumulation extends Op {
 
-    /** Set the final index/result of the accumulation. */
-    void setFinalResult(int idx);
-
-    /** Get the final result of the IndexAccumulation */
-    int getFinalResult();
-
-    /**Initial value for the index accumulation
-     *@return the initial value
-     */
-    double zeroDouble();
-
-    /** Initial value for the index accumulation.
-     * @return the initial value
-     * */
-    float zeroFloat();
-
-    /** Initial value for the index accumulation.
-     * @return the initial value
-     * */
-    float zeroHalf();
-
-    /** The initial value and initial index to use
-     * for the accumulation
-     * @return
-     */
-    Pair<Double, Integer> zeroPair();
-
-
     boolean validateDataTypes();
 
     /**

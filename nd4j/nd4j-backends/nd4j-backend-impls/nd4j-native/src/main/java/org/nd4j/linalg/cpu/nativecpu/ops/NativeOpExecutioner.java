@@ -114,7 +114,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public Op exec(Op op) {
+    public INDArray exec(Op op) {
         checkForCompression(op);
 
         if (op instanceof ScalarOp) {
@@ -145,7 +145,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             exec(rngOp, Nd4j.getRandom());
         }
 
-        return op;
+        return op.z();
     }
 
 
