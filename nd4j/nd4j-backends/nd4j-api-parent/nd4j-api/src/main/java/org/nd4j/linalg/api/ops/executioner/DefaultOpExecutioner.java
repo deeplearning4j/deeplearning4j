@@ -226,7 +226,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public IndexAccumulation execAndReturn(IndexAccumulation op) {
-        return (IndexAccumulation) exec(op);
+        exec(op);
+        return op;
     }
 
     @Override
@@ -707,7 +708,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public CustomOp execAndReturn(CustomOp op) {
-        throw new UnsupportedOperationException();
+        exec(op);
+        return op;
     }
 
     @Override

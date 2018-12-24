@@ -5670,7 +5670,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.getExecutioner().execAndReturn(new OldSoftMax(expected));
 
-        val result = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(original, original.dup(original.ordering())));
+        val result = Nd4j.getExecutioner().exec(new OldSoftMax(original, original.dup(original.ordering())));
 
         assertEquals(reference, original);
         assertEquals(expected, result);

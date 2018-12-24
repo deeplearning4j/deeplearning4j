@@ -222,7 +222,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         return op.z();
     }
 
-
+    @Override
+    public INDArray exec(Variance op) {
+        return exec((ReduceOp) op);
+    }
 
     @Override
     public INDArray exec(ReduceOp op) {
