@@ -1025,10 +1025,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     }
                 }
 
-            if (op.z().isScalar()) {
-                    op.setFinalResult(op.z().getDouble(0));
-            }
-
             profilingHookOut(op, st);
         }
     }

@@ -151,7 +151,7 @@ public class LossMixtureDensity extends DifferentialFunction implements ILossFun
 
         // Alpha is a softmax because
         // the alpha should all sum to 1 for a given gaussian mixture.
-        mdc.alpha = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(mdc.alpha));
+        mdc.alpha = Nd4j.getExecutioner().exec(new OldSoftMax(mdc.alpha));
 
         // Mu comes directly from the network as an unmolested value.
         // Note that this effectively means that the output layer of

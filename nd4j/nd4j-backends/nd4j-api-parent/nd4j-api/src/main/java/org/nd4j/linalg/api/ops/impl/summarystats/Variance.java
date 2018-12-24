@@ -104,8 +104,8 @@ public class Variance extends BaseReduceOp {
         super.init(x, y, z, n);
         if (Nd4j.executionMode == OpExecutioner.ExecutionMode.JAVA) {
             if (biasCorrected)
-                this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).getFinalResult().doubleValue();
-            mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
+                this.bias = Nd4j.getExecutioner().exec(new Bias(x)).getDouble(0);
+            mean = Nd4j.getExecutioner().exec(new Mean(x)).getDouble(0);
         }
 
     }

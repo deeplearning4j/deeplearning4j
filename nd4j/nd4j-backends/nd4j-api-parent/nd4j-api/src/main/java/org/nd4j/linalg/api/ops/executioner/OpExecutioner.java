@@ -94,7 +94,7 @@ public interface OpExecutioner {
      *
      * @param op the operation to execute
      */
-    Op exec(Op op);
+    INDArray exec(Op op);
 
     /**
      * Iterate over every row of every slice
@@ -113,9 +113,7 @@ public interface OpExecutioner {
     /**Execute a TransformOp and return the result
      * @param op the operation to execute
      */
-    INDArray execAndReturn(TransformOp op);
-
-
+    TransformOp execAndReturn(TransformOp op);
 
     /**
      * Execute and return the result from an accumulation
@@ -131,7 +129,7 @@ public interface OpExecutioner {
      * @param op the operation to execute
      * @return the accumulated result
      */
-    ReduceOp execAndReturn(Variance op);
+    Variance execAndReturn(Variance op);
 
     /**Execute and return the result from an index accumulation
      * @param op the index accumulation operation to execute
@@ -144,15 +142,15 @@ public interface OpExecutioner {
      * @param op the operation to execute
      * @return the accumulated result
      */
-    INDArray execAndReturn(ScalarOp op);
+    ScalarOp execAndReturn(ScalarOp op);
 
     /** Execute and return the result from a vector op
      * @param op*/
-    INDArray execAndReturn(BroadcastOp op);
+    BroadcastOp execAndReturn(BroadcastOp op);
 
     /** Execute and return the result from a vector op
      * @param op*/
-    INDArray execAndReturn(ShapeOp op);
+    ShapeOp execAndReturn(ShapeOp op);
 
     /**
      * Execute an reduceOp along one or more dimensions
@@ -202,7 +200,7 @@ public interface OpExecutioner {
      * @param op the operation to execute
      * @return the result from the operation
      */
-    INDArray execAndReturn(Op op);
+    Op execAndReturn(Op op);
 
 
     /**Get the execution mode for this

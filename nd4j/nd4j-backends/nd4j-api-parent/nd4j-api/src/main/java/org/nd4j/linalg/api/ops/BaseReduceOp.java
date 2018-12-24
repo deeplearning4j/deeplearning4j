@@ -250,31 +250,6 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     }
 
     @Override
-    public void setFinalResult(double value) {
-        this.finalResult = value;
-    }
-
-    @Override
-    public Number getFinalResult() {
-        return finalResult;
-    }
-
-    @Override
-    public double zeroDouble() {
-        return 0;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return 0;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return 0;
-    }
-
-    @Override
     public boolean isComplexAccumulation() {
         return isComplex;
     }

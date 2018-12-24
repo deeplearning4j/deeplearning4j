@@ -131,7 +131,7 @@ public class LossBinaryXENT extends DifferentialFunction implements ILossFunctio
         INDArray scoreArr;
         if (activationFn instanceof ActivationSoftmax) {
             //Use LogSoftMax op to avoid numerical issues when calculating score
-            INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(preOutput.dup()));
+            INDArray logsoftmax = Nd4j.getExecutioner().exec(new LogSoftMax(preOutput.dup()));
             scoreArr = logsoftmax.muli(labels);
 
         } else {

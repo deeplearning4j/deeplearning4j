@@ -105,17 +105,17 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public Op exec(Op op) {
+    public INDArray exec(Op op) {
         if (op.isPassThrough()) {
             op.exec();
-            return op;
+            return op.z();
         }
 
         throw new IllegalStateException("Java computation no longer supported");
     }
 
     @Override
-    public INDArray execAndReturn(Op op) {
+    public Op execAndReturn(Op op) {
         if (op instanceof TransformOp) {
             return execAndReturn((TransformOp) op);
         }
@@ -123,10 +123,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return execAndReturn((ScalarOp) op);
         }
         if (op instanceof ReduceOp) {
-            return Nd4j.scalar(execAndReturn((ReduceOp) op).getFinalResult());
+            exec((ReduceOp) op);
+            return op;
         }
         if (op instanceof IndexAccumulation) {
-            return Nd4j.scalar(execAndReturn((IndexAccumulation) op).getFinalResult());
+            exec((IndexAccumulation) op);
+            return op;
         }
 
         throw new IllegalArgumentException("Illegal opType of op: " + op.getClass());
@@ -198,26 +200,28 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     @Override
-    public INDArray execAndReturn(TransformOp op) {
-        Op result = exec(op);
-        TransformOp t = (TransformOp) result;
-        return t.z();
+    public TransformOp execAndReturn(TransformOp op) {
+        exec(op);
+        return op;
     }
 
 
     @Override
     public ReduceOp execAndReturn(ReduceOp op) {
-        return (ReduceOp) exec(op);
+        exec(op);
+        return op;
     }
 
     @Override
-    public ReduceOp execAndReturn(Variance op) {
-        throw new UnsupportedOperationException();
+    public Variance execAndReturn(Variance op) {
+        exec(op);
+        return op;
     }
 
     @Override
-    public INDArray execAndReturn(ScalarOp op) {
-        return exec(op);
+    public ScalarOp execAndReturn(ScalarOp op) {
+        exec(op);
+        return op;
     }
 
     @Override
@@ -226,8 +230,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public INDArray execAndReturn(BroadcastOp op) {
-        return exec(op);
+    public BroadcastOp execAndReturn(BroadcastOp op) {
+        exec(op);
+        return op;
     }
 
     /**
@@ -236,21 +241,19 @@ public class DefaultOpExecutioner implements OpExecutioner {
      * @param op
      */
     @Override
-    public INDArray execAndReturn(ShapeOp op) {
+    public ShapeOp execAndReturn(ShapeOp op) {
         exec(op);
-        return op.z();
+        return op;
     }
 
     @Override
     public INDArray exec(ReduceOp op) {
-
         throw new UnsupportedOperationException("Java computation no longer supported");
     }
 
     @Override
     public INDArray exec(Variance accumulation) {
-        //accumulation.setBiasCorrected(biasCorrected);
-        return exec(accumulation);
+        throw new UnsupportedOperationException("Operation should use exec special");
     }
 
     @Override
