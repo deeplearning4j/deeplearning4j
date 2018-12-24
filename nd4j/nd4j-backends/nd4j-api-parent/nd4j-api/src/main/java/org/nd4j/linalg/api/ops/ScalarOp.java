@@ -24,7 +24,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public interface ScalarOp extends BroadcastOp {
+public interface ScalarOp extends Op {
 
     /**The normal scalar
      *@return the scalar
@@ -42,4 +42,12 @@ public interface ScalarOp extends BroadcastOp {
      * @return
      */
     INDArray dimensions();
+
+    int[] getDimension();
+
+    void setDimension(int... dimension);
+
+    boolean validateDataTypes(boolean experimentalMode);
+
+    Type getOpType();
 }

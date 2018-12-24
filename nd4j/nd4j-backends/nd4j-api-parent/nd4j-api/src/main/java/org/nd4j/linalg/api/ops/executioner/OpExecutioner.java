@@ -171,6 +171,13 @@ public interface OpExecutioner {
     INDArray exec(BroadcastOp broadcast);
 
     /**
+     * Execute ScalarOp
+     * @param broadcast
+     * @return
+     */
+    INDArray exec(ScalarOp broadcast);
+
+    /**
      * Execute an accumulation along one or more dimensions
      * @param accumulation the accumulation
      * @param dimension the dimension

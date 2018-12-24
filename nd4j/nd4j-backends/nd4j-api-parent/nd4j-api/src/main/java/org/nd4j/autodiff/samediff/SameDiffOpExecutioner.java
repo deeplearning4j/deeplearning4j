@@ -181,6 +181,10 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
         return processOp(op).z();
     }
 
+    @Override
+    public INDArray exec(ScalarOp op) {
+        return execAndReturn(op);
+    }
     /**
      * Execute and return the result from a vector op
      *

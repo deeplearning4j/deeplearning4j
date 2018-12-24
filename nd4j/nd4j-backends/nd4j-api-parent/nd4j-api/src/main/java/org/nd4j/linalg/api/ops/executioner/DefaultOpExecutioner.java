@@ -296,6 +296,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public INDArray exec(ScalarOp op) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * @param op
      */

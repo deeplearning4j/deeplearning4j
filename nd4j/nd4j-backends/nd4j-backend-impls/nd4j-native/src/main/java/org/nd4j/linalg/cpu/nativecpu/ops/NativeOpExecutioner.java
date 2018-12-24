@@ -618,7 +618,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     }
 
-    private void exec(ScalarOp op) {
+    public INDArray exec(ScalarOp op) {
         if (executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         } else {
@@ -634,7 +634,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (op.dimensions() != null) {
                 invokeScalarAlongDimension(op);
-                return;
+                return op.z();
             }
 
 
@@ -667,6 +667,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             profilingHookOut(op, st);
         }
+
+        return op.z();
     }
 
     private Pointer getPointerForExtraArgs(Op op, DataType type) {

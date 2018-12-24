@@ -3443,6 +3443,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int[] toIntVector() {
+        if (isEmpty())
+            return new int[0];
+
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector!");
         }
