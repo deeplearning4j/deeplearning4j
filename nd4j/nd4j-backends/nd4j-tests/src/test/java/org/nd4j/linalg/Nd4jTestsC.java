@@ -751,7 +751,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         //Tests: full buffer...
         //1d
         INDArray arr1 = Nd4j.create(new double[] {1, 2, 3, 1});
-        val res1 = Nd4j.getExecutioner().execAndReturn(new IsMax(arr1));
+        val res1 = Nd4j.getExecutioner().exec(new IsMax(arr1));
         INDArray exp1 = Nd4j.create(new boolean[] {false, false, true, false});
 
         assertEquals(exp1, res1);
@@ -3708,8 +3708,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
         IMax iMax = new IMax(arr);
         IAMax iaMax = new IAMax(arr.dup());
-        val imax = Nd4j.getExecutioner().execAndReturn(iMax).getFinalResult();
-        val iamax = Nd4j.getExecutioner().execAndReturn(iaMax).getFinalResult();
+        val imax = Nd4j.getExecutioner().execAndReturn(iMax).getFinalResult().intValue();
+        val iamax = Nd4j.getExecutioner().execAndReturn(iaMax).getFinalResult().intValue();
         System.out.println("IMAX: " + imax);
         System.out.println("IAMAX: " + iamax);
         assertEquals(1, iamax);

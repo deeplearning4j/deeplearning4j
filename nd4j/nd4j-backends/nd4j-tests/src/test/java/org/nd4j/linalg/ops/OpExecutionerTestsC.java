@@ -367,10 +367,10 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray ones = Nd4j.ones(DataType.BOOL, 1,6);
         INDArray zeros = Nd4j.create(DataType.BOOL, new long[]{1,6});
         INDArray res = Nd4j.create(DataType.BOOL, new long[]{1,6});
-        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, res, 0)));
-        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, res,7)));
-        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, res,0)));
-        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, res,7)));
+        assertEquals(ones, Nd4j.getExecutioner().exec(new ScalarGreaterThan(linspace, res, 0)));
+        assertEquals(zeros, Nd4j.getExecutioner().exec(new ScalarGreaterThan(linspace, res,7)));
+        assertEquals(zeros, Nd4j.getExecutioner().exec(new ScalarLessThan(linspace, res,0)));
+        assertEquals(ones, Nd4j.getExecutioner().exec(new ScalarLessThan(linspace, res,7)));
     }
 
     @Test
