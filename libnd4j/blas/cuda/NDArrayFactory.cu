@@ -342,7 +342,7 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
             T step = (T) e / ((T) numElements - (T) 1);
             reinterpret_cast<T *>(result->getBuffer())[e] = (from * ((T) 1 - step) + step * to);            
         }
-        cudaMemcpy(result.spcialBuffer(), result.buffer(), numElements * sizeof(T), cudaMemcpyHostToDevice);
+        cudaMemcpy(result->specialBuffer(), result->getBuffer(), numElements * sizeof(T), cudaMemcpyHostToDevice);
         return result;
     }
     template NDArray* NDArrayFactory::linspace(const double from, const double to, const Nd4jLong numElements);

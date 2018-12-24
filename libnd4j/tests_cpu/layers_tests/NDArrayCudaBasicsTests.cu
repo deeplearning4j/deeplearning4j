@@ -41,3 +41,46 @@ public:
 };
 
 
+//////////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, TestAdd_1) {
+    // allocating host-side arrays
+    auto x = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
+    auto z = NDArrayFactory::create<double>('c', { 5 });
+
+    auto exp = NDArrayFactory::create<double>('c', { 5 }, { 2, 4, 6, 8, 10 });
+
+    // making raw buffers
+    //Nd4jPointer devBufferPtrX, devBufferPtrZ, devShapePtrX;
+    //cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrX), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrZ), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
+    //ASSERT_EQ(0, res);
+
+    Nd4jPointer nativeStream = (Nd4jPointer)malloc(sizeof(cudaStream_t));
+    CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream");
+    cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
+    auto stream = reinterpret_cast<cudaStream_t *>(&nativeStream);
+
+    //cudaMemcpyAsync(devBufferPtrX, x.buffer(), x.lengthOf() * x.sizeOfT(), cudaMemcpyHostToDevice, *stream);
+    //cudaMemcpyAsync(devShapePtrX, x.shapeInfo(), shape::shapeInfoByteLength(x.shapeInfo()), cudaMemcpyHostToDevice, *stream);
+
+    LaunchContext lc(stream, nullptr, nullptr);
+    NativeOpExecutioner::execPairwiseTransform(&lc, pairwise::Add, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr);
+    auto res = cudaStreamSynchronize(*stream);
+    ASSERT_EQ(0, res);
+
+    //cudaMemcpyAsync(z.buffer(), devBufferPtrZ, z.lengthOf() * x.sizeOfT(), cudaMemcpyDeviceToHost, *stream);
+    res = cudaStreamSynchronize(*stream);
+    ASSERT_EQ(0, res);
+
+    //cudaFree(devBufferPtrX);
+    //cudaFree(devBufferPtrZ);
+    //cudaFree(devShapePtrX);
+
+    for (int e = 0; e < z.lengthOf(); e++) {
+        ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+    }
+}
