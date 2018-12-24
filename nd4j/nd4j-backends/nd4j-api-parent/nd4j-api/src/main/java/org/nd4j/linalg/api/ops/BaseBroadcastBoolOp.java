@@ -153,6 +153,7 @@ public abstract class BaseBroadcastBoolOp extends BaseOp implements BroadcastOp 
             if (dimension[i] < 0)
                 dimension[i] += x.rank();
 
+        defineDimensions(dimension);
     }
 
     @Override

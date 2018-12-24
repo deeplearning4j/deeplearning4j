@@ -18,6 +18,7 @@ package org.nd4j.linalg.indexing;
 
 import com.google.common.base.Function;
 import lombok.NonNull;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
@@ -384,7 +385,7 @@ public class BooleanIndexing {
 
         FirstIndex idx = new FirstIndex(array, condition);
         Nd4j.getExecutioner().exec(idx);
-        return Nd4j.scalar((double) idx.getFinalResult());
+        return Nd4j.scalar(DataType.LONG, idx.getFinalResult().longValue());
     }
 
     /**

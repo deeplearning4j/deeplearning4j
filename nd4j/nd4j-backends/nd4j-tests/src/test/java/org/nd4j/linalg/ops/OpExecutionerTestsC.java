@@ -486,11 +486,11 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testIMax() {
         INDArray arr = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         IMax imax = new IMax(arr);
-        assertEquals(9, ((IndexAccumulation) Nd4j.getExecutioner().execAndReturn(imax)).getFinalResult());
+        assertEquals(9, Nd4j.getExecutioner().execAndReturn(imax).getFinalResult().intValue());
 
         arr.muli(-1);
         imax = new IMax(arr);
-        int maxIdx = ((IndexAccumulation) Nd4j.getExecutioner().execAndReturn(imax)).getFinalResult().intValue();
+        int maxIdx = Nd4j.getExecutioner().execAndReturn(imax).getFinalResult().intValue();
         assertEquals(0, maxIdx);
     }
 
@@ -498,11 +498,11 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testIMin() {
         INDArray arr = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         IMin imin = new IMin(arr);
-        assertEquals(0, ((IndexAccumulation) Nd4j.getExecutioner().execAndReturn(imin)).getFinalResult());
+        assertEquals(0, Nd4j.getExecutioner().execAndReturn(imin).getFinalResult().intValue());
 
         arr.muli(-1);
         imin = new IMin(arr);
-        int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().execAndReturn(imin)).getFinalResult().intValue();
+        int minIdx = Nd4j.getExecutioner().execAndReturn(imin).getFinalResult().intValue();
         assertEquals(9, minIdx);
     }
 

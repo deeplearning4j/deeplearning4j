@@ -330,10 +330,10 @@ public class OpExecutionerTests extends BaseNd4jTest {
         INDArray ones = Nd4j.ones(DataType.BOOL, 6);
         INDArray zeros = Nd4j.zeros(DataType.BOOL, 6);
         INDArray res = Nd4j.createUninitialized(DataType.BOOL, 6);
-        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, res,0)));
-        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, res, 7)));
-        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, res, 0)));
-        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, res,7)));
+        assertEquals(ones, Nd4j.getExecutioner().exec(new ScalarGreaterThan(linspace, res,0)));
+        assertEquals(zeros, Nd4j.getExecutioner().exec(new ScalarGreaterThan(linspace, res, 7)));
+        assertEquals(zeros, Nd4j.getExecutioner().exec(new ScalarLessThan(linspace, res, 0)));
+        assertEquals(ones, Nd4j.getExecutioner().exec(new ScalarLessThan(linspace, res,7)));
     }
 
     @Test
@@ -568,7 +568,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testIMax() {
         INDArray arr = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         IMax imax = new IMax(arr);
-        assertEquals(9, ((IndexAccumulation) Nd4j.getExecutioner().exec(imax)).getFinalResult());
+        assertEquals(9, Nd4j.getExecutioner().execAndReturn(imax).getFinalResult().intValue());
 
         arr.muli(-1);
         imax = new IMax(arr);
@@ -580,11 +580,11 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testIMin() {
         INDArray arr = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         IMin imin = new IMin(arr);
-        assertEquals(0, ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult());
+        assertEquals(0, Nd4j.getExecutioner().execAndReturn(imin).getFinalResult().intValue());
 
         arr.muli(-1);
         imin = new IMin(arr);
-        int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult().intValue();
+        int minIdx = Nd4j.getExecutioner().execAndReturn(imin).getFinalResult().intValue();
         assertEquals(9, minIdx);
     }
 
