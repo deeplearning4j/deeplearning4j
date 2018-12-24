@@ -57,6 +57,8 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     // cached instance, for dataType checks
     protected DataBuffer extraArgz;
 
+    protected INDArray dimensionz;
+
     public BaseOp() {
     }
 
@@ -492,5 +494,21 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         result = 31 * result + (passThrough ? 1 : 0);
         result = 31 * result + (extraArgz != null ? extraArgz.hashCode() : 0);
         return result;
+    }
+
+
+    protected void defineDimensions(int... dimensions){
+        if (dimensions != null && dimensions.length > 0) {
+            dimensions = Shape.normalizeAxis(x.rank(), dimensions);
+        }
+
+        if (dimensions == null || dimensions.length == 0)
+            this.dimensionz = Nd4j.empty(DataType.INT);
+        else
+            this.dimensionz = Nd4j.createFromArray(dimensions);
+    }
+
+    public INDArray dimensions() {
+        return dimensionz;
     }
 }

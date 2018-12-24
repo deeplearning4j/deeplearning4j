@@ -46,8 +46,6 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     protected boolean keepDims = false;
     protected boolean newFormat = false;
 
-    protected INDArray dimensionz;
-
     public BaseIndexAccumulation(SameDiff sameDiff,
                                  SDVariable i_v,
                                  boolean keepDims,
@@ -179,17 +177,5 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
                     "got result array of type %s for op %s", z.dataType(), getClass());
 
         return true;
-    }
-
-    protected void defineDimensions(int... dimensions){
-        if (dimensions == null || dimensions.length == 0)
-            this.dimensionz = Nd4j.empty(DataType.INT);
-        else
-            this.dimensionz = Nd4j.createFromArray(dimensions);
-    }
-
-    @Override
-    public INDArray dimensions() {
-        return dimensionz;
     }
 }

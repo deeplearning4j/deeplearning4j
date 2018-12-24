@@ -59,8 +59,6 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     protected boolean newFormat = false;
     protected boolean isComplex = false;
 
-    protected INDArray dimensionz;
-
 
     public BaseReduceOp(SameDiff sameDiff,
                         SDVariable i_v,
@@ -274,18 +272,6 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     @Override
     public float zeroHalf() {
         return 0;
-    }
-
-    @Override
-    public INDArray dimensions() {
-        return dimensionz;
-    }
-
-    protected void defineDimensions(int... dimensions){
-        if (dimensions == null || dimensions.length == 0)
-            this.dimensionz = Nd4j.empty(DataType.INT);
-        else
-            this.dimensionz = Nd4j.createFromArray(dimensions);
     }
 
     @Override

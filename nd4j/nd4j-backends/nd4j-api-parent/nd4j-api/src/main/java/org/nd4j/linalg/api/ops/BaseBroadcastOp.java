@@ -41,7 +41,6 @@ import java.util.Map;
 @Slf4j
 public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
-    protected INDArray dimensionz;
     protected int[] dimension;
 
 
@@ -232,10 +231,5 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     @Override
     public Type getOpType() {
         return Type.BROADCAST;
-    }
-
-    @Override
-    public INDArray dimensions() {
-        return dimensionz;
     }
 }
