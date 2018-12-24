@@ -28,6 +28,7 @@
 #include <string>
 #include <stdexcept>
 #include <StringUtils.h>
+#include <specials_cuda.h>
 
 using namespace simdOps;
 
@@ -66,15 +67,17 @@ namespace functions {
         template<typename X, typename Y, typename Z>
         template <typename OpType>
 		__device__ void Broadcast<X,Y,Z>::transformCuda(
-		void *vx,
-		Nd4jLong *xShapeInfo,
-		void *vy,
-		Nd4jLong *yShapeInfo,
-		void *vz,
-		Nd4jLong *zShapeInfo,
-		int *dimension,
-		int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+		                              void *vx, Nd4jLong *xShapeInfo,
+		                              void *vy, Nd4jLong *yShapeInfo,
+		                              void *vz, Nd4jLong *zShapeInfo,
+		                              int *dimension, int dimensionLength, 
+                                      Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
+            if (tadOnlyShapeInfoZ == nullptr) {
+                tadOnlyShapeInfoZ = tadOnlyShapeInfo;
+                tadOffsetsZ = tadOffsets;
+            }
+            
             auto x = reinterpret_cast<X*>(vx);
             auto y = reinterpret_cast<Y*>(vy);
             auto z = reinterpret_cast<Z*>(vz);
@@ -88,42 +91,25 @@ namespace functions {
             __shared__ int numTads;
             __shared__ Nd4jLong yEWS;
             __shared__ Nd4jLong zEWS;
-            __shared__ Nd4jLong tadOffsetForBlock;
-            __shared__ Nd4jLong tadOffsetForBlockZ;
-            __shared__ Nd4jLong lenY;
-            __shared__ Nd4jLong lenZ;
 
-            __shared__ Z *rR;
+            __shared__ Z *rZ;
             __shared__ X *rX;
 
             if (threadIdx.x == 0) {
-                if (tadOnlyShapeInfoZ == nullptr) {
-                    tadOnlyShapeInfoZ = tadOnlyShapeInfo;
-                    tadOffsetsZ = tadOffsets;
-                }
-
+                                
    	            tadLength = shape::length(tadOnlyShapeInfo);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                 numTads = shape::length(xShapeInfo) / tadLength;
                 yEWS = shape::elementWiseStride(yShapeInfo);
-                zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
-                lenY = shape::length(yShapeInfo);
-                lenZ = shape::length(tadOnlyShapeInfoZ);
+                zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);                
             }
             __syncthreads();
 
             for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-                if (threadIdx.x == 0) {
-                    tadOffsetForBlockZ = tadOffsetsZ[r];
-                    auto vr = reinterpret_cast<void *>(z);
-                    auto vx = reinterpret_cast<void *>(x);
-                    if (vr != vx)
-                        tadOffsetForBlock = tadOffsets[r];
-                    else
-                        tadOffsetForBlock = tadOffsetForBlockZ;
-
-                    rR = z + tadOffsetForBlockZ;
-                    rX = x + tadOffsetForBlock;
+                
+                if (threadIdx.x == 0) {                                       
+                    rX = x + tadOffsets[r];
+                    rZ = z + tadOffsetsZ[r];                    
                 }
                 __syncthreads();
 
@@ -131,17 +117,16 @@ namespace functions {
                 if(tadEWS > 0 && zEWS > 0 && yEWS > 0 && dimensionLength == 1) {
                     
                     for (int i = threadIdx.x; i < tadLength; i+= blockDim.x) 
-                        rR[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS]);                
+                        rZ[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS]); 
                 }
                 else {
-
+                    // it is expected that x and z tads and y array all have the same length
                     for (Nd4jLong i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-
-                        auto xOffset = tadOffsetForBlock  + shape::getIndexOffset(i, tadOnlyShapeInfo,  tadLength);
-                        auto zOffset = tadOffsetForBlockZ + shape::getIndexOffset(i, tadOnlyShapeInfoZ, lenZ);
-                        auto yOffset = shape::getIndexOffset(i, yShapeInfo, lenY);
- 
-                        z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+                        
+                        auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo,  tadLength);
+                        auto yOffset = shape::getIndexOffset(i, yShapeInfo, tadLength);
+                        auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ, tadLength);
+                        rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset]);
                     }
                 }
             }

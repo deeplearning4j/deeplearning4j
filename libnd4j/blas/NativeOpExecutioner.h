@@ -215,38 +215,7 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
-
-
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
+/**
      *
      * @param opNum
      * @param x
@@ -282,6 +251,40 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                             int *dimension, int dimensionLength,
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ);
+    
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
 
 
   /**

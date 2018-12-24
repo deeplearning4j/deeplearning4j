@@ -23,7 +23,6 @@
 #include <graph/exceptions/datatype_exception.h>
 #include <helpers/CudaLaunchHelper.h>
 #include <helpers/ShapeBuilders.h>
-#include <specials_cuda.h>
 
 #include <loops/transform_float.h>
 #include <loops/transform_bool.h>
@@ -231,7 +230,7 @@ void NativeOpExecutioner::execBroadcast(nd4j::graph::LaunchContext *lc,
 #ifdef __ND4J_EXPERIMENTAL__
 	BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
 #endif
 
 	DEBUG_KERNEL(stream, opNum);

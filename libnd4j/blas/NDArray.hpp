@@ -1752,13 +1752,13 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
                     if (col)
                         printf(" ");
                     if (arr->isR())
-                        printf("%f", arr->e<float>(row, col));
+                        printf("%f,", arr->e<float>(row, col));
                     else if (arr->isZ())
-                        printf("%lld", arr->e<Nd4jLong>(row, col));
+                        printf("%lld,", arr->e<Nd4jLong>(row, col));
                     else if (arr->isB())
-                        printf("%s", arr->e<bool>(row, col)?"true":"false");
+                        printf("%s,", arr->e<bool>(row, col)?"true":"false");
                     else if (arr->isS()) {
-                        printf("\"%s\"", arr->e<std::string>(row * cols + col).c_str());
+                        printf("\"%s\",", arr->e<std::string>(row * cols + col).c_str());
                     }
                 }
                 if (row < rows - 1)
@@ -1819,7 +1819,6 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
             else if (this->isS()) {
                 printf("\"%s\"\n", this->e<std::string>(0).c_str());
             }
-
         }
         else if (rowFlag)
             printBuffer(nullptr, limit);
@@ -1998,7 +1997,7 @@ NDArray NDArray::transp() const {
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, tad->tadOnlyShapeInfo, tad->tadOffsets);
+        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, nullptr, nullptr);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2017,7 +2016,7 @@ NDArray NDArray::transp() const {
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Subtract, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, tad->tadOnlyShapeInfo, tad->tadOffsets);
+        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Subtract, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, nullptr, nullptr);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2036,7 +2035,7 @@ NDArray NDArray::transp() const {
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, tad->tadOnlyShapeInfo, tad->tadOffsets);
+        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, nullptr, nullptr);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2057,7 +2056,7 @@ NDArray NDArray::transp() const {
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Divide, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, tad->tadOnlyShapeInfo, tad->tadOffsets);
+        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Divide, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, nullptr, nullptr);
 
     }
 
@@ -2076,7 +2075,7 @@ NDArray NDArray::transp() const {
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, tad->tadOnlyShapeInfo, tad->tadOffsets);
+        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, nullptr, nullptr);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2094,7 +2093,7 @@ NDArray NDArray::transp() const {
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, tad->tadOnlyShapeInfo, tad->tadOffsets);
+        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, nullptr, nullptr);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2111,7 +2110,7 @@ NDArray NDArray::transp() const {
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, tad->tadOnlyShapeInfo, tad->tadOffsets);
+        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, nullptr, nullptr);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2128,7 +2127,7 @@ NDArray NDArray::transp() const {
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, tad->tadOnlyShapeInfo, tad->tadOffsets);
+        NativeOpExecutioner::execBroadcast(nullptr, nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, nullptr, nullptr);
     }
 
 
@@ -2717,7 +2716,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         tad.createOffsets();
 
         // TODO: eventually we want separate tads here
-        NativeOpExecutioner::execBroadcast(nullptr, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
+        NativeOpExecutioner::execBroadcast(nullptr, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, nullptr, nullptr);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -2753,7 +2752,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
         // TODO: eventually we want separate tads here
         NativeOpExecutioner::execBroadcastBool(nullptr, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD,
                 tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD,
-                result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
+                result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, nullptr, nullptr);
     }
 
 //////////////////////////////////////////////////////////////////////////
