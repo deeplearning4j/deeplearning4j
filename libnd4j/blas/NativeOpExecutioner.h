@@ -252,6 +252,40 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ);
     
+/**
+  *
+  * @param opNum
+  * @param dx
+  * @param xStride
+  * @param y
+  * @param yStride
+  * @param result
+  * @param resultStride
+  * @param extraParams
+  * @param n
+  */
+    static void execPairwiseTransform(nd4j::graph::LaunchContext *lc,
+                                    int opNum,
+                                    void *hX, Nd4jLong *hXShapeInfo,
+                                    void *dX, Nd4jLong *dXShapeInfo,
+                                    void *hY, Nd4jLong *hYShapeInfo,
+                                    void *dY, Nd4jLong *dYShapeInfo,
+                                    void *hZ, Nd4jLong *hZShapeInfo,
+                                    void *dZ, Nd4jLong *dZShapeInfo,
+                                    void *extraParams);
+
+    static void execPairwiseBoolTransform(nd4j::graph::LaunchContext *lc,
+                                    int opNum,
+                                    void *hX, Nd4jLong *hXShapeInfo,
+                                    void *dX, Nd4jLong *dXShapeInfo,
+                                    void *hY, Nd4jLong *hYShapeInfo,
+                                    void *dY, Nd4jLong *dYShapeInfo,
+                                    void *hZ, Nd4jLong *hZShapeInfo,
+                                    void *dZ, Nd4jLong *dZShapeInfo,
+                                    void *extraParams);
+
+
+
 
 
  
@@ -287,38 +321,11 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
 
 
 
-  /**
-  *
-  * @param opNum
-  * @param dx
-  * @param xStride
-  * @param y
-  * @param yStride
-  * @param result
-  * @param resultStride
-  * @param extraParams
-  * @param n
-  */
-    static void execPairwiseTransform(nd4j::graph::LaunchContext *lc,
-                                    int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *hY, Nd4jLong *hYShapeInfo,
-                                    void *dY, Nd4jLong *dYShapeInfo,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
-                                    void *extraParams);
+  
 
 
-    static void execPairwiseBoolTransform(nd4j::graph::LaunchContext *lc,
-                                    int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *hY, Nd4jLong *hYShapeInfo,
-                                    void *dY, Nd4jLong *dYShapeInfo,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
-                                    void *extraParams);
+
+
 
     /**
      *
