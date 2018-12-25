@@ -211,6 +211,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         INDArray ret = op.z();
 
         checkForCompression(op);
+        op.validateDataTypes();
         //validateDataType(Nd4j.dataType(), op);
 
         for (int i = 0; i < dimension.length; i++)
