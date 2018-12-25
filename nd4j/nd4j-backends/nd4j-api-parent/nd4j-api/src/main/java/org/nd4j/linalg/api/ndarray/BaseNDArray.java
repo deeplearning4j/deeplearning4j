@@ -6492,4 +6492,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         released = true;
     }
+
+    @Override
+    public INDArray like() {
+        return Nd4j.create(this.dataType(), this.shape(), Nd4j.getStrides(this.shape(), this.ordering()), this.ordering());
+    }
+
+    @Override
+    public INDArray ulike() {
+        return Nd4j.createUninitialized(this.dataType(), this.shape(), this.ordering());
+    }
 }
