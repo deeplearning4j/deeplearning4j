@@ -478,7 +478,7 @@ public class SpecialTests extends BaseNd4jTest {
 
         Nd4j.getExecutioner().commit();
         INDArray out = null;
-        for (int e = 0; e < 100; e++) {
+        for (int e = 0; e < 5; e++) {
             if (e % 10 == 0)
                 log.info("Iteration: [{}]", e);
 

@@ -530,6 +530,26 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(IndexAccumulation op) {
+        val dimension = op.dimensions().toIntVector();
+        val wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == 0;
+        if (op.z() == null) {
+            long[] retShape = wholeArray ? (op.isNewFormat() ? new long[]{} : new long[]{1, 1}) : ArrayUtil.removeIndex(op.x().shape(), dimension);
+
+            //ensure vector is proper shape
+            if (retShape.length == 1) {
+                if (dimension[0] == 0)
+                    retShape = new long[]{1, retShape[0]};
+                else
+                    retShape = new long[]{retShape[0], 1};
+            } else if (retShape.length == 0) {
+                retShape = new long[]{1, 1};
+            }
+
+            INDArray ret = Nd4j.createUninitialized(DataType.LONG, retShape);
+
+            op.setZ(ret);
+        }
+
         long st = profilingHookIn(op);
 
         checkForCompression(op);
@@ -539,31 +559,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
-        val dimension = op.dimensions().toIntVector();
-
-        val wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == 0;
-        long[] retShape = wholeArray ? (op.isNewFormat() ? new long[]{} : new long[] {1, 1}) : ArrayUtil.removeIndex(op.x().shape(), dimension);
-
-
-        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape)) {
+        if (op.x().isVector() && op.x().length() == op.z().length()) {
             return op.x();
         }
-
-
-        //ensure vector is proper shape
-        if (retShape.length == 1) {
-            if (dimension[0] == 0)
-                retShape = new long[] {1, retShape[0]};
-            else
-                retShape = new long[] {retShape[0], 1};
-        } else if (retShape.length == 0) {
-            retShape = new long[] {1, 1};
-        }
-
-
-        INDArray ret = Nd4j.createUninitialized(DataType.LONG, retShape);
-
-        op.setZ(ret);
 
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             lastOp.set(op.opName());
