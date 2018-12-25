@@ -147,17 +147,17 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
 
                 if (j < shortSeq / window) {
                     assertEquals("Failed on window " + j + " batch 0, loop " + i, targetDist,
-                                    minorityDist.getFloat(0, 0), tolerancePerc); //should now be close to target dist
+                                    minorityDist.getFloat(0), tolerancePerc); //should now be close to target dist
                     assertEquals("Failed on window " + j + " batch 1, loop " + i, targetDist,
-                                    minorityDist.getFloat(1, 0), tolerancePerc); //should now be close to target dist
-                    assertEquals("Failed on window " + j + " batch 2, loop " + i, 0.8, minorityDist.getFloat(2, 0),
+                                    minorityDist.getFloat(1), tolerancePerc); //should now be close to target dist
+                    assertEquals("Failed on window " + j + " batch 2, loop " + i, 0.8, minorityDist.getFloat(2),
                                     tolerancePerc); //should be unchanged as it was already above target dist
                 }
-                assertEquals("Failed on window " + j + " batch 3, loop " + i, targetDist, minorityDist.getFloat(3, 0),
+                assertEquals("Failed on window " + j + " batch 3, loop " + i, targetDist, minorityDist.getFloat(3),
                                 tolerancePerc); //should now be close to target dist
-                assertEquals("Failed on window " + j + " batch 4, loop " + i, targetDist, minorityDist.getFloat(4, 0),
+                assertEquals("Failed on window " + j + " batch 4, loop " + i, targetDist, minorityDist.getFloat(4),
                                 tolerancePerc); //should now be close to target dist
-                assertEquals("Failed on window " + j + " batch 5, loop " + i, 0.8, minorityDist.getFloat(5, 0),
+                assertEquals("Failed on window " + j + " batch 5, loop " + i, 0.8, minorityDist.getFloat(5),
                                 tolerancePerc); //should be unchanged as it was already above target dist
             }
         }
@@ -210,17 +210,17 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
 
                 if (j < shortSeq / window) {
                     assertEquals("Failed on window " + j + " batch 0, loop " + i, targetDist,
-                                    minorityDist.getFloat(0, 0), tolerancePerc); //should now be close to target dist
+                                    minorityDist.getFloat(0), tolerancePerc); //should now be close to target dist
                     assertEquals("Failed on window " + j + " batch 1, loop " + i, targetDist,
-                                    minorityDist.getFloat(1, 0), tolerancePerc); //should now be close to target dist
-                    assertEquals("Failed on window " + j + " batch 2, loop " + i, 0.8, minorityDist.getFloat(2, 0),
+                                    minorityDist.getFloat(1), tolerancePerc); //should now be close to target dist
+                    assertEquals("Failed on window " + j + " batch 2, loop " + i, 0.8, minorityDist.getFloat(2),
                                     tolerancePerc); //should be unchanged as it was already above target dist
                 }
-                assertEquals("Failed on window " + j + " batch 3, loop " + i, targetDist, minorityDist.getFloat(3, 0),
+                assertEquals("Failed on window " + j + " batch 3, loop " + i, targetDist, minorityDist.getFloat(3),
                                 tolerancePerc); //should now be close to target dist
-                assertEquals("Failed on window " + j + " batch 4, loop " + i, targetDist, minorityDist.getFloat(4, 0),
+                assertEquals("Failed on window " + j + " batch 4, loop " + i, targetDist, minorityDist.getFloat(4),
                                 tolerancePerc); //should now be close to target dist
-                assertEquals("Failed on window " + j + " batch 5, loop " + i, 0.8, minorityDist.getFloat(5, 0),
+                assertEquals("Failed on window " + j + " batch 5, loop " + i, 0.8, minorityDist.getFloat(5),
                                 tolerancePerc); //should be unchanged as it was already above target dist
             }
         }
@@ -251,10 +251,10 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
         minorityCount = labels.sum(1);
         seqCount = multiDataSet.getLabelsMaskArray(0).sum(1);
         minorityDist = minorityCount.div(seqCount);
-        assertEquals(minorityDist.getDouble(1, 0), 0.5, tolerancePerc);
-        assertEquals(minorityDist.getDouble(2, 0), 0.5, tolerancePerc);
-        assertEquals(minorityDist.getDouble(4, 0), 0.5, tolerancePerc);
-        assertEquals(minorityDist.getDouble(5, 0), 0.5, tolerancePerc);
+        assertEquals(minorityDist.getDouble(1), 0.5, tolerancePerc);
+        assertEquals(minorityDist.getDouble(2), 0.5, tolerancePerc);
+        assertEquals(minorityDist.getDouble(4), 0.5, tolerancePerc);
+        assertEquals(minorityDist.getDouble(5), 0.5, tolerancePerc);
 
         //datasetB - override is switched so grab index=0
         labels = multiDataSet.getLabels(1).get(NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.all())
@@ -262,10 +262,10 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
         minorityCount = labels.sum(1);
         seqCount = multiDataSet.getLabelsMaskArray(1).sum(1);
         minorityDist = minorityCount.div(seqCount);
-        assertEquals(minorityDist.getDouble(1, 0), 0.3, tolerancePerc);
-        assertEquals(minorityDist.getDouble(2, 0), 0.3, tolerancePerc);
-        assertEquals(minorityDist.getDouble(4, 0), 0.3, tolerancePerc);
-        assertEquals(minorityDist.getDouble(5, 0), 0.3, tolerancePerc);
+        assertEquals(minorityDist.getDouble(1), 0.3, tolerancePerc);
+        assertEquals(minorityDist.getDouble(2), 0.3, tolerancePerc);
+        assertEquals(minorityDist.getDouble(4), 0.3, tolerancePerc);
+        assertEquals(minorityDist.getDouble(5), 0.3, tolerancePerc);
 
     }
 

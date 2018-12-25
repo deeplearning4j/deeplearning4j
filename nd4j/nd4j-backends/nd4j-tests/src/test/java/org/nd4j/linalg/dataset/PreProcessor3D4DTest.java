@@ -233,7 +233,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
                         1, 251.00, 1, 260.00, 1, 269.00, 1, 278.00, 1, 287.00, 1, 296.00, 1, 305.00, 1, 314.00, 1,
                         323.00, 1, 332.00, 1, 341.00, 1, 350.00}).reshape(1, -1);
 
-        float templateStd = array.std(1).getFloat(0, 0);
+        float templateStd = array.std(1).getFloat(0);
 
         assertEquals(301.22601, templateStd, 0.01);
     }
