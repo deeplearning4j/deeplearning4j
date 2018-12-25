@@ -501,6 +501,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     ", dimension = " + Arrays.toString(dimension) + ")");
                         }
                     } else {
+                        if (dimension.length == 0)
+                            throw new ND4JIllegalStateException("TAD vs TAD comparison requires dimension (or other comparison mode was supposed to be used?)");
+
                         //Every X TAD vs. entirety of Y
                         val xTADSize = op.x().lengthLong() / op.x().tensorsAlongDimension(dimension);
 
