@@ -154,7 +154,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
             INDArray inputA = a.getFeatures()[i];
             INDArray inputB = b.getFeatures()[i];
             INDArray delta = Transforms.abs(inputA.sub(inputB)).div(inputB);
-            double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0, 0);
+            double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0);
             if (maxdeltaPerc > max) {
                 max = maxdeltaPerc;
             }

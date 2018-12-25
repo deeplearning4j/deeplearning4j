@@ -352,7 +352,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             //calculating stats
             // The theoretical mean should be the mean of 1,..samples*timesteps
             float theoreticalMean = origin - 1 + (samples * timeSteps + 1) / 2.0f;
-            expectedMean = Nd4j.create(new double[] {theoreticalMean, theoreticalMean, theoreticalMean}).reshape(3, 1).castTo(Nd4j.defaultFloatingPointType());
+            expectedMean = Nd4j.create(new double[] {theoreticalMean, theoreticalMean, theoreticalMean}).reshape(3, 1).castTo(featureScale.dataType());
             expectedMean.muliColumnVector(featureScale);
 
             float stdNaturalNums = (float) Math.sqrt((samples * samples * timeSteps * timeSteps - 1) / 12);
