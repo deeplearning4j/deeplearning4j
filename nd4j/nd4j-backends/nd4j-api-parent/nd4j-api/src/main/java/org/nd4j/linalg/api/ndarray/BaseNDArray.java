@@ -4789,8 +4789,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public Number stdNumber(boolean biasCorrected) {
         validateNumericalArray("stdNumber");
-        return Nd4j.getExecutioner().exec(new StandardDeviation(this, biasCorrected))
-                .getDouble(0);
+        return Nd4j.getExecutioner().exec(new StandardDeviation(this, biasCorrected)).getDouble(0);
     }
 
     /**

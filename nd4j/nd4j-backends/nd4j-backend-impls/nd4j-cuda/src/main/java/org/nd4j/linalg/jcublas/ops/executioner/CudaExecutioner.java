@@ -259,20 +259,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer yDevTadShapeInfo = null;
 
         if (op.y() != null) {
-            if ((dimension.length == 1 &&  dimension[0] == Integer.MAX_VALUE )||op.x().tensorAlongDimension(0, dimension).lengthLong() != op.y().lengthLong()) {
+            if (dimension.length == 0 || (dimension.length == 1 &&  dimension[0] == Integer.MAX_VALUE )|| op.x().tensorAlongDimension(0, dimension).lengthLong() != op.y().lengthLong()) {
                 if (!op.isComplexAccumulation() && op.x().lengthLong() != op.y().lengthLong())
                     throw new ND4JIllegalStateException("Op.X [" + op.x().lengthLong() + "] and Op.Y [" + op.y().lengthLong() + "] lengths should match");
 
+                if (!op.z().isScalar()) {
+                    Pair<DataBuffer, DataBuffer> yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
 
-                Pair<DataBuffer, DataBuffer> yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
+                    yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
 
-                yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
+                    DataBuffer yOffsets = yTadBuffers.getSecond();
+                    yDevTadOffsets = yOffsets == null ? null : AtomicAllocator.getInstance().getPointer(yOffsets, context);
 
-                DataBuffer yOffsets = yTadBuffers.getSecond();
-                yDevTadOffsets = yOffsets == null ? null : AtomicAllocator.getInstance().getPointer(yOffsets, context);
-
-                xShapeInfoHostPointer.put(12, yDevTadShapeInfo);
-                xShapeInfoHostPointer.put(13, yDevTadOffsets);
+                    xShapeInfoHostPointer.put(12, yDevTadShapeInfo);
+                    xShapeInfoHostPointer.put(13, yDevTadOffsets);
+                }
             } else {
                 // TAD vs full array code branch
                 val fakeOffsets = Nd4j.getConstantHandler().getConstantBuffer(new int[] {0, 0}, DataType.LONG);
@@ -451,6 +452,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
+    public INDArray exec(Variance op) {
+        return exec((ReduceOp) op);
+    }
+
+    @Override
     public INDArray exec(ReduceOp op) {
         long st = profilingHookIn(op);
         checkForCompression(op);
@@ -463,8 +469,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val maxShape = Shape.getMaxShape(op.x(),op.y());
 
         long[] retShape;
-        if (Shape.wholeArrayDimension(dimension))
-            retShape = new long[] {1, 1};
+        val wholeDims = Shape.wholeArrayDimension(dimension) || op.x().rank() == dimension.length || dimension.length == 0;
+        if (wholeDims)
+            if (op.isNewFormat())
+                retShape = new long[0];
+            else
+                retShape = new long[] {1, 1};
         else
             retShape = ArrayUtil.removeIndex(maxShape, dimension);
         //ensure vector is proper shape
@@ -494,7 +504,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
                     if (op.x().lengthLong() == op.y().lengthLong()) {
                         //Pairwise
-                        if (op.x().tensorsAlongDimension(dimension) != op.y().tensorsAlongDimension(dimension)) {
+                        if (!wholeDims && op.x().tensorsAlongDimension(dimension) != op.y().tensorsAlongDimension(dimension)) {
                             throw new ND4JIllegalStateException("Number of TADs along dimension don't match: (x shape = " +
                                     Arrays.toString(op.x().shape()) + ", y shape = " + Arrays.toString(op.y().shape()) +
                                     ", dimension = " + Arrays.toString(dimension) + ")");
@@ -540,8 +550,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val dimension = op.dimensions().toIntVector();
 
-        long[] retShape = Shape.wholeArrayDimension(dimension) ? (op.isNewFormat() ? new long[]{} : new long[] {1, 1})
-                : ArrayUtil.removeIndex(op.x().shape(), dimension);
+        val wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == 0;
+        long[] retShape = wholeArray ? (op.isNewFormat() ? new long[]{} : new long[] {1, 1}) : ArrayUtil.removeIndex(op.x().shape(), dimension);
 
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape)) {
@@ -1191,6 +1201,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return null;
     }
 
+    @Override
+    public INDArray exec(ScalarOp op) {
+        invoke(op);
+        return op.z();
+    }
+
     protected CudaContext invoke(ScalarOp op) {
         long st = profilingHookIn(op);
 
@@ -1209,8 +1225,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             lastOp.set(op.opName());
 
-        if (op.getDimension() != null) {
-            intercept(op, op.getDimension());
+        if (op.dimensions() != null) {
+            intercept(op, op.dimensions().toIntVector());
             return null;
         }
 
