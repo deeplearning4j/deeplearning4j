@@ -477,15 +477,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 retShape = new long[] {1, 1};
         else
             retShape = ArrayUtil.removeIndex(maxShape, dimension);
-        //ensure vector is proper shape
-        if (retShape.length == 1) {
-            if (dimension[0] == 0)
-                retShape = new long[] {1, retShape[0]};
-            else
-                retShape = new long[] {retShape[0], 1};
-        } else if (retShape.length == 0) {
-            retShape = new long[] {};
-        }
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();
