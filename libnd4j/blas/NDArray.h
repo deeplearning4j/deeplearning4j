@@ -146,7 +146,7 @@ namespace nd4j {
         std::string toStringValue(T value);
 #ifdef __CUDABLAS__
     protected:
-        long _opConter = 0;
+        long _opCounter = 0;
         long _writeHost = 0;
         long _writeDevice = 0;
         long _readHost = 0;
