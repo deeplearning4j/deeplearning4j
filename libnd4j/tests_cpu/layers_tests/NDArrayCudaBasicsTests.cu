@@ -212,3 +212,35 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_4) {
         ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
     }
 }
+
+//////////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, TestMultiply_1) {
+    // allocating host-side arrays
+    auto x = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
+    auto z = NDArrayFactory::create<double>('c', { 5 });
+
+    auto exp = NDArrayFactory::create<double>('c', { 5 }, { 1, 4, 9, 16, 25 });
+
+    // making raw buffers
+    //Nd4jPointer devBufferPtrX, devBufferPtrZ, devShapePtrX;
+    //cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrX), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrZ), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
+    //ASSERT_EQ(0, res);
+    x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
+    x.printBuffer("3X = ");
+    y.printBuffer("3Y = ");
+    z.printBuffer("3Result out");
+
+    //
+    // cudaFree(devBufferPtrX);
+    //cudaFree(devBufferPtrZ);
+    //cudaFree(devShapePtrX);
+
+    for (int e = 0; e < z.lengthOf(); e++) {
+        ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+    }
+}
