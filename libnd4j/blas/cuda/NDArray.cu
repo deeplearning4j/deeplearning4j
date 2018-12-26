@@ -787,6 +787,30 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         }
     }
 
+    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, void *extraParams) const{
+        if (isS())
+            throw std::runtime_error("NDArray::applyPairwiseTransform: you can't use this method on String array!");
+        if (other->lengthOf() != target->lengthOf())
+            throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
+        if (target->_dataType != this->_dataType && target->_dataType != other->_dataType)
+            throw std::invalid_argument("NDArray::applyPairwiseTransform method - type of target array must be the same as type of this or other array !");
+
+        NativeOpExecutioner::execPairwiseTransform(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams);
+//        NativeOpExecutioner::execPairwiseTransform(_context->getCudaStream(), op, this->_buffer, this->_shapeInfo,
+//                this->_bufferD, this->_shapeInfoD,
+//                other->buffer(), other->shapeInfo(), other->specialBuffer(), other->specialShapeInfo(),
+//                target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams);
+        auto res = cudaStreamSynchronize(*(_context->getCudaStream()));
+        if (res != 0) throw std::runtime_error("Operation failed.");
+        if (target)
+            cudaMemcpy(target->_buffer, target->_bufferD, target->lengthOf() * target->sizeOfT(), cudaMemcpyDeviceToHost);
+        else
+            cudaMemcpy(this->_buffer, this->_bufferD, this->lengthOf() * this->sizeOfT(), cudaMemcpyDeviceToHost);
+
+        res = cudaStreamSynchronize(*(_context->getCudaStream()));
+        if (res != 0) throw std::runtime_error("Syncronizing with operation failed.");
+    }
+
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*
 #ifndef __CLION_IDE__
@@ -794,6 +818,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 #endif
  */
 }
+
+
 
 #endif
 

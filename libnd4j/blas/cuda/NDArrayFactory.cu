@@ -423,10 +423,14 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
     int8_t* specialBuffer = nullptr;
     Nd4jLong* specialShapeInfo = nullptr;
     ALLOCATE(buffer, context->getWorkspace(), res.lengthOf() * DataTypeUtils::sizeOfElement(dtype), int8_t);
-    memset(buffer, 0, res.lengthOf() * res.sizeOfT());
-    cudaMalloc(&specialBuffer, res.lengthOf() * DataTypeUtils::sizeOfElement(dtype));
-    cudaMalloc(&specialShapeInfo, shape::shapeInfoByteLength(res.shapeInfo()));
-    
+    size_t bufferSize = res.lengthOf() * res.sizeOfT();
+    size_t shapeSize = shape::shapeInfoByteLength(res.shapeInfo());
+    memset(buffer, 0, bufferSize);
+    cudaMalloc(&specialBuffer, bufferSize);
+    cudaMalloc(&specialShapeInfo, shapeSize);
+    cudaMemcpy(specialBuffer, res.buffer(), bufferSize, cudaMemcpyHostToDevice);
+    cudaMemcpy(specialShapeInfo, res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
+
     res.setBuffer(buffer);
     res.setContext(context);
     res.setSpecialBuffers(specialBuffer, specialShapeInfo);
@@ -443,15 +447,19 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::graph::LaunchContext*
     
     int8_t *buffer = nullptr;
     ALLOCATE(buffer, context->getWorkspace(), DataTypeUtils::sizeOfElement(dtype), int8_t);
-    memset(buffer, 0, DataTypeUtils::sizeOfElement(dtype));
+    size_t bufferSize = DataTypeUtils::sizeOfElement(dtype);
+    memset(buffer, 0, bufferSize);
     res.setBuffer(buffer);
     res.setContext(context);
     res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace()));
     res.triggerAllocationFlag(true, true);
     int8_t* specialBuffer = nullptr;
     Nd4jLong* specialShapeInfo = nullptr;
+    size_t shapeSize = shape::shapeInfoByteLength(res.shapeInfo());
     cudaMalloc(&specialBuffer, DataTypeUtils::sizeOfElement(dtype));
-    cudaMalloc(&specialShapeInfo, shape::shapeInfoByteLength(res.shapeInfo()));
+    cudaMalloc(&specialShapeInfo, shapeSize);
+    cudaMemcpy(specialBuffer, res.buffer(), bufferSize, cudaMemcpyHostToDevice);
+    cudaMemcpy(specialShapeInfo, res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
     res.setSpecialBuffers(specialBuffer, specialShapeInfo);
 
     return res;
@@ -528,7 +536,7 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
         //memcpy(res.buffer(), data.data(), res.lengthOf() * res.sizeOfT());
         memcpyFromVector<T>(res.getBuffer(), data);
         size_t bufferSize = data.size() * sizeof(T);
-        size_t shapeSize = shape.size() * sizeof(Nd4jLong);
+        size_t shapeSize = shape::shapeInfoByteLength(res.shapeInfo());//shape.size() * sizeof(Nd4jLong);
         cudaMemcpy(res.specialBuffer(), res.buffer(), bufferSize, cudaMemcpyHostToDevice);
         cudaMemcpy(res.specialShapeInfo(), res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
 
@@ -561,10 +569,11 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
     result.triggerAllocationFlag(false, true);
     int8_t* specialBuffer = nullptr;
     Nd4jLong* specialShape = nullptr;
+    size_t shapeSize = shape::shapeInfoByteLength(result.shapeInfo());
     cudaMalloc(&specialBuffer, shape::length(result.shapeInfo()) * sizeof(T));
-    cudaMalloc(&specialShape, shape.size() * sizeof(Nd4jLong));
+    cudaMalloc(&specialShape, shapeSize);
     cudaMemcpy(specialBuffer, result.buffer(), result.lengthOf() * sizeof(T), cudaMemcpyHostToDevice);
-    cudaMemcpy(specialShape, result.shapeInfo(), shape::shapeInfoByteLength(result.shapeInfo()), cudaMemcpyHostToDevice);
+    cudaMemcpy(specialShape, result.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
     result.setSpecialBuffers(specialBuffer, specialShape);
     return result;
 }

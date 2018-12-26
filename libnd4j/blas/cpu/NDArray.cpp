@@ -808,6 +808,17 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         }
     }
 
+    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, void *extraParams) const{
+        if (isS())
+            throw std::runtime_error("NDArray::applyPairwiseTransform: you can't use this method on String array!");
+        if (other->lengthOf() != target->lengthOf())
+            throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
+        if (target->_dataType != this->_dataType && target->_dataType != other->_dataType)
+            throw std::invalid_argument("NDArray::applyPairwiseTransform method - type of target array must be the same as type of this or other array !");
+
+        NativeOpExecutioner::execPairwiseTransform(nullptr, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams);
+    }
+
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*
 #ifndef __CLION_IDE__
