@@ -144,6 +144,23 @@ namespace nd4j {
 
         template<typename T>
         std::string toStringValue(T value);
+#ifdef __CUDABLAS__
+    protected:
+        long _opConter = 0;
+        long _writeHost = 0;
+        long _writeDevice = 0;
+        long _readHost = 0;
+        long _readDevice = 0;
+
+        void writeHostUp()   {  _writeHost   = ++_opCounter; }
+        void writeDeviceUp() {  _writeDevice = ++_opCounter; }
+        void readHostUp()    {  _readHost    = ++_opCounter; }
+        void readDeviceUp()  {  _readDevice  = ++_opCounter; }
+
+        void syncToHost();
+        void syncToDevice();
+#endif
+
 
     public:
         NDArray();

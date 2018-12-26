@@ -805,24 +805,27 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         cudaError_t err = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
         auto stream = reinterpret_cast<cudaStream_t *>(&nativeStream);
         _context->setCudaStream(stream);
-        //graph::LaunchContext lc(stream, nullptr, nullptr);
         NativeOpExecutioner::execPairwiseTransform(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams);
-//        NativeOpExecutioner::execPairwiseTransform(_context->getCudaStream(), op, this->_buffer, this->_shapeInfo,
-//                this->_bufferD, this->_shapeInfoD,
-//                other->buffer(), other->shapeInfo(), other->specialBuffer(), other->specialShapeInfo(),
-//                target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams);
         auto res = cudaStreamSynchronize(*stream);
         if (res != 0) {
             nd4j_printf("Error: %i\n", res);
             throw std::runtime_error("Operation failed.");
         }
-        if (target)
-            cudaMemcpy(target->_buffer, target->_bufferD, target->lengthOf() * target->sizeOfT(), cudaMemcpyDeviceToHost);
-        else
-            cudaMemcpy(this->_buffer, this->_bufferD, this->lengthOf() * this->sizeOfT(), cudaMemcpyDeviceToHost);
+
+        target->syncToHost();
 
         res = cudaStreamSynchronize(*stream);
         if (res != 0) throw std::runtime_error("Syncronizing with operation failed.");
+    }
+
+    void
+    NDArray::syncToHost() {
+        cudaMemcpy(this->_buffer, this->_bufferD, this->lengthOf() * this->sizeOfT(), cudaMemcpyDeviceToHost);
+    }
+
+    void
+    NDArray::syncToDevice() {
+        cudaMemcpy(this->_bufferD, this->_buffer, this->lengthOf() * this->sizeOfT(), cudaMemcpyHostToDevice);
     }
 
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
