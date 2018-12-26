@@ -902,53 +902,6 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         assign(*other);
     }
 
-// This method assigns values of given NDArray to this one
-    void NDArray::assign(const NDArray& other) {
-
-        if (this == &other)
-            return;
-
-        if (!Environment::getInstance()->isExperimentalBuild() && (this->dataType() != other.dataType() && other.dataType() != DataType::BOOL)) {
-            throw datatype_exception::build("NDArray::assign: cannot assign array of different types", this->dataType(), other.dataType());
-        }
-
-        if (other.isScalar()) {
-            if(this->isScalar()) {
-                if (!this->isEmpty() && !other.isEmpty()) {
-                    BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign,
-                                          (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
-                }
-                else if (this->isEmpty() != other.isEmpty()) { // need assign non-empty scalar to empty
-                    if (other.isEmpty())
-                        ArrayOptions::setPropertyBit(this->_shapeInfo, ARRAY_EMPTY);
-                    else
-                        *this = other;
-                }
-            }
-            else {
-                NativeOpExecutioner::execScalar(nullptr, scalar::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr);
-            }
-            return;
-        }
-
-        if (other._length != _length) {
-            auto shapeThis = ShapeUtils::shapeAsString(this);
-            auto shapeThat = ShapeUtils::shapeAsString(&other);
-            nd4j_printf("Can't assign new value to the array: this shape %s; other shape: %s\n", shapeThis.c_str(), shapeThat.c_str());
-            throw std::runtime_error("Lengths of arrays are mismatched");
-        }
-
-        // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1)
-            memcpy(_buffer, other._buffer, _length * sizeOfT());
-        else if(_dataType == other._dataType)
-            NativeOpExecutioner::execTransformSame(nullptr, transform::Copy, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, nullptr, nullptr);
-        else
-            NativeOpExecutioner::execPairwiseTransform(nullptr, pairwise::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr);
-
-    }
-
-
 // This method assigns given value to all elements in this NDArray
     void NDArray::assign(const double value) {
         // just fire scalar

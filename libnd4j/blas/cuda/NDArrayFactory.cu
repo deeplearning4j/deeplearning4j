@@ -377,10 +377,10 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
 
         if (startingValue == (T)0.0f) {
             memset(buffer, 0, length);
+            res->syncToDevice();
         } else {
             res->assign(startingValue);
         }
-
         return res;
     }
     template NDArray* NDArrayFactory::vector(Nd4jLong length, const double startingValue, graph::LaunchContext* context);

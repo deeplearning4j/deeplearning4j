@@ -152,6 +152,7 @@ namespace nd4j {
         long _readHost = 0;
         long _readDevice = 0;
 
+    public:
         void writeHostUp()   {  _writeHost   = ++_opCounter; }
         void writeDeviceUp() {  _writeDevice = ++_opCounter; }
         void readHostUp()    {  _readHost    = ++_opCounter; }
@@ -159,6 +160,7 @@ namespace nd4j {
 
         void syncToHost();
         void syncToDevice();
+        void syncShape();
 #endif
 
 
