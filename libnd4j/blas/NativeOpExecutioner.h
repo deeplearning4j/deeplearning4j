@@ -284,8 +284,51 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                                     void *dZ, Nd4jLong *dZShapeInfo,
                                     void *extraParams);
 
+/**
+ *
+ * @param opNum
+ * @param dx
+ * @param xStride
+ * @param result
+ * @param resultStride
+ * @param extraParams
+ * @param n
+ */
+    static void execTransformFloat(nd4j::graph::LaunchContext *lc,
+                                int opNum,
+                                void *hX, Nd4jLong *hXShapeInfo,
+                                void *dX, Nd4jLong *dXShapeInfo,
+                                void *hZ, Nd4jLong *hZShapeInfo,
+                                void *dZ, Nd4jLong *dZShapeInfo,
+                                void *extraParams,
+                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
+static void execTransformAny(nd4j::graph::LaunchContext *lc,
+                                int opNum,
+                                void *hX, Nd4jLong *hXShapeInfo,
+                                void *dX, Nd4jLong *dXShapeInfo,
+                                void *hZ, Nd4jLong *hZShapeInfo,
+                                void *dZ, Nd4jLong *dZShapeInfo,
+                                void *extraParams,
+                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
+static void execTransformStrict(nd4j::graph::LaunchContext *lc,
+                                    int opNum,
+                                    void *hX, Nd4jLong *hXShapeInfo,
+                                    void *dX, Nd4jLong *dXShapeInfo,
+                                    void *hZ, Nd4jLong *hZShapeInfo,
+                                    void *dZ, Nd4jLong *dZShapeInfo,
+                                    void *extraParams,
+                                    Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+
+static void execTransformSame(nd4j::graph::LaunchContext *lc,
+                                int opNum,
+                                void *hX, Nd4jLong *hXShapeInfo,
+                                void *dX, Nd4jLong *dXShapeInfo,
+                                void *hZ, Nd4jLong *hZShapeInfo,
+                                void *dZ, Nd4jLong *dZShapeInfo,
+                                void *extraParams,
+                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 
  
@@ -483,45 +526,9 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 int *dimension, int dimensionLength,
-                                bool biasCorrected);
+                                bool biasCorrected);    
 
- /**
- *
- * @param opNum
- * @param dx
- * @param xStride
- * @param result
- * @param resultStride
- * @param extraParams
- * @param n
- */
-    static void execTransformFloat(nd4j::graph::LaunchContext *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
-
-    static void execTransformSame(nd4j::graph::LaunchContext *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
-
-    static void execTransformStrict(nd4j::graph::LaunchContext *lc,
-                                    int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
-                                    void *extraParams,
-                                    Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
-
+    
     static void execTransformBool(nd4j::graph::LaunchContext *lc,
                                 int opNum,
                                 void *hX, Nd4jLong *hXShapeInfo,
@@ -529,16 +536,7 @@ static void execScalarBool(nd4j::graph::LaunchContext *lc,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
-
-    static void execTransformAny(nd4j::graph::LaunchContext *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);    
 
     template <typename X>
     static FORCEINLINE void execAggregate(nd4j::graph::LaunchContext *lc,

@@ -960,7 +960,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyTransformFloat_test1) {
         return;
 
     NDArray x1('c', {2,2}, {0, 4, 9, 16}, nd4j::DataType::INT64);
-    NDArray x2('c', {2,2}, {0, 2.25, 6.25, 12.25}, nd4j::DataType::HALF);    
+    NDArray x2('c', {2,2}, {0, 2.25, 6.25, 12.25}, nd4j::DataType::HALF);
     NDArray x3('c', {2,2}, {0, 2.25, 6.25, 12.25}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
         
