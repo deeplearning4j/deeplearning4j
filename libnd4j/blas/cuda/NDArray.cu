@@ -819,20 +819,22 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         auto stream = _context->getCudaStream(); //reinterpret_cast<cudaStream_t *>(&nativeStream);
         //_context->setCudaStream(stream);
         NativeOpExecutioner::execPairwiseTransform(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams);
-        auto res = cudaStreamSynchronize(*stream);
-        if (res != 0) {
-            nd4j_printf("Error: %i\n", res);
-            throw std::runtime_error("Operation failed.");
-        }
+        //auto res = cudaStreamSynchronize(*stream);
+        //if (res != 0) {
+        //    nd4j_printf("Error: %i\n", res);
+        //    throw std::runtime_error("Operation failed.");
+        //}
 
-        target->syncToHost();
-
-        res = cudaStreamSynchronize(*stream);
-        if (res != 0) throw std::runtime_error("Syncronizing with operation failed.");
+        //target->syncToHost();
     }
 
     void
     NDArray::syncToHost() {
+        auto res = cudaStreamSynchronize(*_context->getCudaStream());
+        if (this->_buffer == nullptr) {
+            ALLOCATE(this->_buffer, this->_context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
+            triggerAllocationFlag(true, true);
+        }
         cudaMemcpy(this->_buffer, this->_bufferD, this->lengthOf() * this->sizeOfT(), cudaMemcpyDeviceToHost);
     }
 
@@ -936,16 +938,17 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             throw std::runtime_error("Data size doesn't match shape");
         }
 
-        //ALLOCATE(_buffer, context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
+        ALLOCATE(_buffer, context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
         cudaMalloc(&_bufferD, _length * DataTypeUtils::sizeOf(dtype));
         cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
         syncShape();
         _context = context;
-        triggerAllocationFlag(false, true);
+        triggerAllocationFlag(true, true);
 
         for(Nd4jLong i=0; i < _length; ++i) {
-            BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedDoubleAssign<, double>(_bufferD, i, reinterpret_cast<const void *>(data.data()), i), LIBND4J_TYPES);
+            BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedDoubleAssign<, double>(_buffer, i, reinterpret_cast<const void *>(data.data()), i), LIBND4J_TYPES);
         }
+        syncToDevice();
     }
 
 ////////////////////////////////////////////////////////////////////////

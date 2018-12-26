@@ -199,6 +199,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_4) {
     //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
     //ASSERT_EQ(0, res);
     x.applyPairwiseTransform(pairwise::Add, &y, &z, nullptr);
+    z.syncToHost();
     x.printBuffer("3X = ");
     y.printBuffer("3Y = ");
     z.printBuffer("3Result out");
@@ -231,6 +232,7 @@ TEST_F(NDArrayCudaBasicsTests, TestMultiply_1) {
     //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
     //ASSERT_EQ(0, res);
     x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
+    z.syncToHost();
     x.printBuffer("3X = ");
     y.printBuffer("3Y = ");
     z.printBuffer("3Result out");
@@ -250,7 +252,7 @@ TEST_F(NDArrayCudaBasicsTests, TestMultiply_2) {
     // allocating host-side arrays
     auto x = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
-    auto z = NDArrayFactory::create<double>('c', { 5 });
+    NDArray z('c', { 5 }, nd4j::DataType::DOUBLE);
 
     auto exp = NDArrayFactory::create<double>('c', { 5 }, { 1, 4, 9, 16, 25 });
 
@@ -265,6 +267,7 @@ TEST_F(NDArrayCudaBasicsTests, TestMultiply_2) {
     x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
     x.printBuffer("3X = ");
     y.printBuffer("3Y = ");
+    z.syncToHost();
     z.printBuffer("3Result out");
 
     //
@@ -297,6 +300,7 @@ TEST_F(NDArrayCudaBasicsTests, TestMultiply_3) {
     x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
     //x.printBuffer("23X = ");
     //y.printBuffer("23Y = ");
+    z.syncToHost();
     z.printBuffer("23Result out");
 
     //
