@@ -19,6 +19,7 @@
 //
 
 #include <graph/LaunchContext.h>
+#include <logger.h>
 
 namespace nd4j {
 namespace graph {
@@ -53,17 +54,32 @@ LaunchContext::LaunchContext() {
             // default constructor, just to make clang/ranlib happy
             _workspace = nullptr;
 #ifdef __CUDABLAS__
-    Nd4jPointer nativeStream = (Nd4jPointer)malloc(sizeof(cudaStream_t));
-    if (nullptr == nativeStream) throw std::runtime_error("Failed to allocate memory for new CUDA stream");
+    _cudaStream  = new cudaStream_t();
+    _cudaSpecialStream = new cudaStream_t();
+    if (nullptr == _cudaStream || nullptr == _cudaSpecialStream)
+        throw std::runtime_error("Failed to allocate memory for new CUDA stream");
 
-    cudaError_t err = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
-    if (err != 0) throw std::runtime_error("Failed to create default CUDA stream with launch context.");
-    _cudaStream = reinterpret_cast<cudaStream_t *>(&nativeStream);
-    _cudaSpecialStream = _cudaStream;
+    cudaError_t err = cudaStreamCreate(_cudaStream);
+    if (err != 0)
+        throw std::runtime_error("Failed to create default CUDA stream with launch context.");
+    err = cudaStreamCreate(_cudaSpecialStream);
+    if (err != 0)
+        throw std::runtime_error("Failed to create default CUDA stream with launch context.");
 
+    auto res = cudaStreamSynchronize(*_cudaStream);
+    if (res != 0)
+        throw std::runtime_error("sync failed");
+#else
+    //
 #endif
 }
 
+LaunchContext* LaunchContext::defaultContext() {
+    if (!LaunchContext::sDefaultContext) {
+        LaunchContext::sDefaultContext = new LaunchContext;
+    }
+    return LaunchContext::sDefaultContext;
+}
 
 }
 }

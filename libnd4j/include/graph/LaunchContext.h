@@ -42,8 +42,8 @@ class ND4J_EXPORT LaunchContext {
 		void* _reductionPointer;
 		void* _scalarPointer;
 		int* _allocationPointer;		
-		cudaStream_t *_cudaStream;
-		cudaStream_t* _cudaSpecialStream;
+		cudaStream_t *_cudaStream = nullptr;
+		cudaStream_t* _cudaSpecialStream = nullptr;
 #endif		
 	nd4j::memory::Workspace* _workspace;
     int _deviceID = 0;
@@ -81,12 +81,7 @@ class ND4J_EXPORT LaunchContext {
     	void setDeviceID(int deviceID) { _deviceID = deviceID; }
 
 public:
-	static LaunchContext* defaultContext() {
-    		if (!LaunchContext::sDefaultContext)
-    			LaunchContext::sDefaultContext = new LaunchContext;
-
-    		return LaunchContext::sDefaultContext;
-    	}
+	static LaunchContext* defaultContext();
 private:
 	static LaunchContext* sDefaultContext;
 };
