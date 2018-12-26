@@ -42,7 +42,7 @@ class ND4J_EXPORT LaunchContext {
 		void* _reductionPointer;
 		void* _scalarPointer;
 		int* _allocationPointer;		
-		cudaStream_t *_cudaStream;
+		cudaStream_t* _cudaStream;
 		cudaStream_t* _cudaSpecialStream;
 #endif		
 	nd4j::memory::Workspace* _workspace;

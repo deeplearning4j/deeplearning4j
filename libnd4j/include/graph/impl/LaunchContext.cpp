@@ -51,15 +51,22 @@ LaunchContext::LaunchContext(cudaStream_t *cudaStream, cudaStream_t& specialCuda
 ////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext() {
             // default constructor, just to make clang/ranlib happy
-            _workspace = nullptr;
+    _workspace = nullptr;
+    _deviceID = 0;
+
 #ifdef __CUDABLAS__
     Nd4jPointer nativeStream = (Nd4jPointer)malloc(sizeof(cudaStream_t));
-    if (nullptr == nativeStream) throw std::runtime_error("Failed to allocate memory for new CUDA stream");
+    if (nullptr == nativeStream) throw std::bad_alloc(); //"Failed to allocate memory for new CUDA stream");
 
     cudaError_t err = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
-    if (err != 0) throw std::runtime_error("Failed to create default CUDA stream with launch context.");
+    if (0 != err) throw std::bad_alloc(); //"Failed to create default CUDA stream with launch context.");
     _cudaStream = reinterpret_cast<cudaStream_t *>(&nativeStream);
-    _cudaSpecialStream = _cudaStream;
+
+    _cudaSpecialStream = nullptr;
+    //_cudaStream = _cudaSpecialStream;
+	_reductionPointer  = nullptr;
+	_scalarPointer     = nullptr;
+	_allocationPointer = nullptr;
 
 #endif
 }

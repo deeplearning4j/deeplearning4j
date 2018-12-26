@@ -794,20 +794,34 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
         if (target->_dataType != this->_dataType && target->_dataType != other->_dataType)
             throw std::invalid_argument("NDArray::applyPairwiseTransform method - type of target array must be the same as type of this or other array !");
+        if (_context == nullptr)
+            throw std::runtime_error("Launch context cannot be NULL!!!");
+        if (_context->getCudaStream() == nullptr)
+            throw std::runtime_error("CUDA stream cannot be NULL!!!");
 
+        Nd4jPointer nativeStream = (Nd4jPointer)malloc(sizeof(cudaStream_t));
+        //CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream");
+        if (nativeStream == nullptr) throw std::runtime_error("Failed to allocate memory for new CUDA stream");
+        cudaError_t err = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
+        auto stream = reinterpret_cast<cudaStream_t *>(&nativeStream);
+        _context->setCudaStream(stream);
+        //graph::LaunchContext lc(stream, nullptr, nullptr);
         NativeOpExecutioner::execPairwiseTransform(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams);
 //        NativeOpExecutioner::execPairwiseTransform(_context->getCudaStream(), op, this->_buffer, this->_shapeInfo,
 //                this->_bufferD, this->_shapeInfoD,
 //                other->buffer(), other->shapeInfo(), other->specialBuffer(), other->specialShapeInfo(),
 //                target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams);
-        auto res = cudaStreamSynchronize(*(_context->getCudaStream()));
-        if (res != 0) throw std::runtime_error("Operation failed.");
+        auto res = cudaStreamSynchronize(*stream);
+        if (res != 0) {
+            nd4j_printf("Error: %i\n", res);
+            throw std::runtime_error("Operation failed.");
+        }
         if (target)
             cudaMemcpy(target->_buffer, target->_bufferD, target->lengthOf() * target->sizeOfT(), cudaMemcpyDeviceToHost);
         else
             cudaMemcpy(this->_buffer, this->_bufferD, this->lengthOf() * this->sizeOfT(), cudaMemcpyDeviceToHost);
 
-        res = cudaStreamSynchronize(*(_context->getCudaStream()));
+        res = cudaStreamSynchronize(*stream);
         if (res != 0) throw std::runtime_error("Syncronizing with operation failed.");
     }
 
