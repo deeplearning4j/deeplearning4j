@@ -52,7 +52,9 @@ LaunchContext::LaunchContext(cudaStream_t *cudaStream, cudaStream_t& specialCuda
 ////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext() {
             // default constructor, just to make clang/ranlib happy
-            _workspace = nullptr;
+    _workspace = nullptr;
+    _deviceID = 0;
+
 #ifdef __CUDABLAS__
     _cudaStream  = new cudaStream_t();
     _cudaSpecialStream = new cudaStream_t();
