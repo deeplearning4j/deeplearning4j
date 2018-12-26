@@ -1564,6 +1564,472 @@ TEST_F(CudaBasicsTests, execPairwiseBoolTransform_1) {
 	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
 }
 
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execTransformFloat_1) {
+    	
+	NDArray x('c', {2,2}, {0, 6.25, 2.25, 12.25}, nd4j::DataType::DOUBLE);    
+    NDArray z('c', {4}, nd4j::DataType::FLOAT32);	
+	NDArray exp('c', {4}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);
+	x.permutei({1,0});
+    
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;   
+	hostData.emplace_back(x.buffer(), x.lengthOf() * x.sizeOfT());										// 0 -- dX
+	hostData.emplace_back(x.getShapeInfo(), shape::shapeInfoByteLength(x.getShapeInfo()));				// 1 -- dXShapeInfo
+	hostData.emplace_back(z.buffer(), z.lengthOf() * z.sizeOfT());										// 2 -- dZ
+	hostData.emplace_back(z.getShapeInfo(), shape::shapeInfoByteLength(z.getShapeInfo()));				// 3 -- dZShapeInfo	
+	
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execTransformFloat(&lc, nd4j::transform::Sqrt,
+		nullptr, x.getShapeInfo(), devicePtrs[0], (Nd4jLong*)devicePtrs[1], 
+		nullptr, z.getShapeInfo(), devicePtrs[2], (Nd4jLong*)devicePtrs[3], 		
+		nullptr, nullptr, nullptr);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    cudaMemcpyAsync(z.buffer(), devicePtrs[2], hostData[2].second, cudaMemcpyDeviceToHost, stream);        
+    
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++) 
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execTransformFloat_2) {
+    	
+	NDArray x('c', {1,4}, {0, 4, 9, 16}, nd4j::DataType::INT64);
+    NDArray z('c', {2,2}, nd4j::DataType::DOUBLE);	
+	NDArray exp('c', {2,2}, {0, 2, 3, 4}, nd4j::DataType::DOUBLE);	
+    
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;   
+	hostData.emplace_back(x.buffer(), x.lengthOf() * x.sizeOfT());										// 0 -- dX
+	hostData.emplace_back(x.getShapeInfo(), shape::shapeInfoByteLength(x.getShapeInfo()));				// 1 -- dXShapeInfo
+	hostData.emplace_back(z.buffer(), z.lengthOf() * z.sizeOfT());										// 2 -- dZ
+	hostData.emplace_back(z.getShapeInfo(), shape::shapeInfoByteLength(z.getShapeInfo()));				// 3 -- dZShapeInfo	
+	
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execTransformFloat(&lc, nd4j::transform::Sqrt,
+		nullptr, x.getShapeInfo(), devicePtrs[0], (Nd4jLong*)devicePtrs[1], 
+		nullptr, z.getShapeInfo(), devicePtrs[2], (Nd4jLong*)devicePtrs[3], 		
+		nullptr, nullptr, nullptr);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    cudaMemcpyAsync(z.buffer(), devicePtrs[2], hostData[2].second, cudaMemcpyDeviceToHost, stream);        
+    
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++) 
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execTransformAny_1) {
+    	
+	NDArray x('c', {2,2}, {0, 6.25, 2.25, 12.25}, nd4j::DataType::DOUBLE);    
+    NDArray z('c', {4,1}, nd4j::DataType::INT32);	
+	NDArray exp('c', {4,1}, {0, 2, 6, 12}, nd4j::DataType::INT32);
+	x.permutei({1,0});
+    
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;   
+	hostData.emplace_back(x.buffer(), x.lengthOf() * x.sizeOfT());										// 0 -- dX
+	hostData.emplace_back(x.getShapeInfo(), shape::shapeInfoByteLength(x.getShapeInfo()));				// 1 -- dXShapeInfo
+	hostData.emplace_back(z.buffer(), z.lengthOf() * z.sizeOfT());										// 2 -- dZ
+	hostData.emplace_back(z.getShapeInfo(), shape::shapeInfoByteLength(z.getShapeInfo()));				// 3 -- dZShapeInfo	
+	
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execTransformAny(&lc, nd4j::transform::Assign,
+		nullptr, x.getShapeInfo(), devicePtrs[0], (Nd4jLong*)devicePtrs[1], 
+		nullptr, z.getShapeInfo(), devicePtrs[2], (Nd4jLong*)devicePtrs[3], 		
+		nullptr, nullptr, nullptr);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    cudaMemcpyAsync(z.buffer(), devicePtrs[2], hostData[2].second, cudaMemcpyDeviceToHost, stream);        
+    
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++) 
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execTransformAny_2) {
+    	
+	NDArray x('c', {1,4}, {0, 6.25, 2.25, 12.25}, nd4j::DataType::BFLOAT16);
+    NDArray z('c', {2,2}, nd4j::DataType::FLOAT32);	
+	NDArray exp('c', {2,2}, {0, 6.25, 2.25, 12.25}, nd4j::DataType::FLOAT32);
+
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;   
+	hostData.emplace_back(x.buffer(), x.lengthOf() * x.sizeOfT());										// 0 -- dX
+	hostData.emplace_back(x.getShapeInfo(), shape::shapeInfoByteLength(x.getShapeInfo()));				// 1 -- dXShapeInfo
+	hostData.emplace_back(z.buffer(), z.lengthOf() * z.sizeOfT());										// 2 -- dZ
+	hostData.emplace_back(z.getShapeInfo(), shape::shapeInfoByteLength(z.getShapeInfo()));				// 3 -- dZShapeInfo	
+	
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execTransformAny(&lc, nd4j::transform::Assign,
+		nullptr, x.getShapeInfo(), devicePtrs[0], (Nd4jLong*)devicePtrs[1], 
+		nullptr, z.getShapeInfo(), devicePtrs[2], (Nd4jLong*)devicePtrs[3], 		
+		nullptr, nullptr, nullptr);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    cudaMemcpyAsync(z.buffer(), devicePtrs[2], hostData[2].second, cudaMemcpyDeviceToHost, stream);        
+    
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++) 
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execTransformStrict_1) {
+    	
+	NDArray x('c', {2,3}, {0,2,4,1,3,5}, nd4j::DataType::DOUBLE);
+    NDArray z('c', {3,2}, nd4j::DataType::DOUBLE);	
+	NDArray exp('c', {3,2}, {0, 3, 12, 27, 48, 75}, nd4j::DataType::DOUBLE);
+	x.permutei({1,0});
+    
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;   
+	hostData.emplace_back(x.buffer(), x.lengthOf() * x.sizeOfT());										// 0 -- dX
+	hostData.emplace_back(x.getShapeInfo(), shape::shapeInfoByteLength(x.getShapeInfo()));				// 1 -- dXShapeInfo
+	hostData.emplace_back(z.buffer(), z.lengthOf() * z.sizeOfT());										// 2 -- dZ
+	hostData.emplace_back(z.getShapeInfo(), shape::shapeInfoByteLength(z.getShapeInfo()));				// 3 -- dZShapeInfo	
+	
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execTransformStrict(&lc, nd4j::transform::CubeDerivative,
+		nullptr, x.getShapeInfo(), devicePtrs[0], (Nd4jLong*)devicePtrs[1], 
+		nullptr, z.getShapeInfo(), devicePtrs[2], (Nd4jLong*)devicePtrs[3], 		
+		nullptr, nullptr, nullptr);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    cudaMemcpyAsync(z.buffer(), devicePtrs[2], hostData[2].second, cudaMemcpyDeviceToHost, stream);        
+    
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++) 
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execTransformStrict_2) {
+    	
+	NDArray x('c', {6}, {0,1,2,3,4,5}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {3,2}, nd4j::DataType::FLOAT32);	
+	NDArray exp('c', {3,2}, {0, 3, 12, 27, 48, 75}, nd4j::DataType::FLOAT32);	
+    
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;   
+	hostData.emplace_back(x.buffer(), x.lengthOf() * x.sizeOfT());										// 0 -- dX
+	hostData.emplace_back(x.getShapeInfo(), shape::shapeInfoByteLength(x.getShapeInfo()));				// 1 -- dXShapeInfo
+	hostData.emplace_back(z.buffer(), z.lengthOf() * z.sizeOfT());										// 2 -- dZ
+	hostData.emplace_back(z.getShapeInfo(), shape::shapeInfoByteLength(z.getShapeInfo()));				// 3 -- dZShapeInfo	
+	
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execTransformStrict(&lc, nd4j::transform::CubeDerivative,
+		nullptr, x.getShapeInfo(), devicePtrs[0], (Nd4jLong*)devicePtrs[1], 
+		nullptr, z.getShapeInfo(), devicePtrs[2], (Nd4jLong*)devicePtrs[3], 		
+		nullptr, nullptr, nullptr);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    cudaMemcpyAsync(z.buffer(), devicePtrs[2], hostData[2].second, cudaMemcpyDeviceToHost, stream);        
+    
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++) 
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execTransformSame_1) {
+    
+	NDArray x('c', {2,3}, {0,2.5,4.5,1.5,3.5,5.5}, nd4j::DataType::DOUBLE);	
+    NDArray z('c', {1,6}, nd4j::DataType::DOUBLE);	
+	NDArray exp('c', {1,6}, {0,2.25,6.25,12.25,20.25,30.25}, nd4j::DataType::DOUBLE);
+	x.permutei({1,0});
+    
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;   
+	hostData.emplace_back(x.buffer(), x.lengthOf() * x.sizeOfT());										// 0 -- dX
+	hostData.emplace_back(x.getShapeInfo(), shape::shapeInfoByteLength(x.getShapeInfo()));				// 1 -- dXShapeInfo
+	hostData.emplace_back(z.buffer(), z.lengthOf() * z.sizeOfT());										// 2 -- dZ
+	hostData.emplace_back(z.getShapeInfo(), shape::shapeInfoByteLength(z.getShapeInfo()));				// 3 -- dZShapeInfo	
+	
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execTransformSame(&lc, nd4j::transform::Square,
+		nullptr, x.getShapeInfo(), devicePtrs[0], (Nd4jLong*)devicePtrs[1], 
+		nullptr, z.getShapeInfo(), devicePtrs[2], (Nd4jLong*)devicePtrs[3], 		
+		nullptr, nullptr, nullptr);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    cudaMemcpyAsync(z.buffer(), devicePtrs[2], hostData[2].second, cudaMemcpyDeviceToHost, stream);        
+        
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++) 
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execTransformSame_2) {
+    	
+	NDArray x('c', {6}, {0,1,2,3,4,5}, nd4j::DataType::INT32);
+    NDArray z('c', {3,2}, nd4j::DataType::INT32);	
+	NDArray exp('c', {3,2}, {0,1,4,9,16,25}, nd4j::DataType::INT32);	
+    
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;   
+	hostData.emplace_back(x.buffer(), x.lengthOf() * x.sizeOfT());										// 0 -- dX
+	hostData.emplace_back(x.getShapeInfo(), shape::shapeInfoByteLength(x.getShapeInfo()));				// 1 -- dXShapeInfo
+	hostData.emplace_back(z.buffer(), z.lengthOf() * z.sizeOfT());										// 2 -- dZ
+	hostData.emplace_back(z.getShapeInfo(), shape::shapeInfoByteLength(z.getShapeInfo()));				// 3 -- dZShapeInfo	
+	
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execTransformSame(&lc, nd4j::transform::Square,
+		nullptr, x.getShapeInfo(), devicePtrs[0], (Nd4jLong*)devicePtrs[1], 
+		nullptr, z.getShapeInfo(), devicePtrs[2], (Nd4jLong*)devicePtrs[3], 		
+		nullptr, nullptr, nullptr);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    cudaMemcpyAsync(z.buffer(), devicePtrs[2], hostData[2].second, cudaMemcpyDeviceToHost, stream);        
+    
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++) 
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execTransformBool_1) {
+    
+	NDArray x('c', {2,3}, {0,2,4,-1,-3,-5}, nd4j::DataType::DOUBLE);	
+    NDArray z('c', {1,6}, nd4j::DataType::BOOL);	    
+	NDArray exp('c', {1,6}, {0,0,1,0,1,0}, nd4j::DataType::BOOL);
+	x.permutei({1,0});
+    
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;   
+	hostData.emplace_back(x.buffer(), x.lengthOf() * x.sizeOfT());										// 0 -- dX
+	hostData.emplace_back(x.getShapeInfo(), shape::shapeInfoByteLength(x.getShapeInfo()));				// 1 -- dXShapeInfo
+	hostData.emplace_back(z.buffer(), z.lengthOf() * z.sizeOfT());										// 2 -- dZ
+	hostData.emplace_back(z.getShapeInfo(), shape::shapeInfoByteLength(z.getShapeInfo()));				// 3 -- dZShapeInfo	
+	
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execTransformBool(&lc, nd4j::transform::IsPositive,
+		nullptr, x.getShapeInfo(), devicePtrs[0], (Nd4jLong*)devicePtrs[1], 
+		nullptr, z.getShapeInfo(), devicePtrs[2], (Nd4jLong*)devicePtrs[3], 		
+		nullptr, nullptr, nullptr);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    cudaMemcpyAsync(z.buffer(), devicePtrs[2], hostData[2].second, cudaMemcpyDeviceToHost, stream);        
+         	
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++) 
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execTransformBool_2) {
+    	
+	NDArray x('c', {6}, {0,-1,2,-3,4,-5}, nd4j::DataType::INT32);
+    NDArray z('c', {3,2}, nd4j::DataType::BOOL);	
+	NDArray exp('c', {3,2}, {0,0,1,0,1,0}, nd4j::DataType::BOOL);
+    
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;   
+	hostData.emplace_back(x.buffer(), x.lengthOf() * x.sizeOfT());										// 0 -- dX
+	hostData.emplace_back(x.getShapeInfo(), shape::shapeInfoByteLength(x.getShapeInfo()));				// 1 -- dXShapeInfo
+	hostData.emplace_back(z.buffer(), z.lengthOf() * z.sizeOfT());										// 2 -- dZ
+	hostData.emplace_back(z.getShapeInfo(), shape::shapeInfoByteLength(z.getShapeInfo()));				// 3 -- dZShapeInfo	
+	
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execTransformBool(&lc, nd4j::transform::IsPositive,
+		nullptr, x.getShapeInfo(), devicePtrs[0], (Nd4jLong*)devicePtrs[1], 
+		nullptr, z.getShapeInfo(), devicePtrs[2], (Nd4jLong*)devicePtrs[3], 		
+		nullptr, nullptr, nullptr);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    cudaMemcpyAsync(z.buffer(), devicePtrs[2], hostData[2].second, cudaMemcpyDeviceToHost, stream);        
+    
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++) 
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
 // printCudaGlobal<double><<<1,1,0,*stream>>>(dX, 6);
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(dXShapeInfo, 8);
 //     printCudaGlobal<double><<<1,1,0,*stream>>>(dZ, 2);
