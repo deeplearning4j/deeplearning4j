@@ -933,6 +933,10 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             throw std::runtime_error("Synchronization failed");
     }
 
+    void NDArray::registerSpecialUse(std::initializer_list<NDArray*> writeList, std::initializer_list<NDArray*> readList) {
+        // no-op
+    }
+
     ////////////////////////////////////////////////////////////////////////
     NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
 

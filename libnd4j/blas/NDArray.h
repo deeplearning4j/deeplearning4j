@@ -232,6 +232,13 @@ namespace nd4j {
         void synchronize() const;
 
         /**
+         * This method can be used on architectures that use special buffers
+         * @param writeList
+         * @param readList
+         */
+        static void registerSpecialUse(std::initializer_list<NDArray*> writeList, std::initializer_list<NDArray*> readList);
+
+        /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type
          * @param offset
          * @return
