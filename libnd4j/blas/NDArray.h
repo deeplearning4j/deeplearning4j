@@ -145,27 +145,11 @@ namespace nd4j {
 
         template<typename T>
         std::string toStringValue(T value);
-#ifdef __CUDABLAS__
-    protected:
         long _opCounter = 0;
         long _writeHost = 0;
         long _writeDevice = 0;
         long _readHost = 0;
         long _readDevice = 0;
-
-    public:
-        void tickHostWrite()   {  _writeHost   = ++_opCounter; }
-        void tickWriteDevice() {  _writeDevice = ++_opCounter; }
-        void tickReadHost()    {  _readHost    = ++_opCounter; }
-        void tickReadDevice()  {  _readDevice  = ++_opCounter; }
-        bool isActualOnHostSide() const   { _writeHost > _readDevice || _writeHost > _writeDevice; }
-        bool isActualOnDeviceSize() const { _writeDevice > _readHost || _writeDevice > _writeHost; }
-
-        void syncToHost();
-        void syncToDevice();
-        void syncShape();
-#endif
-
 
     public:
         NDArray();
@@ -232,6 +216,28 @@ namespace nd4j {
          * This method blocks until asynchronous operation finishes
          */
         void synchronize() const;
+
+        FORCEINLINE void tickHostWrite()   {  _writeHost   = ++_opCounter; }
+        FORCEINLINE void tickWriteDevice() {  _writeDevice = ++_opCounter; }
+        FORCEINLINE void tickReadHost()    {  _readHost    = ++_opCounter; }
+        FORCEINLINE void tickReadDevice()  {  _readDevice  = ++_opCounter; }
+        FORCEINLINE bool isActualOnHostSide() const   {
+                return (_writeHost > _writeDevice || _readHost > _writeDevice);
+        }
+        FORCEINLINE bool isActualOnDeviceSide() const {
+                return (_writeDevice > _writeHost || _readDevice > _writeHost);
+        }
+
+        void syncToHost();
+        void syncToDevice();
+        void syncShape();
+
+        /**
+         * This method can be used on architectures that use special buffers
+         * @param writeList
+         * @param readList
+         */
+        static void registerSpecialUse(std::initializer_list<NDArray*> writeList, std::initializer_list<NDArray*> readList);
 
         /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type

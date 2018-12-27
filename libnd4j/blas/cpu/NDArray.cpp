@@ -833,6 +833,10 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         // no-op
     }
 
+    void NDArray::registerSpecialUse(std::initializer_list<NDArray*> writeList, std::initializer_list<NDArray*> readList) {
+        // no-op
+    }
+
     // This method assigns values of given NDArray to this one
     void NDArray::assign(const NDArray& other) {
 
