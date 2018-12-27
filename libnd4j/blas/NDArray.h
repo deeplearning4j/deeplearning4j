@@ -154,10 +154,12 @@ namespace nd4j {
         long _readDevice = 0;
 
     public:
-        void writeHostUp()   {  _writeHost   = ++_opCounter; }
-        void writeDeviceUp() {  _writeDevice = ++_opCounter; }
-        void readHostUp()    {  _readHost    = ++_opCounter; }
-        void readDeviceUp()  {  _readDevice  = ++_opCounter; }
+        void tickHostWrite()   {  _writeHost   = ++_opCounter; }
+        void tickWriteDevice() {  _writeDevice = ++_opCounter; }
+        void tickReadHost()    {  _readHost    = ++_opCounter; }
+        void tickReadDevice()  {  _readDevice  = ++_opCounter; }
+        bool isActualOnHostSide() const   { _writeHost > _readDevice || _writeHost > _writeDevice; }
+        bool isActualOnDeviceSize() const { _writeDevice > _readHost || _writeDevice > _writeHost; }
 
         void syncToHost();
         void syncToDevice();
