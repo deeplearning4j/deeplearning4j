@@ -539,7 +539,7 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
         size_t shapeSize = shape::shapeInfoByteLength(res.shapeInfo());//shape.size() * sizeof(Nd4jLong);
         cudaMemcpy(res.specialBuffer(), res.buffer(), bufferSize, cudaMemcpyHostToDevice);
         cudaMemcpy(res.specialShapeInfo(), res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
-
+        res.tickWriteDevice();
         return res;
     }
     template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::graph::LaunchContext* context);
