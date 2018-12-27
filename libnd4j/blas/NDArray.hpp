@@ -1310,7 +1310,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         if (!target->isR())
             throw std::runtime_error("NDArray::applyTransform FloatOps: target array must have one of FLOAT types");
 
-        NativeOpExecutioner::execTransformFloat(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams, nullptr, nullptr);
+        NativeOpExecutioner::execTransformFloat(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr, nullptr, nullptr);
     }
 
     void NDArray::applyTransform(nd4j::transform::AnyOps op, NDArray *target, ExtraArguments *extraParams) {
@@ -1321,7 +1321,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         if (target == nullptr)
             target = this;
 
-        NativeOpExecutioner::execTransformFloat(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams, nullptr, nullptr);
+        NativeOpExecutioner::execTransformFloat(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr, nullptr, nullptr);
     }
 
     void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray *target, ExtraArguments *extraParams) {
@@ -1334,7 +1334,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         if (target->dataType() != this->dataType())
             throw std::runtime_error("NDArray::applyTransform SameOps: target array must have the same data type as original array");
 
-        NativeOpExecutioner::execTransformSame(nullptr, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams, nullptr, nullptr);
+        NativeOpExecutioner::execTransformSame(nullptr, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr, nullptr, nullptr);
     }
 
     void NDArray::applyTransform(nd4j::transform::BoolOps op, NDArray *target, ExtraArguments *extraParams) {
@@ -1347,7 +1347,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         if (!target->isB())
             throw std::runtime_error("NDArray::applyTransform BoolOps: target array must have one of BOOL types");
 
-        NativeOpExecutioner::execTransformBool(nullptr, op, this->_buffer, this->_shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams, nullptr, nullptr);
+        NativeOpExecutioner::execTransformBool(nullptr, op, this->_buffer, this->_shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(this->dataType()) : nullptr, nullptr, nullptr);
     }
 
     void NDArray::applyTransform(nd4j::transform::StrictOps op, NDArray *target, ExtraArguments *extraParams) {
@@ -1360,7 +1360,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         if (!this->isR() || !target->isR() || (this->dataType() != target->dataType()))
             throw std::runtime_error("NDArray::applyTransform StrictOps: both Source and Target array must have same FLOAT type !");
 
-        NativeOpExecutioner::execTransformStrict(nullptr, op, this->_buffer, this->_shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams, nullptr, nullptr);
+        NativeOpExecutioner::execTransformStrict(nullptr, op, this->_buffer, this->_shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr, nullptr, nullptr);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1438,7 +1438,7 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
     if (_dataType != other->_dataType)
         throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - this and other arrays must have the same type !");
 
-    NativeOpExecutioner::execPairwiseBoolTransform(nullptr, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams);
+    NativeOpExecutioner::execPairwiseBoolTransform(nullptr, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr);
 }
 
 /*
@@ -1944,7 +1944,7 @@ void NDArray::applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, ND
         nd4j_printf("This dtype: [%i]; scalar dtype: [%i]\n", this->_dataType, scalar->_dataType);
         throw std::invalid_argument("NDArray::applyScalarArr bool method: this and scalar arrays must have the same type!");
     }
-    NativeOpExecutioner::execScalarBool(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, scalar->_buffer, scalar->_shapeInfo, scalar->_bufferD, scalar->_shapeInfoD, extraParams);
+    NativeOpExecutioner::execScalarBool(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, scalar->_buffer, scalar->_shapeInfo, scalar->_bufferD, scalar->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()): nullptr);
 }
 
 template <typename T>
@@ -1977,7 +1977,7 @@ void NDArray::applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArra
     if(target->_dataType != DataTypeUtils::pickPairwiseResultType(_shapeInfo, scalar->_shapeInfo) && !(target->_dataType == this->_dataType || target->_dataType == scalar->_dataType))
         throw std::invalid_argument("NDArray::applyScalarArr method: wrong type of target array!");
 
-    NativeOpExecutioner::execScalar(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, scalar->getBuffer(), scalar->getShapeInfo(), scalar->_bufferD, scalar->_shapeInfoD, nullptr);
+    NativeOpExecutioner::execScalar(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, scalar->getBuffer(), scalar->getShapeInfo(), scalar->_bufferD, scalar->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr);
 }
 
 template <typename T>
@@ -3006,7 +3006,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
         if (target->isScalar()) {
             //target->_buffer[0] = functions::indexreduce::IndexReduce<T>::template execScalar<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams));
-            NativeOpExecutioner::execIndexReduceScalar(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()), target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo());
+            NativeOpExecutioner::execIndexReduceScalar(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo());
         } else {
             std::vector<int> copy(dimensions);
             if (dimensions.size() > 1)
@@ -3016,7 +3016,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
-            NativeOpExecutioner::execIndexReduce(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()),
+            NativeOpExecutioner::execIndexReduce(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr,
                                                                           reinterpret_cast<Nd4jLong *>(target->_buffer),
                                                                           target->_shapeInfo, target->_bufferD, target->_shapeInfoD,
                                                                           copy.data(), copy.size(),
@@ -3039,7 +3039,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         RELEASE(newShape, _context->getWorkspace());
 
         if (rankOf() == copy.size()) {
-            NativeOpExecutioner::execIndexReduceScalar(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()), result->getBuffer(), result->getShapeInfo(), result->getSpecialBuffer(), result->getSpecialShapeInfo());
+            NativeOpExecutioner::execIndexReduceScalar(nullptr, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr, result->getBuffer(), result->getShapeInfo(), result->getSpecialBuffer(), result->getSpecialShapeInfo());
         } else {
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
             tad.createTadOnlyShapeInfo();
@@ -3070,7 +3070,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         // create output array (scalar)
         auto result = new NDArray(newShape, true, _context, true);
         // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
-        void* params = const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType());
+        void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr;
         if(params == nullptr) {
             params = new int8_t[result->sizeOfT()*3];
             memset(params, 0, result->sizeOfT()*3);
@@ -3116,7 +3116,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         // create output array
         auto result = new NDArray(newShape, true, _context, true);
         // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
-        void* params = const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType());
+        void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr;
         if(params == nullptr) {
             params = new int8_t[result->sizeOfT()*3];
             memset(params, 0, result->sizeOfT()*3);
@@ -3149,7 +3149,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
         auto result = new NDArray(newShape, true, _context, true);
         // create temporary dynamic array of extra parameters if array extraParams is empty (==nullptr)
-        void* params = const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType());
+        void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr;
         if(params == nullptr) {
             params = new int8_t[result->sizeOfT()*3];
             memset(params, 0, result->sizeOfT()*3);
