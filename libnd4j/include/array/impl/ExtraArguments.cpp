@@ -22,6 +22,7 @@
 #include <array/DataType.h>
 #include <array/DataTypeUtils.h>
 #include <stdexcept>
+#include <types/types.h>
 
 #ifdef __CUDABLAS__
 #include <cuda.h>
@@ -38,7 +39,7 @@ namespace nd4j {
     }
 
     ExtraArguments::ExtraArguments() {
-
+        // no-op
     }
 
     ExtraArguments::~ExtraArguments() {
@@ -46,10 +47,36 @@ namespace nd4j {
 #ifdef __CUDABLAS__
             cudaFree(p);
 #else // CPU branch
-            free(p);
+            delete[] p;
 #endif
         }
     }
+
+    template <typename T>
+    void ExtraArguments::convertAndCopy(Nd4jPointer pointer) {
+        auto length = this->length();
+        auto target = reinterpret_cast<T*>(pointer);
+#ifdef __CUDABLAS__
+        target = new T[length];
+#endif
+
+        if (!_fpArgs.empty()) {
+            for (int e = 0; e < _fpArgs.size(); e++) {
+                target[e] = static_cast<T>(_fpArgs[e]);
+            }
+        } else if (_intArgs.empty()) {
+            for (int e = 0; e < _intArgs.size(); e++) {
+                target[e] = static_cast<T>(_intArgs[e]);
+            }
+        }
+
+#ifdef __CUDABLAS__
+        // TODO: maybe make it asynchronous eventually?
+        cudaMemcpy(pointer, target, length * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>()), cudaMemcpyHostToDevice);
+        delete[] target;
+#endif
+    }
+    BUILD_SINGLE_TEMPLATE(template void ExtraArguments::convertAndCopy, (Nd4jPointer pointer), LIBND4J_TYPES);
 
     void* ExtraArguments::allocate(size_t length, size_t elementSize) {
 #ifdef __CUDABLAS__
@@ -58,7 +85,7 @@ namespace nd4j {
 	    if (res != 0)
 		    throw std::runtime_error("Can't allocate CUDA memory");
 #else // CPU branch
-        auto ptr = (Nd4jPointer) malloc(length * elementSize);
+        auto ptr = new int8_t[length * elementSize];
         if (!ptr)
             throw std::runtime_error("Can't allocate memory");
 #endif
@@ -79,6 +106,8 @@ namespace nd4j {
     void* ExtraArguments::argumentsAsT() {
         return argumentAsT(DataTypeUtils::fromT<T>());
     }
+    BUILD_SINGLE_TEMPLATE(template void *ExtraArguments::argumentsAsT, (), LIBND4J_TYPES);
+
 
     void* ExtraArguments::argumentAsT(nd4j::DataType dataType) {
         if (_fpArgs.empty() && _intArgs.empty())
@@ -88,6 +117,7 @@ namespace nd4j {
         auto ptr = allocate(length(), DataTypeUtils::sizeOf(dataType));
 
         // fill it with data
+        BUILD_SINGLE_SELECTOR(dataType, convertAndCopy, (ptr), LIBND4J_TYPES);
 
         // store it internally for future release
         _pointers.emplace_back(ptr);

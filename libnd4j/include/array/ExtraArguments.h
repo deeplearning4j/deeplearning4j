@@ -35,6 +35,8 @@ namespace nd4j {
 
         std::vector<Nd4jPointer> _pointers;
 
+        template <typename T>
+        void convertAndCopy(Nd4jPointer pointer);
 
         void* allocate(size_t length, size_t elementSize);
     public:
