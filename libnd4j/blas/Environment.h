@@ -79,6 +79,8 @@ namespace nd4j{
         void allowPrecisionBoost(bool reallyAllow);
 
         bool isExperimentalBuild();
+
+        bool isCPU();
     };
 }
 
