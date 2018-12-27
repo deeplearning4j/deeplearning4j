@@ -588,8 +588,8 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
 
     auto im2col0 = NDArrayFactory::create<double>('c', {2, channels, kY, kX, oY, oX});
 
-    std::vector<double> args2col({(double) kY, (double) kX, (double) sY, (double) sX, (double) pY, (double) pX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0, (double)0.0, (double) 0.});
-    x.applyTransform(transform::Im2col, &im2col0, args2col.data());
+    ExtraArguments args({(double) kY, (double) kX, (double) sY, (double) sX, (double) pY, (double) pX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0, (double)0.0, (double) 0.});
+    x.applyTransform(transform::Im2col, &im2col0, &args);
 
     nd4j::ops::im2col op;
     auto result2col = op.execute({&x}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
@@ -600,9 +600,9 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
     ASSERT_TRUE(im2col1->equalsTo(&im2col0));
 
 
-    std::vector<double> args2im({ (double) sY, (double) sX, (double) pY, (double) pX, (double) inY, (double) inX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0});
+    ExtraArguments args2({ (double) sY, (double) sX, (double) pY, (double) pX, (double) inY, (double) inX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0});
     auto col2im0 = NDArrayFactory::create<double>('c', {2, channels, inY, inX});
-    im2col0.applyTransform(transform::Col2Im, &col2im0, args2im.data());
+    im2col0.applyTransform(transform::Col2Im, &col2im0, &args2);
 
     nd4j::ops::col2im op2im;
     auto result2im = op2im.execute({im2col1}, {}, {sY, sX, pY, pX, inY, inX, dY, dX, isSameMode ? 1 : 0});
@@ -644,8 +644,8 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_2) {
     auto im2col0 = NDArrayFactory::create<double>('c', {2, channels, oY, oX, kY, kX});
     im2col0.permutei({0, 1, 4, 5, 2, 3});
 
-    std::vector<double> args2col({(double) kY, (double) kX, (double) sY, (double) sX, (double) pY, (double) pX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0, (double)0.0, (double) 0.});
-    x.applyTransform(transform::Im2col, &im2col0, args2col.data());
+    ExtraArguments args2col({(double) kY, (double) kX, (double) sY, (double) sX, (double) pY, (double) pX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0, (double)0.0, (double) 0.});
+    x.applyTransform(transform::Im2col, &im2col0, &args2col);
 
     nd4j::ops::im2col op;
     auto result2col = op.execute({&x}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
@@ -656,9 +656,9 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_2) {
     ASSERT_TRUE(im2col1->equalsTo(&im2col0));
 
 
-    std::vector<double> args2im({ (double) sY, (double) sX, (double) pY, (double) pX, (double) inY, (double) inX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0});
+    ExtraArguments args2im({ (double) sY, (double) sX, (double) pY, (double) pX, (double) inY, (double) inX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0});
     auto col2im0 = NDArrayFactory::create<double>('c', {2, channels, inY, inX});
-    im2col0.applyTransform(transform::Col2Im, &col2im0, args2im.data());
+    im2col0.applyTransform(transform::Col2Im, &col2im0, &args2im);
 
     nd4j::ops::col2im op2im;
     auto result2im = op2im.execute({im2col1}, {}, {sY, sX, pY, pX, inY, inX, dY, dX, isSameMode ? 1 : 0});
@@ -702,8 +702,8 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_3) {
     auto im2col1 = NDArrayFactory::create<double>('c', {2, channels, oY, oX, kY, kX});
     im2col1.permutei({0, 1, 4, 5, 2, 3});
 
-    std::vector<double> args2col({(double) kY, (double) kX, (double) sY, (double) sX, (double) pY, (double) pX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0, (double)0.0, (double) 0.});
-    x.applyTransform(transform::Im2col, &im2col0, args2col.data());
+    ExtraArguments args2col({(double) kY, (double) kX, (double) sY, (double) sX, (double) pY, (double) pX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0, (double)0.0, (double) 0.});
+    x.applyTransform(transform::Im2col, &im2col0, &args2col);
 
     nd4j::ops::im2col op;
     auto status = op.execute({&x}, {&im2col1}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0}, {});
@@ -713,9 +713,9 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_3) {
     ASSERT_TRUE(im2col1.equalsTo(&im2col0));
 
 
-    std::vector<double> args2im({ (double) sY, (double) sX, (double) pY, (double) pX, (double) inY, (double) inX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0});
+    ExtraArguments args2im({ (double) sY, (double) sX, (double) pY, (double) pX, (double) inY, (double) inX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0});
     auto col2im0 = NDArrayFactory::create<double>('c', {2, channels, inY, inX});
-    im2col0.applyTransform(transform::Col2Im, &col2im0, args2im.data());
+    im2col0.applyTransform(transform::Col2Im, &col2im0, &args2im);
 
     nd4j::ops::col2im op2im;
     auto result2im = op2im.execute({&im2col1}, {}, {sY, sX, pY, pX, inY, inX, dY, dX, isSameMode ? 1 : 0});

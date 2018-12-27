@@ -47,7 +47,7 @@ namespace nd4j {
 #ifdef __CUDABLAS__
             cudaFree(p);
 #else // CPU branch
-            delete[] p;
+            delete[] reinterpret_cast<int8_t *>(p);
 #endif
         }
     }

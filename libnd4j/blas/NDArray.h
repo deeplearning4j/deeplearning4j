@@ -35,6 +35,7 @@
 #include <op_enums.h>
 #include <ops/BroadcastOpsTuple.h>
 #include <ops/BroadcastBoolOpsTuple.h>
+#include <array/ExtraArguments.h>
 
 
 namespace nd4j {
@@ -542,11 +543,11 @@ namespace nd4j {
         Nd4jLong argMax(std::initializer_list<int> dimensions = {});
 
         
-        void applyTransform(nd4j::transform::FloatOps op, NDArray *target = nullptr, void *extraParams = nullptr);
-        void applyTransform(nd4j::transform::SameOps op, NDArray *target = nullptr, void *extraParams = nullptr);
-        void applyTransform(nd4j::transform::AnyOps op, NDArray *target = nullptr, void *extraParams = nullptr);
-        void applyTransform(nd4j::transform::BoolOps op, NDArray *target = nullptr, void *extraParams = nullptr);
-        void applyTransform(nd4j::transform::StrictOps op, NDArray *target = nullptr, void *extraParams = nullptr);
+        void applyTransform(nd4j::transform::FloatOps op, NDArray *target = nullptr, ExtraArguments *extraParams = nullptr);
+        void applyTransform(nd4j::transform::SameOps op, NDArray *target = nullptr, ExtraArguments *extraParams = nullptr);
+        void applyTransform(nd4j::transform::AnyOps op, NDArray *target = nullptr, ExtraArguments *extraParams = nullptr);
+        void applyTransform(nd4j::transform::BoolOps op, NDArray *target = nullptr, ExtraArguments *extraParams = nullptr);
+        void applyTransform(nd4j::transform::StrictOps op, NDArray *target = nullptr, ExtraArguments *extraParams = nullptr);
 
         /**
         *  apply OpName transformation to this array and store result in new array to be returned
@@ -562,7 +563,7 @@ namespace nd4j {
         *  other - second array necessary for pairwise operation
         *  extraParams - extra parameters for operation
         */
-        void applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray& other, void *extraParams);
+        void applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray& other, ExtraArguments *extraParams = nullptr);
 
         /**
         *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in target array
@@ -570,9 +571,9 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */
-        void applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray *other, NDArray *target, void *extraParams) const;
+        void applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray *other, NDArray *target, ExtraArguments *extraParams = nullptr) const;
 
-        void applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *other, NDArray *target, void *extraParams) const;
+        void applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *other, NDArray *target, ExtraArguments *extraParams = nullptr) const;
 
         /**
         *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
@@ -581,20 +582,20 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */               
-        void applyBroadcast(nd4j::broadcast::Ops op, const std::initializer_list<int> dimensions, const NDArray* tad, NDArray* target = nullptr, void* extraArgs = nullptr);
+        void applyBroadcast(nd4j::broadcast::Ops op, const std::initializer_list<int> dimensions, const NDArray* tad, NDArray* target = nullptr, ExtraArguments* extraArgs = nullptr);
 
-        void applyBroadcast(nd4j::broadcast::Ops op, const std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, void *extraArgs = nullptr);
+        void applyBroadcast(nd4j::broadcast::Ops op, const std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, ExtraArguments *extraArgs = nullptr);
 
-        void applyBroadcast(nd4j::broadcast::BoolOps op, const std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, void *extraArgs = nullptr);
+        void applyBroadcast(nd4j::broadcast::BoolOps op, const std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, ExtraArguments *extraArgs = nullptr);
 
         /**
         *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
         *  other - input array 
         *  extraParams - extra parameters for operation
         */                       
-        NDArray applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, void *extraArgs = nullptr) const;
+        NDArray applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, ExtraArguments *extraArgs = nullptr) const;
 
-        NDArray* applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, void *extraArgs = nullptr) const;
+        NDArray* applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, ExtraArguments *extraArgs = nullptr) const;
 
         /**
         *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
@@ -603,9 +604,9 @@ namespace nd4j {
         *  checkTargetShape - if true check whether target shape is suitable for broadcasting
         *  extraParams - extra parameters for operation
         */
-        void applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, void *extraArgs = nullptr) const;
+        void applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, ExtraArguments *extraArgs = nullptr) const;
 
-        void applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, void *extraArgs = nullptr) const;
+        void applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, ExtraArguments *extraArgs = nullptr) const;
 
         /** 
         *  apply a scalar operation to an array
@@ -614,10 +615,10 @@ namespace nd4j {
         *  extraParams - extra parameters for operation
         */
         template <typename T>
-        void applyScalar(nd4j::scalar::Ops op, const T scalar, NDArray* target = nullptr, void *extraParams = nullptr);
+        void applyScalar(nd4j::scalar::Ops op, const T scalar, NDArray* target = nullptr, ExtraArguments *extraParams = nullptr);
 
         template <typename T>
-        void applyScalar(nd4j::scalar::BoolOps op, const T scalar, NDArray* target, void *extraParams = nullptr) const;
+        void applyScalar(nd4j::scalar::BoolOps op, const T scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
 
         /** 
         *  apply a scalar operation to an array
@@ -625,9 +626,9 @@ namespace nd4j {
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */ 
-        void applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArray* target = nullptr, void *extraParams = nullptr);
+        void applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArray* target = nullptr, ExtraArguments *extraParams = nullptr);
 
-        void applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray* target, void *extraParams = nullptr) const;
+        void applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
 
 
         /**
@@ -662,7 +663,7 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along
         *  extraArgs - extra parameters for operation
         */
-        NDArray* applyIndexReduce(nd4j::indexreduce::Ops op, const std::vector<int>& dimensions, const void *extraParams = nullptr) const;
+        NDArray* applyIndexReduce(nd4j::indexreduce::Ops op, const std::vector<int>& dimensions, const ExtraArguments *extraParams = nullptr) const;
 
         /**
         *  reduces dimensions in array relying on index operation OpName
@@ -670,14 +671,14 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along
         *  extraArgs - extra parameters for operation
         */
-        void applyIndexReduce(nd4j::indexreduce::Ops op, const NDArray* target, const std::vector<int>& dimensions, const void *extraParams = nullptr) const;
+        void applyIndexReduce(nd4j::indexreduce::Ops op, const NDArray* target, const std::vector<int>& dimensions, const ExtraArguments *extraParams = nullptr) const;
 
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
         *  extraArgs - extra parameters for operation
         */
-        NDArray* applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const void* extraParams = nullptr) const;
+        NDArray* applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const ExtraArguments* extraParams = nullptr) const;
 
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
@@ -685,7 +686,7 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
-        NDArray* applyAllReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams = nullptr) const;
+        NDArray* applyAllReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const ExtraArguments* extraParams = nullptr) const;
 
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
@@ -693,7 +694,7 @@ namespace nd4j {
         *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
-        NDArray* applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const void* extraParams = nullptr) const;
+        NDArray* applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const ExtraArguments* extraParams = nullptr) const;
 
 
         /**

@@ -31,7 +31,7 @@ namespace nd4j {
     namespace ops {
         class BroadcastHelper {
         public: 
-            static FORCEINLINE NDArray* broadcastApply(nd4j::BroadcastOpsTuple op, NDArray* x, NDArray* y, NDArray* z, void *extraArgs = nullptr) {
+            static FORCEINLINE NDArray* broadcastApply(nd4j::BroadcastOpsTuple op, NDArray* x, NDArray* y, NDArray* z, ExtraArguments *extraArgs = nullptr) {
                 std::unique_ptr<NDArray> ptr;
                 if (!Environment::getInstance()->isExperimentalBuild()) {
                     if (y->dataType() != x->dataType()) {
@@ -71,7 +71,7 @@ namespace nd4j {
                 return z;
             }
 
-            static FORCEINLINE NDArray* broadcastApply(nd4j::BroadcastBoolOpsTuple op, NDArray* x, NDArray* y, NDArray* z, void *extraArgs = nullptr) {
+            static FORCEINLINE NDArray* broadcastApply(nd4j::BroadcastBoolOpsTuple op, NDArray* x, NDArray* y, NDArray* z, ExtraArguments *extraArgs = nullptr) {
 
                 if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
                     x->applyPairwiseTransform(op.p, y, z, nullptr);

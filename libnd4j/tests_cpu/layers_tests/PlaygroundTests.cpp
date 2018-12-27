@@ -365,9 +365,9 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
 
     auto legacyStart = std::chrono::system_clock::now();
 
-    float extra[] = {(float)kH, (float)kW, (float)sH, (float)sW, (float)pH, (float)pW, (float)dH, (float)dW, 0.f, 0.f};
+    ExtraArguments extra({(double)kH, (double)kW, (double)sH, (double)sW, (double)pH, (double)pW, (double)dH, (double)dW, (double) 0.f, (double)0.f});
     for (int e = 0; e < iterations; e++) {
-        input.applyTransform(transform::Im2col, &output, extra);
+        input.applyTransform(transform::Im2col, &output, &extra);
     }
 
     auto legacyEnd = std::chrono::system_clock::now();
@@ -377,7 +377,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     auto legacyPermStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) {
-        input.applyTransform(transform::Im2col, &outputPermuted, extra);
+        input.applyTransform(transform::Im2col, &outputPermuted, &extra);
     }
 
     auto legacyPermEnd = std::chrono::system_clock::now();
