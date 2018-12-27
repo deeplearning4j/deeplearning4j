@@ -533,7 +533,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testSort() throws Exception {
         INDArray toSort = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray ascending = Nd4j.sort(toSort.dup(), 1, true);
-        //rows already already sorted
+        //rows are already sorted
         assertEquals(toSort, ascending);
 
         INDArray columnSorted = Nd4j.create(new double[] {2, 1, 4, 3}, new long[] {2, 2});

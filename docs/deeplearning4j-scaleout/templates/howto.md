@@ -472,7 +472,7 @@ try(BufferedInputStream is = new BufferedInputStream(fileSystem.open(new Path(ou
 ## <a name="inference">How to perform distributed inference</a>
 
 Deeplearning4j's Spark implementation supports distributed inference. That is, we can easily generate predictions on an RDD of inputs using a cluster of machines.
-This distributed inference can also be used for networks trained on a single machine and loaded for Spark (see the the [saving/loading section](#saveload) for details on how to load a saved network for use with Spark).
+This distributed inference can also be used for networks trained on a single machine and loaded for Spark (see the [saving/loading section](#saveload) for details on how to load a saved network for use with Spark).
 
 Note: If you want to perform evaluation (i.e., calculate accuracy, F1, MSE, etc), refer to the [evaluation how-to](#evaluation) instead.
 

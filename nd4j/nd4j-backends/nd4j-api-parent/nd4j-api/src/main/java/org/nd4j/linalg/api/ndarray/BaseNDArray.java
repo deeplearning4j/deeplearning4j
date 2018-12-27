@@ -1847,7 +1847,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
-     * Returns the elements at the the specified indices
+     * Returns the elements at the specified indices
      *
      * @param indices the indices to getScalar
      * @return the array with the specified elements
@@ -1858,7 +1858,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
-     * Returns the elements at the the specified indices
+     * Returns the elements at the specified indices
      *
      * @param indices the indices to get
      * @return the array with the specified elements
@@ -1910,7 +1910,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
-     * Returns the elements at the the specified indices
+     * Returns the elements at the specified indices
      *
      * @param indices the indices to get
      * @return the array with the specified elements

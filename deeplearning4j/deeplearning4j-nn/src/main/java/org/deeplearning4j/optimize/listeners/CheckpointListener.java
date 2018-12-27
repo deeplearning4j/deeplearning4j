@@ -195,7 +195,7 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
         long time = System.currentTimeMillis();
         if(saveEveryUnit != null){
             if(saveEverySinceLast){
-                //Consider last saved when when deciding whether to save
+                //Consider last saved when deciding whether to save
                 long lastSaveTime = (lastCheckpoint != null ? lastCheckpoint.getTimestamp() : startTime);
                 if((time - lastSaveTime) >= saveEveryMs){
                     saveCheckpoint(model);

@@ -1288,7 +1288,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if(temp != null){
                 //Should only be non-null on exception
                 while(temp.isScopeActive()){
-                    //For safety, should should never occur in theory: a single close() call may not be sufficient, if
+                    //For safety, should never occur in theory: a single close() call may not be sufficient, if
                     // workspace scope was borrowed and not properly closed when exception occurred
                     temp.close();
                 }

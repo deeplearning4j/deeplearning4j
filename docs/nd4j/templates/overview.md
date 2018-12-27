@@ -67,7 +67,7 @@ NDArrays are stored in memory as a single flat array of numbers (or more general
 
 Physically, the data that backs an INDArray is stored off-heap: that is, it is stored outside of the Java Virtual Machine (JVM). This has numerous benefits, including performance, interoperability with high-performance BLAS libraries, and the ability to avoid some shortcomings of the JVM in high-performance computing (such as issues with Java arrays being limited to 2^31 -1 (2.14 billion) elements due to integer indexing).
 
-In terms of encoding, an NDArray can be encoded in either C (row-major) or Fortran (column-major) order. For more details on row vs. column major order, see [Wikipedia](https://en.wikipedia.org/wiki/Row-major_order). Nd4J may use a combination of C and F order arrays together, at the same time. Most users can just use the default array ordering, but note that is is possible to use a specific ordering for a given array, should the need arise.
+In terms of encoding, an NDArray can be encoded in either C (row-major) or Fortran (column-major) order. For more details on row vs. column major order, see [Wikipedia](https://en.wikipedia.org/wiki/Row-major_order). Nd4J may use a combination of C and F order arrays together, at the same time. Most users can just use the default array ordering, but note that it is possible to use a specific ordering for a given array, should the need arise.
 
 
 The following image shows how a simple 3x3 (2d) NDArray is stored in memory,
