@@ -133,6 +133,9 @@ namespace nd4j {
         bool _isShapeAlloc = false;                    
         bool _isBuffAlloc = false;
 
+        // indicates if array's buffer is within workspace
+        bool _isAttached = false;
+
         /**
          * Field to store cached length
          */
@@ -216,6 +219,12 @@ namespace nd4j {
          * This method blocks until asynchronous operation finishes
          */
         void synchronize() const;
+
+        /**
+         * This method allows to set _isAttached flag
+         * @param reallyAttached
+         */
+        void setAttached(bool reallyAttached);
 
         FORCEINLINE void tickHostWrite()   {  _writeHost   = ++_opCounter; }
         FORCEINLINE void tickWriteDevice() {  _writeDevice = ++_opCounter; }

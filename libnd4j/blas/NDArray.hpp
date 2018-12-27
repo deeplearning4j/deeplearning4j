@@ -1786,6 +1786,9 @@ NDArray NDArray::transp() const {
         return true;
     }
 
+    void NDArray::setAttached(bool reallyAttached) {
+        _isAttached = reallyAttached;
+    };
 
 //////////////////////////////////////////////////////////////////////////
     void NDArray::addRowVector(const NDArray *row, NDArray *target) const {
@@ -3048,7 +3051,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
-            NativeOpExecutioner::execIndexReduce(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()),
+            NativeOpExecutioner::execIndexReduce(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr,
                                                                     reinterpret_cast<Nd4jLong *>(result->_buffer),
                                                                     result->_shapeInfo, result->_bufferD, result->_shapeInfoD,
                                                                     copy.data(), copy.size(),

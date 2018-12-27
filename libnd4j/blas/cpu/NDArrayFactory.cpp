@@ -35,6 +35,11 @@ namespace nd4j {
     NDArray NDArrayFactory::string(const std::string &str, nd4j::graph::LaunchContext* context) {
         NDArray res;
 
+        if (context == nullptr)
+            context = nd4j::graph::LaunchContext::defaultContext();
+
+        res.setAttached(context->getWorkspace() != nullptr);
+
         utf8string **us = nullptr;
         int8_t *buffer = nullptr;
         ALLOCATE(buffer, context->getWorkspace(), sizeof(utf8string*), int8_t);
@@ -52,6 +57,11 @@ namespace nd4j {
 
     NDArray* NDArrayFactory::string_(const std::string &str, nd4j::graph::LaunchContext* context) {
         auto res = new NDArray();
+
+        if (context == nullptr)
+            context = nd4j::graph::LaunchContext::defaultContext();
+
+        res->setAttached(context->getWorkspace() != nullptr);
 
         utf8string **us = nullptr;
         int8_t *buffer = nullptr;
@@ -138,7 +148,12 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     template <typename T>
     NDArray* NDArrayFactory::create_(const T scalar, nd4j::graph::LaunchContext* context) {
         
-        auto res = new NDArray();        
+        auto res = new NDArray();
+
+        if (context == nullptr)
+            context = nd4j::graph::LaunchContext::defaultContext();
+
+        res->setAttached(context->getWorkspace() != nullptr);
 
         int8_t *buffer;
         ALLOCATE(buffer, context->getWorkspace(), 1 * sizeof(T), int8_t);
@@ -197,6 +212,11 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 
         NDArray res;
 
+        if (context == nullptr)
+            context = nd4j::graph::LaunchContext::defaultContext();
+
+        res.setAttached(context->getWorkspace() != nullptr);
+
         int8_t *buffer;
         ALLOCATE(buffer, context->getWorkspace(), 1 * sizeof(T), int8_t);
 
@@ -229,6 +249,11 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
     auto result = new NDArray();
+
+    if (context == nullptr)
+        context = nd4j::graph::LaunchContext::defaultContext();
+
+    result->setAttached(context->getWorkspace() != nullptr);
 
     result->setShapeInfo(ShapeBuilders::createShapeInfo(DataTypeUtils::fromT<T>(), order, shape, context->getWorkspace()));
 
@@ -319,6 +344,11 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
 
         auto res = new NDArray();
 
+        if (context == nullptr)
+            context = nd4j::graph::LaunchContext::defaultContext();
+
+        res->setAttached(context->getWorkspace() != nullptr);
+
         int8_t *buffer = nullptr;
         ALLOCATE(buffer, context->getWorkspace(), length * sizeof(T), int8_t);
 
@@ -367,7 +397,12 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
-    NDArray res;        
+    NDArray res;
+
+    if (context == nullptr)
+        context = nd4j::graph::LaunchContext::defaultContext();
+
+    res.setAttached(context->getWorkspace() != nullptr);
 
     res.setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, context->getWorkspace()));
     
@@ -387,6 +422,11 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
 NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
     
     NDArray res;
+
+    if (context == nullptr)
+        context = nd4j::graph::LaunchContext::defaultContext();
+
+    res.setAttached(context->getWorkspace() != nullptr);
     
     int8_t *buffer = nullptr;
     ALLOCATE(buffer, context->getWorkspace(), DataTypeUtils::sizeOfElement(dtype), int8_t);
@@ -404,7 +444,12 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::graph::LaunchContext*
 template <typename T>
 NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::graph::LaunchContext* context) {
         
-    NDArray res;        
+    NDArray res;
+
+    if (context == nullptr)
+        context = nd4j::graph::LaunchContext::defaultContext();
+
+    res.setAttached(context->getWorkspace() != nullptr);
 
     res.setShapeInfo(ShapeBuilders::createVectorShapeInfo(DataTypeUtils::fromT<T>(), values.size(), context->getWorkspace()));
         
@@ -432,6 +477,9 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
     NDArray* NDArrayFactory::empty(nd4j::graph::LaunchContext* context) {
+        if (context == nullptr)
+            context = nd4j::graph::LaunchContext::defaultContext();
+
         auto shapeInfo = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace());
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
         auto result = new NDArray(nullptr, shapeInfo, context);
@@ -482,6 +530,11 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
     NDArray result;
+
+    if (context == nullptr)
+        context = nd4j::graph::LaunchContext::defaultContext();
+
+    result.setAttached(context->getWorkspace() != nullptr);
 
     result.setBuffer(reinterpret_cast<uint8_t*>(buffer));
     result.setShapeInfo(ShapeBuilders::createShapeInfo(DataTypeUtils::fromT<T>(), order, shape, context->getWorkspace()));
@@ -547,6 +600,11 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
     NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::graph::LaunchContext* context) {
         NDArray res;
 
+        if (context == nullptr)
+            context = nd4j::graph::LaunchContext::defaultContext();
+
+        res.setAttached(context->getWorkspace() != nullptr);
+
         res.setShapeInfo(ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, context->getWorkspace()));
 
         if (res.lengthOf() != string.size())
@@ -569,6 +627,10 @@ template NDArray NDArrayFactory::create(int16_t* buffer, const char order, const
 
     NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::graph::LaunchContext* context) {
         auto res = new NDArray();
+        if (context == nullptr)
+            context = nd4j::graph::LaunchContext::defaultContext();
+
+        res->setAttached(context->getWorkspace() != nullptr);
 
         res->setShapeInfo(ShapeBuilders::createShapeInfo(DataType::UTF8, order, shape, context->getWorkspace()));
 
