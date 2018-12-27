@@ -264,8 +264,6 @@
         (5, AMax) ,\
         (6, AMin)
 
-
-
 #define REDUCE_FLOAT_OPS \
         (0, Mean), \
         (1, AMean) ,\

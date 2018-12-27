@@ -1726,67 +1726,732 @@ TEST_F(CudaBasicsTests, execTransformBool_2) {
 }
 
 ////////////////////////////////////////////////////////////////////////////
-// TEST_F(CudaBasicsTests, execReduceFloat_1) {
+TEST_F(CudaBasicsTests, execReduceFloat_1) {
     	   	
-//     NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
-//     NDArray z('c', {3}, nd4j::DataType::FLOAT32);
-//     NDArray exp('c', {3}, {2.5, 6.5, 10.5}, nd4j::DataType::FLOAT32);
-//     x.permutei({2,1,0});
-
-//     z.printIndexedBuffer();
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
+    NDArray z('c', {3}, {100,100,100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {3}, {2.5, 6.5, 10.5}, nd4j::DataType::FLOAT32);
+    x.permutei({2,1,0});
+    x.syncShape();    
     
-//     std::vector<int> dimensions = {0,2};
+    std::vector<int> dimensions = {0,2};
 
-//     // evaluate xTad data 
-//     shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
-//     xTad.createTadOnlyShapeInfo();
-//     xTad.createOffsets();
+    // evaluate xTad data 
+    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
 
-//     // prepare input arrays for prepareDataForCuda function       
-//     std::vector<std::pair<void*,size_t>> hostData;
-    
-// 	hostData.emplace_back(x.buffer(), x.lengthOf() * x.sizeOfT());									// 0 -- dX
-// 	hostData.emplace_back(x.getShapeInfo(), shape::shapeInfoByteLength(x.getShapeInfo()));			// 1 -- dXShapeInfo
-// 	hostData.emplace_back(z.buffer(), z.lengthOf() * z.sizeOfT());									// 2 -- dZ
-// 	hostData.emplace_back(z.getShapeInfo(), shape::shapeInfoByteLength(z.getShapeInfo()));			// 3 -- dZShapeInfo
-// 	hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));						// 4 -- dimensions
-// 	hostData.emplace_back(xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));// 5 -- xTadShapeInfo
-// 	hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong));						// 6 -- xTadOffsets
-
-// 	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;    	
+	hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));						// 0 -- dimensions
+	hostData.emplace_back(xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));// 1 -- xTadShapeInfo
+	hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong));						// 2 -- xTadOffsets
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
 	
-// 	// create cuda stream and LaunchContext
-// 	cudaError_t cudaResult;
-// 	cudaStream_t stream;
-// 	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-// 	LaunchContext lc(&stream);
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
 
-// 	// allocate required amount of global device memory and copy host data to it 		
-
-// 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+	// allocate required amount of global device memory and copy host data to it 		
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
-// 	// call cuda kernel which calculates result
-// 	NativeOpExecutioner::execReduceFloat(&lc, nd4j::reduce::Mean, 
-// 		nullptr, x.getShapeInfo(), devicePtrs[0], (Nd4jLong*)devicePtrs[1], 
-// 		nullptr, 
-// 		nullptr, z.getShapeInfo(), devicePtrs[2], (Nd4jLong*)devicePtrs[3], 
-// 		(int*)devicePtrs[4], dimensions.size(), 
-// 		(Nd4jLong*)devicePtrs[5], (Nd4jLong*)devicePtrs[6]);
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceFloat(&lc, nd4j::reduce::Mean, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					(int*)devicePtrs[0], dimensions.size(), 
+					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
-// 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-//     cudaMemcpyAsync(z.getBuffer(), devicePtrs[2], z.lengthOf() * z.sizeOfT(), cudaMemcpyDeviceToHost, stream);
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
 
-//  	// verify results
-//  	for (int e = 0; e < z.lengthOf(); e++)  		
-//  		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
 
-// 	// free allocated global device memory
-// 	for(int i = 0; i < devicePtrs.size(); ++i) 
-// 		cudaFree(devicePtrs[i]);	
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
 
-// 	// delete cuda stream
-// 	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
-// }
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceFloat_2) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
+    NDArray z('c', {2,4}, {100,100,100,100,100,100,100,100}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {2,4}, {-1., 0., 1., 2.,11., 12., 13., 14.}, nd4j::DataType::DOUBLE);
+    
+    std::vector<int> dimensions = {1};
+
+    // evaluate xTad data 
+    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
+
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;    	
+	hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));						// 0 -- dimensions
+	hostData.emplace_back(xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));// 1 -- xTadShapeInfo
+	hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong));						// 2 -- xTadOffsets
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it 		
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceFloat(&lc, nd4j::reduce::Mean, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					(int*)devicePtrs[0], dimensions.size(), 
+					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceSame_1) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
+    NDArray z('c', {3}, {100,100,100}, nd4j::DataType::INT32);
+    NDArray exp('c', {3}, {20, 52, 84}, nd4j::DataType::INT32);
+    x.permutei({2,1,0});
+    x.syncShape();    
+    
+    std::vector<int> dimensions = {0,2};
+
+    // evaluate xTad data 
+    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
+
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;    	
+	hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));						// 0 -- dimensions
+	hostData.emplace_back(xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));// 1 -- xTadShapeInfo
+	hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong));						// 2 -- xTadOffsets
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it 		
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceSame(&lc, nd4j::reduce::Sum, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					(int*)devicePtrs[0], dimensions.size(), 
+					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceSame_2) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {2,4}, {100,100,100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {2,4}, {-3., 0., 3., 6.,33., 36., 39., 42.}, nd4j::DataType::FLOAT32);
+    
+    std::vector<int> dimensions = {1};
+
+    // evaluate xTad data 
+    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
+
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;    	
+	hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));						// 0 -- dimensions
+	hostData.emplace_back(xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));// 1 -- xTadShapeInfo
+	hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong));						// 2 -- xTadOffsets
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it 		
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceSame(&lc, nd4j::reduce::Sum, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					(int*)devicePtrs[0], dimensions.size(), 
+					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceBool_1) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, nd4j::DataType::INT32);
+    NDArray z('c', {3}, {100,100,100}, nd4j::DataType::BOOL);
+    NDArray exp('c', {3}, {0, 1, 1}, nd4j::DataType::BOOL);
+    x.permutei({2,1,0});
+    x.syncShape();    
+    
+    std::vector<int> dimensions = {0,2};
+
+    // evaluate xTad data 
+    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
+
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;    	
+	hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));						// 0 -- dimensions
+	hostData.emplace_back(xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));// 1 -- xTadShapeInfo
+	hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong));						// 2 -- xTadOffsets
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it 		
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceBool(&lc, nd4j::reduce::IsPositive, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					(int*)devicePtrs[0], dimensions.size(), 
+					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceBool_2) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {2,4}, {100,100,100,100,100,100,100,100}, nd4j::DataType::BOOL);
+    NDArray exp('c', {2,4}, {1, 1, 1, 1, 0, 0, 0, 0}, nd4j::DataType::BOOL);
+    
+    std::vector<int> dimensions = {1};
+
+    // evaluate xTad data 
+    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
+
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;    	
+	hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));						// 0 -- dimensions
+	hostData.emplace_back(xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));// 1 -- xTadShapeInfo
+	hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong));						// 2 -- xTadOffsets
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it 		
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceBool(&lc, nd4j::reduce::IsPositive, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					(int*)devicePtrs[0], dimensions.size(), 
+					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceLong_1) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, nd4j::DataType::INT32);
+    NDArray z('c', {3}, {100,100,100}, nd4j::DataType::INT64);
+    NDArray exp('c', {3}, {5,6,6}, nd4j::DataType::INT64);
+    x.permutei({2,1,0});
+    x.syncShape();    
+    
+    std::vector<int> dimensions = {0,2};
+
+    // evaluate xTad data 
+    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
+
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;    	
+	hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));						// 0 -- dimensions
+	hostData.emplace_back(xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));// 1 -- xTadShapeInfo
+	hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong));						// 2 -- xTadOffsets
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it 		
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceLong(&lc, nd4j::reduce::CountNonZero, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					(int*)devicePtrs[0], dimensions.size(), 
+					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceLong_2) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {2,4}, {100,100,100,100,100,100,100,100}, nd4j::DataType::INT64);
+    NDArray exp('c', {2,4}, {3, 1, 3, 2, 2, 1, 2, 3}, nd4j::DataType::INT64);    
+
+    std::vector<int> dimensions = {1};
+
+    // evaluate xTad data 
+    shape::TAD xTad(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
+
+    // prepare input arrays for prepareDataForCuda function       
+    std::vector<std::pair<void*,size_t>> hostData;    	
+	hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));						// 0 -- dimensions
+	hostData.emplace_back(xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));// 1 -- xTadShapeInfo
+	hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong));						// 2 -- xTadOffsets
+	std::vector<void*> devicePtrs(hostData.size(), nullptr);
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+
+	// allocate required amount of global device memory and copy host data to it 		
+	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceLong(&lc, nd4j::reduce::CountNonZero, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					(int*)devicePtrs[0], dimensions.size(), 
+					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// free allocated global device memory
+	for(int i = 0; i < devicePtrs.size(); ++i) 
+		cudaFree(devicePtrs[i]);	
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceFloatScalar_1) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
+    NDArray z('c', {0}, {100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {0}, {6.5}, nd4j::DataType::FLOAT32);
+    x.permutei({2,1,0});
+    x.syncShape();    
+       
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+	void* reductionPointer;
+    cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer),  1024*1024); ASSERT_EQ(0, cudaResult);
+    int* allocationPointer;
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&allocationPointer), 1024*1024); ASSERT_EQ(0, cudaResult);
+	lc.setReductionPointer(reductionPointer);
+	lc.setAllocationPointer(allocationPointer);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceFloatScalar(&lc, nd4j::reduce::Mean, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+	
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceFloatScalar_2) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
+    NDArray z('c', {0}, {100}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {0}, {6.5}, nd4j::DataType::DOUBLE);        
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+	void* reductionPointer;
+    cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer),  1024*1024); ASSERT_EQ(0, cudaResult);
+    int* allocationPointer;
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&allocationPointer), 1024*1024); ASSERT_EQ(0, cudaResult);
+	lc.setReductionPointer(reductionPointer);
+	lc.setAllocationPointer(allocationPointer);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceFloatScalar(&lc, nd4j::reduce::Mean, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceSameScalar_1) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
+    NDArray z('c', {0}, {100}, nd4j::DataType::INT32);
+    NDArray exp('c', {0}, {156}, nd4j::DataType::INT32);
+    x.permutei({2,1,0});
+    x.syncShape();    
+       
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+	void* reductionPointer;
+    cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer),  1024*1024); ASSERT_EQ(0, cudaResult);
+    int* allocationPointer;
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&allocationPointer), 1024*1024); ASSERT_EQ(0, cudaResult);
+	lc.setReductionPointer(reductionPointer);
+	lc.setAllocationPointer(allocationPointer);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceSameScalar(&lc, nd4j::reduce::Sum, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+	
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceSameScalar_2) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::DOUBLE);
+    NDArray z('c', {0}, {100}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {0}, {156}, nd4j::DataType::DOUBLE);        
+	
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+	void* reductionPointer;
+    cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer),  1024*1024); ASSERT_EQ(0, cudaResult);
+    int* allocationPointer;
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&allocationPointer), 1024*1024); ASSERT_EQ(0, cudaResult);
+	lc.setReductionPointer(reductionPointer);
+	lc.setAllocationPointer(allocationPointer);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceSameScalar(&lc, nd4j::reduce::Sum, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceBoolScalar_1) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, nd4j::DataType::INT32);
+    NDArray z('c', {0}, {100}, nd4j::DataType::BOOL);
+    NDArray exp('c', {0}, {1}, nd4j::DataType::BOOL);
+    x.permutei({2,1,0});
+    x.syncShape();    
+       
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+	void* reductionPointer;
+    cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer),  1024*1024); ASSERT_EQ(0, cudaResult);
+    int* allocationPointer;
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&allocationPointer), 1024*1024); ASSERT_EQ(0, cudaResult);
+	lc.setReductionPointer(reductionPointer);
+	lc.setAllocationPointer(allocationPointer);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceBoolScalar(&lc, nd4j::reduce::IsPositive, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+	
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceBoolScalar_2) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, nd4j::DataType::DOUBLE);
+    NDArray z('c', {0}, {100}, nd4j::DataType::BOOL);
+    NDArray exp('c', {0}, {1}, nd4j::DataType::BOOL);
+    
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+	void* reductionPointer;
+    cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer),  1024*1024); ASSERT_EQ(0, cudaResult);
+    int* allocationPointer;
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&allocationPointer), 1024*1024); ASSERT_EQ(0, cudaResult);
+	lc.setReductionPointer(reductionPointer);
+	lc.setAllocationPointer(allocationPointer);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceBoolScalar(&lc, nd4j::reduce::IsPositive, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceLongScalar_1) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, nd4j::DataType::INT32);
+    NDArray z('c', {0}, {100}, nd4j::DataType::INT64);
+    NDArray exp('c', {0}, {17}, nd4j::DataType::INT64);
+    x.permutei({2,1,0});
+    x.syncShape();    
+       
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+	void* reductionPointer;
+    cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer),  1024*1024); ASSERT_EQ(0, cudaResult);
+    int* allocationPointer;
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&allocationPointer), 1024*1024); ASSERT_EQ(0, cudaResult);
+	lc.setReductionPointer(reductionPointer);
+	lc.setAllocationPointer(allocationPointer);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceLongScalar(&lc, nd4j::reduce::CountNonZero, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+	
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
+
+////////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, execReduceLongScalar_2) {
+    	   	
+    NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, nd4j::DataType::DOUBLE);
+    NDArray z('c', {0}, {100}, nd4j::DataType::INT64);
+    NDArray exp('c', {0}, {17}, nd4j::DataType::INT64);
+    
+	// create cuda stream and LaunchContext
+	cudaError_t cudaResult;
+	cudaStream_t stream;
+	cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+	LaunchContext lc(&stream);
+	void* reductionPointer;
+    cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer),  1024*1024); ASSERT_EQ(0, cudaResult);
+    int* allocationPointer;
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&allocationPointer), 1024*1024); ASSERT_EQ(0, cudaResult);
+	lc.setReductionPointer(reductionPointer);
+	lc.setAllocationPointer(allocationPointer);
+		
+	// call cuda kernel which calculates result
+	NativeOpExecutioner::execReduceLongScalar(&lc, nd4j::reduce::CountNonZero, 
+					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, 
+					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+
+	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+    z.syncToHost();
+
+ 	// verify results
+ 	for (int e = 0; e < z.lengthOf(); e++)  		
+ 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+
+	// delete cuda stream
+	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
+}
 
 // printCudaGlobal<double><<<1,1,0,*stream>>>(dX, 6);
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(dXShapeInfo, 8);

@@ -125,12 +125,9 @@ __device__ void ReduceLongFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xS
     auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
 
     //shared memory space for storing intermediate results
-    __shared__ Z* sPartials;
-
-    //  __shared__ shape::TAD *tad;
+    __shared__ Z* sPartials;    
     __shared__ int tadLength;
     __shared__ int numTads;
-
     
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -175,32 +172,32 @@ __device__ void ReduceLongFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSha
     auto z = reinterpret_cast<Z*>(vz);
     auto extraParams = reinterpret_cast<X*>(vextraParams);
     auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
-    
-    int xEws = shape::elementWiseStride(xShapeInfo);
-    auto len = shape::length(xShapeInfo);
+        
     auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
     //shared memory space for storing intermediate results
     __shared__ Z* sPartials;
+    __shared__ Nd4jLong xEws;
+    __shared__ Nd4jLong len;
+
     if(threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<Z*>(shmem);
+        xEws = shape::elementWiseStride(xShapeInfo);
+        len = shape::length(xShapeInfo);
     }
     __syncthreads();
 
     sPartials[threadIdx.x] = OpType::startingValue(x);
 
-    if (xEws > 0) {
-        for (int i = tid; i < len; i += (blockDim.x * gridDim.x)) {
-            sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[i * xEws], extraParams), extraParams);
-        }
-    } else {
-        for (int i = tid; i < len; i += blockDim.x * gridDim.x) {
+    if (xEws > 0) 
+        for (int i = tid; i < len; i += (blockDim.x * gridDim.x)) 
+            sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[i * xEws], extraParams), extraParams);            
+    else 
+        for (int i = tid; i < len; i += blockDim.x * gridDim.x)
             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams), extraParams);
-        }
-    }
+            
     __syncthreads();
-
     aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, len), extraParams);
     __syncthreads();
 

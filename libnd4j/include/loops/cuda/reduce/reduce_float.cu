@@ -23,6 +23,7 @@
 #include <loops/legacy_ops.h>
 #include <helpers/DebugHelper.h>
 #include <types/types.h>
+#include <specials_cuda.h>
 
 using namespace simdOps;
 
@@ -102,11 +103,8 @@ __device__ void ReduceFloatFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *x
 
     //shared memory space for storing intermediate results
     __shared__ Z* sPartials;
-
-    //  __shared__ shape::TAD *tad;
     __shared__ int tadLength;
     __shared__ int numTads;
-
     
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -121,19 +119,18 @@ __device__ void ReduceFloatFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *x
         Nd4jLong tadOffsetForBlock = tadOffsets[r];
         sPartials[threadIdx.x] = OpType::startingValue(x + tadOffsetForBlock);
 
-          for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-            
+        for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {            
             auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
-          }
-          __syncthreads();
+        }        
+        __syncthreads();
 
-          // aggregate. do NOT reduce for elements > tadLength
-          aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+        // aggregate. do NOT reduce for elements > tadLength
+        aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
-          __syncthreads();
+        __syncthreads();
 
-          if (threadIdx.x == 0)
+        if (threadIdx.x == 0)
             z[r] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
     }
 }
@@ -145,22 +142,25 @@ __device__ void ReduceFloatFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSh
                                                         void *vextraParams,
                                                         void *vz, Nd4jLong *zShapeInfo,
                                                         void *vreductionBuffer,
-                                                        Nd4jLong *tadOnlyShapeInfo) {
+                                                        Nd4jLong *tadOnlyShapeInfo) {    
 
     auto x = reinterpret_cast<X*>(vx);
     auto z = reinterpret_cast<Z*>(vz);
     auto extraParams = reinterpret_cast<Z*>(vextraParams);
     auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
     
-    int xEws = shape::elementWiseStride(xShapeInfo);
-    auto len = shape::length(xShapeInfo);
     auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
     //shared memory space for storing intermediate results    
     __shared__ Z* sPartials;
+    __shared__ Nd4jLong xEws;
+    __shared__ Nd4jLong len;
+
     if(threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<Z*>(shmem);
+        xEws = shape::elementWiseStride(xShapeInfo);
+        len = shape::length(xShapeInfo);
     }
     __syncthreads();
 
@@ -210,6 +210,7 @@ __device__ void ReduceFloatFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSh
 
             if (threadIdx.x == 0) {
                 z[0] = OpType::postProcess(sPartials[0], len, extraParams);
+                printCudaDevice<float>(z, 1);
             }
         }
     }

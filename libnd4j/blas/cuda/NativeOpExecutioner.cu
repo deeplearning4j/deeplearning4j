@@ -476,6 +476,18 @@ void NativeOpExecutioner::execReduceFloatScalar(nd4j::graph::LaunchContext *lc,
                                                 void *hZ, Nd4jLong *hZShapeInfo,
                                                 void *dZ, Nd4jLong *dZShapeInfo) {
 
+    auto stream = lc->getCudaStream();
+    auto reductionPointer = lc->getReductionPointer();    
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    auto xLength = shape::length(hXShapeInfo);
+    auto blockWidth = 256;
+    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
+    dim3 launchDims(numBlocks, blockWidth, 32768);    
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceScalar(launchDims, stream, opNum, dX,dXShapeInfo, extraParams, dZ,dZShapeInfo, nullptr, 0, reductionPointer, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 
@@ -488,6 +500,21 @@ void NativeOpExecutioner::execReduceBoolScalar(nd4j::graph::LaunchContext *lc,
                                         void *hZ, Nd4jLong *hZShapeInfo,
                                         void *dZ, Nd4jLong *dZShapeInfo) {
 
+    auto stream = lc->getCudaStream();
+    auto reductionPointer = lc->getReductionPointer();  
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (zType != nd4j::DataType::BOOL)
+        throw std::runtime_error("NativeOpExecutioner::execReduceBoolScalar requires Z operand to have BOOL type");
+    
+    auto xLength = shape::length(hXShapeInfo);
+    auto blockWidth = 256;
+    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
+    dim3 launchDims(numBlocks, blockWidth, 32768);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 0, reductionPointer, nullptr), LIBND4J_TYPES, BOOL_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -499,6 +526,21 @@ void NativeOpExecutioner::execReduceSameScalar(nd4j::graph::LaunchContext *lc,
                                         void *hZ, Nd4jLong *hZShapeInfo,
                                         void *dZ, Nd4jLong *dZShapeInfo) {
 
+    auto stream = lc->getCudaStream();
+    auto reductionPointer = lc->getReductionPointer();
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);    
+
+    if (zType != xType)
+        throw datatype_exception::build("NativeOpExecutioner::execReduceSameScalar requires both X & Z operands to have same type", xType, zType);
+
+    auto xLength = shape::length(hXShapeInfo);
+    auto blockWidth = 256;
+    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
+    dim3 launchDims(numBlocks, blockWidth, 32768);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 0, reductionPointer, nullptr), LIBND4J_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -510,6 +552,21 @@ void NativeOpExecutioner::execReduceLongScalar(nd4j::graph::LaunchContext *lc,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo) {
 
+    auto stream = lc->getCudaStream();
+    auto reductionPointer = lc->getReductionPointer();
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (zType != nd4j::DataType::INT64)
+        throw datatype_exception::build("NativeOpExecutioner::execReduceLongScalar wrong Z data type", nd4j::DataType::INT64, zType);
+
+    auto xLength = shape::length(hXShapeInfo);
+    auto blockWidth = 256;
+    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
+    dim3 launchDims(numBlocks, blockWidth, 32768);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 0, reductionPointer, nullptr), LIBND4J_TYPES, LONG_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

@@ -330,6 +330,14 @@ static void execTransformSame(nd4j::graph::LaunchContext *lc,
                                 void *extraParams,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
+static void execTransformBool(nd4j::graph::LaunchContext *lc,
+                                int opNum,
+                                void *hX, Nd4jLong *hXShapeInfo,
+                                void *dX, Nd4jLong *dXShapeInfo,
+                                void *hZ, Nd4jLong *hZShapeInfo,
+                                void *dZ, Nd4jLong *dZShapeInfo,
+                                void *extraParams,
+                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);    
     /**
      *
      * @param opNum
@@ -348,54 +356,6 @@ static void execTransformSame(nd4j::graph::LaunchContext *lc,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             int *dimension, int dimensionLength,
                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
-
-
-
-
-
-
-
-
-
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-  
-
-
-
-
 
     static void execReduceSame(nd4j::graph::LaunchContext *lc,
                                 int opNum,
@@ -467,6 +427,35 @@ static void execTransformSame(nd4j::graph::LaunchContext *lc,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo);    
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     static void execReduce3TAD(nd4j::graph::LaunchContext *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
@@ -535,16 +524,6 @@ static void execTransformSame(nd4j::graph::LaunchContext *lc,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 int *dimension, int dimensionLength,
                                 bool biasCorrected);    
-
-    
-    static void execTransformBool(nd4j::graph::LaunchContext *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);    
 
     template <typename X>
     static FORCEINLINE void execAggregate(nd4j::graph::LaunchContext *lc,
