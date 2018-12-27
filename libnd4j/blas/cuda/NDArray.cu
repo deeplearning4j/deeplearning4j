@@ -935,6 +935,19 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
     void NDArray::registerSpecialUse(std::initializer_list<NDArray*> writeList, std::initializer_list<NDArray*> readList) {
         // no-op
+        for (auto p:writeList) {
+            if (!p->isActualOnDeviceSide())
+                p->syncToDevice();
+
+            p->tickWriteDevice();
+        }
+
+        for (auto p:readList) {
+            if (!p->isActualOnDeviceSide())
+                p->syncToDevice();
+
+            p->tickReadDevice();
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////
