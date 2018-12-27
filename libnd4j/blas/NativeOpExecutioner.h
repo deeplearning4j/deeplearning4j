@@ -330,6 +330,33 @@ static void execTransformSame(nd4j::graph::LaunchContext *lc,
                                 void *extraParams,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
+    /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfo
+     */
+    static void execReduceFloat(nd4j::graph::LaunchContext *lc,
+                            int opNum,
+                            void *hX, Nd4jLong *hXShapeInfo,
+                            void *dX, Nd4jLong *dXShapeInfo,
+                            void *extraParams,
+                            void *hZ, Nd4jLong *hZShapeInfo,
+                            void *dZ, Nd4jLong *dZShapeInfo,
+                            int *dimension, int dimensionLength,
+                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+
+
+
+
+
+
+
+
+
 
  
 
@@ -369,25 +396,6 @@ static void execTransformSame(nd4j::graph::LaunchContext *lc,
 
 
 
-
-    /**
-     *
-     * @param opNum
-     * @param x
-     * @param xShapeInfo
-     * @param extraParams
-     * @param result
-     * @param resultShapeInfo
-     */
-    static void execReduceFloat(nd4j::graph::LaunchContext *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParams,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
     static void execReduceSame(nd4j::graph::LaunchContext *lc,
                                 int opNum,
