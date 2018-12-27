@@ -482,7 +482,7 @@ nd4j::NDArray* MmulHelper::mmulMxM(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDA
     }
     if (result == nullptr) {
         nd4j_verbose("mmulMxM: Creating new array: [%i x %i]\n", A->rows(), B->columns());
-        result = NDArrayFactory::create_<Z>('f', {A->rows(), B->columns()}, nullptr);
+        result = NDArrayFactory::create_<Z>('f', {A->rows(), B->columns()}, A->getContext());
     }
         
     auto aShape = A->shapeOf();

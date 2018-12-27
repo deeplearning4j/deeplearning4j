@@ -914,7 +914,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
 
     template <typename T>
     static void clipByGlobalNorm_(std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
-        NDArray globalNorm = NDArrayFactory::create<T>(0, (nd4j::graph::LaunchContext*)nullptr); //sqrt(sum([l2norm(t)**2 for t in t_list]))
+        NDArray globalNorm = NDArrayFactory::create<T>(0, inputs[0]->getContext()); //sqrt(sum([l2norm(t)**2 for t in t_list]))
 
         for (auto input: inputs) {
             auto l2norm = input->reduceNumber(reduce::Norm2);
