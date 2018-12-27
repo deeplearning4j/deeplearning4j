@@ -100,12 +100,34 @@ TEST_F(NDArrayCudaBasicsTests, Test_Registration_03) {
     ASSERT_TRUE(x->isActualOnHostSide());
 
     NDArray::registerSpecialUse({x}, {y});
-
+    x->applyTransform(transform::Neg, y, nullptr);
     ASSERT_TRUE(x->isActualOnDeviceSide());
     ASSERT_FALSE(x->isActualOnHostSide());
 
     ASSERT_TRUE(y->isActualOnDeviceSide());
     ASSERT_TRUE(y->isActualOnHostSide());
+    //y->syncToHost();
+    y->printBuffer("Negatives");
+    delete x;
+    delete y;
+}
+
+TEST_F(NDArrayCudaBasicsTests, Test_Cosine_1) {
+    auto x = NDArrayFactory::create_<double>('c', {5}, {1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create_<double>('c', {5}, {5, 4, 3, 2, 1});
+
+    ASSERT_TRUE(x->isActualOnDeviceSide());
+    ASSERT_TRUE(x->isActualOnHostSide());
+
+    NDArray::registerSpecialUse({x}, {y});
+    x->applyTransform(transform::Cosine, y, nullptr);
+    ASSERT_TRUE(x->isActualOnDeviceSide());
+    ASSERT_FALSE(x->isActualOnHostSide());
+
+    ASSERT_TRUE(y->isActualOnDeviceSide());
+    ASSERT_TRUE(y->isActualOnHostSide());
+    //y->syncToHost();
+    y->printBuffer("Cosine");
     delete x;
     delete y;
 }
