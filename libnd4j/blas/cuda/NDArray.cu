@@ -120,6 +120,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     cudaMalloc(&_bufferD, _length * sizeOfT());
     cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
     syncShape();
+    tickWriteDevice();
 //    syncToDevice();
 
 }

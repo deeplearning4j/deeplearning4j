@@ -72,6 +72,44 @@ TEST_F(NDArrayCudaBasicsTests, Test_Registration_3) {
     ASSERT_TRUE(y.isActualOnHostSide());
 }
 
+TEST_F(NDArrayCudaBasicsTests, Test_Registration_01) {
+    auto x = NDArrayFactory::create_<int>('c', {5}, {1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create_<int>('c', {5}, {5, 4, 3, 2, 1});
+
+    ASSERT_TRUE(x->isActualOnDeviceSide());
+    ASSERT_TRUE(x->isActualOnHostSide());
+    delete x;
+    delete y;
+}
+
+TEST_F(NDArrayCudaBasicsTests, Test_Registration_02) {
+    auto x = NDArrayFactory::create_<int>('c', {5});
+    auto y = NDArrayFactory::create_<int>('c', {5});
+
+    ASSERT_TRUE(x->isActualOnDeviceSide());
+    ASSERT_FALSE(x->isActualOnHostSide());
+    delete x;
+    delete y;
+}
+
+TEST_F(NDArrayCudaBasicsTests, Test_Registration_03) {
+    auto x = NDArrayFactory::create_<int>('c', {5}, {1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create_<int>('c', {5}, {5, 4, 3, 2, 1});
+
+    ASSERT_TRUE(x->isActualOnDeviceSide());
+    ASSERT_TRUE(x->isActualOnHostSide());
+
+    NDArray::registerSpecialUse({x}, {y});
+
+    ASSERT_TRUE(x->isActualOnDeviceSide());
+    ASSERT_FALSE(x->isActualOnHostSide());
+
+    ASSERT_TRUE(y->isActualOnDeviceSide());
+    ASSERT_TRUE(y->isActualOnHostSide());
+    delete x;
+    delete y;
+}
+
 //////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, TestAdd_1) {
     // allocating host-side arrays

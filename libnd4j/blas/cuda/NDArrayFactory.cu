@@ -168,9 +168,10 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         cudaMalloc(&specialBuffer, sizeof(DataTypeUtils::fromT<T>())); // scalar shape
         res->setSpecialBuffers(specialBuffer, specialShape);
         res->assign(scalar);
-
         cudaMemcpy(specialShape, res->shapeInfo(), shape::shapeInfoByteLength(res->shapeInfo()), cudaMemcpyHostToDevice);
         cudaMemcpy(specialBuffer, res->buffer(), sizeof(T), cudaMemcpyHostToDevice); // only one element
+        res->tickWriteDevice();
+        res->tickReadHost();
 
         return res;
     }
@@ -239,6 +240,9 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
         cudaMemcpy(specialShape, res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
         cudaMemcpy(specialBuffer, res.buffer(), bufferSize, cudaMemcpyHostToDevice); // only one element
         res.setSpecialBuffers(specialBuffer, specialShape);
+        res.tickWriteDevice();
+        res.tickReadHost();
+
         return res;
     }
     template NDArray NDArrayFactory::create(const double scalar, nd4j::graph::LaunchContext* context);
@@ -285,6 +289,8 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd4jLong> &
     cudaMemcpy(specialShape, result->shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
     cudaMemcpy(specialBuffer, result->buffer(), bufferSize, cudaMemcpyHostToDevice); // only one element
     result->setSpecialBuffers(specialBuffer, specialShape);
+    result->tickWriteDevice();
+    result->tickReadHost();
 
     return result;
 }
@@ -343,6 +349,8 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
             reinterpret_cast<T *>(result->getBuffer())[e] = (from * ((T) 1 - step) + step * to);            
         }
         cudaMemcpy(result->specialBuffer(), result->getBuffer(), numElements * sizeof(T), cudaMemcpyHostToDevice);
+        result->tickWriteDevice();
+        result->tickReadHost();
         return result;
     }
     template NDArray* NDArrayFactory::linspace(const double from, const double to, const Nd4jLong numElements);
@@ -430,7 +438,8 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
     cudaMalloc(&specialShapeInfo, shapeSize);
     cudaMemcpy(specialBuffer, res.buffer(), bufferSize, cudaMemcpyHostToDevice);
     cudaMemcpy(specialShapeInfo, res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
-
+    res.tickWriteDevice();
+    //s.tickReadHost();
     res.setBuffer(buffer);
     res.setContext(context);
     res.setSpecialBuffers(specialBuffer, specialShapeInfo);
@@ -540,6 +549,7 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
         cudaMemcpy(res.specialBuffer(), res.buffer(), bufferSize, cudaMemcpyHostToDevice);
         cudaMemcpy(res.specialShapeInfo(), res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
         res.tickWriteDevice();
+        res.tickReadHost();
         return res;
     }
     template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::graph::LaunchContext* context);
@@ -575,6 +585,9 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
     cudaMemcpy(specialBuffer, result.buffer(), result.lengthOf() * sizeof(T), cudaMemcpyHostToDevice);
     cudaMemcpy(specialShape, result.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
     result.setSpecialBuffers(specialBuffer, specialShape);
+    result.tickWriteDevice();
+    //res->tickReadHost();
+
     return result;
 }
 
