@@ -105,7 +105,9 @@ NDArray::NDArray(NDArray&& other) noexcept {
 //constructor, create empty array at given workspace
 NDArray::NDArray(nd4j::graph::LaunchContext* context) {
     _buffer    = nullptr;
+    _bufferD   = nullptr;
     _shapeInfo = nullptr;
+    _shapeInfoD = nullptr;
     _isBuffAlloc = false;                                  // indicate that memory for array is passed from outside
     _isShapeAlloc = false;
     _context = context;
@@ -874,7 +876,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
     NDArray NDArray::varianceNumber(nd4j::variance::Ops op, bool biasCorrected) {
         NDArray res(DataTypeUtils::pickFloatingType(dataType()), _context);
-        NativeOpExecutioner::execSummaryStatsScalar(nullptr, op,this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo(), biasCorrected);
+        NativeOpExecutioner::execSummaryStatsScalar(_context, op,this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo(), biasCorrected);
         return res;
     }
 
@@ -884,7 +886,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         if (isS())
             throw std::runtime_error("NDArray::sumNumber: you can't use this method on String array!");
         NDArray res(_dataType, _context);
-        NativeOpExecutioner::execReduceSameScalar(nullptr, nd4j::reduce::SameOps::Sum, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
+        NativeOpExecutioner::execReduceSameScalar(_context, nd4j::reduce::SameOps::Sum, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
         return res;
     }
 
@@ -894,7 +896,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         if (isS())
             throw std::runtime_error("NDArray::meanNumber: you can't use this method on String array!");
         NDArray res(DataTypeUtils::pickFloatingType(dataType()), _context);
-        NativeOpExecutioner::execReduceFloatScalar(nullptr, nd4j::reduce::FloatOps::Mean, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
+        NativeOpExecutioner::execReduceFloatScalar(_context, nd4j::reduce::FloatOps::Mean, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
         return res;
     }
 
@@ -1084,13 +1086,13 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
 
     if(rankOf() == copy.size() || copy.empty())
         //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
-        NativeOpExecutioner::execReduceFloatScalar(nullptr, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
+        NativeOpExecutioner::execReduceFloatScalar(_context, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
     else {
         shape::TAD tad(_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
-        NativeOpExecutioner::execReduceFloat(nullptr, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+        NativeOpExecutioner::execReduceFloat(_context, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
     }
 }
 
@@ -1113,13 +1115,13 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
 
     if(rankOf() == copy.size() || copy.empty())
         //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
-        NativeOpExecutioner::execReduceSameScalar(nullptr, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
+        NativeOpExecutioner::execReduceSameScalar(_context, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
     else {
         shape::TAD tad(_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
-        NativeOpExecutioner::execReduceSame(nullptr, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+        NativeOpExecutioner::execReduceSame(_context, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
     }
 }
 
@@ -1142,13 +1144,13 @@ void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, co
 
     if(rankOf() == copy.size() || copy.empty())
         //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
-        NativeOpExecutioner::execReduceBoolScalar(nullptr, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
+        NativeOpExecutioner::execReduceBoolScalar(_context, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
     else {
         shape::TAD tad(_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
-        NativeOpExecutioner::execReduceBool(nullptr, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+        NativeOpExecutioner::execReduceBool(_context, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
     }
 }
 
@@ -1171,7 +1173,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
     if(rankOf() == copy.size() || copy.empty())
         //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
-        NativeOpExecutioner::execReduceLongScalar(nullptr, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
+        NativeOpExecutioner::execReduceLongScalar(_context, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
     else {
         shape::TAD tad(_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
