@@ -168,7 +168,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     */
 
     //////////////////////////////////////////////////////////////////////////
-    void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, void *extraArgs) const {
+    void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, ExtraArguments *extraArgs) const {
         if (isS())
             throw std::runtime_error("NDArray::applyTrueBroadcast bool: you can't use this method on String array!");
         if(target == nullptr || other == nullptr)
@@ -243,7 +243,6 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             auto dimsToExclude = ShapeUtils::evalDimsToExclude(target->rankOf(), sameDims);
             const auto numOfSubArrs = ShapeUtils::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
 
-#pragma omp parallel for schedule(guided)
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 NDArray targetSubArr = (*target)(i, dimsToExclude);
                 if (pTarget == target)
@@ -262,7 +261,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, void *extraArgs) const {
+    void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, ExtraArguments *extraArgs) const {
         if (isS())
             throw std::runtime_error("NDArray::applyTrueBroadcast: you can't use this method on String array!");
         if(target == nullptr || other == nullptr)
@@ -335,8 +334,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         else {
             auto dimsToExclude = ShapeUtils::evalDimsToExclude(target->rankOf(), sameDims);
             const auto numOfSubArrs = ShapeUtils::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
-        
-#pragma omp parallel for schedule(guided)
+
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 auto targetSubArr = (*target)(i, dimsToExclude);
                 if(pTarget == target)
@@ -800,7 +798,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         }
     }
 
-    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, void *extraParams) const{
+    void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, ExtraArguments *extraParams) const{
         if (isS())
             throw std::runtime_error("NDArray::applyPairwiseTransform: you can't use this method on String array!");
         if (other->lengthOf() != target->lengthOf())
@@ -818,7 +816,9 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         //cudaError_t err = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
         auto stream = _context->getCudaStream(); //reinterpret_cast<cudaStream_t *>(&nativeStream);
         //_context->setCudaStream(stream);
-        NativeOpExecutioner::execPairwiseTransform(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams);
+
+        NativeOpExecutioner::execPairwiseTransform(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr);
+
         //auto res = cudaStreamSynchronize(*stream);
         //if (res != 0) {
         //    nd4j_printf("Error: %i\n", res);
@@ -826,6 +826,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         //}
 
         //target->syncToHost();
+        if (extraParams != nullptr)
+            this->synchronize();
     }
 
     void
@@ -923,6 +925,12 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         result->assign(*this);
 
         return result;
+    }
+
+    void NDArray::synchronize() const {
+        auto res = cudaStreamSynchronize(*(_context->getCudaStream()));
+        if (res != 0)
+            throw std::runtime_error("Synchronization failed");
     }
 
     ////////////////////////////////////////////////////////////////////////

@@ -226,6 +226,10 @@ namespace nd4j {
         */
         NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext());
 
+        /**
+         * This method blocks until asynchronous operation finishes
+         */
+        void synchronize() const;
 
         /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type

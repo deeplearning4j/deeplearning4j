@@ -828,6 +828,11 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     }
     BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedDoubleAssign, (void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const, LIBND4J_TYPES, LIBND4J_TYPES);
 
+
+    void NDArray::synchronize() const {
+        // no-op
+    }
+
     // This method assigns values of given NDArray to this one
     void NDArray::assign(const NDArray& other) {
 

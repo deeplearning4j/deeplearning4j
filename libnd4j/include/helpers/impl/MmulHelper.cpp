@@ -680,7 +680,7 @@ NDArray* MmulHelper::simpleMMul(const NDArray* a, const NDArray* b, NDArray* c, 
         dot->applyScalar(scalar::Multiply, alpha, dot, nullptr);
 
     if(beta != 0.) {
-        c->applyPairwiseTransform(pairwise::Add, dot, nullptr);
+        c->applyPairwiseTransform(pairwise::Add, dot, nullptr, nullptr);
         delete dot;
     }
     

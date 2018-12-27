@@ -405,6 +405,8 @@ FORCEINLINE T DataTypeUtils::eps() {
             return nd4j::DataType::UINT32;
         } else if (std::is_same<T, Nd4jULong>::value) {
             return nd4j::DataType::UINT64;
+        } else {
+            return nd4j::DataType::INHERIT;
         }
     }
 }
