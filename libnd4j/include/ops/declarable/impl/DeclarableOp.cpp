@@ -727,6 +727,7 @@ namespace nd4j {
                     auto arr = var->getNDArray();
                     if (!arr->isAttached()) {
                         var->markRemovable(false);
+                        arr->setContext(nd4j::graph::LaunchContext::defaultContext());
                         arrayList->push_back(arr);
                     } else {
                         arrayList->push_back(arr->detach());

@@ -862,6 +862,7 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         auto result = new NDArray(newBuffer, newShapeInfo, nullptr);
         result->_isBuffAlloc = true;
         result->_isShapeAlloc = true;
+        result->setContext(nd4j::graph::LaunchContext::defaultContext());
 
 //        auto d1 = this->dataType();
   //      auto d2 = result->dataType();
