@@ -540,6 +540,9 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
 
 TEST_F(PlaygroundTests, loop_test_1) {
 
+    if (1>0)
+        return;
+
     auto f = NDArrayFactory::create<float>('c', {2}, {5000, 10000});
     nd4j::ops::randomuniform op;
 
