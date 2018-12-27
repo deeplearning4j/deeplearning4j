@@ -138,6 +138,14 @@ namespace nd4j {
         _precBoost.store(reallyAllow);
     }
 
+    bool Environment::isCPU() {
+#ifdef __CUDABLAS__
+        return false;
+#else
+        return true;
+#endif
+    }
+
     nd4j::Environment *nd4j::Environment::_instance = 0;
 
 }

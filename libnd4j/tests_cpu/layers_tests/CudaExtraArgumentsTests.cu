@@ -21,22 +21,21 @@
 #include "testlayers.h"
 #include <array/ExtraArguments.h>
 #include <array>
+#include <cuda.h>
+#include <cuda_runtime.h>
 
 using namespace nd4j;
 
-class ExtraArgumentsTests : public testing::Test {
+class CudaExtraArgumentsTests : public testing::Test {
 public:
 
-    ExtraArgumentsTests() {
+    CudaExtraArgumentsTests() {
         printf("\n");
         fflush(stdout);
     }
 };
 
-TEST_F(ExtraArgumentsTests, Basic_Test_1) {
-    if (!Environment::getInstance()->isCPU())
-        return;
-
+TEST_F(CudaExtraArgumentsTests, Basic_Test_1) {
     ExtraArguments args({1.0, 2.0, 3.0});
 
     float ef[] = {1.f, 2.f, 3.f};
@@ -47,17 +46,26 @@ TEST_F(ExtraArgumentsTests, Basic_Test_1) {
     ASSERT_TRUE(ptrFloat != nullptr);
     ASSERT_TRUE(ptrDouble != nullptr);
 
+    auto tmpFloat = new float[3];
+    auto tmpDouble = new double[3];
+
+    cudaMemcpy(tmpFloat, ptrFloat, 3 * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(tmpDouble, ptrDouble, 3 * sizeof(double), cudaMemcpyDeviceToHost);
+
     for (int e = 0; e < 3; e++) {
-        ASSERT_NEAR(ef[e], ptrFloat[e], 1e-5f);
+        ASSERT_NEAR(ef[e], tmpFloat[e], 1e-5f);
     }
 
     for (int e = 0; e < 3; e++) {
-        ASSERT_NEAR(ed[e], ptrDouble[e], 1e-5);
+        ASSERT_NEAR(ed[e], tmpDouble[e], 1e-5);
     }
+
+    delete[] tmpFloat;
+    delete[] tmpDouble;
 }
 
 
-TEST_F(ExtraArgumentsTests, Basic_Test_2) {
+TEST_F(CudaExtraArgumentsTests, Basic_Test_2) {
     ExtraArguments args;
 
     auto ptrInt = args.argumentsAsT<int>();
