@@ -273,7 +273,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
     if (weightsPoint){
 
         auto resultFFShape = isNCHW ? std::vector<Nd4jLong>({bS, mC*iC, oH, oW}) : std::vector<Nd4jLong>({bS, oH, oW, mC*iC});
-        auto resultFF  = NDArrayFactory::create_(input->ordering(), resultFFShape, input->dataType(), block.getWorkspace());
+        auto resultFF  = NDArrayFactory::create_(input->ordering(), resultFFShape, input->dataType(), block.launchContext());
         ConvolutionUtils::sconv2d(block, input, weightsDepth, nullptr, nullptr, resultFF, kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW);
 
         auto gradIDepthShape = ShapeUtils::composeShapeUsingDimsAndIdx({bS,iC*mC,oH,oW,  0,indIOioC,indIiH,indIiH+1});

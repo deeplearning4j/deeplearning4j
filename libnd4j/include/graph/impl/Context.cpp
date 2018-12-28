@@ -328,6 +328,11 @@ namespace nd4j {
         nd4j::memory::Workspace *Context::oWorkspace() {
             return nullptr;
         }
+
+        LaunchContext* Context::launchContext() {
+            //FIXME: we need proper context to be shared here
+            return LaunchContext::defaultContext();
+        }
     }
 }
 

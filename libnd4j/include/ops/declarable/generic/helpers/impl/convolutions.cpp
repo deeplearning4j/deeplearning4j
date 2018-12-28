@@ -645,7 +645,7 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
     else
         permutForOutput = {0, indOoH, indOoH+1, indIOioC};                          // [bS, oC, oH, oW] -> [bS, oH, oW, oC]
 
-    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getWorkspace());
+    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
 
     //----- calculation of output -----//
     graph::LaunchContext ctx;
@@ -781,7 +781,7 @@ static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const N
     else
         gradOaxesForDot  = {0, 2, 3};                                           // bS, oH, oW
 
-    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getWorkspace());
+    NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
 
     // ----- calculation of gradW ----- //
     if(gradW) {

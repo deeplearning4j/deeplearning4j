@@ -111,6 +111,8 @@ namespace nd4j {
 
             VariableSpace *getVariableSpace();
 
+            LaunchContext* launchContext();
+
             // these fields define, if we can execute specific node in-place, without generating new array
 
 
