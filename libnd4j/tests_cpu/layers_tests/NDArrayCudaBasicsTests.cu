@@ -99,13 +99,13 @@ TEST_F(NDArrayCudaBasicsTests, Test_Registration_03) {
     ASSERT_TRUE(x->isActualOnDeviceSide());
     ASSERT_TRUE(x->isActualOnHostSide());
 
-    NDArray::registerSpecialUse({x}, {y});
+    NDArray::registerSpecialUse({y}, {x});
     x->applyTransform(transform::Neg, y, nullptr);
-    ASSERT_TRUE(x->isActualOnDeviceSide());
-    ASSERT_FALSE(x->isActualOnHostSide());
+    //ASSERT_TRUE(x->isActualOnDeviceSide());
+    //ASSERT_FALSE(x->isActualOnHostSide());
 
-    ASSERT_TRUE(y->isActualOnDeviceSide());
-    ASSERT_TRUE(y->isActualOnHostSide());
+    //ASSERT_TRUE(y->isActualOnDeviceSide());
+    //ASSERT_TRUE(y->isActualOnHostSide());
     //y->syncToHost();
     y->printBuffer("Negatives");
     delete x;
@@ -119,13 +119,13 @@ TEST_F(NDArrayCudaBasicsTests, Test_Cosine_1) {
     ASSERT_TRUE(x->isActualOnDeviceSide());
     ASSERT_TRUE(x->isActualOnHostSide());
 
-    NDArray::registerSpecialUse({x}, {y});
+    NDArray::registerSpecialUse({y}, {x});
     x->applyTransform(transform::Cosine, y, nullptr);
-    ASSERT_TRUE(x->isActualOnDeviceSide());
-    ASSERT_FALSE(x->isActualOnHostSide());
+    //ASSERT_TRUE(x->isActualOnDeviceSide());
+    //ASSERT_FALSE(x->isActualOnHostSide());
 
-    ASSERT_TRUE(y->isActualOnDeviceSide());
-    ASSERT_TRUE(y->isActualOnHostSide());
+    //ASSERT_TRUE(y->isActualOnDeviceSide());
+    //ASSERT_TRUE(y->isActualOnHostSide());
     //y->syncToHost();
     y->printBuffer("Cosine");
     delete x;
@@ -469,5 +469,34 @@ TEST_F(NDArrayCudaBasicsTests, TestMultiply_4) {
 
     for (int e = 0; e < x.lengthOf(); e++) {
         ASSERT_NEAR(exp.e<double>(e), x.e<double>(e), 1e-5);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, TestPrimitiveNeg_1) {
+    // allocating host-side arrays
+    auto x = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
+
+    auto exp = NDArrayFactory::create<double>('c', { 5 }, { -1, -2, -3, -4, -5 });
+
+    //Nd4jPointer nativeStream = (Nd4jPointer)malloc(sizeof(cudaStream_t));
+    //CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream");
+    //cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
+    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+
+    //LaunchContext lc(x.getContext()); //->getCudaStream(), nullptr, nullptr);
+    NativeOpExecutioner::execTransformSame(x.getContext(), transform::Neg, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), nullptr, nullptr, nullptr);
+    auto res = cudaStreamSynchronize(*stream);
+    ASSERT_EQ(0, res);
+    y.syncToHost();
+    //cudaMemcpy(y.buffer(), y.specialBuffer(), y.lengthOf() * y.sizeOfT(), cudaMemcpyDeviceToHost);
+    //res = cudaStreamSynchronize(*stream);
+    //ASSERT_EQ(0, res);
+    x.printBuffer("X = ");
+    y.printBuffer("Y = ");
+
+    for (int e = 0; e < y.lengthOf(); e++) {
+        ASSERT_NEAR(exp.e<double>(e), y.e<double>(e), 1e-5);
     }
 }
