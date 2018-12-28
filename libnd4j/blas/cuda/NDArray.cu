@@ -91,9 +91,7 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     _shapeInfo = shapeInfo;
     _isBuffAlloc = isBuffAlloc;                                  // indicate that memory for array is passed from outside
     _isShapeAlloc = isShapeAlloc;
-    _context = context;
-    if (_context == nullptr)
-        _context = graph::LaunchContext::defaultContext();
+    _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
     if (shapeInfo != nullptr) {
         _length = shape::length(shapeInfo);
         _dataType = ArrayOptions::dataType(shapeInfo);
@@ -117,11 +115,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, context->getWorkspace()));
 //    ALLOCATE(_buffer, context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
 //    memset(_buffer, 0, _length * DataTypeUtils::sizeOf(dtype));
-    _context = context;
-    if (_context == nullptr)
-        _context = graph::LaunchContext::defaultContext();
-
-        triggerAllocationFlag(true, true);
+    _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
+    triggerAllocationFlag(true, true);
     cudaMalloc(&_bufferD, _length * sizeOfT());
     cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
     syncShape();
@@ -973,10 +968,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         cudaMalloc(&_bufferD, _length * DataTypeUtils::sizeOf(dtype));
         cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
         syncShape();
-        _context = context;
-        if (_context == nullptr)
-            _context = graph::LaunchContext::defaultContext();
-
+        _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
         triggerAllocationFlag(true, true);
 
         for(Nd4jLong i=0; i < _length; ++i) {
@@ -993,9 +985,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         if (_context == nullptr)
             _context = graph::LaunchContext::defaultContext();
 
-        _context = context;
-        if (_context == nullptr)
-            _context = graph::LaunchContext::defaultContext();
+        _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
 
         triggerAllocationFlag(true, true);
     }
@@ -1009,10 +999,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, context->getWorkspace()));
 
         _buffer = reinterpret_cast<int8_t *>(buffer);
-        _context = context;
-        if (_context == nullptr)
-            _context = graph::LaunchContext::defaultContext();
-
+        _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
         triggerAllocationFlag(false, true);
     }
 
@@ -1043,10 +1030,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
             triggerAllocationFlag(true, true);
         }
-        _context = context;
-        if (_context == nullptr)
-            _context = graph::LaunchContext::defaultContext();
-
+        _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1066,10 +1050,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         _dataType = dtype;
         _length = shape::length(_shapeInfo);
-        _context = context;
-        if (_context == nullptr)
-            _context = graph::LaunchContext::defaultContext();
-
+        _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
         ArrayOptions::setDataType(_shapeInfo, _dataType);
 
         ALLOCATE(_buffer, _context->getWorkspace(), _length * sizeOfT() , int8_t);
@@ -1085,10 +1066,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace()));
         ALLOCATE(_buffer, context->getWorkspace(), DataTypeUtils::sizeOfElement(dtype), int8_t);
         memset(_buffer, 0, DataTypeUtils::sizeOfElement(dtype));
-        _context = context;
-        if (_context == nullptr)
-            _context = graph::LaunchContext::defaultContext();
-
+        _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
         triggerAllocationFlag(true, true);
     }
 
