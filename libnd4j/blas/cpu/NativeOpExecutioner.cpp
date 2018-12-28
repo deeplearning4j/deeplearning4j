@@ -645,8 +645,8 @@ void NativeOpExecutioner::execSummaryStats(nd4j::graph::LaunchContext *lc,
                                 void *extraParams,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension,
-                                int dimensionLength,
+                                int *dimension, int dimensionLength,
+                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                                 bool biasCorrected) {
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);

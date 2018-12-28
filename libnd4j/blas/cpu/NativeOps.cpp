@@ -580,8 +580,7 @@ void NativeOps::execReduce3(Nd4jPointer *extraPointers,
         auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
 
         NativeOpExecutioner::execReduce3TAD(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets);
-    }
-
+    }    
 }
 
 /**
@@ -743,6 +742,8 @@ void NativeOps::execSummaryStats(Nd4jPointer *extraPointers,
             dZShapeInfo,
             dimension,
             dimensionLength,
+            tadShapeInfo,
+            tadOffsets,
             biasCorrected);
 
 }

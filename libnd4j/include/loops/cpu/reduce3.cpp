@@ -313,12 +313,12 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
             localExtraParams = new Z[OpType::extraParamsLen];
 
         for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
-            localExtraParams[extraParamsIdx] = startingVal;                    
+            localExtraParams[extraParamsIdx] = startingVal;
 
         for (Nd4jLong f = 0; f < tadLength; f++) {
 
             auto xOffset = offset + shape::getIndexOffset(f, tadShapeInfo, tadLength);
-            auto yOffset = shape::getIndexOffset(f, yShapeInfo,   tadLength);                        
+            auto yOffset = shape::getIndexOffset(f, yShapeInfo, tadLength);
             z[r] = OpType::update(z[r], OpType::op(x[xOffset], y[yOffset], localExtraParams), localExtraParams);
         }
 

@@ -24,6 +24,7 @@
 #include <ops/random_ops.h>
 #include <helpers/shape.h>
 #include <graph/RandomGenerator.h>
+#include <specials_cuda.h>
 
 namespace randomOps {
 
@@ -57,11 +58,15 @@ namespace randomOps {
             __shared__ Nd4jLong xEWS;
             __shared__ Nd4jLong yEWS;
             __shared__ Nd4jLong zEWS;
+            __shared__ char xOrder;
+            __shared__ char yOrder;
+            __shared__ char zOrder;
 
             __shared__ nd4j::graph::RandomGenerator *rng;
             __shared__ unsigned char *cB;
             __shared__ unsigned char *dB;
             __shared__ nd4j::graph::RandomGenerator *devRng;
+
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
                 rng = (nd4j::graph::RandomGenerator*) shmem;
@@ -76,6 +81,9 @@ namespace randomOps {
                 xEWS = shape::elementWiseStride(xShapeBuffer);
                 yEWS = shape::elementWiseStride(yShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
+                xOrder = shape::order(xShapeBuffer);
+                yOrder = shape::order(yShapeBuffer);
+                zOrder = shape::order(zShapeBuffer);
             }
             __syncthreads();
 
@@ -87,7 +95,7 @@ namespace randomOps {
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-            if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
+            if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1 && xOrder == yOrder && xOrder == zOrder) {
                 for (Nd4jLong e = tid; e < zLength; e+=blockDim.x * gridDim.x) {
                     T prob = rng->relativeT<T>(e);
                     T cumProb = (T) 0.0f;
@@ -223,6 +231,7 @@ namespace randomOps {
 
 #ifdef __CUDACC__
         __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+
             __shared__ T epsilon;
             __shared__ T two_pi;
 

@@ -32,6 +32,7 @@
 #include <cuda_runtime.h>
 #include <cuda_launch_config.h>
 #include <helpers/DebugHelper.h>
+#include <specials_cuda.h>
 
 using namespace simdOps;
 
@@ -39,9 +40,9 @@ namespace functions {
     namespace summarystats {
 
 template <typename X, typename Z>
-void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *z, Nd4jLong *zShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
             
-    functions::summarystats::SummaryStatsReduce<X,Z>::transform(op,dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,biasCorrected,allocationBuffer,reductionBuffer,tadOnlyShapeInfo,tadOffsets);
+    functions::summarystats::SummaryStatsReduce<X,Z>::transform(op,dx,xShapeInfo,extraParams,z,zShapeInfo,dimension,dimensionLength,biasCorrected,allocationBuffer,reductionBuffer,tadOnlyShapeInfo,tadOffsets);
 }
 
         /**
@@ -103,13 +104,16 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
 			 */
         template<typename X, typename Z>
         template<typename OpType>
-        _CUDA_D void SummaryStatsReduce<X,Z>::transform(void *vdx, Nd4jLong *xShapeInfo, void *vextraParams, void *vresult, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *vreductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+        _CUDA_D void SummaryStatsReduce<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo, 
+                                                        void *vextraParams, 
+                                                        void *vz, Nd4jLong *zShapeInfo, 
+                                                        int *dimension, int dimensionLength, 
+                                                        int postProcessOrNot, 
+                                                        int *allocationBuffer, void *vreductionBuffer, 
+                                                        Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
-            /**
-             * Gpu information for the problem
-             */
-            auto dx = static_cast<X*>(vdx);
-            auto result = static_cast<Z*>(vresult);
+            auto dx = static_cast<X*>(vx);
+            auto z = static_cast<Z*>(vz);
             auto extraParams = static_cast<Z*>(vextraParams);
             auto reductionBuffer = static_cast<Z*>(vreductionBuffer);
 
@@ -120,7 +124,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
 
             int numElements = blockDim.x;
             //shared memory space for storing intermediate results
-            SummaryStatsData<X> *sPartials;
+            __shared__ SummaryStatsData<X> *sPartials;
             if(threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
                 sPartials = reinterpret_cast<SummaryStatsData<X>*>(shmem);
@@ -145,8 +149,8 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
             reduction.initWithValue(0.0);
             reduction.n = 0;
             if (threadIdx.x == 0) {
-                if (resultShapeInfo != nullptr)
-                    resultLength = shape::length(resultShapeInfo);
+                if (zShapeInfo != nullptr)
+                    resultLength = shape::length(zShapeInfo);
                 else resultLength = 1;
 
                 if (dimensionLength == 1) {
@@ -212,7 +216,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
-                            result[r] = OpType::getValue(postProcessOrNot, sPartials[threadIdx.x]);
+                            z[r] = OpType::getValue(postProcessOrNot, sPartials[threadIdx.x]);
                         }
 
                     }
@@ -247,7 +251,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
-                            result[i] = OpType::getValue(postProcessOrNot, sPartials[threadIdx.x]); //postProcess(sPartials[0],tadLength ,extraParams);
+                            z[i] = OpType::getValue(postProcessOrNot, sPartials[threadIdx.x]); //postProcess(sPartials[0],tadLength ,extraParams);
                         }
                     }
                 }
@@ -321,7 +325,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                         __syncthreads();
 
                         if (tid == 0) {
-                            result[0] = OpType::getValue(postProcessOrNot, sPartials[0]);
+                            z[0] = OpType::getValue(postProcessOrNot, sPartials[0]);
                         }
                     }
                 }
@@ -329,7 +333,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                     if (tid == 0) {
                         unsigned int *tc = (unsigned *)reductionBuffer;
                         tc[16384] = 0;
-                        result[0] = result[0] = OpType::getValue(postProcessOrNot, sPartials[0]);
+                        z[0] = z[0] = OpType::getValue(postProcessOrNot, sPartials[0]);
                     }
                 }
             }
@@ -337,8 +341,8 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
 
 
         template <typename X, typename Y>
-        _CUDA_D void SummaryStatsReduce<X,Y>::transform(const int opNum, void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-            DISPATCH_BY_OPNUM_TT(transform, PARAMS(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets), SUMMARY_STATS_OPS);
+        _CUDA_D void SummaryStatsReduce<X,Y>::transform(const int opNum, void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+            DISPATCH_BY_OPNUM_TT(transform, PARAMS(dx, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets), SUMMARY_STATS_OPS);
         };
 
 
@@ -369,10 +373,10 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
         }
 
         template <typename X, typename Z>
-        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vextraParams, void *vresult, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer) {
+        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer) {
 
             auto x = static_cast<X*>(vx);
-            auto result = static_cast<Z*>(vresult);
+            auto z = static_cast<Z*>(vz);
             auto extraParams = static_cast<Z*>(vextraParams);
 
             if (nd4j::Environment::getInstance()->isDebugAndVerbose())
@@ -385,8 +389,8 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                             x,
                             xShapeInfo, shape::rank(hxShapeInfo),
                             extraParams,
-                            result,
-                            resultShapeInfo, shape::rank(hzShapeInfo),
+                            z,
+                            zShapeInfo, shape::rank(hzShapeInfo),
                             nullptr,
                             1,
                             1,biasCorrected, nullptr, reductionPointerA, tadShapeInfo, tadOffsets);
@@ -396,10 +400,10 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
 
 
         template<typename X, typename Z>
-        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vextraParams, void *vresult, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer) {
+        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer) {
 
             auto x = static_cast<X*>(vx);
-            auto result = static_cast<Z*>(vresult);
+            auto z = static_cast<Z*>(vz);
             auto extraParams = static_cast<Z*>(vextraParams);
 
             if (nd4j::Environment::getInstance()->isDebugAndVerbose())
@@ -410,8 +414,8 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                             x,
                             xShapeInfo, shape::rank(hxShapeInfo),
                             extraParams,
-                            result,
-                            resultShapeInfo, shape::rank(hzShapeInfo),
+                            z,
+                            zShapeInfo, shape::rank(hzShapeInfo),
                             dimension,
                             dimensionLength,
                             1, biasCorrected, nullptr, reinterpret_cast<Z*>(reductionBuffer), tadShapeInfo, tadOffsets);

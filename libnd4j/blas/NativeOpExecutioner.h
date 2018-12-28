@@ -468,6 +468,28 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
                             int *dimension, int dimensionLength, 
                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);   
 
+ /**
+     *
+     * @param opNum
+     * @param x
+     * @param xShapeInfo
+     * @param extraParams
+     * @param result
+     * @param resultShapeInfoBuffer
+     * @param dimension
+     * @param dimensionLength
+     */
+    static void execSummaryStats(nd4j::graph::LaunchContext *lc,
+                                int opNum,
+                                void *hX, Nd4jLong *hXShapeInfo,
+                                void *dX, Nd4jLong *dXShapeInfo,
+                                void *extraParams,
+                                void *hZ, Nd4jLong *hZShapeInfo,
+                                void *dZ, Nd4jLong *dZShapeInfo,
+                                int *dimension, int dimensionLength,
+                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                                bool biasCorrected);    
+
     /**
      *
      * @param opNum
@@ -502,48 +524,8 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
                                     void *extraParams,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo,
-                                    bool biasCorrected);
+                                    bool biasCorrected);   
 
-    /**
-     *
-     * @param opNum
-     * @param x
-     * @param xShapeInfo
-     * @param extraParams
-     * @param result
-     * @param resultShapeInfoBuffer
-     * @param dimension
-     * @param dimensionLength
-     */
-    static void execSummaryStats(nd4j::graph::LaunchContext *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength,
-                                bool biasCorrected);    
-
-    template <typename X>
-    static FORCEINLINE void execAggregate(nd4j::graph::LaunchContext *lc,
-                              int opNum,
-                              void **varguments,
-                              int numArguments,
-                              Nd4jLong **shapeArguments,
-                              int numShapeArguments,
-                              int *indexArguments,
-                              int numIndexArguments,
-                              int **intArrays,
-                              int numIntArrays,
-                              void *vrealArguments,
-                              int numRealArguments) {
-
-        auto arguments = reinterpret_cast<X **>(varguments);
-        auto realArguments = reinterpret_cast<X *>(vrealArguments);
-
-        functions::aggregate::AggregatedFunction<X>::exec(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
-    }
 
     static void execRandom(nd4j::graph::LaunchContext *lc,
                             int opNum,
@@ -572,6 +554,28 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
                           void *dZ, Nd4jLong *dZShapeBuffer,
                           void *extraArguments);
 
+
+
+    template <typename X>
+    static FORCEINLINE void execAggregate(nd4j::graph::LaunchContext *lc,
+                              int opNum,
+                              void **varguments,
+                              int numArguments,
+                              Nd4jLong **shapeArguments,
+                              int numShapeArguments,
+                              int *indexArguments,
+                              int numIndexArguments,
+                              int **intArrays,
+                              int numIntArrays,
+                              void *vrealArguments,
+                              int numRealArguments) {
+
+        auto arguments = reinterpret_cast<X **>(varguments);
+        auto realArguments = reinterpret_cast<X *>(vrealArguments);
+
+        functions::aggregate::AggregatedFunction<X>::exec(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
+    }
+    
 
     inline static void execSort(void *x, Nd4jLong *xShapeInfo, bool descending) {
         auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);

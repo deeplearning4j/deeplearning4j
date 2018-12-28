@@ -844,6 +844,7 @@ void NativeOpExecutioner::execSummaryStats(nd4j::graph::LaunchContext *lc,
                                 bool biasCorrected) {
 
     auto stream = lc->getCudaStream();
+    auto reductionPointer = lc->getReductionPointer();    
 
     dim3 launchDims = dim3(256, 256, 32768);
 
@@ -853,7 +854,7 @@ void NativeOpExecutioner::execSummaryStats(nd4j::graph::LaunchContext *lc,
     if (!DataTypeUtils::isR(zType))
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execSummaryStats requires Z operand to have floating point data type", zType);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::execSummaryStatsReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, nullptr, nullptr, biasCorrected, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::execSummaryStatsReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, nullptr, nullptr, biasCorrected, reductionPointer), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -865,10 +866,8 @@ void NativeOpExecutioner::execSummaryStats(nd4j::graph::LaunchContext *lc,
                                 			void *hZ, Nd4jLong *hZShapeInfo,
                                 			void *dZ, Nd4jLong *dZShapeInfo,
                                 			int *dimension, int dimensionLength,
+                                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                                 			bool biasCorrected) {
-
-	Nd4jLong *tadShapeInfo = nullptr;
-	Nd4jLong *tadOffsets  = nullptr;
 	auto stream = lc->getCudaStream();
 	auto reductionPointer = lc->getReductionPointer();
 
@@ -1135,7 +1134,7 @@ void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
     auto sizeOf = sizeof(nd4j::graph::RandomGenerator);
     Nd4jPointer stateDevice;
 
-    cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
+    cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);    
     checkCudaErrors(cudaStreamSynchronize(*stream));
     checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
@@ -1143,7 +1142,7 @@ void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     // functions::random::RandomFunction<float>::executeCudaSingle(launchDims, extraPointers, opNum, stateHost, dZ, dZShapeInfo, extraArguments),
-    BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::executeCudaSingle(launchDims, nullptr, opNum, stateDevice, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::executeCudaSingle(launchDims, stream, opNum, stateDevice, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
     checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
     checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1165,14 +1164,14 @@ void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
     auto sizeOf = sizeof(nd4j::graph::RandomGenerator);
     Nd4jPointer stateDevice;
 
-    cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
+    cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);    
     checkCudaErrors(cudaStreamSynchronize(*stream));
     checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
     dim3 launchDims = dim3(512, 512, 32768);
     auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     // functions::random::RandomFunction<float>::executeCudaDouble(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments);
-    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaDouble(launchDims, nullptr, opNum, stateDevice, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaDouble(launchDims, stream, opNum, stateDevice, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
     checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
     checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1195,14 +1194,14 @@ void NativeOpExecutioner::execRandom(nd4j::graph::LaunchContext *lc,
     auto sizeOf = sizeof(nd4j::graph::RandomGenerator);
     Nd4jPointer stateDevice;
 
-    cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);
+    cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&stateDevice), sizeOf);    
     checkCudaErrors(cudaStreamSynchronize(*stream));
     checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
     dim3 launchDims = dim3(512, 512, 32768);
     auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     // functions::random::RandomFunction<float>::executeCudaTriple(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments);
-    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaTriple(launchDims, nullptr, opNum, stateDevice, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaTriple(launchDims, stream, opNum, stateDevice, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
     checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
     checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -1254,7 +1253,7 @@ void NativeOpExecutioner::execReduce3TAD(nd4j::graph::LaunchContext *lc,
                                             int opNum,
                                             void *hX, Nd4jLong *hXShapeInfo,
                                             void *dX, Nd4jLong *dXShapeInfo,
-                                            void *extraParamsVals,
+                                            void *extraParams,
                                             void *hY, Nd4jLong *hYShapeInfo,
                                             void *dY, Nd4jLong *dYShapeInfo,
                                             void *hZ, Nd4jLong *hZShapeInfo,
@@ -1262,5 +1261,27 @@ void NativeOpExecutioner::execReduce3TAD(nd4j::graph::LaunchContext *lc,
                                             int *dimension, int dimensionLength, 
                                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
+    if(shape::isScalar(hZShapeInfo)) {
+        NativeOpExecutioner::execReduce3(lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
+        return;
+    }
+
+    auto stream = lc->getCudaStream();
+    auto allocationPointer = lc->getAllocationPointer();
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+     if (xType != yType)
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execReduce3TAD requires Y operand to have X type", xType, yType);
+
+    if (!DataTypeUtils::isR(zType))
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execReduce3TAD requires Z operand to have floating point data type", zType);
+
+    auto numBlocks = shape::length(hZShapeInfo);
+    dim3 launchDims(numBlocks, 256, 32768);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, 1, allocationPointer, tadShapeInfo, tadOffsets, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 }
 

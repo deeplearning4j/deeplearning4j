@@ -262,4 +262,20 @@ TEST_F(GraphRandomGeneratorTests, FloatingPoint_Test_1) {
     ASSERT_NE(z0.size(), negs);
 }
 
+// TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_100) {
+//     nd4j::graph::RandomGenerator g0(119,5);
+//     NDArray x('c', {10}, {0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1}, nd4j::DataType::DOUBLE);
+//     NDArray z('c', {10}, , nd4j::DataType::DOUBLE);
+//     double extraPtr[2] = {0.5};
+        
+//     NativeOpExecutioner::execRandom(nullptr, random::BinomialDistributionEx, &g0, 
+//                                     x.buffer(), x.shapeInfo(), nullptr, nullptr, 
+//                                     z.buffer(), z.shapeInfo(), nullptr, nullptr, 
+//                                     extraPtr);
+//     z.printIndexedBuffer();
+        
+// }
+
+
 //#endif
+
