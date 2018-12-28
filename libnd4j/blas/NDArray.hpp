@@ -1317,6 +1317,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
     void NDArray::applyTransform(nd4j::transform::AnyOps op, NDArray *target, ExtraArguments *extraParams) {
+        nd4j_printf("Float op %i transform:\n", (int)op);
 
         if (isS())
             throw std::runtime_error("NDArray::applyTransform FloatOps: you can't use this method on String array!");
@@ -1328,6 +1329,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
     void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray *target, ExtraArguments *extraParams) {
+        nd4j_printf("Same op %i transform:\n", (int)op);
         if (isS())
             throw std::runtime_error("NDArray::applyTransform SameOps: you can't use this method on String array!");
 
@@ -1336,7 +1338,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
 
         if (target->dataType() != this->dataType())
             throw std::runtime_error("NDArray::applyTransform SameOps: target array must have the same data type as original array");
-
+        NDArray::registerSpecialUse({target}, {this});
         NativeOpExecutioner::execTransformSame(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr, nullptr, nullptr);
     }
 
@@ -1350,6 +1352,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         if (!target->isB())
             throw std::runtime_error("NDArray::applyTransform BoolOps: target array must have one of BOOL types");
 
+        NDArray::registerSpecialUse({target}, {this});
         NativeOpExecutioner::execTransformBool(_context, op, this->_buffer, this->_shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(this->dataType()) : nullptr, nullptr, nullptr);
     }
 
@@ -1363,6 +1366,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         if (!this->isR() || !target->isR() || (this->dataType() != target->dataType()))
             throw std::runtime_error("NDArray::applyTransform StrictOps: both Source and Target array must have same FLOAT type !");
 
+        NDArray::registerSpecialUse({target}, {this});
         NativeOpExecutioner::execTransformStrict(_context, op, this->_buffer, this->_shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr, nullptr, nullptr);
     }
 

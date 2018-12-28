@@ -477,26 +477,106 @@ TEST_F(NDArrayCudaBasicsTests, TestPrimitiveNeg_1) {
     // allocating host-side arrays
     auto x = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
-
     auto exp = NDArrayFactory::create<double>('c', { 5 }, { -1, -2, -3, -4, -5 });
 
-    //Nd4jPointer nativeStream = (Nd4jPointer)malloc(sizeof(cudaStream_t));
-    //CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream");
-    //cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
     auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
 
-    //LaunchContext lc(x.getContext()); //->getCudaStream(), nullptr, nullptr);
     NativeOpExecutioner::execTransformSame(x.getContext(), transform::Neg, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), nullptr, nullptr, nullptr);
     auto res = cudaStreamSynchronize(*stream);
     ASSERT_EQ(0, res);
     y.syncToHost();
-    //cudaMemcpy(y.buffer(), y.specialBuffer(), y.lengthOf() * y.sizeOfT(), cudaMemcpyDeviceToHost);
-    //res = cudaStreamSynchronize(*stream);
-    //ASSERT_EQ(0, res);
+
     x.printBuffer("X = ");
     y.printBuffer("Y = ");
 
     for (int e = 0; e < y.lengthOf(); e++) {
         ASSERT_NEAR(exp.e<double>(e), y.e<double>(e), 1e-5);
     }
+}
+
+//////////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, TestPrimitiveNeg_01) {
+    // allocating host-side arrays
+    auto x = NDArrayFactory::create<int>('c', { 5 }, { 1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create<int>('c', { 5 }, { 1, 2, 3, 4, 5});
+    auto exp = NDArrayFactory::create<int>('c', { 5 }, { -1, -2, -3, -4, -5 });
+
+    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+
+    NativeOpExecutioner::execTransformSame(x.getContext(), transform::Neg, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), nullptr, nullptr, nullptr);
+    auto res = cudaStreamSynchronize(*stream);
+    ASSERT_EQ(0, res);
+    y.syncToHost();
+
+    x.printBuffer("X = ");
+    y.printBuffer("Y = ");
+
+    for (int e = 0; e < y.lengthOf(); e++) {
+        ASSERT_NEAR(exp.e<int>(e), y.e<int>(e), 1e-5);
+    }
+}
+
+TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveNeg_2) {
+    auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create<double>('c', {5});
+
+    ASSERT_TRUE(x.isActualOnDeviceSide());
+    ASSERT_TRUE(x.isActualOnHostSide());
+
+    x.applyTransform(transform::Neg, &y, nullptr);
+    //ASSERT_TRUE(x->isActualOnDeviceSide());
+    //ASSERT_FALSE(x->isActualOnHostSide());
+
+    //ASSERT_TRUE(y->isActualOnDeviceSide());
+    //ASSERT_TRUE(y->isActualOnHostSide());
+    //auto res = cudaStreamSynchronize(*y.getContext()->getCudaStream());
+    //ASSERT_EQ(0, res);
+    y.syncToHost();
+    y.printBuffer("Negatives2");
+    //delete x;
+    //delete y;
+}
+
+TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_1) {
+    auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create<double>('c', {5});
+
+    ASSERT_TRUE(x.isActualOnDeviceSide());
+    ASSERT_TRUE(x.isActualOnHostSide());
+
+    x.applyTransform(transform::Cosine, &y, nullptr);
+    //ASSERT_TRUE(x->isActualOnDeviceSide());
+    //ASSERT_FALSE(x->isActualOnHostSide());
+
+    //ASSERT_TRUE(y->isActualOnDeviceSide());
+    //ASSERT_TRUE(y->isActualOnHostSide());
+    //auto res = cudaStreamSynchronize(*y.getContext()->getCudaStream());
+    //ASSERT_EQ(0, res);
+    y.syncToHost();
+    y.printBuffer("Cosine2");
+    //delete x;
+    //delete y;
+}
+
+TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_2) {
+    auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create<double>('c', {5});
+    auto exp = NDArrayFactory::create<double>({0.540302, -0.416147, -0.989992, -0.653644, 0.283662});
+
+    ASSERT_TRUE(x.isActualOnDeviceSide());
+    ASSERT_TRUE(x.isActualOnHostSide());
+
+    x.applyTransform(transform::Cosine, &y, nullptr);
+    //ASSERT_TRUE(x->isActualOnDeviceSide());
+    //ASSERT_FALSE(x->isActualOnHostSide());
+
+    //ASSERT_TRUE(y->isActualOnDeviceSide());
+    //ASSERT_TRUE(y->isActualOnHostSide());
+    //auto res = cudaStreamSynchronize(*y.getContext()->getCudaStream());
+    //ASSERT_EQ(0, res);
+    y.syncToHost();
+    y.printBuffer("PrimitiveCosine2");
+    ASSERT_TRUE(exp.equalsTo(y));
+    //delete x;
+    //delete y;
 }
