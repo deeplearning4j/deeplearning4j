@@ -100,9 +100,7 @@ namespace nd4j {
             this->_tArgs.clear();
             this->_inputs.clear();
 #ifdef HAVE_MKLDNN
-            if (_mkldnnStream != nullptr) {
-                delete _mkldnnStream;
-            }
+            this->_mkldnnStreams.clear();
 #endif
         }
 
@@ -329,6 +327,11 @@ namespace nd4j {
 
         nd4j::memory::Workspace *Context::oWorkspace() {
             return nullptr;
+        }
+
+        LaunchContext* Context::launchContext() {
+            //FIXME: we need proper context to be shared here
+            return LaunchContext::defaultContext();
         }
     }
 }

@@ -24,10 +24,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -110,7 +108,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                                 .updater(new NoOp())
                                 .list()
                                 .layer(new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
-                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                                        .dist(new NormalDistribution(0, 1.0))
                                         .updater(new NoOp()).build())
                                 .layer(new RnnLossLayer.Builder(lf)
                                         .activation(oa)
@@ -216,7 +214,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                                     .convolutionMode(ConvolutionMode.Same)
                                     .list()
                                     .layer(new ConvolutionLayer.Builder().nIn(dIn).nOut(dOut).activation(Activation.TANH)
-                                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                                            .dist(new NormalDistribution(0, 1.0))
                                             .updater(new NoOp()).build())
                                     .layer(new CnnLossLayer.Builder(lf)
                                             .activation(oa)
@@ -362,7 +360,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                                         .convolutionMode(ConvolutionMode.Same)
                                         .list()
                                         .layer(new Convolution3D.Builder().nIn(chIn).nOut(chOut).activation(Activation.TANH)
-                                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                                                .dist(new NormalDistribution(0, 1.0))
                                                 .dataFormat(dataFormat)
                                                 .updater(new NoOp()).build())
                                         .layer(new Cnn3DLossLayer.Builder(dataFormat)

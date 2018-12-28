@@ -27,7 +27,6 @@ import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -73,7 +72,7 @@ public class TestKryo extends BaseSparkKryoTest {
         testSerialization(mlc, si);
 
 
-        ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.DISTRIBUTION)
+        ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder()
                         .dist(new UniformDistribution(-1, 1))
                         .updater(new Adam(new MapSchedule(ScheduleType.ITERATION,m)))
                         .graphBuilder()

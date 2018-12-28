@@ -19,31 +19,33 @@ package org.deeplearning4j.nn.params;
 import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
 
-/**LSTM Parameter initializer, for LSTM based on
+/**
+ * LSTM Parameter initializer, for LSTM based on
  * Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
  */
 public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer {
 
     private static final GravesBidirectionalLSTMParamInitializer INSTANCE =
-                    new GravesBidirectionalLSTMParamInitializer();
+            new GravesBidirectionalLSTMParamInitializer();
 
     public static GravesBidirectionalLSTMParamInitializer getInstance() {
         return INSTANCE;
     }
 
-    /** Weights for previous time step -> current time step connections */
+    /**
+     * Weights for previous time step -> current time step connections
+     */
     public final static String RECURRENT_WEIGHT_KEY_FORWARDS = "RWF";
     public final static String BIAS_KEY_FORWARDS = DefaultParamInitializer.BIAS_KEY + "F";
     public final static String INPUT_WEIGHT_KEY_FORWARDS = DefaultParamInitializer.WEIGHT_KEY + "F";
@@ -67,14 +69,14 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
     @Override
     public long numParams(Layer l) {
         org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf =
-                        (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) l;
+                (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) l;
 
         val nL = layerConf.getNOut(); //i.e., n neurons in this layer
         val nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
 
         val nParamsForward = nLast * (4 * nL) //"input" weights
-                        + nL * (4 * nL + 3) //recurrent weights
-                        + 4 * nL; //bias
+                + nL * (4 * nL + 3) //recurrent weights
+                + 4 * nL; //bias
 
         return 2 * nParamsForward;
     }
@@ -110,10 +112,8 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
         org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf =
-                        (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) conf.getLayer();
+                (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) conf.getLayer();
         double forgetGateInit = layerConf.getForgetGateBiasInit();
-
-        Distribution dist = Distributions.createDistribution(layerConf.getDist());
 
         val nL = layerConf.getNOut(); //i.e., n neurons in this layer
         val nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
@@ -143,10 +143,10 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
         INDArray bR = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bROffset, bROffset + nBias));
 
         if (initializeParams) {
-            bF.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)},
-                            Nd4j.ones(1, nL).muli(forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG
-            bR.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)},
-                            Nd4j.ones(1, nL).muli(forgetGateInit));
+            bF.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)},
+                    Nd4j.ones(1, nL).muli(forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG
+            bR.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)},
+                    Nd4j.ones(1, nL).muli(forgetGateInit));
         }
         /*The above line initializes the forget gate biases to specified value.
          * See Sutskever PhD thesis, pg19:
@@ -161,25 +161,25 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
             //As per standard LSTM
             val fanIn = nL;
             val fanOut = nLast + nL;
-            val inputWShape = new long[] {nLast, 4 * nL};
-            val recurrentWShape = new long[] {nL, 4 * nL + 3};
+            val inputWShape = new long[]{nLast, 4 * nL};
+            val recurrentWShape = new long[]{nL, 4 * nL + 3};
 
-            params.put(INPUT_WEIGHT_KEY_FORWARDS, WeightInitUtil.initWeights(fanIn, fanOut, inputWShape,
-                            layerConf.getWeightInit(), dist, iwF));
-            params.put(RECURRENT_WEIGHT_KEY_FORWARDS, WeightInitUtil.initWeights(fanIn, fanOut, recurrentWShape,
-                            layerConf.getWeightInit(), dist, rwF));
+            params.put(INPUT_WEIGHT_KEY_FORWARDS, layerConf.getWeightInitFn().init(fanIn, fanOut, inputWShape,
+                    IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, iwF));
+            params.put(RECURRENT_WEIGHT_KEY_FORWARDS, layerConf.getWeightInitFn().init(fanIn, fanOut, recurrentWShape,
+                    IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, rwF));
             params.put(BIAS_KEY_FORWARDS, bF);
-            params.put(INPUT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.initWeights(fanIn, fanOut, inputWShape,
-                            layerConf.getWeightInit(), dist, iwR));
-            params.put(RECURRENT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.initWeights(fanIn, fanOut, recurrentWShape,
-                            layerConf.getWeightInit(), dist, rwR));
+            params.put(INPUT_WEIGHT_KEY_BACKWARDS, layerConf.getWeightInitFn().init(fanIn, fanOut, inputWShape,
+                    IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, iwR));
+            params.put(RECURRENT_WEIGHT_KEY_BACKWARDS, layerConf.getWeightInitFn().init(fanIn, fanOut, recurrentWShape,
+                    IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, rwR));
             params.put(BIAS_KEY_BACKWARDS, bR);
         } else {
-            params.put(INPUT_WEIGHT_KEY_FORWARDS, WeightInitUtil.reshapeWeights(new long[] {nLast, 4 * nL}, iwF));
-            params.put(RECURRENT_WEIGHT_KEY_FORWARDS, WeightInitUtil.reshapeWeights(new long[] {nL, 4 * nL + 3}, rwF));
+            params.put(INPUT_WEIGHT_KEY_FORWARDS, WeightInitUtil.reshapeWeights(new long[]{nLast, 4 * nL}, iwF));
+            params.put(RECURRENT_WEIGHT_KEY_FORWARDS, WeightInitUtil.reshapeWeights(new long[]{nL, 4 * nL + 3}, rwF));
             params.put(BIAS_KEY_FORWARDS, bF);
-            params.put(INPUT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.reshapeWeights(new long[] {nLast, 4 * nL}, iwR));
-            params.put(RECURRENT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.reshapeWeights(new long[] {nL, 4 * nL + 3}, rwR));
+            params.put(INPUT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.reshapeWeights(new long[]{nLast, 4 * nL}, iwR));
+            params.put(RECURRENT_WEIGHT_KEY_BACKWARDS, WeightInitUtil.reshapeWeights(new long[]{nL, 4 * nL + 3}, rwR));
             params.put(BIAS_KEY_BACKWARDS, bR);
         }
 
@@ -190,7 +190,7 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf =
-                        (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) conf.getLayer();
+                (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) conf.getLayer();
 
         val nL = layerConf.getNOut(); //i.e., n neurons in this layer
         val nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
@@ -206,14 +206,14 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
         val bROffset = rwROffset + nParamsRecurrent;
 
         INDArray iwFG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, rwFOffset)).reshape('f', nLast,
-                        4 * nL);
+                4 * nL);
         INDArray rwFG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(rwFOffset, bFOffset)).reshape('f',
-                        nL, 4 * nL + 3);
+                nL, 4 * nL + 3);
         INDArray bFG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bFOffset, iwROffset));
         INDArray iwRG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(iwROffset, rwROffset))
-                        .reshape('f', nLast, 4 * nL);
+                .reshape('f', nLast, 4 * nL);
         INDArray rwRG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(rwROffset, bROffset)).reshape('f',
-                        nL, 4 * nL + 3);
+                nL, 4 * nL + 3);
         INDArray bRG = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(bROffset, bROffset + nBias));
 
         Map<String, INDArray> out = new LinkedHashMap<>();

@@ -124,12 +124,14 @@ public interface Layer extends Serializable, Cloneable, Model, Trainable {
     Collection<TrainingListener> getListeners();
 
     /**
-     * Set the iteration listeners for this layer.
+     * Set the {@link TrainingListener}s for this model. If any listeners have previously been set, they will be
+     * replaced by this method
      */
     void setListeners(TrainingListener... listeners);
 
     /**
-     * Set the iteration listeners for this layer.
+     * Set the {@link TrainingListener}s for this model. If any listeners have previously been set, they will be
+     * replaced by this method
      */
     void setListeners(Collection<TrainingListener> listeners);
 

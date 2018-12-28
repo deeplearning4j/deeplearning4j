@@ -64,27 +64,26 @@ namespace nd4j {
 
                 // X gradient
                 //epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
-                gradX->assign(epsNext * -(*y) / ((*x) * (*x)));
-
+                gradX->assign((*epsNext) * (*y) / ((*x) * (*x)));
+                gradX->applyTransform(transform::Neg, nullptr, nullptr);
                 // Y gradient
                 //epsNext->applyPairwiseLambda(x, lambdaY, gradY);
-                epsNext->applyPairwiseTransform(pairwise::Divide, x, gradY, nullptr);
-
+                gradY->assign((*epsNext) / (*x));
             } else if (y->isScalar()) {
                 // scalar case
                 auto tmp = epsNext->reduceNumber(reduce::Sum);
                 auto tmpX = x->reduceNumber(reduce::Sum);
                 gradY->assign(tmp / tmpX);
 
-                gradX->assign(epsNext * -(*y) / ((*x) * (*x)));
+                gradX->assign((*epsNext) * (*y) / ((*x) * (*x)));
+                gradX->applyTransform(transform::Neg, nullptr, nullptr);
             } else {
                 // broadcast case
 
                 auto preY = (*epsNext) / (*x);
 
-                NDArray negY(*y);
-                y->applyTransform(transform::Neg, &negY);
-                auto preX = *epsNext * negY / ((*x) * (*x));
+                auto preX = *epsNext * (*y) / ((*x) * (*x));
+                preX.applyTransform(transform::Neg, nullptr, nullptr);
 
                 auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
                 auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());

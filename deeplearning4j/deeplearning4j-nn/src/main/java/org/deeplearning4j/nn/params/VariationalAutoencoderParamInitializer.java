@@ -18,12 +18,10 @@ package org.deeplearning4j.nn.params;
 
 import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
@@ -203,8 +201,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         int[] encoderLayerSizes = layer.getEncoderLayerSizes();
         int[] decoderLayerSizes = layer.getDecoderLayerSizes();
 
-        WeightInit weightInit = layer.getWeightInit();
-        Distribution dist = Distributions.createDistribution(layer.getDist());
+        IWeightInit weightInit = layer.getWeightInitFn();
 
         int soFar = 0;
         for (int i = 0; i < encoderLayerSizes.length; i++) {
@@ -222,7 +219,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
                             NDArrayIndex.interval(soFar, soFar + encoderLayerSizes[i]));
             soFar += encoderLayerSizes[i];
 
-            INDArray layerWeights = createWeightMatrix(encoderLayerNIn, encoderLayerSizes[i], weightInit, dist,
+            INDArray layerWeights = createWeightMatrix(encoderLayerNIn, encoderLayerSizes[i], weightInit,
                             weightView, initializeParams);
             INDArray layerBiases = createBias(encoderLayerSizes[i], 0.0, biasView, initializeParams); //TODO don't hardcode 0
 
@@ -244,7 +241,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         soFar += nOut;
 
         INDArray pzxWeightsMeanReshaped = createWeightMatrix(encoderLayerSizes[encoderLayerSizes.length - 1], nOut,
-                        weightInit, dist, pzxWeightsMean, initializeParams);
+                        weightInit, pzxWeightsMean, initializeParams);
         INDArray pzxBiasMeanReshaped = createBias(nOut, 0.0, pzxBiasMean, initializeParams); //TODO don't hardcode 0
 
         ret.put(PZX_MEAN_W, pzxWeightsMeanReshaped);
@@ -261,7 +258,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         soFar += nOut;
 
         INDArray pzxWeightsLogStdev2Reshaped = createWeightMatrix(encoderLayerSizes[encoderLayerSizes.length - 1], nOut,
-                        weightInit, dist, pzxWeightsLogStdev2, initializeParams);
+                        weightInit, pzxWeightsLogStdev2, initializeParams);
         INDArray pzxBiasLogStdev2Reshaped = createBias(nOut, 0.0, pzxBiasLogStdev2, initializeParams); //TODO don't hardcode 0
 
         ret.put(PZX_LOGSTD2_W, pzxWeightsLogStdev2Reshaped);
@@ -284,7 +281,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
                             NDArrayIndex.interval(soFar, soFar + decoderLayerSizes[i]));
             soFar += decoderLayerSizes[i];
 
-            INDArray layerWeights = createWeightMatrix(decoderLayerNIn, decoderLayerSizes[i], weightInit, dist,
+            INDArray layerWeights = createWeightMatrix(decoderLayerNIn, decoderLayerSizes[i], weightInit,
                             weightView, initializeParams);
             INDArray layerBiases = createBias(decoderLayerSizes[i], 0.0, biasView, initializeParams); //TODO don't hardcode 0
 
@@ -307,7 +304,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
                         NDArrayIndex.interval(soFar, soFar + nDistributionParams));
 
         INDArray pxzWeightsReshaped = createWeightMatrix(decoderLayerSizes[decoderLayerSizes.length - 1],
-                        nDistributionParams, weightInit, dist, pxzWeightView, initializeParams);
+                        nDistributionParams, weightInit, pxzWeightView, initializeParams);
         INDArray pxzBiasReshaped = createBias(nDistributionParams, 0.0, pxzBiasView, initializeParams); //TODO don't hardcode 0
 
         ret.put(PXZ_W, pxzWeightsReshaped);
@@ -374,7 +371,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         soFar += nOut;
 
         INDArray pzxWeightsLogStdev2Reshaped = createWeightMatrix(encoderLayerSizes[encoderLayerSizes.length - 1], nOut,
-                        null, null, pzxWeightsLogStdev2, false); //TODO
+                         null, pzxWeightsLogStdev2, false); //TODO
 
         ret.put(PZX_LOGSTD2_W, pzxWeightsLogStdev2Reshaped);
         ret.put(PZX_LOGSTD2_B, pzxBiasLogStdev2);
@@ -395,7 +392,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
             soFar += decoderLayerSizes[i];
 
             INDArray layerWeights =
-                            createWeightMatrix(decoderLayerNIn, decoderLayerSizes[i], null, null, weightView, false);
+                            createWeightMatrix(decoderLayerNIn, decoderLayerSizes[i], null, weightView, false);
             INDArray layerBiases = createBias(decoderLayerSizes[i], 0.0, biasView, false); //TODO don't hardcode 0
 
             String sW = "d" + i + WEIGHT_KEY_SUFFIX;
@@ -415,7 +412,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
                         NDArrayIndex.interval(soFar, soFar + nDistributionParams));
 
         INDArray pxzWeightsReshaped = createWeightMatrix(decoderLayerSizes[decoderLayerSizes.length - 1],
-                        nDistributionParams, null, null, pxzWeightView, false);
+                        nDistributionParams, null, pxzWeightView, false);
         INDArray pxzBiasReshaped = createBias(nDistributionParams, 0.0, pxzBiasView, false);
 
         ret.put(PXZ_W, pxzWeightsReshaped);

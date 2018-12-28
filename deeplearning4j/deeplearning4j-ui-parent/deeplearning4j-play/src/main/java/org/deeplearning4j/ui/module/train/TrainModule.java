@@ -31,7 +31,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.i18n.I18NProvider;
 import org.deeplearning4j.ui.i18n.I18NResource;
@@ -47,12 +47,11 @@ import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import play.libs.Json;
 import play.mvc.Result;
 import play.mvc.Results;
 
-import java.io.File;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -940,13 +939,13 @@ public class TrainModule implements UIModule {
                         layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerNParams"),
                                         String.valueOf(nParams)});
                         if (nParams > 0) {
-                            WeightInit wi = bl.getWeightInit();
-                            String str = wi.toString();
-                            if (wi == WeightInit.DISTRIBUTION) {
-                                str += bl.getDist();
+                            try {
+                                String str = JsonMappers.getMapper().writeValueAsString(bl.getWeightInitFn());
+                                layerInfoRows.add(new String[] {
+                                                i18N.getMessage("train.model.layerinfotable.layerWeightInit"), str});
+                            } catch (JsonProcessingException e) {
+                                throw new RuntimeException(e);
                             }
-                            layerInfoRows.add(new String[] {
-                                            i18N.getMessage("train.model.layerinfotable.layerWeightInit"), str});
 
                             IUpdater u = bl.getIUpdater();
                             String us = (u == null ? "" : u.getClass().getSimpleName());

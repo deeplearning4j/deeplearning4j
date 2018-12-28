@@ -20,9 +20,7 @@
 
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_absolute_difference_loss)
-
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/losses.h>
 
 namespace nd4j {
     namespace ops {

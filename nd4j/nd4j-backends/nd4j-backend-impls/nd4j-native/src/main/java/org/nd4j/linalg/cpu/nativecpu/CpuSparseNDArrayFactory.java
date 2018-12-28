@@ -33,10 +33,7 @@ import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * @author Audrey Loeffel
@@ -504,6 +501,9 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     public INDArray createFromNpyFile(File file) {
         return null;
     }
+
+    @Override
+    public Map<String, INDArray> createFromNpzFile(File file){return null; }
 
     @Override
     public Pointer convertToNumpy(INDArray array) {

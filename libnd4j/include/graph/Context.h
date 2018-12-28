@@ -59,7 +59,7 @@ namespace nd4j {
 
             std::vector<nd4j::DataType> _dataTypes;
 #ifdef HAVE_MKLDNN
-            MKLDNNStream* _mkldnnStream = nullptr;
+            std::vector<nd4j::MKLDNNStream> _mkldnnStreams;
 #endif
         public:
             // TODO: maybe override new here as well?
@@ -111,6 +111,8 @@ namespace nd4j {
 
             VariableSpace *getVariableSpace();
 
+            LaunchContext* launchContext();
+
             // these fields define, if we can execute specific node in-place, without generating new array
 
 
@@ -119,10 +121,7 @@ namespace nd4j {
             void setBranch(int branch);
 
 #ifdef HAVE_MKLDNN
-#ifndef __JAVACPP_HACK__
-            MKLDNNStream *getMKLDNNStream() { return _mkldnnStream; }
-            void setMKLDNNStream(MKLDNNStream *mkldnnStream) { _mkldnnStream = mkldnnStream; }
-#endif
+            std::vector<nd4j::MKLDNNStream>& getMKLDNNStreams() { return _mkldnnStreams; }
 #endif
             /**
              *

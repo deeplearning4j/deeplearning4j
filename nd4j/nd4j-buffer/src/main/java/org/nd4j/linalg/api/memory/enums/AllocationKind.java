@@ -14,25 +14,25 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-// @author Yurii Shyrma (iuriish@yahoo.com), created on 29.08.2018
-//
+package org.nd4j.linalg.api.memory.enums;
 
-#ifndef LIBND4J_LOSS_H
-#define LIBND4J_LOSS_H
+/**
+ * This enum describes different allocation kinds
+ * @author raver119@gmail.com
+ */
+public enum AllocationKind {
+    /**
+     * General allocations
+     */
+    GENERAL,
 
-#include <ops/declarable/helpers/helpers.h>
+    /**
+     * Allocations that will be never released, and reused during session
+     */
+    CONSTANT,
 
-
-namespace nd4j    {
-namespace ops     {
-namespace helpers {
-
-	void sparseSoftmaxCrossEntropyLossWithLogits(const NDArray& labels, const NDArray& logits, NDArray& output);
-	void reduceZeroCountWeights(NDArray* weightsBroad, Nd4jLong sizeAtRestDims, NDArray& numOfNonZeroWeights);
-
+    /**
+     * Allocations for workspaces
+     */
+    WORKSPACE,
 }
-}
-}
-
-#endif //LIBND4J_LOSS_H

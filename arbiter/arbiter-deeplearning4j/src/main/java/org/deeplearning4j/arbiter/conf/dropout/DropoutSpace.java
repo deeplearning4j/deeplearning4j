@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.conf.dropout;
 
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.AbstractParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
@@ -25,6 +26,7 @@ import org.deeplearning4j.nn.conf.dropout.IDropout;
 import java.util.List;
 
 @AllArgsConstructor
+@NoArgsConstructor
 public class DropoutSpace extends AbstractParameterSpace<IDropout> {
 
     private ParameterSpace<Double> dropout;

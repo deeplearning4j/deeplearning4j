@@ -464,4 +464,22 @@ public class MixedDataTypesTests {
             }
         }
     }
+
+    @Test
+    public void testArrayCreationFromPointer() {
+        val source = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+
+        val pAddress = source.data().addressPointer();
+        val shape = source.shape();
+        val stride = source.stride();
+        val order = source.ordering();
+
+        val buffer = Nd4j.createBuffer(pAddress, source.length(), source.dataType());
+        val restored = Nd4j.create(buffer, shape, stride, 0, order, source.dataType());
+        assertEquals(source, restored);
+
+        assertArrayEquals(source.toDoubleVector(), restored.toDoubleVector(), 1e-5);
+
+        assertEquals(source.getDouble(0), restored.getDouble(0), 1e-5);
+    }
 }
