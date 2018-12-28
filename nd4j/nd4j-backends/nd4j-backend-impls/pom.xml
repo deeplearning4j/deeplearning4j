@@ -34,14 +34,6 @@
         <module>nd4j-cuda-platform</module>
     </modules>
     <dependencies>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>libnd4j</artifactId>
-            <version>${project.version}</version>
-            <type>zip</type>
-            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
     <properties>

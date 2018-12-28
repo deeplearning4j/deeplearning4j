@@ -79,6 +79,14 @@
             <version>${mkl-dnn.javacpp.version}</version>
             <classifier>${dependency.platform2}</classifier>
         </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>libnd4j</artifactId>
+            <version>${project.version}</version>
+            <type>zip</type>
+            <classifier>${dependency.platform}</classifier>
+            <scope>provided</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
