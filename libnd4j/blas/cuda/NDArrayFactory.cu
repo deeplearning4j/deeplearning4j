@@ -187,21 +187,22 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
     template NDArray* NDArrayFactory::create_(const int16_t scalar, nd4j::graph::LaunchContext* context);
 
     template <typename T>
-    NDArray NDArrayFactory::create(DataType type, const T scalar, nd4j::graph::LaunchContext* context) {
-
+    NDArray NDArrayFactory::create(nd4j::DataType type, const T scalar, nd4j::graph::LaunchContext* context) {
+        if (type == DataTypeUtils::fromT<T>())
+            return NDArrayFactory::create(scalar,  context);
         NDArray res(type, context);
 
-        //int8_t *buffer;
-        //ALLOCATE(buffer, workspace, 1 * sizeof(T), int8_t);
+        int8_t *buffer;
+        ALLOCATE(buffer, context->getWorkspace(), 1 * sizeof(T), int8_t);
 
         //res.setShapeInfo(ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), workspace));
-        //res.setBuffer(buffer);
-        //res.triggerAllocationFlag(true, true);
-        //res.setContext(context);
+        res.setBuffer(buffer);
+        res.triggerAllocationFlag(true, true);
+        res.setContext(context);
 
         res.p(0, scalar);
-        //cudaMemcpy(res._specialShape, res.shapeInfo(), shape::shapeInfoByteLength(res->shapeInfo(), cudaMemcpyHostToDevice);
-        //cudaMemcpy(res->_bufferD, res->_buffer, sizeof(T), cudaMemcpyHostToDevice); // only one element
+        res.syncShape();
+        res.syncToDevice();
 
         return res;
     }
