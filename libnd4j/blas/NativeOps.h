@@ -1394,15 +1394,15 @@ public:
         return n;
     }
 
-    char* getNpyArrayNameFromMap(void *map, int index){
+    const char* getNpyArrayNameFromMap(void *map, int index){
         cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
         cnpy::npz_t::iterator it = arrays->begin();
         cnpy::npz_t::iterator end = arrays->end();
         int cnt = 0;
         for(; it != end; ++it, ++cnt){
             if (cnt == index){
-
-                return strdup(it->first.c_str());
+                // FIXME: @fariz, this is a leak!
+                return const_cast<const char *>(strdup(it->first.c_str()));
             }
         }
         throw std::runtime_error("No array at index.");

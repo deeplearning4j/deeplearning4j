@@ -32,6 +32,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -446,6 +447,11 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
 
     @Override
     public INDArray createFromNpyFile(File file) {
+        return null;
+    }
+
+    @Override
+    public Map<String, INDArray> createFromNpzFile(File file) throws Exception {
         return null;
     }
 
