@@ -127,7 +127,7 @@ public class OCNNOutputLayerTest {
         }
 
         DataSet anomalies = next.filterBy(new int[] {2});
-        INDArray output = network.labelProbabilities(anomalies.getFeatures());
+        INDArray output = network.output(anomalies.getFeatures());
         INDArray normalOutput = network.output(anomalies.getFeatures(),false);
         assertEquals(output.lt(0.0).castTo(Nd4j.defaultFloatingPointType()).sumNumber().doubleValue(), normalOutput.eq(0.0).castTo(Nd4j.defaultFloatingPointType()).sumNumber().doubleValue(),1e-1);
 
@@ -135,7 +135,7 @@ public class OCNNOutputLayerTest {
         System.out.println("Anomaly output " + normalOutput);
         System.out.println(output);
 
-        INDArray normalProbs = network.labelProbabilities(filtered.getFeatures());
+        INDArray normalProbs = network.output(filtered.getFeatures());
         INDArray outputForNormalSamples = network.output(filtered.getFeatures(),false);
         System.out.println("Normal probabilities " + normalProbs);
         System.out.println("Normal raw output " + outputForNormalSamples);

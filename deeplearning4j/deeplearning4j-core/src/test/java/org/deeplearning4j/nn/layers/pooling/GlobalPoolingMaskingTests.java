@@ -60,7 +60,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
         for (int miniBatchSize : minibatchSizes) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                            .updater(new NoOp())
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                             .build())

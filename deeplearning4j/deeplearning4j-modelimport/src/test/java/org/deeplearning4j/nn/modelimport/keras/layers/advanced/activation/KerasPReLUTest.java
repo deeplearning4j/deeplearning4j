@@ -17,15 +17,13 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.advanced.activation;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 import org.deeplearning4j.nn.conf.layers.PReLULayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
-import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
 import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasPReLU;
-import org.deeplearning4j.nn.modelimport.keras.layers.local.KerasLocallyConnected2D;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.IWeightInit;
+import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -43,7 +41,7 @@ public class KerasPReLUTest {
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     private final String INIT_KERAS = "glorot_normal";
-    private final WeightInit INIT_DL4J = WeightInit.XAVIER;
+    private final IWeightInit INIT_DL4J = new WeightInitXavier();
 
     @Test
     public void testPReLULayer() throws Exception {
@@ -76,7 +74,7 @@ public class KerasPReLUTest {
 
         PReLULayer layer = kerasPReLU.getPReLULayer();
         assertArrayEquals(layer.getInputShape(), new long[] {3, 5, 4});
-        assertEquals(INIT_DL4J, layer.getWeightInit());
+        assertEquals(INIT_DL4J, layer.getWeightInitFn());
 
         assertEquals(layerName, layer.getLayerName());
     }

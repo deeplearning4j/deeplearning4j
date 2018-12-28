@@ -38,7 +38,7 @@ namespace nd4j {
                 int e = 1;
                 char order = (char) -(*arguments)[0];
                 if (order != 'c' && order != 'f') {
-                    order = x->ordering();
+                    order = 'c'; //x->ordering();
                     e = 0;
                 }
 

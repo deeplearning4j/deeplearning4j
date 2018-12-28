@@ -180,7 +180,7 @@ namespace nd4j {
 
 				
         /**
-		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
+		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
         */
 		NDArray(Nd4jLong* shapeInfo, const bool copyStrides = false, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext(), const bool isShapeAlloc = false);
 
@@ -1452,6 +1452,7 @@ namespace nd4j {
 
         FORCEINLINE bool operator==(const NDArray &other) const;
 
+        FORCEINLINE bool operator!=(const NDArray &other) const;
     };
 
 
@@ -1895,10 +1896,24 @@ bool NDArray::isEmpty() const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::operator==(const NDArray &other) const {
+    if (this->dataType() != other.dataType())
+            return false;
+
     if (!this->isSameShape(&other))
         return false;
 
     return this->equalsTo(&other);
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool NDArray::operator!=(const NDArray &other) const {
+    if (this->dataType() != other.dataType())
+        return true;
+
+    if (!this->isSameShape(&other))
+        return true;
+
+    return !this->equalsTo(&other);
 }
 
 //////////////////////////////////////////////////////////////////////////

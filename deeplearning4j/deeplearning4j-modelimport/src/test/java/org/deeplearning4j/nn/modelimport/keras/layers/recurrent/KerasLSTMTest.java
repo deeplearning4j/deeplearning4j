@@ -27,7 +27,8 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.IWeightInit;
+import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -47,7 +48,7 @@ public class KerasLSTMTest {
     private final String ACTIVATION_DL4J = "identity";
     private final String LAYER_NAME = "lstm_layer";
     private final String INIT_KERAS = "glorot_normal";
-    private final WeightInit INIT_DL4J = WeightInit.XAVIER;
+    private final IWeightInit INIT_DL4J = new WeightInitXavier();
     private final double L1_REGULARIZATION = 0.01;
     private final double L2_REGULARIZATION = 0.02;
     private final double DROPOUT_KERAS = 0.3;
@@ -124,7 +125,7 @@ public class KerasLSTMTest {
         }
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
-        assertEquals(INIT_DL4J, layer.getWeightInit());
+        assertEquals(INIT_DL4J, layer.getWeightInitFn());
         assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
         assertEquals(L2_REGULARIZATION, layer.getL2(), 0.0);
         assertEquals(new Dropout(DROPOUT_DL4J), layer.getIDropout());

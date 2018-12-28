@@ -1016,7 +1016,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             getPointerForExtraArgs(op, op.z().dataType()),
                             op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                             null, null,
-                            true);
+                            ((Variance) op).isBiasCorrected());
                 } else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
                     val p = getPointerForExtraArgs(op, op.z().dataType());
                     loop.execReduce3Scalar(null, op.opNum(),
@@ -2062,7 +2062,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val addr = ((LongIndexer) buffer.indexer()).get(index);
         val ptr = new PagedPointer(addr);
         val str = new Nd4jCpu.utf8string(ptr);
-        return str._buffer().substring(0, str._length());
+        return str._buffer().capacity(str._length()).getString();
     }
 
     @Override

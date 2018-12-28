@@ -152,7 +152,7 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
                 .nIn(nIn)
                 .nOut(nIn * depthMultiplier)
                 .activation(getIActivationFromConfig(layerConfig, conf))
-                .weightInit(depthWeightInit)
+                .weightInit(depthWeightInit.getWeightInitFunction(depthDistribution))
                 .depthMultiplier(depthMultiplier)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
@@ -160,8 +160,6 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
                 .hasBias(hasBias)
                 .stride(getStrideFromConfig(layerConfig, 2, conf));
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
-        if (depthDistribution != null)
-            builder.dist(depthDistribution);
         if (hasBias)
             builder.biasInit(0.0);
         if (padding != null)

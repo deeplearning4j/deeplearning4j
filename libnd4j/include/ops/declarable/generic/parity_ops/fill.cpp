@@ -60,7 +60,6 @@ namespace nd4j {
         DECLARE_SHAPE_FN(fill) {
 
             auto shapeArray = INPUT_VARIABLE(0);
-            auto val = INPUT_VARIABLE(1);
             const int len = (int) shapeArray->lengthOf();
             Nd4jLong *newShape = nullptr;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(len), Nd4jLong);            
@@ -68,8 +67,21 @@ namespace nd4j {
             newShape[0] = len;
             for (int e = 0; e < shapeArray->lengthOf(); e++)
                 newShape[e+1] = shapeArray->e<Nd4jLong>(e);
-            
-            ShapeUtils::updateStridesAndType(newShape, val->dataType(), 'c');
+
+            nd4j::DataType dataType;
+
+            if (block.width() > 1) {
+                dataType = INPUT_VARIABLE(1)->dataType();
+            } else if (block.numT() > 0) {
+                dataType = Environment::getInstance()->defaultFloatDataType();
+            } else if (block.numI() > 0) {
+                dataType = nd4j::DataType::INT32;
+            } else if (block.numB() > 0) {
+                dataType = nd4j::DataType::BOOL;
+            } else
+                throw std::runtime_error("Fill: missing value to fill output array with");
+
+            ShapeUtils::updateStridesAndType(newShape, dataType, 'c');
 
             return SHAPELIST(newShape);
         };

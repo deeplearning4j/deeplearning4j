@@ -20,7 +20,7 @@
 
 
 #include <ops/declarable/CustomOperations.h>
-
+#include <ops/declarable/helpers/axis.h>
 
 namespace nd4j    {
 namespace ops     {
@@ -30,10 +30,25 @@ CUSTOM_OP_IMPL(reduce_variance, 1, 1, false, 0, 0) {
     auto input   = INPUT_VARIABLE(0);
     auto output  = OUTPUT_VARIABLE(0);
 
-    const bool keepDims      = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    const bool biasCorrected = block.getTArguments()->size() > 1 ? (bool)T_ARG(1) : false;
-    
-    std::vector<int> dimensions = *block.getIArguments();    
+    bool keepDims      = false;//block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+    bool biasCorrected = false;//block.getTArguments()->size() > 1 ? (bool)T_ARG(1) : false;
+
+    auto dimensions = *block.getIArguments();
+    if (block.width() > 1) {
+        auto axesVector = INPUT_VARIABLE(1);
+        helpers::adjustAxis(input, axesVector, dimensions);
+    }
+//            else if (block.getIArguments()->size())
+    if (block.getBArguments()->size()) {
+        keepDims = B_ARG(0);
+        if (block.getBArguments()->size() > 1)
+            biasCorrected = B_ARG(1);
+    }
+    else if (block.getTArguments()->size()) {
+        keepDims = (bool)T_ARG(0);
+        if (block.getTArguments()->size() > 1)
+            biasCorrected = (bool)T_ARG(1);
+    }
 
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_VARIANCE OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
@@ -52,10 +67,21 @@ CUSTOM_OP_IMPL(reduce_variance, 1, 1, false, 0, 0) {
         }
 
 
-DECLARE_SHAPE_FN(reduce_variance) {    
-    const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    
-    std::vector<int> dimensions = *block.getIArguments();
+DECLARE_SHAPE_FN(reduce_variance) {
+    bool keepDims      = false;//block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+
+    auto dimensions = *block.getIArguments();
+    if (block.width() > 1) {
+        auto axesVector = INPUT_VARIABLE(1);
+        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+    }
+//            else if (block.getIArguments()->size())
+    if (block.getBArguments()->size()) {
+        keepDims = B_ARG(0);
+    }
+    else if (block.getTArguments()->size()) {
+        keepDims = (bool)T_ARG(0);
+    }
 
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_VARIANCE OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
@@ -82,10 +108,25 @@ CUSTOM_OP_IMPL(reduce_variance_bp, 2, 1, false, 0, 0) {
 
     auto gradI  = OUTPUT_VARIABLE(0);
 
-    const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    const bool biasCorrected = block.getTArguments()->size() > 1 ? (bool)T_ARG(1) : false;
-    
-    std::vector<int> dimensions = *block.getIArguments();    
+    bool keepDims      = false;//block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+    bool biasCorrected = false;//block.getTArguments()->size() > 1 ? (bool)T_ARG(1) : false;
+
+    auto dimensions = *block.getIArguments();
+    if (block.width() > 2) {
+        auto axesVector = INPUT_VARIABLE(2);
+        helpers::adjustAxis(input, axesVector, dimensions);
+    }
+//            else if (block.getIArguments()->size())
+    if (block.getBArguments()->size()) {
+        keepDims = B_ARG(0);
+        if (block.getBArguments()->size() > 1)
+            biasCorrected = B_ARG(1);
+    }
+    else if (block.getTArguments()->size()) {
+        keepDims = (bool)T_ARG(0);
+        if (block.getTArguments()->size() > 1)
+            biasCorrected = (bool)T_ARG(1);
+    }
 
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_VARIANCE OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
@@ -117,10 +158,14 @@ CUSTOM_OP_IMPL(reduce_variance_bp, 2, 1, false, 0, 0) {
 
 
 
-DECLARE_SHAPE_FN(reduce_variance_bp) {    
-    const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+DECLARE_SHAPE_FN(reduce_variance_bp) {
 
-    std::vector<int> dimensions = *block.getIArguments();
+    auto dimensions = *block.getIArguments();
+    if (block.width() > 2) {
+        auto axesVector = INPUT_VARIABLE(2);
+        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+    }
+//            else if (block.getIArguments()->size())
 
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_VARIANCE OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     

@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/reduce_product.h>
+#include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -28,8 +29,18 @@ namespace ops {
     CUSTOM_OP_IMPL(reduce_prod, 1, 1, false, 0, 0) {
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
-        std::vector<int> axes = *block.getIArguments();
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+
+        auto axes = *block.getIArguments();
+        if (block.width() > 1) {
+            auto axesVector = INPUT_VARIABLE(1);
+            helpers::adjustAxis(input, axesVector, axes);
+        }
+//            else if (block.getIArguments()->size())
+        bool keepDims = false;
+        if (block.getBArguments()->size())
+            keepDims = B_ARG(0);
+        else if (block.getTArguments()->size())
+            keepDims = (bool)T_ARG(0);
 
         for(const auto& item : axes)
             REQUIRE_TRUE(item > -input->shapeInfo()[0] || item <input->shapeInfo()[0], 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
@@ -45,12 +56,21 @@ namespace ops {
                     ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
-    DECLARE_SHAPE_FN(reduce_prod) {    
+    DECLARE_SHAPE_FN(reduce_prod) {
 
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    
-        std::vector<int> dimensions = *block.getIArguments();
-        auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
+        auto axes = *block.getIArguments();
+        if (block.width() > 1) {
+            auto axesVector = INPUT_VARIABLE(1);
+            helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, axes);
+        }
+//            else if (block.getIArguments()->size())
+        bool keepDims = false;
+        if (block.getBArguments()->size())
+            keepDims = B_ARG(0);
+        else if (block.getTArguments()->size())
+            keepDims = (bool)T_ARG(0);
+
+        auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), axes, inputShape->at(0), keepDims, false, block.getWorkspace());
         //ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
         return SHAPELIST(outShapeInfo);
     }
@@ -78,24 +98,23 @@ namespace ops {
         auto epsilon = INPUT_VARIABLE(1);
         auto output = OUTPUT_VARIABLE(0);
 
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-
-        // FIXME: double
-        double keepDimsT = (keepDims ? 1. : 0.);
-        // at first step we build fwd activation
-        nd4j::ops::reduce_prod op;
-        std::vector<Nd4jLong> axes;
-
-        if (block.numI() > 0) {
-            for (int e = 0; e < block.numI(); e++)
-                axes.emplace_back(INT_ARG(e));// = *block.getIArguments();
+        auto axes = *block.getIArguments();
+        if (block.width() > 2) {
+            auto axesVector = INPUT_VARIABLE(2);
+            helpers::adjustAxis(input, axesVector, axes);
         }
+//            else if (block.getIArguments()->size())
+        bool keepDims = false;
+        if (block.getBArguments()->size())
+            keepDims = B_ARG(0);
+        else if (block.getTArguments()->size())
+            keepDims = (bool)T_ARG(0);
+        std::vector<Nd4jLong> axesLong;
+        for (size_t e = 0; e < axes.size(); e++)
+            axesLong.emplace_back(axes[e]);// = *block.getIArguments();
 
-        // FIXME: double
-        std::vector<double> tVec(1);
-        tVec[0] = (keepDims ? 1.0 : 0.0);
-        std::vector<NDArray*> inputVec({input});
-        std::unique_ptr<ResultSet> tmpResult(op.execute(inputVec, tVec, axes, {}, false));
+        nd4j::ops::reduce_prod op;
+        std::unique_ptr<ResultSet> tmpResult(op.execute({input}, {}, axesLong, {keepDims}, false));
         if (tmpResult->status() != Status::OK())
             return tmpResult->status();
         auto tempProd = tmpResult->at(0);
@@ -107,7 +126,6 @@ namespace ops {
         }
         else { // result 
 
-            auto axes = *block.getIArguments();
             helpers::reduceProductBP(input, epsilon, tempProd, output, axes);
         }
 

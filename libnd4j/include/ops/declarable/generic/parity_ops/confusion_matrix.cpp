@@ -32,8 +32,8 @@ namespace nd4j {
     namespace ops {
         DECLARE_TYPES(confusion_matrix) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
         }
 
         CUSTOM_OP_IMPL(confusion_matrix, 2, 1, false, 0, -2) {
@@ -46,7 +46,7 @@ namespace nd4j {
                 REQUIRE_TRUE(weights->isSameShape(predictions),0, "CONFUSION_MATRIX: Weights and predictions should have equal shape");
             }
             auto output = OUTPUT_VARIABLE(0);
-
+            output->assign(0.);
             int minPrediction = predictions->reduceNumber(reduce::Min).e<int>(0);
             int minLabel = labels->reduceNumber(reduce::Min).e<int>(0);
 

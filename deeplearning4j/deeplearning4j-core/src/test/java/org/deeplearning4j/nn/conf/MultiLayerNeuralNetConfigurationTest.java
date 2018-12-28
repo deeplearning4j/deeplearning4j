@@ -149,7 +149,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
     @Test
     public void testGlobalPoolingJson() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
+                        .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                         .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(5).build())
                         .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.PNORM).pnorm(3).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -252,9 +252,9 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
 
     private static MultiLayerConfiguration getConf() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345l).list()
-                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
+                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2)
                                         .dist(new NormalDistribution(0, 1)).build())
-                        .layer(1, new OutputLayer.Builder().nIn(2).nOut(1).weightInit(WeightInit.DISTRIBUTION)
+                        .layer(1, new OutputLayer.Builder().nIn(2).nOut(1)
                                         .activation(Activation.TANH)
                                         .dist(new NormalDistribution(0, 1)).lossFunction(LossFunctions.LossFunction.MSE).build())
                         .build();

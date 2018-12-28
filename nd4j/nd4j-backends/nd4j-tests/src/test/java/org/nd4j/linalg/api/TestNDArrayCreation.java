@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.Ignore;
@@ -28,10 +29,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -75,6 +78,25 @@ public class TestNDArrayCreation extends BaseNd4jTest {
         assertEquals(2.0, arrCreate.getDouble(0, 1), 1e-1);
         assertEquals(3.0, arrCreate.getDouble(1, 0), 1e-1);
         assertEquals(4.0, arrCreate.getDouble(1, 1), 1e-1);
+
+    }
+
+    @Test
+    @Ignore
+    public void testCreateNpz() throws Exception {
+        Map<String, INDArray> map = Nd4j.createFromNpzFile(new ClassPathResource("nd4j-tests/test.npz").getFile());
+        assertEquals(true, map.containsKey("x"));
+        assertEquals(true, map.containsKey("y"));
+        INDArray arrX = map.get("x");
+        INDArray arrY = map.get("y");
+        assertEquals(1.0, arrX.getDouble(0), 1e-1);
+        assertEquals(2.0, arrX.getDouble(1), 1e-1);
+        assertEquals(3.0, arrX.getDouble(2), 1e-1);
+        assertEquals(4.0, arrX.getDouble(3), 1e-1);
+        assertEquals(5.0, arrY.getDouble(0), 1e-1);
+        assertEquals(6.0, arrY.getDouble(1), 1e-1);
+        assertEquals(7.0, arrY.getDouble(2), 1e-1);
+        assertEquals(8.0, arrY.getDouble(3), 1e-1);
 
     }
 

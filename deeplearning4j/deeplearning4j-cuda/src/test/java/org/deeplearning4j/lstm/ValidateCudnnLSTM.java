@@ -26,7 +26,6 @@ import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.recurrent.CudnnLSTMHelper;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -66,7 +65,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().inferenceWorkspaceMode(WorkspaceMode.NONE)
                         .trainingWorkspaceMode(WorkspaceMode.NONE).updater(new NoOp())
-                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
@@ -144,7 +143,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                         .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
-                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
@@ -228,7 +227,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                         .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
-                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
                         .layer(0, new LSTM.Builder().nIn(inputSize).nOut(lstmLayerSize)
                                         .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
@@ -297,7 +296,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                     .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
                     .cacheMode(CacheMode.NONE).seed(12345L)
-                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2)).list()
+                    .dist(new NormalDistribution(0, 2)).list()
                     .layer(0, new LSTM.Builder().nIn(inputSize).nOut(lstmLayerSize)
                             .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
                     .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)

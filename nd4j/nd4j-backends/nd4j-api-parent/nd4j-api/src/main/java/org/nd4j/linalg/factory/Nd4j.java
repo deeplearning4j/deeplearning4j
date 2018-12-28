@@ -690,7 +690,7 @@ public class Nd4j {
         int index = 0;
         for (Collection<INDArray> matrixCollection : matrices) {
             for (INDArray matrix : matrixCollection) {
-                INDArray linear = matrix.linearView();
+                INDArray linear = matrix.reshape(-1);
                 for (int i = 0; i < matrix.length(); i++) {
                     linear.putScalar(i, theta.getDouble(index));
                     index++;
@@ -1010,7 +1010,7 @@ public class Nd4j {
         int index = 0;
         for (Iterator<? extends INDArray> matrixIterator : matrices) {
             while (matrixIterator.hasNext()) {
-                INDArray matrix = matrixIterator.next().linearView();
+                INDArray matrix = matrixIterator.next().reshape(-1);
                 for (int i = 0; i < matrix.length(); i++) {
                     matrix.putScalar(i, theta.getDouble(index));
                     index++;
@@ -2787,11 +2787,12 @@ public class Nd4j {
     }
 
     /**
-     * Array of evenly spaced values.
+     * Create a 1D array of evenly spaced values between {@code begin} (inclusive) and {@code end} (exclusive)
+     * with a step size of 1
      *
-     * @param begin the begin of the range
-     * @param end   the end of the range
-     * @return the range vector
+     * @param begin the begin of the range (inclusive)
+     * @param end   the end of the range (exclusive)
+     * @return the 1D range vector
      */
     public static INDArray arange(double begin, double end) {
         INDArray ret = INSTANCE.arange(begin, end);
@@ -2801,10 +2802,11 @@ public class Nd4j {
 
 
     /**
-     * Array of evenly spaced values.
+     * Create a 1D array of evenly spaced values between 0 (inclusive) and {@code end} (exclusive)
+     * with a step size of 1
      *
-     * @param end   the end of the range
-     * @return the range vector
+     * @param end   the end of the range (exclusive)
+     * @return the 1D range vector
      */
     public static INDArray arange(double end) {
         return arange(0, end);
@@ -6547,20 +6549,18 @@ public class Nd4j {
 
 
     /**
-     * Write an {@link INDArray}
-     * to a {@link File}
-     * @param arr the array to write
-     * @param file the file to write
+     * Write an {@link INDArray} to a {@link File} in Numpy .npy format, which can then be loaded with numpy.load
+     * @param arr the array to write in Numpy .npy format
+     * @param file the file to write to
      * @throws IOException if an error occurs when writing the file
      */
-    public static void writeAsNumpy(INDArray arr,File file) throws IOException {
+    public static void writeAsNumpy(INDArray arr, File file) throws IOException {
         writeAsNumpy(arr, new FileOutputStream(file));
     }
 
 
     /**
-     * Converts an {@link INDArray}
-     * to a numpy struct.
+     * Converts an {@link INDArray} to a numpy struct.
      * @param arr the array to convert
      * @return a pointer to the numpy struct
      */
@@ -6575,7 +6575,7 @@ public class Nd4j {
      * @param writeTo the output stream to write to
      * @throws IOException
      */
-    public static void writeAsNumpy(INDArray arr,OutputStream writeTo) throws IOException {
+    public static void writeAsNumpy(INDArray arr, OutputStream writeTo) throws IOException {
         try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(writeTo)) {
             Pointer asNumpy = convertToNumpy(arr);
             WritableByteChannel channel = Channels.newChannel(bufferedOutputStream);
@@ -6605,7 +6605,7 @@ public class Nd4j {
     }
 
     /**
-     * Create from a given numpy file.
+     * Create from a given Numpy .npy file.
      *
      * @param file the file to create the ndarray from
      * @return the created ndarray
@@ -6614,9 +6614,12 @@ public class Nd4j {
         return INSTANCE.createFromNpyFile(file);
     }
 
+    public static Map<String, INDArray> createFromNpzFile(File file) throws Exception{
+        return INSTANCE.createFromNpzFile(file);
+    }
+
     /**
-     * Create a numpy array based on the passed in
-     * input stream
+     * Create a numpy array based on the passed in input stream
      * @param is the input stream to read
      * @return the loaded ndarray
      * @throws IOException
@@ -6628,8 +6631,7 @@ public class Nd4j {
 
 
     /**
-     * Create an {@link INDArray} from
-     * the given numpy input.
+     * Create an {@link INDArray} from the given numpy input.<br>
      * The numpy input follows the format:
      * https://docs.scipy.org/doc/numpy-1.14.0/neps/npy-format.html
      *
@@ -6645,8 +6647,7 @@ public class Nd4j {
     }
 
     /**
-     * Converts an {@link INDArray}
-     * to a byte array
+     * Converts an {@link INDArray} to a byte array
      * @param input the input array
      * @return the {@link INDArray} as a byte array
      * with the numpy format.
@@ -6661,8 +6662,7 @@ public class Nd4j {
 
 
     /**
-     * Create an {@link INDArray}
-     * from a flatbuffers {@link FlatArray}
+     * Create an {@link INDArray} from a flatbuffers {@link FlatArray}
      * @param array the array to create the {@link INDArray} from
      * @return the created {@link INDArray}
      */
@@ -6810,6 +6810,526 @@ public class Nd4j {
 
     public static INDArray create(@NonNull Collection<String> strings, long[] shape, char order) {
         return INSTANCE.create(strings, shape, order);
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(double... array) {
+        return create(array, new long[]{array.length}, DataType.DOUBLE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(float... array) {
+        return create(array, new long[]{array.length}, DataType.FLOAT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(int... array) {
+        return create(array, new long[]{array.length}, DataType.INT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(short... array) {
+        return create(array, new long[]{array.length}, DataType.SHORT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(byte... array) {
+        return create(array, new long[]{array.length}, DataType.BYTE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(long... array) {
+        return create(array, new long[]{array.length}, DataType.LONG);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(boolean... array) {
+        return create(array, new long[]{array.length}, DataType.BOOL);
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(double[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.DOUBLE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(float[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.FLOAT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(long[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.LONG);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(int[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.INT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(short[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.SHORT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(byte[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.BYTE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(boolean[][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.BOOL);
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(double[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.DOUBLE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(float[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.FLOAT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(long[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.LONG);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(int[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.INT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(short[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.SHORT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(byte[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.BYTE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(boolean[][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.BOOL);
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(double[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.DOUBLE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(float[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.FLOAT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(long[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.LONG);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(int[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.INT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(short[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.SHORT);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(byte[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.BYTE);
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(boolean[][][][] array) {
+        return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.BOOL);
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(Double[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(Float[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(Integer[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(Short[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(Byte[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(Long[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 1D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(Boolean[] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(Double[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(Float[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(Integer[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(Short[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(Byte[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(Long[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 2D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(Boolean[][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(Double[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(Float[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(Integer[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(Short[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(Byte[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(Long[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 3D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(Boolean[][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+///////////////////
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with DOUBLE data type
+     */
+    public static INDArray createFromArray(Double[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with FLOAT data type
+     */
+    public static INDArray createFromArray(Float[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT32 data type
+     */
+    public static INDArray createFromArray(Integer[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT16 data type
+     */
+    public static INDArray createFromArray(Short[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT8 data type
+     */
+    public static INDArray createFromArray(Byte[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with INT64 data type
+     */
+    public static INDArray createFromArray(Long[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
+    }
+
+    /**
+     * This method creates INDArray from provided jvm array
+     * @param array
+     * @return 4D INDArray with BOOL data type
+     */
+    public static INDArray createFromArray(Boolean[][][][] array) {
+        return createFromArray(ArrayUtil.toPrimitives(array));
     }
 
     public static boolean isExperimentalMode() {

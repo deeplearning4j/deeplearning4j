@@ -47,16 +47,16 @@ namespace functions {
     namespace indexreduce {
 
         template <typename T>
-        _CUDA_H void IndexReduce<T>::executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream, 
-                                                                const int opNum, 
-                                                                void *dx, Nd4jLong *xShapeInfo, 
-                                                                int xRank, 
-                                                                void *extraParams, 
-                                                                Nd4jLong *result, Nd4jLong *resultShapeInfo, 
-                                                                int zRank, 
-                                                                int *dimension, int dimensionLength, 
-                                                                int postProcessOrNot, 
-                                                                int *allocationBuffer, void *reductionBuffer, 
+        _CUDA_H void IndexReduce<T>::executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream,
+                                                                const int opNum,
+                                                                void *dx, Nd4jLong *xShapeInfo,
+                                                                int xRank,
+                                                                void *extraParams,
+                                                                Nd4jLong *result, Nd4jLong *resultShapeInfo,
+                                                                int zRank,
+                                                                int *dimension, int dimensionLength,
+                                                                int postProcessOrNot,
+                                                                int *allocationBuffer, void *reductionBuffer,
                                                                 Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
             simpleIndexReduceGeneric<T><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(opNum,
@@ -64,8 +64,8 @@ namespace functions {
                                                                                             extraParams,
                                                                                             result, nullptr, 0,
                                                                                             nullptr,1,
-                                                                                            1, 
-                                                                                            allocationBuffer, reductionBuffer, 
+                                                                                            1,
+                                                                                            allocationBuffer, reductionBuffer,
                                                                                             tadOnlyShapeInfo, tadOffsets);
 
             checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -182,7 +182,7 @@ namespace functions {
                                                 void *vextraParams,
                                                 Nd4jLong *result, Nd4jLong *resultShapeInfo,
                                                 int *dimension, int dimensionLength,
-                                                int postProcessOrNot, 
+                                                int postProcessOrNot,
                                                 int *allocationBuffer, void *vreductionBuffer,
                                                 Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets){
             /**int
@@ -197,7 +197,7 @@ namespace functions {
 
             //shared memory space for storing intermediate results
             __shared__ IndexValue<T>* sPartials;
-            if(threadIdx.x == 0) {                
+            if(threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
                 sPartials = reinterpret_cast<IndexValue<T>*>(shmem);
             }

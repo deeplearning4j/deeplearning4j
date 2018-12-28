@@ -28,6 +28,8 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
+import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.cache.ArrayDescriptor;
 import org.nd4j.linalg.cache.ConstantHandler;
@@ -133,6 +135,8 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         //logger.info("shape: " + point.getShape());
         // and release device memory :)
+
+        AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, deviceId, requiredMemoryBytes);
 
         long currentOffset = constantOffsets.get(deviceId).get();
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();

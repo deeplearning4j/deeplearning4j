@@ -692,7 +692,7 @@ void scatterUpdate(NDArray& operand, NDArray& updates, const std::vector<int>* i
     int dimSize = (*intArgs)[1];    
     unsigned long e;
     unsigned long limg = 2 + dimSize;
-    std::vector<int> tadDimension(limg-2);
+    std::vector<int> tadDimension(dimSize);
     for (e = 2; e < limg; e++)
         tadDimension[e-2] = (*intArgs)[e];
 

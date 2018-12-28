@@ -186,7 +186,17 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>jcl-over-slf4j</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>net.jodah</groupId>
+                    <artifactId>typetools</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>net.jodah</groupId>
+            <artifactId>typetools</artifactId>
+            <version>${jodah.typetools.version}</version>
         </dependency>
 
         <dependency>

@@ -20,7 +20,7 @@
 
 
 #include <ops/declarable/CustomOperations.h>
-
+#include <ops/declarable/helpers/axis.h>
 
 namespace nd4j    {
 namespace ops     {
@@ -30,9 +30,17 @@ CUSTOM_OP_IMPL(reduce_mean, 1, 1, false, 0, 0) {
     auto input   = INPUT_VARIABLE(0);
     auto output  = OUTPUT_VARIABLE(0);
 
-    const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    
-    std::vector<int> dimensions = *block.getIArguments();    
+    auto dimensions = *block.getIArguments();
+    if (block.width() > 1) {
+        auto axesVector = INPUT_VARIABLE(1);
+        helpers::adjustAxis(input, axesVector, dimensions);
+    }
+//            else if (block.getIArguments()->size())
+    bool keepDims = false;
+    if (block.getBArguments()->size())
+        keepDims = B_ARG(0);
+    else if (block.getTArguments()->size())
+        keepDims = (bool)T_ARG(0);
 
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_MEAN OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
@@ -51,10 +59,18 @@ CUSTOM_OP_IMPL(reduce_mean, 1, 1, false, 0, 0) {
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
-DECLARE_SHAPE_FN(reduce_mean) {    
-    const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    
-    std::vector<int> dimensions = *block.getIArguments();
+DECLARE_SHAPE_FN(reduce_mean) {
+    auto dimensions = *block.getIArguments();
+    if (block.width() > 1) {
+        auto axesVector = INPUT_VARIABLE(1);
+        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+    }
+//            else if (block.getIArguments()->size())
+    bool keepDims = false;
+    if (block.getBArguments()->size())
+        keepDims = B_ARG(0);
+    else if (block.getTArguments()->size())
+        keepDims = (bool)T_ARG(0);
 
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_MEAN OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
@@ -81,9 +97,17 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
 
     auto gradI  = OUTPUT_VARIABLE(0);
 
-    const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    
-    std::vector<int> dimensions = *block.getIArguments();    
+    auto dimensions = *block.getIArguments();
+    if (block.width() > 2) {
+        auto axesVector = INPUT_VARIABLE(2);
+        helpers::adjustAxis(input, axesVector, dimensions);
+    }
+//            else if (block.getIArguments()->size())
+    bool keepDims = false;
+    if (block.getBArguments()->size())
+        keepDims = B_ARG(0);
+    else if (block.getTArguments()->size())
+        keepDims = (bool)T_ARG(0);
 
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_MEAN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
@@ -115,9 +139,11 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
 
 
 DECLARE_SHAPE_FN(reduce_mean_bp) {    
-    const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-
-    std::vector<int> dimensions = *block.getIArguments();
+    auto dimensions = *block.getIArguments();
+    if (block.width() > 2) {
+        auto axesVector = INPUT_VARIABLE(2);
+        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+    }
 
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_MEAN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     

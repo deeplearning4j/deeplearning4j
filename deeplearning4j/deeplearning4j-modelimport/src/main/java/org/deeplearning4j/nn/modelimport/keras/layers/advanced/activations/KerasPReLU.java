@@ -20,18 +20,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 import org.deeplearning4j.nn.conf.layers.PReLULayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PReLUParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.ActivationLReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -42,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.removeDefaultWeights;
 
 /**
  * Imports PReLU layer from Keras
@@ -91,10 +86,7 @@ public class KerasPReLU extends KerasLayer {
         long[] axes = getSharedAxes(layerConfig);
 
         PReLULayer.Builder builder = new PReLULayer.Builder().sharedAxes(axes)
-        .weightInit(weightInit).name(layerName);
-        if (distribution != null) {
-            builder.dist(distribution);
-        }
+        .weightInit(weightInit.getWeightInitFunction(distribution)).name(layerName);
         if (weightConstraint != null){
             builder.constrainWeights(weightConstraint);
         }

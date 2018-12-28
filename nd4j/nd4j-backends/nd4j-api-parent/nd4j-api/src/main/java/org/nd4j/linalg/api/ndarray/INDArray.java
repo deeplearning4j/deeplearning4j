@@ -35,7 +35,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public interface INDArray extends Serializable {
+public interface INDArray extends Serializable, AutoCloseable {
     /**
      * Returns the shape information debugging
      * information
@@ -87,24 +87,6 @@ public interface INDArray extends Serializable {
      */
     void markAsCompressed(boolean reallyCompressed);
 
-    /**
-     * Set the ndarray to wrap around
-     * @param wrapAround thewrap around
-     */
-    void setWrapAround(boolean wrapAround);
-
-    /**
-     * Returns true if the ndarray
-     * on linear indexing wraps around
-     * based on the stride(1) of the ndarray
-     * This is a useful optimization in linear view
-     * where strides that might otherwise
-     * go out of bounds but wrap around instead.
-     *
-     * @return true if this ndarray wraps around on linear
-     * indexing, false otherwise
-     */
-    boolean isWrapAround();
 
     /**
      * Returns the rank of the ndarray (the number of dimensions).
@@ -121,44 +103,9 @@ public interface INDArray extends Serializable {
     int stride(int dimension);
 
     /**
-     * Element stride (one element to the next,
-     * also called the default stride: 1 for normal
-     * @return
-     * @deprecated Previously used for complex numbers
-     */
-    @Deprecated
-    int elementStride();
-
-
-    /**
      * Element wise stride
      */
     int elementWiseStride();
-
-    /**
-     * Returns true if the ndarray has already been freed
-     * @return
-     */
-    boolean isCleanedUp();
-
-    /**
-     * Cleanup resources
-     */
-    void cleanup();
-
-    /**
-     * Resets the linear view
-     */
-    @Deprecated
-    void resetLinearView();
-
-    /**
-     * Return the second stride for an ndarray.
-     * Think of this as the stride for the next element in a column.
-     *
-     * @return the secondary stride for an ndarray
-     */
-    int secondaryStride();
 
     /**
      * Get a scalar
@@ -178,42 +125,6 @@ public interface INDArray extends Serializable {
      * @return this
      */
     INDArray putScalarUnsafe(long offset, double value);
-
-    /**
-     * Return the major stride for an ndarray
-     *
-     * @return the major stride for an ndarray
-     */
-    int majorStride();
-
-    /**
-     * Get the inner most stride
-     * wrt the ordering of the array
-     * @return
-     */
-    int innerMostStride();
-
-    /**
-     * Returns a linear view reference of shape
-     * 1,length(ndarray)
-     *
-     * @return the linear view of this ndarray
-     * @deprecated Linear views are not always possible. Use reshape(array.length()) or reshape(1,array.length())
-     */
-    @Deprecated
-    INDArray linearView();
-
-
-
-    /**
-     * Returns a linear view reference of shape
-     * 1,length(ndarray)
-     *
-     * @return the linear view of this ndarray
-     * * @deprecated Linear views are not always possible. Use reshape(array.length()) or reshape(1,array.length())
-     */
-    @Deprecated
-    INDArray linearViewColumnOrder();
 
     /**
      * Returns the number of possible vectors for a given dimension
@@ -491,12 +402,26 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * Returns the binary ndarray for "Greter" comparison.
+     * Returns the binary ndarray for "Greater Than" comparison.
      *
      * @param other the ndarray to compare.
-     * @return the binary ndarray for "Greter" comparison.
+     * @return the binary ndarray for "Greater Than" comparison.
      */
     INDArray gt(INDArray other);
+
+    /**
+     * Returns the binary NDArray with value true where this array's entries are infinite, or false where they
+     * are not infinite
+     */
+    INDArray isInfinite();
+
+    /**
+     * Returns the binary NDArray with value true where this array's entries are NaN, or false where they
+     * are not infinite
+     */
+    INDArray isNaN();
+
+
 
     /**
      * Returns the ndarray negative (cloned)
@@ -938,22 +863,12 @@ public interface INDArray extends Serializable {
     INDArray putSlice(int slice, INDArray put);
 
     /**
-     * 1 in the ndarray if the element matches
-     * the condition 0 otherwise
+     * Returns a binary INDArray with value 'true' if the element matches the specified condition and 'false' otherwise
      *
      * @param condition Condition to apply
      * @return Copy of this array with values 0 (condition does not apply), or one (condition applies)
      */
     INDArray cond(Condition condition);
-
-    /**
-     * In-place: 1 in the ndarray if the element matches the condition 0 otherwise
-     *
-     * @param condition Condition to apply
-     * @return This array, modified with values 0 (condition does not apply), or one (condition applies)
-     */
-    INDArray condi(Condition condition);
-
 
 
     /**
@@ -2775,4 +2690,18 @@ public interface INDArray extends Serializable {
      * @return
      */
     boolean none();
+
+    /**
+     * This method checks, if this INDArray instalce can use close() method
+     * @return true if array can be released, false otherwise
+     */
+    boolean closeable();
+
+    /**
+     * This method releases exclusive off-heap resources uses by this INDArray instance.
+     * If INDArray relies on shared resources, exception will be thrown instead
+     *
+     * PLEASE NOTE: This method is NOT safe by any means
+     */
+    void close();
 }
