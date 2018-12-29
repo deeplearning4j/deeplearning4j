@@ -2444,9 +2444,7 @@ public class Shape {
     public static int[] newStrides(int[] strides, int newLength, INDArrayIndex[] indexes) {
         if (strides.length > newLength) {
             int[] newStrides = new int[strides.length - 1];
-            for (int i = 0; i < newStrides.length; i++) {
-                newStrides[i] = strides[i + 1];
-            }
+            System.arraycopy(strides, 1, newStrides, 0, newStrides.length);
             strides = newStrides;
         }
 
@@ -2671,15 +2669,13 @@ public class Shape {
      */
     public static int[] shape(int[] buffer) {
         int[] ret = new int[rank(buffer)];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = buffer[1 + i];
+        System.arraycopy(buffer, 1, ret, 0, ret.length);
         return ret;
     }
 
     public static long[] shape(long[] buffer) {
         long[] ret = new long[rank(buffer)];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = buffer[1 + i];
+        System.arraycopy(buffer, 1, ret, 0, ret.length);
         return ret;
     }
 
