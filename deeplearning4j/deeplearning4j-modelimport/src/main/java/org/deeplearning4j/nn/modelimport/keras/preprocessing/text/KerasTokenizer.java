@@ -114,7 +114,7 @@ public class KerasTokenizer {
             throw new InvalidKerasConfigurationException("No configuration found for Keras tokenizer");
 
 
-        int numWords = (int) tokenizerConfig.get("num_words");
+        Integer numWords = (Integer) tokenizerConfig.get("num_words");
         String filters = (String) tokenizerConfig.get("filters");
         Boolean lower = (Boolean) tokenizerConfig.get("lower");
         String split = (String) tokenizerConfig.get("split");
