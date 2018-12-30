@@ -61,7 +61,7 @@ Assuming you are using Ubuntu as your flavor of Linux and you are running as a n
 
 ```bash
 # Installing JDK, Cmake, git, GCC and G++
-sudo apt-get clean -y all
+sudo apt-get clean -y
 sudo apt-get update -y
 sudo apt-get upgrade -y
 sudo apt-get install -y cmake git openjdk-8-jdk build-essential
@@ -99,7 +99,7 @@ Finally, install prerequisite tools:
 
 ```bash
 brew update
-brew install maven gcc5
+brew install maven gcc5 python
 ```
 
 Note: You can *not* use clang. You also can *not* use a new version of gcc. If you have a newer version of gcc, please
@@ -181,29 +181,28 @@ In order to build the CUDA backend you will have to setup some more environment 
 But first, set the system environment variable `SET_FULL_PATH` to `true`, so all of the variables that `vcvars64.bat` sets up, are passed to the mingw shell.
 Additionally, you need to open the `mingw64.ini` in your msys64 installation folder and add the command: `MSYS2_PATH_TYPE=inherit`. After that, follow the steps below:
 
-1. In your visual studio installation folder, look for the file `vcvars64.bat`. After it's found, go to its location and run it. This will set up some environment variables and open `cmd.exe`.
-2. Inside the console, run `c:\msys64\mingw64.exe`. This will open up the MSYS2 shell with the environment variables set so, you can execute the required maven commands to build the DL4J stack for the GPU architecture.
+1. In your visual studio installation folder, press `Ctrl + F` and look for the file `vcvars64.bat`. After it's found, go to its location by right clicking on it and selecting `Open file location` and run it. Open this location inside `cmd.exe` and run the `vcvars64.bat` file. This will set up some environment variables.
+2. Inside the console, run `c:\msys64\mingw64.exe`. This will open up the MSYS2 shell with the required environment variables set so you can execute the maven commands to build the DL4J stack for the GPU architecture.
 
 See the section below for the required build commands.
 
 ## Build Instructions
 
-
-First clone the DL4J repository and navigate to the `deeplearning4j` folder 
+First clone the DL4J repository at a valid location and navigate to the `deeplearning4j` folder 
 
 ```bash
 git clone https://github.com/deeplearning4j/deeplearning4j.git
 cd deeplearning4j
 ```
 
-If you want to change the Scala, Spark or Cuda versions, you can execute one or more of the following commands:
+If you want to change the Scala, Spark or Cuda (for GPU) versions, you can execute one or more of the following commands:
 ```bash
-./change-cuda-versions.sh x.x
-./change-scala-versions.sh 2.xx
-./change-spark-versions.sh x
+./change-cuda-versions.sh x.x # Valid versions as of now: (8.0 9.0 9.1 9.2 10.0)
+./change-scala-versions.sh 2.xx # Valid versions as of now: (2.10 2.11)
+./change-spark-versions.sh x # Valid versions as of now: (1 2)
 ```
 
-Now, to build for each architecture, execute the relevant commands:
+Now, to build for each architecture (CPU or GPU), execute the relevant commands:
 
 ### Building for CPU
 
@@ -212,8 +211,6 @@ Let's first set some variables for ease:
 ```bash
 PLATFORM=<YOUR_PLATFORM> # Can be either one of [linux-x86_64, macosx-x86_64, windows-x86_64]
 ```
-
-### 
 
 The command is: 
 ```bash
@@ -232,8 +229,9 @@ COMPUTE_CAPABILITY=<COMPUTE_CAPABILITY> # Such as "61" for a compute cabability 
 
 #### Note
  The `COMPUTE_CAPABILITY` variable should be set without any `.` in between. For example, if your GPU has a compute capability of 6.1 then you should set the variable like this:
-`COMPUTE_CAPABILITY=61`
-    
+`COMPUTE_CAPABILITY=61`. Vist this page for more info: https://en.wikipedia.org/wiki/CUDA
+
+The command is: 
 ```bash
 mvn clean install -Dmaven.test.skip -Dlibnd4j.cuda=${CUDA_VERSION} -Dlibnd4j.compute=${COMPUTE_CAPABILITY} -Dlibnd4j.platform=${PLATFORM} -Djavacpp.platform=${PLATFORM}
 ```
@@ -258,8 +256,36 @@ mvn install
 
 Tests will run __only__ when `testresources` and a backend profile (such as `test-nd4j-native`) are selected
 
+##### For CPU
+
+Let's first set some variables for ease:
+
 ```bash
-mvn clean test -P  testresources,test-nd4j-native
+PLATFORM=<YOUR_PLATFORM> # Can be either one of [linux-x86_64, macosx-x86_64, windows-x86_64]
+```
+
+The test command is: 
+```bash
+mvn clean test -pl '!deeplearning4j/deeplearning4j-cuda,!nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!jumpy,!pydatavec,!pydl4j' -Dlibnd4j.platform=${PLATFORM} -Djavacpp.platform=${PLATFORM} -P testresources,test-nd4j-native
+```
+
+##### For GPU
+
+Let's first set some variables for ease:
+
+```bash
+PLATFORM=<YOUR_PLATFORM> # Can be either one of [linux-x86_64, macosx-x86_64, windows-x86_64]
+CUDA_VERSION=<YOUR_CUDA_SDK_VERSION> # Such as "10.0"
+COMPUTE_CAPABILITY=<COMPUTE_CAPABILITY> # Such as "61" for a compute cabability of '6.1'. Can be found here, depending on your GPU type: https://en.wikipedia.org/wiki/CUDA
+```
+
+#### Note
+ The `COMPUTE_CAPABILITY` variable should be set without any `.` in between. For example, if your GPU has a compute capability of 6.1 then you should set the variable like this:
+`COMPUTE_CAPABILITY=61`. Vist this page for more info: https://en.wikipedia.org/wiki/CUDA
+
+The test command is:     
+```bash
+mvn clean test -Dmaven.test.skip -Dlibnd4j.cuda=${CUDA_VERSION} -Dlibnd4j.compute=${COMPUTE_CAPABILITY} -Dlibnd4j.platform=${PLATFORM} -Djavacpp.platform=${PLATFORM} -P testresources,test-nd4j-native
 ```
 
 Running the tests will take a while. To run tests of just a single maven module you can add a module constraint with `-pl deeplearning4j-core` (for details see [here](https://stackoverflow.com/questions/11869762/maven-run-only-single-test-in-multi-module-project))
@@ -267,8 +293,6 @@ Running the tests will take a while. To run tests of just a single maven module 
 ## Using Local Dependencies
 
 Once you've installed the DL4J stack to your local maven repository, you can now include it in your build tool's dependencies. Follow the typical [Getting Started](http://deeplearning4j.org/gettingstarted) instructions for Deeplearning4j, and appropriately replace versions with the SNAPSHOT version currently on the [master POM](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/pom.xml).
-
-Note that some build tools such as Gradle and SBT don't properly pull in platform-specific binaries. You can follow instructions [here](http://nd4j.org/dependencies.html) for setting up your favorite build tool.
 
 ## Support and Assistance
 
