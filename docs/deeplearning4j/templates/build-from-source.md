@@ -49,10 +49,6 @@ IDE-specific requirements:
 
 * Lombok Plugin for IntelliJ or Eclipse
 
-DL4J testing dependencies:
-
-* [dl4j-test-resources](https://github.com/deeplearning4j/dl4j-test-resources) (Needed only for running tests.)
-
 ### Installing Prerequisite Tools
 
 #### Ubuntu
@@ -209,7 +205,7 @@ Now, to build for each architecture (CPU or GPU), execute the relevant commands:
 Let's first set some variables for ease:
 
 ```bash
-PLATFORM=<YOUR_PLATFORM> # Can be either one of [linux-x86_64, macosx-x86_64, windows-x86_64]
+PLATFORM=<YOUR_PLATFORM> # Can be either one of (linux-x86_64, macosx-x86_64, windows-x86_64)
 ```
 
 The command is: 
@@ -222,7 +218,7 @@ mvn -B -V -U clean install -pl '!deeplearning4j/deeplearning4j-cuda,!nd4j/nd4j-b
 Let's first set some variables for ease:
 
 ```bash
-PLATFORM=<YOUR_PLATFORM> # Can be either one of [linux-x86_64, macosx-x86_64, windows-x86_64]
+PLATFORM=<YOUR_PLATFORM> # Can be either one of (linux-x86_64, macosx-x86_64, windows-x86_64)
 CUDA_VERSION=<YOUR_CUDA_SDK_VERSION> # Such as "10.0"
 COMPUTE_CAPABILITY=<COMPUTE_CAPABILITY> # Such as "61" for a compute cabability of '6.1'. Can be found here, depending on your GPU type: https://en.wikipedia.org/wiki/CUDA
 ```
@@ -247,12 +243,7 @@ If you want to work on ScalNet, the Scala API, or on certain modules such as the
 
 #### Testing
 
-Deeplearning4j uses a separate repository that contains all resources necessary for testing. This is to keep the central DL4J repository lightweight and avoid large blobs in the GIT history. To run the tests you need to install the test-resources from https://github.com/deeplearning4j/dl4j-test-resources (~3.5gb). If you don't care about history, do a shallow clone only with
-```bash
-git clone --depth 1 --branch master https://github.com/deeplearning4j/dl4j-test-resources
-cd dl4j-test-resources
-mvn install
-```
+Deeplearning4j uses a separate test repository, [dl4j-test-resources](https://github.com/deeplearning4j/dl4j-test-resources), that contains all resources necessary for testing. This is to keep the central DL4J repository lightweight and avoid large blobs in the GIT history. These test resources will automatically be downloaded (~3.5GB in size as of now) when you run the test profiles. 
 
 Tests will run __only__ when `testresources` and a backend profile (such as `test-nd4j-native`) are selected
 
@@ -261,7 +252,7 @@ Tests will run __only__ when `testresources` and a backend profile (such as `tes
 Let's first set some variables for ease:
 
 ```bash
-PLATFORM=<YOUR_PLATFORM> # Can be either one of [linux-x86_64, macosx-x86_64, windows-x86_64]
+PLATFORM=<YOUR_PLATFORM> # Can be either one of (linux-x86_64, macosx-x86_64, windows-x86_64)
 ```
 
 The test command is: 
@@ -274,7 +265,7 @@ mvn clean test -pl '!deeplearning4j/deeplearning4j-cuda,!nd4j/nd4j-backends/nd4j
 Let's first set some variables for ease:
 
 ```bash
-PLATFORM=<YOUR_PLATFORM> # Can be either one of [linux-x86_64, macosx-x86_64, windows-x86_64]
+PLATFORM=<YOUR_PLATFORM> # Can be either one of (linux-x86_64, macosx-x86_64, windows-x86_64)
 CUDA_VERSION=<YOUR_CUDA_SDK_VERSION> # Such as "10.0"
 COMPUTE_CAPABILITY=<COMPUTE_CAPABILITY> # Such as "61" for a compute cabability of '6.1'. Can be found here, depending on your GPU type: https://en.wikipedia.org/wiki/CUDA
 ```
