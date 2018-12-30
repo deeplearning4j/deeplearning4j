@@ -10,7 +10,7 @@ weight: 10
 
 **NOTE: MOST USERS SHOULD USE THE RELEASES ON MAVEN CENTRAL AS PER THE QUICK START GUIDE, AND NOT BUILD FROM SOURCE**
 
-*Unless you have a very good reason to build from source (such as developing new features - excluding custom layers, custom activation functions, custom loss functions, etc - all of which can be added without modifying DL4J directly) then you shouldn't build from source. Building from source can be quite complex, with no benefit in a lot of cases.*
+*Unless you have a very good reason to build from source (such as developing new features - excluding custom layers, custom activation functions, custom loss functions, etc - all of which can be added without modifying DL4J directly) then you shouldn't build from source. Building from source can be quite complex, with no benefit in a lot of cases. Alternatively, you can use the daily [SNAPSHOT](https://deeplearning4j.org/docs/latest/deeplearning4j-config-snapshots) builds.*
 
 For those developers and engineers who prefer to use the most up-to-date version of Deeplearning4j or fork and build their own version, these instructions will walk you through building and installing Deeplearning4j. The preferred installation destination is to your machine's local maven repository.
 
