@@ -230,7 +230,7 @@ namespace randomOps {
         static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
-        __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+        __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {         
 
             __shared__ T epsilon;
             __shared__ T two_pi;
@@ -274,9 +274,9 @@ namespace randomOps {
             __syncthreads();
 
             // using this loop instead of memcpy
-            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
+            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
-            }
+
             __syncthreads();
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -284,25 +284,23 @@ namespace randomOps {
             int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
 
             for (int e = tid; e < middle; e += step) {
-                auto epm = e + middle;
-
+                auto epm = e + middle;                
                 // we need to get random values
                 T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
                 T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
                 T realMean0 = y == z ? mean : y[e * yEWS];
 
-                z[e * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
+                z[e * zEWS] = (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
 
                 if (epm < zLength) {
                     T realMean1 = y == z ? mean : y[epm * yEWS];
-                    z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
+                    z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;                    
                 }
             }
 
-            __syncthreads();
-
-            if (threadIdx.x == 0 && blockIdx.x == 0)
+            __syncthreads();        
+            if (threadIdx.x == 0 && blockIdx.x == 0)                
                 devRng->rewindH(zLength);
         }
 #endif

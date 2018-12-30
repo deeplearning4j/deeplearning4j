@@ -48,9 +48,9 @@ __global__ void printCudaGlobal(void* pointer, const int len) {
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
-__device__ void printCudaDevice(void* pointer, const int len) {
+__device__ void printCudaDevice(void* pointer, const int len, const int tid = 0) {
 
-    if(blockIdx.x * blockDim.x + threadIdx.x != 0) return;
+    if(blockIdx.x * blockDim.x + threadIdx.x != tid) return;
     for(int i = 0; i < len; ++i)
         printf("%f, ", (double)reinterpret_cast<T*>(pointer)[i] );
     printf("\n");

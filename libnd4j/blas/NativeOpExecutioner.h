@@ -427,35 +427,6 @@ static void execTransformBool(nd4j::graph::LaunchContext *lc,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo);    
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     static void execReduce3TAD(nd4j::graph::LaunchContext *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
