@@ -283,7 +283,7 @@ Running the tests will take a while. To run tests of just a single maven module 
 
 ## Using Local Dependencies
 
-Once you've installed the DL4J stack to your local maven repository, you can now include it in your build tool's dependencies. Follow the typical [Getting Started](http://deeplearning4j.org/gettingstarted) instructions for Deeplearning4j, and appropriately replace versions with the SNAPSHOT version currently on the [master POM](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/pom.xml).
+Once you've installed the DL4J stack to your local maven repository, you can now include it in your build tool's dependencies. Follow these pages ([maven](https://deeplearning4j.org/docs/latest/deeplearning4j-config-maven), [SBT, Gradle, & Others](https://deeplearning4j.org/docs/latest/deeplearning4j-config-buildtools)) for your build tool instructions for Deeplearning4j, and appropriately replace versions with the SNAPSHOT version currently on the [master POM](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/pom.xml).
 
 ## Support and Assistance
 
