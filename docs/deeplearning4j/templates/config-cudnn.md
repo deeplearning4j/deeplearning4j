@@ -54,10 +54,37 @@ Note there are multiple combinations of cuDNN and CUDA supported. At this time t
 </table>
 
  
- To install, simply extract the library to a directory found in the system path used by native libraries. The easiest way is to place it alongside other libraries from CUDA in the default directory (`/usr/local/cuda/lib64/` on Linux, `/usr/local/cuda/lib/` on Mac OS X, and `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\`, `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.0\bin\`, or `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\bin\` on Windows).
+ To install, simply extract the library to a directory found in the system path used by native libraries. The easiest way is to place it alongside other libraries from CUDA in the default directory (`/usr/local/cuda/lib64/` on Linux, `/usr/local/cuda/lib/` on Mac OS X, and `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.0\bin\`, `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\bin\`, or `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.0\bin\` on Windows).
 
-Alternatively, in the case of CUDA 9.2 or 10.0, cuDNN comes bundled with the "redist" package of the [JavaCPP Presets for CUDA](https://github.com/bytedeco/javacpp-presets/tree/master/cuda). [After agreeing to the license](https://github.com/bytedeco/javacpp-presets/tree/master/cuda#license-agreements), we can add the following dependencies instead of installing CUDA and cuDNN:
-
+Alternatively, in the case of CUDA 9.0, 9.2 or 10.0, cuDNN comes bundled with the "redist" package of the [JavaCPP Presets for CUDA](https://github.com/bytedeco/javacpp-presets/tree/master/cuda). [After agreeing to the license](https://github.com/bytedeco/javacpp-presets/tree/master/cuda#license-agreements), we can add the following dependencies instead of installing CUDA and cuDNN:
+	
+	<dependency>
+	     <groupId>org.bytedeco.javacpp-presets</groupId>
+	     <artifactId>cuda</artifactId>
+	     <version>9.0-7.0-1.4.1</version>
+	     <classifier>linux-x86_64-redist</classifier>
+	 </dependency>
+	 <dependency>
+	     <groupId>org.bytedeco.javacpp-presets</groupId>
+	     <artifactId>cuda</artifactId>
+	     <version>9.0-7.0-1.4.1</version>
+	     <classifier>linux-ppc64le-redist</classifier>
+	 </dependency>
+	 <dependency>
+	     <groupId>org.bytedeco.javacpp-presets</groupId>
+	     <artifactId>cuda</artifactId>
+	     <version>9.0-7.0-1.4.1</version>
+	     <classifier>macosx-x86_64-redist</classifier>
+	 </dependency>
+	 <dependency>
+	     <groupId>org.bytedeco.javacpp-presets</groupId>
+	     <artifactId>cuda</artifactId>
+	     <version>9.0-7.0-1.4.1</version>
+	     <classifier>windows-x86_64-redist</classifier>
+	 </dependency>
+	 
+or
+	 
 	 <dependency>
 	     <groupId>org.bytedeco.javacpp-presets</groupId>
 	     <artifactId>cuda</artifactId>
