@@ -245,7 +245,7 @@ If you want to work on ScalNet, the Scala API, or on certain modules such as the
 
 Deeplearning4j uses a separate test repository, [dl4j-test-resources](https://github.com/deeplearning4j/dl4j-test-resources), that contains all resources necessary for testing. This is to keep the central DL4J repository lightweight and avoid large blobs in the GIT history. These test resources will automatically be downloaded (~3.5GB in size as of now) when you run the test profiles. 
 
-Tests will run __only__ when `testresources` and a backend profile (such as `test-nd4j-native`) are selected
+Tests will run __only__ when `testresources` and a backend profile (such as `test-nd4j-native` or `test-nd4j-cuda-<cuda_version>`) are selected (where `<cuda_version>` is the CUDA version you're building and testing the sources for).
 
 ##### For CPU
 
@@ -276,7 +276,7 @@ COMPUTE_CAPABILITY=<COMPUTE_CAPABILITY> # Such as "61" for a compute cabability 
 
 The test command is:     
 ```bash
-mvn clean test -Dlibnd4j.cuda=${CUDA_VERSION} -Dlibnd4j.compute=${COMPUTE_CAPABILITY} -Dlibnd4j.platform=${PLATFORM} -Djavacpp.platform=${PLATFORM} -P testresources,test-nd4j-native
+mvn clean test -Dlibnd4j.cuda=${CUDA_VERSION} -Dlibnd4j.compute=${COMPUTE_CAPABILITY} -Dlibnd4j.platform=${PLATFORM} -Djavacpp.platform=${PLATFORM} -P testresources,test-nd4j-cuda-${CUDA_VERSION}
 ```
 
 Running the tests will take a while. To run tests of just a single maven module you can add a module constraint with `-pl deeplearning4j-core` (for details see [here](https://stackoverflow.com/questions/11869762/maven-run-only-single-test-in-multi-module-project))
