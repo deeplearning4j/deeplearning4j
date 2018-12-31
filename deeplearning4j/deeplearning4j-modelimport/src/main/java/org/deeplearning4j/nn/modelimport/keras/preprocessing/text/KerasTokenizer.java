@@ -120,7 +120,7 @@ public class KerasTokenizer {
         String split = (String) tokenizerConfig.get("split");
         Boolean charLevel = (Boolean) tokenizerConfig.get("char_level");
         String oovToken = (String) tokenizerConfig.get("oov_token");
-        int documentCount = (int) tokenizerConfig.get("document_count");
+        Integer documentCount = (Integer) tokenizerConfig.get("document_count");
 
         @SuppressWarnings("unchecked")
         Map<String, Integer> wordCounts = (Map) parseJsonString((String) tokenizerConfig.get("word_counts"));
