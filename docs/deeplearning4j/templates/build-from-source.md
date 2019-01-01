@@ -243,7 +243,13 @@ If you want to work on ScalNet, the Scala API, or on certain modules such as the
 
 #### Testing
 
-Deeplearning4j uses a separate test repository, [dl4j-test-resources](https://github.com/deeplearning4j/dl4j-test-resources), that contains all resources necessary for testing. This is to keep the central DL4J repository lightweight and avoid large blobs in the GIT history. These test resources will automatically be downloaded (~3.5GB in size as of now) when you run the test profiles. 
+Deeplearning4j uses a separate test repository, [dl4j-test-resources](https://github.com/deeplearning4j/dl4j-test-resources), that contains all resources necessary for testing. This is to keep the central DL4J repository lightweight and avoid large blobs in the GIT history. To run the tests you need to install the test-resources from https://github.com/deeplearning4j/dl4j-test-resources (~3.5gb). If you don't care about history, do a shallow clone only with:
+
+```bash
+git clone --depth 1 --branch master https://github.com/deeplearning4j/dl4j-test-resources
+cd dl4j-test-resources
+mvn install 
+```
 
 Tests will run __only__ when `testresources` and a backend profile (such as `test-nd4j-native` or `test-nd4j-cuda-<cuda_version>`) are selected (where `<cuda_version>` is the CUDA version you're building and testing the sources for).
 
