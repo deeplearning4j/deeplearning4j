@@ -45,7 +45,7 @@ else()
         set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fsanitize=address")
     endif()
 
-    if (${__F16C__})
+    if (${F16C})
         set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -mf16c -D__F16C__=true")
     endif()
 endif()
