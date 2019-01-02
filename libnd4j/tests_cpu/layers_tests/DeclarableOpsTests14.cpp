@@ -64,7 +64,7 @@ TEST_F(DeclarableOpsTests14, Test_Reshape_CF_1) {
 
     auto r = x.reshape('c', {3, 2});
     r->printIndexedBuffer("r pre-s");
-    r->streamline('f');
+    r->streamline('f');    
 
     nd4j::ops::reshape op;
     auto result = op.execute({&x}, {}, {3, 2}, {});
@@ -78,6 +78,9 @@ TEST_F(DeclarableOpsTests14, Test_Reshape_CF_1) {
     r->printShapeInfo("r shape");
     r->printBuffer("r buffr");
     r->printIndexedBuffer("r indxd");
+
+    delete r;
+    delete result;
 }
 
 TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_1) {

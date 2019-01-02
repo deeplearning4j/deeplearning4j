@@ -98,7 +98,7 @@ import java.util.*;
  * MultiLayerNetwork is a neural network with multiple layers in a stack, and usually an output layer.<br>
  * For neural networks with a more complex connection architecture, use {@link org.deeplearning4j.nn.graph.ComputationGraph}
  * which allows for an arbitrary directed acyclic graph connection structure between layers.
- * MultiLayerNetwork is trainable via backprop, with optional pretraining, depending on the type of layers it contains.
+ * MultiLayerNetwork is trainable via backprop, with optional unsupervised layerwise training, depending on the type of layers it contains.
  *
  * @author Adam Gibson
  */
@@ -238,20 +238,31 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
+    /**
+     * Set the last ETL time in milliseconds, for informational/reporting purposes. Generally used internally.
+     * @param time    ETL time
+     */
     public void setLastEtlTime(long time) {
         lastEtlTime.set(time);
     }
 
+    /**
+     * Get the last ETL time. This in informational, and is the amount of time in milliseconds that was required
+     * to obtain the last DataSet/MultiDataSet during fitting.
+     * A value consistently above 0 may indicate a data feeding bottleneck, or no asynchronous data prefetching (async
+     * prefetch is enabled by default)
+     * @return The last ETL time in milliseconds, if avaliable (or 0 if not)
+     */
     public long getLastEtlTime() {
         Long time = lastEtlTime.get();
         return time == null ? 0L : time;
     }
 
     /**
-     * Initialize the network based on the configuration
+     * Initialize the network based on the configuration (a MultiLayerConfiguration in JSON format) and parameters array
      *
      * @param conf   the configuration json
-     * @param params the parameters
+     * @param params the parameters for the network
      */
     public MultiLayerNetwork(String conf, INDArray params) {
         this(MultiLayerConfiguration.fromJson(conf));
@@ -261,7 +272,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Initialize the network based on the configuraiton
+     * Initialize the network based on the configuration and parameters array
      *
      * @param conf   the configuration
      * @param params the parameters
@@ -274,7 +285,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     protected void intializeConfigurations() {
-
         if (layerWiseConfigurations == null)
             layerWiseConfigurations = new MultiLayerConfiguration.Builder().build();
 
@@ -294,12 +304,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Perform layerwise pretraining on all pre-trainable layers in the network (VAEs, Autoencoders, etc), for the specified
+     * Perform layerwise unsupervised training on all pre-trainable layers in the network (VAEs, Autoencoders, etc), for the specified
      * number of epochs each. For example, if numEpochs=3, then layer 0 will be fit for 3 epochs, followed by layer 1
      * for 3 epochs, and so on.<br>
-     * Note that pretraining will be performed on one layer after the other, resetting the DataSetIterator between iterations.<br>
-     * For multiple epochs per layer, appropriately wrap the iterator (for example, a MultipleEpochsIterator) or train
-     * each layer manually using {@link #pretrainLayer(int, DataSetIterator)}
+     * Note that pretraining will be performed on one layer after the other. To perform unsupervised training on a single layer,
+     * use {@link #pretrainLayer(int, DataSetIterator)}
      *
      * @param iter Training data
      */
@@ -449,6 +458,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return solver.getOptimizer();
     }
 
+    /**
+     * Get one parameter array for the network.<br>
+     * In MultiLayerNetwork, parameters are keyed like "0_W" and "0_b" to mean "weights of layer index 0" and "biases
+     * of layer index 0" respectively. Numbers increment sequentially, and the suffixes ("W", "b" etc) depend on the
+     * layer type, and are defined in the relevant parameter initializers for each layer.<br>
+     * Note that the returned INDArrays are views of the underlying network parameters, so modifications of the returned
+     * arrays will impact the parameters of the network.
+     *
+     * @param param the key of the parameter
+     * @return The specified parameter array for the network
+     * @see #paramTable() paramTable() method, for a map of all parameters
+     */
     @Override
     public INDArray getParam(String param) {
         //Get params for MultiLayerNetwork sub layers.
@@ -461,11 +482,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return layers[layerIdx].getParam(newKey);
     }
 
+    /**
+     * Return a map of all parameters in the network. Parameter names are as described in {@link #getParam(String)}.
+     * As per {@link #getParam(String)} the returned arrays are views - modifications to these will impact
+     * the underlying network parameters
+     * @return A map of all parameters in the network
+     */
     @Override
     public Map<String, INDArray> paramTable() {
         return paramTable(false);
     }
 
+    /**
+     * Returns a map of all parameters in the network as per {@link #paramTable()}.<br>
+     * Optionally (with backpropParamsOnly=true) only the 'backprop' parameters are returned - that is, any parameters
+     * involved only in unsupervised layerwise pretraining not standard inference/backprop are excluded from the returned list.
+     * @param backpropParamsOnly If true, return backprop params only. If false: return all params
+     * @return Parameters for the network
+     */
     public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
         //Get all parameters from all layers
         Map<String, INDArray> allParams = new LinkedHashMap<>();
@@ -479,6 +513,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return allParams;
     }
 
+    /**
+     * Intended for internal use
+     */
     @Override
     public boolean updaterDivideByMinibatch(String paramName) {
         int idx = paramName.indexOf('_');
@@ -487,6 +524,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return getLayer(layerIdx).updaterDivideByMinibatch(subName);
     }
 
+    /**
+     * Set the parameters of the netowrk. Note that the parameter keys must match the format as described in {@link #getParam(String)}
+     * and {@link #paramTable()}. Note that the values of the parameters used as an argument to this method are copied -
+     * i.e., it is safe to later modify/reuse the values in the provided paramTable without this impacting the network.
+     *
+     * @param paramTable    Parameters to set
+     */
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
         Map<String, INDArray> currParamTable = paramTable();
@@ -513,6 +557,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
+    /**
+     * Set the values of a single parameter. See {@link #setParamTable(Map)} and {@link #getParam(String)} for more
+     * details.
+     * @param key the key of the parameter to set
+     * @param val the new values for the parameter
+     */
     @Override
     public void setParam(String key, INDArray val) {
         //Set params for MultiLayerNetwork sub layers.
@@ -525,19 +575,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         layers[layerIdx].setParam(newKey, val);
     }
 
-
+    /**
+     * Get the configuration for the network
+     * @return Network configuration
+     */
     public MultiLayerConfiguration getLayerWiseConfigurations() {
         return layerWiseConfigurations;
     }
 
+    /**
+     * This method is intended for internal/developer use only.
+     */
     public void setLayerWiseConfigurations(MultiLayerConfiguration layerWiseConfigurations) {
         this.layerWiseConfigurations = layerWiseConfigurations;
     }
 
     /**
      * Initialize the MultiLayerNetwork. This should be called once before the network is used.
-     * This is functionally equivalent to calling
-     * {@code init(null, false)}.
+     * This is functionally equivalent to calling {@code init(null, false)}.
      * @see MultiLayerNetwork#init(INDArray, boolean)
      */
     public void init() {
@@ -574,11 +629,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 layerWiseConfigurations.getTrainingWorkspaceMode(),
                 layerWiseConfigurations.getInferenceWorkspaceMode(),
                 layerWiseConfigurations.getCacheMode());
-
-        //TODO
-//        if (layerWiseConfigurations.getCacheMode() == CacheMode.HOST) {
-//            workspaceConfigurationCache.setPolicyMirroring(MirroringPolicy.HOST_ONLY);
-//        }
 
         int nLayers = getnLayers();
 
@@ -680,12 +730,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * This method allows you to specificy GradientsAccumulator instance to be used with this model
-     *
-     * PLEASE NOTE: Do not use this method unless you understand how to use GradientsAccumulator & updates sharing.
+     * This method allows you to specificy GradientsAccumulator instance to be used with this model<br>
+     * <br>
+     * PLEASE NOTE: Do not use this method unless you understand how to use GradientsAccumulator & updates sharing.<br>
      * PLEASE NOTE: Do not use this method on standalone model
      *
-     * @param accumulator
+     * @param accumulator    Gradient accumulator to use for the network
      */
     public void setGradientsAccumulator(GradientsAccumulator accumulator) {
         if (!isInitCalled())
@@ -734,15 +784,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
-    /**
-     * @deprecated Use {@link #output(INDArray)}
-     */
-    @Deprecated
-    public INDArray activate(INDArray input) {
-        return output(input);
-    }
-
-    public INDArray activationFromPrevLayer(int curr, INDArray input, boolean training, LayerWorkspaceMgr mgr) {
+    protected INDArray activationFromPrevLayer(int curr, INDArray input, boolean training, LayerWorkspaceMgr mgr) {
         if (getLayerWiseConfigurations().getInputPreProcess(curr) != null) {
             input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input, getInputMiniBatchSize(), mgr);
         }
@@ -783,9 +825,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Compute activations from input to output of the output layer
+     * Compute all layer activations, from input to output of the output layer.
+     * Note that the input is included in the list: thus feedForward(in,train).get(0) is the inputs,
+     * .get(1) is the activations of layer 0, and so on.
      *
-     * @return the list of activations for each layer
+     * @param train Training: if true, perform forward pass/inference at training time. Usually, inference is performed
+     *              with train = false. This impacts whether dropout etc is applied or not.
+     * @return The list of activations for each layer, including the input
      */
     public List<INDArray> feedForward(INDArray input, boolean train) {
         setInput(input);
@@ -793,7 +839,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Compute activations from input to output of the output layer
+     * Compute activations from input to output of the output layer.
+     * As per {@link #feedForward(INDArray, boolean)} but using the inputs that have previously been set using {@link #setInput(INDArray)}
      *
      * @return the list of activations for each layer
      */
@@ -1115,7 +1162,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         Additionally, we'll reconfigure the workspace manager for the *final* layer, so that we don't have to detach
          */
         if(outputWorkspace == null || outputWorkspace instanceof DummyWorkspace) {
-            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in outputOfLayerDetached");
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in outputOfLayerDetached", true);
         } else {
             Preconditions.checkState(outputWorkspace.isScopeActive(), "Workspace \"" + outputWorkspace.getId() +
                     "\" was provided for the network/layer outputs. When provided, this workspace must be opened before " +
@@ -1250,7 +1297,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
 
             if(outputWorkspace == null || outputWorkspace instanceof DummyWorkspace) {
-                WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
+                WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached", true);
             } else {
                 Preconditions.checkState(outputWorkspace.isScopeActive(), "Expected output workspace to still be open" +
                         "at end of outputOfLayerDetached, but it is closed. This suggests an implementation or layer workspace problem");
@@ -1269,18 +1316,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Compute activations from input to output of the output layer
+     * Compute activations of all layers from input (inclusive) to output of the final/output layer.
+     * Equivalent to calling {@link #feedForward(boolean)} with train=false
      *
-     * @return the list of activations for each layer
+     * @return the list of activations for each layer, including the input
      */
     public List<INDArray> feedForward() {
         return feedForward(false);
     }
 
     /**
-     * Compute activations from input to output of the output layer
+     * Compute activations of all layers from input (inclusive) to output of the final/output layer.
+     * Equivalent to calling {@link #feedForward(INDArray, boolean)} with train = false
      *
-     * @return the list of activations for each layer
+     * @return the list of activations for each layer, including the input
      */
     public List<INDArray> feedForward(INDArray input) {
         if (input == null)
@@ -1289,9 +1338,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return feedForward();
     }
 
-    /** Compute the activations from the input to the output layer, given mask arrays (that may be null)
+    /**
+     * Compute the activations from the input to the output layer, given mask arrays (that may be null)
      * The masking arrays are used in situations such an one-to-many and many-to-one rucerrent neural network (RNN)
      * designs, as well as for supporting time series of varying lengths within the same minibatch for RNNs.
+     * Other than mask arrays, this is equivalent to calling {@link #feedForward(INDArray, boolean)} with train = false
      */
     public List<INDArray> feedForward(INDArray input, INDArray featuresMask, INDArray labelsMask) {
         setLayerMaskArrays(featuresMask, labelsMask);
@@ -1313,8 +1364,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Clones the multilayernetwork
-     * @return
+     * Clone the MultiLayerNetwork
+     * @return A cloned MultiLayerNetwork with a copy of the configuration, parameters and updater identical to the current network.
      */
     @Override
     public MultiLayerNetwork clone() {
@@ -1356,10 +1407,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Returns a 1 x m vector where the vector is composed of
-     * a flattened vector of all of the weights for the
-     * various neuralNets(w,hbias NOT VBIAS) and output layer
+     * Returns a 1 x m vector where the vector is composed of a flattened vector of all of the parameters (weights and
+     * biases etc) for all parameters in the network. Note that this method is generally reserved for developer and
+     * internal use - see {@link #getParam(String)} and {@link #paramTable()} for a more useful/interpretable
+     * representation of the parameters.<br>
+     * Note that with backwardsOnly = false the parameter vector is not a copy, and changes to the returned INDArray
+     * will impact the network parameters.
      *
+     * @param backwardOnly Return a copy of the parameters excluding any parameters used only for unsupervised layers'
+     *                     unsupervised training (such as decoder parameters in an autoencoder layer
      * @return the params for this neural net
      */
     public INDArray params(boolean backwardOnly) {
@@ -1378,11 +1434,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Returns a 1 x m vector where the vector is composed of
-     * a flattened vector of all of the weights for the
-     * various neuralNets(w,hbias NOT VBIAS) and output layer
+     * Returns a 1 x m vector where the vector is composed of a flattened vector of all of the parameters in the network.<br>
+     * See {@link #getParam(String)} and {@link #paramTable()} for a more useful/interpretable representation of the parameters.<br>
+     * Note that the parameter vector is not a copy, and changes to the returned INDArray will impact the network parameters.
      *
-     * @return the params for this neural net
+     * @return the parameters for this neural net
      */
     @Override
     public INDArray params() {
@@ -1391,9 +1447,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     /**
      * Set the parameters for this model.
-     * This expects a linear ndarray
-     * which then be unpacked internally
-     * relative to the expected ordering of the model
+     * This expects a linear ndarray which then be unpacked internally relative to the expected ordering of the model.<br>
+     * See also: {@link #setParamTable(Map)} and {@link #setParam(String, INDArray)}
      *
      * @param params the parameters for the model
      */
@@ -1451,21 +1506,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Returns a 1 x m vector where the vector is composed of
-     * a flattened vector of all of the weights for the
-     * various neuralNets and output layer
+     * Returns the number of parameters in the network
      *
-     * @return the params for this neural net
+     * @return The number of parameters
      */
     @Override
     public long numParams() {
-        if (isInitCalled())
-            return numParams(false);
-        else
-            log.info("Model is not initialized. Initialize net with init()");
-        return 0;
+        if(!isInitCalled())
+            init();
+        return flattenedParams == null ? 0 : flattenedParams.length();  //Maybe nul for 0 params net
     }
 
+    /**
+     * Returns the number of parameters in the network
+     *
+     * @param  backwards If true: exclude any parameters uned only in unsupervised layerwise training (such as the decoder
+     *                   parameters in an autoencoder)
+     * @return The number of parameters
+     */
     @Override
     public long numParams(boolean backwards) {
         int length = 0;
@@ -1476,8 +1534,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Sets the input and labels and returns a score for the prediction
-     * wrt true labels
+     * Sets the input and labels and returns the F1 score for the prediction with respect to the true labels
      *
      * @param data the data to score
      * @return the score for the given input,label pairs
@@ -1505,7 +1562,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Perform minibatch training on all minibatches in the DataSetIterator.<br>
+     * Perform minibatch training on all minibatches in the DataSetIterator for 1 epoch.<br>
      * Note that this method does not do layerwise  pretraining.<br>
      * For pretraining use method pretrain.. {@link #pretrain(DataSetIterator)}<br>
      * @param iterator Training data (DataSetIterator)
@@ -1618,7 +1675,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Calculate parameter gradients and input activation gradients given the input and labels
+     * Calculate parameter gradients and input activation gradients given the input and labels, and optionally mask arrays
      *
      * @param features  Features for gradient calculation
      * @param label     Labels for gradient
@@ -1764,7 +1821,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         mgrOdd.setHelperWorkspacePointers(helperWorkspaces);
 
         //calculate and apply the backward gradient for every layer
-        /**
+        /*
          * Skip the output layer for the indexing and just loop backwards updating the coefficients for each layer.
          * (when withOutputLayer == true)
          *
@@ -1967,6 +2024,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return out;
     }
 
+    /**
+     * Intended for internal/developer use
+     */
     public void updateRnnStateWithTBPTTState() {
         for (int i = 0; i < layers.length; i++) {
             if (layers[i] instanceof RecurrentLayer) {
@@ -1979,17 +2039,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     *
-     * @return listeners
+     * Get the {@link TrainingListener}s set for this network, if any
+     * @return listeners set for this network
      */
     public Collection<TrainingListener> getListeners() {
         return trainingListeners;
     }
 
     /**
-     *
-     * @return trainingListeners
+     * @deprecated Use {@link #getListeners()}
      */
+    @Deprecated
     public Collection<TrainingListener> getTrainingListeners() {
         return trainingListeners;
     }
@@ -2043,10 +2103,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Returns the predictions for each example in the dataset
+     * Usable only for classification networks in conjunction with OutputLayer. Cannot be used with RnnOutputLayer,
+     * CnnLossLayer, or networks used for regression.<br>
+     * To get the raw output activations of the output layer, use {@link #output(INDArray)} or similar.<br>
+     * <br>
+     * Equivalent to argmax(this.output(input)): Returns the predicted class indices corresponding to the predictions
+     * for each example in the features array.
      *
-     * @param d the matrix to predict
-     * @return the prediction for the dataset
+     * @param d The input features to perform inference on
+     * @return The predicted class index for each example
      */
     @Override
     public int[] predict(INDArray d) {
@@ -2064,13 +2129,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Return predicted label names
-     *
-     * @param dataSet to predict
-     * @return the predicted labels for the dataSet
+     * As per {@link #predict(INDArray)} but the returned values are looked up from the list of label names
+     * in the provided DataSet
      */
     @Override
     public List<String> predict(org.nd4j.linalg.dataset.api.DataSet dataSet) {
+        Preconditions.checkState(dataSet.getLabelNamesList() != null, "This method can only be used when the DataSet contains a label name list");
         int[] intRet = predict(dataSet.getFeatures());
         List<String> ret = new ArrayList<>();
         for (int i = 0; i < intRet.length; i++) {
@@ -2079,24 +2143,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return ret;
     }
 
-
-
     /**
-     * Returns the probabilities for each label
-     * for each example row wise
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @return the likelihoods of each example and each label
-     */
-    @Override
-    public INDArray labelProbabilities(INDArray examples) {
-        List<INDArray> feed = feedForward(examples);
-        IOutputLayer o = (IOutputLayer) getOutputLayer();
-        return o.labelProbabilities(feed.get(feed.size() - 1));
-    }
-
-    /**
-     * Fit the model
+     * Fit the model for one iteration on the provided data
      *
      * @param data   the examples to classify (one example in each row)
      * @param labels the example labels(a binary outcome matrix)
@@ -2107,7 +2155,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Fit the model
+     * Fit the model for one iteration on the provided data
      *
      * @param features   the examples to classify (one example in each row)
      * @param labels the example labels(a binary outcome matrix)
@@ -2173,7 +2221,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Fit the model
+     * Fit the model for one iteration on the provided data
      *
      * @param data the data to train on
      */
@@ -2183,7 +2231,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Fit the model
+     * Fit the model for one iteration on the provided data
      *
      * @param examples the examples to classify (one example in each row)
      * @param labels   the labels for each example (the number of labels must match
@@ -2199,44 +2247,33 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Label the probabilities of the input
+     * Perform inference on the provided input/features - i.e., perform forward pass using the provided input/features
+     * and return the output of the final layer.
      *
-     * @param input    the input to label
-     * @param train whether the output
-     *             is test or train. This mainly
-     *             affect hyper parameters such as
-     *             drop out where certain things should
-     *             be applied with activations
-     * @return a vector of probabilities
-     * given each label.
-     * <p>
-     * This is typically of the form:
-     * [0.5, 0.5] or some other probability distribution summing to one
+     * @param input Input to the network
+     * @param train whether the output is test or train. This mainly affect hyper parameters such as dropout and
+     *              batch normalization, which have different behaviour for test vs. train
+     * @return The network predictions - i.e., the activations of the final layer
      */
     public INDArray output(INDArray input, TrainingMode train) {
         return output(input, train == TrainingMode.TRAIN);
     }
 
     /**
-     * Label the probabilities of the input
+     * Perform inference on the provided input/features - i.e., perform forward pass using the provided input/features
+     * and return the output of the final layer.
      *
-     * @param input    the input to label
-     * @param train whether the output
-     *             is test or train. This mainly
-     *             affect hyper parameters such as
-     *             drop out where certain things should
-     *             be applied with activations
-     * @return a vector of probabilities
-     * given each label.
-     * <p>
-     * This is typically of the form:
-     * [0.5, 0.5] or some other probability distribution summing to one
+     * @param input Input to the network
+     * @param train whether the output is test or train. This mainly affect hyper parameters such as dropout and
+     *              batch normalization, which have different behaviour for test vs. train
+     * @return The network predictions - i.e., the activations of the final layer
      */
     public INDArray output(INDArray input, boolean train) {
         return output(input, train, null, null);
     }
 
-    /** Calculate the output of the network, with masking arrays. The masking arrays are used in situations such
+    /**
+     * Calculate the output of the network, with masking arrays. The masking arrays are used in situations such
      * as one-to-many and many-to-one recurrent neural network (RNN) designs, as well as for supporting time series
      * of varying lengths within the same minibatch.
      */
@@ -2304,24 +2341,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Label the probabilities of the input
+     * Perform inference on the provided input/features - i.e., perform forward pass using the provided input/features
+     * and return the output of the final layer. Equivalent to {@link #output(INDArray, boolean)} with train=false - i.e.,
+     * this method is used for inference.
      *
-     * @param input the input to label
-     * @return a vector of probabilities
-     * given each label.
-     * <p>
-     * This is typically of the form:
-     * [0.5, 0.5] or some other probability distribution summing to one
+     * @param input Input to the network
+     * @return The network predictions - i.e., the activations of the final layer
      */
     public INDArray output(INDArray input) {
         return output(input, TrainingMode.TEST);
     }
 
     /**
-     * Generate the output for all examples/batches in the input iterator, and concatenate them into a single array
+     * Generate the output for all examples/batches in the input iterator, and concatenate them into a single array.
+     * See {@link #output(INDArray)}<br>
+     * NOTE: The output array can require a considerable amount of memory for iterators with a large number of examples
      *
      * @param iterator Data to pass through the network
-     * @return output for all examples in the iterator
+     * @return output for all examples in the iterator, concatenated into a
      */
     public INDArray output(DataSetIterator iterator, boolean train) {
         List<INDArray> outList = new ArrayList<>();
@@ -2340,55 +2377,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Generate the output for all examples/batches in the input iterator, and concatenate them into a single array
-     *
-     * @param iterator Data to pass through the network
-     * @return output for all examples in the iterator
+     * Equivalent to {@link #output(DataSetIterator, boolean)} with train=false
      */
     public INDArray output(DataSetIterator iterator) {
         return output(iterator, false);
     }
 
-
     /**
-     * Reconstructs the input.
-     * This is equivalent functionality to a
-     * deep autoencoder.
+     * Perform inference and then calculate the F1 score of the output(input) vs. the labels.
      *
-     * @param x        the input to transform
-     * @param layerNum the layer to output for encoding
-     * @return a reconstructed matrix
-     * relative to the size of the last hidden layer.
-     * This is great for data compression and visualizing
-     * high dimensional data (or just doing dimensionality reduction).
-     * <p>
-     * This is typically of the form:
-     * [0.5, 0.5] or some other probability distribution summing to one
-     */
-    public INDArray reconstruct(INDArray x, int layerNum) {
-        List<INDArray> forward = feedForward(x);
-        return forward.get(layerNum - 1);
-    }
-
-
-    /**
-     * Prints the configuration
-     */
-    public void printConfiguration() {
-        StringBuilder sb = new StringBuilder();
-        int count = 0;
-        for (NeuralNetConfiguration conf : getLayerWiseConfigurations().getConfs()) {
-            sb.append(" Layer " + count++ + " conf " + conf);
-        }
-
-        log.info(sb.toString());
-    }
-
-    /**
-     * Sets the input and labels and returns a score for the prediction
-     * wrt true labels
-     *
-     * @param input  the input to score
+     * @param input  the input to perform inference with
      * @param labels the true labels
      * @return the score for the given input,label pairs
      */
@@ -2397,21 +2395,22 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         feedForward(input);
         setLabels(labels);
         Evaluation eval = new Evaluation();
-        eval.eval(labels, labelProbabilities(input));
+        eval.eval(labels, output(input));
         return eval.f1();
     }
 
     /**
-     * Returns the number of possible labels
-     *
-     * @return the number of possible labels for this classifier
+     * @deprecated Will be removed in a future release
      */
+    @Deprecated
     @Override
     public int numLabels() {
-        return labels.columns();
+        return (int)labels.size(1);
     }
 
-    /**Sets the input and labels and returns a score for the prediction with respect to the true labels<br>
+    /**
+     * Sets the input and labels and calculates the score (value of the output layer loss function plus l1/l2 if applicable)
+     * for the prediction with respect to the true labels<br>
      * This is equivalent to {@link #score(DataSet, boolean)} with training==false.
      * @param data the data to score
      * @return the score for the given input,label pairs
@@ -2421,7 +2420,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return score(data, false);
     }
 
-    /**Calculate the score (loss function) of the prediction with respect to the true labels<br>
+    /**
+     * Sets the input and labels and calculates the score (value of the output layer loss function plus l1/l2 if applicable)
+     * for the prediction with respect to the true labels<br>
      * @param data data to calculate score for
      * @param training If true: score during training. If false: score at test time. This can affect the application of
      *                 certain features, such as dropout and dropconnect (which are applied at training time only)
@@ -2484,6 +2485,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return score;
     }
 
+    /**
+     * As per {@link #scoreExamples(DataSet, boolean)} - the outputs (example scores) for all DataSets in the iterator are concatenated
+     */
     public INDArray scoreExamples(DataSetIterator iter, boolean addRegularizationTerms) {
         List<INDArray> out = new ArrayList<>();
 
@@ -2556,7 +2560,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Score of the model (relative to the objective function)
+     * Score of the model (relative to the objective function) - previously calculated on the last minibatch
      *
      * @return the score of the model (relative to the objective function)
      */
@@ -2565,7 +2569,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return score;
     }
 
-
+    /**
+     * Intended for developer/internal use
+     */
     public void setScore(double score) {
         this.score = score;
     }
@@ -2672,11 +2678,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Note that if input isn't null
-     * and the neuralNets are null, this is a way
-     * of initializing the neural network
+     * Set the input array for the network
      *
-     * @param input
+     * @param input Input array to set
      */
     public void setInput(INDArray input) {
         this.input = input;
@@ -2699,7 +2703,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Get the output layer
+     * Get the output layer - i.e., the last layer in the netwok
      *
      * @return
      */
@@ -2713,16 +2717,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Sets parameters for the model.
-     * This is used to manipulate the weights and biases across
-     * all neuralNets (including the output layer)
-     *
-     * @param params a parameter vector equal 1,numParameters
+     * See {@link #setParams(INDArray)}
      */
     public void setParameters(INDArray params) {
         setParams(params);
     }
 
+    /**
+     * Intended for internal/developer use
+     */
     public NeuralNetConfiguration getDefaultConfiguration() {
         return defaultConfiguration;
     }
@@ -2737,8 +2740,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     *
-     * @param labels
+     * @param labels Labels to set
      */
     public void setLabels(INDArray labels) {
         this.labels = labels;
@@ -2754,8 +2756,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     *
-     * @return
+     * @return The layers in the network
      */
     public synchronized Layer[] getLayers() {
         return layers;
@@ -2861,10 +2862,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
 
+    /**
+     * Equivalent to {@link #output(INDArray)} using the input set via {@link #setInput(INDArray)}
+     */
     public INDArray activate(TrainingMode training) {
         return output(input, training == TrainingMode.TRAIN);
     }
 
+    /**
+     * Equivalent to {@link #output(INDArray, TrainingMode)}
+     */
     public INDArray activate(INDArray input, TrainingMode training) {
         return output(input, training == TrainingMode.TRAIN);
     }

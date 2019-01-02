@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,7 +38,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Map;
 import java.util.Random;
@@ -295,7 +295,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                                         .graphBuilder()
                                                         .addInputs("in").addLayer("0",
                                                                         new GravesLSTM.Builder().nIn(nIn).nOut(5)
-                                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                                         .dist(new NormalDistribution(0,
                                                                                                         1))
                                                                                         .updater(new NoOp()).build(),
@@ -363,7 +363,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                                         .graphBuilder()
                                                         .addInputs("in").addLayer("0",
                                                                         new GravesLSTM.Builder().nIn(nIn).nOut(5)
-                                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                                         .dist(new NormalDistribution(0,
                                                                                                         1))
                                                                                         .updater(new NoOp()).build(),
@@ -384,7 +384,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                                         .graphBuilder()
                                                         .addInputs("in").addLayer("0",
                                                                         new GravesLSTM.Builder().nIn(nIn).nOut(5)
-                                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                                         .dist(new NormalDistribution(0,
                                                                                                         1))
                                                                                         .updater(new NoOp()).build(),

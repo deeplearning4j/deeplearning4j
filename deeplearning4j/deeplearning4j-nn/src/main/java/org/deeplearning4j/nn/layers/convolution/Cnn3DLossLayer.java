@@ -154,11 +154,6 @@ public class Cnn3DLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     }
 
     @Override
-    public INDArray labelProbabilities(INDArray examples) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
     public void fit(INDArray examples, INDArray labels) {
         throw new UnsupportedOperationException("Not supported");
     }

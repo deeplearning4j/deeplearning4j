@@ -58,6 +58,34 @@ public:
     }
 };
 
+template <typename T>
+class TypedDeclarableOpsTests1 : public testing::Test {
+public:
+
+    const int bS = 2;       // batch size
+    const int iD = 1;       // input depth (number of picture channels, for example rgb=3)
+    const int iH = 28;      // picture height in pixels
+    const int iW = 28;      // picture width in pixels
+    const int oD = 3;       // output depth (= N for dense layer)
+    const int kH = 5;       // kernel height in pixels
+    const int kW = 5;       // kernel width in pixels
+    const int sH = 1;       // stride step in horizontal direction
+    const int sW = 1;       // stride step in vertical direction
+    const int pH = 0;       // padding height
+    const int pW = 0;       // padding width
+    const int dH = 2;       // dilation height
+    const int dW = 2;       // dilation width
+    const int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;     // output height
+    const int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;     // output width
+
+    TypedDeclarableOpsTests1() {
+        printf("\n");
+    }
+};
+
+typedef ::testing::Types<double, float> TestingTypes;
+TYPED_TEST_CASE(TypedDeclarableOpsTests1, TestingTypes);
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, BasicInitialization1) {
     auto concat = new nd4j::ops::concat();
@@ -3085,18 +3113,18 @@ TEST_F(DeclarableOpsTests1, sru_bi_bp_1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Maxpool2d_bp2) {
+TYPED_TEST(TypedDeclarableOpsTests1, Maxpool2d_bp2) {
     
     int bS=2, iD=1, iH=4,iW=4, oD=3, kH=2,kW=2, sH=1,sW=1, pH=0,pW=0, dH=1,dW=1;
     int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;     
     int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;    
 
-    double epsilonBuff[]  = {6., 7., 8., 10., 11., 12., 14., 15., 16., 22., 23., 24., 26., 27., 28., 30., 31., 32.};
-    double expectedBuff[] = {0., 0., 0., 0.,0., 6., 7., 8.,0.,10.,11.,12.,0.,14.,15.,16.,0., 0., 0., 0.,0.,22.,23.,24.,0.,26.,27.,28.,0.,30.,31.,32.};
+    TypeParam epsilonBuff[]  = {6., 7., 8., 10., 11., 12., 14., 15., 16., 22., 23., 24., 26., 27., 28., 30., 31., 32.};
+    TypeParam expectedBuff[] = {0., 0., 0., 0.,0., 6., 7., 8.,0.,10.,11.,12.,0.,14.,15.,16.,0., 0., 0., 0.,0.,22.,23.,24.,0.,26.,27.,28.,0.,30.,31.,32.};
 
-    auto input    = NDArrayFactory::create<double>('c', {bS,iD,iH,iW});
-    auto epsilon  = NDArrayFactory::create<double>('c', {bS,iD,oH,oW});
-    auto expected = NDArrayFactory::create<double>('c', {bS,iD,iH,iW});
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS,iD,iH,iW});
+    auto epsilon  = NDArrayFactory::create<TypeParam>('c', {bS,iD,oH,oW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS,iD,iH,iW});
 
 
     input.linspace(1.);
@@ -3116,18 +3144,18 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_bp2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Avgpool2d_bp2) {
+TYPED_TEST(TypedDeclarableOpsTests1, Avgpool2d_bp2) {
     
     int bS=2, iD=1, iH=4,iW=4, oD=3, kH=2,kW=2, sH=1,sW=1, pH=0,pW=0, dH=1,dW=1;
     int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;     
     int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;    
 
-    double epsilonBuff[] = {3.5 , 4.5 , 5.5, 7.5 , 8.5 , 9.5, 11.5, 12.5, 13.5, 19.5, 20.5, 21.5, 23.5, 24.5, 25.5, 27.5, 28.5, 29.5};
-    double expectedBuff[] = {0.875, 2., 2.5,  1.375, 2.75 , 6., 7.,  3.75, 4.75 ,10., 11., 5.75, 2.875, 6., 6.5, 3.375, 4.875, 10.,10.5, 5.375, 10.75, 22.,23., 11.75, 12.75, 26.,27., 13.75, 6.875, 14.,14.5, 7.375};
+    TypeParam epsilonBuff[] = {3.5 , 4.5 , 5.5, 7.5 , 8.5 , 9.5, 11.5, 12.5, 13.5, 19.5, 20.5, 21.5, 23.5, 24.5, 25.5, 27.5, 28.5, 29.5};
+    TypeParam expectedBuff[] = {0.875, 2., 2.5,  1.375, 2.75 , 6., 7.,  3.75, 4.75 ,10., 11., 5.75, 2.875, 6., 6.5, 3.375, 4.875, 10.,10.5, 5.375, 10.75, 22.,23., 11.75, 12.75, 26.,27., 13.75, 6.875, 14.,14.5, 7.375};
 
-    auto input    = NDArrayFactory::create<double>('c', {bS,iD,iH,iW});
-    auto epsilon  = NDArrayFactory::create<double>('c', {bS,iD,oH,oW});
-    auto expected = NDArrayFactory::create<double>('c', {bS,iD,iH,iW});
+    auto input    = NDArrayFactory::create<TypeParam>('c', {bS,iD,iH,iW});
+    auto epsilon  = NDArrayFactory::create<TypeParam>('c', {bS,iD,oH,oW});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {bS,iD,iH,iW});
 
 
     input.linspace(1.);

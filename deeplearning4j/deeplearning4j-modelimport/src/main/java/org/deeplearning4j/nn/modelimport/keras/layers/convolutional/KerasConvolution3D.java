@@ -101,15 +101,13 @@ public class KerasConvolution3D extends KerasConvolution {
         Convolution3D.Builder builder = new Convolution3D.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
-                .weightInit(weightInit)
+                .weightInit(weightInit.getWeightInitFunction(distribution))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 3, conf, kerasMajorVersion))
                 .hasBias(hasBias)
                 .stride(getStrideFromConfig(layerConfig, 3, conf));
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 3, conf, kerasMajorVersion);
-        if (distribution != null)
-            builder.dist(distribution);
         if (hasBias)
             builder.biasInit(0.0);
         if (padding != null)

@@ -87,12 +87,11 @@ public class KerasAtrousConvolution2D extends KerasConvolution {
         Pair<WeightInit, Distribution> init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
         WeightInit weightInit = init.getFirst();
-        Distribution distribution = init.getSecond();
 
         ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
-                .weightInit(weightInit)
+                .weightInit(weightInit.getWeightInitFunction())
                 .dilation(getDilationRate(layerConfig, 2, conf, true))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
@@ -100,8 +99,7 @@ public class KerasAtrousConvolution2D extends KerasConvolution {
                 .hasBias(hasBias)
                 .stride(getStrideFromConfig(layerConfig, 2, conf));
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
-        if (distribution != null)
-            builder.dist(distribution);
+
         if (hasBias)
             builder.biasInit(0.0);
         if (padding != null)

@@ -20,11 +20,12 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.AdaDelta;
@@ -87,39 +88,35 @@ public class LayerConfigTest extends BaseDL4JTest {
     @Test
     public void testWeightBiasInitLayerwiseOverride() {
         //Without layerwise override:
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new NormalDistribution(0, 1.0)).biasInit(1).list()
+        final Distribution defaultDistribution = new NormalDistribution(0, 1.0);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .dist(defaultDistribution).biasInit(1).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(WeightInit.DISTRIBUTION, ((BaseLayer) conf.getConf(0).getLayer()).getWeightInit());
-        assertEquals(WeightInit.DISTRIBUTION, ((BaseLayer) conf.getConf(1).getLayer()).getWeightInit());
-        assertEquals("NormalDistribution(mean=0.0, std=1.0)",
-                        ((BaseLayer) conf.getConf(0).getLayer()).getDist().toString());
-        assertEquals("NormalDistribution(mean=0.0, std=1.0)",
-                        ((BaseLayer) conf.getConf(1).getLayer()).getDist().toString());
+        assertEquals(new WeightInitDistribution(defaultDistribution), ((BaseLayer) conf.getConf(0).getLayer()).getWeightInitFn());
+        assertEquals(new WeightInitDistribution(defaultDistribution), ((BaseLayer) conf.getConf(1).getLayer()).getWeightInitFn());
+
         assertEquals(1, ((BaseLayer) conf.getConf(0).getLayer()).getBiasInit(), 0.0);
         assertEquals(1, ((BaseLayer) conf.getConf(1).getLayer()).getBiasInit(), 0.0);
 
         //With:
-        conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new NormalDistribution(0, 1.0)).biasInit(1).list()
+        final Distribution overriddenDistribution = new UniformDistribution(0, 1);
+        conf = new NeuralNetConfiguration.Builder()
+                        .dist(defaultDistribution).biasInit(1).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build()).layer(1,
-                                        new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
-                                                        .dist(new UniformDistribution(0, 1)).biasInit(0).build())
+                                        new DenseLayer.Builder().nIn(2).nOut(2)
+                                                        .dist(overriddenDistribution).biasInit(0).build())
                         .build();
 
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(WeightInit.DISTRIBUTION, ((BaseLayer) conf.getConf(0).getLayer()).getWeightInit());
-        assertEquals(WeightInit.DISTRIBUTION, ((BaseLayer) conf.getConf(1).getLayer()).getWeightInit());
-        assertEquals("NormalDistribution(mean=0.0, std=1.0)",
-                        ((BaseLayer) conf.getConf(0).getLayer()).getDist().toString());
-        assertEquals("UniformDistribution(lower=0.0, upper=1.0)",
-                        ((BaseLayer) conf.getConf(1).getLayer()).getDist().toString());
+        assertEquals(new WeightInitDistribution(defaultDistribution), ((BaseLayer) conf.getConf(0).getLayer()).getWeightInitFn());
+        assertEquals(new WeightInitDistribution(overriddenDistribution), ((BaseLayer) conf.getConf(1).getLayer()).getWeightInitFn());
+
         assertEquals(1, ((BaseLayer) conf.getConf(0).getLayer()).getBiasInit(), 0.0);
         assertEquals(0, ((BaseLayer) conf.getConf(1).getLayer()).getBiasInit(), 0.0);
     }

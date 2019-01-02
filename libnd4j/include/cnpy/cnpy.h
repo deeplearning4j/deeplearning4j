@@ -153,13 +153,6 @@ namespace cnpy {
     /**
      *
      * @param fname
-     * @return
-     */
-    npz_t npzLoad(std::string fname);
-
-    /**
-     *
-     * @param fname
      * @param varname
      * @return
      */
@@ -212,6 +205,12 @@ namespace cnpy {
     ND4J_EXPORT NpyArray loadNpyFromFile(FILE *fp);
 
     /**
+     * Load the numpy array archive from the given file.
+     * @param fp the file to load
+     * @return the loaded archive
+    */
+    ND4J_EXPORT npz_t npzLoad(FILE* fp);
+    /**
      *
      * @param data
      * @return
@@ -225,6 +224,8 @@ namespace cnpy {
    */
     ND4J_EXPORT NpyArray loadNpyFromHeader(char *data);
 
+
+    ND4J_EXPORT npz_t npzLoad(std::string fname);
 
 /**
 * Parse the numpy header from

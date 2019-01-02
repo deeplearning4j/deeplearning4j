@@ -65,6 +65,7 @@ import org.nd4j.linalg.exception.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
@@ -1661,6 +1662,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().exec(new OldGreaterThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length())).z();
     }
 
+    @Override
+    public INDArray isInfinite(){
+        validateNumericalArray("isInfinite");
+        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), Conditions.isInfinite())).z();
+    }
+
+    @Override
+    public INDArray isNaN(){
+        validateNumericalArray("isNaN");
+        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), Conditions.isNan())).z();
+    }
+
     /**
      * Negate each element.
      */
@@ -2614,18 +2627,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray cond(Condition condition) {
-        return dup().condi(condition);
-    }
-
-    @Override
-    public INDArray condi(Condition condition) {
-        Nd4j.getCompressor().autoDecompress(this);
-        INDArray linear = this;
-        for (int i = 0; i < length(); i++) {
-            boolean met = condition.apply(linear.getDouble(i));
-            linear.putScalar(i, met ? 1 : 0);
-        }
-        return this;
+        INDArray ret = Nd4j.createUninitialized(DataType.BOOL, this.shape());
+        Nd4j.getExecutioner().exec(new MatchConditionTransform(this,ret, condition));
+        return ret;
     }
 
 

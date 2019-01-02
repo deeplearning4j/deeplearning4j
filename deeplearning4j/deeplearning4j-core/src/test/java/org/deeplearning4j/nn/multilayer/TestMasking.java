@@ -39,7 +39,6 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -150,7 +149,7 @@ public class TestMasking extends BaseDL4JTest {
 
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
-                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
+                                .dist(new NormalDistribution(0, 1)).seed(12345)
                                 .list()
                                 .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                                 .build())
@@ -196,7 +195,7 @@ public class TestMasking extends BaseDL4JTest {
 
                 //Do the same for CompGraph
                 ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().updater(new NoOp())
-                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
+                                .dist(new NormalDistribution(0, 1)).seed(12345)
                                 .graphBuilder().addInputs("in")
                                 .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(layerSize)
                                                 .activation(Activation.TANH).build(), "in")
@@ -238,7 +237,7 @@ public class TestMasking extends BaseDL4JTest {
         int nOut = 4;
 
         ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().updater(new NoOp())
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
+                        .dist(new NormalDistribution(0, 1)).seed(12345)
                         .graphBuilder().addInputs("in")
                         .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                         .build(), "in")

@@ -24,7 +24,9 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitDistribution;
 
 import java.util.Arrays;
 import java.util.List;
@@ -35,13 +37,11 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public abstract class BaseRecurrentLayer extends FeedForwardLayer {
 
-    protected WeightInit weightInitRecurrent;
-    protected Distribution distRecurrent;
+    protected IWeightInit weightInitFnRecurrent;
 
     protected BaseRecurrentLayer(Builder builder) {
         super(builder);
-        this.weightInitRecurrent = builder.weightInitRecurrent;
-        this.distRecurrent = builder.distRecurrent;
+        this.weightInitFnRecurrent = builder.weightInitFnRecurrent;
     }
 
     @Override
@@ -79,8 +79,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
         protected List<LayerConstraint> recurrentConstraints;
         protected List<LayerConstraint> inputWeightConstraints;
-        protected WeightInit weightInitRecurrent;
-        protected Distribution distRecurrent;
+        protected IWeightInit weightInitFnRecurrent;
 
         /**
          * Set constraints to be applied to the RNN recurrent weight parameters of this layer. Default: no constraints.<br>
@@ -112,8 +111,23 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          *
          * @param weightInit Weight initialization for the recurrent weights only.
          */
+        public T weightInitRecurrent(IWeightInit weightInit){
+            this.weightInitFnRecurrent = weightInit;
+            return (T) this;
+        }
+
+        /**
+         * Set the weight initialization for the recurrent weights. Not that if this is not set explicitly, the same
+         * weight initialization as the layer input weights is also used for the recurrent weights.
+         *
+         * @param weightInit Weight initialization for the recurrent weights only.
+         */
         public T weightInitRecurrent(WeightInit weightInit){
-            this.weightInitRecurrent = weightInit;
+            if(weightInit == WeightInit.DISTRIBUTION) {
+                throw new UnsupportedOperationException("Not supported!, Use weightInit(Distribution distribution) instead!");
+            }
+
+            this.weightInitFnRecurrent = weightInit.getWeightInitFunction();
             return (T) this;
         }
 
@@ -125,8 +139,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          * @param dist Distribution to use for initializing the recurrent weights
          */
         public T weightInitRecurrent(Distribution dist){
-            this.weightInitRecurrent = WeightInit.DISTRIBUTION;
-            this.distRecurrent = dist;
+            this.weightInitFnRecurrent = new WeightInitDistribution(dist);
             return (T) this;
         }
     }

@@ -31,9 +31,13 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
+import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitDistribution;
+import org.deeplearning4j.nn.weights.WeightInitRelu;
+import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -41,6 +45,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import static org.junit.Assert.*;
 
@@ -149,11 +154,14 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
         BaseLayer bl0 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(0).getLayer());
         BaseLayer bl1 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(1).getLayer());
         BaseLayer bl3 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(3).getLayer());
-        assertEquals(bl0.getWeightInit(), WeightInit.XAVIER);
-        assertEquals(bl0.getDist(), null);
-        assertEquals(bl1.getWeightInit(), WeightInit.DISTRIBUTION);
-        assertEquals(bl1.getDist(), new NormalDistribution(1, 1e-1));
-        assertEquals(bl3.getWeightInit(), WeightInit.XAVIER);
+        assertEquals(bl0.getWeightInitFn().getClass(), WeightInitXavier.class);
+        try {
+            assertEquals(JsonMappers.getMapper().writeValueAsString(bl1.getWeightInitFn()),
+                    JsonMappers.getMapper().writeValueAsString(new WeightInitDistribution(new NormalDistribution(1, 1e-1))));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        assertEquals(bl3.getWeightInitFn(), new WeightInitXavier());
 
         //modelNow should have the same architecture as modelExpectedArch
         assertArrayEquals(modelExpectedArch.params().shape(), modelNow.params().shape());
@@ -487,13 +495,13 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
         BaseLayer l0 = (BaseLayer) net.getLayer(0).conf().getLayer();
         assertEquals(new Adam(1e-4), l0.getIUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
-        assertEquals(WeightInit.RELU, l0.getWeightInit());
+        assertEquals(new WeightInitRelu(), l0.getWeightInitFn());
         assertEquals(0.1, l0.getL1(), 1e-6);
 
         BaseLayer l1 = (BaseLayer) net.getLayer(1).conf().getLayer();
         assertEquals(new Adam(1e-4), l1.getIUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
-        assertEquals(WeightInit.RELU, l1.getWeightInit());
+        assertEquals(new WeightInitRelu(), l1.getWeightInitFn());
         assertEquals(0.2, l1.getL2(), 1e-6);
 
         assertEquals(BackpropType.Standard, conf.getBackpropType());
@@ -502,13 +510,13 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
         l0 = (BaseLayer) net2.getLayer(0).conf().getLayer();
         assertEquals(new Adam(2e-2), l0.getIUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
-        assertEquals(WeightInit.RELU, l0.getWeightInit());
+        assertEquals(new WeightInitRelu(), l0.getWeightInitFn());
         assertEquals(0.1, l0.getL1(), 1e-6);
 
         l1 = (BaseLayer) net2.getLayer(1).conf().getLayer();
         assertEquals(new Adam(2e-2), l1.getIUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
-        assertEquals(WeightInit.RELU, l1.getWeightInit());
+        assertEquals(new WeightInitRelu(), l1.getWeightInitFn());
         assertEquals(0.2, l1.getL2(), 1e-6);
 
         assertEquals(BackpropType.TruncatedBPTT, net2.getLayerWiseConfigurations().getBackpropType());

@@ -47,7 +47,7 @@ namespace nd4j {
             double bias = T_ARG(0);
             int depth = INT_ARG(0);
 
-            return helpers::lrnFunctor(input, output, depth, bias, alpha, beta);
+            return helpers::lrnFunctor(block, input, output, depth, bias, alpha, beta);
         }
 
         DECLARE_TYPES(lrn_bp) {
@@ -73,7 +73,7 @@ namespace nd4j {
             std::unique_ptr<NDArray> unitScale(errors->dup('c'));
             std::unique_ptr<NDArray> scale(errors->dup('c'));
 
-            REQUIRE_TRUE(ND4J_STATUS_OK == helpers::lrnFunctorEx(input, output, unitScale.get(), scale.get(), (long)depth, bias, alpha, beta), 0, "lrn_bp: Failed to get lrn for given input." );
+            REQUIRE_TRUE(ND4J_STATUS_OK == helpers::lrnFunctorEx(block, input, output, unitScale.get(), scale.get(), (long)depth, bias, alpha, beta), 0, "lrn_bp: Failed to get lrn for given input." );
 
             errors->applyPairwiseTransform(pairwise::Multiply, scale.get(), scale.get(), nullptr);
             output->applyPairwiseTransform(pairwise::Multiply, input, output, nullptr);
@@ -100,7 +100,7 @@ namespace nd4j {
             double bias = T_ARG(2);
             double depth = T_ARG(3);
 
-            return helpers::lrnFunctorEx(input, output, unitScale, scale, (int)depth, bias, alpha, beta);
+            return helpers::lrnFunctorEx(block, input, output, unitScale, scale, (int)depth, bias, alpha, beta);
         }
         DECLARE_SYN(LRN, lrn_old);
 

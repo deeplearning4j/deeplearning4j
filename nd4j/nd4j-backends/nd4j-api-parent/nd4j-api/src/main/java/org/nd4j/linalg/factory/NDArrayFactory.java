@@ -27,10 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Creation of ndarrays via classpath discovery.
@@ -1391,6 +1388,13 @@ public interface NDArrayFactory {
      * @return the created ndarray
      */
     INDArray createFromNpyFile(File file);
+
+    /**
+     * Create a Map<String, INDArray> from given npz file.
+     * @param file the file to create the map from
+     * @return Map<String, INDArray>
+     */
+    public Map<String, INDArray> createFromNpzFile(File file) throws Exception;
 
     /**
      * Convert an {@link INDArray}
