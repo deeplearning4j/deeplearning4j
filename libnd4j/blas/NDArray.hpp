@@ -1519,7 +1519,10 @@ void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *
             }
         } else if (this->isZ()) {
             for (Nd4jLong e = 0; e < limit; e++) {
-                printf("%llu", this->r<Nd4jLong>(e));
+                if (this->dataType() != nd4j::DataType::INT64 && this->dataType() != nd4j::DataType::UINT64)
+                    printf("%d", this->e<int>(e));
+                else
+                    printf("%llu", this->e<Nd4jLong>(e));
                 if (e < limit - 1)
                     printf(", ");
             }
