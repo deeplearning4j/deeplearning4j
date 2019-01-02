@@ -107,6 +107,8 @@ TEST_F(DataTypesValidationTests, Basic_Test_4) {
 TEST_F(DataTypesValidationTests, cast_1) {
 
     float16 x = static_cast<float16>(1.f);
+    float y = static_cast<float16>(x);
 
-    ASSERT_TRUE(1 == x);
+    ASSERT_TRUE(1.f == x);
+    ASSERT_TRUE(y == x);
 }
