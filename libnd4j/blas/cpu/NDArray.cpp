@@ -1354,8 +1354,10 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
 
     if (isS())
         throw std::runtime_error("NDArray::reduceAlongDimension SameOps: you can't use this method on String array!");
-    if (target == nullptr || target->_dataType != _dataType)
-        throw std::runtime_error("NDArray::reduceAlongDimension SameOps: requires target array to be present and have same dtype as input");
+    else if (target == nullptr)
+        throw std::runtime_error("NDArray::reduceAlongDimension SameOps: requires target array to be present");
+    else if (target->_dataType != _dataType)
+        throw datatype_exception::build("NDArray::reduceAlongDimension SameOps: requires target array to have same dtype as input", _dataType, target->dataType());
 
         std::vector<int> copy(dimensions);
 

@@ -91,7 +91,6 @@ namespace nd4j {
 
 
         DECLARE_SHAPE_FN(batched_gemm) {
-            auto shapeList = SHAPELIST();
             int transA = INT_ARG(0);
             int transB = INT_ARG(1);
             int M = INT_ARG(2);
@@ -106,6 +105,8 @@ namespace nd4j {
             for (int e = 1; e < block.width(); e++) {
                 REQUIRE_TRUE(firstType == ArrayOptions::dataType(inputShape->at(1)), 0, "BatchedGemm: all inputs must have same data type");
             }
+
+            auto shapeList = SHAPELIST();
 
             if (!(M > 0 && N > 0 && K > 0 && ldA > 0 && ldB > 0 && ldC > 0 && batchSize > 0)) {
                 Nd4jLong *newShape;
