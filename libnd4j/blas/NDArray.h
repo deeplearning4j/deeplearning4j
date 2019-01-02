@@ -148,6 +148,7 @@ namespace nd4j {
 
         template<typename T>
         std::string toStringValue(T value);
+        
         long _opCounter = 0;
         long _writeHost = 0;
         long _writeDevice = 0;
@@ -226,16 +227,12 @@ namespace nd4j {
          */
         void setAttached(bool reallyAttached);
 
-        FORCEINLINE void tickHostWrite()   {  _writeHost   = ++_opCounter; }
-        FORCEINLINE void tickWriteDevice() {  _writeDevice = ++_opCounter; }
-        FORCEINLINE void tickReadHost()    {  _readHost    = ++_opCounter; }
-        FORCEINLINE void tickReadDevice()  {  _readDevice  = ++_opCounter; }
-        FORCEINLINE bool isActualOnHostSide() const   {
-                return (_writeHost > _writeDevice || _readHost > _writeDevice);
-        }
-        FORCEINLINE bool isActualOnDeviceSide() const {
-                return (_writeDevice > _writeHost || _readDevice > _writeHost);
-        }
+        FORCEINLINE void tickWriteHost();
+        FORCEINLINE void tickWriteDevice();
+        FORCEINLINE void tickReadHost();
+        FORCEINLINE void tickReadDevice();
+        FORCEINLINE bool isActualOnHostSide() const;
+        FORCEINLINE bool isActualOnDeviceSide() const;
 
         void syncToHost();
         void syncToDevice();
@@ -1973,6 +1970,14 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
     auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));        
 }
+
+////////////////////////////////////////////////////////////////////////
+void NDArray::tickWriteHost()                { _writeHost   = ++_opCounter; }
+void NDArray::tickWriteDevice()              {  _writeDevice = ++_opCounter; }
+void NDArray::tickReadHost()                 {  _readHost    = ++_opCounter; }
+void NDArray::tickReadDevice()               {  _readDevice  = ++_opCounter; }
+bool NDArray::isActualOnHostSide() const     { return (_writeHost > _writeDevice || _readHost > _writeDevice); }
+bool NDArray::isActualOnDeviceSide() const   { return (_writeDevice > _writeHost || _readDevice > _writeHost); }
 
 
 }

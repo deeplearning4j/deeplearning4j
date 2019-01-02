@@ -73,22 +73,26 @@ NDArray::NDArray(const NDArray& other) {
     _length = other._length;
     _context = other._context;
     _dataType = other._dataType;
-    if (other._isBuffAlloc)
-        ALLOCATE(_buffer, other._context->getWorkspace(), _length * other.sizeOfT(), int8_t);
+
     cudaMalloc(&_bufferD, _length * other.sizeOfT());
     _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace());
     cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
     syncShape();
-    _isBuffAlloc = other._isBuffAlloc;
-    _isShapeAlloc = true;
+    triggerAllocationFlag(true, true);
 
-    this->assign(&other);
+    if(isActualOnDeviceSide())
+        this->assign(&other);
+    else
+        cudaMemcpy(_bufferD, other._buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
+    
+    tickWriteDevice();
 }
 
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
 NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isShapeAlloc) {
-    _shapeInfo = shapeInfo;
+    _shapeInfoD = shapeInfo;
+    _buffer = reinterpret_cast<int8_t *>(buffer);
     _isBuffAlloc = isBuffAlloc;                                  // indicate that memory for array is passed from outside
     _isShapeAlloc = isShapeAlloc;
     _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
@@ -97,8 +101,6 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
         _dataType = ArrayOptions::dataType(shapeInfo);
     } else
         throw std::runtime_error("NDArray can't be initalized without shapeinfo");
-    if (_isBuffAlloc)
-        _buffer = reinterpret_cast<int8_t *>(buffer);
 
     cudaMalloc(&_bufferD, _length * sizeOfT());
     cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
@@ -508,9 +510,9 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         if (_isShapeAlloc  && _context->getWorkspace() == nullptr && _shapeInfo != nullptr)
             delete[] _shapeInfo;
-        if (_shapeInfoD)
+        if (_isBuffAlloc && _shapeInfoD != nullptr)
             cudaFree(_shapeInfoD);
-        if (_bufferD)
+        if (_isShapeAlloc && _bufferD != nullptr)
             cudaFree(_bufferD);
     }
 
@@ -1069,6 +1071,87 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
         triggerAllocationFlag(true, true);
     }
+
+////////////////////////////////////////////////////////////////////////
+    // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
+    bool NDArray::equalsTo(const NDArray *other, double eps) const {
+        if (this->dataType() != other->dataType() || lengthOf() != other->lengthOf())
+            return false;
+
+        // we need to be able to compare [1, len] to [len]
+        if ((rankOf() == 1 && other->rankOf() == 2) || (rankOf() == 2 && other->rankOf() == 1)) {
+            // FIXME: do something here?
+        } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
+            return false;
+
+        NDArray tmp(nd4j::DataType::FLOAT32, _context); // scalar = 0
+
+        if(!isActualOnDeviceSide()) {
+            const_cast<NDArray*>(this)->syncToDevice();
+            const_cast<NDArray*>(this)->tickWriteDevice();
+        }
+
+        if(!other->isActualOnDeviceSide()) {
+            const_cast<NDArray*>(other)->syncToDevice();
+            const_cast<NDArray*>(other)->tickWriteDevice();
+        }
+        
+        NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
+
+        if (tmp.e<int>(0) > 0)
+            return false;
+
+        return true;
+    }
+
+//////////////////////////////////////////////////////////////////////////
+    template <>
+    utf8string NDArray::e(const Nd4jLong i) const {
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+
+        if (!isS())
+            throw std::runtime_error("This method is available for String arrays only");
+
+        if(!isActualOnHostSide()) {
+            const_cast<NDArray*>(this)->syncToHost();
+            const_cast<NDArray*>(this)->tickWriteHost();
+        }
+
+        auto rp = getOffset(i);
+        return *(reinterpret_cast<utf8string**>(_buffer)[rp]);
+    }
+
+    template <>
+    std::string NDArray::e(const Nd4jLong i) const {
+        
+        if(!isActualOnHostSide()) {
+            const_cast<NDArray*>(this)->syncToHost();
+            const_cast<NDArray*>(this)->tickWriteHost();
+        }
+
+        auto u = e<utf8string>(i);
+        std::string r(u._buffer);
+        return r;
+    }
+
+    template <typename T>
+    T NDArray::e(const Nd4jLong i) const {
+
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+
+        if(!isActualOnHostSide()) {
+            const_cast<NDArray*>(this)->syncToHost();
+            const_cast<NDArray*>(this)->tickWriteHost();
+        }
+
+        auto rp = getOffset(i);
+
+        BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
+//        return static_cast<T>(119);
+    }
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
 
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*

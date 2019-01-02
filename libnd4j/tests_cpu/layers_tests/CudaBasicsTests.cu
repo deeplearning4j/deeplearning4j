@@ -3023,6 +3023,19 @@ TEST_F(CudaBasicsTests, execRandom_4) {
 	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
 }
 
+//////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, equalsTo_1) {
+    	       
+    NDArray x('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE);
+    NDArray y('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE);
+    
+    ASSERT_TRUE(x.equalsTo(y));
+
+    x.permutei({1,0});
+    y.permutei({1,0});
+
+    ASSERT_TRUE(x.equalsTo(y));
+}
 
 
 
