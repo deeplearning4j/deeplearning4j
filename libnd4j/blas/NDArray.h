@@ -233,9 +233,9 @@ namespace nd4j {
         FORCEINLINE bool isActualOnHostSide() const;
         FORCEINLINE bool isActualOnDeviceSide() const;
 
-        void syncToHost();
-        void syncToDevice();
-        void syncShape();
+        void syncToHost() ;
+        void syncToDevice() const;
+        void syncShape() const;
 
         /**
          * This method can be used on architectures that use special buffers
@@ -1973,10 +1973,10 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::tickWriteHost()                { _writeHost   = ++_opCounter; }
+void NDArray::tickWriteHost()                 { _writeHost   = ++_opCounter; }
 void NDArray::tickWriteDevice()              {  _writeDevice = ++_opCounter; }
 void NDArray::tickReadHost()                 {  _readHost    = ++_opCounter; }
-void NDArray::tickReadDevice()               {  _readDevice  = ++_opCounter; }
+void NDArray::tickReadDevice()                {  _readDevice  = ++_opCounter; }
 bool NDArray::isActualOnHostSide() const     { return (_writeHost > _writeDevice || _readHost > _writeDevice); }
 bool NDArray::isActualOnDeviceSide() const   { return (_writeDevice > _writeHost || _readDevice > _writeHost); }
 

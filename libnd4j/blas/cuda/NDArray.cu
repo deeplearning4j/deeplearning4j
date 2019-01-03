@@ -864,13 +864,13 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     }
 
     void
-    NDArray::syncToDevice() {
+    NDArray::syncToDevice() const {
         cudaMemcpy(this->_bufferD, this->_buffer, this->lengthOf() * this->sizeOfT(), cudaMemcpyHostToDevice);
         this->tickReadDevice();
     }
 
     void
-    NDArray::syncShape() {
+    NDArray::syncShape() const {
         cudaMemcpy(_shapeInfoD, _shapeInfo, shape::shapeInfoByteLength(_shapeInfo), cudaMemcpyHostToDevice);
     }
 
