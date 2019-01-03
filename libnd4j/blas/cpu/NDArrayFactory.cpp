@@ -482,8 +482,7 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
 
         auto shapeInfo = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace());
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
-        auto result = new NDArray(nullptr, shapeInfo, context);
-        result->triggerAllocationFlag(false, true);
+        auto result = new NDArray(nullptr, shapeInfo, context, false, true);        
 
         return result;
     }

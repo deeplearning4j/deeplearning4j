@@ -183,9 +183,6 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     if (shapeInfo == nullptr)
         throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
 
-    if (buffer == nullptr)
-        throw std::runtime_error("NDArray constructor: can't be initalized without buffer");
-
     if ((int) shapeInfo[0] > MAX_RANK)
         throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32");
 
@@ -197,19 +194,22 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     _context = context;
     _isShapeAlloc = isShapeAlloc;
 
+    tickWriteDevice();
+
     if (this->isEmpty()) {
         _length = 0;
-        _isBuffAlloc = false;
+        _isBuffAlloc = false;        
+        tickReadHost();
     }
     else {
         _buffer = reinterpret_cast<int8_t *>(buffer);
         cudaMalloc(&_bufferD, _length * sizeOfT());
-        cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
-        _isBuffAlloc = isBuffAlloc;
-        tickReadHost();
-    }
-      
-    tickWriteDevice();   
+        if(_buffer != nullptr) {
+            cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
+            tickReadHost();
+        }
+        _isBuffAlloc = isBuffAlloc;        
+    }            
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -251,10 +251,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     
     if (shape.empty())
         throw std::runtime_error("NDArray constructor: input shape is empty !");
-    
-    if (buffer == nullptr)
-        throw std::runtime_error("NDArray constructor: can't be initalized without buffer");
-    
+        
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
     
@@ -264,12 +261,13 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
     _buffer = reinterpret_cast<int8_t *>(buffer);
     cudaMalloc(&_bufferD, _length * sizeOfT());
-    cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);    
+    if(_buffer != nullptr)
+        cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);    
     
     triggerAllocationFlag(false, true);
-
-    tickReadHost();
+    
     tickWriteDevice();
+    tickReadHost();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -296,11 +294,10 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 delete []_shapeInfo;
         }
 
-        _length = other._length;
-        _dataType = other._dataType;
         _context= other._context;
-
-        _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace());
+        _buffer = nullptr;
+              
+        setShapeInfo(ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace()));    
         cudaMalloc(&_bufferD, _length * other.sizeOfT());
 
         triggerAllocationFlag(true, true);        
@@ -998,7 +995,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             constThis->_isBuffAlloc = true;
         }
         cudaMemcpy(this->_buffer, this->_bufferD, this->lengthOf() * this->sizeOfT(), cudaMemcpyDeviceToHost);
-        this->tickReadHost();
+        tickReadHost();
     }
 
     void NDArray::syncToDevice() const {
