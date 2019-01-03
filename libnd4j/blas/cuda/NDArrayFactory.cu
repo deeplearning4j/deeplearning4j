@@ -586,7 +586,7 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
     cudaMemcpy(specialShape, result.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
     result.setSpecialBuffers(specialBuffer, specialShape);
     result.tickWriteDevice();
-    res.tickReadHost();
+    result.tickReadHost();
 
     return result;
 }
