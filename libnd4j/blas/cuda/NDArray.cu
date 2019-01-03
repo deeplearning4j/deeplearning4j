@@ -269,7 +269,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
         if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other->isB()) || (op.s == scalar::ReverseDivide && this->isB()))
             throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
-
+        //NDArray::registerSpecialUse({target}, {const_cast<NDArray*>(this), const_cast<NDArray*>(other)});
         if (isScalar()) {
             target->assign(this);
             target->applyPairwiseTransform(op.p, *other, extraArgs);
