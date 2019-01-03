@@ -205,7 +205,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_2) {
 
     //cudaMemcpyAsync(devBufferPtrX, x.buffer(), x.lengthOf() * x.sizeOfT(), cudaMemcpyHostToDevice, *stream);
     //cudaMemcpyAsync(devShapePtrX, x.shapeInfo(), shape::shapeInfoByteLength(x.shapeInfo()), cudaMemcpyHostToDevice, *stream);
-
+    z.lazyAllocateBuffer();
     LaunchContext lc(stream, *stream, nullptr, nullptr);
     NativeOpExecutioner::execPairwiseTransform(&lc, pairwise::Add, nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr);
     auto res = cudaStreamSynchronize(*stream);
@@ -620,7 +620,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_2) {
     //ASSERT_TRUE(y->isActualOnHostSide());
     //auto res = cudaStreamSynchronize(*y.getContext()->getCudaStream());
     //ASSERT_EQ(0, res);
-    //y.syncToHost();
+    y.syncToHost();
     y.printBuffer("PrimitiveCosine2");
     ASSERT_TRUE(exp.equalsTo(y));
     //delete x;
@@ -683,7 +683,7 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_2) {
     //void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, ExtraArguments *extraArgs)
     x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &y, &exp);
     exp.syncToHost();
-    exp.printBuffer("55Result out");
+    exp.printBuffer("56Result out");
 
     //
     // cudaFree(devBufferPtrX);
