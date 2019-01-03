@@ -94,3 +94,14 @@ TEST_F(NDArrayConstructorsTests, test_constructor_5) {
     ASSERT_FALSE(x.shapeInfo() == nullptr);
     ASSERT_FALSE(x.specialShapeInfo() == nullptr);
 }
+
+TEST_F(NDArrayConstructorsTests, test_constructor_6) {
+    auto x = NDArrayFactory::create<double>('c', {2, 2}, {1, 2, 3, 4});
+    NDArray y(x);
+
+    ASSERT_TRUE(y.buffer() == nullptr);
+    ASSERT_FALSE(y.specialBuffer() == nullptr);
+
+    ASSERT_FALSE(y.shapeInfo() == nullptr);
+    ASSERT_FALSE(y.specialShapeInfo() == nullptr);
+}
