@@ -43,49 +43,49 @@ public:
 TEST_F(NDArrayConstructorsTests, test_constructor_1) {
     auto x = NDArrayFactory::empty<float>();
 
-    ASSERT_TRUE(x->buffer() == nullptr);
-    ASSERT_TRUE(x->specialBuffer() == nullptr);
+    ASSERT_TRUE(x.buffer() == nullptr);
+    ASSERT_TRUE(x.specialBuffer() == nullptr);
 
-    ASSERT_FALSE(x->shapeInfo() == nullptr);
-    ASSERT_FALSE(x->specialShapeInfo() == nullptr);
+    ASSERT_FALSE(x.shapeInfo() == nullptr);
+    ASSERT_FALSE(x.specialShapeInfo() == nullptr);
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_2) {
     auto x = NDArrayFactory::vector<float>(5, 1.0f);
 
-    ASSERT_TRUE(x->buffer() == nullptr);
-    ASSERT_FALSE(x->specialBuffer() == nullptr);
+    ASSERT_TRUE(x.buffer() == nullptr);
+    ASSERT_FALSE(x.specialBuffer() == nullptr);
 
-    ASSERT_FALSE(x->shapeInfo() == nullptr);
-    ASSERT_FALSE(x->specialShapeInfo() == nullptr);
+    ASSERT_FALSE(x.shapeInfo() == nullptr);
+    ASSERT_FALSE(x.specialShapeInfo() == nullptr);
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_3) {
     auto x = NDArrayFactory::create<float>('c',{5, 5});
 
-    ASSERT_TRUE(x->buffer() == nullptr);
-    ASSERT_FALSE(x->specialBuffer() == nullptr);
+    ASSERT_TRUE(x.buffer() == nullptr);
+    ASSERT_FALSE(x.specialBuffer() == nullptr);
 
-    ASSERT_FALSE(x->shapeInfo() == nullptr);
-    ASSERT_FALSE(x->specialShapeInfo() == nullptr);
+    ASSERT_FALSE(x.shapeInfo() == nullptr);
+    ASSERT_FALSE(x.specialShapeInfo() == nullptr);
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_4) {
     auto x = NDArrayFactory::create(nd4j::DataType::FLOAT32, 1.0f);
 
-    ASSERT_FALSE(x->buffer() == nullptr);
-    ASSERT_FALSE(x->specialBuffer() == nullptr);
+    ASSERT_FALSE(x.buffer() == nullptr);
+    ASSERT_FALSE(x.specialBuffer() == nullptr);
 
-    ASSERT_FALSE(x->shapeInfo() == nullptr);
-    ASSERT_FALSE(x->specialShapeInfo() == nullptr);
+    ASSERT_FALSE(x.shapeInfo() == nullptr);
+    ASSERT_FALSE(x.specialShapeInfo() == nullptr);
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_5) {
     auto x = NDArrayFactory::create<double>('c',{2, 2}, {1, 2, 3, 4});
 
-    ASSERT_FALSE(x->buffer() == nullptr);
-    ASSERT_FALSE(x->specialBuffer() == nullptr);
+    ASSERT_FALSE(x.buffer() == nullptr);
+    ASSERT_FALSE(x.specialBuffer() == nullptr);
 
-    ASSERT_FALSE(x->shapeInfo() == nullptr);
-    ASSERT_FALSE(x->specialShapeInfo() == nullptr);
+    ASSERT_FALSE(x.shapeInfo() == nullptr);
+    ASSERT_FALSE(x.specialShapeInfo() == nullptr);
 }
