@@ -541,28 +541,6 @@ TEST_F(NDArrayCudaBasicsTests, TestMultiply_4) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayCudaBasicsTests, TestPrimitiveNeg_1) {
-    // allocating host-side arrays
-    auto x = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
-    auto y = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
-    auto exp = NDArrayFactory::create<double>('c', { 5 }, { -1, -2, -3, -4, -5 });
-
-    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
-
-    NativeOpExecutioner::execTransformSame(x.getContext(), transform::Neg, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), nullptr, nullptr, nullptr);
-    auto res = cudaStreamSynchronize(*stream);
-    ASSERT_EQ(0, res);
-    y.syncToHost();
-
-    x.printBuffer("X = ");
-    y.printBuffer("Y = ");
-
-    for (int e = 0; e < y.lengthOf(); e++) {
-        ASSERT_NEAR(exp.e<double>(e), y.e<double>(e), 1e-5);
-    }
-}
-
-//////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, TestPrimitiveNeg_01) {
     // allocating host-side arrays
     auto x = NDArrayFactory::create<int>('c', { 5 }, { 1, 2, 3, 4, 5});
@@ -647,4 +625,94 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_2) {
     ASSERT_TRUE(exp.equalsTo(y));
     //delete x;
     //delete y;
+}
+
+TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply) {
+    // allocating host-side arrays
+    NDArray x('c', { 2, 3 }, { 1, 2, 3, 4, 5, 6}, nd4j::DataType::DOUBLE);
+    NDArray y('c', { 3 }, { 2., 3., 4.}, nd4j::DataType::DOUBLE);
+    //auto z = NDArrayFactory::create<double>('c', { 5 });
+
+    auto exp = NDArrayFactory::create<double>('c', { 2, 3 }, { 2, 6, 12, 8, 15, 24 });
+
+    // making raw buffers
+    //Nd4jPointer devBufferPtrX, devBufferPtrZ, devShapePtrX;
+    //cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrX), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrZ), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
+    //ASSERT_EQ(0, res);
+    //x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
+    //x.printBuffer("23X = ");
+    //y.printBuffer("23Y = ");
+    x *= y;
+    x.syncToHost();
+    x.printBuffer("55Result out");
+
+    //
+    // cudaFree(devBufferPtrX);
+    //cudaFree(devBufferPtrZ);
+    //cudaFree(devShapePtrX);
+
+    //for (int e = 0; e < x.lengthOf(); e++) {
+    //    ASSERT_NEAR(exp.e<double>(e), x.e<double>(e), 1e-5);
+    //}
+}
+
+TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_2) {
+    // allocating host-side arrays
+    NDArray x('c', { 2, 3 }, { 1, 2, 3, 4, 5, 6}, nd4j::DataType::DOUBLE);
+    NDArray y('c', { 3 }, { 2., 3., 4.}, nd4j::DataType::DOUBLE);
+    //auto z = NDArrayFactory::create<double>('c', { 5 });
+
+    auto exp = NDArrayFactory::create<double>('c', { 2, 3 }, { 11,12, 13,14, 15, 16 });
+    auto expZ = NDArrayFactory::create<double>('c', { 2, 3 }, { 2, 6, 12, 8, 15, 24 });
+
+    // making raw buffers
+    //Nd4jPointer devBufferPtrX, devBufferPtrZ, devShapePtrX;
+    //cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrX), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrZ), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
+    //ASSERT_EQ(0, res);
+    //x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
+    //x.printBuffer("23X = ");
+    //y.printBuffer("23Y = ");
+    //void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, ExtraArguments *extraArgs)
+    x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &y, &exp);
+    exp.syncToHost();
+    exp.printBuffer("55Result out");
+
+    //
+    // cudaFree(devBufferPtrX);
+    //cudaFree(devBufferPtrZ);
+    //cudaFree(devShapePtrX);
+
+    //for (int e = 0; e < x.lengthOf(); e++) {
+    //    ASSERT_NEAR(exp.e<double>(e), x.e<double>(e), 1e-5);
+    //}
+    ASSERT_TRUE(exp.equalsTo(expZ));
+
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, TestReduceSum_1) {
+    // allocating host-side arrays
+    auto x = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create<double>(15);
+    auto exp = NDArrayFactory::create<double>(15);
+
+    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+
+    NativeOpExecutioner::execReduceSameScalar(x.getContext(), reduce::Sum, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo());
+    auto res = cudaStreamSynchronize(*stream);
+    ASSERT_EQ(0, res);
+    y.syncToHost();
+
+    x.printBuffer("X = ");
+    y.printBuffer("Y = ");
+    ASSERT_NEAR(y.e<double>(0), 15, 1e-5);
 }
