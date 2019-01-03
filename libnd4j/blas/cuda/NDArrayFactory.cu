@@ -384,9 +384,13 @@ template NDArray* NDArrayFactory::create_(const char order, const std::vector<Nd
         res->setSpecialBuffers(specialBuffer, specialShapeInfo);
         res->triggerAllocationFlag(true, true);
 
+        // tick this before potential assign call, to avoid additional sync before assign
+        res->tickWriteDevice();
+
         if (startingValue == (T)0.0f) {
             memset(buffer, 0, length);
             res->syncToDevice();
+            res->tickReadHost();
         } else {
             res->assign(startingValue);
         }
@@ -439,6 +443,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
 
     cudaMemset(specialBuffer, 0, bufferSize);
     cudaMemcpy(specialShapeInfo, res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
+    nd4j_printf("Ticking\n","");
     res.tickWriteDevice();
     res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
     res.setSpecialBuffers(specialBuffer, specialShapeInfo);

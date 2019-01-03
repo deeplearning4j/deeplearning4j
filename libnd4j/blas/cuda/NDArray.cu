@@ -117,8 +117,17 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
         nd4j_printf("Not empty","");
         cudaMalloc(&_bufferD, _length * sizeOfT());
 
-        if (_buffer != nullptr)
+        if (_buffer != nullptr) {
             cudaMemcpy(_bufferD, buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
+            this->tickReadHost();
+        } else {
+            cudaMemset(_bufferD, 0, _length * sizeOfT());
+        }
+
+        this->tickWriteDevice();
+    } else {
+        this->tickWriteDevice();
+        this->tickReadHost();
     }
 }
 

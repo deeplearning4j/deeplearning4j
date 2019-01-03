@@ -148,11 +148,11 @@ namespace nd4j {
         template<typename T>
         std::string toStringValue(T value);
         
-        long _opCounter = 0;
-        long _writeHost = 0;
-        long _writeDevice = 0;
-        long _readHost = 0;
-        long _readDevice = 0;
+        Nd4jLong _opCounter = 0L;
+        Nd4jLong _writeHost = 0L;
+        Nd4jLong _writeDevice = 0L;
+        Nd4jLong _readHost = 0L;
+        Nd4jLong _readDevice = 0L;
 
     public:
         NDArray();

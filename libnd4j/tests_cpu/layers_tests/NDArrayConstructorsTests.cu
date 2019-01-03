@@ -49,6 +49,9 @@ TEST_F(NDArrayConstructorsTests, test_constructor_1) {
     ASSERT_FALSE(x->shapeInfo() == nullptr);
     ASSERT_FALSE(x->specialShapeInfo() == nullptr);
 
+    ASSERT_TRUE(x->isActualOnDeviceSide());
+    ASSERT_TRUE(x->isActualOnHostSide());
+
     delete x;
 }
 
@@ -62,6 +65,9 @@ TEST_F(NDArrayConstructorsTests, test_constructor_2) {
     ASSERT_FALSE(x->shapeInfo() == nullptr);
     ASSERT_FALSE(x->specialShapeInfo() == nullptr);
 
+    ASSERT_TRUE(x->isActualOnDeviceSide());
+    ASSERT_FALSE(x->isActualOnHostSide());
+
     delete x;
 }
 
@@ -73,6 +79,9 @@ TEST_F(NDArrayConstructorsTests, test_constructor_3) {
 
     ASSERT_FALSE(x.shapeInfo() == nullptr);
     ASSERT_FALSE(x.specialShapeInfo() == nullptr);
+
+    ASSERT_TRUE(x.isActualOnDeviceSide());
+    ASSERT_FALSE(x.isActualOnHostSide());
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_4) {
@@ -83,6 +92,9 @@ TEST_F(NDArrayConstructorsTests, test_constructor_4) {
 
     ASSERT_FALSE(x.shapeInfo() == nullptr);
     ASSERT_FALSE(x.specialShapeInfo() == nullptr);
+
+    ASSERT_TRUE(x.isActualOnDeviceSide());
+    ASSERT_TRUE(x.isActualOnHostSide());
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_5) {
@@ -93,6 +105,9 @@ TEST_F(NDArrayConstructorsTests, test_constructor_5) {
 
     ASSERT_FALSE(x.shapeInfo() == nullptr);
     ASSERT_FALSE(x.specialShapeInfo() == nullptr);
+
+    ASSERT_TRUE(x.isActualOnDeviceSide());
+    ASSERT_TRUE(x.isActualOnHostSide());
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_6) {
@@ -104,6 +119,9 @@ TEST_F(NDArrayConstructorsTests, test_constructor_6) {
 
     ASSERT_FALSE(y.shapeInfo() == nullptr);
     ASSERT_FALSE(y.specialShapeInfo() == nullptr);
+
+    ASSERT_TRUE(y.isActualOnDeviceSide());
+    ASSERT_FALSE(y.isActualOnHostSide());
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_7) {
@@ -114,6 +132,9 @@ TEST_F(NDArrayConstructorsTests, test_constructor_7) {
 
     ASSERT_FALSE(x.shapeInfo() == nullptr);
     ASSERT_FALSE(x.specialShapeInfo() == nullptr);
+
+    ASSERT_TRUE(x.isActualOnDeviceSide());
+    ASSERT_TRUE(x.isActualOnHostSide());
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_8) {
@@ -124,6 +145,9 @@ TEST_F(NDArrayConstructorsTests, test_constructor_8) {
 
     ASSERT_FALSE(x->shapeInfo() == nullptr);
     ASSERT_FALSE(x->specialShapeInfo() == nullptr);
+
+    ASSERT_TRUE(x->isActualOnDeviceSide());
+    ASSERT_TRUE(x->isActualOnHostSide());
 
     delete x;
 }
@@ -137,6 +161,9 @@ TEST_F(NDArrayConstructorsTests, test_constructor_9) {
     ASSERT_FALSE(x->shapeInfo() == nullptr);
     ASSERT_FALSE(x->specialShapeInfo() == nullptr);
 
+    ASSERT_TRUE(x->isActualOnDeviceSide());
+    ASSERT_FALSE(x->isActualOnHostSide());
+
     delete x;
 }
 
@@ -148,6 +175,9 @@ TEST_F(NDArrayConstructorsTests, test_linspace_1) {
 
     ASSERT_FALSE(x->shapeInfo() == nullptr);
     ASSERT_FALSE(x->specialShapeInfo() == nullptr);
+
+    ASSERT_TRUE(x->isActualOnDeviceSide());
+    ASSERT_TRUE(x->isActualOnHostSide());
 
     delete x;
 }
