@@ -836,22 +836,18 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         if (_context->getCudaStream() == nullptr)
             throw std::runtime_error("CUDA stream cannot be NULL!!!");
 
-        //Nd4jPointer nativeStream = (Nd4jPointer)malloc(sizeof(cudaStream_t));
-        //CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream");
-        //if (nativeStream == nullptr) throw std::runtime_error("Failed to allocate memory for new CUDA stream");
-        //cudaError_t err = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
-        auto stream = _context->getCudaStream(); //reinterpret_cast<cudaStream_t *>(&nativeStream);
-        //_context->setCudaStream(stream);
+
+        if (!this->isActualOnDeviceSide())
+            this->syncToDevice();
+
+        if (!other->isActualOnDeviceSide())
+            other->syncToDevice();
 
         NativeOpExecutioner::execPairwiseTransform(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr);
 
-        //auto res = cudaStreamSynchronize(*stream);
-        //if (res != 0) {
-        //    nd4j_printf("Error: %i\n", res);
-        //    throw std::runtime_error("Operation failed.");
-        //}
 
-        //target->syncToHost();
+        target->tickWriteDevice();
+
         if (extraParams != nullptr)
             this->synchronize();
     }
@@ -864,11 +860,13 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             triggerAllocationFlag(true, true);
         }
         cudaMemcpy(this->_buffer, this->_bufferD, this->lengthOf() * this->sizeOfT(), cudaMemcpyDeviceToHost);
+        this->tickReadHost();
     }
 
     void
     NDArray::syncToDevice() {
         cudaMemcpy(this->_bufferD, this->_buffer, this->lengthOf() * this->sizeOfT(), cudaMemcpyHostToDevice);
+        this->tickReadDevice();
     }
 
     void
