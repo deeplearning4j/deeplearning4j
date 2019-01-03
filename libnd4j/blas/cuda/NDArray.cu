@@ -102,10 +102,15 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     } else
         throw std::runtime_error("NDArray can't be initalized without shapeinfo");
 
-    cudaMalloc(&_bufferD, _length * sizeOfT());
     cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
     syncShape();
-    cudaMemcpy(_bufferD, buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
+
+    if (!this->isEmpty()) {
+        cudaMalloc(&_bufferD, _length * sizeOfT());
+
+        if (_buffer != nullptr)
+            cudaMemcpy(_bufferD, buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////

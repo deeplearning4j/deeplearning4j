@@ -56,7 +56,7 @@ TEST_F(NDArrayConstructorsTests, test_constructor_2) {
     auto x = NDArrayFactory::vector<float>(5, 1.0f);
 
 
-    ASSERT_TRUE(x->buffer() == nullptr);
+    ASSERT_FALSE(x->buffer() == nullptr);
     ASSERT_FALSE(x->specialBuffer() == nullptr);
 
     ASSERT_FALSE(x->shapeInfo() == nullptr);
