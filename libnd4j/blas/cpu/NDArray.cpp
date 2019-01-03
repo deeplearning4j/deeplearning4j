@@ -1044,7 +1044,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             return false;
 
         auto extras = NDArrayFactory::create(eps, _context);
-        auto ptr = extras.getBufferAsPointer(nd4j::DataType::FLOAT32);
+        auto ptr = extras.getBufferAsPointer(nd4j::DataType::DOUBLE);
 
         NDArray tmp(nd4j::DataType::FLOAT32, _context); // scalar = 0
 

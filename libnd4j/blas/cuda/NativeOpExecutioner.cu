@@ -976,9 +976,10 @@ void NativeOpExecutioner::execReduce3Scalar(nd4j::graph::LaunchContext *lc,
                                   void *hZ, Nd4jLong *hZShapeInfo,
                                   void *dZ, Nd4jLong *dZShapeInfo) {
 
+
 	auto stream 		   = lc->getCudaStream();
 	auto allocationPointer = lc->getAllocationPointer();
-	auto reductionPointer  = lc->getReductionPointer();
+	auto reductionPointer  = lc->getReductionPointer();    
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
