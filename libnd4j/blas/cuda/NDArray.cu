@@ -40,6 +40,7 @@
 #include <MmulHelper.h>
 #include <helpers/threshold.h>
 #include <graph/exceptions/datatype_exception.h>
+#include <specials_cuda.h>
 
 #include "../NDArray.hpp"
 
@@ -92,7 +93,6 @@ void NDArray::lazyAllocateBuffer() {
     if (_buffer == nullptr && !this->isEmpty()) {
         ALLOCATE(_buffer, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
         syncToHost();
-        tickReadDevice();
     }
 }
 
@@ -1085,10 +1085,15 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
 
         setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace()));
-        ALLOCATE(_buffer, context->getWorkspace(), DataTypeUtils::sizeOfElement(dtype), int8_t);
-        memset(_buffer, 0, DataTypeUtils::sizeOfElement(dtype));
-        _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
+        cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
+        syncShape();
+        
+        cudaMalloc(&_bufferD, _length * sizeOfT());
+        cudaMemset(_bufferD, 0, _length * sizeOfT());
+
         triggerAllocationFlag(true, true);
+
+        this->tickWriteDevice(); 
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1110,8 +1115,15 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         if(!other->isActualOnDeviceSide())
             other->syncToDevice();
-        
-        NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
+                
+        ExtraArguments extras({eps});        
+        NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extras.argumentAsT(DataType::DOUBLE), other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
+
+        auto res = cudaStreamSynchronize(*_context->getCudaStream());
+        if (res != 0) {
+            nd4j_printf("Kernel returned [%i]\n", res);
+            throw std::runtime_error("equalsTo failed");
+        }
 
         if (tmp.e<int>(0) > 0)
             return false;
@@ -1129,10 +1141,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         if (!isS())
             throw std::runtime_error("This method is available for String arrays only");
 
-        if(!isActualOnHostSide()) {
+        if(!isActualOnHostSide()) 
             syncToHost();
-            tickWriteHost();
-        }
 
         auto rp = getOffset(i);
         return *(reinterpret_cast<utf8string**>(_buffer)[rp]);
@@ -1141,10 +1151,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     template <>
     std::string NDArray::e(const Nd4jLong i) const {
         
-        if(!isActualOnHostSide()) {
+        if(!isActualOnHostSide())
             syncToHost();
-            tickWriteHost();
-        }
 
         auto u = e<utf8string>(i);
         std::string r(u._buffer);
@@ -1157,10 +1165,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         if (i >= _length)
             throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
 
-        if(!isActualOnHostSide()) {
+        if(!isActualOnHostSide())
             syncToHost();
-            tickWriteHost();
-        }
 
         auto rp = getOffset(i);
 
