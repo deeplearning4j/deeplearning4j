@@ -71,28 +71,21 @@ TEST_F(DeclarableOpsTests14, Test_Reshape_CF_1) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    z->printShapeInfo("z shape");
-    z->printBuffer("z buffr");
-    z->printIndexedBuffer("z indxd");
-    printf("------------------\n");
-    r->printShapeInfo("r shape");
-    r->printBuffer("r buffr");
-    r->printIndexedBuffer("r indxd");
 
     delete r;
     delete result;
 }
 
 TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_1) {
-    auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 1.0/0.0, 5});
-    auto y = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 1.0/0.0, 5});
+    auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, std::numeric_limits<double>::infinity(), 5});
+    auto y = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, std::numeric_limits<double>::infinity(), 5});
 
     ASSERT_EQ(x, y);
 }
 
 TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_2) {
-    auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 1.0/0.0, 5});
-    auto y = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, -1.0/0.0, 5});
+    auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, std::numeric_limits<double>::infinity(), 5});
+    auto y = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, -std::numeric_limits<double>::infinity(), 5});
 
     ASSERT_NE(x, y);
 }
