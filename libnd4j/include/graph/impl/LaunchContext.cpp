@@ -71,6 +71,18 @@ LaunchContext::LaunchContext() {
     auto res = cudaStreamSynchronize(*_cudaStream);
     if (res != 0)
         throw std::runtime_error("sync failed");
+
+    res = cudaMalloc(reinterpret_cast<void**>(&_reductionPointer), 1024 * 1024 * 8);
+    if (res != 0)
+        throw std::runtime_error("_reductionPointer allocation failed");
+
+    res = cudaMalloc(reinterpret_cast<void**>(&_scalarPointer), 8);
+    if (res != 0)
+        throw std::runtime_error("_scalarPointer allocation failed");
+
+    res = cudaMalloc(reinterpret_cast<void**>(&_allocationPointer), 1024 * 1024 * 8);
+    if (res != 0)
+        throw std::runtime_error("_reductionPointer allocation failed");
 #else
     //
 #endif
