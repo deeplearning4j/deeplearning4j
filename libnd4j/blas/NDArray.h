@@ -148,11 +148,11 @@ namespace nd4j {
         template<typename T>
         std::string toStringValue(T value);
         
-        Nd4jLong _opCounter = 0L;
-        Nd4jLong _writeHost = 0L;
-        Nd4jLong _writeDevice = 0L;
-        Nd4jLong _readHost = 0L;
-        Nd4jLong _readDevice = 0L;
+        mutable Nd4jLong _opCounter = 0L;
+        mutable Nd4jLong _writeHost = 0L;
+        mutable Nd4jLong _writeDevice = 0L;
+        mutable Nd4jLong _readHost = 0L;
+        mutable Nd4jLong _readDevice = 0L;
 
     public:
         NDArray();
@@ -226,14 +226,14 @@ namespace nd4j {
          */
         void setAttached(bool reallyAttached);
 
-        FORCEINLINE void tickWriteHost();
-        FORCEINLINE void tickWriteDevice();
-        FORCEINLINE void tickReadHost();
-        FORCEINLINE void tickReadDevice();
+        FORCEINLINE void tickWriteHost() const;
+        FORCEINLINE void tickWriteDevice() const;
+        FORCEINLINE void tickReadHost() const;
+        FORCEINLINE void tickReadDevice() const;
         FORCEINLINE bool isActualOnHostSide() const;
         FORCEINLINE bool isActualOnDeviceSide() const;
 
-        void syncToHost() ;
+        void syncToHost() const;
         void syncToDevice() const;
         void syncShape() const;
 
@@ -1973,10 +1973,10 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::tickWriteHost()                 { _writeHost   = ++_opCounter; }
-void NDArray::tickWriteDevice()              {  _writeDevice = ++_opCounter; }
-void NDArray::tickReadHost()                 {  _readHost    = ++_opCounter; }
-void NDArray::tickReadDevice()                {  _readDevice  = ++_opCounter; }
+void NDArray::tickWriteHost() const          { _writeHost   = ++_opCounter; }
+void NDArray::tickWriteDevice() const        {  _writeDevice = ++_opCounter; }
+void NDArray::tickReadHost() const           {  _readHost    = ++_opCounter; }
+void NDArray::tickReadDevice() const         {  _readDevice  = ++_opCounter; }
 bool NDArray::isActualOnHostSide() const     { return (_writeHost > _writeDevice || _readHost > _writeDevice); }
 bool NDArray::isActualOnDeviceSide() const   { return (_writeDevice > _writeHost || _readDevice > _writeHost); }
 

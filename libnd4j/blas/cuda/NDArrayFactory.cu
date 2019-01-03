@@ -443,7 +443,6 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
 
     cudaMemset(specialBuffer, 0, bufferSize);
     cudaMemcpy(specialShapeInfo, res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
-    nd4j_printf("Ticking\n","");
     res.tickWriteDevice();
     res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
     res.setSpecialBuffers(specialBuffer, specialShapeInfo);
