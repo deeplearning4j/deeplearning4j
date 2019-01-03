@@ -100,6 +100,15 @@ NDArray::NDArray(nd4j::graph::LaunchContext* context) {
     _isShapeAlloc = false;
 }
 
+////////////////////////////////////////////////////////////////////////
+// creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros, set dtype as array type
+NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc): 
+                NDArray(shapeInfo, copyStrides, context, isShapeAlloc) {
+    
+    ArrayOptions::setDataType(_shapeInfo, _dataType);
+}
+
+
     template <typename T>
     void NDArray::templatedAssign(void *xBuffer, Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const {
         auto x = reinterpret_cast<T *>(xBuffer);
@@ -354,39 +363,6 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
         _bufferD = reinterpret_cast<int8_t *>(buffer);
         _shapeInfoD = shape;
     }
-
-////////////////////////////////////////////////////////////////////////
-// assignment operator
-    NDArray& NDArray::operator=(const NDArray& other) {
-
-	if (this == &other)
-        return *this;
-
-    if (_shapeInfo != nullptr && _buffer != nullptr && shape::equalsSoft(_shapeInfo, other._shapeInfo) && _dataType == other._dataType) {
-        this->assign(&other);
-    }
-    else {
-        if(_isBuffAlloc && _context->getWorkspace() == nullptr)
-            delete []_buffer;
-        if(_isShapeAlloc && _context->getWorkspace() == nullptr)
-            delete []_shapeInfo;
-
-        _length = other._length;
-        _dataType = other._dataType;
-
-        _context= other._context;
-
-        _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace());
-        ALLOCATE(_buffer, _context->getWorkspace(), _length * sizeOfT(), int8_t);
-
-        _isBuffAlloc = true;
-        _isShapeAlloc = true;
-        _context= other._context;
-        this->assign(&other);
-    }
-
-    return *this;
-}
 
 ////////////////////////////////////////////////////////////////////////
 // move assignment operator

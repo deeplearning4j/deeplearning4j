@@ -70,14 +70,12 @@ namespace nd4j {
 // copy constructor
 NDArray::NDArray(const NDArray& other) {
 
-    _length = other._length;
-    _context = other._context;
-    _dataType = other._dataType;
-    ALLOCATE(_buffer, other._context->getWorkspace(), _length * other.sizeOfT(), int8_t);
-    _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace());
+    _context = other._context;    
 
-    _isBuffAlloc = true;
-    _isShapeAlloc = true;
+    setShapeInfo(ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace()));
+    ALLOCATE(_buffer, other._context->getWorkspace(), _length * other.sizeOfT(), int8_t);    
+
+    triggerAllocationFlag(true, true);
 
     this->assign(&other);
 }
@@ -85,27 +83,45 @@ NDArray::NDArray(const NDArray& other) {
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
 NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isShapeAlloc) {
-    _buffer    = reinterpret_cast<int8_t *>(buffer);
-    _shapeInfo = shapeInfo;
-    _isBuffAlloc = isBuffAlloc;                                  // indicate that memory for array is passed from outside
-    _isShapeAlloc = isShapeAlloc;
+    
+    if (shapeInfo == nullptr)
+        throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
+
+    if (buffer == nullptr)
+        throw std::runtime_error("NDArray constructor: can't be initalized without buffer");
+
+    if ((int) shapeInfo[0] > MAX_RANK)
+        throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32");
+
+     if(isShapeAlloc) 
+        setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, true, _context->getWorkspace()));
+    else 
+        setShapeInfo(shapeInfo);
+
     _context = context;
+    _isAttached = _context->getWorkspace() != nullptr;    
+    _isShapeAlloc = isShapeAlloc;
 
-    _isAttached = _context->getWorkspace() != nullptr;
-
-    if (shapeInfo != nullptr) {
-        _length = shape::length(shapeInfo);
-        _dataType = ArrayOptions::dataType(shapeInfo);
-    } else
-        throw std::runtime_error("NDArray can't be initalized without shapeinfo");
+    if (this->isEmpty()) {
+        _length = 0;        
+        _isBuffAlloc = false;
+    }
+    else {        
+        _buffer = reinterpret_cast<int8_t *>(buffer);            
+        _isBuffAlloc = isBuffAlloc;
+    }
 }
 
+////////////////////////////////////////////////////////////////////////
 void NDArray::lazyAllocateBuffer() {
     // no-op
 }
 
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+
+    if (shape.empty())
+        throw std::runtime_error("NDArray constructor: input shape is empty !");
 
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
@@ -120,6 +136,143 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     triggerAllocationFlag(true, true);
 }
 
+////////////////////////////////////////////////////////////////////////
+    NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+
+        if (shape.empty())
+            throw std::runtime_error("NDArray constructor: input shape is empty !");
+
+        if ((int) shape.size() > MAX_RANK)
+            throw std::invalid_argument("Rank of NDArray can't exceed 32");
+
+        _context = context;
+        _isAttached = _context->getWorkspace() != nullptr;
+
+        setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, _context->getWorkspace()));
+
+        if (_length != data.size()) {
+            nd4j_printf("NDArray constructor: data size [%i] doesn't match shape length [%i]\n", data.size(), _length);
+            throw std::runtime_error("Data size doesn't match shape");
+        }
+
+        ALLOCATE(_buffer, _context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
+        triggerAllocationFlag(true, true);
+
+        for(Nd4jLong i=0; i < _length; ++i) {
+            BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedDoubleAssign<, double>(_buffer, i, reinterpret_cast<const void *>(data.data()), i), LIBND4J_TYPES);
+        }
+    }
+
+////////////////////////////////////////////////////////////////////////
+    NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::LaunchContext* context) {
+
+        _context = context;
+        _isAttached = _context->getWorkspace() != nullptr;
+
+        ALLOCATE(_buffer, _context->getWorkspace(), other->_length * DataTypeUtils::sizeOf(other->dataType()), int8_t);
+        setShapeInfo(ShapeBuilders::copyShapeInfo(other->_shapeInfo, copyStrides, _context->getWorkspace()));
+        triggerAllocationFlag(true, true);
+    }
+
+////////////////////////////////////////////////////////////////////////
+    NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+
+        if (shape.empty())
+            throw std::runtime_error("NDArray constructor: input shape is empty !");
+
+        if (buffer == nullptr)
+            throw std::runtime_error("NDArray constructor: can't be initalized without buffer");
+        
+        if ((int) shape.size() > MAX_RANK)
+            throw std::invalid_argument("Rank of NDArray can't exceed 32");
+
+        _context = context;
+        _isAttached = _context->getWorkspace() != nullptr;
+
+        setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, _context->getWorkspace()));
+
+        _buffer = reinterpret_cast<int8_t *>(buffer);
+        triggerAllocationFlag(false, true);
+    }
+
+////////////////////////////////////////////////////////////////////////
+// creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
+    NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc) {
+
+        if (shapeInfo == nullptr)
+            throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
+
+        if ((int) shapeInfo[0] > MAX_RANK)
+            throw std::invalid_argument("Rank of NDArray can't exceed 32");
+
+        _context = context;
+        _isAttached = _context->getWorkspace() != nullptr;
+
+        if(isShapeAlloc) {
+            setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, _context->getWorkspace()));            
+        }
+        else {
+            setShapeInfo(shapeInfo);
+            if(!copyStrides)
+                shape::updateStrides(_shapeInfo, shape::order(shapeInfo));
+        }
+
+        _isShapeAlloc = isShapeAlloc;
+        
+        if (this->isEmpty()) {
+            _length = 0;
+            _isBuffAlloc = false;
+        }
+        else {
+            ALLOCATE(_buffer, _context->getWorkspace(), _length * DataTypeUtils::sizeOfElement(_dataType), int8_t);
+            memset(_buffer, 0, _length * DataTypeUtils::sizeOfElement(_dataType));
+            _isBuffAlloc = true;
+        }
+    }
+
+////////////////////////////////////////////////////////////////////////
+    NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+
+        _context = context;
+        _isAttached = _context->getWorkspace() != nullptr;
+
+        setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, _context->getWorkspace()));
+        ALLOCATE(_buffer, _context->getWorkspace(), DataTypeUtils::sizeOfElement(dtype), int8_t);
+        memset(_buffer, 0, DataTypeUtils::sizeOfElement(dtype));
+        triggerAllocationFlag(true, true);
+    }
+
+////////////////////////////////////////////////////////////////////////
+// assignment operator
+    NDArray& NDArray::operator=(const NDArray& other) {
+
+    if (this == &other)
+        return *this;
+
+    if (_shapeInfo != nullptr && _buffer != nullptr && shape::equalsSoft(_shapeInfo, other._shapeInfo) && _dataType == other._dataType) {
+        this->assign(&other);
+    }
+    else {
+        if(_isBuffAlloc && _context->getWorkspace() == nullptr)
+            delete []_buffer;
+        if(_isShapeAlloc && _context->getWorkspace() == nullptr)
+            delete []_shapeInfo;
+
+        _length = other._length;
+        _dataType = other._dataType;
+
+        _context= other._context;
+
+        _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace());
+        ALLOCATE(_buffer, _context->getWorkspace(), _length * sizeOfT(), int8_t);
+
+        _isBuffAlloc = true;
+        _isShapeAlloc = true;        
+        this->assign(&other);
+    }
+
+    return *this;
+}
 
 //////////////////////////////////////////////////////////////////////////
 // perform array transformation
@@ -906,128 +1059,6 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         result->assign(this);
 
         return result;
-    }
-
-    ////////////////////////////////////////////////////////////////////////
-    NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
-
-        if ((int) shape.size() > MAX_RANK)
-            throw std::invalid_argument("Rank of NDArray can't exceed 32");
-
-        _context = context;
-        _isAttached = _context->getWorkspace() != nullptr;
-
-        setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, _context->getWorkspace()));
-
-        if (_length != data.size()) {
-            nd4j_printf("NDArray constructor: data size [%i] doesn't match shape length [%i]\n", data.size(), _length);
-            throw std::runtime_error("Data size doesn't match shape");
-        }
-
-        ALLOCATE(_buffer, _context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
-        triggerAllocationFlag(true, true);
-
-        for(Nd4jLong i=0; i < _length; ++i) {
-            BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedDoubleAssign<, double>(_buffer, i, reinterpret_cast<const void *>(data.data()), i), LIBND4J_TYPES);
-        }
-    }
-
-////////////////////////////////////////////////////////////////////////
-    NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::LaunchContext* context) {
-
-        _context = context;
-        _isAttached = _context->getWorkspace() != nullptr;
-
-        ALLOCATE(_buffer, _context->getWorkspace(), other->_length * DataTypeUtils::sizeOf(other->dataType()), int8_t);
-        setShapeInfo(ShapeBuilders::copyShapeInfo(other->_shapeInfo, copyStrides, _context->getWorkspace()));
-        triggerAllocationFlag(true, true);
-    }
-
-////////////////////////////////////////////////////////////////////////
-    NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
-
-        if ((int) shape.size() > MAX_RANK)
-            throw std::invalid_argument("Rank of NDArray can't exceed 32");
-
-        _context = context;
-        _isAttached = _context->getWorkspace() != nullptr;
-
-        setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, _context->getWorkspace()));
-
-        _buffer = reinterpret_cast<int8_t *>(buffer);
-        triggerAllocationFlag(false, true);
-    }
-
-////////////////////////////////////////////////////////////////////////
-// creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
-    NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc) {
-
-        if ((int) shapeInfo[0] > MAX_RANK)
-            throw std::invalid_argument("Rank of NDArray can't exceed 32");
-
-        _context = context;
-        _isAttached = _context->getWorkspace() != nullptr;
-
-        if(isShapeAlloc) {
-            setShapeInfo(shapeInfo);
-            if(!copyStrides)
-                shape::updateStrides(_shapeInfo, shape::order(shapeInfo));
-        }
-        else
-            setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, _context->getWorkspace()));
-
-        if (ArrayOptions::hasPropertyBitSet(shapeInfo, ARRAY_EMPTY)) {
-            _buffer = nullptr;
-            _length = 0;
-            triggerAllocationFlag(false, true);
-        }
-        else {
-            ALLOCATE(_buffer, _context->getWorkspace(), _length * DataTypeUtils::sizeOfElement(_dataType), int8_t);
-            memset(_buffer, 0, _length * DataTypeUtils::sizeOfElement(_dataType));
-
-            triggerAllocationFlag(true, true);
-        }
-    }
-
-////////////////////////////////////////////////////////////////////////
-// creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros, set dtype as array type
-    NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc) {
-
-        if (shapeInfo == nullptr || (int) shapeInfo[0] > MAX_RANK)
-            throw std::invalid_argument("NDArray constructor: input shapeInfo is nullptr or its rank exceeds 32");
-
-        _context = context;
-        _isAttached = _context->getWorkspace() != nullptr;
-
-        if(isShapeAlloc) {
-            _shapeInfo = shapeInfo;
-            if(!copyStrides)
-                shape::updateStrides(_shapeInfo, shape::order(shapeInfo));
-        }
-        else
-            _shapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, _context->getWorkspace());
-
-        _dataType = dtype;
-        _length = shape::length(_shapeInfo);
-        ArrayOptions::setDataType(_shapeInfo, _dataType);
-
-        ALLOCATE(_buffer, _context->getWorkspace(), _length * sizeOfT() , int8_t);
-
-        memset(_buffer, 0, _length * DataTypeUtils::sizeOfElement(_dataType));
-
-        triggerAllocationFlag(true, true);
-    }
-
-////////////////////////////////////////////////////////////////////////
-    NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
-
-        _context = context;
-        _isAttached = _context->getWorkspace() != nullptr;
-
-        setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, _context->getWorkspace()));
-        ALLOCATE(_buffer, _context->getWorkspace(), DataTypeUtils::sizeOfElement(dtype), int8_t);
-        memset(_buffer, 0, DataTypeUtils::sizeOfElement(dtype));
-        triggerAllocationFlag(true, true);
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1864,6 +1895,22 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         return result;
     }
+
+//////////////////////////////////////////////////////////////////////////
+    void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
+        if(_isShapeAlloc && _context->getWorkspace() == nullptr)
+            delete []_shapeInfo;
+
+        _shapeInfo = shapeInfo;
+
+        if (shapeInfo != nullptr) {
+            this->_length = shape::length(shapeInfo);
+            this->_dataType = ArrayOptions::dataType(shapeInfo);
+        } else {
+            this->_dataType = nd4j::DataType::INHERIT;
+        }
+    }
+    
 
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*

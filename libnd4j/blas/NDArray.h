@@ -1132,6 +1132,11 @@ namespace nd4j {
         ResultSet* allExamples()const ;
 
         /**
+        *  set _shapeInfo
+        */
+        void setShapeInfo(Nd4jLong *shapeInfo);
+
+        /**
         *  returns absolute offset which corresponds to given sequential index
         */
         Nd4jLong getOffset(const Nd4jLong i) const;
@@ -1159,12 +1164,7 @@ namespace nd4j {
         /**
         *  default destructor
         */
-        ~NDArray() noexcept; 
-
-        /**
-        *  set _shapeInfo
-        */
-        FORCEINLINE void setShapeInfo(Nd4jLong *shapeInfo);
+        ~NDArray() noexcept;         
 
         /**
         *  set _buffer
@@ -1468,22 +1468,7 @@ namespace nd4j {
             auto b = reinterpret_cast<T*>(buffer);
             auto v = static_cast<R>(b[index]);
             return v;
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
-        if(_isShapeAlloc && _context->getWorkspace() == nullptr)
-            delete []_shapeInfo;
-
-        _shapeInfo = shapeInfo;
-
-        if (shapeInfo != nullptr) {
-            this->_length = shape::length(shapeInfo);
-            this->_dataType = ArrayOptions::dataType(shapeInfo);
-        } else {
-            this->_dataType = nd4j::DataType::INHERIT;
-        }
-    }
+    }    
 
     //////////////////////////////////////////////////////////////////////////
     void NDArray::setBuffer(void* buffer) {

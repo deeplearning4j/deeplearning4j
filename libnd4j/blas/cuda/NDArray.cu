@@ -46,49 +46,48 @@
 
 namespace nd4j {
 
-    void* NDArray::operator new(size_t i) {
-        if (nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached()) {
-            nd4j::memory::Workspace* ws = nd4j::memory::MemoryRegistrator::getInstance()->getWorkspace();
-
-            return ws->allocateBytes((Nd4jLong) i);
-        } else {
-            auto p = malloc(i);
-            
-            CHECK_ALLOC(p, "Failed to allocate new NDArray");
-
-            return p;
-        }
+////////////////////////////////////////////////////////////////////////
+void* NDArray::operator new(size_t i) {
+    if (nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached()) {
+        nd4j::memory::Workspace* ws = nd4j::memory::MemoryRegistrator::getInstance()->getWorkspace();
+        return ws->allocateBytes((Nd4jLong) i);
+    } else {
+        auto p = malloc(i);
+        
+        CHECK_ALLOC(p, "Failed to allocate new NDArray");
+        return p;
     }
+}
 
-    void NDArray::operator delete(void* p) {
-        if (!nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached()) {
-            free(p);
-        }
-    }
+////////////////////////////////////////////////////////////////////////
+void NDArray::operator delete(void* p) {
+    
+    if (!nd4j::memory::MemoryRegistrator::getInstance()->hasWorkspaceAttached())
+        free(p);
+}
 
 
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
 NDArray::NDArray(const NDArray& other) {
+    
+    _context = other._context;    
 
-    _length = other._length;
-    _context = other._context;
-    _dataType = other._dataType;
+    setShapeInfo(ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace()));    
 
     cudaMalloc(&_bufferD, _length * other.sizeOfT());
-    _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace());
-    cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
-    syncShape();
+
+    if(other.isActualOnHostSide())
+        cudaMemcpy(_bufferD, other._buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
+    else        
+        cudaMemcpy(_bufferD, other._bufferD, _length * sizeOfT(), cudaMemcpyDeviceToDevice);
+        
     triggerAllocationFlag(true, true);
 
-    if(isActualOnDeviceSide())
-        this->assign(&other);
-    else
-        cudaMemcpy(_bufferD, other._buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
-    
     tickWriteDevice();
 }
 
+////////////////////////////////////////////////////////////////////////
 void NDArray::lazyAllocateBuffer() {
     if (_buffer == nullptr && !this->isEmpty()) {
         ALLOCATE(_buffer, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
@@ -97,14 +96,13 @@ void NDArray::lazyAllocateBuffer() {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// scalar constructor
 NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
 
     setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace()));
-    cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
-    syncShape();
         
-    cudaMalloc(&_bufferD, _length * sizeOfT());
-    cudaMemset(_bufferD, 0, _length * sizeOfT());
+    cudaMalloc(&_bufferD, sizeOfT());
+    cudaMemset(_bufferD, 0, sizeOfT());
 
     triggerAllocationFlag(true, true);
 
@@ -112,22 +110,60 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
+NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc) {
+    
+    if (shapeInfo == nullptr)
+        throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
+
+    if ((int) shapeInfo[0] > MAX_RANK)
+        throw std::invalid_argument("Rank of NDArray can't exceed 32");
+
+    _context = context;        
+
+    if(isShapeAlloc) {
+        setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, _context->getWorkspace()));       
+    }
+    else {
+        setShapeInfo(shapeInfo);
+        if(!copyStrides)
+            shape::updateStrides(_shapeInfo, shape::order(shapeInfo));         
+    }
+
+    _isShapeAlloc = isShapeAlloc;
+
+    if (this->isEmpty()) {
+        _length = 0;
+        _isBuffAlloc = false;
+    }
+    else {
+        cudaMalloc(&_bufferD, _length * sizeOfT());
+        cudaMemset(_bufferD, 0, _length * sizeOfT());
+        _isBuffAlloc = true;
+    }
+
+    tickWriteDevice();  
+}
+
+////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+
+    if (shape.empty())
+        throw std::runtime_error("NDArray constructor: input shape is empty !");
 
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
-    setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, context->getWorkspace()));
+    _context = context;
+
+    setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, _context->getWorkspace()));
 
     if (_length != data.size()) {
         nd4j_printf("NDArray constructor: data size [%i] doesn't match shape length [%i]\n", data.size(), _length);
         throw std::runtime_error("Data size doesn't match shape");
     }
 
-    cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
-    syncShape();
-
-    ALLOCATE(_buffer, context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
+    ALLOCATE(_buffer, _context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
     cudaMalloc(&_bufferD, _length * DataTypeUtils::sizeOf(dtype));    
 
     triggerAllocationFlag(true, true);
@@ -143,58 +179,137 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
 NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isShapeAlloc) {
-    _shapeInfo = shapeInfo;
-    _buffer = reinterpret_cast<int8_t *>(buffer);
-    _isBuffAlloc = isBuffAlloc;                                  // indicate that memory for array is passed from outside
-    _isShapeAlloc = isShapeAlloc;
+
+    if (shapeInfo == nullptr)
+        throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
+
+    if (buffer == nullptr)
+        throw std::runtime_error("NDArray constructor: can't be initalized without buffer");
+
+    if ((int) shapeInfo[0] > MAX_RANK)
+        throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32");
+
+     if(isShapeAlloc) 
+        setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, true, _context->getWorkspace()));
+    else 
+        setShapeInfo(shapeInfo);
+    
     _context = context;
+    _isShapeAlloc = isShapeAlloc;
 
-    if (shapeInfo != nullptr) {
-        _length = shape::length(shapeInfo);
-        _dataType = ArrayOptions::dataType(shapeInfo);
-    } else
-        throw std::runtime_error("NDArray can't be initalized without shapeinfo");
-
-    cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
-    syncShape();
-
-    if (!this->isEmpty()) {
-        nd4j_printf("Not empty","");
-        cudaMalloc(&_bufferD, _length * sizeOfT());
-
-        if (_buffer != nullptr) {
-            cudaMemcpy(_bufferD, buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
-            this->tickReadHost();
-        } else {
-            cudaMemset(_bufferD, 0, _length * sizeOfT());
-        }
-
-        this->tickWriteDevice();
-    } else {
-        this->tickWriteDevice();
-        this->tickReadHost();
+    if (this->isEmpty()) {
+        _length = 0;
+        _isBuffAlloc = false;
     }
+    else {
+        _buffer = reinterpret_cast<int8_t *>(buffer);
+        cudaMalloc(&_bufferD, _length * sizeOfT());
+        cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
+        _isBuffAlloc = isBuffAlloc;
+        tickReadHost();
+    }
+      
+    tickWriteDevice();   
 }
 
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
 
+    if (shape.empty())
+        throw std::runtime_error("NDArray constructor: input shape is empty !");
+
     if ((int) shape.size() > MAX_RANK)
         throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
-    setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, context->getWorkspace()));
-//    ALLOCATE(_buffer, context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
-//    memset(_buffer, 0, _length * DataTypeUtils::sizeOf(dtype));
     _context = context;
-    triggerAllocationFlag(true, true);
-    cudaMalloc(&_bufferD, _length * sizeOfT());
-    cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
-    syncShape();
-    tickWriteDevice();
-//    syncToDevice();
 
+    setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, _context->getWorkspace()));
+        
+    cudaMalloc(&_bufferD, _length * sizeOfT());
+
+    triggerAllocationFlag(true, true);
+
+    tickWriteDevice();
 }
 
+////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::LaunchContext* context) {
+
+    _context = context;
+    
+    setShapeInfo(ShapeBuilders::copyShapeInfo(other->_shapeInfo, copyStrides, _context->getWorkspace()));
+    
+    cudaMalloc(&_bufferD, _length * sizeOfT());    
+                
+    triggerAllocationFlag(true, true);    
+
+    tickWriteDevice();
+}
+
+////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+    
+    if (shape.empty())
+        throw std::runtime_error("NDArray constructor: input shape is empty !");
+    
+    if (buffer == nullptr)
+        throw std::runtime_error("NDArray constructor: can't be initalized without buffer");
+    
+    if ((int) shape.size() > MAX_RANK)
+        throw std::invalid_argument("Rank of NDArray can't exceed 32");
+    
+    _context = context;
+
+    setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, _context->getWorkspace()));
+
+    _buffer = reinterpret_cast<int8_t *>(buffer);
+    cudaMalloc(&_bufferD, _length * sizeOfT());
+    cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);    
+    
+    triggerAllocationFlag(false, true);
+
+    tickReadHost();
+    tickWriteDevice();
+}
+
+////////////////////////////////////////////////////////////////////////
+// assignment operator
+    NDArray& NDArray::operator=(const NDArray& other) {
+
+    if (this == &other)
+        return *this;
+
+    if (_shapeInfo != nullptr && _bufferD != nullptr && shape::equalsSoft(_shapeInfo, other._shapeInfo) && _dataType == other._dataType) {
+        this->assign(&other);
+    }
+    else {
+        
+        if(_isBuffAlloc) {
+            cudaFree(_bufferD);
+            if(_context->getWorkspace() == nullptr)
+                delete []_buffer;
+        }
+        
+        if(_isShapeAlloc) {
+            cudaFree(_shapeInfoD);
+            if(_context->getWorkspace() == nullptr)
+                delete []_shapeInfo;
+        }
+
+        _length = other._length;
+        _dataType = other._dataType;
+        _context= other._context;
+
+        _shapeInfo = ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace());
+        cudaMalloc(&_bufferD, _length * other.sizeOfT());
+
+        triggerAllocationFlag(true, true);        
+                
+        this->assign(&other);
+    }
+
+    return *this;
+}
 
 //////////////////////////////////////////////////////////////////////////
 // perform array transformation
@@ -560,29 +675,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     template void NDArray::setValueInDiagMatrix(const int8_t& value, const int diag, const char direction);
     template void NDArray::setValueInDiagMatrix(const bool& value, const int diag, const char direction);
 
-    ////////////////////////////////////////////////////////////////////////
-    // default destructor
-    NDArray::~NDArray() noexcept {
-        if (_isBuffAlloc && _context->getWorkspace() == nullptr && _buffer != nullptr) {
-            if (!isS()) {
-                delete[] _buffer;
-            } else {
-                for (int e = 0; e < lengthOf(); e++) {
-                    auto t = reinterpret_cast<utf8string**>(_buffer);
-                    delete t[e];
-                };
-
-                delete[] _buffer;
-            }
-        }
-
-        if (_isShapeAlloc  && _context->getWorkspace() == nullptr && _shapeInfo != nullptr)
-            delete[] _shapeInfo;
-        if (_isBuffAlloc && _shapeInfoD != nullptr)
-            cudaFree(_shapeInfoD);
-        if (_isShapeAlloc && _bufferD != nullptr)
-            cudaFree(_bufferD);
-    }
+    
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -954,6 +1047,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             else {
                 NativeOpExecutioner::execScalar(_context, scalar::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr);
             }
+            tickWriteDevice();
             return;
         }
 
@@ -972,6 +1066,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         else
             NativeOpExecutioner::execPairwiseTransform(_context, pairwise::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr);
 
+        tickWriteDevice();
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -1017,121 +1112,6 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         }
     }
     
-////////////////////////////////////////////////////////////////////////
-    NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::LaunchContext* context) {
-
-        ALLOCATE(_buffer, context->getWorkspace(), other->_length * DataTypeUtils::sizeOf(other->dataType()), int8_t);
-        setShapeInfo(ShapeBuilders::copyShapeInfo(other->_shapeInfo, copyStrides, context->getWorkspace()));        
-        _context = context;
-
-        triggerAllocationFlag(true, true);
-    }
-
-////////////////////////////////////////////////////////////////////////
-    NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
-
-        if ((int) shape.size() > MAX_RANK)
-            throw std::invalid_argument("Rank of NDArray can't exceed 32");
-
-        setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, context->getWorkspace()));
-
-        _buffer = reinterpret_cast<int8_t *>(buffer);
-        _context = context;
-        triggerAllocationFlag(false, true);
-    }
-
-////////////////////////////////////////////////////////////////////////
-// creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
-    NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc) {
-
-        if ((int) shapeInfo[0] > MAX_RANK)
-            throw std::invalid_argument("Rank of NDArray can't exceed 32");
-
-        if(isShapeAlloc) {
-            setShapeInfo(shapeInfo);
-            if(!copyStrides)
-                shape::updateStrides(_shapeInfo, shape::order(shapeInfo));
-        }
-        else
-            setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, context->getWorkspace()));
-
-        if (ArrayOptions::hasPropertyBitSet(shapeInfo, ARRAY_EMPTY)) {
-            _buffer = nullptr;
-            _length = 0;
-            triggerAllocationFlag(false, true);
-        }
-        else {
-            ALLOCATE(_buffer, context->getWorkspace(), _length * DataTypeUtils::sizeOfElement(_dataType), int8_t);
-
-            memset(_buffer, 0, _length * DataTypeUtils::sizeOfElement(_dataType));
-
-            triggerAllocationFlag(true, true);
-        }
-        _context = context;
-    }
-
-////////////////////////////////////////////////////////////////////////
-// creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros, set dtype as array type
-    NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc) {
-
-        if (shapeInfo == nullptr || (int) shapeInfo[0] > MAX_RANK)
-            throw std::invalid_argument("NDArray constructor: input shapeInfo is nullptr or its rank exceeds 32");
-
-        if(isShapeAlloc) {
-            _shapeInfo = shapeInfo;
-            if(!copyStrides)
-                shape::updateStrides(_shapeInfo, shape::order(shapeInfo));
-        }
-        else
-            _shapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, context->getWorkspace());
-
-        _dataType = dtype;
-        _length = shape::length(_shapeInfo);
-        _context = context;
-        ArrayOptions::setDataType(_shapeInfo, _dataType);
-
-        ALLOCATE(_buffer, _context->getWorkspace(), _length * sizeOfT() , int8_t);
-
-        memset(_buffer, 0, _length * DataTypeUtils::sizeOfElement(_dataType));
-
-        triggerAllocationFlag(true, true);
-    }
-
-////////////////////////////////////////////////////////////////////////
-    // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
-    bool NDArray::equalsTo(const NDArray *other, double eps) const {
-        if (this->dataType() != other->dataType() || lengthOf() != other->lengthOf())
-            return false;
-
-        // we need to be able to compare [1, len] to [len]
-        if ((rankOf() == 1 && other->rankOf() == 2) || (rankOf() == 2 && other->rankOf() == 1)) {
-            // FIXME: do something here?
-        } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
-            return false;
-
-        NDArray tmp(nd4j::DataType::FLOAT32, _context); // scalar = 0
-
-        if(!isActualOnDeviceSide()) 
-            syncToDevice();
-
-        if(!other->isActualOnDeviceSide())
-            other->syncToDevice();
-
-        ExtraArguments extras({eps});        
-        NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extras.argumentAsT(DataType::DOUBLE), other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
-
-        auto res = cudaStreamSynchronize(*_context->getCudaStream());
-        if (res != 0) {
-            nd4j_printf("Kernel returned [%i]\n", res);
-            throw std::runtime_error("equalsTo failed");
-        }
-
-        if (tmp.e<int>(0) > 0)
-            return false;
-
-        return true;
-    }
-
 
 //////////////////////////////////////////////////////////////////////////
     template <>
@@ -1951,11 +1931,87 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         return result;
     }
 
-    /*
-#ifndef __CLION_IDE__
-#include "NDArray.macro"
-#endif
- */
+////////////////////////////////////////////////////////////////////////
+// default destructor
+NDArray::~NDArray() noexcept {
+
+    if (_isBuffAlloc && _context->getWorkspace() == nullptr && _buffer != nullptr) {
+        if (!isS()) {
+            delete[] _buffer;
+        } else {
+            for (int e = 0; e < lengthOf(); e++) {
+                auto t = reinterpret_cast<utf8string**>(_buffer);
+                delete t[e];
+            };
+            delete[] _buffer;
+        }
+    }
+    if (_isShapeAlloc  && _context->getWorkspace() == nullptr && _shapeInfo != nullptr)
+        delete[] _shapeInfo;
+    if (_isBuffAlloc)
+        cudaFree(_shapeInfoD);
+    if (_isShapeAlloc)
+        cudaFree(_bufferD);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
+
+    if(_isShapeAlloc) {
+        cudaFree(_shapeInfoD);
+        if(_context->getWorkspace() == nullptr)
+            delete []_shapeInfo;
+    } 
+        
+    _shapeInfo = shapeInfo;
+
+    if (shapeInfo != nullptr) {
+        this->_length = shape::length(shapeInfo);
+        this->_dataType = ArrayOptions::dataType(shapeInfo);
+    } else {
+        this->_dataType = nd4j::DataType::INHERIT;
+    }
+
+    cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
+    syncShape();
+}
+
+////////////////////////////////////////////////////////////////////////
+    // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
+    bool NDArray::equalsTo(const NDArray *other, double eps) const {
+        if (this->dataType() != other->dataType() || lengthOf() != other->lengthOf())
+            return false;
+
+        // we need to be able to compare [1, len] to [len]
+        if ((rankOf() == 1 && other->rankOf() == 2) || (rankOf() == 2 && other->rankOf() == 1)) {
+            // FIXME: do something here?
+        } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
+            return false;
+
+        NDArray tmp(nd4j::DataType::FLOAT32, _context); // scalar = 0
+
+        if(!isActualOnDeviceSide()) 
+            syncToDevice();
+
+        if(!other->isActualOnDeviceSide())
+            other->syncToDevice();
+
+        ExtraArguments extras({eps}); 
+        NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extras.argumentAsT(DataType::FLOAT32), other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
+
+        auto res = cudaStreamSynchronize(*_context->getCudaStream());
+        if (res != 0) {
+            nd4j_printf("Kernel returned [%i]\n", res);
+            throw std::runtime_error("equalsTo failed");
+        }
+
+        if (tmp.e<int>(0) > 0)
+            return false;
+
+        return true;
+    }
+
+
 }
 
 
