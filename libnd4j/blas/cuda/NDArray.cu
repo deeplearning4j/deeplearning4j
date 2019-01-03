@@ -1782,6 +1782,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         if (!tadArray->isActualOnDeviceSide())
             tadArray->syncToDevice();
 
+
         // TODO: eventually we want separate tads here
         NativeOpExecutioner::execBroadcastBool(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD,
                                                tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD,
