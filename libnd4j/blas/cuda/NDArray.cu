@@ -1113,6 +1113,12 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         
         NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
 
+        auto res = cudaStreamSynchronize(*_context->getCudaStream());
+        if (res != 0) {
+            nd4j_printf("Kernel returned [%i]\n", res);
+            throw std::runtime_error("equalsTo failed");
+        }
+
         if (tmp.e<int>(0) > 0)
             return false;
 
