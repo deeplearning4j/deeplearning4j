@@ -99,7 +99,6 @@ namespace nd4j {
 */
         template <typename T>
         void* templatedPointerShift(const Nd4jLong offset) const;
-    
     protected:
 
        /**
@@ -1450,6 +1449,8 @@ namespace nd4j {
         FORCEINLINE bool operator==(const NDArray &other) const;
 
         FORCEINLINE bool operator!=(const NDArray &other) const;
+
+        void lazyAllocateBuffer();
     };
 
 

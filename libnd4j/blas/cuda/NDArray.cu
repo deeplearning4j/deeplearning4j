@@ -88,6 +88,14 @@ NDArray::NDArray(const NDArray& other) {
     tickWriteDevice();
 }
 
+void NDArray::lazyAllocateBuffer() {
+    if (_buffer == nullptr && !this->isEmpty()) {
+        ALLOCATE(_buffer, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
+        syncToHost();
+        tickReadDevice();
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
 NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isShapeAlloc) {

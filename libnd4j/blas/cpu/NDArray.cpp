@@ -100,6 +100,10 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
         throw std::runtime_error("NDArray can't be initalized without shapeinfo");
 }
 
+void NDArray::lazyAllocateBuffer() {
+    // no-op
+}
+
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
 
