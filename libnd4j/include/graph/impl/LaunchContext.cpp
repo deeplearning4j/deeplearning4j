@@ -82,7 +82,7 @@ LaunchContext::LaunchContext() {
 
     res = cudaMalloc(reinterpret_cast<void**>(&_allocationPointer), 1024 * 1024 * 8);
     if (res != 0)
-        throw std::runtime_error("_reductionPointer allocation failed");
+        throw std::runtime_error("_allocationPointer allocation failed");
 #else
     //
 #endif
