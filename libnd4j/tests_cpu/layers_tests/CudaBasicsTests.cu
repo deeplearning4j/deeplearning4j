@@ -69,7 +69,7 @@ static cudaError_t allocateDeviceMem(LaunchContext& lc, std::vector<void*>& devi
 TEST_F(CudaBasicsTests, TestPairwise_1) {
 	// allocating host-side arrays
 	auto x = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
-	auto z = NDArrayFactory::create<double>('c', { 5 });
+	auto z = NDArrayFactory::create<double>('c', { 5 }, {0,0,0,0,0});
 
 	auto exp = NDArrayFactory::create<double>('c', { 5 }, { 2, 4, 6, 8, 10 });
 
@@ -116,7 +116,7 @@ TEST_F(CudaBasicsTests, execIndexReduceScalar_1) {
     NDArray x2('c', {2,2}, {0.5, 1.5, -4.5, 3.5}, nd4j::DataType::BFLOAT16);    
     NDArray x3('c', {2,2}, {0, -1, 0, 1}, nd4j::DataType::BOOL);
     
-    NDArray scalar(nd4j::DataType::INT64);
+    NDArray scalar('c', {0}, {0}, nd4j::DataType::INT64);
 
     NDArray exp1('c', {0}, {3}, nd4j::DataType::INT64);
     NDArray exp2('c', {0}, {2}, nd4j::DataType::INT64);
@@ -228,6 +228,9 @@ TEST_F(CudaBasicsTests, execIndexReduceScalar_1) {
 
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests, execReduce3Scalar_1) {
+
+	 if (!Environment::getInstance()->isExperimentalBuild())
+        return;
 
     NDArray x1('c', {2,2}, {1,2,3,4}, nd4j::DataType::INT32);
     NDArray x2('c', {2,2}, {-1,-2,-3,-4}, nd4j::DataType::INT32);
@@ -912,6 +915,9 @@ TEST_F(CudaBasicsTests, execIndexReduce_3) {
 
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests, execScalar_1) {
+
+	if (!Environment::getInstance()->isExperimentalBuild())
+        return;
     	
     NDArray x('c', {2,3},  {0,1,2,3,4,5}, nd4j::DataType::INT64); 
     NDArray exp('c',{2,3}, {0,0,1,1,2,2}, nd4j::DataType::INT64);
@@ -944,6 +950,9 @@ TEST_F(CudaBasicsTests, execScalar_1) {
 
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests, execScalar_2) {
+
+	if (!Environment::getInstance()->isExperimentalBuild())
+        return;
     	
     NDArray x('c', {2,3},  {-1,-2,-3,-4,-5,-6}, nd4j::DataType::INT64); 
     NDArray exp('c',{2,3}, {10,10,10,10,10,10}, nd4j::DataType::FLOAT32);
@@ -977,6 +986,9 @@ TEST_F(CudaBasicsTests, execScalar_2) {
 
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests, execScalar_3) {
+
+	if (!Environment::getInstance()->isExperimentalBuild())
+        return;
     	
     NDArray x('c', {2,3,2},  {0,1,2,3,4,5,6,7,8,9,10,11}, nd4j::DataType::INT64); 
     NDArray scalars('c',{2,2}, {1,2,3,4}, nd4j::DataType::FLOAT32);
@@ -1123,6 +1135,9 @@ TEST_F(CudaBasicsTests, execScalarBool_2) {
 
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests, execBroadcast_1) {
+
+	if (!Environment::getInstance()->isExperimentalBuild())
+        return;
     	
 	NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::INT32);
     NDArray y('c', {3},   {10, 20, 30}, nd4j::DataType::INT64);
@@ -1179,6 +1194,9 @@ TEST_F(CudaBasicsTests, execBroadcast_1) {
 
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests, execBroadcast_2) {
+
+	if (!Environment::getInstance()->isExperimentalBuild())
+        return;
     	
 	NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::INT32);
     NDArray y('c', {2,4},   {10,20,30,40,50,60,70,80}, nd4j::DataType::FLOAT32);
@@ -1348,6 +1366,9 @@ TEST_F(CudaBasicsTests, execBroadcastBool_2) {
 
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests, execPairwiseTransform_1) {
+
+	if (!Environment::getInstance()->isExperimentalBuild())
+        return;
     	
 	NDArray x('c', {2,2,2}, {1,5,3,7,2,6,4,8}, nd4j::DataType::INT32);
     NDArray y('c', {4,2}, {0.1,0.2,0.3,0.4,1.5,0.6,0.7,1.8}, nd4j::DataType::DOUBLE);
@@ -3025,21 +3046,9 @@ TEST_F(CudaBasicsTests, execRandom_4) {
 
 //////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests, equalsTo_1) {
-
-	LaunchContext context;
-	cudaError_t cudaResult;
-	void* reductionPointer;
-    cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer),  1024*1024);
-    ASSERT_TRUE(cudaResult == 0);
-    int* allocationPointer;
-	cudaResult = cudaMalloc(reinterpret_cast<void **>(&allocationPointer), 1024*1024);
-	ASSERT_TRUE(cudaResult == 0);
-
-	context.setReductionPointer(reductionPointer);
-	context.setAllocationPointer(allocationPointer);
     	       
-    NDArray x('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE, &context);
-    NDArray y('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE, &context);
+    NDArray x('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE);
+    NDArray y('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE);
     
     ASSERT_TRUE(x.equalsTo(y));
 
@@ -3052,20 +3061,8 @@ TEST_F(CudaBasicsTests, equalsTo_1) {
 //////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests, equalsTo_2) {
 
-	LaunchContext context;
-	cudaError_t cudaResult;
-	void* reductionPointer;
-    cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer),  1024*1024);
-    ASSERT_TRUE(cudaResult == 0);
-    int* allocationPointer;
-	cudaResult = cudaMalloc(reinterpret_cast<void **>(&allocationPointer), 1024*1024);
-	ASSERT_TRUE(cudaResult == 0);
-
-	context.setReductionPointer(reductionPointer);
-	context.setAllocationPointer(allocationPointer);
-
-	NDArray x('c', {2,5}, {1,2,3,4,5,6,7,8,10,10}, nd4j::DataType::DOUBLE, &context);
-	NDArray y('c', {2,5}, {1,2,5,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE, &context);
+	NDArray x('c', {2,5}, {1,2,3,4,5,6,7,8,10,10}, nd4j::DataType::DOUBLE);
+	NDArray y('c', {2,5}, {1,2,5,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE);
 
 	ASSERT_FALSE(x.equalsTo(y));
 
@@ -3078,20 +3075,8 @@ TEST_F(CudaBasicsTests, equalsTo_2) {
 //////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests, equalsTo_3) {
 
-	LaunchContext context;
-	cudaError_t cudaResult;
-	void* reductionPointer;
-    cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer),  1024*1024);
-    ASSERT_TRUE(cudaResult == 0);
-    int* allocationPointer;
-	cudaResult = cudaMalloc(reinterpret_cast<void **>(&allocationPointer), 1024*1024);
-	ASSERT_TRUE(cudaResult == 0);
-
-	context.setReductionPointer(reductionPointer);
-	context.setAllocationPointer(allocationPointer);
-
-	NDArray x('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE, &context);
-	NDArray y('c', {2,5}, {1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f}, nd4j::DataType::FLOAT32, &context);
+	NDArray x('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE);
+	NDArray y('c', {2,5}, {1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f}, nd4j::DataType::FLOAT32);
 
 	ASSERT_FALSE(x.equalsTo(y));
 
