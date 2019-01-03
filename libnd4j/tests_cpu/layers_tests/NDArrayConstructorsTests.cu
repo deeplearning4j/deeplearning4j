@@ -105,3 +105,25 @@ TEST_F(NDArrayConstructorsTests, test_constructor_6) {
     ASSERT_FALSE(y.shapeInfo() == nullptr);
     ASSERT_FALSE(y.specialShapeInfo() == nullptr);
 }
+
+TEST_F(NDArrayConstructorsTests, test_constructor_7) {
+    auto x = NDArrayFactory::create<float>(1.0f);
+
+    ASSERT_FALSE(x.buffer() == nullptr);
+    ASSERT_FALSE(x.specialBuffer() == nullptr);
+
+    ASSERT_FALSE(x.shapeInfo() == nullptr);
+    ASSERT_FALSE(x.specialShapeInfo() == nullptr);
+}
+
+TEST_F(NDArrayConstructorsTests, test_linspace_1) {
+    auto x = NDArrayFactory::linspace<float>(1.0f, 10.0f, 20);
+
+    ASSERT_FALSE(x->buffer() == nullptr);
+    ASSERT_FALSE(x->specialBuffer() == nullptr);
+
+    ASSERT_FALSE(x->shapeInfo() == nullptr);
+    ASSERT_FALSE(x->specialShapeInfo() == nullptr);
+
+    delete x;
+}
