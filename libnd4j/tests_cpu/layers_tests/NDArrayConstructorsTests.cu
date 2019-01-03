@@ -43,21 +43,26 @@ public:
 TEST_F(NDArrayConstructorsTests, test_constructor_1) {
     auto x = NDArrayFactory::empty<float>();
 
-    ASSERT_TRUE(x.buffer() == nullptr);
-    ASSERT_TRUE(x.specialBuffer() == nullptr);
+    ASSERT_TRUE(x->buffer() == nullptr);
+    ASSERT_TRUE(x->specialBuffer() == nullptr);
 
-    ASSERT_FALSE(x.shapeInfo() == nullptr);
-    ASSERT_FALSE(x.specialShapeInfo() == nullptr);
+    ASSERT_FALSE(x->shapeInfo() == nullptr);
+    ASSERT_FALSE(x->specialShapeInfo() == nullptr);
+
+    delete x;
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_2) {
     auto x = NDArrayFactory::vector<float>(5, 1.0f);
 
-    ASSERT_TRUE(x.buffer() == nullptr);
-    ASSERT_FALSE(x.specialBuffer() == nullptr);
 
-    ASSERT_FALSE(x.shapeInfo() == nullptr);
-    ASSERT_FALSE(x.specialShapeInfo() == nullptr);
+    ASSERT_TRUE(x->buffer() == nullptr);
+    ASSERT_FALSE(x->specialBuffer() == nullptr);
+
+    ASSERT_FALSE(x->shapeInfo() == nullptr);
+    ASSERT_FALSE(x->specialShapeInfo() == nullptr);
+
+    delete x;
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_3) {
