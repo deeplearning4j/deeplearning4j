@@ -611,7 +611,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_2) {
 
     ASSERT_TRUE(x.isActualOnDeviceSide());
     ASSERT_TRUE(x.isActualOnHostSide());
-
+    y.lazyAllocateBuffer();
     x.applyTransform(transform::Cosine, &y, nullptr);
     //ASSERT_TRUE(x->isActualOnDeviceSide());
     //ASSERT_FALSE(x->isActualOnHostSide());
@@ -621,10 +621,155 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_2) {
     //auto res = cudaStreamSynchronize(*y.getContext()->getCudaStream());
     //ASSERT_EQ(0, res);
     y.syncToHost();
+    //exp.syncToHost();
     y.printBuffer("PrimitiveCosine2");
+    exp.printBuffer("Primitive Cosine exp");
+    ASSERT_TRUE(exp.isSameShape(y));
+    ASSERT_TRUE(exp.dataType() == y.dataType());
+    for (int e = 0; e < y.lengthOf(); e++) {
+        ASSERT_NEAR(exp.e<double>(e), y.e<double>(e), 1e-5);
+    }
+
     ASSERT_TRUE(exp.equalsTo(y));
     //delete x;
     //delete y;
+}
+
+TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_1) {
+    // allocating host-side arrays
+    NDArray x('c', { 2, 3 }, { 1, 2, 3, 4, 5, 6}, nd4j::DataType::DOUBLE);
+    NDArray y = NDArrayFactory::create<double>(3.); //'c', { 3 }, { 2., 3., 4.}, nd4j::DataType::DOUBLE);
+    //auto z = NDArrayFactory::create<double>('c', { 5 });
+
+    auto exp = NDArrayFactory::create<double>('c', { 2, 3 }, { 3, 6, 9, 12, 15, 18 });
+
+    // making raw buffers
+    //Nd4jPointer devBufferPtrX, devBufferPtrZ, devShapePtrX;
+    //cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrX), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrZ), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
+    //ASSERT_EQ(0, res);
+    //x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
+    //x.printBuffer("23X = ");
+    //y.printBuffer("23Y = ");
+    x *= y;
+    x.syncToHost();
+    x.printBuffer("54Result out");
+
+    //
+    // cudaFree(devBufferPtrX);
+    //cudaFree(devBufferPtrZ);
+    //cudaFree(devShapePtrX);
+    ASSERT_TRUE(exp.equalsTo(x));
+//    for (int e = 0; e < x.lengthOf(); e++) {
+//        ASSERT_NEAR(exp.e<double>(e), x.e<double>(e), 1e-5);
+//    }
+}
+
+TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_01) {
+    // allocating host-side arrays
+    NDArray x('c', { 2, 3 }, { 1, 2, 3, 4, 5, 6}, nd4j::DataType::DOUBLE);
+    NDArray y = NDArrayFactory::create<double>(3.); //'c', { 3 }, { 2., 3., 4.}, nd4j::DataType::DOUBLE);
+    auto z = NDArrayFactory::create<double>('c', { 2, 3 });
+
+    auto exp = NDArrayFactory::create<double>('c', { 2, 3 }, { 3, 6, 9, 12, 15, 18 });
+
+    // making raw buffers
+    //Nd4jPointer devBufferPtrX, devBufferPtrZ, devShapePtrX;
+    //cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrX), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrZ), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
+    //ASSERT_EQ(0, res);
+    //x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
+    //x.printBuffer("23X = ");
+    //y.printBuffer("23Y = ");
+    x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &y, &z);// *= y;
+    z.syncToHost();
+    z.printBuffer("53Result out");
+
+    //
+    // cudaFree(devBufferPtrX);
+    //cudaFree(devBufferPtrZ);
+    //cudaFree(devShapePtrX);
+    ASSERT_TRUE(exp.equalsTo(z));
+
+//    for (int e = 0; e < x.lengthOf(); e++) {
+//        ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+//    }
+}
+
+TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_02) {
+    // allocating host-side arrays
+    auto x = NDArrayFactory::create<double>('c', { 2, 3 }, { 1, 2, 3, 4, 5, 6}); //, nd4j::DataType::DOUBLE);
+    auto y = NDArrayFactory::create<double>('c', {2,3}, {3, 3, 3, 3, 3, 3}); //'c', { 3 }, { 2., 3., 4.}, nd4j::DataType::DOUBLE);
+    auto z = NDArrayFactory::create<double>('c', { 2, 3 });
+
+    auto exp = NDArrayFactory::create<double>('c', { 2, 3 }, { 3, 6, 9, 12, 15, 18 });
+    //if (x.isActualOnHostSide() && !x.isActualOnDeviceSide())
+    // making raw buffers
+    //Nd4jPointer devBufferPtrX, devBufferPtrZ, devShapePtrX;
+    //cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrX), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrZ), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
+    //ASSERT_EQ(0, res);
+    //x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
+    //x.printBuffer("23X = ");
+    //y.printBuffer("23Y = ");
+    x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &y, &z);// *= y;
+    //z.lazyAllocateBuffer();
+    z.syncToHost();
+    z.printBuffer("52Result out");
+
+    //
+    // cudaFree(devBufferPtrX);
+    //cudaFree(devBufferPtrZ);
+    //cudaFree(devShapePtrX);
+    //ASSERT_TRUE(exp.equalsTo(z));
+
+//    for (int e = 0; e < x.lengthOf(); e++) {
+//        ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+//    }
+}
+
+TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_002) {
+    // allocating host-side arrays
+    auto x = NDArrayFactory::create<double>('c', { 2, 3 }, { 1, 2, 3, 4, 5, 6}); //, nd4j::DataType::DOUBLE);
+    auto y = NDArrayFactory::create<double>('c', {2, 3}, {2., 3., 3., 3., 3., 3.}); //'c', { 3 }, { 2., 3., 4.}, nd4j::DataType::DOUBLE);
+    auto z = NDArrayFactory::create<double>('c', { 2, 3 });
+
+    auto exp = NDArrayFactory::create<double>('c', { 2, 3 }, { 2, 6, 9, 12, 15, 18 });
+    //if (x.isActualOnHostSide() && !x.isActualOnDeviceSide())
+    // making raw buffers
+    //Nd4jPointer devBufferPtrX, devBufferPtrZ, devShapePtrX;
+    //cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrX), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrZ), x.lengthOf() * x.sizeOfT());
+    //ASSERT_EQ(0, res);
+    //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
+    //ASSERT_EQ(0, res);
+    //x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
+    //x.printBuffer("23X = ");
+    //y.printBuffer("23Y = ");
+    x.applyPairwiseTransform(pairwise::Multiply, &y, &z);// *= y;
+    //z.lazyAllocateBuffer();
+    z.syncToHost();
+    z.printBuffer("51Result out");
+
+    //
+    // cudaFree(devBufferPtrX);
+    //cudaFree(devBufferPtrZ);
+    //cudaFree(devShapePtrX);
+    //ASSERT_TRUE(exp.equalsTo(z));
+
+//    for (int e = 0; e < x.lengthOf(); e++) {
+//        ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
+//    }
 }
 
 TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply) {
@@ -659,6 +804,7 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply) {
     //    ASSERT_NEAR(exp.e<double>(e), x.e<double>(e), 1e-5);
     //}
 }
+
 
 TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_2) {
     // allocating host-side arrays
