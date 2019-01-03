@@ -91,7 +91,7 @@ NDArray::NDArray(const NDArray& other) {
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
 NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isShapeAlloc) {
-    _shapeInfoD = shapeInfo;
+    _shapeInfo = shapeInfo;
     _buffer = reinterpret_cast<int8_t *>(buffer);
     _isBuffAlloc = isBuffAlloc;                                  // indicate that memory for array is passed from outside
     _isShapeAlloc = isShapeAlloc;
@@ -106,6 +106,7 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     syncShape();
 
     if (!this->isEmpty()) {
+        nd4j_printf("Not empty","");
         cudaMalloc(&_bufferD, _length * sizeOfT());
 
         if (_buffer != nullptr)
