@@ -153,13 +153,6 @@ namespace cnpy {
     /**
      *
      * @param fname
-     * @return
-     */
-    npz_t npzLoad(std::string fname);
-
-    /**
-     *
-     * @param fname
      * @param varname
      * @return
      */

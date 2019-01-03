@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -51,5 +52,20 @@ public class TokenizerImportTest {
         assertEquals(0, tokenizer.getDocumentCount().intValue());
 
 
+    }
+
+    @Test
+    public void importNumWordsNullTest() throws IOException, InvalidKerasConfigurationException {
+
+        String path = "modelimport/keras/preprocessing/tokenizer_num_words_null.json";
+
+        ClassPathResource configResource = new ClassPathResource(path, classLoader);
+        KerasTokenizer tokenizer = KerasTokenizer.fromJson(configResource.getFile().getAbsolutePath());
+
+        assertNull(tokenizer.getNumWords());
+        assertTrue(tokenizer.isLower());
+        assertEquals(" ", tokenizer.getSplit());
+        assertFalse(tokenizer.isCharLevel());
+        assertEquals(0, tokenizer.getDocumentCount().intValue());
     }
 }
