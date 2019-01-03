@@ -181,3 +181,27 @@ TEST_F(NDArrayConstructorsTests, test_linspace_1) {
 
     delete x;
 }
+
+TEST_F(NDArrayConstructorsTests, test_constructor_10) {
+
+    NDArray scalar1(nd4j::DataType::DOUBLE); // scalar1 = 0
+    NDArray scalar2('c', {0}, {0});
+
+    ASSERT_TRUE(scalar1.isActualOnDeviceSide());
+    ASSERT_TRUE(!scalar1.isActualOnHostSide());
+    ASSERT_TRUE(scalar2.isActualOnDeviceSide());
+    ASSERT_TRUE(scalar2.isActualOnHostSide());
+    
+    ASSERT_TRUE(scalar2.equalsTo(scalar1));
+    
+    ASSERT_TRUE(scalar1.isActualOnDeviceSide());
+    ASSERT_TRUE(!scalar1.isActualOnHostSide());
+    ASSERT_TRUE(scalar2.isActualOnDeviceSide());
+    ASSERT_TRUE(scalar2.isActualOnHostSide());
+
+    ASSERT_TRUE(scalar1.getBuffer() == nullptr);        
+    ASSERT_TRUE(scalar1.getSpecialBuffer() != nullptr);
+    ASSERT_TRUE(scalar1.getShapeInfo() != nullptr);
+    ASSERT_TRUE(scalar1.getSpecialShapeInfo() != nullptr);
+    ASSERT_TRUE(scalar1.lengthOf() == 1);
+}

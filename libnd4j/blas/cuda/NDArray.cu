@@ -97,13 +97,58 @@ void NDArray::lazyAllocateBuffer() {
 }
 
 ////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+
+    setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace()));
+    cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
+    syncShape();
+        
+    cudaMalloc(&_bufferD, _length * sizeOfT());
+    cudaMemset(_bufferD, 0, _length * sizeOfT());
+
+    triggerAllocationFlag(true, true);
+
+    tickWriteDevice(); 
+}
+
+////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
+
+    if ((int) shape.size() > MAX_RANK)
+        throw std::invalid_argument("Rank of NDArray can't exceed 32");
+
+    setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, context->getWorkspace()));
+
+    if (_length != data.size()) {
+        nd4j_printf("NDArray constructor: data size [%i] doesn't match shape length [%i]\n", data.size(), _length);
+        throw std::runtime_error("Data size doesn't match shape");
+    }
+
+    cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
+    syncShape();
+
+    ALLOCATE(_buffer, context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
+    cudaMalloc(&_bufferD, _length * DataTypeUtils::sizeOf(dtype));    
+
+    triggerAllocationFlag(true, true);
+
+    for(Nd4jLong i=0; i < _length; ++i) {
+        BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedDoubleAssign<, double>(_buffer, i, reinterpret_cast<const void *>(data.data()), i), LIBND4J_TYPES);
+    }
+    
+    tickReadHost();
+    syncToDevice();    
+}
+
+////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
 NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isShapeAlloc) {
     _shapeInfo = shapeInfo;
     _buffer = reinterpret_cast<int8_t *>(buffer);
     _isBuffAlloc = isBuffAlloc;                                  // indicate that memory for array is passed from outside
     _isShapeAlloc = isShapeAlloc;
-    _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
+    _context = context;
+
     if (shapeInfo != nullptr) {
         _length = shape::length(shapeInfo);
         _dataType = ArrayOptions::dataType(shapeInfo);
@@ -140,7 +185,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, context->getWorkspace()));
 //    ALLOCATE(_buffer, context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
 //    memset(_buffer, 0, _length * DataTypeUtils::sizeOf(dtype));
-    _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
+    _context = context;
     triggerAllocationFlag(true, true);
     cudaMalloc(&_bufferD, _length * sizeOfT());
     cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
@@ -865,7 +910,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
     void NDArray::syncToDevice() const {
         cudaMemcpy(this->_bufferD, this->_buffer, this->lengthOf() * this->sizeOfT(), cudaMemcpyHostToDevice);
-        this->tickReadDevice();
+        tickReadDevice();
     }
 
     void NDArray::syncShape() const {
@@ -971,42 +1016,13 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             p->tickReadDevice();
         }
     }
-
-    ////////////////////////////////////////////////////////////////////////
-    NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
-
-        if ((int) shape.size() > MAX_RANK)
-            throw std::invalid_argument("Rank of NDArray can't exceed 32");
-
-        setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, context->getWorkspace()));
-
-        if (_length != data.size()) {
-            nd4j_printf("NDArray constructor: data size [%i] doesn't match shape length [%i]\n", data.size(), _length);
-            throw std::runtime_error("Data size doesn't match shape");
-        }
-
-        ALLOCATE(_buffer, context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
-        cudaMalloc(&_bufferD, _length * DataTypeUtils::sizeOf(dtype));
-        cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
-        syncShape();
-        _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
-        triggerAllocationFlag(true, true);
-
-        for(Nd4jLong i=0; i < _length; ++i) {
-            BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedDoubleAssign<, double>(_buffer, i, reinterpret_cast<const void *>(data.data()), i), LIBND4J_TYPES);
-        }
-        syncToDevice();
-    }
-
+    
 ////////////////////////////////////////////////////////////////////////
     NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::LaunchContext* context) {
 
         ALLOCATE(_buffer, context->getWorkspace(), other->_length * DataTypeUtils::sizeOf(other->dataType()), int8_t);
-        setShapeInfo(ShapeBuilders::copyShapeInfo(other->_shapeInfo, copyStrides, context->getWorkspace()));
-        if (_context == nullptr)
-            _context = graph::LaunchContext::defaultContext();
-
-        _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
+        setShapeInfo(ShapeBuilders::copyShapeInfo(other->_shapeInfo, copyStrides, context->getWorkspace()));        
+        _context = context;
 
         triggerAllocationFlag(true, true);
     }
@@ -1020,7 +1036,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, context->getWorkspace()));
 
         _buffer = reinterpret_cast<int8_t *>(buffer);
-        _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
+        _context = context;
         triggerAllocationFlag(false, true);
     }
 
@@ -1051,7 +1067,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
             triggerAllocationFlag(true, true);
         }
-        _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
+        _context = context;
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1071,7 +1087,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         _dataType = dtype;
         _length = shape::length(_shapeInfo);
-        _context = context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context;
+        _context = context;
         ArrayOptions::setDataType(_shapeInfo, _dataType);
 
         ALLOCATE(_buffer, _context->getWorkspace(), _length * sizeOfT() , int8_t);
@@ -1079,21 +1095,6 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         memset(_buffer, 0, _length * DataTypeUtils::sizeOfElement(_dataType));
 
         triggerAllocationFlag(true, true);
-    }
-
-////////////////////////////////////////////////////////////////////////
-    NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
-
-        setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace()));
-        cudaMalloc(&_shapeInfoD, shape::shapeInfoByteLength(_shapeInfo));
-        syncShape();
-        
-        cudaMalloc(&_bufferD, _length * sizeOfT());
-        cudaMemset(_bufferD, 0, _length * sizeOfT());
-
-        triggerAllocationFlag(true, true);
-
-        this->tickWriteDevice(); 
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1115,7 +1116,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         if(!other->isActualOnDeviceSide())
             other->syncToDevice();
-                
+
         ExtraArguments extras({eps});        
         NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extras.argumentAsT(DataType::DOUBLE), other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
 
