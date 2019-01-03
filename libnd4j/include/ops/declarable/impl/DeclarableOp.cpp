@@ -678,13 +678,9 @@ namespace nd4j {
 
         nd4j::ResultSet* nd4j::ops::DeclarableOp::execute(const std::vector<NDArray*>& inputs, const std::vector<double>& tArgs, const std::vector<Nd4jLong>& iArgs, const std::vector<bool>& bArgs, bool isInplace, nd4j::DataType type) {
             VariableSpace variableSpace;
-            auto arrayList = new ResultSet();
             //ResultSet arrayList;
             FlowPath fp;
             variableSpace.setFlowPath(&fp);
-
-            if (isInplace)
-                arrayList->setNonRemovable();
 
             int cnt = -1;
             std::vector<int> in;
@@ -715,6 +711,10 @@ namespace nd4j {
                 block.getBArguments()->push_back(bArgs.at(e));
 
             Nd4jStatus status = this->execute(&block);
+            auto arrayList = new ResultSet();
+            if (isInplace)
+                arrayList->setNonRemovable();
+
             arrayList->setStatus(status);
             if (status != ND4J_STATUS_OK)
                 return arrayList;

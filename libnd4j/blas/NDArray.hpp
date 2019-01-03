@@ -21,39 +21,11 @@
 
 namespace nd4j {
 
-    //////////////////////////////////////////////////////////////////////////
     template <>
-    utf8string NDArray::e(const Nd4jLong i) const {
-        if (i >= _length)
-            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
-
-        if (!isS())
-            throw std::runtime_error("This method is available for String arrays only");
-
-        auto rp = getOffset(i);
-        return *(reinterpret_cast<utf8string**>(_buffer)[rp]);
-    }
-
+    utf8string NDArray::e(const Nd4jLong i) const;
     template <>
-    std::string NDArray::e(const Nd4jLong i) const {
-        auto u = e<utf8string>(i);
-        std::string r(u._buffer);
-        return r;
-    }
-
-    template <typename T>
-    T NDArray::e(const Nd4jLong i) const {
-
-        if (i >= _length)
-            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
-
-        auto rp = getOffset(i);
-
-        BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
-//        return static_cast<T>(119);
-    }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
-
+    std::string NDArray::e(const Nd4jLong i) const;
+    
 
     NDArray* NDArray::getView() {
         auto view = new NDArray();
@@ -95,6 +67,12 @@ NDArray::NDArray(NDArray&& other) noexcept {
     _isShapeAlloc = other._isShapeAlloc;
     _isBuffAlloc  = other._isBuffAlloc;
     _dataType     = other._dataType;
+
+    _writeDevice = other._writeDevice;
+    _readDevice = other._readDevice;
+    _writeHost = other._writeHost;
+    _readHost = other._readHost;
+    _opCounter = other._opCounter;
 
     other._buffer = other._bufferD = nullptr;
     other._shapeInfo = other._shapeInfoD = nullptr;
@@ -738,6 +716,11 @@ NDArray& NDArray::operator=(NDArray&& other) noexcept {
     _isBuffAlloc  = other._isBuffAlloc;
     _dataType     = other._dataType;
     _length       = other._length;
+    _writeDevice = other._writeDevice;
+    _readDevice = other._readDevice;
+    _writeHost = other._writeHost;
+    _readHost = other._readHost;
+    _opCounter = other._opCounter;
 
     other._buffer = other._bufferD = nullptr;
     other._shapeInfo = other._shapeInfoD = nullptr;
@@ -1760,38 +1743,6 @@ NDArray NDArray::transp() const {
         return ptr;
     }
 
-    // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
-    bool NDArray::equalsTo(const NDArray *other, double eps) const {
-        if (this->dataType() != other->dataType())
-            return false;
-
-        if (lengthOf() != other->lengthOf()) {
-            auto t = lengthOf();
-            auto o = other->lengthOf();
-            return false;
-        }
-
-        // we need to be able to compare [1, len] to [len]
-        if ((rankOf() == 1 && other->rankOf() == 2) || (rankOf() == 2 && other->rankOf() == 1)) {
-            // FIXME: do something here?
-        } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
-            return false;
-
-        auto extras = NDArrayFactory::create(eps, _context);
-        auto ptr = extras.getBufferAsPointer(nd4j::DataType::FLOAT32);
-
-        NDArray tmp(nd4j::DataType::FLOAT32, _context); // scalar = 0
-
-        // we don't need extraparams for this op
-        NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, ptr, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
-
-        RELEASE(reinterpret_cast<int8_t *>(ptr), _context);
-
-        if (tmp.e<int>(0) > 0)
-            return false;
-
-        return true;
-    }
 
     void NDArray::setAttached(bool reallyAttached) {
         _isAttached = reallyAttached;
@@ -2641,7 +2592,7 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     T NDArray::r(const Nd4jLong i) const {
 
         if (i >= _length)
-            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+            throw std::invalid_argument("NDArray::r(i): input index is out of array length !");
 
 
         BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, i), LIBND4J_TYPES);

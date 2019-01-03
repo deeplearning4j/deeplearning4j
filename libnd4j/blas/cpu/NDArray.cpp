@@ -100,6 +100,10 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
         throw std::runtime_error("NDArray can't be initalized without shapeinfo");
 }
 
+void NDArray::lazyAllocateBuffer() {
+    // no-op
+}
+
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
 
@@ -1026,6 +1030,68 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         triggerAllocationFlag(true, true);
     }
 
+////////////////////////////////////////////////////////////////////////
+    // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
+    bool NDArray::equalsTo(const NDArray *other, double eps) const {
+        
+        if (this->dataType() != other->dataType() || lengthOf() != other->lengthOf())
+            return false;
+
+        // we need to be able to compare [1, len] to [len]
+        if ((rankOf() == 1 && other->rankOf() == 2) || (rankOf() == 2 && other->rankOf() == 1)) {
+            // FIXME: do something here?
+        } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
+            return false;
+
+        auto extras = NDArrayFactory::create(eps, _context);
+        auto ptr = extras.getBufferAsPointer(nd4j::DataType::FLOAT32);
+
+        NDArray tmp(nd4j::DataType::FLOAT32, _context); // scalar = 0
+
+        // we don't need extraparams for this op
+        NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, ptr, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
+
+        RELEASE(reinterpret_cast<int8_t *>(ptr), _context);
+
+        if (tmp.e<int>(0) > 0)
+            return false;
+
+        return true;
+    }
+
+//////////////////////////////////////////////////////////////////////////
+    template <>
+    utf8string NDArray::e(const Nd4jLong i) const {
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+
+        if (!isS())
+            throw std::runtime_error("This method is available for String arrays only");
+
+        auto rp = getOffset(i);
+        return *(reinterpret_cast<utf8string**>(_buffer)[rp]);
+    }
+
+    template <>
+    std::string NDArray::e(const Nd4jLong i) const {
+        auto u = e<utf8string>(i);
+        std::string r(u._buffer);
+        return r;
+    }
+
+    template <typename T>
+    T NDArray::e(const Nd4jLong i) const {
+
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
+
+        auto rp = getOffset(i);
+
+        BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
+//        return static_cast<T>(119);
+    }
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
+
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*
 #ifndef __CLION_IDE__
@@ -1035,4 +1101,4 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 }
 
 #endif
-
+ 

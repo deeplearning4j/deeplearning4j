@@ -114,13 +114,13 @@ public class KerasTokenizer {
             throw new InvalidKerasConfigurationException("No configuration found for Keras tokenizer");
 
 
-        int numWords = (int) tokenizerConfig.get("num_words");
+        Integer numWords = (Integer) tokenizerConfig.get("num_words");
         String filters = (String) tokenizerConfig.get("filters");
         Boolean lower = (Boolean) tokenizerConfig.get("lower");
         String split = (String) tokenizerConfig.get("split");
         Boolean charLevel = (Boolean) tokenizerConfig.get("char_level");
         String oovToken = (String) tokenizerConfig.get("oov_token");
-        int documentCount = (int) tokenizerConfig.get("document_count");
+        Integer documentCount = (Integer) tokenizerConfig.get("document_count");
 
         @SuppressWarnings("unchecked")
         Map<String, Integer> wordCounts = (Map) parseJsonString((String) tokenizerConfig.get("word_counts"));
