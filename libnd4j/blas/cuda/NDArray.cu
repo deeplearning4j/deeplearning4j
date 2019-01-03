@@ -852,25 +852,23 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             this->synchronize();
     }
 
-    void
-    NDArray::syncToHost() {
-        auto res = cudaStreamSynchronize(*_context->getCudaStream());
+    void NDArray::syncToHost() const {
+        cudaStreamSynchronize(*_context->getCudaStream());
         if (this->_buffer == nullptr) {
-            ALLOCATE(this->_buffer, this->_context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
-            triggerAllocationFlag(true, true);
+            NDArray* constThis =  const_cast<NDArray*>(this); // not recommended solution
+            ALLOCATE(constThis->_buffer, constThis->_context->getWorkspace(), constThis->lengthOf() * constThis->sizeOfT(), int8_t);
+            constThis->_isBuffAlloc = true;
         }
         cudaMemcpy(this->_buffer, this->_bufferD, this->lengthOf() * this->sizeOfT(), cudaMemcpyDeviceToHost);
         this->tickReadHost();
     }
 
-    void
-    NDArray::syncToDevice() const {
+    void NDArray::syncToDevice() const {
         cudaMemcpy(this->_bufferD, this->_buffer, this->lengthOf() * this->sizeOfT(), cudaMemcpyHostToDevice);
         this->tickReadDevice();
     }
 
-    void
-    NDArray::syncShape() const {
+    void NDArray::syncShape() const {
         cudaMemcpy(_shapeInfoD, _shapeInfo, shape::shapeInfoByteLength(_shapeInfo), cudaMemcpyHostToDevice);
     }
 
@@ -1107,15 +1105,11 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         NDArray tmp(nd4j::DataType::FLOAT32, _context); // scalar = 0
 
-        if(!isActualOnDeviceSide()) {
-            const_cast<NDArray*>(this)->syncToDevice();
-            const_cast<NDArray*>(this)->tickWriteDevice();
-        }
+        if(!isActualOnDeviceSide()) 
+            syncToDevice();
 
-        if(!other->isActualOnDeviceSide()) {
-            const_cast<NDArray*>(other)->syncToDevice();
-            const_cast<NDArray*>(other)->tickWriteDevice();
-        }
+        if(!other->isActualOnDeviceSide())
+            other->syncToDevice();
         
         NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
 
@@ -1124,6 +1118,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         return true;
     }
+
 
 //////////////////////////////////////////////////////////////////////////
     template <>
@@ -1135,8 +1130,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             throw std::runtime_error("This method is available for String arrays only");
 
         if(!isActualOnHostSide()) {
-            const_cast<NDArray*>(this)->syncToHost();
-            const_cast<NDArray*>(this)->tickWriteHost();
+            syncToHost();
+            tickWriteHost();
         }
 
         auto rp = getOffset(i);
@@ -1147,8 +1142,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     std::string NDArray::e(const Nd4jLong i) const {
         
         if(!isActualOnHostSide()) {
-            const_cast<NDArray*>(this)->syncToHost();
-            const_cast<NDArray*>(this)->tickWriteHost();
+            syncToHost();
+            tickWriteHost();
         }
 
         auto u = e<utf8string>(i);
@@ -1163,8 +1158,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
 
         if(!isActualOnHostSide()) {
-            const_cast<NDArray*>(this)->syncToHost();
-            const_cast<NDArray*>(this)->tickWriteHost();
+            syncToHost();
+            tickWriteHost();
         }
 
         auto rp = getOffset(i);
