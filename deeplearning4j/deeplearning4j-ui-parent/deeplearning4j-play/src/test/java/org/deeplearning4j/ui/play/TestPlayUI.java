@@ -169,6 +169,44 @@ public class TestPlayUI {
 
         Thread.sleep(1000000);
     }
+    
+    @Test
+    @Ignore
+    public void testUISequentialSessions() throws Exception {
+        System.out.println("--- testUISequentialSessions start ---");
+        UIServer uiServer = UIServer.getInstance();
+        StatsStorage ss = null;
+        for (int session = 0; session < 3; session++) {
+            
+            if (ss != null) {
+                uiServer.detach(ss);
+            }
+            ss = new InMemoryStatsStorage();
+            uiServer.attach(ss);
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
+                            .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
+                            .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                                            .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
+                            .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+            net.setListeners(new StatsListener(ss), new ScoreIterationListener(1));
+
+            DataSetIterator iter = new IrisDataSetIterator(150, 150);
+
+            for (int i = 0; i < 20; i++) {
+                net.fit(iter);
+                Thread.sleep(100);
+            }
+        }
+
+
+        System.out.println("--- testUISequentialSessions end ---");
+        Thread.sleep(1000000);
+    }
 
     @Test
     @Ignore

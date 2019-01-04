@@ -184,6 +184,10 @@ public class TrainModule implements UIModule {
         for (String s : knownSessionIDs.keySet()) {
             if (knownSessionIDs.get(s) == statsStorage) {
                 knownSessionIDs.remove(s);
+                workerIdxCount.remove(s);
+                workerIdxToName.remove(s);
+                currentSessionID = null;
+                getDefaultSession();
             }
         }
     }
