@@ -18,7 +18,7 @@
 // Created by raver119 on 11.10.2017.
 //
 
-#include "../MemoryUtils.h"
+#include "memory/MemoryUtils.h"
 #include <helpers/logger.h>
 
 #if defined(__APPLE__)
