@@ -40,30 +40,46 @@ namespace nd4j {
                 _ptrHost = (char *) external->pointerHost();
                 _ptrDevice = (char *) external->pointerDevice();
 
-                _initialSize = external->sizeHost();
-                _currentSize = external->sizeHost();
+                _initialSize = external->sizeDevice();
+                _currentSize = external->sizeDevice();
+                _initialSizeSecondary = external->sizeHost();
+                _currentSizeSecondary = external->sizeHost();
                 _offset = 0L;
                 _offsetSecondary = 0L;
                 this->_cycleAllocations = 0;
+                this->_cycleAllocationsSecondary = 0;
                 this->_spillsSize = 0;
+                this->_spillsSizeSecondary = 0;
 
                 _externalized = true;
             }
         }
 
-        Workspace::Workspace(Nd4jLong initialSize, Nd4jLong secondaryBytes) {
-            if (initialSize > 0) {
-                this->_ptrHost = (char *) malloc(initialSize);
+        Workspace::Workspace(Nd4jLong primarySize, Nd4jLong secondarySize) {
+            if (secondarySize > 0) {
+                auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost), secondarySize, cudaHostAllocDefault);
+                if (res != 0)
+                    throw cuda_exception::build("Can't allocate [HOST] memory", res);
 
-                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace", initialSize);
-
-                memset(this->_ptrHost, 0, initialSize);
+                cudaMemset(this->_ptrHost, 0, secondarySize);
                 this->_allocatedHost = true;
             } else
                 this->_allocatedHost = false;
 
-            this->_initialSize = initialSize;
-            this->_currentSize = initialSize;
+            if (primarySize > 0) {
+                auto res = cudaMalloc(reinterpret_cast<void **>(&_ptrDevice), primarySize);
+                if (res != 0)
+                    throw cuda_exception::build("Can't allocate [DEVICE] memory", res);
+
+                cudaMemset(this->_ptrDevice, 0, primarySize);
+                this->_allocatedDevice = true;
+            } else
+                this->_allocatedDevice = false;
+
+            this->_initialSize = primarySize;
+            this->_initialSizeSecondary = secondarySize;
+            this->_currentSize = primarySize;
+            this->_currentSizeSecondary = secondarySize;
             this->_offset = 0;
             this->_offsetSecondary = 0;
             this->_cycleAllocations = 0;
@@ -72,15 +88,29 @@ namespace nd4j {
 
         void Workspace::init(Nd4jLong primaryBytes, Nd4jLong secondaryBytes) {
             if (this->_currentSize < primaryBytes) {
-                if (this->_allocatedHost && !_externalized)
-                    free((void *)this->_ptrHost);
+                if (this->_allocatedDevice && !_externalized)
+                    cudaFree((void *)this->_ptrDevice);
 
-                this->_ptrHost =(char *) malloc(primaryBytes);
+                auto res = cudaMalloc(reinterpret_cast<void **>(&_ptrDevice), secondaryBytes);
+                if (res != 0)
+                    throw cuda_exception::build("Can't allocate [DEVICE] memory", res);
 
-                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace", primaryBytes);
-
-                memset(this->_ptrHost, 0, primaryBytes);
+                cudaMemset(this->_ptrDevice, 0, primaryBytes);
                 this->_currentSize = primaryBytes;
+                this->_allocatedDevice = true;
+            }
+
+            if (this->_currentSizeSecondary < secondaryBytes) {
+                if (this->_allocatedHost && !_externalized)
+                    cudaFreeHost((void *)this->_ptrHost);
+
+                auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost), secondaryBytes, cudaHostAllocDefault);
+                if (res != 0)
+                    throw cuda_exception::build("Can't allocate [HOST] memory", res);
+
+
+                cudaMemset(this->_ptrHost, 0, secondaryBytes);
+                this->_currentSizeSecondary = secondaryBytes;
                 this->_allocatedHost = true;
             }
         }
@@ -95,14 +125,16 @@ namespace nd4j {
 
         void Workspace::freeSpills() {
             _spillsSize = 0;
-
-            if (_spills.size() < 1)
-                return;
+            _spillsSizeSecondary = 0;
 
             for (auto v:_spills)
-                free(v);
+                cudaFree(v);
+
+            for (auto v:_spillsSecondary)
+                cudaFreeHost(v);
 
             _spills.clear();
+            _spillsSecondary.clear();
         }
 
         Workspace::~Workspace() {
@@ -166,7 +198,7 @@ namespace nd4j {
                             Nd4jPointer p;
                             auto res = cudaHostAlloc(reinterpret_cast<void **>(&p), numBytes, cudaHostAllocDefault);
                             if (res != 0)
-                                throw cuda_exception::build("Can't allocate [HOST] memory", numBytes);
+                                throw cuda_exception::build("Can't allocate [HOST] memory", res);
 
                             _mutexSpills.lock();
                             _spillsSecondary.push_back(p);
@@ -205,7 +237,7 @@ namespace nd4j {
                             Nd4jPointer p;
                             auto res = cudaMalloc(reinterpret_cast<void **>(&p), numBytes);
                             if (res != 0)
-                                throw cuda_exception::build("Can't allocate [DEVICE] memory", numBytes);
+                                throw cuda_exception::build("Can't allocate [DEVICE] memory", res);
 
                             _mutexSpills.lock();
                             _spills.push_back(p);
