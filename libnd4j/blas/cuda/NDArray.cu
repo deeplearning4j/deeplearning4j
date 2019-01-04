@@ -981,8 +981,10 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         NativeOpExecutioner::execPairwiseTransform(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr);
 
-
-        target->tickWriteDevice();
+        if(target)
+            target->tickWriteDevice();
+        else
+            this->tickWriteDevice();
 
         if (extraParams != nullptr)
             this->synchronize();
@@ -1218,6 +1220,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 }
             }
         }
+        target->tickWriteDevice();
     }
     template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<double (double, double, double)>& func, NDArray* target);
     template void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::function<float (float, float, float)>& func, NDArray* target);
@@ -1283,6 +1286,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 }
             }
         }
+        target->tickWriteDevice();
     }
     template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<double (double, double)>& func, NDArray* target);
     template void NDArray::applyPairwiseLambda(NDArray* other, const std::function<float (float, float)>& func, NDArray* target);
@@ -1336,6 +1340,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 }
             }
         }
+        target->tickWriteDevice();
     }
     template void NDArray::applyLambda(const std::function<double(double)>& func, NDArray* target);
     template void NDArray::applyLambda(const std::function<float(float)>& func, NDArray* target);
@@ -1387,6 +1392,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 }
             }
         }
+        target->tickWriteDevice();
     }
     template void NDArray::applyIndexedLambda(const std::function<double(Nd4jLong, double)>& func, NDArray* target);
     template void NDArray::applyIndexedLambda(const std::function<float(Nd4jLong, float)>& func, NDArray* target);
@@ -1450,6 +1456,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 }
             }
         }
+        target->tickWriteDevice();
     }
     template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<double (Nd4jLong, double, double)>& func, NDArray* target);
     template void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<float (Nd4jLong, float, float)>& func, NDArray* target);
@@ -1477,6 +1484,10 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("NDArray::applyTransform FloatOps: target array must have one of FLOAT types");
 
         NativeOpExecutioner::execTransformFloat(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr, nullptr, nullptr);
+        if (target != nullptr)
+            target->tickWriteDevice();
+        else
+            this->tickWriteDevice();
     }
 
     void NDArray::applyTransform(nd4j::transform::AnyOps op, NDArray *target, ExtraArguments *extraParams) {
@@ -1488,7 +1499,9 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (target == nullptr)
             target = this;
 
+        NDArray::registerSpecialUse({target}, {this});
         NativeOpExecutioner::execTransformFloat(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr, nullptr, nullptr);
+        //target->tickWriteDevice();
     }
 
     void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray *target, ExtraArguments *extraParams) {
@@ -1503,6 +1516,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("NDArray::applyTransform SameOps: target array must have the same data type as original array");
         NDArray::registerSpecialUse({target}, {this});
         NativeOpExecutioner::execTransformSame(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr, nullptr, nullptr);
+//        target->tickWriteDevice();
     }
 
     void NDArray::applyTransform(nd4j::transform::BoolOps op, NDArray *target, ExtraArguments *extraParams) {
@@ -1608,6 +1622,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (_dataType != other->_dataType)
             throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - this and other arrays must have the same type !");
 
+        NDArray::registerSpecialUse({target}, {const_cast<NDArray*>(this), const_cast<NDArray*>(other)});
         NativeOpExecutioner::execPairwiseBoolTransform(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr);
     }
 
@@ -1626,7 +1641,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         if (!scalar->isActualOnDeviceSide())
             scalar->syncToDevice();
-
+        NDArray::registerSpecialUse({target}, {const_cast<NDArray*>(this), const_cast<NDArray*>(scalar)});
         NativeOpExecutioner::execScalarBool(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, scalar->_buffer, scalar->_shapeInfo, scalar->_bufferD, scalar->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()): nullptr);
     }
 
@@ -1665,7 +1680,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         if (!scalar->isActualOnDeviceSide())
             scalar->syncToDevice();
-
+        NDArray::registerSpecialUse({target}, {this, const_cast<NDArray*>(scalar)});
         NativeOpExecutioner::execScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, scalar->getBuffer(), scalar->getShapeInfo(), scalar->_bufferD, scalar->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr);
     }
 
@@ -1722,6 +1737,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (!tadArray->isActualOnDeviceSide())
             tadArray->syncToDevice();
 
+        NDArray::registerSpecialUse({target}, {this, const_cast<NDArray*>(tadArray)});
+
         // TODO: eventually we want separate tads here
         NativeOpExecutioner::execBroadcast(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, nullptr, nullptr);
     }
@@ -1761,7 +1778,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (!tadArray->isActualOnDeviceSide())
             tadArray->syncToDevice();
 
-
+        NDArray::registerSpecialUse({target}, {this, const_cast<NDArray*>(tadArray)});
         // TODO: eventually we want separate tads here
         NativeOpExecutioner::execBroadcastBool(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD,
                                                tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD,
@@ -1783,6 +1800,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         return result;
     }
+    //TO DO: target should not be const!!!
     void NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, const NDArray* target, const std::vector<int>& dimensions, const ExtraArguments *extraParams) const {
         if (isS())
             throw std::runtime_error("NDArray::applyIndexReduce: you can't use this method on String array!");
@@ -1801,6 +1819,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
+
+            NDArray::registerSpecialUse({const_cast<NDArray*>(target)}, {const_cast<NDArray*>(this)});
 
             NativeOpExecutioner::execIndexReduce(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr,
                                                  reinterpret_cast<Nd4jLong *>(target->_buffer),
@@ -1830,6 +1850,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
+            NDArray::registerSpecialUse({result}, {const_cast<NDArray*>(this)});
 
             NativeOpExecutioner::execIndexReduce(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr,
                                                  reinterpret_cast<Nd4jLong *>(result->_buffer),
@@ -1861,6 +1882,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             params = new int8_t[result->sizeOfT()*3];
             memset(params, 0, result->sizeOfT()*3);
         }
+        NDArray::registerSpecialUse({result}, {const_cast<NDArray*>(this), const_cast<NDArray*>(other)});
+
         NativeOpExecutioner::execReduce3Scalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD);
 
         if(params != extraParams)
@@ -1908,6 +1931,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             memset(params, 0, result->sizeOfT()*3);
 
         }
+        NDArray::registerSpecialUse({result}, {const_cast<NDArray*>(this), const_cast<NDArray*>(other)});
 
         NativeOpExecutioner::execReduce3All(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params,
                                             other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD,
@@ -1940,6 +1964,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             params = new int8_t[result->sizeOfT()*3];
             memset(params, 0, result->sizeOfT()*3);
         }
+        NDArray::registerSpecialUse({result}, {const_cast<NDArray*>(this), const_cast<NDArray*>(other)});
+
         // perform calculations
         if(rankOf() == copy.size() && other->rankOf() == copy.size())
             NativeOpExecutioner::execReduce3Scalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo());
