@@ -63,9 +63,13 @@ namespace nd4j {
             bool _externalized = false;
 
             std::vector<void*> _spills;
+            std::vector<void*> _spillsSecondary;
 
             std::atomic<Nd4jLong> _spillsSize;
             std::atomic<Nd4jLong> _cycleAllocations;
+
+            std::atomic<Nd4jLong> _spillsSizeSecondary;
+            std::atomic<Nd4jLong> _cycleAllocationsSecondary;
 
             void init(Nd4jLong bytes);
             void freeSpills();

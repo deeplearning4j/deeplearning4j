@@ -28,6 +28,7 @@
 #include <helpers/logger.h>
 #include <templatemath.h>
 #include <cstring>
+#include <cuda_exception.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -150,7 +151,46 @@ namespace nd4j {
             switch (type) {
                 case HOST: {
                         if (numBytes < 1)
-                            throw allocation_exception::build("Number of bytes for allocation should be positive", numBytes);
+                            throw allocation_exception::build("Number of [HOST] bytes for allocation should be positive", numBytes);
+
+
+                        //numBytes += 32;
+                        void* result = nullptr;
+                        this->_cycleAllocationsSecondary += numBytes;
+                        this->_mutexAllocation.lock();
+
+                        if (_offsetSecondary.load() + numBytes > _currentSizeSecondary) {
+                            nd4j_debug("Allocating %lld [HOST] bytes in spills\n", numBytes);
+                            this->_mutexAllocation.unlock();
+
+                            Nd4jPointer p;
+                            auto res = cudaHostAlloc(reinterpret_cast<void **>(&p), numBytes, cudaHostAllocDefault);
+                            if (res != 0)
+                                throw cuda_exception::build("Can't allocate [HOST] memory", numBytes);
+
+                            _mutexSpills.lock();
+                            _spillsSecondary.push_back(p);
+                            _mutexSpills.unlock();
+
+                            _spillsSizeSecondary += numBytes;
+
+                            return p;
+                        }
+
+                        result = (void *)(_ptrHost + _offsetSecondary.load());
+                        _offsetSecondary += numBytes;
+                        //memset(result, 0, (int) numBytes);
+
+                        nd4j_debug("Allocating %lld bytes from [HOST] workspace; Current PTR: %p; Current offset: %lld\n", numBytes, result, _offset.load());
+
+                        this->_mutexAllocation.unlock();
+
+                        return result;
+                    }
+                    break;
+                case DEVICE: {
+                        if (numBytes < 1)
+                            throw allocation_exception::build("Number of [DEVICE] bytes for allocation should be positive", numBytes);
 
 
                         //numBytes += 32;
@@ -159,12 +199,13 @@ namespace nd4j {
                         this->_mutexAllocation.lock();
 
                         if (_offset.load() + numBytes > _currentSize) {
-                            nd4j_debug("Allocating %lld bytes in spills\n", numBytes);
+                            nd4j_debug("Allocating %lld [DEVICE] bytes in spills\n", numBytes);
                             this->_mutexAllocation.unlock();
 
-                            void *p = malloc(numBytes);
-
-                            CHECK_ALLOC(p, "Failed to allocate new workspace", numBytes);
+                            Nd4jPointer p;
+                            auto res = cudaMalloc(reinterpret_cast<void **>(&p), numBytes);
+                            if (res != 0)
+                                throw cuda_exception::build("Can't allocate [DEVICE] memory", numBytes);
 
                             _mutexSpills.lock();
                             _spills.push_back(p);
@@ -175,24 +216,20 @@ namespace nd4j {
                             return p;
                         }
 
-                        result = (void *)(_ptrHost + _offset.load());
+                        result = (void *)(_ptrDevice + _offset.load());
                         _offset += numBytes;
                         //memset(result, 0, (int) numBytes);
 
-                        nd4j_debug("Allocating %lld bytes from workspace; Current PTR: %p; Current offset: %lld\n", numBytes, result, _offset.load());
+                        nd4j_debug("Allocating %lld bytes from [DEVICE] workspace; Current PTR: %p; Current offset: %lld\n", numBytes, result, _offset.load());
 
                         this->_mutexAllocation.unlock();
 
                         return result;
                     }
                     break;
-                case DEVICE: {
-
-                    }
-                    break;
+                default:
+                    throw std::runtime_error("Unknown MemoryType was passed in");
             }
-
-            return this->allocateBytes(numBytes);
         }
 
         Workspace* Workspace::clone() {
