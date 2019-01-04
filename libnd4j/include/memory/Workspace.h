@@ -71,11 +71,11 @@ namespace nd4j {
             std::atomic<Nd4jLong> _spillsSizeSecondary;
             std::atomic<Nd4jLong> _cycleAllocationsSecondary;
 
-            void init(Nd4jLong bytes);
+            void init(Nd4jLong primaryBytes, Nd4jLong secondaryBytes = 0L);
             void freeSpills();
         public:
             explicit Workspace(ExternalWorkspace *external);
-            explicit Workspace(Nd4jLong initialSize = 0);
+            Workspace(Nd4jLong initialSize = 0L, Nd4jLong secondaryBytes = 0L);
             ~Workspace();
 
             Nd4jLong getAllocatedSize();
@@ -84,8 +84,8 @@ namespace nd4j {
             Nd4jLong getSpilledSize();
             Nd4jLong getUsedSize();
 
-            void expandBy(Nd4jLong numBytes);
-            void expandTo(Nd4jLong numBytes);
+            void expandBy(Nd4jLong primaryBytes, Nd4jLong secondaryBytes = 0L);
+            void expandTo(Nd4jLong primaryBytes, Nd4jLong secondaryBytes = 0L);
 
 //            bool resizeSupported();
 

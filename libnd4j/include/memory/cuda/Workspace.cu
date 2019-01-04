@@ -51,7 +51,7 @@ namespace nd4j {
             }
         }
 
-        Workspace::Workspace(Nd4jLong initialSize) {
+        Workspace::Workspace(Nd4jLong initialSize, Nd4jLong secondaryBytes) {
             if (initialSize > 0) {
                 this->_ptrHost = (char *) malloc(initialSize);
 
@@ -70,27 +70,27 @@ namespace nd4j {
             this->_spillsSize = 0;
         }
 
-        void Workspace::init(Nd4jLong bytes) {
-            if (this->_currentSize < bytes) {
+        void Workspace::init(Nd4jLong primaryBytes, Nd4jLong secondaryBytes) {
+            if (this->_currentSize < primaryBytes) {
                 if (this->_allocatedHost && !_externalized)
                     free((void *)this->_ptrHost);
 
-                this->_ptrHost =(char *) malloc(bytes);
+                this->_ptrHost =(char *) malloc(primaryBytes);
 
-                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace", bytes);
+                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace", primaryBytes);
 
-                memset(this->_ptrHost, 0, bytes);
-                this->_currentSize = bytes;
+                memset(this->_ptrHost, 0, primaryBytes);
+                this->_currentSize = primaryBytes;
                 this->_allocatedHost = true;
             }
         }
 
-        void Workspace::expandBy(Nd4jLong numBytes) {
-            this->init(_currentSize + numBytes);
+        void Workspace::expandBy(Nd4jLong numBytes, Nd4jLong secondaryBytes) {
+            this->init(_currentSize + numBytes, _currentSizeSecondary + secondaryBytes);
         }
 
-        void Workspace::expandTo(Nd4jLong numBytes) {
-            this->init(numBytes);
+        void Workspace::expandTo(Nd4jLong numBytes, Nd4jLong secondaryBytes) {
+            this->init(numBytes, secondaryBytes);
         }
 
         void Workspace::freeSpills() {
