@@ -27,7 +27,7 @@
 #include <loops/reduce_long.h>
 #include <helpers/threshold.h>
 #include <ops/specials_cuda.h>
-#include <graph/exceptions/datatype_exception.h>
+#include <exceptions/datatype_exception.h>
 #include <helpers/CudaLaunchHelper.h>
 // FIXME: we need cuda-specific implementations
 #include <GraphExecutioner.h>
