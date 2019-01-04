@@ -1721,8 +1721,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         std::vector<int> copy(dimensions);
 
-        if (dimensions.size() > 1)
-            std::sort(copy.begin(), copy.end());
+        //if (dimensions.size() > 1)
+        //    std::sort(copy.begin(), copy.end());
 
         Nd4jLong tadLength = shape::tadLength(this->_shapeInfo, copy.data(), (int) copy.size());
         if (tadLength != tadArray->lengthOf())
@@ -1737,10 +1737,33 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (!tadArray->isActualOnDeviceSide())
             tadArray->syncToDevice();
 
+        // prepare input arrays for prepareDataForCuda function
+        std::vector<std::pair<void*,size_t>> hostData;
+        hostData.emplace_back(copy.data(), copy.size() * sizeof(int));							// 0 -- dimensions
+        hostData.emplace_back(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+
+        // create cuda stream and LaunchContext
+        cudaError_t cudaResult;
+        //cudaStream_t stream;
+        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+        cudaStream_t* stream = this->getContext()->getCudaStream();
+        // allocate required amount of global device memory and copy host data to it
+//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaMemcpyAsync(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice, stream);
+        }
+
+        // call cuda kernel which calculates result
+
         NDArray::registerSpecialUse({target}, {this, const_cast<NDArray*>(tadArray)});
 
         // TODO: eventually we want separate tads here
-        NativeOpExecutioner::execBroadcast(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, nullptr, nullptr);
+        NativeOpExecutioner::execBroadcast(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, (int*)devicePtrs[0], (int)copy.size(), (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
     }
 
     //////////////////////////////////////////////////////////////////////////
