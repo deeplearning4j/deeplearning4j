@@ -755,8 +755,8 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_3) {
 //    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
     for(int i = 0; i < devicePtrs.size(); ++i) {
 
-        cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second); if(cudaResult != 0) return cudaResult;
-        cudaMemcpyAsync(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice, stream);
+        cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second); ASSERT_EQ(0, cudaResult);
+        cudaMemcpyAsync(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice, *stream);
     }
 
     NDArray::registerSpecialUse({&z}, {&x, &y});
