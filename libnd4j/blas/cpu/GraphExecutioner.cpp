@@ -52,8 +52,8 @@
 #include <deque>
 #include <graph/ResultWrapper.h>
 #include <graph/ExecutionResult.h>
-#include <graph/exceptions/graph_execution_exception.h>
-#include <graph/exceptions/no_results_exception.h>
+#include <exceptions/graph_execution_exception.h>
+#include <exceptions/no_results_exception.h>
 
 namespace nd4j{
 namespace graph {

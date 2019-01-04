@@ -39,7 +39,7 @@
 #include <helpers/ArrayUtils.h>
 #include <MmulHelper.h>
 #include <helpers/threshold.h>
-#include <graph/exceptions/datatype_exception.h>
+#include <exceptions/datatype_exception.h>
 
 #include <NDArray.hpp>
 
