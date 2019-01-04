@@ -116,171 +116,227 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         execScalar<OpType>(vx, xShapeInfo, extraParamsVals, vy, yShapeInfo, vz, zShapeInfo);
         return;
     }
-    
-    char xOrder = shape::order(xShapeInfo);
-    char yOrder = shape::order(yShapeInfo);
-    auto zLen = shape::length(zShapeInfo);
-    auto tadLength = shape::tadLength(xShapeInfo,dimension,dimensionLength);
-    
-    if(xOrder != yOrder) {
-        
-        nd4j::OmpLaunchHelper info(zLen);
-        #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
-        {                
-            auto threadNum = omp_get_thread_num();         
-            auto threadOffset = info.getThreadOffset(threadNum);
 
-            #pragma omp simd
-            for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
-                auto xOffset = shape::getIndexOffset(i+threadOffset, xShapeInfo, zLen);
-                auto yOffset = shape::getIndexOffset(i+threadOffset, yShapeInfo, zLen);
-                auto zOffset = shape::getIndexOffset(i+threadOffset, zShapeInfo, zLen);
-                z[zOffset] = OpType::update(z[zOffset], OpType::op(x[xOffset], y[yOffset], extraParamsVals), extraParamsVals);
-            }
+    shape::TAD xTad(xShapeInfo, dimension, dimensionLength);
+    xTad.createTadOnlyShapeInfo();
+    xTad.createOffsets();
+
+    shape::TAD yTad(yShapeInfo, dimension, dimensionLength);
+    yTad.createTadOnlyShapeInfo();
+    yTad.createOffsets();
+
+    if(!shape::equalsSoft(xTad.tadOnlyShapeInfo, yTad.tadOnlyShapeInfo) || (xTad.numTads != yTad.numTads && yTad.numTads != 1))
+        throw std::runtime_error("Reduce3<X,Z>::exec function: arrays tads are inconsistent !");
+
+    const auto tadLen    = shape::length(xTad.tadOnlyShapeInfo);
+    const auto xTadOrder = shape::order(xTad.tadOnlyShapeInfo);
+    const auto yTadOrder = shape::order(yTad.tadOnlyShapeInfo);
+    const auto xTadEws   = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
+    const auto yTadEws   = shape::elementWiseStride(yTad.tadOnlyShapeInfo);
+    const auto zLen      = shape::length(zShapeInfo);    
+
+    nd4j::OmpLaunchHelper info(zLen);
+
+    if(xTadEws > 1 && yTadEws > 1 && xTadOrder == yTadOrder) {
+
+        // #pragma omp  parallel for schedule(guided) num_threads(info._numThreads) if (info._numThreads > 1) proc_bind(AFFINITY) default(shared)
+        for(Nd4jLong i = 0; i < zLen; ++i) {
+
+            Nd4jLong xOffset = xTad.tadOffsets[i];
+            Nd4jLong yOffset = yTad.numTads == 1 ? 0 : yTad.tadOffsets[i];            
+            auto start = OpType::startingValue(x + xOffset);
+
+            for (int j = 0; j < tadLen; j++) {
+
+                Nd4jLong xOffset2 =  xOffset + j*xTadEws;
+                Nd4jLong yOffset2 =  yOffset + j*yTadEws;
+                start = OpType::update(start, OpType::op(x[xOffset2], y[yOffset2], extraParams), extraParamsVals);
+            }            
+            z[i] = OpType::postProcess(start, tadLen, extraParamsVals);
         }
-                        
-        auto zEws = shape::elementWiseStride(zShapeInfo);
-        #pragma omp parallel for proc_bind(AFFINITY) default(shared)
-        for(Nd4jLong i = 0; i < zLen; i+=zEws) 
-            z[i] = OpType::postProcess(z[i], tadLength, extraParamsVals);
     }
     else {
         
-        auto startingVal = OpType::startingValue(x);        
-        
-        shape::TAD xTad(xShapeInfo, dimension, dimensionLength);
-        xTad.createTadOnlyShapeInfo();
-        xTad.createOffsets();
+        // #pragma omp  parallel for schedule(guided) num_threads(info._numThreads) if (info._numThreads > 1) proc_bind(AFFINITY) default(shared)
+        for(Nd4jLong i = 0; i < zLen; ++i) {
 
-        shape::TAD yTad(yShapeInfo, dimension, dimensionLength);
-        yTad.createTadOnlyShapeInfo();
-        yTad.createOffsets();
+            Nd4jLong xOffset = xTad.tadOffsets[i];
+            Nd4jLong yOffset = yTad.numTads == 1 ? 0 : yTad.tadOffsets[i];            
+            auto start = OpType::startingValue(x + xOffset);
 
-        /**
-        * The element wise stride belong longs to a reduction index.
-        * When used out of order, we can get rid of the data
-        * dependencies and rely on using the max dimension
-        * specified for stride instead.
-        * Say we take the sum(0,1) along long arr
-        * we can use arr.stride(1) as a representation
-        * along long which to iterate.
-        */
-        int largerElementWiseStride;
-        int smallerElementWiseStride;
-        auto xEws = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
-        auto yEws = shape::elementWiseStride(yTad.tadOnlyShapeInfo);
-        int tadLength;
-        Nd4jLong xModLength;
-        Nd4jLong yModLength;
-        Nd4jLong *iterationTadInfo;
-        bool xTadBigger;
-        
-        if(shape::length(xShapeInfo) > shape::length(yShapeInfo)) {
-            tadLength = shape::length(xTad.tadOnlyShapeInfo);
-            iterationTadInfo = xTad.tadOnlyShapeInfo;
-            largerElementWiseStride = shape::elementWiseStride(xShapeInfo);
-            smallerElementWiseStride = shape::elementWiseStride(yShapeInfo);
-            xModLength = 1;
-            yModLength = tadLength;
-            xTadBigger = true;
-        }
-        else {
-            tadLength = shape::length(yTad.tadOnlyShapeInfo);
-            iterationTadInfo = yTad.tadOnlyShapeInfo;
-            largerElementWiseStride = shape::elementWiseStride(yShapeInfo);
-            smallerElementWiseStride = shape::elementWiseStride(xShapeInfo);
-            xModLength = tadLength;
-            yModLength = 1;
-            xTadBigger = false;
-        }
-        
-        if (largerElementWiseStride >= 1 && smallerElementWiseStride >= 1 && xEws >= 1 && yEws >= 1) {
-
-            if(shape::length(xShapeInfo) == shape::length(yShapeInfo)) {
-                
-                //#pragma omp parallel for proc_bind(AFFINITY) default(shared)
-                for (Nd4jLong i = 0; i < zLen; i++) {
+            for (int j = 0; j < tadLen; j++) {
                     
-                    Z *localExtraParams = nullptr;
-                    
-                    if (OpType::extraParamsLen > 0)
-                        localExtraParams = new Z[OpType::extraParamsLen];
-                    
-                    for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
-                        localExtraParams[extraParamsIdx] = startingVal;
-                                
-                    Nd4jLong offset = xTad.tadOffsets[i];
-                    Nd4jLong yOffset = yTad.tadOffsets[i];
-                    z[i] = OpType::op(x[offset], y[yOffset], localExtraParams);
-                    
-                    for (int j = 1; j < tadLength; j++) {
-                        int xIdx = (offset + xEws * j);
-                        int yIdx = (yOffset + yEws * j);
-                        z[i] = OpType::update(z[i], OpType::op(x[xIdx],y[yIdx],localExtraParams), localExtraParams);
-                    }
-
-                    z[i] = OpType::postProcess(z[i], tadLength, localExtraParams);
-
-                    if (localExtraParams != nullptr)
-                        delete[] localExtraParams;
-                }
+                Nd4jLong xOffset2 =  xOffset + shape::getIndexOffset(j, xTad.tadOnlyShapeInfo, tadLen);
+                Nd4jLong yOffset2 =  yOffset + shape::getIndexOffset(j, yTad.tadOnlyShapeInfo, tadLen);                                    
+                start = OpType::update(start, OpType::op(x[xOffset2], y[yOffset2], extraParams), extraParamsVals);
             }
-            else {
-                
-                int tadsPerThread = zLen / TAD_THRESHOLD;
-                int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-
-//#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
-                for (int i = 0; i < zLen; i++) {
-                
-                    Nd4jLong xOffset = xTadBigger ? xTad.tadOffsets[i] : 0;
-                    Nd4jLong yOffset = !xTadBigger ? yTad.tadOffsets[i] : 0;
-                    auto xShapeInf = xTadBigger ? xTad.tadOnlyShapeInfo : xShapeInfo;
-                    auto yShapeInf = !xTadBigger ? yTad.tadOnlyShapeInfo : yShapeInfo;
-                    auto start = OpType::startingValue(x);
-
-                    for (int j = 0; j < tadLength; j++) {
-                    
-                        int xOffset2 =  xOffset + shape::getIndexOffset(j, xShapeInf, tadLength);
-                        int yOffset2 =  yOffset + shape::getIndexOffset(j, yShapeInf, tadLength);                                    
-                        start = OpType::update(start, OpType::op(x[xOffset2], y[yOffset2],extraParams), extraParamsVals);
-                    }
-
-                    z[i] = OpType::postProcess(start, shape::length(iterationTadInfo), extraParamsVals);
-                }   
-            }
-        } 
-        else {
-        
-            shape::TAD xTad(xShapeInfo, dimension, dimensionLength);
-            xTad.createTadOnlyShapeInfo();
-            xTad.createOffsets();
-
-            shape::TAD yTad(yShapeInfo, dimension, dimensionLength);
-            yTad.createTadOnlyShapeInfo();
-            yTad.createOffsets();
-            int tadsPerThread = zLen / TAD_THRESHOLD;
-            int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-            num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-
-//#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared) private(coord)
-            for (int i = 0; i < zLen; i++) {
-                
-                Nd4jLong xOffset = xTad.tadOffsets[i];
-                Nd4jLong yOffset = yTad.tadOffsets[i];
-                auto start = OpType::startingValue(x + xOffset);
-                
-                for (int j = 0; j < tadLength; j++) {
-                    Nd4jLong xOffset2 = xOffset + shape::getIndexOffset(j, xTad.tadOnlyShapeInfo, tadLength);
-                    Nd4jLong yOffset2 = yOffset + shape::getIndexOffset(j, yTad.tadOnlyShapeInfo, tadLength);
-                    start = OpType::update(start, OpType::op(x[xOffset2], y[yOffset2],extraParamsVals), extraParamsVals);
-                }
-
-                z[i] = OpType::postProcess(start, shape::length(iterationTadInfo), extraParamsVals);
-            }
+            z[i] = OpType::postProcess(start, tadLen, extraParamsVals);
         }
     }
+
+
+
+
+//     char xOrder = shape::order(xShapeInfo);
+//     char yOrder = shape::order(yShapeInfo);
+//     auto zLen = shape::length(zShapeInfo);
+//     auto tadLen = shape::tadLen(xShapeInfo,dimension,dimensionLength);
+    
+//     if(xOrder != yOrder) {
+        
+//         nd4j::OmpLaunchHelper info(zLen);
+//         #pragma omp parallel num_threads(info._numThreads) if (info._numThreads > 1) default(shared)
+//         {                
+//             auto threadNum = omp_get_thread_num();         
+//             auto threadOffset = info.getThreadOffset(threadNum);
+
+//             #pragma omp simd
+//             for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++) {
+//                 auto xOffset = shape::getIndexOffset(i+threadOffset, xShapeInfo, zLen);
+//                 auto yOffset = shape::getIndexOffset(i+threadOffset, yShapeInfo, zLen);
+//                 auto zOffset = shape::getIndexOffset(i+threadOffset, zShapeInfo, zLen);
+//                 z[zOffset] = OpType::update(z[zOffset], OpType::op(x[xOffset], y[yOffset], extraParamsVals), extraParamsVals);
+//             }
+//         }
+                        
+//         auto zEws = shape::elementWiseStride(zShapeInfo);
+//         #pragma omp parallel for proc_bind(AFFINITY) default(shared)
+//         for(Nd4jLong i = 0; i < zLen; i+=zEws) 
+//             z[i] = OpType::postProcess(z[i], tadLen, extraParamsVals);
+//     }
+//     else {
+        
+//         auto startingVal = OpType::startingValue(x); 
+        
+//         shape::TAD xTad(xShapeInfo, dimension, dimensionLength);
+//         xTad.createTadOnlyShapeInfo();
+//         xTad.createOffsets();
+
+//         shape::TAD yTad(yShapeInfo, dimension, dimensionLength);
+//         yTad.createTadOnlyShapeInfo();
+//         yTad.createOffsets();
+
+//          // if(!shape::equalsSoft(xTad.tadOnlyShapeInfo, yTad.tadOnlyShapeInfo))
+//          //        throw std::runtime_error("NDArray::applyReduce3 cuda method: arrays tads are inconsistent !");
+
+//         /**
+//         * The element wise stride belong longs to a reduction index.
+//         * When used out of order, we can get rid of the data
+//         * dependencies and rely on using the max dimension
+//         * specified for stride instead.
+//         * Say we take the sum(0,1) along long arr
+//         * we can use arr.stride(1) as a representation
+//         * along long which to iterate.
+//         */
+//         int largerElementWiseStride;
+//         int smallerElementWiseStride;
+//         auto xEws = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
+//         auto yEws = shape::elementWiseStride(yTad.tadOnlyShapeInfo);
+//         int tadLen;
+//         Nd4jLong xModLength;
+//         Nd4jLong yModLength;
+//         Nd4jLong *iterationTadInfo;
+//         bool xTadBigger;
+        
+//         if(shape::length(xShapeInfo) > shape::length(yShapeInfo)) {
+//             tadLen = shape::length(xTad.tadOnlyShapeInfo);
+//             iterationTadInfo = xTad.tadOnlyShapeInfo;
+//             largerElementWiseStride = shape::elementWiseStride(xShapeInfo);
+//             smallerElementWiseStride = shape::elementWiseStride(yShapeInfo);
+//             xModLength = 1;
+//             yModLength = tadLen;
+//             xTadBigger = true;
+//         }
+//         else {
+//             tadLen = shape::length(yTad.tadOnlyShapeInfo);
+//             iterationTadInfo = yTad.tadOnlyShapeInfo;
+//             largerElementWiseStride = shape::elementWiseStride(yShapeInfo);
+//             smallerElementWiseStride = shape::elementWiseStride(xShapeInfo);
+//             xModLength = tadLen;
+//             yModLength = 1;
+//             xTadBigger = false;
+//         }
+        
+//         if (largerElementWiseStride >= 1 && smallerElementWiseStride >= 1 && xEws >= 1 && yEws >= 1) {
+
+//             if(shape::length(xShapeInfo) == shape::length(yShapeInfo)) {
+                
+//                 //#pragma omp parallel for proc_bind(AFFINITY) default(shared)
+//                 for (Nd4jLong i = 0; i < zLen; i++) {
+                    
+//                     Z *localExtraParams = nullptr;
+                    
+//                     if (OpType::extraParamsLen > 0)
+//                         localExtraParams = new Z[OpType::extraParamsLen];
+                    
+//                     for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
+//                         localExtraParams[extraParamsIdx] = startingVal;
+                                
+//                     Nd4jLong offset = xTad.tadOffsets[i];
+//                     Nd4jLong yOffset = yTad.tadOffsets[i];
+//                     z[i] = OpType::op(x[offset], y[yOffset], localExtraParams);
+                    
+//                     for (int j = 1; j < tadLen; j++) {
+//                         int xIdx = (offset + xEws * j);
+//                         int yIdx = (yOffset + yEws * j);
+//                         z[i] = OpType::update(z[i], OpType::op(x[xIdx],y[yIdx],localExtraParams), localExtraParams);
+//                     }
+
+//                     z[i] = OpType::postProcess(z[i], tadLen, localExtraParams);
+
+//                     if (localExtraParams != nullptr)
+//                         delete[] localExtraParams;
+//                 }
+//             }
+//             else {
+                
+//                 int tadsPerThread = zLen / TAD_THRESHOLD;
+//                 int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+//                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+// //#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+//                 for (int i = 0; i < zLen; i++) {
+                
+//                     Nd4jLong xOffset = xTadBigger ? xTad.tadOffsets[i] : 0;
+//                     Nd4jLong yOffset = !xTadBigger ? yTad.tadOffsets[i] : 0;
+//                     auto xShapeInf = xTadBigger ? xTad.tadOnlyShapeInfo : xShapeInfo;
+//                     auto yShapeInf = !xTadBigger ? yTad.tadOnlyShapeInfo : yShapeInfo;
+//                     auto start = OpType::startingValue(x);
+
+//                     for (int j = 0; j < tadLen; j++) {
+                    
+//                         int xOffset2 =  xOffset + shape::getIndexOffset(j, xShapeInf, tadLen);
+//                         int yOffset2 =  yOffset + shape::getIndexOffset(j, yShapeInf, tadLen);                                    
+//                         start = OpType::update(start, OpType::op(x[xOffset2], y[yOffset2],extraParams), extraParamsVals);
+//                     }
+
+//                     z[i] = OpType::postProcess(start, shape::length(iterationTadInfo), extraParamsVals);
+//                 }   
+//             }
+//         } 
+//         else {
+             
+//             int tadsPerThread = zLen / TAD_THRESHOLD;
+//             int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+//             num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+// //#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+//             for (int i = 0; i < zLen; i++) {
+                
+//                 Nd4jLong xOffset = xTad.tadOffsets[i];
+//                 Nd4jLong yOffset = yTad.tadOffsets[i];
+//                 auto start = OpType::startingValue(x + xOffset);
+                
+//                 for (int j = 0; j < tadLen; j++) {
+//                     Nd4jLong xOffset2 = xOffset + shape::getIndexOffset(j, xTad.tadOnlyShapeInfo, tadLen);
+//                     Nd4jLong yOffset2 = yOffset + shape::getIndexOffset(j, yTad.tadOnlyShapeInfo, tadLen);
+//                     start = OpType::update(start, OpType::op(x[xOffset2], y[yOffset2],extraParamsVals), extraParamsVals);
+//                 }
+
+//                 z[i] = OpType::postProcess(start, shape::length(iterationTadInfo), extraParamsVals);
+//             }
+//         }
+//     }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -300,8 +356,8 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
     
     auto startingVal = OpType::startingValue(x);
 
-    auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-    auto tads = shape::length(xShapeInfo) / tadLength;
+    auto tadLen = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    auto tads = shape::length(xShapeInfo) / tadLen;
 
 //#pragma  omp parallel for proc_bind(AFFINITY) default(shared)
     for (Nd4jLong r = 0; r < tads; r++) {
@@ -315,14 +371,14 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) 
             localExtraParams[extraParamsIdx] = startingVal;
 
-        for (Nd4jLong f = 0; f < tadLength; f++) {
+        for (Nd4jLong f = 0; f < tadLen; f++) {
 
-            auto xOffset = offset + shape::getIndexOffset(f, tadShapeInfo, tadLength);
-            auto yOffset = shape::getIndexOffset(f, yShapeInfo, tadLength);
+            auto xOffset = offset + shape::getIndexOffset(f, tadShapeInfo, tadLen);
+            auto yOffset = shape::getIndexOffset(f, yShapeInfo, tadLen);
             z[r] = OpType::update(z[r], OpType::op(x[xOffset], y[yOffset], localExtraParams), localExtraParams);
         }
 
-        z[r] = OpType::postProcess(z[r], tadLength, localExtraParams);
+        z[r] = OpType::postProcess(z[r], tadLen, localExtraParams);
 
         if (localExtraParams != nullptr)
             delete[] localExtraParams;

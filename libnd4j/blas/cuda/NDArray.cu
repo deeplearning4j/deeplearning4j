@@ -122,7 +122,7 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::Launc
 
     _context = context;        
 
-    if(isShapeAlloc) {
+    if(!isShapeAlloc) {
         setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, _context->getWorkspace()));       
     }
     else {
@@ -131,7 +131,7 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::Launc
             shape::updateStrides(_shapeInfo, shape::order(shapeInfo));         
     }
 
-    _isShapeAlloc = isShapeAlloc;
+    _isShapeAlloc = true;
 
     if (this->isEmpty()) {
         _length = 0;
@@ -187,13 +187,13 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     if ((int) shapeInfo[0] > MAX_RANK)
         throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32");
 
-     if(isShapeAlloc) 
+     if(!isShapeAlloc) 
         setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, true, _context->getWorkspace()));
     else 
         setShapeInfo(shapeInfo);
     
     _context = context;
-    _isShapeAlloc = isShapeAlloc;
+    _isShapeAlloc = true;
 
     tickWriteDevice();
 
@@ -452,7 +452,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
         if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other->isB()) || (op.s == scalar::ReverseDivide && this->isB()))
             throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
-        //NDArray::registerSpecialUse({target}, {const_cast<NDArray*>(this), const_cast<NDArray*>(other)});
+        //NDArray::registerSpecialUse({target}, {this,other});
         if (isScalar()) {
             target->assign(this);
             target->applyPairwiseTransform(op.p, *other, extraArgs);
@@ -1095,7 +1095,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("Synchronization failed");
     }
 
-    void NDArray::registerSpecialUse(std::initializer_list<NDArray*> writeList, std::initializer_list<NDArray*> readList) {
+    void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
         // no-op
         for (auto p:writeList) {
             if (!p->isActualOnDeviceSide())
@@ -1622,7 +1622,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (_dataType != other->_dataType)
             throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - this and other arrays must have the same type !");
 
-        NDArray::registerSpecialUse({target}, {const_cast<NDArray*>(this), const_cast<NDArray*>(other)});
+        NDArray::registerSpecialUse({target}, {this,other});
         NativeOpExecutioner::execPairwiseBoolTransform(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr);
     }
 
@@ -1641,7 +1641,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         if (!scalar->isActualOnDeviceSide())
             scalar->syncToDevice();
-        NDArray::registerSpecialUse({target}, {const_cast<NDArray*>(this), const_cast<NDArray*>(scalar)});
+        NDArray::registerSpecialUse({target}, {this, scalar});
         NativeOpExecutioner::execScalarBool(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, scalar->_buffer, scalar->_shapeInfo, scalar->_bufferD, scalar->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()): nullptr);
     }
 
@@ -1680,7 +1680,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         if (!scalar->isActualOnDeviceSide())
             scalar->syncToDevice();
-        NDArray::registerSpecialUse({target}, {this, const_cast<NDArray*>(scalar)});
+        NDArray::registerSpecialUse({target}, {this,scalar});
         NativeOpExecutioner::execScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, scalar->getBuffer(), scalar->getShapeInfo(), scalar->_bufferD, scalar->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr);
     }
 
@@ -1801,7 +1801,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (!tadArray->isActualOnDeviceSide())
             tadArray->syncToDevice();
 
-        NDArray::registerSpecialUse({target}, {this, const_cast<NDArray*>(tadArray)});
+        NDArray::registerSpecialUse({target}, {this, tadArray});
         // TODO: eventually we want separate tads here
         NativeOpExecutioner::execBroadcastBool(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD,
                                                tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD,
@@ -1843,7 +1843,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
 
-            NDArray::registerSpecialUse({const_cast<NDArray*>(target)}, {const_cast<NDArray*>(this)});
+            NDArray::registerSpecialUse({target}, {this});
 
             NativeOpExecutioner::execIndexReduce(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr,
                                                  reinterpret_cast<Nd4jLong *>(target->_buffer),
@@ -1873,7 +1873,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
-            NDArray::registerSpecialUse({result}, {const_cast<NDArray*>(this)});
+            NDArray::registerSpecialUse({result}, {this});
 
             NativeOpExecutioner::execIndexReduce(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr,
                                                  reinterpret_cast<Nd4jLong *>(result->_buffer),
@@ -1905,12 +1905,93 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             params = new int8_t[result->sizeOfT()*3];
             memset(params, 0, result->sizeOfT()*3);
         }
-        NDArray::registerSpecialUse({result}, {const_cast<NDArray*>(this), const_cast<NDArray*>(other)});
+        NDArray::registerSpecialUse({result}, {this, other});
 
         NativeOpExecutioner::execReduce3Scalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD);
 
         if(params != extraParams)
             delete [] static_cast<int8_t*>(params);
+
+        return result;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // apply reduce3 (exec) operations to this and other array, return result in new output array
+    NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const ExtraArguments* extraParams) const {
+        
+        if (isS())
+            throw std::runtime_error("NDArray::applyReduce3: you can't use this method on String array!");
+        if(_dataType != other->_dataType)
+            throw std::runtime_error("NDArray::applyReduce3 method: the types of this and other arrays must be the same !");
+
+        std::vector<int> copy(dimensions);
+        shape::checkDimensions(rankOf(), copy);
+        shape::checkDimensions(other->rankOf(), copy);
+
+        if(!isActualOnDeviceSide()) 
+            syncToDevice();
+
+        if(!other->isActualOnDeviceSide())
+            other->syncToDevice();
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
+        auto result = new NDArray(newShape, true, _context, true);
+        // create temporary dynamic array of extra parameters if array extraParams is empty (==nullptr)
+        void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr;
+
+        // perform calculations
+        if(rankOf() == copy.size() && other->rankOf() == copy.size())
+            NativeOpExecutioner::execReduce3Scalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo());
+        else {
+            
+            // evaluate xTad data 
+            shape::TAD xTad(_shapeInfo, copy.data(), copy.size());
+            xTad.createTadOnlyShapeInfo();
+            xTad.createOffsets();
+
+            // evaluate yTad data
+            shape::TAD yTad(other->_shapeInfo, copy.data(), copy.size());         
+            yTad.createTadOnlyShapeInfo();
+            yTad.createOffsets();
+
+            if(!shape::equalsSoft(xTad.tadOnlyShapeInfo, yTad.tadOnlyShapeInfo) || (xTad.numTads != yTad.numTads && xTad.numTads != 1 && yTad.numTads != 1))
+                throw std::runtime_error("NDArray::applyReduce3 cuda method: arrays tads are inconsistent !");
+
+            // device memory allocation for tads
+            Nd4jLong *xTadShapeInfo, *xTadOffsets, *yTadShapeInfo, *yTadOffsets;
+            int *dims;
+
+            auto cudaResult = cudaMalloc(reinterpret_cast<void **>(&dims), copy.size() * sizeof(int));
+            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda memory allocation failed !", cudaResult);
+            
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadShapeInfo), shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
+            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda memory allocation failed !", cudaResult);
+
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&yTadShapeInfo), shape::shapeInfoByteLength(yTad.tadOnlyShapeInfo));
+            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda memory allocation failed !", cudaResult);
+
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadOffsets), xTad.numTads * sizeof(Nd4jLong));
+            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda memory allocation failed !", cudaResult);
+
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&yTadOffsets), yTad.numTads * sizeof(Nd4jLong));
+            if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda memory allocation failed !", cudaResult);
+
+            cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());
+            cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
+            cudaMemcpyAsync(yTadShapeInfo, yTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(yTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
+            cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
+            cudaMemcpyAsync(yTadOffsets, yTad.tadOffsets, yTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
+
+            NativeOpExecutioner::execReduce3(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, dims, copy.size(), xTadShapeInfo, xTadOffsets,  yTadShapeInfo, yTadOffsets);
+
+            cudaFree(xTadShapeInfo); cudaFree(xTadOffsets); cudaFree(yTadShapeInfo); cudaFree(yTadOffsets);            
+        }
+    
+        auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());        
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::applyReduce3 cuda failed !", cudaResult);
+
+        NDArray::registerSpecialUse({result}, {this, other});
 
         return result;
     }
@@ -1954,7 +2035,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             memset(params, 0, result->sizeOfT()*3);
 
         }
-        NDArray::registerSpecialUse({result}, {const_cast<NDArray*>(this), const_cast<NDArray*>(other)});
+        NDArray::registerSpecialUse({result}, {this, other});
 
         NativeOpExecutioner::execReduce3All(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params,
                                             other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD,
@@ -1966,41 +2047,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         return result;
     }
 
-    ////////////////////////////////////////////////////////////////////////
-    // apply reduce3 (exec) operations to this and other array, return result in new output array
-    NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const ExtraArguments* extraParams) const {
-        if (isS())
-            throw std::runtime_error("NDArray::applyReduce3: you can't use this method on String array!");
-        if(_dataType != other->_dataType)
-            throw std::runtime_error("NDArray::applyReduce3 method: the types of this and other arrays must be the same !");
-
-        std::vector<int> copy(dimensions);
-        shape::checkDimensions(rankOf(), copy);
-        shape::checkDimensions(other->rankOf(), copy);
-
-        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
-        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
-        auto result = new NDArray(newShape, true, _context, true);
-        // create temporary dynamic array of extra parameters if array extraParams is empty (==nullptr)
-        void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr;
-        if(params == nullptr) {
-            params = new int8_t[result->sizeOfT()*3];
-            memset(params, 0, result->sizeOfT()*3);
-        }
-        NDArray::registerSpecialUse({result}, {const_cast<NDArray*>(this), const_cast<NDArray*>(other)});
-
-        // perform calculations
-        if(rankOf() == copy.size() && other->rankOf() == copy.size())
-            NativeOpExecutioner::execReduce3Scalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo());
-        else
-            NativeOpExecutioner::execReduce3(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), copy.size(), nullptr, nullptr, nullptr, nullptr);
-
-        if(params != extraParams)
-            delete [] static_cast<int8_t*>(params);
-
-        return result;
-    }
-
+    
 ////////////////////////////////////////////////////////////////////////
 // default destructor
 NDArray::~NDArray() noexcept {
@@ -2079,6 +2126,41 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
         return true;
     }
 
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::permutei(const int* dimensions, const int rank) {
+
+        // check if current object is _shapeInfo owner
+        if (!_isShapeAlloc) {             // if _shapeInfo is not its own
+            _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
+            _isShapeAlloc = true;
+        } else {
+            if (!nonNull() || rank != rankOf())
+                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
+            shape::doPermuteShapeInfo(_shapeInfo, dimensions);
+        }
+
+        syncShape();
+
+        return true;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::permutei(const Nd4jLong* dimensions, const int rank) {
+
+        // check if current object is _shapeInfo owner
+        if (!_isShapeAlloc) {             // if _shapeInfo is not its own
+            _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
+            _isShapeAlloc = true;
+        } else {
+            if (!nonNull() || rank != rankOf())
+                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
+            shape::doPermuteShapeInfo(_shapeInfo, dimensions);
+        }
+
+        syncShape();
+        
+        return true;
+    }
 
 }
 

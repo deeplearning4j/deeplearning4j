@@ -91,14 +91,14 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     if ((int) shapeInfo[0] > MAX_RANK)
         throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32");
 
-     if(isShapeAlloc) 
+     if(!isShapeAlloc) 
         setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, true, _context->getWorkspace()));
     else 
         setShapeInfo(shapeInfo);
 
     _context = context;
-    _isAttached = _context->getWorkspace() != nullptr;    
-    _isShapeAlloc = isShapeAlloc;
+    _isAttached = _context->getWorkspace() != nullptr;
+    _isShapeAlloc = true;
 
     if (this->isEmpty()) {
         _length = 0;        
@@ -203,7 +203,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         _context = context;
         _isAttached = _context->getWorkspace() != nullptr;
 
-        if(isShapeAlloc) {
+        if(!isShapeAlloc) {
             setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, _context->getWorkspace()));            
         }
         else {
@@ -212,7 +212,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
                 shape::updateStrides(_shapeInfo, shape::order(shapeInfo));
         }
 
-        _isShapeAlloc = isShapeAlloc;
+        _isShapeAlloc = true;
         
         if (this->isEmpty()) {
             _length = 0;
@@ -990,7 +990,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         // no-op
     }
 
-    void NDArray::registerSpecialUse(std::initializer_list<NDArray*> writeList, std::initializer_list<NDArray*> readList) {
+    void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
         // no-op
     }
 
@@ -1819,6 +1819,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         std::vector<int> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
         shape::checkDimensions(other->rankOf(), copy);
+        
         // create tads
         shape::TAD tadX(_shapeInfo, copy.data(), copy.size());
         tadX.createTadOnlyShapeInfo();
@@ -1827,6 +1828,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         shape::TAD tadY(other->_shapeInfo, copy.data(), copy.size());
         tadY.createTadOnlyShapeInfo();
         tadY.createOffsets();
+        
         // check tads shapes
         if(!shape::equalsSoft(tadX.tadOnlyShapeInfo, tadY.tadOnlyShapeInfo))
             throw std::runtime_error("NDArray::applyAllReduce3 method: the shapes of array tads are different !");
@@ -1882,8 +1884,9 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         // perform calculations
         if(rankOf() == copy.size() && other->rankOf() == copy.size())
             NativeOpExecutioner::execReduce3Scalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo());
-        else
+        else {
             NativeOpExecutioner::execReduce3(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, params, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), copy.size(), nullptr, nullptr, nullptr, nullptr);
+        }
 
         if(params != extraParams)
             delete [] static_cast<int8_t*>(params);
@@ -1906,6 +1909,38 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         }
     }
     
+//////////////////////////////////////////////////////////////////////////
+    bool NDArray::permutei(const int* dimensions, const int rank) {
+
+        // check if current object is _shapeInfo owner
+        if (!_isShapeAlloc) {             // if _shapeInfo is not its own
+            _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
+            _isShapeAlloc = true;
+        } else {
+            if (!nonNull() || rank != rankOf())
+                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
+            shape::doPermuteShapeInfo(_shapeInfo, dimensions);
+        }
+
+        return true;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    bool NDArray::permutei(const Nd4jLong* dimensions, const int rank) {
+
+        // check if current object is _shapeInfo owner
+        if (!_isShapeAlloc) {             // if _shapeInfo is not its own
+            _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
+            _isShapeAlloc = true;
+        } else {
+            if (!nonNull() || rank != rankOf())
+                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
+            shape::doPermuteShapeInfo(_shapeInfo, dimensions);
+        }
+        
+        return true;
+    }
+
 
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*

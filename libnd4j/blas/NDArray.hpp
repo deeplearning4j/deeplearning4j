@@ -1755,39 +1755,7 @@ NDArray NDArray::transp() const {
                 }
             }
         }
-    }
-
-
-    //////////////////////////////////////////////////////////////////////////
-    bool NDArray::permutei(const int* dimensions, const int rank) {
-
-        // check if current object is _shapeInfo owner
-        if (!_isShapeAlloc) {             // if _shapeInfo is not its own
-            _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
-            _isShapeAlloc = true;
-        } else {
-            if (!nonNull() || rank != rankOf())
-                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
-            shape::doPermuteShapeInfo(_shapeInfo, dimensions);
-        }
-
-        return true;
-    }
-
-    bool NDArray::permutei(const Nd4jLong* dimensions, const int rank) {
-
-        // check if current object is _shapeInfo owner
-        if (!_isShapeAlloc) {             // if _shapeInfo is not its own
-            _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
-            _isShapeAlloc = true;
-        } else {
-            if (!nonNull() || rank != rankOf())
-                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
-            shape::doPermuteShapeInfo(_shapeInfo, dimensions);
-        }
-
-        return true;
-    }
+    }    
 
     //////////////////////////////////////////////////////////////////////////
     bool NDArray::permutei(const std::initializer_list<int>& dimensions) {
