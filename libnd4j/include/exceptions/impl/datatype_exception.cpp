@@ -19,7 +19,7 @@
 //
 
 #include <array/DataTypeUtils.h>
-#include "../datatype_exception.h"
+#include <exceptions/datatype_exception.h>
 
 namespace nd4j {
     datatype_exception::datatype_exception(std::string message) : std::runtime_error(message){

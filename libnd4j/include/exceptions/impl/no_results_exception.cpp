@@ -18,21 +18,11 @@
 // Created by raver on 8/31/2018.
 //
 
-#ifndef DEV_TESTS_NO_RESULTS_EXCEPTION_H
-#define DEV_TESTS_NO_RESULTS_EXCEPTION_H
-
-#include <op_boilerplate.h>
-#include <pointercast.h>
-#include <stdexcept>
-#include <graph/exceptions/graph_exception.h>
+#include <helpers/StringUtils.h>
+#include <exceptions/no_results_exception.h>
 
 namespace nd4j {
-    namespace graph {
-        class no_results_exception: public graph_exception {
-        public:
-            explicit no_results_exception(Nd4jLong graphId);
-        };
+    no_results_exception::no_results_exception(Nd4jLong graphId) : graph_exception(StringUtils::buildGraphErrorMessage("Got no results after graph execution", graphId), graphId) {
+        _graphId = graphId;
     }
 }
-
-#endif //DEV_TESTS_UNKNOWN_GRAPH_EXCEPTION_H

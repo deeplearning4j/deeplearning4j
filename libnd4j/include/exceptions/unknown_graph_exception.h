@@ -18,13 +18,19 @@
 // Created by raver on 8/31/2018.
 //
 
-#include <helpers/StringUtils.h>
-#include <graph/exceptions/unknown_graph_exception.h>
+#ifndef DEV_TESTS_UNKNOWN_GRAPH_EXCEPTION_H
+#define DEV_TESTS_UNKNOWN_GRAPH_EXCEPTION_H
+
+#include <op_boilerplate.h>
+#include <pointercast.h>
+#include <stdexcept>
+#include <exceptions/graph_exception.h>
 
 namespace nd4j {
-    namespace graph {
-        unknown_graph_exception::unknown_graph_exception(Nd4jLong graphId) : graph_exception(StringUtils::buildGraphErrorMessage("Unknown graph", graphId), graphId) {
-            _graphId = graphId;
-        }
-    }
+    class unknown_graph_exception: public graph_exception {
+    public:
+        explicit unknown_graph_exception(Nd4jLong graphId);
+    };
 }
+
+#endif //DEV_TESTS_UNKNOWN_GRAPH_EXCEPTION_H

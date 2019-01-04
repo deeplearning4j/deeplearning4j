@@ -19,12 +19,10 @@
 //
 
 #include <helpers/StringUtils.h>
-#include <graph/exceptions/graph_execution_exception.h>
+#include <exceptions/graph_exists_exception.h>
 
 namespace nd4j {
-    namespace graph {
-        graph_execution_exception::graph_execution_exception(Nd4jLong graphId) : graph_exception(StringUtils::buildGraphErrorMessage("Caught exception during graph execution", graphId), graphId) {
-            _graphId = graphId;
-        }
+    graph_exists_exception::graph_exists_exception(Nd4jLong graphId) : graph_exception(StringUtils::buildGraphErrorMessage("Graph with given ID already exists", graphId), graphId) {
+        _graphId = graphId;
     }
 }

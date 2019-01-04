@@ -18,21 +18,19 @@
 // Created by raver on 8/31/2018.
 //
 
-#ifndef DEV_TESTS_GRAPH_EXISTS_EXCEPTION_H
-#define DEV_TESTS_GRAPH_EXISTS_EXCEPTION_H
+#ifndef DEV_TESTS_GRAPH_EXECUTION_EXCEPTION_H
+#define DEV_TESTS_GRAPH_EXECUTION_EXCEPTION_H
 
 #include <op_boilerplate.h>
 #include <pointercast.h>
 #include <stdexcept>
-#include <graph/exceptions/graph_exception.h>
+#include <exceptions/graph_exception.h>
 
 namespace nd4j {
-    namespace graph {
-        class graph_exists_exception: public graph_exception {
-        public:
-            explicit graph_exists_exception(Nd4jLong graphId);
-        };
-    }
+    class graph_execution_exception: public graph_exception {
+    public:
+        explicit graph_execution_exception(Nd4jLong graphId);
+    };
 }
 
 #endif //DEV_TESTS_UNKNOWN_GRAPH_EXCEPTION_H
