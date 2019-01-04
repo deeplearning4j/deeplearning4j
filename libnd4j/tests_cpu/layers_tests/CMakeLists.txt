@@ -28,6 +28,7 @@ if (APPLE)
 elseif(WIN32)    
     set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
 else()
+    # OR CMAKE_BUILD_TYPE STREQUAL "Release"
     if ("${_RELEASE}")
         set(CMAKE_CXX_FLAGS  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
         if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")

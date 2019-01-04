@@ -460,10 +460,10 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
 ////////////////////////////////////////////////////////////////////////
 std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     int magicNumber = shape::shapeInfoLength(this->rankOf());
-    std::vector<int64_t> vector(magicNumber);
+    std::vector<int64_t> vector;
 
     for (int e = 0; e < magicNumber; e++)
-        vector[e] = static_cast<int64_t>(_shapeInfo[e]);
+        vector.emplace_back(static_cast<int64_t>(_shapeInfo[e]));
 
     return vector;
 }
@@ -471,10 +471,10 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
 ////////////////////////////////////////////////////////////////////////
     std::vector<Nd4jLong> NDArray::getShapeInfoAsVector() {
         int magicNumber = shape::shapeInfoLength(this->rankOf());
-        std::vector<Nd4jLong> vector(magicNumber);
+        std::vector<Nd4jLong> vector;
 
         for (int e = 0; e < magicNumber; e++)
-            vector[e] = this->_shapeInfo[e];
+            vector.emplace_back(this->_shapeInfo[e]);
 
         return vector;
     }

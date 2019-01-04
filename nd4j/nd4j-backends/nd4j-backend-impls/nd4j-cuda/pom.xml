@@ -228,6 +228,14 @@
             <classifier>${dependency.platform}</classifier>
         </dependency>
         <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>libnd4j</artifactId>
+            <version>${project.version}</version>
+            <type>zip</type>
+            <classifier>${javacpp.platform}-cuda-${cuda.version}</classifier>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
