@@ -55,7 +55,7 @@ void* NDArray::operator new(size_t i) {
     } else {
         auto p = malloc(i);
         
-        CHECK_ALLOC(p, "Failed to allocate new NDArray");
+        CHECK_ALLOC(p, "Failed to allocate new NDArray", i);
         return p;
     }
 }

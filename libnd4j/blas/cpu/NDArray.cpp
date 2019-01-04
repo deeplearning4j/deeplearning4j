@@ -40,6 +40,7 @@
 #include <MmulHelper.h>
 #include <helpers/threshold.h>
 #include <exceptions/datatype_exception.h>
+#include <exceptions/allocation_exception.h>
 
 #include <NDArray.hpp>
 
@@ -53,7 +54,7 @@ namespace nd4j {
         } else {
             auto p = malloc(i);
             
-            CHECK_ALLOC(p, "Failed to allocate new NDArray");
+            CHECK_ALLOC(p, "Failed to allocate new NDArray", i);
 
             return p;
         }

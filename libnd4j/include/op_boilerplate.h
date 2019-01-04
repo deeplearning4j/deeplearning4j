@@ -66,6 +66,7 @@
 #define OP_BOILERPLATE_HH
 
 #include <type_boilerplate.h>
+#include <exceptions/allocation_exception.h>
 
 #ifdef __CUDACC__
 #define meta_def inline __device__
@@ -1510,7 +1511,7 @@
 
 #endif // CUDACC
 
-#define CHECK_ALLOC(PTR, MSG) if (PTR == nullptr) { nd4j_printf("%s\n", MSG); throw std::bad_alloc(); };
+#define CHECK_ALLOC(PTR, MSG, BYTES) if (PTR == nullptr) { throw nd4j::allocation_exception::build(MSG, BYTES); };
 
 #define LAMBDA_H(X, ...) [__VA_ARGS__] (float16 X) -> float16
 #define LAMBDA_HH(X, Y, ...) [__VA_ARGS__] (float16 X, float16 Y) -> float16

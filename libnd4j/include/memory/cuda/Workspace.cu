@@ -29,6 +29,9 @@
 #include <templatemath.h>
 #include <cstring>
 
+#include <cuda.h>
+#include <cuda_runtime.h>
+
 namespace nd4j {
     namespace memory {
         Workspace::Workspace(ExternalWorkspace *external) {
@@ -39,6 +42,7 @@ namespace nd4j {
                 _initialSize = external->sizeHost();
                 _currentSize = external->sizeHost();
                 _offset = 0L;
+                _offsetSecondary = 0L;
                 this->_cycleAllocations = 0;
                 this->_spillsSize = 0;
 
@@ -50,7 +54,7 @@ namespace nd4j {
             if (initialSize > 0) {
                 this->_ptrHost = (char *) malloc(initialSize);
 
-                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace");
+                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace", initialSize);
 
                 memset(this->_ptrHost, 0, initialSize);
                 this->_allocatedHost = true;
@@ -60,6 +64,7 @@ namespace nd4j {
             this->_initialSize = initialSize;
             this->_currentSize = initialSize;
             this->_offset = 0;
+            this->_offsetSecondary = 0;
             this->_cycleAllocations = 0;
             this->_spillsSize = 0;
         }
@@ -71,7 +76,7 @@ namespace nd4j {
 
                 this->_ptrHost =(char *) malloc(bytes);
 
-                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace");
+                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace", bytes);
 
                 memset(this->_ptrHost, 0, bytes);
                 this->_currentSize = bytes;
@@ -120,42 +125,7 @@ namespace nd4j {
 
 
         void* Workspace::allocateBytes(Nd4jLong numBytes) {
-            if (numBytes < 1) {
-                nd4j_printf("Bad number of bytes requested for allocation: %i\n", numBytes);
-                throw std::invalid_argument("Number of bytes for allocation should be positive");
-            }
-
-            //numBytes += 32;
-            void* result = nullptr;
-            this->_cycleAllocations += numBytes;
-            this->_mutexAllocation.lock();
-
-            if (_offset.load() + numBytes > _currentSize) {
-                nd4j_debug("Allocating %lld bytes in spills\n", numBytes);
-                this->_mutexAllocation.unlock();
-
-                void *p = malloc(numBytes);
-
-                CHECK_ALLOC(p, "Failed to allocate new workspace");
-
-                _mutexSpills.lock();
-                _spills.push_back(p);
-                _mutexSpills.unlock();
-
-                _spillsSize += numBytes;
-
-                return p;
-            }
-
-            result = (void *)(_ptrHost + _offset.load());
-            _offset += numBytes;
-            //memset(result, 0, (int) numBytes);
-
-            nd4j_debug("Allocating %lld bytes from workspace; Current PTR: %p; Current offset: %lld\n", numBytes, result, _offset.load());
-
-            this->_mutexAllocation.unlock();
-
-            return result;
+            return allocateBytes(nd4j::memory::MemoryType::HOST, numBytes);
         }
 
         Nd4jLong Workspace::getAllocatedSize() {
@@ -177,8 +147,50 @@ namespace nd4j {
         }
 
         void* Workspace::allocateBytes(nd4j::memory::MemoryType type, Nd4jLong numBytes) {
-            if (type == DEVICE)
-                throw std::runtime_error("CPU backend doesn't have device memory");
+            switch (type) {
+                case HOST: {
+                        if (numBytes < 1)
+                            throw allocation_exception::build("Number of bytes for allocation should be positive", numBytes);
+
+
+                        //numBytes += 32;
+                        void* result = nullptr;
+                        this->_cycleAllocations += numBytes;
+                        this->_mutexAllocation.lock();
+
+                        if (_offset.load() + numBytes > _currentSize) {
+                            nd4j_debug("Allocating %lld bytes in spills\n", numBytes);
+                            this->_mutexAllocation.unlock();
+
+                            void *p = malloc(numBytes);
+
+                            CHECK_ALLOC(p, "Failed to allocate new workspace", numBytes);
+
+                            _mutexSpills.lock();
+                            _spills.push_back(p);
+                            _mutexSpills.unlock();
+
+                            _spillsSize += numBytes;
+
+                            return p;
+                        }
+
+                        result = (void *)(_ptrHost + _offset.load());
+                        _offset += numBytes;
+                        //memset(result, 0, (int) numBytes);
+
+                        nd4j_debug("Allocating %lld bytes from workspace; Current PTR: %p; Current offset: %lld\n", numBytes, result, _offset.load());
+
+                        this->_mutexAllocation.unlock();
+
+                        return result;
+                    }
+                    break;
+                case DEVICE: {
+
+                    }
+                    break;
+            }
 
             return this->allocateBytes(numBytes);
         }

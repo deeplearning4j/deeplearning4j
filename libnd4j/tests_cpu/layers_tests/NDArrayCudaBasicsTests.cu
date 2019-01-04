@@ -151,7 +151,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_1) {
     //ASSERT_EQ(0, res);
 
     Nd4jPointer nativeStream = (Nd4jPointer)malloc(sizeof(cudaStream_t));
-    CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream");
+    CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream", sizeof(cudaStream_t));
     cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
     auto stream = reinterpret_cast<cudaStream_t *>(&nativeStream);
 
@@ -199,7 +199,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_2) {
     //ASSERT_EQ(0, res);
 
     Nd4jPointer nativeStream = (Nd4jPointer)malloc(sizeof(cudaStream_t));
-    CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream");
+    CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream", sizeof(cudaStream_t));
     cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
     auto stream = reinterpret_cast<cudaStream_t *>(&nativeStream);
 
@@ -243,7 +243,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_3) {
     //ASSERT_EQ(0, res);
 
     Nd4jPointer nativeStream = (Nd4jPointer)malloc(sizeof(cudaStream_t));
-    CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream");
+    CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream", sizeof(cudaStream_t));
     cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
     auto stream = reinterpret_cast<cudaStream_t *>(&nativeStream);
 

@@ -41,6 +41,7 @@ namespace nd4j {
                 _initialSize = external->sizeHost();
                 _currentSize = external->sizeHost();
                 _offset = 0L;
+                _offsetSecondary = 0L;
                 this->_cycleAllocations = 0;
                 this->_spillsSize = 0;
 
@@ -52,7 +53,7 @@ namespace nd4j {
             if (initialSize > 0) {
                 this->_ptrHost = (char *) malloc(initialSize);
 
-                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace");
+                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace", initialSize);
 
                 memset(this->_ptrHost, 0, initialSize);
                 this->_allocatedHost = true;
@@ -62,6 +63,7 @@ namespace nd4j {
             this->_initialSize = initialSize;
             this->_currentSize = initialSize;
             this->_offset = 0;
+            this->_offsetSecondary = 0;
             this->_cycleAllocations = 0;
             this->_spillsSize = 0;
         }
@@ -73,7 +75,7 @@ namespace nd4j {
 
                 this->_ptrHost =(char *) malloc(bytes);
 
-                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace");
+                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace", bytes);
 
                 memset(this->_ptrHost, 0, bytes);
                 this->_currentSize = bytes;
@@ -122,10 +124,9 @@ namespace nd4j {
 
 
         void* Workspace::allocateBytes(Nd4jLong numBytes) {
-            if (numBytes < 1) {
-                nd4j_printf("Bad number of bytes requested for allocation: %i\n", numBytes);
-                throw std::invalid_argument("Number of bytes for allocation should be positive");
-            }
+            if (numBytes < 1)
+                throw allocation_exception::build("Number of bytes for allocation should be positive", numBytes);
+
 
             //numBytes += 32;
             void* result = nullptr;
@@ -138,7 +139,7 @@ namespace nd4j {
 
                 void *p = malloc(numBytes);
 
-                CHECK_ALLOC(p, "Failed to allocate new workspace");
+                CHECK_ALLOC(p, "Failed to allocate new workspace", numBytes);
 
                 _mutexSpills.lock();
                 _spills.push_back(p);
@@ -172,6 +173,7 @@ namespace nd4j {
 
         void Workspace::scopeOut() {
             _offset = 0;
+            _offsetSecondary = 0;
         }
 
         Nd4jLong Workspace::getSpilledSize() {

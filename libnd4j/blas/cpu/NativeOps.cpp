@@ -34,6 +34,7 @@
 #include <pointercast.h>
 #include <pairwise_util.h>
 #include <types/types.h>
+#include <exceptions/allocation_exception.h>
 
 
 #include <fcntl.h>
@@ -1662,7 +1663,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
     if (!nameSet) {
         name = reinterpret_cast<char *>(malloc(256 * sizeof(char)));
 
-        CHECK_ALLOC(name, "Failed to allocate new string buffer");
+        CHECK_ALLOC(name, "Failed to allocate new string buffer", 256);
 
         std::memset(name, 0, 256 * sizeof(char));
         nameSet = true;

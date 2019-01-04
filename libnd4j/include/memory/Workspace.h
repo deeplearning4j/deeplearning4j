@@ -35,8 +35,6 @@
 namespace nd4j {
     namespace memory {
 
-//        void ping();
-
         enum MemoryType {
             HOST,
             DEVICE,
@@ -51,9 +49,13 @@ namespace nd4j {
             bool _allocatedDevice = false;
 
             std::atomic<Nd4jLong> _offset;
+            std::atomic<Nd4jLong> _offsetSecondary;
 
             Nd4jLong _initialSize = 0L;
+            Nd4jLong _initialSizeSecondary = 0L;
+
             Nd4jLong _currentSize = 0L;
+            Nd4jLong _currentSizeSecondary = 0L;
 
             std::mutex _mutexAllocation;
             std::mutex _mutexSpills;
