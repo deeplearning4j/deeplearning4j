@@ -39,7 +39,8 @@
 #include <helpers/ArrayUtils.h>
 #include <MmulHelper.h>
 #include <helpers/threshold.h>
-#include <graph/exceptions/datatype_exception.h>
+#include <exceptions/datatype_exception.h>
+#include <exceptions/cuda_exception.h>
 #include <specials_cuda.h>
 
 #include "../NDArray.hpp"
@@ -2020,10 +2021,8 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
         NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extras.argumentAsT(DataType::FLOAT32), other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
 
         auto res = cudaStreamSynchronize(*_context->getCudaStream());
-        if (res != 0) {
-            nd4j_printf("Kernel returned [%i]\n", res);
-            throw std::runtime_error("equalsTo failed");
-        }
+        if (res != 0)
+            throw current_exception::build("NDArray::equalsTo failed", res);
 
         if (tmp.e<int>(0) > 0)
             return false;
