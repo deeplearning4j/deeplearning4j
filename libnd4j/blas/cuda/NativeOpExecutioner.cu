@@ -20,7 +20,7 @@
 #include <op_boilerplate.h>
 #include <helpers/DebugHelper.h>
 #include <DataTypeUtils.h>
-#include <graph/exceptions/datatype_exception.h>
+#include <exceptions/datatype_exception.h>
 #include <helpers/CudaLaunchHelper.h>
 #include <helpers/ShapeBuilders.h>
 

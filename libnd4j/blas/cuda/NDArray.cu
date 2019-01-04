@@ -2022,7 +2022,7 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
 
         auto res = cudaStreamSynchronize(*_context->getCudaStream());
         if (res != 0)
-            throw current_exception::build("NDArray::equalsTo failed", res);
+            throw cuda_exception::build("NDArray::equalsTo failed", res);
 
         if (tmp.e<int>(0) > 0)
             return false;
