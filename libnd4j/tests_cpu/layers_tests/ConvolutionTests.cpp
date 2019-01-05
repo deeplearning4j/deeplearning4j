@@ -2631,7 +2631,7 @@ TYPED_TEST(TypedConvolutionTests, sconv2d_bp_test2) {
     NDArray gradO('c', {bS, oC, oH, oW}, typeid(TypeParam) == typeid(float) ? nd4j::DataType::FLOAT32 : nd4j::DataType::DOUBLE);
     NDArray weightsDepth('f', {kH, kW, iC, mC}, typeid(TypeParam) == typeid(float) ? nd4j::DataType::FLOAT32 : nd4j::DataType::DOUBLE);
     NDArray weightsPoint('f', {1, 1, iC*mC, oC}, typeid(TypeParam) == typeid(float) ? nd4j::DataType::FLOAT32 : nd4j::DataType::DOUBLE);
-    NDArray bias('c', {1,oC}, {0.5, 0.5});
+    NDArray bias('c', {1,oC}, {0.5, 0.5}, typeid(TypeParam) == typeid(float) ? nd4j::DataType::FLOAT32 : nd4j::DataType::DOUBLE);
 
     NDArray gradI(&input);
     NDArray gradWD(&weightsDepth);
