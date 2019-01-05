@@ -990,6 +990,18 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         // no-op
     }
 
+    void NDArray::syncToDevice() const {
+        //
+    }
+
+    void NDArray::syncToHost() const {
+      //
+    }
+
+    void NDArray::syncShape() const {
+
+    }
+
     void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
         // no-op
     }
