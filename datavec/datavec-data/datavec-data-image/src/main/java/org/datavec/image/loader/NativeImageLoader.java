@@ -240,7 +240,7 @@ public class NativeImageLoader extends BaseImageLoader {
         if (this.multiPageMode != null) {
              a = asMatrix(mat.data(), mat.cols());
         }else{
-            Mat image = imdecode(mat, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+            Mat image = imdecode(mat, IMREAD_ANYDEPTH | IMREAD_ANYCOLOR);
             if (image == null || image.empty()) {
                 PIX pix = pixReadMem(mat.data(), mat.cols());
                 if (pix == null) {
@@ -317,7 +317,7 @@ public class NativeImageLoader extends BaseImageLoader {
     @Override
     public Image asImageMatrix(InputStream is) throws IOException {
         Mat mat = streamToMat(is);
-        Mat image = imdecode(mat, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        Mat image = imdecode(mat, IMREAD_ANYDEPTH | IMREAD_ANYCOLOR);
         if (image == null || image.empty()) {
             PIX pix = pixReadMem(mat.data(), mat.cols());
             if (pix == null) {
@@ -491,7 +491,7 @@ public class NativeImageLoader extends BaseImageLoader {
 
     public void asMatrixView(InputStream is, INDArray view) throws IOException {
         Mat mat = streamToMat(is);
-        Mat image = imdecode(mat, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        Mat image = imdecode(mat, IMREAD_ANYDEPTH | IMREAD_ANYCOLOR);
         if (image == null || image.empty()) {
             PIX pix = pixReadMem(mat.data(), mat.cols());
             if (pix == null) {
@@ -677,7 +677,7 @@ public class NativeImageLoader extends BaseImageLoader {
     public ImageWritable asWritable(File f) throws IOException {
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
             Mat mat = streamToMat(bis);
-            Mat image = imdecode(mat, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+            Mat image = imdecode(mat, IMREAD_ANYDEPTH | IMREAD_ANYCOLOR);
             if (image == null || image.empty()) {
                 PIX pix = pixReadMem(mat.data(), mat.cols());
                 if (pix == null) {
