@@ -76,7 +76,7 @@ NDArray::NDArray(const NDArray& other) {
 
     setShapeInfo(ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace()));    
 
-    ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length, int8_t);
+    ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
 
     if(other.isActualOnHostSide()) {
         auto res = cudaMemcpy(_bufferD, other._buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
