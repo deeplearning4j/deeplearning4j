@@ -41,16 +41,12 @@ public class ASum extends BaseReduceSameOp {
 
     public ASum() {}
 
-    public ASum(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public ASum(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
-    public ASum(INDArray x) {
-        super(x);
-    }
-
-    public ASum(INDArray x, INDArray z) {
-        super(x, null, z);
+    public ASum(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
     @Override

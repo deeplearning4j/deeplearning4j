@@ -315,7 +315,7 @@ All dropout types are applied at training time only. They are not applied at tes
 * **Dropout** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/dropout/Dropout.java)) - Each input activation x is independently set to (0, with probability 1-p) or (x/p with probability p)<br>
 * **GaussianDropout** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/dropout/GaussianDropout.java)) - This is a multiplicative Gaussian noise (mean 1) on the input activations. Each input activation x is independently set to: ```x * y```, where ```y ~ N(1, stdev = sqrt((1-rate)/rate))```
 * **GaussianNoise** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/dropout/GaussianNoise.java)) - Applies additive, mean-zero Gaussian noise to the input - i.e., ```x = x + N(0,stddev)```
-* **AlphaDropout** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/dropout/AlphaDropout.java)) - AlphaDropout is a dropout technique proposed by [Klaumbauer et al. 2017 - Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515). Designed for self-normalizing neural networks (SELU activation, NORMAL weight init). Attempts to keep both the mean and variance of the post-dropout activations to the the same (in expectation) as before alpha dropout was applied
+* **AlphaDropout** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/dropout/AlphaDropout.java)) - AlphaDropout is a dropout technique proposed by [Klaumbauer et al. 2017 - Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515). Designed for self-normalizing neural networks (SELU activation, NORMAL weight init). Attempts to keep both the mean and variance of the post-dropout activations to the same (in expectation) as before alpha dropout was applied
 
 Note that (as of current master - but not 0.9.1) the dropout parameters can also be specified according to any of the schedule classes mentioned in the Learning Rate Schedules section.
 
@@ -342,7 +342,7 @@ Constraints are deterministic limitations that are placed on a model's parameter
 
 DataSetIterator is an abstraction that DL4J uses to iterate over minibatches of data, used for training. DataSetIterator returns DataSet objects, which are minibatches, and support a maximum of 1 input and 1 output array (INDArray).
 
-MultiDataSetIterator is similar to DataSetIterator, but returns MultiDataSet objects, which can have as many input and output arrays arrays as required for the network.
+MultiDataSetIterator is similar to DataSetIterator, but returns MultiDataSet objects, which can have as many input and output arrays as required for the network.
 
 #### <a name="data-iter-builtin">Iterators - Build-In (DL4J-Provided Data)</a>
 

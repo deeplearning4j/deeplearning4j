@@ -57,6 +57,8 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     // cached instance, for dataType checks
     protected DataBuffer extraArgz;
 
+    protected INDArray dimensionz;
+
     public BaseOp() {
     }
 
@@ -492,5 +494,41 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         result = 31 * result + (passThrough ? 1 : 0);
         result = 31 * result + (extraArgz != null ? extraArgz.hashCode() : 0);
         return result;
+    }
+
+
+    protected void defineDimensions(int... dimensions){
+        if (dimensions != null && dimensions.length > 0) {
+            dimensions = Shape.normalizeAxis(x.rank(), dimensions);
+        }
+
+        if (dimensions == null || dimensions.length == 0)
+            this.dimensionz = Nd4j.empty(DataType.INT);
+        else
+            this.dimensionz = Nd4j.createFromArray(dimensions);
+    }
+
+    public INDArray dimensions() {
+        return dimensionz;
+    }
+
+    public Number getFinalResult() {
+        if (this.z == null)
+            throw new ND4JIllegalStateException("Op.Z is null. Op wasn't executed yet?");
+
+        if (z.isEmpty())
+            throw new ND4JIllegalStateException("Can't get number from empty array");
+
+        if (!z.isScalar())
+            throw new ND4JIllegalStateException("Can't get final result scalar out of N-dim tensor");
+
+        if (z.isR())
+            return new Double(z.getDouble(0));
+        else if (z.isZ())
+            return new Long(z.getInt(0));
+        else if (z.isB())
+            return new Integer(z.getInt(0));
+
+        throw new ND4JIllegalStateException("???");
     }
 }

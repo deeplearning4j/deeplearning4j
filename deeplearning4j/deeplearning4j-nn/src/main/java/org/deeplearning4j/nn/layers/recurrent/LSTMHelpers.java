@@ -558,7 +558,7 @@ public class LSTMHelpers {
                 INDArray deltao = deltaoNext;
                 Nd4j.getExecutioner().exec(new OldMulOp(nablaOut, sigmahOfS, deltao));
                 if (sigmoidGates) {
-                    INDArray sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(new TimesOneMinus(ao.dup('f'))); //Equivalent to sigmoid deriv on zo
+                    INDArray sigmaoPrimeOfZo = Nd4j.getExecutioner().exec(new TimesOneMinus(ao.dup('f'))); //Equivalent to sigmoid deriv on zo
                     deltao.muli(sigmaoPrimeOfZo);
                 } else {
                     deltao.assign(gateActivationFn.backprop(fwdPass.oz[time], deltao).getFirst()); //Deltao needs to be modified in-place
@@ -610,8 +610,7 @@ public class LSTMHelpers {
                     deltag.muli(ai);
                     deltag.muli(nablaCellState);
                 } else {
-                    INDArray temp2 = Nd4j.getExecutioner().execAndReturn(
-                            new OldMulOp(ai, nablaCellState, Nd4j.createUninitialized(ai.shape(), 'f')));
+                    INDArray temp2 = Nd4j.getExecutioner().exec(new OldMulOp(ai, nablaCellState, Nd4j.createUninitialized(ai.shape(), 'f')));
                     deltag.assign(gateActivationFn.backprop(fwdPass.gz[time], temp2).getFirst());
                     //TODO activation functions with params; optimize (no assign)
                 }
@@ -620,8 +619,7 @@ public class LSTMHelpers {
                 //Network input delta:
                 INDArray zi = fwdPass.iz[time];
                 INDArray deltai = deltaiNext;
-                temp = Nd4j.getExecutioner().execAndReturn(
-                        new OldMulOp(ag, nablaCellState, Nd4j.createUninitialized(deltai.shape(), 'f')));
+                temp = Nd4j.getExecutioner().exec(new OldMulOp(ag, nablaCellState, Nd4j.createUninitialized(deltai.shape(), 'f')));
                 deltai.assign(afn.backprop(zi, temp).getFirst());
                 //TODO activation functions with params; also: optimize this (no assign)
                 //Shape: [m,n^L]

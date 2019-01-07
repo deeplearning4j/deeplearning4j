@@ -22,7 +22,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 /**
  *
  * Polynomial decay schedule, with 3 parameters: initial value, maxIter, power.<br>
- * Note that the the value will be 0 after maxIter, otherwise is given by:
+ * Note that the value will be 0 after maxIter, otherwise is given by:
  * value(i) = initialValue * (1 + i/maxIter)^(-power)
  * where i is the iteration or epoch (depending on the setting)
  *

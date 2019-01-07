@@ -60,7 +60,7 @@ public class TwoPointApproximation {
      * @param numSteps Number of h steps in 1 direction
      *                 to implement finite difference scheme.
      *
-     * @param lowerBound Lower bounds for independent variable variable
+     * @param lowerBound Lower bounds for independent variable
      * @param upperBound Upper bounds for independent variable
      * @return
      */

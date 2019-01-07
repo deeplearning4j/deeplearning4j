@@ -127,7 +127,7 @@ public class LongTests extends BaseNd4jTest {
             assertEquals("Failed at row " + x, 1000, hugeX.getRow(x).sumNumber().intValue());
         }
 
-        INDArray result = Nd4j.getExecutioner().exec(new ManhattanDistance(hugeX, hugeY, hugeX.lengthLong()), 1);
+        INDArray result = Nd4j.getExecutioner().exec(new ManhattanDistance(hugeX, hugeY, 1));
         for (int x = 0; x < hugeX.rows(); x++) {
             assertEquals(exp, result.getDouble(x), 1e-5);
         }

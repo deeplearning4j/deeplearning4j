@@ -59,22 +59,22 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
     }
 
     public BaseReduceFloatOp(INDArray input, INDArray output, boolean keepDims, int... dimensions){
-        super(input, null, output, input.length());
+        super(input, null, output, dimensions);
         this.keepDims = keepDims;
         this.dimensions = dimensions;
     }
 
 
-    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+    public BaseReduceFloatOp(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
-    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
-    }
 
-    public BaseReduceFloatOp(INDArray x) {
-        super(x);
+    public BaseReduceFloatOp(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
     protected BaseReduceFloatOp() {

@@ -95,7 +95,7 @@ public class AMSGradUpdater implements GradientUpdater<AMSGrad> {
             alphat = epsilon;
 
         //gradient array contains: sqrt(vHat) + eps
-        Nd4j.getExecutioner().execAndReturn(new Sqrt(vHat, gradient)).addi(epsilon);
+        Nd4j.getExecutioner().exec(new Sqrt(vHat, gradient)).addi(epsilon);
 
         //gradient = alphat * m_t / (sqrt(vHat) + eps)
         gradient.rdivi(m).muli(alphat);

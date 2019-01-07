@@ -129,7 +129,7 @@ namespace nd4j {
             std::map<int, nd4j::graph::Node*> *getMapped();
 
             /**
-             * This method returns outputs of of this graph
+             * This method returns outputs of this graph
              * @return
              */
             std::vector<nd4j::graph::Variable*> *fetchOutputs();

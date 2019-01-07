@@ -168,7 +168,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         try {
             conf = mapper.readValue(json, ComputationGraphConfiguration.class);
         } catch (Exception e) {
-            //Check if this exception came from legacy legacy deserializer...
+            //Check if this exception came from legacy deserializer...
             String msg = e.getMessage();
             if(msg != null && msg.contains("legacy")){
                 throw new RuntimeException("Error deserializing ComputationGraphConfiguration - configuration may have a custom " +

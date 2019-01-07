@@ -41,17 +41,14 @@ public class ShannonEntropy extends BaseReduceFloatOp {
 
     public ShannonEntropy() {}
 
-    public ShannonEntropy(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public ShannonEntropy(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
-    public ShannonEntropy(INDArray x) {
-        super(x);
+    public ShannonEntropy(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
-    public ShannonEntropy(INDArray x, INDArray z) {
-        super(x, null, z, x.lengthLong());
-    }
     @Override
     public int opNum() {
         return 10;

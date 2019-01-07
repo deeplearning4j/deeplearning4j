@@ -274,7 +274,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
 
                     int colIdx = columnsPointers.getInt(count);
 
-                    // add the element in the subarray it it belongs to the view
+                    // add the element in the subarray if it belongs to the view
                     if (colIdx >= firstElement && colIdx < lastElement && rowIdx >= firstRow && rowIdx < lastRow) {
 
                         // add the new column pointer for this element

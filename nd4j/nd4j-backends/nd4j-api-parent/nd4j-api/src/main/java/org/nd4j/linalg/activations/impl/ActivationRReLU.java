@@ -70,7 +70,7 @@ public class ActivationRReLU extends BaseActivationFunction {
         } else {
             this.alpha = null;
             double a = 0.5 * (l + u);
-            return Nd4j.getExecutioner().execAndReturn(new RectifedLinear(in, a));
+            return Nd4j.getExecutioner().exec(new RectifedLinear(in, a));
         }
 
         return in;

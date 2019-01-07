@@ -396,7 +396,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                             .addIntegerArguments(a)
                             .build();
 
-                    Nd4j.getExecutioner().exec(op);
+                    Nd4j.getExecutioner().execAndReturn(op);
 
                     INDArray expEpsNext = expGradMaxPoolBackPropSame(input, epsilon, kernel, strides, same);
 

@@ -65,7 +65,7 @@ compile group: 'org.bytedeco.javacpp-presets', name: 'leptonica', version: '1.76
 
 ```
 
-If you choose to use a SNAPSHOT version of the dependencies with gradle, you will need to create the a pom.xml file in the root directory and run run ``` mvn -U compile ``` on it from the terminal. You will also need to include ``` mavenLocal() ``` in the ```  repository {} ``` block of the build.gradle file. An example pom.xml file is provided below.
+If you choose to use a SNAPSHOT version of the dependencies with gradle, you will need to create the a pom.xml file in the root directory and run ``` mvn -U compile ``` on it from the terminal. You will also need to include ``` mavenLocal() ``` in the ```  repository {} ``` block of the build.gradle file. An example pom.xml file is provided below.
 
 ``` xml
 <project>

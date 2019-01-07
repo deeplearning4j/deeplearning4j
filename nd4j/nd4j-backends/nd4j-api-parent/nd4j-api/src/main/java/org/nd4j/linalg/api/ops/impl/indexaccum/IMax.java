@@ -39,12 +39,12 @@ public class IMax extends BaseIndexAccumulation {
     public IMax() {
     }
 
-    public IMax(INDArray x, INDArray y, long n) {
-        super(x, y, null, n);
+    public IMax(INDArray x, INDArray z, int... dimensions) {
+        super(x, z, dimensions);
     }
 
-    public IMax(INDArray x) {
-        super(x, null, null, x.length());
+    public IMax(INDArray x, int... dimensions) {
+        super(x, null, dimensions);
     }
 
 
@@ -56,22 +56,6 @@ public class IMax extends BaseIndexAccumulation {
     @Override
     public String opName() {
         return "imax";
-    }
-
-
-    @Override
-    public float zeroFloat() {
-        return 0.0f;
-    }
-
-    @Override
-    public double zeroDouble() {
-        return 0.0;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return zeroFloat();
     }
 
     @Override

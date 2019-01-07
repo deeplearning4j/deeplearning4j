@@ -202,7 +202,7 @@ public class KerasEmbedding extends KerasLayer {
 
     /**
      * Get Keras input length from Keras layer configuration. In Keras input_length, if present, denotes
-     * the number of indices to embed per mini-batch, i.e. input will be of of shape (mb, input_length)
+     * the number of indices to embed per mini-batch, i.e. input will be of shape (mb, input_length)
      * and (mb, 1) else.
      *
      * @param layerConfig dictionary containing Keras layer configuration

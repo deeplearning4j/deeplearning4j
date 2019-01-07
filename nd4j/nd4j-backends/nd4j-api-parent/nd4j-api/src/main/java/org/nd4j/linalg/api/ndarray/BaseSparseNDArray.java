@@ -294,7 +294,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
                     List<Integer> row = indices.get(i);
                     for(int j = 0; j < row.size(); j++) {
                         INDArray slice = slice(row.get(j));
-                        Nd4j.getExecutioner().exec(new Assign(new INDArray[]{slice,element},new INDArray[]{slice}));
+                        Nd4j.getExecutioner().execAndReturn(new Assign(new INDArray[]{slice,element},new INDArray[]{slice}));
                         arrList.add(slice(row.get(j)));
                     }
 
@@ -1886,7 +1886,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
      */
     @Override
     public INDArray entropy(int... dimension) {
-        return Nd4j.getExecutioner().exec(new Entropy(this), dimension);
+        return Nd4j.getExecutioner().exec(new Entropy(this, dimension));
     }
 
     /**
@@ -1896,7 +1896,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
      */
     @Override
     public INDArray shannonEntropy(int... dimension) {
-        return Nd4j.getExecutioner().exec(new ShannonEntropy(this), dimension);
+        return Nd4j.getExecutioner().exec(new ShannonEntropy(this, dimension));
     }
 
     /**
@@ -1906,7 +1906,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
      */
     @Override
     public INDArray logEntropy(int... dimension) {
-        return Nd4j.getExecutioner().exec(new LogEntropy(this), dimension);
+        return Nd4j.getExecutioner().exec(new LogEntropy(this, dimension));
     }
 
     @Override

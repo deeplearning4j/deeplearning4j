@@ -42,7 +42,7 @@ public class ActivationCube extends BaseActivationFunction {
     @Override
     public Pair<INDArray, INDArray> backprop(@NonNull INDArray in, @NonNull INDArray epsilon) {
         assertShape(in, epsilon);
-        INDArray dLdz = Nd4j.getExecutioner().execAndReturn(new CubeDerivative(in));
+        INDArray dLdz = Nd4j.getExecutioner().exec(new CubeDerivative(in));
         dLdz.muli(epsilon);
         return new Pair<>(dLdz, null);
     }

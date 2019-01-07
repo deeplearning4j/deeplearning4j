@@ -44,33 +44,17 @@ public class JaccardDistance extends BaseReduceFloatOp {
         passThrough = false;
     }
 
-    public JaccardDistance(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
+    public JaccardDistance(INDArray x, INDArray y, int... dimensions) {
+        this(x, y, null, false, dimensions);
     }
 
-    public JaccardDistance(INDArray x, INDArray y, long n) {
-        super(x, y, null);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public JaccardDistance(INDArray x) {
-        super(x);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public JaccardDistance(INDArray x, INDArray y) {
-        super(x, y, null);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public JaccardDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
-        this(x, y, z, x.lengthLong());
+    public JaccardDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
+        this(x, y, z, true, false, dimensions);
         this.isComplex = allDistances;
+    }
+
+    public JaccardDistance(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, false, null);
     }
 
     public JaccardDistance(INDArray x, INDArray y, boolean allDistances) {

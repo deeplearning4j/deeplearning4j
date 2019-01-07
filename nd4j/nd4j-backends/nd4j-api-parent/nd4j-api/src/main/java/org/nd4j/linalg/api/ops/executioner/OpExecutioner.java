@@ -94,7 +94,7 @@ public interface OpExecutioner {
      *
      * @param op the operation to execute
      */
-    Op exec(Op op);
+    INDArray exec(Op op);
 
     /**
      * Iterate over every row of every slice
@@ -113,9 +113,7 @@ public interface OpExecutioner {
     /**Execute a TransformOp and return the result
      * @param op the operation to execute
      */
-    INDArray execAndReturn(TransformOp op);
-
-
+    TransformOp execAndReturn(TransformOp op);
 
     /**
      * Execute and return the result from an accumulation
@@ -131,7 +129,7 @@ public interface OpExecutioner {
      * @param op the operation to execute
      * @return the accumulated result
      */
-    ReduceOp execAndReturn(Variance op, boolean biasCorrected);
+    Variance execAndReturn(Variance op);
 
     /**Execute and return the result from an index accumulation
      * @param op the index accumulation operation to execute
@@ -144,23 +142,15 @@ public interface OpExecutioner {
      * @param op the operation to execute
      * @return the accumulated result
      */
-    INDArray execAndReturn(ScalarOp op);
+    ScalarOp execAndReturn(ScalarOp op);
 
     /** Execute and return the result from a vector op
      * @param op*/
-    INDArray execAndReturn(BroadcastOp op);
+    BroadcastOp execAndReturn(BroadcastOp op);
 
     /** Execute and return the result from a vector op
      * @param op*/
-    INDArray execAndReturn(ShapeOp op);
-
-
-    /**Execute the operation along 1 or more dimensions
-     *
-     * @param op the operation to execute
-     */
-    Op exec(Op op, int... dimension);
-
+    ShapeOp execAndReturn(ShapeOp op);
 
     /**
      * Execute an reduceOp along one or more dimensions
@@ -168,7 +158,7 @@ public interface OpExecutioner {
      * @param dimension the dimension
      * @return the reduceOp op
      */
-    INDArray exec(ReduceOp reduceOp, int... dimension);
+    INDArray exec(ReduceOp reduceOp);
 
     /**
      * Execute an broadcast along one or more dimensions
@@ -176,7 +166,14 @@ public interface OpExecutioner {
      * @param dimension the dimension
      * @return the broadcast op
      */
-    INDArray exec(BroadcastOp broadcast, int... dimension);
+    INDArray exec(BroadcastOp broadcast);
+
+    /**
+     * Execute ScalarOp
+     * @param broadcast
+     * @return
+     */
+    INDArray exec(ScalarOp broadcast);
 
     /**
      * Execute an accumulation along one or more dimensions
@@ -184,7 +181,7 @@ public interface OpExecutioner {
      * @param dimension the dimension
      * @return the accmulation op
      */
-    INDArray exec(Variance accumulation, boolean biasCorrected, int... dimension);
+    INDArray exec(Variance accumulation);
 
 
     /** Execute an index accumulation along one or more dimensions
@@ -192,7 +189,7 @@ public interface OpExecutioner {
      * @param dimension the dimension/s to execute along
      * @return result
      */
-    INDArray exec(IndexAccumulation indexAccum, int... dimension);
+    INDArray exec(IndexAccumulation indexAccum);
 
 
 
@@ -203,7 +200,7 @@ public interface OpExecutioner {
      * @param op the operation to execute
      * @return the result from the operation
      */
-    INDArray execAndReturn(Op op);
+    Op execAndReturn(Op op);
 
 
     /**Get the execution mode for this
@@ -240,7 +237,7 @@ public interface OpExecutioner {
      *
      * @param op
      */
-    void exec(ShapeOp op);
+    INDArray exec(ShapeOp op);
 
     /**
      * This method executes previously built batch
@@ -382,7 +379,9 @@ public interface OpExecutioner {
      * PLEASE NOTE: You're responsible for input/output validation
      * @param op
      */
-    void exec(CustomOp op);
+    CustomOp execAndReturn(CustomOp op);
+
+    INDArray[] exec(CustomOp op);
 
     List<LongShapeDescriptor> calculateOutputShape(CustomOp op);
 

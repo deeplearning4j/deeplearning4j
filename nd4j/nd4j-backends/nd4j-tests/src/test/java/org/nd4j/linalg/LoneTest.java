@@ -162,7 +162,7 @@ public class LoneTest extends BaseNd4jTest {
     public void testRelu() {
         INDArray aA = Nd4j.linspace(-3, 4, 8).reshape(2, 4);
         INDArray aD = Nd4j.linspace(-3, 4, 8).reshape(2, 4);
-        INDArray b = Nd4j.getExecutioner().execAndReturn(new Tanh(aA));
+        INDArray b = Nd4j.getExecutioner().exec(new Tanh(aA));
         //Nd4j.getExecutioner().execAndReturn(new TanhDerivative(aD));
         System.out.println(aA);
         System.out.println(aD);
