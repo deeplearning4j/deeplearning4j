@@ -1995,4 +1995,14 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public boolean none() {
         return false;
     }
+
+    @Override
+    public INDArray like() {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public INDArray ulike() {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }

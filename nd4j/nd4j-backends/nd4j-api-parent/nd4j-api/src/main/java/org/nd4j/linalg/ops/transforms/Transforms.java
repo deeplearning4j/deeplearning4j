@@ -104,7 +104,7 @@ public class Transforms {
     }
 
     public static INDArray dot(INDArray x, INDArray y){
-        return Nd4j.getExecutioner().exec(new Dot(x,y)).z();
+        return Nd4j.getExecutioner().exec(new Dot(x,y));
     }
 
     public static INDArray cross(INDArray x, INDArray y){

@@ -1665,13 +1665,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray isInfinite(){
         validateNumericalArray("isInfinite");
-        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), Conditions.isInfinite())).z();
+        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), Conditions.isInfinite()));
     }
 
     @Override
     public INDArray isNaN(){
         validateNumericalArray("isNaN");
-        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), Conditions.isNan())).z();
+        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), Conditions.isNan()));
     }
 
     /**
