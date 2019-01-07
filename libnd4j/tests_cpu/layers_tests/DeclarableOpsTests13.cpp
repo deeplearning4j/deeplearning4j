@@ -37,3 +37,19 @@ public:
         fflush(stdout);
     }
 };
+
+TEST_F(DeclarableOpsTests13, test_pow_1) {
+    auto x = NDArrayFactory::create<float>('c', {2, 2}, {2.f, 2.f, 2.f, 2.f});
+    auto y = NDArrayFactory::create<int>('c', {2}, {3, 3});
+    auto e = NDArrayFactory::create<float>('c', {2, 2}, {8.f, 8.f, 8.f, 8.f});
+
+    nd4j::ops::Pow op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}

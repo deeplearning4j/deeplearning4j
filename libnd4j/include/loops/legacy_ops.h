@@ -50,7 +50,8 @@
        (3, Divide), \
        (4, ReverseDivide), \
        (5, ReverseSubtract), \
-       (6, CopyPws) ,\
+       (6, CopyPws), \
+       (7, Pow), \
        (13, MinPairwise) ,\
        (14, MaxPairwise) ,\
        (15, AMinPairwise) ,\
