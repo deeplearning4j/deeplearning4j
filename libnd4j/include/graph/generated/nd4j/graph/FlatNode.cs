@@ -55,6 +55,7 @@ public struct FlatNode : IFlatbufferObject
   public DataType OutputTypes(int j) { int o = __p.__offset(38); return o != 0 ? (DataType)__p.bb.GetSbyte(__p.__vector(o) + j * 1) : (DataType)0; }
   public int OutputTypesLength { get { int o = __p.__offset(38); return o != 0 ? __p.__vector_len(o) : 0; } }
   public ArraySegment<byte>? GetOutputTypesBytes() { return __p.__vector_as_arraysegment(38); }
+  public FlatArray? Scalar { get { int o = __p.__offset(40); return o != 0 ? (FlatArray?)(new FlatArray()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
 
   public static Offset<FlatNode> CreateFlatNode(FlatBufferBuilder builder,
       int id = 0,
@@ -74,9 +75,11 @@ public struct FlatNode : IFlatbufferObject
       StringOffset scope_nameOffset = default(StringOffset),
       VectorOffset outputNamesOffset = default(VectorOffset),
       StringOffset opNameOffset = default(StringOffset),
-      VectorOffset outputTypesOffset = default(VectorOffset)) {
-    builder.StartObject(18);
+      VectorOffset outputTypesOffset = default(VectorOffset),
+      Offset<FlatArray> scalarOffset = default(Offset<FlatArray>)) {
+    builder.StartObject(19);
     FlatNode.AddOpNum(builder, opNum);
+    FlatNode.AddScalar(builder, scalarOffset);
     FlatNode.AddOutputTypes(builder, outputTypesOffset);
     FlatNode.AddOpName(builder, opNameOffset);
     FlatNode.AddOutputNames(builder, outputNamesOffset);
@@ -97,7 +100,7 @@ public struct FlatNode : IFlatbufferObject
     return FlatNode.EndFlatNode(builder);
   }
 
-  public static void StartFlatNode(FlatBufferBuilder builder) { builder.StartObject(18); }
+  public static void StartFlatNode(FlatBufferBuilder builder) { builder.StartObject(19); }
   public static void AddId(FlatBufferBuilder builder, int id) { builder.AddInt(0, id, 0); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(1, nameOffset.Value, 0); }
   public static void AddOpType(FlatBufferBuilder builder, OpType opType) { builder.AddSbyte(2, (sbyte)opType, 0); }
@@ -136,6 +139,7 @@ public struct FlatNode : IFlatbufferObject
   public static void AddOutputTypes(FlatBufferBuilder builder, VectorOffset outputTypesOffset) { builder.AddOffset(17, outputTypesOffset.Value, 0); }
   public static VectorOffset CreateOutputTypesVector(FlatBufferBuilder builder, DataType[] data) { builder.StartVector(1, data.Length, 1); for (int i = data.Length - 1; i >= 0; i--) builder.AddSbyte((sbyte)data[i]); return builder.EndVector(); }
   public static void StartOutputTypesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(1, numElems, 1); }
+  public static void AddScalar(FlatBufferBuilder builder, Offset<FlatArray> scalarOffset) { builder.AddOffset(18, scalarOffset.Value, 0); }
   public static Offset<FlatNode> EndFlatNode(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<FlatNode>(o);

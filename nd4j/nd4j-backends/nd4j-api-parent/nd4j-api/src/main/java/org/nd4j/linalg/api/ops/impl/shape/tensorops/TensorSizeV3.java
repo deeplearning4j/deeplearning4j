@@ -54,7 +54,7 @@ public class TensorSizeV3 extends BaseTensorOp {
       val ownName = this.getOwnName();
 
       // storing our size
-      sameDiff.putOrUpdateArrayForVarName(ownName, result);
+      sameDiff.setArrayForVariable(ownName, result);
 
       return list;
    }

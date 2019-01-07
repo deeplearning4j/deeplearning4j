@@ -1750,6 +1750,8 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray sum(int... dimension);
 
+    INDArray sum(boolean keepDims, int... dimension);
+
     /**
      * This method takes boolean condition, and returns number of elements matching this condition
      *

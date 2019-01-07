@@ -29,49 +29,49 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class RectifedLinear extends BaseScalarOp {
-    public RectifedLinear(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double cutoff) {
+public class RectifiedLinear extends BaseScalarOp {
+    public RectifiedLinear(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double cutoff) {
         super(sameDiff, i_v1, cutoff, inPlace);
     }
 
-    public RectifedLinear(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double cutoff) {
+    public RectifiedLinear(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double cutoff) {
         super(sameDiff, i_v1, cutoff, extraArgs);
     }
 
-    public RectifedLinear(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
+    public RectifiedLinear(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
         super(sameDiff, i_v, cutoff, inPlace);
     }
 
-    public RectifedLinear() {
+    public RectifiedLinear() {
         super();
     }
 
-    public RectifedLinear(INDArray x, INDArray z, double cutoff) {
+    public RectifiedLinear(INDArray x, INDArray z, double cutoff) {
         super(x, null, z, x.length(), cutoff);
 
         init(x, null, z, n); //Need to re-init to properly set cutoff in extra args array
     }
 
-    public RectifedLinear(INDArray x, INDArray z, long n, double cutoff) {
+    public RectifiedLinear(INDArray x, INDArray z, long n, double cutoff) {
         super(x, null, z, n, cutoff);
         init(x, null, z, n);
     }
 
-    public RectifedLinear(INDArray x, double cutoff) {
+    public RectifiedLinear(INDArray x, double cutoff) {
         super(x, cutoff);
 
         init(x, null, x, x.length());
     }
 
-    public RectifedLinear(INDArray x, INDArray z) {
+    public RectifiedLinear(INDArray x, INDArray z) {
         this(x, z, 0.0f);
     }
 
-    public RectifedLinear(INDArray x, INDArray z, long n) {
+    public RectifiedLinear(INDArray x, INDArray z, long n) {
         this(x, z, n, 0.0f);
     }
 
-    public RectifedLinear(INDArray x) {
+    public RectifiedLinear(INDArray x) {
         this(x, 0.0f);
     }
 

@@ -33,6 +33,9 @@ table FlatNode {
 
     // output data types (optional)
     outputTypes:[DataType];
+	
+	//Scalar value - used for scalar ops. Should be single value only.
+	scalar:FlatArray;
 }
 
 root_type FlatNode;

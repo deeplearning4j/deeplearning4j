@@ -65,28 +65,32 @@ public final class FlatNode extends Table {
   public int outputTypesLength() { int o = __offset(38); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer outputTypesAsByteBuffer() { return __vector_as_bytebuffer(38, 1); }
   public ByteBuffer outputTypesInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 38, 1); }
+  public FlatArray scalar() { return scalar(new FlatArray()); }
+  public FlatArray scalar(FlatArray obj) { int o = __offset(40); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
 
   public static int createFlatNode(FlatBufferBuilder builder,
-      int id,
-      int nameOffset,
-      byte opType,
-      long opNum,
-      int propertiesOffset,
-      int inputOffset,
-      int inputPairedOffset,
-      int outputOffset,
-      int extraParamsOffset,
-      int extraIntegerOffset,
-      int extraBoolsOffset,
-      int dimensionsOffset,
-      int device,
-      int scope_id,
-      int scope_nameOffset,
-      int outputNamesOffset,
-      int opNameOffset,
-      int outputTypesOffset) {
-    builder.startObject(18);
+                                   int id,
+                                   int nameOffset,
+                                   byte opType,
+                                   long opNum,
+                                   int propertiesOffset,
+                                   int inputOffset,
+                                   int inputPairedOffset,
+                                   int outputOffset,
+                                   int extraParamsOffset,
+                                   int extraIntegerOffset,
+                                   int extraBoolsOffset,
+                                   int dimensionsOffset,
+                                   int device,
+                                   int scope_id,
+                                   int scope_nameOffset,
+                                   int outputNamesOffset,
+                                   int opNameOffset,
+                                   int outputTypesOffset,
+                                   int scalarOffset) {
+    builder.startObject(19);
     FlatNode.addOpNum(builder, opNum);
+    FlatNode.addScalar(builder, scalarOffset);
     FlatNode.addOutputTypes(builder, outputTypesOffset);
     FlatNode.addOpName(builder, opNameOffset);
     FlatNode.addOutputNames(builder, outputNamesOffset);
@@ -107,7 +111,7 @@ public final class FlatNode extends Table {
     return FlatNode.endFlatNode(builder);
   }
 
-  public static void startFlatNode(FlatBufferBuilder builder) { builder.startObject(18); }
+  public static void startFlatNode(FlatBufferBuilder builder) { builder.startObject(19); }
   public static void addId(FlatBufferBuilder builder, int id) { builder.addInt(0, id, 0); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(1, nameOffset, 0); }
   public static void addOpType(FlatBufferBuilder builder, byte opType) { builder.addByte(2, opType, 0); }
@@ -146,6 +150,7 @@ public final class FlatNode extends Table {
   public static void addOutputTypes(FlatBufferBuilder builder, int outputTypesOffset) { builder.addOffset(17, outputTypesOffset, 0); }
   public static int createOutputTypesVector(FlatBufferBuilder builder, byte[] data) { builder.startVector(1, data.length, 1); for (int i = data.length - 1; i >= 0; i--) builder.addByte(data[i]); return builder.endVector(); }
   public static void startOutputTypesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(1, numElems, 1); }
+  public static void addScalar(FlatBufferBuilder builder, int scalarOffset) { builder.addOffset(18, scalarOffset, 0); }
   public static int endFlatNode(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

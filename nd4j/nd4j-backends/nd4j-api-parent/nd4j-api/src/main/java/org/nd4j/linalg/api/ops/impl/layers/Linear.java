@@ -23,6 +23,7 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -190,30 +191,6 @@ public class Linear extends BaseModule {
         else {
             return new INDArray[] {paramsScheme.create(Nd4j.defaultFloatingPointType(), new long[]{nOut,nIn})};
 
-        }
-    }
-
-    private DifferentialFunction[] getFunctionParams(int nIn,
-                                                     int nOut) {
-        if(biasWeightInitScheme != null) {
-            return new DifferentialFunction[] {
-                    SDVariable.builder().sameDiff(sameDiff).varName("w")
-                            .shape(new long[]{nOut,nIn}).weightInitScheme(
-                            weightInitScheme).build(),
-                    SDVariable.builder().sameDiff(sameDiff)
-                            .varName("b")
-                            .shape(new long[]{nOut,1})
-                            .weightInitScheme(biasWeightInitScheme).build()
-            };
-        }
-        else {
-            return new DifferentialFunction[] {
-                    SDVariable.builder().sameDiff(sameDiff)
-                            .varName("w")
-                            .shape(new long[]{nOut,nIn})
-                            .weightInitScheme(new ZeroInitScheme('f'))
-                            .build()
-            };
         }
     }
 }

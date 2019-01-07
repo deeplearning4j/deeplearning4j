@@ -228,8 +228,8 @@ public class SameDiffTests {
         SameDiff sameDiff = SameDiff.create();
         INDArray x = Nd4j.scalar(1.0);
         INDArray y = Nd4j.scalar(2.0);
-        SDVariable xVar = sameDiff.placeHolder("x",1,1);
-        SDVariable yVar = sameDiff.placeHolder("y",1,1);
+        SDVariable xVar = sameDiff.placeHolder("x",DataType.DOUBLE, 1,1);
+        SDVariable yVar = sameDiff.placeHolder("y",DataType.DOUBLE, 1,1);
         SDVariable output = xVar.add(yVar);
         INDArray[] eval = sameDiff.eval(new INDArray[]{x, y});
         assertEquals(1,eval.length);
@@ -562,8 +562,7 @@ public class SameDiffTests {
     @Test(expected = ND4JIllegalStateException.class)
     public void testPlaceHolderWithFullShape() {
         val sd = SameDiff.create();
-        val placeholder = sd.var("somevar", new long[]{2, 2});
-        sd.addAsPlaceHolder(placeholder.getVarName());
+        val placeholder = sd.placeHolder("somevar", 2, 2);
         assertTrue(sd.isPlaceHolder(placeholder.getVarName()));
         sd.resolveVariablesWith(Collections.singletonMap(placeholder.getVarName(), Nd4j.linspace(1, 4, 4, DataType.FLOAT)));
     }
@@ -796,7 +795,7 @@ public class SameDiffTests {
     @Test
     public void testNegativeOneShape() {
         val sd = SameDiff.create();
-        val var = sd.var("test", new long[]{-1, 3});
+        SDVariable var = sd.placeHolder("test", DataType.FLOAT, -1, 3);
         assertNull(var.getShape());
         assertTrue(var.isPlaceHolder());
     }
@@ -957,7 +956,7 @@ public class SameDiffTests {
         val s = in2.add(5.0);
 
 
-        val arr = sd.execAndEndResult();
+        val arr = sd.execSingle(null, s.getVarName());
         log.info("Result M: {}", m.getArr());
         log.info("Result F: {}", f.getArr());
         log.info("Result S: {}", s.getArr());
@@ -1399,16 +1398,10 @@ public class SameDiffTests {
         SDVariable sdVariable = sameDiff.var("ones", ones);
         SDVariable result = sdVariable.addi(1.0);
         SDVariable total = sameDiff.sum(result, Integer.MAX_VALUE);
-        List<DifferentialFunction> ops = sameDiff.exec().getRight();
-        INDArray output = null;
-        for (int i = 0; i < 5; i++) {
-            output = sameDiff.execAndEndResult(ops);
-            System.out.println("Ones " + ones);
-            System.out.println(output);
-        }
+        sameDiff.execAndEndResult();
 
         assertEquals(Nd4j.valueArrayOf(4, 7), ones);
-        assertEquals(28, output.getDouble(0), 1e-1);
+        assertEquals(28, total.getArr().getDouble(0), 1e-1);
     }
 
 
@@ -2713,9 +2706,9 @@ public class SameDiffTests {
     public void testFill(){
         SameDiff sd = SameDiff.create();
         INDArray arr = Nd4j.create(new double[]{2,2});
-        INDArray expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42);
+        INDArray expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42.0);
         SDVariable x = sd.var(arr);
-        SDVariable result = sd.fill(x, 42);
+        SDVariable result = sd.fill(x, DataType.DOUBLE, 42);
         assertEquals(expOut, result.eval());
     }
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){

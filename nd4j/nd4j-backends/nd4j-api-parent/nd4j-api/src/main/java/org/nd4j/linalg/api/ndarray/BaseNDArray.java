@@ -1665,13 +1665,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray isInfinite(){
         validateNumericalArray("isInfinite");
-        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), Conditions.isInfinite())).z();
+        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), Conditions.isInfinite()));
     }
 
     @Override
     public INDArray isNaN(){
         validateNumericalArray("isNaN");
-        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), Conditions.isNan())).z();
+        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), Conditions.isNan()));
     }
 
     /**
@@ -1679,8 +1679,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray neg() {
-        validateNumericalArray("negatiwe (neg)");
-        return Nd4j.getExecutioner().exec(new Negative(this, Nd4j.createUninitialized(this.shape(), this.ordering())));
+        validateNumericalArray("negative (neg)");
+        return Nd4j.getExecutioner().exec(new Negative(this, Nd4j.createUninitialized(this.dataType(), this.shape(), this.ordering())));
     }
 
     /**
@@ -3394,7 +3394,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public double[][] toDoubleMatrix() {
         if(!isMatrix()) {
-            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix! Array shape: " + Arrays.toString(this.shape()));
+            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix! Shape: " + Shape.shapeToStringShort(this));
         }
 
         if (this.size(0) > Integer.MAX_VALUE || this.size(1) > Integer.MAX_VALUE)
@@ -3411,7 +3411,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public double[] toDoubleVector() {
         if(!isVectorOrScalar()) {
-            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector!");
+            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
 
 
@@ -3421,7 +3421,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public float[] toFloatVector() {
         if(!isVectorOrScalar()) {
-            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector!");
+            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
 
         return dup().data().asFloat();
@@ -3430,7 +3430,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public float[][] toFloatMatrix() {
         if(!isMatrix()) {
-            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix!");
+            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix! Shape: " + Shape.shapeToStringShort(this));
         }
 
         if (this.rows() > Integer.MAX_VALUE || this.columns() > Integer.MAX_VALUE)
@@ -3450,23 +3450,29 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return new int[0];
 
         if(!isVectorOrScalar()) {
-            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector!");
+            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-        return dup().data().asInt();
+        if(isView() || elementWiseStride() != 1){
+            return dup().data().asInt();
+        }
+        return data().asInt();
     }
 
     @Override
     public long[] toLongVector() {
         if(!isVectorOrScalar()) {
-            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector!");
+            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-        return dup().data().asLong();
+        if(isView() || elementWiseStride() != 1){
+            return dup().data().asLong();
+        }
+        return data().asLong();
     }
 
     @Override
     public long[][] toLongMatrix() {
         if(!isMatrix()) {
-            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix!");
+            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix! Shape: " + Shape.shapeToStringShort(this));
         }
 
         if (this.rows() > Integer.MAX_VALUE || this.columns() > Integer.MAX_VALUE)
@@ -3483,7 +3489,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public int[][] toIntMatrix() {
         if(!isMatrix()) {
-            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix!");
+            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix! Shape: " + Shape.shapeToStringShort(this));
         }
 
         if (this.rows() > Integer.MAX_VALUE || this.columns() > Integer.MAX_VALUE)
@@ -3925,7 +3931,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if(!Shape.shapeEquals(this.shape(),other.shape())) {
             int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
-            result = Nd4j.createUninitialized(Shape.broadcastOutputShape(this.shape(),other.shape()));
+            result = Nd4j.createUninitialized(this.dataType(), Shape.broadcastOutputShape(this.shape(),other.shape()));
             Nd4j.getExecutioner().exec(new BroadcastAddOp(this,other,result,broadcastDimensions));
             return result;
         }
@@ -4708,7 +4714,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
-     * Returns the sum along the last dimension of this ndarray
+     * Returns the sum along the specified dimension(s) of this ndarray
      *
      * @param dimension the dimension to getScalar the sum along
      * @return the sum along the specified dimension of this ndarray
@@ -4717,6 +4723,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray sum(int... dimension) {
         validateNumericalArray("sum");
         return Nd4j.getExecutioner().exec(new Sum(this, dimension));
+    }
+
+    /**
+     * Returns the sum along the last dimension of this ndarray
+     *
+     * @param dimension the dimension to getScalar the sum along
+     * @return the sum along the specified dimension of this ndarray
+     */
+    @Override
+    public INDArray sum(boolean keepDim, int... dimension) {
+        validateNumericalArray("sum");
+        return Nd4j.getExecutioner().exec(new Sum(this, null, true, keepDim, dimension));
     }
 
 
@@ -5313,7 +5331,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         // if we're on scalar, we can just create new array
         if (this.isScalar())
-            return Nd4j.createUninitialized(shape).assign(this.getDouble(0));
+            return Nd4j.createUninitialized(this.dataType(), shape).assign(this.getDouble(0));
 
 
 
@@ -5776,7 +5794,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray remainder(INDArray denominator) {
-        return remainder(denominator, Nd4j.createUninitialized(this.shape()));
+        return remainder(denominator, Nd4j.createUninitialized(this.dataType(), this.shape()));
     }
 
     @Override
@@ -5789,7 +5807,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray remainder(Number denominator) {
-        return remainder(denominator, Nd4j.createUninitialized(this.shape()));
+        return remainder(denominator, Nd4j.createUninitialized(this.dataType(), this.shape()));
     }
 
     @Override
@@ -5819,7 +5837,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray fmod(INDArray denominator) {
         validateNumericalArray("fmod");
-        return fmod(denominator, Nd4j.createUninitialized(this.shape()));
+        return fmod(denominator, Nd4j.createUninitialized(this.dataType(), this.shape()));
     }
 
     @Override
@@ -5832,7 +5850,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray fmod(Number denominator) {
-        return fmod(denominator, Nd4j.createUninitialized(this.shape()));
+        return fmod(denominator, Nd4j.createUninitialized(this.dataType(), this.shape()));
     }
 
     @Override
@@ -5997,7 +6015,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
                 return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
             } else {
-                INDArray copy = Nd4j.createUninitialized(this.shape(), this.ordering());
+                INDArray copy = Nd4j.createUninitialized(this.dataType(), this.shape(), this.ordering());
                 copy.assign(this);
                 Nd4j.getExecutioner().commit();
 
@@ -6019,7 +6037,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
             } else {
-                copy = Nd4j.createUninitialized(this.shape(), this.ordering());
+                copy = Nd4j.createUninitialized(this.dataType(), this.shape(), this.ordering());
                 copy.assign(this);
                 Nd4j.getExecutioner().commit();
             }
@@ -6279,7 +6297,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         INDArray sorted = Nd4j.getNDArrayFactory().sort(this.dup(this.ordering()), false, dimension);
 
         // there's no practical sense doing this on GPU, stride will be just size of TAD.
-        INDArray ret = Nd4j.createUninitialized(sorted.tensorsAlongDimension(dimension));
+        INDArray ret = Nd4j.createUninitialized(Nd4j.defaultFloatingPointType(), sorted.tensorsAlongDimension(dimension));
         for (int i = 0; i < ret.length(); i++) {
             ret.putScalar(i, getPercentile(quantile, sorted.tensorAlongDimension(i, dimension)));
         }

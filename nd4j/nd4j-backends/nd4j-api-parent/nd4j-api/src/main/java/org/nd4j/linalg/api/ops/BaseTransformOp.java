@@ -191,24 +191,6 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
     @Override
     public INDArray z() {
-        if(z == null) {
-            if(sameDiff != null) {
-                this.z = outputVariables()[0].getArr();
-                if(this.z == null) {
-                    val var = outputVariables()[0];
-                    if(var.getShape() != null)
-                        this. z = var.storeAndAllocateNewArray();
-                    else {
-                        val argsShape = args()[0].getShape();
-                        if(argsShape != null) {
-                            sameDiff.putShapeForVarName(var.getVarName(),argsShape);
-                            this. z = var.storeAndAllocateNewArray();
-                        }
-                    }
-                }
-            }
-        }
-
         return z;
     }
 

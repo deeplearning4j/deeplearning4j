@@ -76,23 +76,13 @@ public class TFGraphTestAllSameDiff {
     };
 
     public static final String[] IGNORE_REGEXES = new String[]{
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6172
-            "pad/rank1.*",
-            "pad/rank2Pone_const10",
-            "pad/rank3.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6177
-            "topk/.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6179
-            "in_top_k/.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6181
+            //No tensorflow op found for SparseTensorDenseAdd
             "confusion/.*",
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6180
-            "identity_n.*",
             //https://github.com/deeplearning4j/deeplearning4j/issues/6182
             "zeta.*",
 
             //TODO look into this:
-            "reverse/shape5-.*",
+//            "reverse/shape5-.*",
 
             //https://github.com/deeplearning4j/deeplearning4j/issues/6281
             "log_determinant/.*",
@@ -162,13 +152,8 @@ public class TFGraphTestAllSameDiff {
             "conv_4",
             "ae",
 
-
-            //NEW TESTS - enable later
-            "assert_.*",
-            "cond/.*",
-            "case/.*",
-            "while1/.*",
-            "while2/.*"
+            //https://github.com/deeplearning4j/deeplearning4j/issues/6873 - issue 18 (listdiff)
+            "tensor_dot_misc"
 
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));

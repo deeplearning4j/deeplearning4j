@@ -64,6 +64,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         }
         this.keepDims = keepDims;
         this.newFormat = true;
+        defineDimensions(dimensions);
     }
 
     public BaseIndexAccumulation(SameDiff sameDiff,
@@ -92,6 +93,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         }
         this.keepDims = keepDims;
         this.newFormat = true;
+        defineDimensions(dimensions);
     }
 
 
@@ -120,13 +122,11 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        if(arg().getShape() == null)
+        if(x == null)
             return Collections.emptyList();
 
-        List<LongShapeDescriptor> ret = new ArrayList<>(1);
-        val reducedShape = Shape.getReducedShape(arg().getShape(), dimensions, keepDims, newFormat);
-        ret.add(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
-        return ret;
+        long[] reducedShape = Shape.getReducedShape(x.shape(), dimensions, keepDims, newFormat);
+        return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
     }
 
     @Override
@@ -142,5 +142,12 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
                     "got result array of type %s for op %s", z.dataType(), getClass());
 
         return true;
+    }
+
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //All index accumulation ops: always long output type
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
+        return Collections.singletonList(DataType.LONG);
     }
 }

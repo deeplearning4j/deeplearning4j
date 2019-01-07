@@ -98,7 +98,7 @@ public class LossCosineProximity extends DifferentialFunction implements ILossFu
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1);
+        return scoreArr.sum(true,1);
     }
 
     @Override
@@ -113,7 +113,7 @@ public class LossCosineProximity extends DifferentialFunction implements ILossFu
         INDArray yhatL2normSq = yhatL2norm.mul(yhatL2norm);
 
         //Note: This is not really the L1 norm since I am not taking abs values
-        INDArray yhatDotyL1norm = labels.mul(yhat).sum(1);
+        INDArray yhatDotyL1norm = labels.mul(yhat).sum(true,1);
 
         INDArray dLda = labels.mulColumnVector(yhatL2normSq);
         dLda.subi(yhat.mulColumnVector(yhatDotyL1norm));

@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -78,8 +79,6 @@ public class Tan extends BaseTransformStrictOp {
 
         SDVariable oneDivCos2 = sameDiff.square(sameDiff.cos(arg())).rdiv(1.0);
         SDVariable ret = oneDivCos2.mul(i_v.get(0));
-        return Arrays.asList(ret);
+        return Collections.singletonList(ret);
     }
-
-
 }

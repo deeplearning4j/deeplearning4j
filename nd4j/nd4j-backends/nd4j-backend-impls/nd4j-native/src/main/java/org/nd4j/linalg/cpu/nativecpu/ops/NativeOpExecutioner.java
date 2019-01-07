@@ -25,6 +25,7 @@ import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -698,7 +699,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         PointerPointer dummy = extraz.get();
 
         // Pow operations might be special
-        if (op.opNum() == 7) {
+        if (op.opNum() == 31) {
             if (op.y() != null && op.y().isScalar()) {
                 op.setY(Nd4j.valueArrayOf(op.x().shape(), op.y().getDouble(0)));
             }
@@ -783,6 +784,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             getPointerForExtraArgs(op, op.z().dataType()));
                         break;
                     case TRANSFORM_BOOL:
+                    case PAIRWISE_BOOL:
                         loop.execPairwiseTransformBool(dummy, op.opNum(),
                                 op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 null, null,
@@ -961,8 +963,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 op.setZ(Nd4j.scalar(op.resultType(), 0));
             }
 
-            if (!op.validateDataTypes())
-                throw new ND4JIllegalArgumentException("Bad data types");
+            if (!op.validateDataTypes()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Data type validation failed for op ").append(op.getClass().getSimpleName()).append(": ")
+                        .append("Arrays: [x=(").append(op.x() == null ? null : Shape.shapeToStringShort(op.x()))
+                        .append("),y=(").append(op.y() == null ? null : Shape.shapeToStringShort(op.y()))
+                        .append("),z=(").append(op.z() == null ? null : Shape.shapeToStringShort(op.z()))
+                        .append(")]");
+
+                throw new ND4JIllegalArgumentException(sb.toString());
+            }
 
             // since we're going to call reduceToScalar, we must ensure equal lengths
             if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
@@ -1156,7 +1166,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         loop.execAggregateBatch(null, batch.getNumAggregates(), batch.opNum(),
                     batch.getSample().maxArguments(), batch.getSample().maxShapes(),
                     batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
-                    batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer, SameDiff.getDataTypeAsByte(dataType));
+                    batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer, FlatBuffersMapper.getDataTypeAsByte(dataType));
 
     }
 
@@ -1262,7 +1272,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         loop.execAggregate(null, op.opNum(), arguments, numArguments, shapes, numShapes, pointer,
                     numIndexArguments, intArrays, numIntArrays, block.getRealArgumentsPointer(),
-                    numRealArguments, SameDiff.getDataTypeAsByte(dataType));
+                    numRealArguments, FlatBuffersMapper.getDataTypeAsByte(dataType));
 
     }
 
@@ -1689,8 +1699,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if (list.isEmpty())
                     throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
 
-                for (val shape: list)
-                    op.addOutputArgument(Nd4j.create(shape));
+                for (LongShapeDescriptor shape : list)
+                    op.addOutputArgument(Nd4j.create(shape, false));
 
             } catch (Exception e) {
                 throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
@@ -1777,12 +1787,27 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if (status != OpStatus.ND4J_STATUS_OK)
                     throw new ND4JIllegalStateException("Failed to execute op [" + name + "] with error code [" + status +"]");
             }catch(Exception e) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Inputs: [(");
+                for( int i=0; i<inputArgs.length; i++ ){
+                    if(i > 0)
+                        sb.append("), (");
+                    sb.append(Shape.shapeToStringShort(inputArgs[i]));
+                }
+                sb.append(")]. Outputs: [(");
+                for( int i=0; i<outputArgs.length; i++){
+                    if(i > 0)
+                        sb.append("), (");
+                    sb.append(Shape.shapeToStringShort(outputArgs[i]));
+                }
+                sb.append(")]");
                 log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
                                 String.valueOf(op.numInputArguments()) + " inputs, " +
                                 String.valueOf(op.numOutputArguments()) + " outputs, "+
                                 String.valueOf(op.numTArguments()) + " targs and " +
                                 String.valueOf(op.numIArguments()) + " iargs. " +
-                "Please see above message (printed out from c++) for a possible cause of error.");
+                                sb.toString() +
+                " - Please see above message (printed out from c++) for a possible cause of error.");
                 throw e;
             }
 
@@ -1845,9 +1870,30 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val t: tArgs1)
                 tArgs.put(cnt++, t);
 
-            val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapes(null,
-                    hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs,
-                    op.numTArguments(), iArgs, op.numIArguments());
+
+            Nd4jCpu.ShapeList ptrptr;
+            try {
+                ptrptr = (Nd4jCpu.ShapeList) loop.calculateOutputShapes(null,
+                        hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs,
+                        op.numTArguments(), iArgs, op.numIArguments());
+            } catch (Throwable t){
+                StringBuilder sb = new StringBuilder();
+                sb.append("Inputs: [(");
+                for( int i=0; i<inputArgs.length; i++ ){
+                    if(i > 0)
+                        sb.append("), (");
+                    sb.append(Shape.shapeToStringShort(inputArgs[i]));
+                }
+                sb.append(")]");
+                log.error("Failed to calculate output shapes for op " + op.opName() + ". Attempted to execute with " +
+                        String.valueOf(op.numInputArguments()) + " inputs, " +
+                        String.valueOf(op.numOutputArguments()) + " outputs, "+
+                        String.valueOf(op.numTArguments()) + " targs and " +
+                        String.valueOf(op.numIArguments()) + " iargs. " +
+                        sb.toString() +
+                        " - Please see above message (printed out from c++) for a possible cause of error.");
+                throw t;
+            }
 
             if (ptrptr == null)
                 throw new RuntimeException();

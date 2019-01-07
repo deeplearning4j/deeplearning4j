@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -60,7 +61,7 @@ public class ExternalErrorsFunction extends DifferentialFunction {
     @Override
     public SDVariable[] outputVariables(String baseName) {
         if(out == null){
-            out = sameDiff.zero("dummyOutput", new long[]{1});
+            out = sameDiff.zero("dummyOutput", DataType.FLOAT, 1);
         }
         return new SDVariable[]{out};
     }
@@ -76,7 +77,7 @@ public class ExternalErrorsFunction extends DifferentialFunction {
                 if(gradArr != null){
                     grad = sameDiff.var(arg.getVarName() + "-externalGrad", gradArr);
                 } else {
-                    grad = sameDiff.var(arg.getVarName() + "-externalGrad", arg.getShape());
+                    grad = sameDiff.var(arg.getVarName() + "-externalGrad", arg.dataType(), arg.getShape());
                 }
                 gradVariables.put(arg.getVarName(), grad);
                 out.add(grad);

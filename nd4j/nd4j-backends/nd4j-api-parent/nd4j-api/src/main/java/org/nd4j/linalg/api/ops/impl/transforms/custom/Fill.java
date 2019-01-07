@@ -20,12 +20,16 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -45,15 +49,17 @@ import java.util.Map;
 public class Fill extends DynamicCustomOp {
 
     private double value;
+    private DataType outputDataType;
 
     public Fill() {
     }
 
 
-    public Fill(SameDiff sameDiff, SDVariable shape, double value) {
+    public Fill(SameDiff sameDiff, SDVariable shape, DataType outputDataType, double value) {
         super(null,sameDiff, new SDVariable[] {shape}, false);
         this.value = value;
         val shp = shape.getArr();
+        this.outputDataType = outputDataType;
         addArgs();
     }
 
@@ -80,8 +86,10 @@ public class Fill extends DynamicCustomOp {
             else {
                 throw new ND4JIllegalStateException("Second input to node " + nodeDef + " should be scalar!");
             }
-        }
 
+            org.tensorflow.framework.DataType dt = attributesForNode.get("T").getType();
+            this.outputDataType = DataTypeAdapter.dtypeConv(dt);
+        }
     }
 
     @Override
@@ -115,16 +123,18 @@ public class Fill extends DynamicCustomOp {
         if(numArgs < 1)
             return Collections.emptyList();
 
-        val shape = args()[0].getArr();
-        val value = args()[1].getArr();
-        if(shape == null || value == null)
+        SDVariable[] args = args();
+        INDArray shape = args()[0].getArr();
+        INDArray value = (args.length > 1 ? args()[1].getArr() : null);
+        if(shape == null)
             return Collections.emptyList();
         else {
+            //TODO properly allow customizing datatype
             if(shape.isEmpty()){
                 //Edge case, mainly for TF import
-                return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], value.dataType()));   //TODO is this OK?
+                return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], value == null ? Nd4j.defaultFloatingPointType() : value.dataType()));   //TODO is this OK?
             } else {
-                return Arrays.asList(LongShapeDescriptor.fromShape(shape.data().asLong(), value.dataType()));
+                return Arrays.asList(LongShapeDescriptor.fromShape(shape.data().asLong(), value == null ? Nd4j.defaultFloatingPointType() : value.dataType()));
             }
         }
     }
@@ -152,5 +162,14 @@ public class Fill extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
         return Collections.singletonList(sameDiff.zerosLike(arg()));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //1 or 2 possible: 2 for TF import (fill with specified value
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
+                "Expected 1 or 2 input datatypes for %s, got %s", getClass(), dataTypes);
+        Preconditions.checkNotNull(outputDataType, "Output datatype was null (not set)");
+        return Collections.singletonList(outputDataType);
     }
 }
