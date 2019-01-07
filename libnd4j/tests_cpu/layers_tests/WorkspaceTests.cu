@@ -41,6 +41,10 @@ TEST_F(CudaWorkspaceTests, Basic_Tests_1) {
 
     ASSERT_EQ(164, workspace.getCurrentOffset());
     ASSERT_EQ(64, workspace.getCurrentSecondaryOffset());
+
+    array.e<int>(0);
+
+    ASSERT_EQ(164, workspace.getCurrentSecondaryOffset());
 }
 
 TEST_F(CudaWorkspaceTests, Basic_Tests_2) {
