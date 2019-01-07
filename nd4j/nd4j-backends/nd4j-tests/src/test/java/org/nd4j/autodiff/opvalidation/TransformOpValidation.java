@@ -1071,6 +1071,8 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), ia.rsub(ib));
                     break;
                 case 5:
+                    ia.assign(Nd4j.rand(ia.shape())).addi(0.5);
+                    ib.assign(Nd4j.rand(ib.shape())).addi(0.5);
                     t = in1.rdiv(in2);
                     tc.expectedOutput(t.getVarName(), ia.rdiv(ib));
                     break;
