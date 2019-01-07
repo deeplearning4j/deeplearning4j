@@ -66,7 +66,7 @@
         <libnd4j.build>release</libnd4j.build>
         <libnd4j.chip>cpu</libnd4j.chip>
         <libnd4j.platform>${javacpp.platform}</libnd4j.platform>
-        <libnd4j.extension>${javacpp.platform.extension}</libnd4j.extension>
+        <libnd4j.extension></libnd4j.extension>
         <libnd4j.cuda></libnd4j.cuda>
         <libnd4j.compute></libnd4j.compute>
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
