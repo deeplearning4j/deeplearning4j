@@ -150,7 +150,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     case 7:
                         inArr.assign(Nd4j.rand(inArr.shape()).muli(5).subi(2.5));
                         out = sd.scalarFloorMod(in, 2);
-                        tc.expected(out, Nd4j.getExecutioner().execAndReturn(new ScalarFMod(inArr.dup(), 2.0)));
+                        tc.expected(out, Nd4j.getExecutioner().exec(new ScalarFMod(inArr.dup(), 2.0)));
                         msg = "scalarFloorMod - " + inOrder;
                         break;
                     case 8:
@@ -638,7 +638,7 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 16:
                     t = sd.acosh(in);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).addi(1.01); //Only defined for x >= 1
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new ACosh(ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new ACosh(ia.dup())));
                     break;
                 case 17:
                     t = sd.asin(in);
@@ -671,7 +671,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     //TODO SHOULDN'T THIS HAVE A DIMENSION ARG???
                     t = sd.softmax(in);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new OldSoftMax(ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldSoftMax(ia.dup())));
                     break;
                 case 24:
                     t = sd.sqrt(in);
