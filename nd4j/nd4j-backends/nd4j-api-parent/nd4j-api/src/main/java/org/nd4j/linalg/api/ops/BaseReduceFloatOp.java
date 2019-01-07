@@ -129,7 +129,7 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //Second input is dynamic axis arg
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
-                "Expected 1 or input datatype for %s, got input %s", getClass(), dataTypes);
+                "Expected 1 or 2 input datatype for %s, got input %s", getClass(), dataTypes);
         Preconditions.checkState(dataTypes.size() == 1 || dataTypes.get(1).isIntType(), "When executing reductions" +
                 "with 2 inputs, second input (axis) must be an integer datatype for %s, got %s", getClass(), dataTypes);
         //Output data type: always float. TODO let's allow configuration...

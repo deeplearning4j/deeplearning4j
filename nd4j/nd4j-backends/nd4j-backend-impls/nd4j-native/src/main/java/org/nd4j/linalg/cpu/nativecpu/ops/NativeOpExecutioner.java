@@ -784,6 +784,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             getPointerForExtraArgs(op, op.z().dataType()));
                         break;
                     case TRANSFORM_BOOL:
+                    case PAIRWISE_BOOL:
                         loop.execPairwiseTransformBool(dummy, op.opNum(),
                                 op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 null, null,

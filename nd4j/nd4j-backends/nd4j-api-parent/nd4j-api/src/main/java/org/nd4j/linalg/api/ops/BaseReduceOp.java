@@ -260,6 +260,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
     @Override
     public void setDimensions(int... dimensions) {
+        this.dimensions = dimensions;
         defineDimensions(dimensions);
     }
 }
