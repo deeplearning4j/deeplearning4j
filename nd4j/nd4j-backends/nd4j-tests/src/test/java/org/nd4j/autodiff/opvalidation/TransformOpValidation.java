@@ -603,6 +603,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.getVarName(), Transforms.tanh(ia, true));
                     break;
                 case 9:
+                    ia.assign(Nd4j.rand(DataType.DOUBLE, ia.shape()));
                     t = sd.tan(in);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
                     tc.expectedOutput(t.getVarName(), Transforms.tan(ia));
