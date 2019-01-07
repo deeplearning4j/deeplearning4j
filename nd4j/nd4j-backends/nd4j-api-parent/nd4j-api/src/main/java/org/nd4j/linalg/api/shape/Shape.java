@@ -3717,4 +3717,17 @@ public class Shape {
             throw new IllegalArgumentException("Invalid order arg: must be 'c' or 'f' (or 'a' for vectors), got '" + order + "'");
         }
     }
+
+    /**
+     * Create an INDArray to represent the (possibly null) int[] dimensions.
+     * If null or length 0, returns an empty INT array. Otherwise, returns a 1d INT NDArray
+     * @param dimensions Dimensions to convert
+     * @return Dimenions as an INDArray
+     */
+    public static INDArray ndArrayDimFromInt(int... dimensions){
+        if (dimensions == null || dimensions.length == 0)
+            return Nd4j.empty(DataType.INT);
+        else
+            return Nd4j.createFromArray(dimensions);
+    }
 }

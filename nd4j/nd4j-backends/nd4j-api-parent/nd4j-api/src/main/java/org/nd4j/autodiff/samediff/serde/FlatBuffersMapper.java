@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -371,10 +372,12 @@ public class FlatBuffersMapper {
                     || opType == Op.Type.REDUCE_BOOL || opType == Op.Type.REDUCE_LONG || opType == Op.Type.REDUCE_SAME) {
                 val ba = (BaseReduceOp) op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
+                ba.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
                 ba.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
             } else if(opType == Op.Type.INDEXREDUCE){
                 BaseIndexAccumulation bia = (BaseIndexAccumulation)op;
                 bia.setDimensions(dimensions);
+                bia.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
                 bia.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
             }
             /*

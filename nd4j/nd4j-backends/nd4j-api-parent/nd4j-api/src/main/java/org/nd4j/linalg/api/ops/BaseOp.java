@@ -450,11 +450,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 dimensions = Shape.normalizeAxis(x.rank(), dimensions);
             }
         }
-
-        if (dimensions == null || dimensions.length == 0)
-            this.dimensionz = Nd4j.empty(DataType.INT);
-        else
-            this.dimensionz = Nd4j.createFromArray(dimensions);
+        this.dimensionz = Shape.ndArrayDimFromInt(dimensions);
     }
 
     public INDArray dimensions() {

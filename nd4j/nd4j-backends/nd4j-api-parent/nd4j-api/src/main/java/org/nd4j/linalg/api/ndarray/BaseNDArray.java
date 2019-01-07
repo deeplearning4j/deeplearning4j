@@ -3452,7 +3452,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-        return dup().data().asInt();
+        if(isView() || elementWiseStride() != 1){
+            return dup().data().asInt();
+        }
+        return data().asInt();
     }
 
     @Override
@@ -3460,7 +3463,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-        return dup().data().asLong();
+        if(isView() || elementWiseStride() != 1){
+            return dup().data().asLong();
+        }
+        return data().asLong();
     }
 
     @Override

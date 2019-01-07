@@ -6824,6 +6824,9 @@ public class Nd4j {
      * @return 1D INDArray with DOUBLE data type
      */
     public static INDArray createFromArray(double... array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0)
+            return Nd4j.empty(DataType.DOUBLE);
         return create(array, new long[]{array.length}, DataType.DOUBLE);
     }
 
@@ -6833,6 +6836,9 @@ public class Nd4j {
      * @return 1D INDArray with FLOAT data type
      */
     public static INDArray createFromArray(float... array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0)
+            return Nd4j.empty(DataType.FLOAT);
         return create(array, new long[]{array.length}, DataType.FLOAT);
     }
 
@@ -6842,6 +6848,9 @@ public class Nd4j {
      * @return 1D INDArray with INT32 data type
      */
     public static INDArray createFromArray(int... array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0)
+            return Nd4j.empty(DataType.INT);
         return create(array, new long[]{array.length}, DataType.INT);
     }
 
@@ -6851,6 +6860,9 @@ public class Nd4j {
      * @return 1D INDArray with INT16 data type
      */
     public static INDArray createFromArray(short... array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0)
+            return Nd4j.empty(DataType.SHORT);
         return create(array, new long[]{array.length}, DataType.SHORT);
     }
 
@@ -6860,6 +6872,9 @@ public class Nd4j {
      * @return 1D INDArray with INT8 data type
      */
     public static INDArray createFromArray(byte... array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0)
+            return Nd4j.empty(DataType.BYTE);
         return create(array, new long[]{array.length}, DataType.BYTE);
     }
 
@@ -6869,6 +6884,9 @@ public class Nd4j {
      * @return 1D INDArray with INT64 data type
      */
     public static INDArray createFromArray(long... array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0)
+            return Nd4j.empty(DataType.LONG);
         return create(array, new long[]{array.length}, DataType.LONG);
     }
 
@@ -6878,6 +6896,9 @@ public class Nd4j {
      * @return 1D INDArray with BOOL data type
      */
     public static INDArray createFromArray(boolean... array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0)
+            return Nd4j.empty(DataType.BOOL);
         return create(array, new long[]{array.length}, DataType.BOOL);
     }
 
@@ -6889,6 +6910,9 @@ public class Nd4j {
      * @return 2D INDArray with DOUBLE data type
      */
     public static INDArray createFromArray(double[][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0)
+            return Nd4j.empty(DataType.DOUBLE);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.DOUBLE);
     }
 
@@ -6898,6 +6922,9 @@ public class Nd4j {
      * @return 2D INDArray with FLOAT data type
      */
     public static INDArray createFromArray(float[][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0)
+            return Nd4j.empty(DataType.FLOAT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.FLOAT);
     }
 
@@ -6907,6 +6934,9 @@ public class Nd4j {
      * @return 2D INDArray with INT64 data type
      */
     public static INDArray createFromArray(long[][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0)
+            return Nd4j.empty(DataType.LONG);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.LONG);
     }
 
@@ -6916,6 +6946,9 @@ public class Nd4j {
      * @return 2D INDArray with INT32 data type
      */
     public static INDArray createFromArray(int[][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0)
+            return Nd4j.empty(DataType.INT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.INT);
     }
 
@@ -6925,6 +6958,9 @@ public class Nd4j {
      * @return 2D INDArray with INT16 data type
      */
     public static INDArray createFromArray(short[][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0)
+            return Nd4j.empty(DataType.SHORT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.SHORT);
     }
 
@@ -6934,6 +6970,9 @@ public class Nd4j {
      * @return 2D INDArray with INT8 data type
      */
     public static INDArray createFromArray(byte[][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0)
+            return Nd4j.empty(DataType.BYTE);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.BYTE);
     }
 
@@ -6943,6 +6982,9 @@ public class Nd4j {
      * @return 2D INDArray with BOOL data type
      */
     public static INDArray createFromArray(boolean[][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0)
+            return Nd4j.empty(DataType.BOOL);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.BOOL);
     }
 
@@ -6954,6 +6996,9 @@ public class Nd4j {
      * @return 3D INDArray with DOUBLE data type
      */
     public static INDArray createFromArray(double[][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
+            return Nd4j.empty(DataType.DOUBLE);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.DOUBLE);
     }
 
@@ -6963,6 +7008,9 @@ public class Nd4j {
      * @return 3D INDArray with FLOAT data type
      */
     public static INDArray createFromArray(float[][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
+            return Nd4j.empty(DataType.FLOAT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.FLOAT);
     }
 
@@ -6972,6 +7020,9 @@ public class Nd4j {
      * @return 3D INDArray with INT64 data type
      */
     public static INDArray createFromArray(long[][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
+            return Nd4j.empty(DataType.LONG);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.LONG);
     }
 
@@ -6981,6 +7032,9 @@ public class Nd4j {
      * @return 3D INDArray with INT32 data type
      */
     public static INDArray createFromArray(int[][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
+            return Nd4j.empty(DataType.INT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.INT);
     }
 
@@ -6990,6 +7044,9 @@ public class Nd4j {
      * @return 3D INDArray with INT16 data type
      */
     public static INDArray createFromArray(short[][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
+            return Nd4j.empty(DataType.SHORT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.SHORT);
     }
 
@@ -6999,6 +7056,9 @@ public class Nd4j {
      * @return 3D INDArray with INT8 data type
      */
     public static INDArray createFromArray(byte[][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
+            return Nd4j.empty(DataType.BYTE);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.BYTE);
     }
 
@@ -7008,6 +7068,9 @@ public class Nd4j {
      * @return 3D INDArray with BOOL data type
      */
     public static INDArray createFromArray(boolean[][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
+            return Nd4j.empty(DataType.BOOL);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.BOOL);
     }
 
@@ -7019,6 +7082,9 @@ public class Nd4j {
      * @return 4D INDArray with DOUBLE data type
      */
     public static INDArray createFromArray(double[][][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
+            return Nd4j.empty(DataType.DOUBLE);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.DOUBLE);
     }
 
@@ -7028,6 +7094,9 @@ public class Nd4j {
      * @return 4D INDArray with FLOAT data type
      */
     public static INDArray createFromArray(float[][][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
+            return Nd4j.empty(DataType.FLOAT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.FLOAT);
     }
 
@@ -7037,6 +7106,9 @@ public class Nd4j {
      * @return 4D INDArray with INT64 data type
      */
     public static INDArray createFromArray(long[][][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
+            return Nd4j.empty(DataType.LONG);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.LONG);
     }
 
@@ -7046,6 +7118,9 @@ public class Nd4j {
      * @return 4D INDArray with INT32 data type
      */
     public static INDArray createFromArray(int[][][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
+            return Nd4j.empty(DataType.INT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.INT);
     }
 
@@ -7055,6 +7130,9 @@ public class Nd4j {
      * @return 4D INDArray with INT16 data type
      */
     public static INDArray createFromArray(short[][][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
+            return Nd4j.empty(DataType.SHORT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.SHORT);
     }
 
@@ -7064,6 +7142,9 @@ public class Nd4j {
      * @return 4D INDArray with INT8 data type
      */
     public static INDArray createFromArray(byte[][][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
+            return Nd4j.empty(DataType.BYTE);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.BYTE);
     }
 
@@ -7073,6 +7154,9 @@ public class Nd4j {
      * @return 4D INDArray with BOOL data type
      */
     public static INDArray createFromArray(boolean[][][][] array) {
+        Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
+            return Nd4j.empty(DataType.BOOL);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.BOOL);
     }
 
