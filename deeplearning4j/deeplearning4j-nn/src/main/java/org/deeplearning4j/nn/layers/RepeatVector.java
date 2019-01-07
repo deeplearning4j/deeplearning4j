@@ -101,8 +101,9 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         long miniBatch = input.shape()[0];
         long size = input.shape()[1];
         INDArray output = input.reshape(miniBatch, size, 1);
-
-        return output.repeat(2, (long) getN());
+        output = output.repeat(2, (long)getN());
+        output = output.detach();  // .repeat returns an attatched array
+        return output;
     }
 
     @Override
@@ -113,7 +114,6 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
             cacheMode = CacheMode.NONE;
 
         INDArray z = preOutput(training, false, workspaceMgr);
-
         if (training && cacheMode != CacheMode.NONE && workspaceMgr.hasConfiguration(ArrayType.FF_CACHE)
                 && workspaceMgr.isWorkspaceOpen(ArrayType.FF_CACHE)) {
             try (MemoryWorkspace wsB = workspaceMgr.notifyScopeBorrowed(ArrayType.FF_CACHE)) {
