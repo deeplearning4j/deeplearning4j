@@ -96,8 +96,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
             case Subtract:
                 if (inputs.length != 2)
                     throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
-                return Nd4j.getExecutioner().execAndReturn(
-                        new OldSubOp(inputs[0], inputs[1], workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].shape())));
+                return Nd4j.getExecutioner().exec(new OldSubOp(inputs[0], inputs[1], workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].shape())));
             case Product:
                 INDArray product =  workspaceMgr.dup(ArrayType.ACTIVATIONS, inputs[0]);
                 for (int i = 1; i < inputs.length; i++) {

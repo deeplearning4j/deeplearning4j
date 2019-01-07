@@ -24,13 +24,30 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public interface ScalarOp extends BroadcastOp {
+public interface ScalarOp extends Op {
 
     /**The normal scalar
      *@return the scalar
      */
     INDArray scalar();
 
-
+    /**
+     * This method allows to set scalar
+     * @param scalar
+     */
     void setScalar(Number scalar);
+
+    /**
+     * This method returns target dimensions for this op
+     * @return
+     */
+    INDArray dimensions();
+
+    int[] getDimension();
+
+    void setDimension(int... dimension);
+
+    boolean validateDataTypes(boolean experimentalMode);
+
+    Type getOpType();
 }

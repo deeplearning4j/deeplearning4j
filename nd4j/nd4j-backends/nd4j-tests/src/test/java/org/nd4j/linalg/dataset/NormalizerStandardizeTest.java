@@ -68,12 +68,12 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
 
         INDArray meanDelta = Transforms.abs(theoreticalMean.sub(myNormalizer.getMean()));
         INDArray meanDeltaPerc = meanDelta.div(theoreticalMean).mul(100);
-        double maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0, 0);
+        double maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0);
         assertTrue(maxMeanDeltaPerc < tolerancePerc);
 
         INDArray stdDelta = Transforms.abs(theoreticalStd.sub(myNormalizer.getStd()));
         INDArray stdDeltaPerc = stdDelta.div(theoreticalStd).mul(100);
-        double maxStdDeltaPerc = stdDeltaPerc.max(1).getDouble(0, 0);
+        double maxStdDeltaPerc = stdDeltaPerc.max(1).getDouble(0);
         assertTrue(maxStdDeltaPerc < tolerancePerc);
 
         // SAME TEST WITH THE ITERATOR
@@ -84,12 +84,12 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
 
         meanDelta = Transforms.abs(theoreticalMean.sub(myNormalizer.getMean()));
         meanDeltaPerc = meanDelta.div(theoreticalMean).mul(100);
-        maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0, 0);
+        maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0);
         assertTrue(maxMeanDeltaPerc < tolerancePerc);
 
         stdDelta = Transforms.abs(theoreticalStd.sub(myNormalizer.getStd()));
         stdDeltaPerc = stdDelta.div(theoreticalStd).mul(100);
-        maxStdDeltaPerc = stdDeltaPerc.max(1).getDouble(0, 0);
+        maxStdDeltaPerc = stdDeltaPerc.max(1).getDouble(0);
         assertTrue(maxStdDeltaPerc < tolerancePerc);
     }
 
@@ -225,7 +225,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
 
         INDArray meanDelta = Transforms.abs(theoreticalMean.sub(myNormalizer.getMean()));
         INDArray meanDeltaPerc = meanDelta.mul(100).div(theoreticalMean);
-        assertTrue(meanDeltaPerc.max(1).getDouble(0, 0) < tolerancePerc);
+        assertTrue(meanDeltaPerc.max(1).getDouble(0) < tolerancePerc);
 
         //this just has to not barf
         //myNormalizer.transform(sampleIter);
@@ -251,7 +251,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         //System.out.println(transformed.getFeatures());
         INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures()))
                         .div(sampleDataSet.getFeatures());
-        double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0, 0);
+        double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0);
         assertTrue(maxdeltaPerc < tolerancePerc);
     }
 
@@ -276,7 +276,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         //Checking if we gets nans, because std dev is zero
         assertFalse(Double.isNaN(sampleDataSet.getFeatures().min(0, 1).getDouble(0)));
         //Checking to see if transformed values are close enough to zero
-        assertEquals(Transforms.abs(sampleDataSet.getFeatures()).max(0, 1).getDouble(0, 0), 0,
+        assertEquals(Transforms.abs(sampleDataSet.getFeatures()).max(0, 1).getDouble(0), 0,
                         constant * tolerancePerc / 100.0);
 
         myNormalizer.revert(sampleDataSet);

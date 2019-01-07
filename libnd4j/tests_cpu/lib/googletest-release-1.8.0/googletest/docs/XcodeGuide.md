@@ -66,7 +66,7 @@ If you haven't set up the DYLD\_FRAMEWORK\_PATH, correctly, you might get a mess
     Reason: image not found
 ```
 
-To correct this problem, go to to the directory containing the executable named in "Referenced from:" value in the error message above. Then, with the terminal in this location, find the relative path to the directory containing the gtest.framework. That is the value you'll need to set as the DYLD\_FRAMEWORK\_PATH.
+To correct this problem, go to the directory containing the executable named in "Referenced from:" value in the error message above. Then, with the terminal in this location, find the relative path to the directory containing the gtest.framework. That is the value you'll need to set as the DYLD\_FRAMEWORK\_PATH.
 
 # Build and Go #
 

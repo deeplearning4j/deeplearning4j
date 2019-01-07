@@ -51,7 +51,7 @@ public class ActivationThresholdedReLU extends BaseActivationFunction {
         DynamicCustomOp threshRelu = DynamicCustomOp.builder("thresholdedrelu")
                 .addOutputs(in).addInputs(in)
                 .addFloatingPointArguments(theta).build();
-        Nd4j.getExecutioner().exec(threshRelu);
+        Nd4j.getExecutioner().execAndReturn(threshRelu);
         return in;
     }
 
@@ -60,7 +60,7 @@ public class ActivationThresholdedReLU extends BaseActivationFunction {
         assertShape(in, epsilon);
         DynamicCustomOp threshReluBp = DynamicCustomOp.builder("thresholdedrelu_bp")
                 .addInputs(in, epsilon).addOutputs(in).addFloatingPointArguments(theta).build();
-        Nd4j.getExecutioner().exec(threshReluBp);
+        Nd4j.getExecutioner().execAndReturn(threshReluBp);
         return new Pair<>(in, null);
     }
 

@@ -50,38 +50,27 @@ public class CosineDistance extends BaseReduceFloatOp {
         passThrough = true;
     }
 
-    public CosineDistance(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public CosineDistance(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, null);
+    }
+
+    public CosineDistance(INDArray x, INDArray y, INDArray z, int... dimension) {
+        super(x, y, z, dimension);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public CosineDistance(INDArray x, INDArray y, long n) {
-        super(x, y, null, n);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
+    public CosineDistance(INDArray x, INDArray y, int... dimension) {
+        this(x, y, null, dimension);
     }
 
-    public CosineDistance(INDArray x) {
-        super(x);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public CosineDistance(INDArray x, INDArray y) {
-        super(x, y, null);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public CosineDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
-        this(x, y, z, x.lengthLong());
+    public CosineDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimension) {
+        this(x, y, z, dimension);
         this.isComplex = allDistances;
     }
 
-    public CosineDistance(INDArray x, INDArray y, boolean allDistances) {
-        this(x, y);
-        this.isComplex = allDistances;
+    public CosineDistance(INDArray x, INDArray y, boolean allDistances, int... dimension) {
+        this(x, y, null, allDistances, dimension);
     }
 
     public CosineDistance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){

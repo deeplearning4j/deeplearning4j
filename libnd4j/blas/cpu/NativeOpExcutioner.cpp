@@ -157,9 +157,13 @@ void NativeOpExcutioner::execPairwiseTransform(int opNum, void *dx, Nd4jLong *xS
     auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
-    if (!nd4j::Environment::getInstance()->isExperimentalBuild())
-        if ((yType != xType && yType != nd4j::DataType::BOOL) || xType != zType)
+    if (!nd4j::Environment::getInstance()->isExperimentalBuild()) {
+        if ((yType != xType && yType != nd4j::DataType::BOOL))
             throw nd4j::datatype_exception::build("NativeOps::execPairwiseTransform both operands must have same data type", xType, yType);
+
+        if (xType != zType)
+            throw nd4j::datatype_exception::build("NativeOps::execPairwiseTransform result must have the same type as X", xType, zType);
+    }
 
 #ifdef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform, ::exec(opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
@@ -173,9 +177,14 @@ void NativeOpExcutioner::execPairwiseBoolTransform(int opNum, void *dx, Nd4jLong
     auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(resultShapeInfo);
 
-    if (!nd4j::Environment::getInstance()->isExperimentalBuild())
-        if (yType != xType || nd4j::DataType::BOOL != zType)
-            throw nd4j::datatype_exception::build("NativeOps::execPairwiseBoolTransform both operands must have same data type", xType, yType);
+    if (!nd4j::Environment::getInstance()->isExperimentalBuild()) {
+        if (yType != xType)
+            throw nd4j::datatype_exception::build(
+                    "NativeOps::execPairwiseBoolTransform both operands must have same data type, and result must have bool type", xType, yType);
+
+        if (nd4j::DataType::BOOL != zType)
+            throw nd4j::datatype_exception::build("NativeOps::execPairwiseBoolTransform result must have bool type", zType);
+    }
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::pairwise_transforms::PairWiseBoolTransform, ::exec(opNum, dx, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, extraParams), LIBND4J_TYPES, BOOL_TYPES);
 }

@@ -669,7 +669,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
 
         workspace.initializeWorkspace();
-        long reqMemory = 11 * Nd4j.sizeOfDataType();
+        long reqMemory = 13 * Nd4j.sizeOfDataType();
         assertEquals(reqMemory + reqMemory % 8 + Nd4j.sizeOfDataType(DOUBLE), workspace.getCurrentSize());
 
 

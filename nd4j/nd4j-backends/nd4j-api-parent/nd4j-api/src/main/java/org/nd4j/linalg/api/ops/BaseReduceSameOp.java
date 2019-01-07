@@ -50,16 +50,12 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
         super(x, null, z, newFormat, keepDims, dimensions);
     }
 
-    public BaseReduceSameOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public BaseReduceSameOp(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
     }
 
-    public BaseReduceSameOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
-    }
-
-    public BaseReduceSameOp(INDArray x) {
-        super(x);
+    public BaseReduceSameOp(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
     protected BaseReduceSameOp() {

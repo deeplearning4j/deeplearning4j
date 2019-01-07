@@ -364,7 +364,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     public void testMatchConditionAllDimensions1() throws Exception {
         INDArray array = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
 
-        int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.lessThan(5)), Integer.MAX_VALUE)
+        int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.lessThan(5)))
                 .getDouble(0);
 
         assertEquals(5, val);
@@ -374,7 +374,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     public void testMatchConditionAllDimensions2() throws Exception {
         INDArray array = Nd4j.create(new double[] {0, 1, 2, 3, Double.NaN, 5, 6, 7, 8, 9});
 
-        int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.isNan()), Integer.MAX_VALUE)
+        int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.isNan()))
                 .getDouble(0);
 
         assertEquals(1, val);
@@ -385,7 +385,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         INDArray array = Nd4j.create(new double[] {0, 1, 2, 3, Double.NEGATIVE_INFINITY, 5, 6, 7, 8, 9});
 
         int val = (int) Nd4j.getExecutioner()
-                .exec(new MatchCondition(array, Conditions.isInfinite()), Integer.MAX_VALUE).getDouble(0);
+                .exec(new MatchCondition(array, Conditions.isInfinite())).getDouble(0);
 
         assertEquals(1, val);
     }
@@ -524,7 +524,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     public void testEpsEquals1() throws Exception {
         INDArray array = Nd4j.create(new double[] {-1, -1, -1e-8, 1e-8, 1, 1});
         MatchCondition condition = new MatchCondition(array, Conditions.epsEquals(0.0));
-        int numZeroes = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+        int numZeroes = Nd4j.getExecutioner().exec(condition).getInt(0);
 
         assertEquals(2, numZeroes);
     }

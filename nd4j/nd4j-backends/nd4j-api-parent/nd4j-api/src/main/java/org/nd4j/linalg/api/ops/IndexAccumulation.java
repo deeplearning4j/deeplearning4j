@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
 /**An index accumulation is an operation that returns an index within
@@ -42,34 +43,6 @@ import org.nd4j.linalg.primitives.Pair;
  */
 public interface IndexAccumulation extends Op {
 
-    /** Set the final index/result of the accumulation. */
-    void setFinalResult(int idx);
-
-    /** Get the final result of the IndexAccumulation */
-    int getFinalResult();
-
-    /**Initial value for the index accumulation
-     *@return the initial value
-     */
-    double zeroDouble();
-
-    /** Initial value for the index accumulation.
-     * @return the initial value
-     * */
-    float zeroFloat();
-
-    /** Initial value for the index accumulation.
-     * @return the initial value
-     * */
-    float zeroHalf();
-
-    /** The initial value and initial index to use
-     * for the accumulation
-     * @return
-     */
-    Pair<Double, Integer> zeroPair();
-
-
     boolean validateDataTypes();
 
     /**
@@ -78,4 +51,18 @@ public interface IndexAccumulation extends Op {
      * @return
      */
     boolean isKeepDims();
+
+    /**
+     * This method returns true if scalar is 0D, false otherwise
+     * @return
+     */
+    boolean isNewFormat();
+
+    /**
+     * This method returns dimensions for this op
+     * @return
+     */
+    INDArray dimensions();
+
+    Number getFinalResult();
 }

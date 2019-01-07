@@ -67,45 +67,40 @@ public class Transforms {
      *
      */
     public static double cosineSim(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(d1, d2, d1.length())).getFinalResult()
-                        .doubleValue();
+        return Nd4j.getExecutioner().exec(new CosineSimilarity(d1, d2)).getDouble(0);
     }
 
     public static double cosineDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().execAndReturn(new CosineDistance(d1, d2, d1.length())).getFinalResult()
-                        .doubleValue();
+        return Nd4j.getExecutioner().exec(new CosineDistance(d1, d2)).getDouble(0);
     }
 
     public static double hammingDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().execAndReturn(new HammingDistance(d1, d2, d1.length())).getFinalResult()
-                        .doubleValue();
+        return Nd4j.getExecutioner().exec(new HammingDistance(d1, d2)).getDouble(0);
     }
 
     public static double jaccardDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
-        return Nd4j.getExecutioner().execAndReturn(new JaccardDistance(d1, d2, d1.length())).getFinalResult()
-                        .doubleValue();
+        return Nd4j.getExecutioner().exec(new JaccardDistance(d1, d2)).getDouble(0);
     }
 
     public static INDArray allCosineSimilarities(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
-        return Nd4j.getExecutioner().exec(new CosineSimilarity(d1, d2, true), dimensions);
+        return Nd4j.getExecutioner().exec(new CosineSimilarity(d1, d2, true, dimensions));
     }
 
     public static INDArray allCosineDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
-        return Nd4j.getExecutioner().exec(new CosineDistance(d1, d2, true), dimensions);
+        return Nd4j.getExecutioner().exec(new CosineDistance(d1, d2, true, dimensions));
     }
 
     public static INDArray allEuclideanDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
-        return Nd4j.getExecutioner().exec(new EuclideanDistance(d1, d2, true), dimensions);
+        return Nd4j.getExecutioner().exec(new EuclideanDistance(d1, d2, true, dimensions));
     }
 
     public static INDArray allManhattanDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
-        return Nd4j.getExecutioner().exec(new ManhattanDistance(d1, d2, true), dimensions);
+        return Nd4j.getExecutioner().exec(new ManhattanDistance(d1, d2, true, dimensions));
     }
 
 
     public static INDArray reverse(INDArray x, boolean dup) {
-        return Nd4j.getExecutioner().exec(new OldReverse(x, dup ? Nd4j.createUninitialized(x.shape(), x.ordering()) : x))
-                        .z();
+        return Nd4j.getExecutioner().exec(new OldReverse(x, dup ? x.ulike() : x));
     }
 
     public static INDArray dot(INDArray x, INDArray y){
@@ -140,8 +135,7 @@ public class Transforms {
      * @return the theta from point (r, theta) when converting (x,y) from to cartesian to polar coordinates
      */
     public static INDArray atan2(@NonNull INDArray x, @NonNull INDArray y) {
-        return Nd4j.getExecutioner()
-                        .execAndReturn(new OldAtan2Op(x, y, Nd4j.createUninitialized(x.shape(), x.ordering())));
+        return Nd4j.getExecutioner().exec(new OldAtan2Op(x, y, x.ulike()));
     }
 
     /**
@@ -235,7 +229,7 @@ public class Transforms {
      * @return
      */
     public static INDArray ceiling(INDArray ndArray, boolean copyOnOps) {
-        return exec(copyOnOps ? new Ceil(ndArray, ndArray.dup()) : new Ceil(ndArray, ndArray));
+        return exec(copyOnOps ? new Ceil(ndArray, ndArray.ulike()) : new Ceil(ndArray, ndArray));
     }
 
     /**
@@ -275,7 +269,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sin(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new Sin((copy ? in.dup() : in)));
+        return Nd4j.getExecutioner().exec(new Sin(in, (copy ? in.ulike() : in)));
     }
 
 
@@ -295,7 +289,7 @@ public class Transforms {
      * @return
      */
     public static INDArray atanh(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new ATanh((copy ? in.dup() : in)));
+        return Nd4j.getExecutioner().exec(new ATanh(in, (copy ? in.ulike() : in)));
     }
 
     /**
@@ -314,7 +308,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sinh(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new Sinh((copy ? in.dup() : in)));
+        return Nd4j.getExecutioner().exec(new Sinh(in, (copy ? in.ulike() : in)));
     }
 
     /**
@@ -333,7 +327,7 @@ public class Transforms {
      * @return
      */
     public static INDArray cosh(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new Cosh((copy ? in.dup() : in)));
+        return Nd4j.getExecutioner().exec(new Cosh(in, (copy ? in.ulike() : in)));
     }
 
     /**
@@ -352,7 +346,7 @@ public class Transforms {
      * @return
      */
     public static INDArray cos(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new Cos((copy ? in.dup() : in)));
+        return Nd4j.getExecutioner().exec(new Cos(in, (copy ? in.ulike() : in)));
     }
 
 
@@ -362,7 +356,7 @@ public class Transforms {
 
 
     public static INDArray acos(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new ACos(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new ACos(in, (copy ? in.ulike() : in)));
     }
 
 
@@ -372,7 +366,7 @@ public class Transforms {
 
 
     public static INDArray asin(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new ASin(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new ASin(((copy ? in.dup() : in))));
     }
 
     public static INDArray atan(INDArray arr) {
@@ -381,7 +375,7 @@ public class Transforms {
 
 
     public static INDArray atan(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new ATan(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new ATan(in, (copy ? in.ulike() : in)));
     }
 
     public static INDArray ceil(INDArray arr) {
@@ -390,7 +384,7 @@ public class Transforms {
 
 
     public static INDArray ceil(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new Ceil(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new Ceil(in, (copy ? in.ulike() : in)));
     }
 
 
@@ -400,7 +394,7 @@ public class Transforms {
 
 
     public static INDArray relu(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new RectifedLinear(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new RectifedLinear(in, (copy ? in.ulike() : in)));
     }
 
     public static INDArray relu6(INDArray arr) {
@@ -409,7 +403,7 @@ public class Transforms {
 
 
     public static INDArray relu6(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new Relu6(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new Relu6(in, (copy ? in.ulike() : in)));
     }
 
 
@@ -419,7 +413,7 @@ public class Transforms {
 
 
     public static INDArray leakyRelu(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new LeakyReLU(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new LeakyReLU(in, (copy ? in.ulike() : in)));
     }
 
     public static INDArray elu(INDArray arr) {
@@ -428,7 +422,7 @@ public class Transforms {
 
 
     public static INDArray elu(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new ELU(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new ELU(in, (copy ? in.ulike() : in)));
     }
 
     public static INDArray eluDerivative(INDArray arr) {
@@ -437,7 +431,7 @@ public class Transforms {
 
 
     public static INDArray eluDerivative(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new ELUDerivative(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new ELUDerivative(in, (copy ? in.ulike() : in)));
     }
 
 
@@ -448,7 +442,7 @@ public class Transforms {
 
 
     public static INDArray leakyRelu(INDArray in, double cutoff, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new LeakyReLU((copy ? in.dup() : in), cutoff));
+        return Nd4j.getExecutioner().exec(new LeakyReLU(in, (copy ? in.ulike() : in), cutoff));
     }
 
     public static INDArray leakyReluDerivative(INDArray arr, double cutoff) {
@@ -457,7 +451,7 @@ public class Transforms {
 
 
     public static INDArray leakyReluDerivative(INDArray in, double cutoff, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new LeakyReLUDerivative((copy ? in.dup() : in), cutoff));
+        return Nd4j.getExecutioner().exec(new LeakyReLUDerivative(in, (copy ? in.ulike() : in), cutoff));
     }
 
 
@@ -468,7 +462,7 @@ public class Transforms {
 
 
     public static INDArray softPlus(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new SoftPlus(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new SoftPlus(in, (copy ? in.ulike() : in)));
     }
 
     public static INDArray step(INDArray arr) {
@@ -477,7 +471,7 @@ public class Transforms {
 
 
     public static INDArray step(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new Step(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new Step(in, (copy ? in.ulike() : in)));
     }
 
 
@@ -487,7 +481,7 @@ public class Transforms {
 
 
     public static INDArray softsign(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new SoftSign(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new SoftSign(in, (copy ? in.ulike() : in)));
     }
 
 
@@ -497,7 +491,7 @@ public class Transforms {
 
 
     public static INDArray softsignDerivative(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new SoftSignDerivative(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new SoftSignDerivative(in, (copy ? in.ulike() : in)));
     }
 
 
@@ -514,7 +508,7 @@ public class Transforms {
      * @return
      */
     public static INDArray softmax(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new OldSoftMax(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new OldSoftMax(in, (copy ? in.ulike() : in)));
     }
 
     /**
@@ -551,7 +545,7 @@ public class Transforms {
      * @return the output
      */
     public static INDArray hardTanh(INDArray ndArray, boolean dup) {
-        return exec(dup ? new HardTanh(ndArray, ndArray.dup()) : new HardTanh(ndArray));
+        return exec(dup ? new HardTanh(ndArray, ndArray.ulike()) : new HardTanh(ndArray));
     }
 
 
@@ -568,7 +562,7 @@ public class Transforms {
      * @return the output
      */
     public static INDArray hardTanhDerivative(INDArray ndArray, boolean dup) {
-        return exec(dup ? new HardTanhDerivative(ndArray, ndArray.dup()) : new HardTanhDerivative(ndArray));
+        return exec(dup ? new HardTanhDerivative(ndArray, ndArray.ulike()) : new HardTanhDerivative(ndArray));
     }
 
 
@@ -617,7 +611,7 @@ public class Transforms {
      * @return the ndarray raised to this power
      */
     public static INDArray pow(INDArray ndArray, INDArray power, boolean dup) {
-        INDArray result = (dup ? Nd4j.create(ndArray.shape(), ndArray.ordering()) : ndArray);
+        INDArray result = (dup ? ndArray.ulike() : ndArray);
         return exec(new PowPairwise(ndArray, power, result, ndArray.length()));
     }
 
@@ -649,7 +643,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sigmoid(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Sigmoid(ndArray, ndArray.dup()) : new Sigmoid(ndArray));
+        return exec(dup ? new Sigmoid(ndArray, ndArray.ulike()) : new Sigmoid(ndArray));
     }
 
     /**
@@ -670,7 +664,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sigmoidDerivative(INDArray ndArray, boolean dup) {
-        return exec(dup ? new SigmoidDerivative(ndArray, Nd4j.createUninitialized(ndArray.shape(), ndArray.ordering())) : new SigmoidDerivative(ndArray));
+        return exec(dup ? new SigmoidDerivative(ndArray, ndArray.ulike()) : new SigmoidDerivative(ndArray));
     }
 
 
@@ -700,7 +694,7 @@ public class Transforms {
      * @param ndArray Input array
      */
     public static INDArray tan(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Tan(ndArray, Nd4j.createUninitialized(ndArray.shape(), ndArray.ordering())) : new Tan(ndArray));
+        return exec(dup ? new Tan(ndArray, ndArray.ulike()) : new Tan(ndArray));
     }
 
     /**
@@ -732,7 +726,7 @@ public class Transforms {
      * @return
      */
     public static INDArray log(INDArray ndArray, double base, boolean duplicate) {
-        return Nd4j.getExecutioner().exec(new LogX(duplicate ? ndArray.dup(ndArray.ordering()) : ndArray, base)).z();
+        return Nd4j.getExecutioner().exec(new LogX(ndArray, duplicate ? ndArray.ulike() : ndArray, base));
     }
 
     public static INDArray log(INDArray ndArray) {
@@ -797,7 +791,7 @@ public class Transforms {
      * @return
      */
     public static INDArray floor(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Floor(ndArray.dup()) : new Floor(ndArray));
+        return exec(dup ? new Floor(ndArray, ndArray.ulike()) : new Floor(ndArray));
 
     }
 
@@ -809,7 +803,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sign(INDArray toSign, boolean dup) {
-        return exec(dup ? new Sign(toSign, toSign.dup()) : new Sign(toSign));
+        return exec(dup ? new Sign(toSign, toSign.ulike()) : new Sign(toSign));
     }
 
     /**
@@ -821,7 +815,7 @@ public class Transforms {
      * @return
      */
     public static INDArray max(INDArray ndArray, double k, boolean dup) {
-        return exec(dup ? new ScalarMax(ndArray.dup(), k) : new ScalarMax(ndArray, k));
+        return exec(dup ? new ScalarMax(ndArray, null, ndArray.ulike(), ndArray.length(), k) : new ScalarMax(ndArray, k));
     }
 
     /**
@@ -846,7 +840,7 @@ public class Transforms {
     public static INDArray max(INDArray first, INDArray second, boolean dup) {
         INDArray result = first;
         if (dup) {
-            result = Nd4j.createUninitialized(first.dataType(), first.shape(), first.ordering());
+            result = first.ulike();
         }
         return exec(new OldMax(first, second, result, first.length()));
     }
@@ -871,7 +865,7 @@ public class Transforms {
      * @return
      */
     public static INDArray min(INDArray ndArray, double k, boolean dup) {
-        return exec(dup ? new ScalarMin(ndArray, null, Nd4j.createUninitialized(ndArray.dataType(), ndArray.shape(), ndArray.ordering()), ndArray.length(), k) : new ScalarMin(ndArray, k));
+        return exec(dup ? new ScalarMin(ndArray, null, ndArray.ulike(), ndArray.length(), k) : new ScalarMin(ndArray, k));
     }
 
     /**
@@ -921,7 +915,7 @@ public class Transforms {
      * @return
      */
     public static INDArray stabilize(INDArray ndArray, double k, boolean dup) {
-        return exec(dup ? new Stabilize(ndArray, ndArray.dup(), k) : new Stabilize(ndArray, k));
+        return exec(dup ? new Stabilize(ndArray, ndArray.ulike(), k) : new Stabilize(ndArray, k));
     }
 
 
@@ -933,7 +927,7 @@ public class Transforms {
      * @return
      */
     public static INDArray abs(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Abs(ndArray, ndArray.dup()) : new Abs(ndArray));
+        return exec(dup ? new Abs(ndArray, ndArray.ulike()) : new Abs(ndArray));
 
     }
 
@@ -945,7 +939,7 @@ public class Transforms {
      * @return
      */
     public static INDArray exp(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Exp(ndArray, ndArray.dup()) : new Exp(ndArray));
+        return exec(dup ? new Exp(ndArray, ndArray.ulike()) : new Exp(ndArray));
     }
 
 
@@ -957,7 +951,7 @@ public class Transforms {
      * @return
      */
     public static INDArray expm1(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Expm1(ndArray, ndArray.dup()) : new Expm1(ndArray));
+        return exec(dup ? new Expm1(ndArray, ndArray.ulike()) : new Expm1(ndArray));
     }
 
 
@@ -969,7 +963,7 @@ public class Transforms {
      * @return
      */
     public static INDArray identity(INDArray ndArray, boolean dup) {
-        return exec(dup ? new OldIdentity(ndArray, ndArray.dup()) : new OldIdentity(ndArray));
+        return exec(dup ? new OldIdentity(ndArray, ndArray.ulike()) : new OldIdentity(ndArray));
     }
 
     public static INDArray isMax(INDArray input, DataType dataType) {
@@ -982,7 +976,7 @@ public class Transforms {
     }
 
     public static INDArray isMax(INDArray input, INDArray output) {
-        return Nd4j.getExecutioner().execAndReturn(new IsMax(input, output));
+        return Nd4j.getExecutioner().exec(new IsMax(input, output));
     }
 
 
@@ -995,7 +989,7 @@ public class Transforms {
      * @return
      */
     public static INDArray pow(INDArray ndArray, Number power, boolean dup) {
-        return exec(dup ? new Pow(ndArray, ndArray.dup(), power.doubleValue()) : new Pow(ndArray, power.doubleValue()));
+        return exec(dup ? new Pow(ndArray, ndArray.ulike(), power.doubleValue()) : new Pow(ndArray, power.doubleValue()));
     }
 
     /**
@@ -1006,7 +1000,7 @@ public class Transforms {
      * @return
      */
     public static INDArray round(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Round(ndArray, ndArray.dup()) : new Round(ndArray));
+        return exec(dup ? new Round(ndArray, ndArray.ulike()) : new Round(ndArray));
     }
 
 
@@ -1019,7 +1013,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sqrt(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Sqrt(ndArray, ndArray.dup()) : new Sqrt(ndArray));
+        return exec(dup ? new Sqrt(ndArray, ndArray.ulike()) : new Sqrt(ndArray));
     }
 
     /**
@@ -1030,7 +1024,7 @@ public class Transforms {
      * @return
      */
     public static INDArray tanh(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Tanh(ndArray, ndArray.dup()) : new Tanh(ndArray));
+        return exec(dup ? new Tanh(ndArray, ndArray.ulike()) : new Tanh(ndArray));
     }
 
     /**
@@ -1041,7 +1035,7 @@ public class Transforms {
      * @return
      */
     public static INDArray log(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Log(ndArray, ndArray.dup()) : new Log(ndArray));
+        return exec(dup ? new Log(ndArray, ndArray.ulike()) : new Log(ndArray));
     }
 
 
@@ -1053,7 +1047,7 @@ public class Transforms {
      * @return
      */
     public static INDArray log1p(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Log1p(ndArray, ndArray.dup()) : new Log1p(ndArray));
+        return exec(dup ? new Log1p(ndArray, ndArray.ulike()) : new Log1p(ndArray));
     }
 
     /**
@@ -1064,7 +1058,7 @@ public class Transforms {
      * @return
      */
     public static INDArray neg(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Negative(ndArray, ndArray.dup()) : new Negative(ndArray));
+        return exec(dup ? new Negative(ndArray, ndArray.ulike()) : new Negative(ndArray));
     }
 
     public static INDArray and(INDArray x, INDArray y) {
@@ -1104,7 +1098,7 @@ public class Transforms {
      * @return the new ndarray
      */
     private static INDArray exec(ScalarOp op) {
-        return Nd4j.getExecutioner().exec(op).z();
+        return Nd4j.getExecutioner().exec(op);
     }
 
     /**
@@ -1114,7 +1108,7 @@ public class Transforms {
      * @return the new ndarray
      */
     private static INDArray exec(TransformOp op) {
-        return Nd4j.getExecutioner().execAndReturn(op);
+        return Nd4j.getExecutioner().exec(op);
     }
 
     /**

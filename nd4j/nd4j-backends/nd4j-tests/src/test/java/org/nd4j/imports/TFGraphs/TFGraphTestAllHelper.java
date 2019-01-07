@@ -219,7 +219,7 @@ public class TFGraphTestAllHelper {
                                 " and max values are all less than minAbsError - nothing can be tested here");
                     }
 
-                    int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).z().getInt(0);
+                    int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).getInt(0);
 
                     double maxRE = -1;
                     if(countExceeds > 0){
@@ -286,7 +286,7 @@ public class TFGraphTestAllHelper {
                             INDArray relError = diff.divi(sumAbs);
                             relError.muli(absErrorMask);
 
-                            int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).z().getInt(0);
+                            int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).getInt(0);
 
                             double maxRE = -1;
                             //Mainly used for analysis in debugger:

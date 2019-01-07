@@ -23,7 +23,7 @@ import org.tartarus.snowball.SnowballProgram;
  * This is StemmingPreprocessor compatible with different StemmingProcessors defined as lucene/tartarus SnowballProgram
  * such as: RussianStemmer, DutchStemmer, FrenchStemmer etc.
  * <br>
- * Note that CommonPreprocessor#preProcess(String) is first applied (i.e. punctuation marks are removed and and lower-cased), then the stemmer is applied.
+ * Note that CommonPreprocessor#preProcess(String) is first applied (i.e. punctuation marks are removed and lower-cased), then the stemmer is applied.
  * <br>
  * This preprocessor is synchronized, thus thread-safe.
  *

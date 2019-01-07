@@ -154,7 +154,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         try {
             conf = mapper.readValue(json, MultiLayerConfiguration.class);
         } catch (IOException e) {
-            //Check if this exception came from legacy legacy deserializer...
+            //Check if this exception came from legacy deserializer...
             String msg = e.getMessage();
             if (msg != null && msg.contains("legacy")) {
                 throw new RuntimeException("Error deserializing MultiLayerConfiguration - configuration may have a custom " +

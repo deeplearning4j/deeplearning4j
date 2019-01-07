@@ -404,7 +404,7 @@ public class ShapeOffsetResolution implements Serializable {
                 if (i < arr.rank() && arr.size(i) == 1)
                     oneDimensionWithAllEncountered.add(i);
                 //different dimension from new axis (look for new axis dimensions
-                //at at the beginning. track when the last new axis is encountered.
+                //at the beginning. track when the last new axis is encountered.
                 if (newAxesPrepend > 0 && lastPrependIndex < 0) {
                     lastPrependIndex = i - 1;
                 }
@@ -418,7 +418,7 @@ public class ShapeOffsetResolution implements Serializable {
                 shapeIndex++;
                 strideIndex++;
                 //different dimension from new axis (look for new axis dimensions
-                //at at the beginning. track when the last new axis is encountered.
+                //at the beginning. track when the last new axis is encountered.
                 if (newAxesPrepend > 0 && lastPrependIndex < 0) {
                     lastPrependIndex = i - 1;
                 }
@@ -460,7 +460,7 @@ public class ShapeOffsetResolution implements Serializable {
                 strideIndex++;
 
                 //different dimension from new axis (look for new axis dimensions
-                //at at the beginning. track when the last new axis is encountered.
+                //at the beginning. track when the last new axis is encountered.
                 if (newAxesPrepend > 0 && lastPrependIndex < 0) {
                     lastPrependIndex = i - 1;
                 }

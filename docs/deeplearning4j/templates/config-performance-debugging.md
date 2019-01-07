@@ -267,7 +267,7 @@ For serving predictions in multi-threaded applications (such as a web server), [
 
 MultiLayerNetwork and ComputationGraph are not considered thread-safe, and should not be used from multiple threads.
 That said, most operations such as fit, output, etc use synchronized blocks. These synchronized methods should avoid hard to understand exceptions (race conditions due to concurrent use), they will limit throughput to a single thread (though, note that native operation parallelism will still be parallelized as normal).
-In summary, using using the one network from multiple threads should be avoided as it is not thread safe and can be a performance bottleneck.
+In summary, using the one network from multiple threads should be avoided as it is not thread safe and can be a performance bottleneck.
 
 
 For inference from multiple threads, you should use one model per thread (as this avoids locks) or for serving predictions in multi-threaded applications (such as a web server), use [ParallelInference](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-scaleout/deeplearning4j-scaleout-parallelwrapper/src/main/java/org/deeplearning4j/parallelism/ParallelInference.java).

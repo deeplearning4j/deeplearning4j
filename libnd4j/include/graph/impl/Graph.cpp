@@ -82,7 +82,7 @@ namespace nd4j {
                         std::vector<Nd4jLong*> inputShapes;
                         int *oldShape;
                         for (auto v: *node->input()) {
-                            nd4j_debug("     inputs for estimation are are: %i:%i\n", v.first, v.second);
+                            nd4j_debug("     inputs for estimation are: %i:%i\n", v.first, v.second);
                             if (v.first < 0) {
                                 inputShapes.push_back(_variableSpace->getVariable(v.first)->getNDArray()->getShapeInfo());
                             } else {

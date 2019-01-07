@@ -63,8 +63,8 @@ public class LossFunctionTest extends BaseNd4jTest {
 
         MatchCondition c1 = new MatchCondition(grad1, Conditions.isNan());
         MatchCondition c2 = new MatchCondition(grad2, Conditions.isNan());
-        int match1 = Nd4j.getExecutioner().exec(c1, Integer.MAX_VALUE).getInt(0);
-        int match2 = Nd4j.getExecutioner().exec(c2, Integer.MAX_VALUE).getInt(0);
+        int match1 = Nd4j.getExecutioner().exec(c1).getInt(0);
+        int match2 = Nd4j.getExecutioner().exec(c2).getInt(0);
 
         assertTrue(match1 > 0);
         assertEquals(0, match2);

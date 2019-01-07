@@ -665,13 +665,13 @@ TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
     auto y = NDArrayFactory::create<float>('c', {3, 4, 5});
     auto z = NDArrayFactory::create<float>('c', {5});
 
-    std::vector<int> dims = {0, 1};
+    auto dims = NDArrayFactory::create<int>('c', {2}, {0, 1});
 
     NativeOps nativeOps;
     nativeOps.execReduce3(nullptr, 2, x.buffer(), x.shapeInfo(), nullptr, nullptr, nullptr, 
                         y.buffer(), y.shapeInfo(), nullptr, nullptr,
                         z.buffer(), z.shapeInfo(), nullptr, nullptr,
-                        dims.data(), (int) dims.size(), nullptr, nullptr, nullptr, nullptr);
+                        dims.buffer(), dims.shapeInfo(), dims.specialBuffer(), dims.specialShapeInfo(), nullptr, nullptr, nullptr, nullptr);
 }
 /*
 TEST_F(JavaInteropTests, Test_SimpleIf_Output) {

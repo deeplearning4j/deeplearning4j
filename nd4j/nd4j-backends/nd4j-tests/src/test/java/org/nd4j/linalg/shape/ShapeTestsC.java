@@ -334,7 +334,7 @@ public class ShapeTestsC extends BaseNd4jTest {
     public void testSumRow() {
         INDArray rowVector10 = Nd4j.ones(DataType.DOUBLE,1,10);
         INDArray sum1 = rowVector10.sum(1);
-        assertArrayEquals(sum1.shape(), new long[] {1, 1});
+        assertArrayEquals(new long[] {1}, sum1.shape());
         assertTrue(sum1.getDouble(0) == 10);
     }
 
@@ -342,7 +342,7 @@ public class ShapeTestsC extends BaseNd4jTest {
     public void testSumColumn() {
         INDArray colVector10 = Nd4j.ones(10, 1);
         INDArray sum0 = colVector10.sum(0);
-        assertArrayEquals(sum0.shape(), new long[] {1, 1});
+        assertArrayEquals( new long[] {1}, sum0.shape());
         assertTrue(sum0.getDouble(0) == 10);
     }
 
@@ -350,17 +350,17 @@ public class ShapeTestsC extends BaseNd4jTest {
     public void testSum2d() {
         INDArray arr = Nd4j.ones(10, 10);
         INDArray sum0 = arr.sum(0);
-        assertArrayEquals(sum0.shape(), new long[] {1, 10});
+        assertArrayEquals(new long[] {10}, sum0.shape());
 
         INDArray sum1 = arr.sum(1);
-        assertArrayEquals(sum1.shape(), new long[] {10, 1});
+        assertArrayEquals(new long[] {10}, sum1.shape());
     }
 
     @Test
     public void testSum2dv2() {
         INDArray arr = Nd4j.ones(10, 10);
         INDArray sumBoth = arr.sum(0, 1);
-        assertArrayEquals(sumBoth.shape(), new long[] {1, 1});
+        assertArrayEquals(new long[0], sumBoth.shape());
         assertTrue(sumBoth.getDouble(0) == 100);
     }
 

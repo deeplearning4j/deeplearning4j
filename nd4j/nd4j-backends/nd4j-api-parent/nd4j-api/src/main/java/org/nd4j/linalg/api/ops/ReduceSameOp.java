@@ -20,5 +20,5 @@ package org.nd4j.linalg.api.ops;
  * ReduceLong take any type in, and return same type
  * @author raver119@gmail.com
  */
-public interface ReduceSameOp {
+public interface ReduceSameOp extends ReduceOp {
 }
