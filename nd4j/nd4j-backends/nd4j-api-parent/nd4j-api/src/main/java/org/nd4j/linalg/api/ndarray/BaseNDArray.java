@@ -4734,7 +4734,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray sum(boolean keepDim, int... dimension) {
         validateNumericalArray("sum");
-        return Nd4j.getExecutioner().exec(new Sum(this, this.ulike(), true, keepDim, dimension));
+        return Nd4j.getExecutioner().exec(new Sum(this, null, true, keepDim, dimension));
     }
 
 
