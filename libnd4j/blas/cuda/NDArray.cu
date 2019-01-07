@@ -76,12 +76,23 @@ NDArray::NDArray(const NDArray& other) {
 
     setShapeInfo(ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace()));    
 
-    cudaMalloc(&_bufferD, _length * other.sizeOfT());
+    if (_context->getWorkspace() == nullptr) {
+        auto res = cudaMalloc(&_bufferD, _length * other.sizeOfT());
+        if (res != 0)
+            throw cuda_exception::build("[DEVICE] allocation failed", res);
+    } else {
+        _bufferD = reinterpret_cast<int8_t *>(_context->getWorkspace()->allocateBytes(nd4j::memory::MemoryType::DEVICE, _length * other.sizeOfT()));
+    }
 
-    if(other.isActualOnHostSide())
-        cudaMemcpy(_bufferD, other._buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
-    else        
-        cudaMemcpy(_bufferD, other._bufferD, _length * sizeOfT(), cudaMemcpyDeviceToDevice);
+    if(other.isActualOnHostSide()) {
+        auto res = cudaMemcpy(_bufferD, other._buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
+        if (res != 0)
+            throw cuda_exception::build("cudaMemcpy failed", res);
+    } else {
+        auto res = cudaMemcpy(_bufferD, other._bufferD, _length * sizeOfT(), cudaMemcpyDeviceToDevice);
+        if (res != 0)
+            throw cuda_exception::build("cudaMemcpy failed", res);
+    }
         
     triggerAllocationFlag(true, true);
 

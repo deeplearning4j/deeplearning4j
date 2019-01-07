@@ -41,8 +41,9 @@ namespace nd4j {
         ALLOCATE(buffer, context->getWorkspace(), sizeof(utf8string*), int8_t);
         us = reinterpret_cast<utf8string**>(buffer);
         us[0] = new utf8string(str);
-        int8* specialBuffer = nullptr;//res.specialBuffer();
-        cudaMalloc(&specialBuffer, sizeof(utf8string*));
+        int8_t* specialBuffer = nullptr;//res.specialBuffer();
+        //cudaMalloc(&specialBuffer, sizeof(utf8string*));
+        ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), sizeof(utf8string*), int8_t);
         Nd4jLong* specialShape = nullptr;
         //int8_t* specialBuffer = nullptr;
         //cudaMalloc(&specialBuffer[0], shape::length(res->shapeInfo()) * sizeof(DataTypeUtils::fromFlatDataType(nd4j::DataType::UTF8)));
