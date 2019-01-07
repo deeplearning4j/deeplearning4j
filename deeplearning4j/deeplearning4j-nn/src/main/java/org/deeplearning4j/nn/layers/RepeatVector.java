@@ -102,8 +102,9 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         long size = input.shape()[1];
         INDArray output = input.reshape(miniBatch, size, 1);
         output = output.repeat(2, (long)getN());
-        output = output.detach();  // .repeat returns an attached array
-        return output;
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
+            return output.repeat(2, (long) getN());
+        }
     }
 
     @Override
