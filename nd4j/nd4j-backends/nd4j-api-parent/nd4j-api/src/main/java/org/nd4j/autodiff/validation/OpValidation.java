@@ -296,7 +296,7 @@ public class OpValidation {
 
         //Check the outputs:
         try {
-            Nd4j.getExecutioner().exec(testCase.op());
+            Nd4j.getExecutioner().execAndReturn(testCase.op());
         } catch (Throwable t) {
             throw new IllegalStateException("Error during op execution", t);
         }

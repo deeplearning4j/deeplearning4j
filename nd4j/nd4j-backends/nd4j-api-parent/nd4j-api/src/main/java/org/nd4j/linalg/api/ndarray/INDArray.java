@@ -2704,4 +2704,16 @@ public interface INDArray extends Serializable, AutoCloseable {
      * PLEASE NOTE: This method is NOT safe by any means
      */
     void close();
+
+    /**
+     * This method returns empty array with the same dtype/order/shape as this one
+     * @return
+     */
+    INDArray like();
+
+    /**
+     * This method returns uninitialized array with the same dtype/order/shape as this one
+     * @return
+     */
+    INDArray ulike();
 }

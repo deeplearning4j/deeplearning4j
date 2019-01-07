@@ -43,17 +43,13 @@ public class NormMax extends BaseReduceFloatOp {
     public NormMax() {
     }
 
-    public NormMax(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public NormMax(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
 
-    public NormMax(INDArray x) {
-        super(x);
-    }
-
-    public NormMax(INDArray x, INDArray z) {
-        super(x, null, z);
+    public NormMax(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
     @Override

@@ -11239,7 +11239,7 @@ public class SameDiff {
                 }
                 customOp.assertValidForExecution();
 
-                Nd4j.getExecutioner().exec(customOp);
+                Nd4j.getExecutioner().execAndReturn(customOp);
 
                 /*
                 if (customOp instanceof LessThanOrEqual) {
@@ -11305,7 +11305,7 @@ public class SameDiff {
                     if (differentialFunction instanceof ReduceOp) {
                         ReduceOp reduceOp = (ReduceOp) differentialFunction;
 
-                        Nd4j.getExecutioner().exec(reduceOp, axes);
+                        Nd4j.getExecutioner().exec(reduceOp);
 
                         if (differentialFunction.outputVariable().getArr() == null) {
                             val var = differentialFunction.outputVariables()[0];
@@ -11314,16 +11314,16 @@ public class SameDiff {
                         }
                     } else if (differentialFunction instanceof BroadcastOp) {
                         BroadcastOp broadcastOp = (BroadcastOp) differentialFunction;
-                        Nd4j.getExecutioner().exec(broadcastOp, axes);
+                        Nd4j.getExecutioner().exec(broadcastOp);
                     } else if (differentialFunction instanceof GradientOp) {
                         Nd4j.getExecutioner().exec(op);
                     } else if (differentialFunction instanceof IndexAccumulation) {
                         IndexAccumulation indexAccumulation = (IndexAccumulation) differentialFunction;
-                        Nd4j.getExecutioner().exec(indexAccumulation, axes);
+                        Nd4j.getExecutioner().exec(indexAccumulation);
 
                     } else if (differentialFunction instanceof TransformOp) {
                         TransformOp t = (TransformOp) differentialFunction;
-                        Nd4j.getExecutioner().exec(t, axes);
+                        Nd4j.getExecutioner().exec(t);
                     }
                 }
 

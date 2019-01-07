@@ -39,10 +39,6 @@ public class SoftMaxDerivative extends OldSoftMax {
         super(x, z);
     }
 
-    public SoftMaxDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public SoftMaxDerivative(INDArray x) {
         super(x);
     }

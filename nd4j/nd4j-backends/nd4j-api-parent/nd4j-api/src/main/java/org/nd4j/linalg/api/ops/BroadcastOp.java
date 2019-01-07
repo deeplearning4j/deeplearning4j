@@ -16,6 +16,8 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 /**
  * A broad cast op is one where a scalar
  * or less rank array
@@ -38,4 +40,6 @@ public interface BroadcastOp extends Op {
     boolean validateDataTypes(boolean experimentalOp);
 
     Type getOpType();
+
+    INDArray dimensions();
 }

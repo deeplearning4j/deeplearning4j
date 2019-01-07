@@ -114,7 +114,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public Op exec(Op op) {
+    public INDArray exec(Op op) {
         checkForCompression(op);
 
         if (op instanceof ScalarOp) {
@@ -135,7 +135,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             exec(iac); //Currently using DefaultOpExecutioner
         } else if (op instanceof BroadcastOp) {
             BroadcastOp broadcastOp = (BroadcastOp) op;
-            exec(broadcastOp, broadcastOp.getDimension());
+            exec(broadcastOp);
         }
         else if(op instanceof ShapeOp) {
             ShapeOp shapeOp = (ShapeOp) op;
@@ -145,31 +145,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             exec(rngOp, Nd4j.getRandom());
         }
 
-        return op;
+        return op.z();
     }
 
 
     @Override
-    public INDArray exec(IndexAccumulation op, int... dimension) {
-        if (dimension == null || dimension.length == 0)
-            dimension = new int[] {Integer.MAX_VALUE};
-
+    public INDArray exec(IndexAccumulation op) {
         checkForCompression(op);
-
-//        validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
-        dimension = Shape.normalizeAxis(op.x().rank(), dimension);
-
-        for (int i = 0; i < dimension.length; i++) {
-            if (dimension[i] < 0)
-                dimension[i] += op.x().rank();
-        }
-        //do op along all dimensions
-        if (dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
+        val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
 
         boolean keepDims;
         boolean newFormat;
@@ -182,7 +169,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
         long[] retShape = reductionShape(op.x(), dimension, newFormat, keepDims);
 
-
         if(op.z() == null || op.x() == op.z()) {
             val ret = Nd4j.createUninitialized(DataType.LONG, retShape);
 
@@ -191,11 +177,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new IllegalStateException("Z array shape does not match expected return type for op " + op
                     + ": expected shape " + Arrays.toString(retShape) + ", z.shape()=" + Arrays.toString(op.z().shape()));
         }
-
-
-        //do op along all dimensions
-        if (dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
 
         op.validateDataTypes();
 
@@ -231,21 +212,26 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         getPointerForExtraArgs(op, op.x().dataType()),
                         z, (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                         null, null,
-                        (IntPointer) dimensionAddress,
-                        dimension.length);
+                        op.dimensions().data().addressPointer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                        null,
+                        null);
             }
 
         profilingHookOut(op, st);
         return op.z();
     }
 
-
+    @Override
+    public INDArray exec(Variance op) {
+        return exec((ReduceOp) op);
+    }
 
     @Override
-    public INDArray exec(ReduceOp op, int... dimension) {
+    public INDArray exec(ReduceOp op) {
         Preconditions.checkNotNull(op.x(), "Op.x() cannot be null: Was null for op %s", op);
-        dimension = Shape.normalizeAxis(op.x().rank(), dimension);
-
+        op.validateDataTypes();
+        val dimension = Shape.normalizeAxis(op.x().rank(), op.dimensions().toIntVector());
 
         //validateDataType(Nd4j.dataType(), op);
 
@@ -253,18 +239,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             extraz.set(new PointerPointer(32));
 
         long[] maxShape = Shape.getMaxShape(op.x(),op.y());
-        for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] >= maxShape.length && dimension[i] != Integer.MAX_VALUE)
-                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
-                        + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
-
-        for (int i = 0; i < dimension.length; i++) {
-            if (dimension[i] < 0)
-                dimension[i] += op.x().rank();
-        }
-        //do op along all dimensions
-        if (dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
 
         boolean keepDims;
         boolean newFormat;
@@ -361,7 +335,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
 
-
         if (op.isComplexAccumulation()) {
             yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
 
@@ -370,7 +343,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         "x TAD length = " + op.x().tensorAlongDimension(0, dimension).lengthLong() + ", y TAD length " +
                         op.y().tensorAlongDimension(0, dimension).lengthLong());
         }
-
 
         /**
          * This is a pointer to a pointer in c.
@@ -406,7 +378,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             getPointerForExtraArgs(op, op.z().dataType()),
                                 op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                 null, null,
-                            (IntPointer) dimensionAddress, dimension.length, var.isBiasCorrected(), null, null);} catch (Throwable t){
+                                op.dimensions().data().addressPointer(),
+                                (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                null,
+                                null,
+                                var.isBiasCorrected(), null, null);} catch (Throwable t){
                         String str = opInfoString(op, Optional.of(dimension));
                         throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
                     }
@@ -425,8 +401,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 null, null,
                                  op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                 null, null,
-                                (IntPointer) dimensionAddress,
-                                dimension.length,
+                                op.dimensions().data().addressPointer(),
+                                (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                null,
+                                null,
                                 (LongPointer) tadBuffers.getFirst().addressPointer(),
                                 new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
                                 (LongPointer) yTadBuffers.getFirst().addressPointer(),
@@ -455,8 +433,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 null, null,
                                 op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                 null, null,
-                                (IntPointer) dimensionAddress,
-                                dimension.length,
+                                op.dimensions().data().addressPointer(),
+                                (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                null,
+                                null,
                                 null, null, null, null);
                     } catch (Throwable t){
                         String str = opInfoString(op, Optional.of(dimension));
@@ -511,8 +491,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 getPointerForExtraArgs(op, op.z().dataType()),
                                 op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
-                                (IntPointer) dimensionAddress,
-                                    dimension.length);
+                                    op.dimensions().data().addressPointer(),
+                                    (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                    null,
+                                    null);
                         break;
                         case REDUCE_LONG:
                             loop.execReduceLong(dummy, op.opNum(),
@@ -521,8 +503,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     getPointerForExtraArgs(op, op.x().dataType()),
                                     op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
-                                    (IntPointer) dimensionAddress,
-                                    dimension.length);
+                                    op.dimensions().data().addressPointer(),
+                                    (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                    null,
+                                    null);
                             break;
                         case REDUCE_SAME:
                             loop.execReduceSame(dummy, op.opNum(),
@@ -531,8 +515,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     getPointerForExtraArgs(op, op.z().dataType()),
                                     op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
-                                    (IntPointer) dimensionAddress,
-                                    dimension.length);
+                                    op.dimensions().data().addressPointer(),
+                                    (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                    null,
+                                    null);
                             break;
                         case REDUCE_BOOL:
                             loop.execReduceBool(dummy, op.opNum(),
@@ -541,8 +527,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                     getPointerForExtraArgs(op, op.x().dataType()),
                                     op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                                     null, null,
-                                    (IntPointer) dimensionAddress,
-                                    dimension.length);
+                                    op.dimensions().data().addressPointer(),
+                                    (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                                    null,
+                                    null);
                             break;
                         default:
                             throw new UnsupportedOperationException("Unsupported op used in reduce: "+ op.getOpType());
@@ -558,8 +546,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * @param op
      * @param dimension
      */
-    private void invoke(ScalarOp op, int[] dimension) {
-        dimension = Shape.normalizeAxis(op.x().rank(), dimension);
+    private void invokeScalarAlongDimension(ScalarOp op) {
+        val dimension = op.dimensions().toIntVector();
+        //dimension = Shape.normalizeAxis(op.x().rank(), dimension);
         // do tad magic
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
@@ -604,8 +593,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         op.y().data().addressPointer(), (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
                         null, null,
                         getPointerForExtraArgs(op, op.z().dataType()),
-                        (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.INT).addressPointer(),
-                        dimension.length,
+                        op.dimensions().data().addressPointer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                        null,
+                        null,
                         (LongPointer) hostTadShapeInfo, (LongPointer) hostTadOffsets,
                         (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
                 break;
@@ -618,8 +609,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         op.y().data().addressPointer(), (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
                         null, null,
                         getPointerForExtraArgs(op, op.z().dataType()),
-                        (IntPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.INT).addressPointer(),
-                        dimension.length,
+                        op.dimensions().data().addressPointer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                        null,
+                        null,
                         (LongPointer) hostTadShapeInfo, (LongPointer) hostTadOffsets,
                         (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
                 break;
@@ -629,7 +622,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     }
 
-    private void exec(ScalarOp op) {
+    public INDArray exec(ScalarOp op) {
         if (executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         } else {
@@ -643,9 +636,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "], z shape info = ["
                         + Arrays.toString(op.z().shapeInfoDataBuffer().asInt()) + "]");
 
-            if (op.getDimension() != null) {
-                invoke(op, op.getDimension());
-                return;
+            if (op.dimensions() != null) {
+                invokeScalarAlongDimension(op);
+                return op.z();
             }
 
 
@@ -678,6 +671,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             profilingHookOut(op, st);
         }
+
+        return op.z();
     }
 
     private Pointer getPointerForExtraArgs(Op op, DataType type) {
@@ -873,21 +868,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         profilingHookOut(op, st);
     }
 
-    @Override
-    public INDArray exec(BroadcastOp op, int... dimension) {
+    public INDArray exec(BroadcastOp op) {
         long st = profilingHookIn(op);
-        if(dimension == null)
-            dimension = new int[] {Integer.MAX_VALUE};
-        dimension = Shape.normalizeAxis(op.x().rank(), dimension);
-
-        //validateDataType(Nd4j.dataType(), op);
 
         op.validateDataTypes(experimentalMode.get());
 
-        for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
-                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
-                        + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
+        val dimension = op.dimensions().toIntVector();
+
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
          * and the associated offsets for each {@link INDArray#tensorAlongDimension(int, int...)}
@@ -932,8 +919,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         null, null,
                     op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                         null, null,
-                    (IntPointer) dimensionAddress,
-                    dimension.length);
+                        op.dimensions().data().addressPointer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                        null,
+                        null);
                 break;
             case BROADCAST_BOOL:
                 loop.execBroadcastBool(dummy, op.opNum(),
@@ -943,46 +932,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         null, null,
                         op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                         null, null,
-                        (IntPointer) dimensionAddress,
-                        dimension.length);
+                        op.dimensions().data().addressPointer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                        null,
+                        null);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");
-
         }
 
 
         return op.z();
     }
 
-    private void exec(IndexAccumulation op) {
-        if (executionMode() == ExecutionMode.JAVA) {
-            super.exec(op);
-
-        } else {
-            if(op.z() == op.x() || op.z() == null) {
-                op.setZ(Nd4j.scalar(DataType.LONG, 0.0));
-            }
-
-            long st = profilingHookIn(op);
-
-            //validateDataType(Nd4j.dataType(), op);
-            op.validateDataTypes();
-
-            loop.execIndexReduceScalar(null, op.opNum(),
-                        op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                    null, null,
-                        getPointerForExtraArgs(op, op.x().dataType()),
-                        op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                    null, null);
-
-            op.setFinalResult(op.z().getInt(0));
-
-            profilingHookOut(op, st);
-        }
-    }
-
-    private void exec(ReduceOp op) {
+    private void execTBR(ReduceOp op) {
         if (executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         }
@@ -1065,10 +1028,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             throw new UnsupportedOperationException("Unsupported reduce operation group:" + op.getOpType());
                     }
                 }
-
-            if (op.z().isScalar()) {
-                    op.setFinalResult(op.z().getDouble(0));
-            }
 
             profilingHookOut(op, st);
         }
@@ -1720,7 +1679,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * PLEASE NOTE: You're responsible for input/output validation
      * @param op
      */
-    public void exec(@NonNull CustomOp op) {
+    @Override
+    public INDArray[] exec(@NonNull CustomOp op) {
         long st = profilingHookIn(op);
 
         if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
@@ -1741,7 +1701,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val hash = op.opHash();
 
         if (name.equals("noop")) {
-            return;
+            return op.outputArguments();
         }
 
         val inputShapes = getInputShapes(op.numInputArguments());
@@ -1778,8 +1738,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
             outputShapes.put(cnt++, out.shapeInfoDataBuffer().addressPointer());
         }
-
-
 
         val iArgs = op.numIArguments() > 0 ? new LongPointer(op.numIArguments()) : null;
         cnt = 0;
@@ -1830,6 +1788,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         profilingHookOut(op, st);
+        return op.outputArguments();
     }
 
     protected LongShapeDescriptor getShapeFromPointer(LongPointer ptr) {
@@ -2024,7 +1983,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
     private static long[] reductionShape(INDArray x, int[] dimension, boolean newFormat, boolean keepDims){
-        boolean wholeArray = Shape.wholeArrayDimension(dimension);
+        boolean wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == x.rank();
         long[] retShape;
         if(!newFormat) {
             retShape = wholeArray ? new long[] {1, 1} : ArrayUtil.removeIndex(x.shape(), dimension);

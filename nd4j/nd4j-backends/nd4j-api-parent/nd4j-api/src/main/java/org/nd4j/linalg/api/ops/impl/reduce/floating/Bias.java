@@ -48,8 +48,8 @@ public class Bias extends BaseReduceFloatOp {
 
     public Bias() {}
 
-    public Bias(INDArray x) {
-        super(x);
+    public Bias(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
     @Override

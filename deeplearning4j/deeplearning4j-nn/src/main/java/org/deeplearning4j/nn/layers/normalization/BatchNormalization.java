@@ -279,7 +279,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 dxhat = epsilon.mul(layerConf.getGamma());
             } else {
                 //Standard case
-                dxhat = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(epsilon, gamma,
+                dxhat = Nd4j.getExecutioner().exec(new BroadcastMulOp(epsilon, gamma,
                                 Nd4j.createUninitialized(epsilon.shape(), epsilon.ordering()), 1));
             }
 
@@ -292,9 +292,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             INDArray dxmu2 = xMu.sum(0, 2, 3).muli(-2.0 / effectiveBatchSize).muli(dLdVar);
             INDArray dLdmu = dxmu1.addi(dxmu2);
 
-            INDArray dLdx = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(dxhat, std, dxhat, 1))
-                            .addi(Nd4j.getExecutioner().execAndReturn(
-                                            new BroadcastMulOp(xMu, dLdVar.muli(2.0 / effectiveBatchSize), xMu, 1)));
+            INDArray dLdx = Nd4j.getExecutioner().exec(new BroadcastDivOp(dxhat, std, dxhat, 1))
+                            .addi(Nd4j.getExecutioner().exec(new BroadcastMulOp(xMu, dLdVar.muli(2.0 / effectiveBatchSize), xMu, 1)));
             Nd4j.getExecutioner()
                             .execAndReturn(new BroadcastAddOp(dLdx, dLdmu.muli(1.0 / effectiveBatchSize), dLdx, 1));
 
@@ -513,9 +512,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             if (!Shape.strideDescendingCAscendingF(x))
                 x = x.dup(); //TODO: temp Workaround for broadcast bug. To be removed when fixed
             xMu = workspaceMgr.createUninitialized(ArrayType.INPUT, x.shape(), x.ordering());
-            xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(x, mean,xMu, 1));
+            xMu = Nd4j.getExecutioner().exec(new BroadcastSubOp(x, mean,xMu, 1));
             xHat =  workspaceMgr.createUninitialized(ArrayType.INPUT, x.shape(), x.ordering());
-            xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu, std,xHat, 1));
+            xHat = Nd4j.getExecutioner().exec(new BroadcastDivOp(xMu, std,xHat, 1));
 
             if (layerConf.isLockGammaBeta()) {
                 //Special case: gamma/beta have fixed values for all outputs
@@ -531,10 +530,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             } else {
                 //Standard case: gamma and beta are learned per parameter
                 activations = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, x.shape(), x.ordering());
-                activations = Nd4j.getExecutioner().execAndReturn(
-                                new BroadcastMulOp(xHat, gamma, activations, 1));
-                activations = Nd4j.getExecutioner()
-                                .execAndReturn(new BroadcastAddOp(activations, beta, activations, 1));
+                activations = Nd4j.getExecutioner().exec(new BroadcastMulOp(xHat, gamma, activations, 1));
+                activations = Nd4j.getExecutioner().exec(new BroadcastAddOp(activations, beta, activations, 1));
             }
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf

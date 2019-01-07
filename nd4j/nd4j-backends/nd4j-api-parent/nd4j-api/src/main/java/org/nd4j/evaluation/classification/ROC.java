@@ -307,9 +307,9 @@ public class ROC extends BaseEvaluation<ROC> {
                     ppc.assign(positivePredictedClassColumn);
                 }
                 Op op = new CompareAndSet(ppc, 1.0, condGeq);
-                INDArray predictedClass1 = Nd4j.getExecutioner().execAndReturn(op);
+                INDArray predictedClass1 = Nd4j.getExecutioner().exec(op);
                 op = new CompareAndSet(predictedClass1, 0.0, condLeq);
-                predictedClass1 = Nd4j.getExecutioner().execAndReturn(op);
+                predictedClass1 = Nd4j.getExecutioner().exec(op);
 
 
                 //True positives: occur when positive predicted class and actual positive actual class...
@@ -322,10 +322,8 @@ public class ROC extends BaseEvaluation<ROC> {
                     itp = isTruePositive;
                     ifp = isFalsePositive;
                 } else {
-                    isTruePositive = Nd4j.getExecutioner()
-                                    .execAndReturn(new OldMulOp(predictedClass1, positiveActualClassColumn, itp));
-                    isFalsePositive = Nd4j.getExecutioner()
-                                    .execAndReturn(new OldMulOp(predictedClass1, negativeActualClassColumn, ifp));
+                    isTruePositive = Nd4j.getExecutioner().exec(new OldMulOp(predictedClass1, positiveActualClassColumn, itp));
+                    isFalsePositive = Nd4j.getExecutioner().exec(new OldMulOp(predictedClass1, negativeActualClassColumn, ifp));
                 }
 
                 //Counts for this batch:

@@ -479,7 +479,7 @@ public class SpecialTests extends BaseNd4jTest {
 
         Nd4j.getExecutioner().commit();
         INDArray out = null;
-        for (int e = 0; e < 100; e++) {
+        for (int e = 0; e < 5; e++) {
             if (e % 10 == 0)
                 log.info("Iteration: [{}]", e);
 
@@ -594,7 +594,7 @@ public class SpecialTests extends BaseNd4jTest {
         val op = DynamicCustomOp.builder("space_to_batch")
                 .addInputs(input, blocks, padding)
                 .addOutputs(expOut).build();
-        Nd4j.getExecutioner().exec(op);
+        Nd4j.getExecutioner().execAndReturn(op);
     }
 
     @Test
@@ -616,7 +616,7 @@ public class SpecialTests extends BaseNd4jTest {
         DynamicCustomOp op = DynamicCustomOp.builder("batch_to_space")
                 .addInputs(input, blocks, crops)
                 .addOutputs(expOut).build();
-        Nd4j.getExecutioner().exec(op);
+        Nd4j.getExecutioner().execAndReturn(op);
     }
 
     @Test
@@ -665,7 +665,7 @@ public class SpecialTests extends BaseNd4jTest {
     public void testMatchCondition(){
         INDArray x = Nd4j.valueArrayOf(new long[]{10,10}, 2.0, DataType.DOUBLE);
         val op = new MatchCondition(x, Conditions.equals(2));
-        INDArray z = Nd4j.getExecutioner().exec(op).z();
+        INDArray z = Nd4j.getExecutioner().exec(op);
         int count = z.getInt(0);
         assertEquals(100, count);
     }

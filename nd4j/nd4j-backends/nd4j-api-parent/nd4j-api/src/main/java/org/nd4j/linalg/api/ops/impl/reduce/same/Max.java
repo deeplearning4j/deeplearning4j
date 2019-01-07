@@ -51,19 +51,15 @@ public class Max extends BaseReduceSameOp {
      * @param z the result
      * @param n the number of elements
      */
-    public Max(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public Max(INDArray x, int... axis) {
+        super(x, null, null, axis);
     }
 
-    public Max(INDArray x) {
-        super(x);
+    public Max(INDArray x, INDArray z, int... axis) {
+        super(x, null, z, axis);
     }
 
-    public Max(INDArray x, INDArray z) {
-        super(x, null, z);
-    }
-
-    public Max(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+    public Max(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
         super(x,  z, newFormat, keepDims, dimensions);
     }
 
@@ -77,22 +73,6 @@ public class Max extends BaseReduceSameOp {
     public String opName() {
         return "reduce_max";
     }
-
-    @Override
-    public double zeroDouble() {
-        return -Double.MAX_VALUE;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return -65503.0f;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return -Float.MAX_VALUE;
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {

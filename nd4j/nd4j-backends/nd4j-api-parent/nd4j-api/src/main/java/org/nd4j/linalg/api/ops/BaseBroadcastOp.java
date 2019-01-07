@@ -151,10 +151,8 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         Broadcast.validateBroadcastDims(x,y,z, dimension);
 
         this.dimension = dimension;
-        for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] < 0)
-                dimension[i] += x.rank();
 
+        defineDimensions(dimension);
     }
 
     @Override

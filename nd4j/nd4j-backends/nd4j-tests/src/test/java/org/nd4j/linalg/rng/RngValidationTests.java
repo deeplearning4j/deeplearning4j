@@ -234,8 +234,8 @@ public class RngValidationTests {
             }
 
             //Check for NaNs, Infs, etc
-            int countNaN = Nd4j.getExecutioner().execAndReturn(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isNan())).castTo(DataType.INT).sumNumber().intValue();
-            int countInf = Nd4j.getExecutioner().execAndReturn(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isInfinite())).castTo(DataType.INT).sumNumber().intValue();
+            int countNaN = Nd4j.getExecutioner().exec(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isNan())).castTo(DataType.INT).sumNumber().intValue();
+            int countInf = Nd4j.getExecutioner().exec(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isInfinite())).castTo(DataType.INT).sumNumber().intValue();
             assertEquals("NaN - expected 0 values", 0, countNaN);
             assertEquals("Infinite - expected 0 values", 0, countInf);
 

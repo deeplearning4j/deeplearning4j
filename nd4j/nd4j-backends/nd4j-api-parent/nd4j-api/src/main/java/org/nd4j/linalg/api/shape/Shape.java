@@ -3362,7 +3362,8 @@ public class Shape {
         }
 
         // now we're sorting array
-        Arrays.sort(tmp);
+        if (tmp.length > 1)
+            Arrays.sort(tmp);
 
         // and getting rid of possible duplicates
         return uniquify(tmp);

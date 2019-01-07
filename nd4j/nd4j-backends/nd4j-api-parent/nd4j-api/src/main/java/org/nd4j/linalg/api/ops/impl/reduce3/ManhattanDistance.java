@@ -46,33 +46,22 @@ public class ManhattanDistance extends BaseReduceFloatOp {
 
     public ManhattanDistance() {}
 
-    public ManhattanDistance(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        extraArgs = new Object[]{0.0f, 0.0f};
+
+    public ManhattanDistance(INDArray x, INDArray y, int... dimensions) {
+        this(x, y, false, dimensions);
     }
 
-    public ManhattanDistance(INDArray x, INDArray y, long n) {
-        super(x, y, null, n);
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public ManhattanDistance(INDArray x) {
-        super(x);
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public ManhattanDistance(INDArray x, INDArray y) {
-        super(x, y, null);
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public ManhattanDistance(INDArray x, INDArray y, boolean allDistances) {
-        this(x, y);
+    public ManhattanDistance(INDArray x, INDArray y, boolean allDistances, int... dimensions) {
+        this(x, y, null, true, false, dimensions);
         this.isComplex = allDistances;
     }
 
-    public ManhattanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
-        this(x, y, z, x.lengthLong());
+    public ManhattanDistance(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, false, null);
+    }
+
+    public ManhattanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
+        this(x, y, z, true, false, dimensions);
         this.isComplex = allDistances;
     }
 

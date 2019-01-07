@@ -61,33 +61,15 @@ public interface ReduceOp extends Op {
      * @return the no op version of the input
      */
     INDArray noOp();
-    /** Get the final result (may return null if getAndSetFinalResult has not
-     * been called, or for accumulation ops on complex arrays)
-     */
-    Number getFinalResult();
-
-    /** Get the final result (may return null if getAndSetFinalResult has not
-     * been called, or for accumulation ops on complex arrays)
-     */
-    void setFinalResult(double value);
-
-
-    /**Initial value (used to initialize the accumulation op)
-     * @return the initial value
-     */
-    double zeroDouble();
-
-    /** Initial value (used to initialize the accumulation op) */
-    float zeroFloat();
 
     /**
-     * Initial value for half
+     * This method returns dimensions for this op
      * @return
      */
-    float zeroHalf();
+    INDArray dimensions();
 
+    @Deprecated
     boolean isComplexAccumulation();
-
 
     Type getOpType();
 
@@ -99,10 +81,20 @@ public interface ReduceOp extends Op {
     boolean isKeepDims();
 
     /**
+     * This method returns true if scalar is 0D, false otherwise
+     * @return
+     */
+    boolean isNewFormat();
+
+    /**
      * This method returns datatype for result array wrt given inputs
      * @return
      */
     DataType resultType();
 
     boolean validateDataTypes();
+
+    Number getFinalResult();
+
+    void setDimensions(int... dimensions);
 }

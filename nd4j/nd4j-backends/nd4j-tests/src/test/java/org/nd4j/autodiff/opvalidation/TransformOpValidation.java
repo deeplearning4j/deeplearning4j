@@ -149,7 +149,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     case 7:
                         inArr.assign(Nd4j.rand(inArr.shape()).muli(5).subi(2.5));
                         out = sd.scalarFloorMod(in, 2);
-                        tc.expected(out, Nd4j.getExecutioner().execAndReturn(new ScalarFMod(inArr.dup(), 2.0)));
+                        tc.expected(out, Nd4j.getExecutioner().exec(new ScalarFMod(inArr.dup(), 2.0)));
                         msg = "scalarRemainer - " + inOrder;
                         break;
                     case 8:
@@ -206,8 +206,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
         INDArray in = Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape('c',3,4);
 
-        INDArray outC = Nd4j.getExecutioner().execAndReturn(new ScalarMultiplication(in.dup('c'), 2.0));
-        INDArray outF = Nd4j.getExecutioner().execAndReturn(new ScalarMultiplication(in.dup('f'), 2.0));
+        INDArray outC = Nd4j.getExecutioner().exec(new ScalarMultiplication(in.dup('c'), 2.0));
+        INDArray outF = Nd4j.getExecutioner().exec(new ScalarMultiplication(in.dup('f'), 2.0));
 
         assertEquals(outC, outF);
     }
@@ -629,7 +629,7 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 16:
                     t = sd.acosh(in);
                     ia = Nd4j.rand(minibatch, nOut).addi(1.01); //Only defined for x >= 1
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new ACosh(ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new ACosh(ia.dup())));
                     break;
                 case 17:
                     t = sd.asin(in);
@@ -662,7 +662,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     //TODO SHOULDN'T THIS HAVE A DIMENSION ARG???
                     t = sd.softmax(in);
                     ia = Nd4j.rand(minibatch, nOut);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new OldSoftMax(ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldSoftMax(ia.dup())));
                     break;
                 case 24:
                     t = sd.sqrt(in);
@@ -687,7 +687,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 29:
                     t = sd.asinh(in);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new ASinh(ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new ASinh(ia.dup())));
                     break;
                 case 30:
                     t = sd.exp(in);
@@ -709,11 +709,11 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 34:
                     t = sd.logSigmoid(in);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new LogSigmoid(ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new LogSigmoid(ia.dup())));
                     break;
                 case 35:
                     t = sd.swish(in);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new Swish(ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new Swish(ia.dup())));
                     break;
                 case 36:
                     t = sd.sign(in);
@@ -736,7 +736,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 40:
                     t = sd.selu(in);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new SELU(ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new SELU(ia.dup())));
                     break;
                 case 41:
                     t = sd.gt(in, 1.0);
@@ -861,7 +861,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 55:
                     t = sd.erfc(in);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new Erfc(ia, Nd4j.createUninitialized(ia.shape(), ia.ordering()))));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new Erfc(ia, Nd4j.createUninitialized(ia.shape(), ia.ordering()))));
                     break;
                 case 56:
                     t = sd.expm1(in);
@@ -880,7 +880,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     ia = Nd4j.create(new float[]{4, 2});
                     in = sd.var("in", new int[]{1, 2});
                     t = sd.rsqrt(in);
-                    tc.expectedOutput(t.getVarName(),Nd4j.getExecutioner().execAndReturn(new RSqrt(ia, Nd4j.create(ia.shape(), ia.ordering()))));
+                    tc.expectedOutput(t.getVarName(),Nd4j.getExecutioner().exec(new RSqrt(ia, Nd4j.create(ia.shape(), ia.ordering()))));
                     break;
                 case 60:
                     t = sd.relu6(in, 0);
@@ -897,7 +897,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 62:
                     t = sd.hardSigmoid(in);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new HardSigmoid(ia, ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new HardSigmoid(ia, ia.dup())));
                     break;
                 case 63:
                     t = sd.scalarMax(in, 0.5);
@@ -913,7 +913,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 66:
                     t = sd.scalarFloorMod(in, 0.5);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new ScalarFMod(ia.dup(), 0.5)));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new ScalarFMod(ia.dup(), 0.5)));
                     break;
                 case 67:
                     t = sd.reciprocal(in);
@@ -970,12 +970,12 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 78:
                     ia = Nd4j.rand(ia.shape()).muli(2).subi(1);
                     t = sd.f().tanhRational(in);
-                    tc.expected(t, Nd4j.getExecutioner().execAndReturn(new RationalTanh(ia.dup())));
+                    tc.expected(t, Nd4j.getExecutioner().exec(new RationalTanh(ia.dup())));
                     break;
                 case 79:
                     ia = Nd4j.rand(ia.shape()).muli(2).subi(1);
                     t = sd.f().tanhRectified(in);
-                    tc.expected(t, Nd4j.getExecutioner().execAndReturn(new RectifiedTanh(ia.dup())));
+                    tc.expected(t, Nd4j.getExecutioner().exec(new RectifiedTanh(ia.dup())));
                     break;
                 default:
                     throw new RuntimeException();
@@ -1110,11 +1110,11 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 14:
                     t = sd.max(in1, in2);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new OldMax(ia, ib, ia.dup(), ia.length())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldMax(ia, ib, ia.dup(), ia.length())));
                     break;
                 case 15:
                     t = sd.min(in1, in2);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new OldMin(ia, ib, ia.dup(), ia.length())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldMin(ia, ib, ia.dup(), ia.length())));
                     break;
                 case 16:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
