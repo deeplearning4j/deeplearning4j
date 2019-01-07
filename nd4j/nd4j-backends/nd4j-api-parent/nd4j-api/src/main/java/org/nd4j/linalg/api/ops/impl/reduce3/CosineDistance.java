@@ -36,11 +36,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class CosineDistance extends BaseReduceFloatOp {
-
-    public CosineDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, Number constantNormalizedByNorm2X, Number constantNormalizedByNorm2Y) {
-        super(sameDiff, i_v, dimensions);
-    }
+public class CosineDistance extends BaseReduce3Op {
 
     public CosineDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
@@ -79,16 +75,6 @@ public class CosineDistance extends BaseReduceFloatOp {
     }
 
     @Override
-    public Type opType() {
-        return Type.REDUCE3;
-    }
-
-    @Override
-    public Type getOpType() {
-        return opType();
-    }
-
-    @Override
     public int opNum() {
         return 5;
     }
@@ -110,18 +96,7 @@ public class CosineDistance extends BaseReduceFloatOp {
     }
 
     @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-    }
-
-
-    @Override
     public String tensorflowName() {
         return "cosine_distance";
-    }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatingPointType();
     }
 }
