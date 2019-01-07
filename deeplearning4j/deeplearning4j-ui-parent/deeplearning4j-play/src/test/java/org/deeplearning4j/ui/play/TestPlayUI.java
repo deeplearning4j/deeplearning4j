@@ -18,12 +18,17 @@ package org.deeplearning4j.ui.play;
 
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -37,8 +42,11 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -148,11 +156,11 @@ public class TestPlayUI {
             uiServer.attach(ss);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
-                            .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
-                            .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                                            .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
-                            .build();
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
+                    .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
+                    .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                            .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
+                    .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -173,7 +181,6 @@ public class TestPlayUI {
     @Test
     @Ignore
     public void testUISequentialSessions() throws Exception {
-        System.out.println("--- testUISequentialSessions start ---");
         UIServer uiServer = UIServer.getInstance();
         StatsStorage ss = null;
         for (int session = 0; session < 3; session++) {
@@ -184,12 +191,22 @@ public class TestPlayUI {
             ss = new InMemoryStatsStorage();
             uiServer.attach(ss);
 
+            int numInputs = 4;
+            int outputNum = 3;
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
-                            .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
-                            .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                                            .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
-                            .build();
+                .activation(Activation.TANH)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Sgd(0.03))
+                .l2(1e-4)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(3)
+                        .build())
+                .layer(1, new DenseLayer.Builder().nIn(3).nOut(3)
+                        .build())
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .activation(Activation.SOFTMAX)
+                        .nIn(3).nOut(outputNum).build())
+                .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -197,14 +214,13 @@ public class TestPlayUI {
 
             DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 1000; i++) {
                 net.fit(iter);
-                Thread.sleep(100);
             }
+            Thread.sleep(5000);
         }
 
 
-        System.out.println("--- testUISequentialSessions end ---");
         Thread.sleep(1000000);
     }
 
