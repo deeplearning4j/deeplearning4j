@@ -90,7 +90,7 @@ public class TestCompGraphUnsupervised extends BaseDL4JTest {
                 }
             }
 
-            int count = Nd4j.getExecutioner().exec(new MatchCondition(cg.params(), Conditions.isNan())).z().getInt(0);
+            int count = Nd4j.getExecutioner().exec(new MatchCondition(cg.params(), Conditions.isNan())).getInt(0);
             assertEquals(0, count);
 
 
@@ -107,7 +107,7 @@ public class TestCompGraphUnsupervised extends BaseDL4JTest {
                 }
             }
 
-            count = Nd4j.getExecutioner().exec(new MatchCondition(cg.params(), Conditions.isNan())).z().getInt(0);
+            count = Nd4j.getExecutioner().exec(new MatchCondition(cg.params(), Conditions.isNan())).getInt(0);
             assertEquals(0, count);
         }
     }

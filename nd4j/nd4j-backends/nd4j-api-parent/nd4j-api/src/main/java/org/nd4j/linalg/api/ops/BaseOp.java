@@ -446,7 +446,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
     protected void defineDimensions(int... dimensions){
         if (dimensions != null && dimensions.length > 0) {
-            dimensions = Shape.normalizeAxis(x.rank(), dimensions);
+            if(x != null) {
+                dimensions = Shape.normalizeAxis(x.rank(), dimensions);
+            }
         }
 
         if (dimensions == null || dimensions.length == 0)

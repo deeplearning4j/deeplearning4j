@@ -82,6 +82,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         }
 
         this.newFormat = true;
+        defineDimensions(dimensions);
     }
 
     public BaseReduceOp(SameDiff sameDiff,
@@ -107,6 +108,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         }
 
         this.newFormat = true;
+        defineDimensions(dimensions);
     }
 
 

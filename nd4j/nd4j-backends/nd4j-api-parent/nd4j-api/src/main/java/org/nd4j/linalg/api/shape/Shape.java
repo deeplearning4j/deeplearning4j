@@ -652,6 +652,9 @@ public class Shape {
     }
 
     private static INDArray toOffsetZeroCopyHelper(final INDArray arr, char order, boolean anyOrder) {
+        if(arr.isEmpty())
+            return arr; //Empty arrays are immutable, return as-is
+
         //Use CopyOp:
         char outOrder = (anyOrder ? arr.ordering() : order);
         if (outOrder == 'a')

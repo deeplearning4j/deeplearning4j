@@ -64,6 +64,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         }
         this.keepDims = keepDims;
         this.newFormat = true;
+        defineDimensions(dimensions);
     }
 
     public BaseIndexAccumulation(SameDiff sameDiff,
@@ -92,6 +93,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         }
         this.keepDims = keepDims;
         this.newFormat = true;
+        defineDimensions(dimensions);
     }
 
 
