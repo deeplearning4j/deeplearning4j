@@ -268,5 +268,26 @@ namespace nd4j {
             // for clone we take whatever is higher: current allocated size, or allocated size of current loop
             return new Workspace(nd4j::math::nd4j_max<Nd4jLong >(this->getCurrentSize(), this->_cycleAllocations.load()));
         }
+
+        Nd4jLong Workspace::getAllocatedSecondarySize() {
+            return getCurrentSecondarySize() + getSpilledSecondarySize();
+        }
+
+        Nd4jLong Workspace::getCurrentSecondarySize() {
+            return _currentSizeSecondary;
+        }
+
+        Nd4jLong Workspace::getCurrentSecondaryOffset() {
+            return _offsetSecondary.load();
+        }
+
+        Nd4jLong Workspace::getSpilledSecondarySize() {
+            return _spillsSizeSecondary;
+        }
+
+        Nd4jLong Workspace::getUsedSecondarySize() {
+            return getCurrentSecondaryOffset();
+        }
+
     }
 }

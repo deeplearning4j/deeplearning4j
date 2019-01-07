@@ -84,6 +84,12 @@ namespace nd4j {
             Nd4jLong getSpilledSize();
             Nd4jLong getUsedSize();
 
+            Nd4jLong getAllocatedSecondarySize();
+            Nd4jLong getCurrentSecondarySize();
+            Nd4jLong getCurrentSecondaryOffset();
+            Nd4jLong getSpilledSecondarySize();
+            Nd4jLong getUsedSecondarySize();
+
             void expandBy(Nd4jLong primaryBytes, Nd4jLong secondaryBytes = 0L);
             void expandTo(Nd4jLong primaryBytes, Nd4jLong secondaryBytes = 0L);
 
