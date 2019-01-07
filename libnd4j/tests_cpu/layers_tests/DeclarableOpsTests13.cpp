@@ -103,3 +103,39 @@ TEST_F(DeclarableOpsTests13, test_listdiff_1) {
     auto result = op.execute({&x, &y}, {&od, &oi}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result);
 }
+
+TEST_F(DeclarableOpsTests13, test_or_1) {
+    auto x = NDArrayFactory::create<bool>('c', {4}, {false, true, false, true});
+    auto y = NDArrayFactory::create<bool>('c', {4}, {false, false, true, true});
+    auto e = NDArrayFactory::create<bool>('c', {4}, {false, true, true, true});
+
+    auto z = NDArrayFactory::create<bool>('c', {4});
+
+    x.applyPairwiseTransform(pairwise::Or, &y, &z, nullptr);
+
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(DeclarableOpsTests13, test_and_1) {
+    auto x = NDArrayFactory::create<bool>('c', {4}, {false, true, false, true});
+    auto y = NDArrayFactory::create<bool>('c', {4}, {false, false, true, true});
+    auto e = NDArrayFactory::create<bool>('c', {4}, {false, false, false, true});
+
+    auto z = NDArrayFactory::create<bool>('c', {4});
+
+    x.applyPairwiseTransform(pairwise::And, &y, &z, nullptr);
+
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(DeclarableOpsTests13, test_xor_1) {
+    auto x = NDArrayFactory::create<bool>('c', {4}, {false, true, false, true});
+    auto y = NDArrayFactory::create<bool>('c', {4}, {false, false, true, true});
+    auto e = NDArrayFactory::create<bool>('c', {4}, {false, true, true, false});
+
+    auto z = NDArrayFactory::create<bool>('c', {4});
+
+    x.applyPairwiseTransform(pairwise::Xor, &y, &z, nullptr);
+
+    ASSERT_EQ(e, z);
+}
