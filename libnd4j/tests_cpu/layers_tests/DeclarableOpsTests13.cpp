@@ -91,3 +91,15 @@ TEST_F(DeclarableOpsTests13, test_empty_range_3) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests13, test_listdiff_1) {
+    auto x = NDArrayFactory::create<int>('c', {4}, {0, 1, 2, 3});
+    auto y = NDArrayFactory::create<int>('c', {2}, {3, 1});
+
+    auto od = NDArrayFactory::create<int>('c', {2});
+    auto oi = NDArrayFactory::create<int>('c', {2});
+
+    nd4j::ops::listdiff op;
+    auto result = op.execute({&x, &y}, {&od, &oi}, {}, {}, {});
+    ASSERT_EQ(Status::OK(), result);
+}
