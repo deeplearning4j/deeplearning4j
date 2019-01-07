@@ -57,7 +57,7 @@ class DenseTest extends WordSpec with Matchers {
       compiledLayer.isInstanceOf[JOutputLayer] shouldBe true
     }
 
-    "become an output layer when when converted to ouput layer with proper loss" in {
+    "become an output layer when converted to ouput layer with proper loss" in {
       val DenseLayer = Dense(100)
       val compiledLayer = DenseLayer.toOutputLayer(LossFunction.NEGATIVELOGLIKELIHOOD)
       compiledLayer.isInstanceOf[OutputLayer] shouldBe true

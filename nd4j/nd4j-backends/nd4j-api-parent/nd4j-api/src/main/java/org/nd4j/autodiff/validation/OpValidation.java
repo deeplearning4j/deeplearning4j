@@ -23,9 +23,12 @@ import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.DefaultOpConverter;
@@ -33,6 +36,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.*;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.reduce3.EqualsWithEps;
 import org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.*;
@@ -70,6 +74,8 @@ import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.primitives.Pair;
 import org.tensorflow.framework.OpDef;
 
@@ -194,6 +200,7 @@ public class OpValidation {
             try {
                 ok = GradCheckUtil.checkGradients(testCase);
             } catch (Throwable t) {
+                t.printStackTrace();
                 throw new IllegalStateException("Exception encountered during gradient check" + testCase.testNameErrMsg(), t);
             }
 
@@ -225,42 +232,107 @@ public class OpValidation {
         }
 
         //Check ops:
-        DifferentialFunction[] dfOrig = original.functions();
-        DifferentialFunction[] dfDe = deserialized.functions();
-        Preconditions.checkState(dfOrig.length == dfDe.length, "Number of functions differs: %s vs. %s", dfOrig.length, dfDe.length);
-        for( int i=0; i<dfOrig.length; i++ ){
-            Preconditions.checkState(dfOrig[i].getClass().equals(dfDe[i].getClass()), "Different classes: op %s - %s vs %s",
-                    i, dfOrig[i].getClass(), dfDe[i].getClass());
+        Map<String,SameDiffOp> opsOrig = original.getOps();
+        Map<String,SameDiffOp> opsDeser = deserialized.getOps();
+        Preconditions.checkState(opsOrig.keySet().equals(opsDeser.keySet()), "Op names differs: %s vs. %s", opsOrig.keySet(), opsDeser.keySet());
+
+        for(String s : opsOrig.keySet()){
+            SameDiffOp orig = opsOrig.get(s);
+            SameDiffOp des = opsDeser.get(s);
+            Preconditions.checkState(orig.getName().equals(des.getName()), "Names differ: %s vs %s", orig.getName(), des.getName());
+            Preconditions.checkState((orig.getInputsToOp() == null) == (des.getInputsToOp() == null), "Inputs differ: %s vs. %s", orig.getInputsToOp(), des.getInputsToOp());
+            Preconditions.checkState(orig.getInputsToOp() == null || orig.getInputsToOp().equals(des.getInputsToOp()), "Inputs differ: %s vs. %s", orig.getInputsToOp(), des.getInputsToOp());
+
+            Preconditions.checkState((orig.getOutputsOfOp() == null) == (des.getOutputsOfOp() == null), "Outputs differ: %s vs. %s", orig.getOutputsOfOp(), des.getOutputsOfOp());
+            Preconditions.checkState(orig.getOutputsOfOp() == null || orig.getOutputsOfOp().equals(des.getOutputsOfOp()), "Outputs differ: %s vs. %s", orig.getOutputsOfOp(), des.getOutputsOfOp());
+
+            Preconditions.checkState((orig.getControlDeps() == null) == (des.getControlDeps() == null), "Control dependencies differ: %s vs. %s", orig.getControlDeps(), des.getControlDeps());
+            Preconditions.checkState(orig.getControlDeps() == null || orig.getControlDeps().equals(des.getControlDeps()), "Control dependencies differ: %s vs. %s", orig.getControlDeps(), des.getControlDeps());
+
+            Preconditions.checkState(orig.getOp().getClass() == des.getOp().getClass(), "Classes differ: %s v. %s", orig.getOp().getClass(), des.getOp().getClass());
         }
 
         //Check placeholders:
-        Set<String> pcBefore = original.getPlaceHolderVarNames();
-        Set<String> pcAfter = deserialized.getPlaceHolderVarNames();
-        if(pcBefore == null){
-            Preconditions.checkState(pcAfter == null || pcAfter.size() == 0, "%s", pcAfter);
+        Set<String> phBefore = new HashSet<>();
+        Set<String> phAfter = new HashSet<>();
+
+        for(Variable v : original.getVariables().values()){
+            if(v.getVariable().isPlaceHolder())
+                phBefore.add(v.getName());
+        }
+        for(Variable v : deserialized.getVariables().values()){
+            if(v.getVariable().isPlaceHolder())
+                phAfter.add(v.getName());
+        }
+
+        if(phBefore == null){
+            Preconditions.checkState(phAfter == null || phAfter.size() == 0, "%s", phAfter);
         } else {
-            Preconditions.checkState(pcAfter != null, "Placeholders after deserialization was null");
-            Preconditions.checkState(pcBefore.equals(pcAfter), "Before: %s, after deserialization: %s", pcBefore, pcAfter);
+            Preconditions.checkState(phAfter != null, "Placeholders after deserialization was null");
+            Preconditions.checkState(phBefore.equals(phAfter), "Before: %s, after deserialization: %s", phBefore, phAfter);
+        }
+
+        Map<String,Variable> varsBefore = original.getVariables();
+        Map<String,Variable> varsAfter = deserialized.getVariables();
+        Preconditions.checkState(varsBefore.keySet().equals(varsAfter.keySet()), "Variable keysets do not match: %s vs %s", varsBefore.keySet(), varsAfter.keySet());
+        for(String s : varsBefore.keySet()){
+            Variable vB = varsBefore.get(s);
+            Variable vA = varsAfter.get(s);
+            Preconditions.checkState(vB.getName().equals(vA.getName()), "Variable names do not match: %s vs %s", vA.getName(), vB.getName());
+            Preconditions.checkState(vB.getVariable().getVariableType() == vA.getVariable().getVariableType(),
+                    "Variable types do not match: %s - %s vs %s", s, vB.getVariable().getVariableType(), vA.getVariable().getVariableType());
+
+            Preconditions.checkState((vB.getInputsForOp() == null) == (vA.getInputsForOp() == null), "Input to ops differ: %s vs. %s", vB.getInputsForOp(), vA.getInputsForOp());
+            Preconditions.checkState(vB.getInputsForOp() == null || vB.getInputsForOp().equals(vA.getInputsForOp()), "Inputs differ: %s vs. %s", vB.getInputsForOp(), vA.getInputsForOp());
+
+            Preconditions.checkState((vB.getOutputOfOp() == null && vA.getOutputOfOp() == null) || vB.getOutputOfOp().equals(vA.getOutputOfOp()), "Output of op differ: %s vs. %s", vB.getOutputOfOp(), vA.getOutputOfOp());
+
+            Preconditions.checkState((vB.getControlDeps() == null) == (vA.getControlDeps() == null), "Control dependencies differ: %s vs. %s", vB.getControlDeps(), vA.getControlDeps());
+            Preconditions.checkState(vB.getControlDeps() == null || vB.getControlDeps().equals(vA.getControlDeps()), "Control dependencies differ: %s vs. %s", vB.getControlDeps(), vA.getControlDeps());
         }
 
 
         //Finally: check execution/output
-        INDArray[] outOrig = original.execAndEndResults();
-        INDArray[] outDe = deserialized.execAndEndResults();
-        Preconditions.checkState(outOrig.length == outDe.length, "Different number of outputs: %s expected vs. %s actual", outOrig.length, outDe.length);
-        DifferentialFunction[] functions = original.functions();
-        String[] outNames = original.getOutputsForFunction(functions[functions.length-1]);
-        for(int i=0; i<outOrig.length; i++ ){
-            Function<INDArray,String> fn = tc.fwdTestFns().get(outNames[i]);
+        Map<String,INDArray> outOrig = original.execAll(tc.placeholderValues());
+        Map<String,INDArray> outDe = deserialized.execAll(tc.placeholderValues());
+        Preconditions.checkState(outOrig.keySet().equals(outDe.keySet()), "Keysets for execution after deserialization does not match key set for original model");
+
+        for(String s : outOrig.keySet()){
+            INDArray orig = outOrig.get(s);
+            INDArray deser = outDe.get(s);
+
+            Function<INDArray,String> f = tc.fwdTestFns().get(s);
             String err = null;
-            if(fn != null){
-                err = fn.apply(outDe[i]);
+            if(f != null){
+                err = f.apply(deser);
             } else {
-                if(!outOrig[i].equals(outDe[i])) {
-                    err = "INDArray equality failed";
+                if(!orig.equals(deser)){
+                    //Edge case: check for NaNs in original and deserialized... might be legitimate test (like replaceNaNs op)
+                    long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(orig, Conditions.isNan())).getFinalResult().longValue();
+                    if(count > 0 && orig.equalShapes(deser)){
+                        long count2 = Nd4j.getExecutioner().execAndReturn(new MatchCondition(deser, Conditions.isNan())).getFinalResult().longValue();
+                        if(count != count2){
+                            err = "INDArray equality failed";
+                        } else {
+                            //TODO is there a better way to do this?
+                            NdIndexIterator iter = new NdIndexIterator(orig.shape());
+                            while(iter.hasNext()){
+                                long[] i = iter.next();
+                                double d1 = orig.getDouble(i);
+                                double d2 = deser.getDouble(i);
+                                if((Double.isNaN(d1) != Double.isNaN(d2)) || (Double.isInfinite(d1) != Double.isInfinite(d2)) || Math.abs(d1 - d2) > 1e-5 ){
+                                    err = "INDArray equality failed";
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        err = "INDArray equality failed";
+                    }
                 }
             }
-            Preconditions.checkState(err == null, "Output array %s failed check - \"%ndSInfo\" vs \"%ndSInfo\" - %nd10 vs %nd10\nError:%s", i, outOrig[i], outDe[i], outOrig[i], outDe[i], err);
+
+            Preconditions.checkState(err == null, "Variable result (%s) failed check - \"%ndSInfo\" vs \"%ndSInfo\" - %nd10 vs %nd10\nError:%s", s, orig, deser, orig, deser, err);
         }
     }
 
@@ -296,7 +368,7 @@ public class OpValidation {
 
         //Check the outputs:
         try {
-            Nd4j.getExecutioner().exec(testCase.op());
+            Nd4j.getExecutioner().execAndReturn(testCase.op());
         } catch (Throwable t) {
             throw new IllegalStateException("Error during op execution", t);
         }
@@ -378,9 +450,8 @@ public class OpValidation {
 
 
     public static void collectTensorflowImportCoverage(SameDiff graph){
-
-        Map<String,DifferentialFunction> map = graph.getFunctionInstancesById();
-        for(DifferentialFunction d : map.values()){
+        for(SameDiffOp op : graph.getOps().values()){
+            DifferentialFunction d = op.getOp();
             String[] tfNames = null;
             try{
                 tfNames = d.tensorflowNames();

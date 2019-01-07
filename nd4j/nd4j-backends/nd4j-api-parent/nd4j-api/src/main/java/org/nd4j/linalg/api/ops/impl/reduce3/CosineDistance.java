@@ -36,11 +36,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class CosineDistance extends BaseReduceFloatOp {
-
-    public CosineDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, Number constantNormalizedByNorm2X, Number constantNormalizedByNorm2Y) {
-        super(sameDiff, i_v, dimensions);
-    }
+public class CosineDistance extends BaseReduce3Op {
 
     public CosineDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
@@ -50,53 +46,32 @@ public class CosineDistance extends BaseReduceFloatOp {
         passThrough = true;
     }
 
-    public CosineDistance(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public CosineDistance(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, null);
+    }
+
+    public CosineDistance(INDArray x, INDArray y, INDArray z, int... dimension) {
+        super(x, y, z, dimension);
         passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public CosineDistance(INDArray x, INDArray y, long n) {
-        super(x, y, null, n);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
+    public CosineDistance(INDArray x, INDArray y, int... dimension) {
+        this(x, y, null, dimension);
     }
 
-    public CosineDistance(INDArray x) {
-        super(x);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public CosineDistance(INDArray x, INDArray y) {
-        super(x, y, null);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public CosineDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
-        this(x, y, z, x.lengthLong());
+    public CosineDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimension) {
+        this(x, y, z, dimension);
         this.isComplex = allDistances;
     }
 
-    public CosineDistance(INDArray x, INDArray y, boolean allDistances) {
-        this(x, y);
-        this.isComplex = allDistances;
+    public CosineDistance(INDArray x, INDArray y, boolean allDistances, int... dimension) {
+        this(x, y, null, allDistances, dimension);
     }
 
     public CosineDistance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
         super(x, y, z, newFormat, keepDims, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    @Override
-    public Type opType() {
-        return Type.REDUCE3;
-    }
-
-    @Override
-    public Type getOpType() {
-        return opType();
     }
 
     @Override
@@ -121,18 +96,7 @@ public class CosineDistance extends BaseReduceFloatOp {
     }
 
     @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-    }
-
-
-    @Override
     public String tensorflowName() {
         return "cosine_distance";
-    }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatingPointType();
     }
 }

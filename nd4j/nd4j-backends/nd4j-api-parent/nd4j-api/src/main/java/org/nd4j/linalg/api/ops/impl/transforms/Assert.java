@@ -17,8 +17,10 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -44,5 +46,10 @@ public class Assert extends DynamicCustomOp {
     @Override
     public int numOutputArguments(){
         return 1;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        return Collections.singletonList(DataType.BOOL);
     }
 }

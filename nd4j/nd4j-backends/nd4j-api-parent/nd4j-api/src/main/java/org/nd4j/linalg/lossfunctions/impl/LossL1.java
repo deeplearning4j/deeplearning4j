@@ -118,7 +118,7 @@ public class LossL1 extends DifferentialFunction implements ILossFunction {
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1);
+        return scoreArr.sum(true,1);
     }
 
     @Override
@@ -129,7 +129,7 @@ public class LossL1 extends DifferentialFunction implements ILossFunction {
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray outSubLabels = output.sub(labels);
-        INDArray dLda = Nd4j.getExecutioner().execAndReturn(new Sign(outSubLabels));
+        INDArray dLda = Nd4j.getExecutioner().exec(new Sign(outSubLabels));
 
         if (weights != null) {
             dLda.muliRowVector(weights);

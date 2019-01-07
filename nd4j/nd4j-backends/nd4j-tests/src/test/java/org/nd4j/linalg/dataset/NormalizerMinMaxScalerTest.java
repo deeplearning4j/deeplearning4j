@@ -116,7 +116,7 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
         myNormalizer.revert(transformed);
         INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures()))
                         .div(sampleDataSet.getFeatures());
-        double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0, 0);
+        double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0);
         System.out.println("Delta: " + maxdeltaPerc);
         assertTrue(maxdeltaPerc < tolerancePerc);
 
@@ -144,7 +144,7 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
         myNormalizer.revert(transformed);
         INDArray delta = Transforms.abs(transformed.getFeatures().sub(sampleDataSet.getFeatures()))
                         .div(sampleDataSet.getFeatures());
-        double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0, 0);
+        double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0);
         System.out.println("Delta: " + maxdeltaPerc);
         assertTrue(maxdeltaPerc < tolerancePerc);
     }
@@ -170,7 +170,7 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
         //feature set is basically all 10s -> should transform to the min
         INDArray expected = Nd4j.ones(nSamples, nFeatures).mul(givenMin);
         INDArray delta = Transforms.abs(transformed.getFeatures().sub(expected)).div(expected);
-        double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0, 0);
+        double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0);
         assertTrue(maxdeltaPerc < tolerancePerc);
     }
 

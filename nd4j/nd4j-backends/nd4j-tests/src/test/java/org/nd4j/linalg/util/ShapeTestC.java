@@ -70,7 +70,7 @@ public class ShapeTestC extends BaseNd4jTest {
         //INDArray[] inputs, INDArray[] outputs, int[] axis
         INDArray result = Nd4j.createUninitialized(DataType.DOUBLE,  new long[]{2,2});
         Tile tile = new Tile(new INDArray[]{arr},new INDArray[]{result},new int[] {2,2});
-        Nd4j.getExecutioner().exec(tile);
+        Nd4j.getExecutioner().execAndReturn(tile);
         INDArray tiled = Nd4j.tile(arr,2,2).castTo(DataType.DOUBLE);
         assertEquals(tiled,result);
 

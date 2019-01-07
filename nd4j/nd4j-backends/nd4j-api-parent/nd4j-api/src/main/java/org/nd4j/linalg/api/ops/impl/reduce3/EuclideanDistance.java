@@ -33,7 +33,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class EuclideanDistance extends BaseReduceFloatOp {
+public class EuclideanDistance extends BaseReduce3Op {
     public static final String OP_NAME = "euclidean";
 
     public EuclideanDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
@@ -46,45 +46,33 @@ public class EuclideanDistance extends BaseReduceFloatOp {
 
     public EuclideanDistance() {}
 
-    public EuclideanDistance(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+
+
+    public EuclideanDistance(INDArray x, INDArray y, int... dimensions) {
+        this(x, y, null, dimensions);
+    }
+
+    public EuclideanDistance(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, null);
+    }
+
+    public EuclideanDistance(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z,dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public EuclideanDistance(INDArray x, INDArray y, long n) {
-        super(x, y,null, n);
-        extraArgs = new Object[]{0.0f, 0.0f};
+    public EuclideanDistance(INDArray x, INDArray y, boolean allDistances, int... dimensions) {
+        this(x, y, null, allDistances, dimensions);
     }
 
-
-    public EuclideanDistance(INDArray x, INDArray y) {
-        super(x, y, null);
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public EuclideanDistance(INDArray x, INDArray y, boolean allDistances) {
-        this(x, y);
-        this.isComplex = allDistances;
-    }
-
-    public EuclideanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
-        this(x, y, z, x.lengthLong());
+    public EuclideanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
+        this(x, y, z, true, false, dimensions);
         this.isComplex = allDistances;
     }
 
     public EuclideanDistance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
         super(x, y, z, newFormat, keepDims, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    @Override
-    public Type opType() {
-        return Type.REDUCE3;
-    }
-
-    @Override
-    public Type getOpType() {
-        return opType();
     }
 
     @Override
@@ -110,21 +98,5 @@ public class EuclideanDistance extends BaseReduceFloatOp {
         SDVariable gradX = difference.mul(divBroadcastable);
         SDVariable gradY = f().neg(gradX);
         return Arrays.asList(gradX, gradY);
-    }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatingPointType();
     }
 }

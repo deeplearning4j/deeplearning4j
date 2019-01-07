@@ -33,7 +33,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class HammingDistance extends BaseReduceFloatOp {
+public class HammingDistance extends BaseReduce3Op {
 
 
     public HammingDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
@@ -44,53 +44,26 @@ public class HammingDistance extends BaseReduceFloatOp {
         passThrough = true;
     }
 
-    public HammingDistance(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
+    public HammingDistance(INDArray x, INDArray y, int... dimensions) {
+        this(x, y, null, false, dimensions);
     }
 
-    public HammingDistance(INDArray x, INDArray y, long n) {
-        super(x, y, null);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public HammingDistance(INDArray x) {
-        super(x);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public HammingDistance(INDArray x, INDArray y) {
-        super(x, y, null);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public HammingDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
-        this(x, y, z, x.lengthLong());
+    public HammingDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
+        this(x, y, z, true, false, dimensions);
         this.isComplex = allDistances;
     }
 
-    public HammingDistance(INDArray x, INDArray y, boolean allDistances) {
-        this(x, y);
-        this.isComplex = allDistances;
+    public HammingDistance(INDArray x, INDArray y, boolean allDistances, int... dimensions) {
+        this(x, y, null, allDistances, dimensions);
+    }
+
+    public HammingDistance(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, false, null);
     }
 
     public HammingDistance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
         super(x, y, z, newFormat, keepDims, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    @Override
-    public Type opType() {
-        return Type.REDUCE3;
-    }
-
-    @Override
-    public Type getOpType() {
-        return opType();
     }
 
     @Override
@@ -111,22 +84,5 @@ public class HammingDistance extends BaseReduceFloatOp {
         //Consequently: it's not continuously differentiable, and gradients are 0 almost everywhere (but undefined
         // when x_i == y_i)
         return Arrays.asList(sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
-    }
-
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatingPointType();
     }
 }

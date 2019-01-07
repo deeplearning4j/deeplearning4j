@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.summarystats;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -49,6 +50,7 @@ public class Variance extends BaseReduceOp {
     public Variance(SameDiff sameDiff, SDVariable i_v, boolean biasCorrected, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
         this.biasCorrected = biasCorrected;
+        defineDimensions(dimensions);
     }
 
     public Variance() {
@@ -58,49 +60,28 @@ public class Variance extends BaseReduceOp {
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        init(x, y, z, n);
+    public Variance(INDArray x, int... dimension) {
+        this(x, true, dimension);
     }
 
-    public Variance(INDArray x, INDArray y, long n) {
-        this(x, y, x, n);
-    }
-
-    public Variance(INDArray x) {
-        this(x, null, x, x.lengthLong(), true);
-    }
-
-    public Variance(INDArray x, INDArray y) {
-        super(x, y);
-    }
-
-    public Variance(INDArray x, INDArray y, INDArray z, long n, boolean biasCorrected) {
-        super(x, y, z, n);
+    public Variance(INDArray x, INDArray z, boolean biasCorrected, int... dimensions) {
+        this(x, z, true, false, dimensions);
         this.biasCorrected = biasCorrected;
         init(x, y, z, n);
+        defineDimensions(dimensions);
     }
 
-    public Variance(INDArray x, INDArray y, long n, boolean biasCorrected) {
-        super(x, y, n);
-        this.biasCorrected = biasCorrected;
-        init(x, y, z, n);
-    }
-
-    public Variance(INDArray x, boolean biasCorrected) {
+    public Variance(INDArray x, boolean biasCorrected, int... dimensions) {
         super(x);
         this.biasCorrected = biasCorrected;
         init(x, y, z, n);
+        defineDimensions(dimensions);
     }
 
-    public Variance(INDArray x, INDArray y, boolean biasCorrected) {
-        super(x, y);
-        this.biasCorrected = biasCorrected;
-        init(x, y, x, x.lengthLong());
-    }
-
-    public Variance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
-        super(x, y, z, newFormat, keepDims, dimensions);
+    public Variance(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
+        super(x, null, z, newFormat, keepDims, dimensions);
+        this.biasCorrected = true;
+        defineDimensions(dimensions);
     }
 
     @Override
@@ -124,15 +105,15 @@ public class Variance extends BaseReduceOp {
         super.init(x, y, z, n);
         if (Nd4j.executionMode == OpExecutioner.ExecutionMode.JAVA) {
             if (biasCorrected)
-                this.bias = Nd4j.getExecutioner().execAndReturn(new Bias(x)).getFinalResult().doubleValue();
-            mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
+                this.bias = Nd4j.getExecutioner().exec(new Bias(x)).getDouble(0);
+            mean = Nd4j.getExecutioner().exec(new Mean(x)).getDouble(0);
         }
 
     }
 
     @Override
     public boolean isPassThrough() {
-        return true;
+        return false;
     }
 
 
@@ -212,5 +193,14 @@ public class Variance extends BaseReduceOp {
     @Override
     public Type opType(){
         return Type.VARIANCE;
+    }
+
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
+        //Variance and stdev reduction: Always FP out, but if FP in is float/double/half then it's float/double/half out
+        //If not FP in, then return default FP type out
+        if(dataTypes.get(0).isFPType())
+            return dataTypes;
+        return Collections.singletonList(Nd4j.defaultFloatingPointType());
     }
 }

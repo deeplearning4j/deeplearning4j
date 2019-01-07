@@ -444,10 +444,10 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 //KL divergence: should be a probability distribution for labels??
                 ret[1] = Nd4j.rand(labelsShape);
                 if(labelsShape.length == 2){
-                    Nd4j.getExecutioner().exec(new OldSoftMax(ret[1]), 1);
+                    Nd4j.getExecutioner().exec(new OldSoftMax(ret[1], 1));
                 } else if(labelsShape.length == 3) {
                     for (int i = 0; i < labelsShape[2]; i++) {
-                        Nd4j.getExecutioner().exec(new OldSoftMax(ret[1].get(all(), all(), point(i))), 1);
+                        Nd4j.getExecutioner().exec(new OldSoftMax(ret[1].get(all(), all(), point(i)), 1));
                     }
                 } else {
                     throw new RuntimeException();

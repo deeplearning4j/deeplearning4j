@@ -367,10 +367,10 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray ones = Nd4j.ones(DataType.BOOL, 1,6);
         INDArray zeros = Nd4j.create(DataType.BOOL, new long[]{1,6});
         INDArray res = Nd4j.create(DataType.BOOL, new long[]{1,6});
-        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, res, 0)));
-        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarGreaterThan(linspace, res,7)));
-        assertEquals(zeros, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, res,0)));
-        assertEquals(ones, Nd4j.getExecutioner().execAndReturn(new ScalarLessThan(linspace, res,7)));
+        assertEquals(ones, Nd4j.getExecutioner().exec(new ScalarGreaterThan(linspace, res, 0)));
+        assertEquals(zeros, Nd4j.getExecutioner().exec(new ScalarGreaterThan(linspace, res,7)));
+        assertEquals(zeros, Nd4j.getExecutioner().exec(new ScalarLessThan(linspace, res,0)));
+        assertEquals(ones, Nd4j.getExecutioner().exec(new ScalarLessThan(linspace, res,7)));
     }
 
     @Test
@@ -393,8 +393,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         Min min = new Min(row);
         double min2 = Nd4j.getExecutioner().execAndReturn(min).getFinalResult().doubleValue();
         assertEquals(1.0, min2, 1e-1);
-        Max matrixMax = new Max(linspace);
-        INDArray exec2 = Nd4j.getExecutioner().exec(matrixMax, 1);
+        Max matrixMax = new Max(linspace, 1);
+        INDArray exec2 = Nd4j.getExecutioner().execAndReturn(matrixMax).z();
         assertEquals(Nd4j.create(new double[] {3, 6}), exec2);
     }
 
@@ -442,8 +442,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testDimensionSoftMax() {
         INDArray linspace = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
-        OldSoftMax max = new OldSoftMax(linspace);
-        Nd4j.getExecutioner().exec(max, 1);
+        OldSoftMax max = new OldSoftMax(linspace, 1);
+        Nd4j.getExecutioner().exec(max);
         linspace.assign(max.z());
         assertEquals(getFailureMessage(), linspace.getRow(0).sumNumber().doubleValue(), 1.0, 1e-1);
     }
@@ -486,11 +486,11 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testIMax() {
         INDArray arr = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         IMax imax = new IMax(arr);
-        assertEquals(9, ((IndexAccumulation) Nd4j.getExecutioner().exec(imax)).getFinalResult());
+        assertEquals(9, Nd4j.getExecutioner().execAndReturn(imax).getFinalResult().intValue());
 
         arr.muli(-1);
         imax = new IMax(arr);
-        int maxIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imax)).getFinalResult();
+        int maxIdx = Nd4j.getExecutioner().execAndReturn(imax).getFinalResult().intValue();
         assertEquals(0, maxIdx);
     }
 
@@ -498,11 +498,11 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testIMin() {
         INDArray arr = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         IMin imin = new IMin(arr);
-        assertEquals(0, ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult());
+        assertEquals(0, Nd4j.getExecutioner().execAndReturn(imin).getFinalResult().intValue());
 
         arr.muli(-1);
         imin = new IMin(arr);
-        int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult();
+        int minIdx = Nd4j.getExecutioner().execAndReturn(imin).getFinalResult().intValue();
         assertEquals(9, minIdx);
     }
 
@@ -614,7 +614,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testOneMinus() {
         INDArray in = Nd4j.linspace(1, 3, 3, DataType.DOUBLE);
-        INDArray out = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", in));
+        INDArray out = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", in)).z();
 
         //Expect: 0, -2, -6 -> from 1*(1-1), 2*(1-2), 3*(1-3). Getting: [0,0,0]
         INDArray exp = Nd4j.create(new double[] {0, -2.0, -6.0});
@@ -637,7 +637,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testLogSoftmaxVector() {
         INDArray temp = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0});
-        INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(temp.dup()));
+        INDArray logsoftmax = Nd4j.getExecutioner().exec(new LogSoftMax(temp.dup()));
         INDArray assertion = Nd4j.create(new double[] {-3.4401898, -2.4401898, -1.4401897, -0.44018975});
         assertEquals(assertion, logsoftmax);
 
@@ -961,7 +961,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
             assertEquals(secondOrig, second);
 
 
-            INDArray out = Nd4j.getExecutioner().exec(new EuclideanDistance(first, second), 1, 2, 3);
+            INDArray out = Nd4j.getExecutioner().exec(new EuclideanDistance(first, second, 1, 2, 3));
             for (int i = 0; i < first.tensorsAlongDimension(1, 2, 3); i++) {
                 val j = first.javaTensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer().asLong();
                 val t = first.tensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer().asLong();
@@ -980,21 +980,21 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
                                 secondTadInfo.getSecond().getLong(i));
             }
 
-            INDArray outManhattan = Nd4j.getExecutioner().exec(new ManhattanDistance(first, second), 1, 2, 3);
+            INDArray outManhattan = Nd4j.getExecutioner().exec(new ManhattanDistance(first, second, 1, 2, 3));
 
             System.out.println("\n\nOrder: " + order);
             System.out.println("Euclidean:");
-            System.out.println(Arrays.toString(out.getRow(0).dup().data().asDouble()));
-            System.out.println(Arrays.toString(out.getRow(1).dup().data().asDouble()));
+            //System.out.println(Arrays.toString(out.getRow(0).dup().data().asDouble()));
+            //System.out.println(Arrays.toString(out.getRow(1).dup().data().asDouble()));
 
-            assertEquals(out.getRow(0), out.getRow(1));
+            assertEquals(out.getDouble(0), out.getDouble(1), 1e-5);
 
             System.out.println("Manhattan:");
-            System.out.println(Arrays.toString(outManhattan.getRow(0).dup().data().asDouble()));
-            System.out.println(Arrays.toString(outManhattan.getRow(1).dup().data().asDouble()));
+            //System.out.println(Arrays.toString(outManhattan.getRow(0).dup().data().asDouble()));
+            //System.out.println(Arrays.toString(outManhattan.getRow(1).dup().data().asDouble()));
 
-            assertEquals(expManhattanDistance, outManhattan.getRow(0).getDouble(0), 1e-5);
-            assertEquals(expectedEuclidean, out.getRow(0).getDouble(0), 1e-5);
+            assertEquals(expManhattanDistance, outManhattan.getDouble(0), 1e-5);
+            assertEquals(expectedEuclidean, out.getDouble(0), 1e-5);
         }
 
         DataTypeUtil.setDTypeForContext(initialType);

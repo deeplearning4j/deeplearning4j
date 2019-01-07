@@ -460,10 +460,10 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::memory::Workspace* workspace) {
 ////////////////////////////////////////////////////////////////////////
 std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     int magicNumber = shape::shapeInfoLength(this->rankOf());
-    std::vector<int64_t> vector(magicNumber);
+    std::vector<int64_t> vector;
 
     for (int e = 0; e < magicNumber; e++)
-        vector[e] = static_cast<int64_t>(_shapeInfo[e]);
+        vector.emplace_back(static_cast<int64_t>(_shapeInfo[e]));
 
     return vector;
 }
@@ -471,10 +471,10 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
 ////////////////////////////////////////////////////////////////////////
     std::vector<Nd4jLong> NDArray::getShapeInfoAsVector() {
         int magicNumber = shape::shapeInfoLength(this->rankOf());
-        std::vector<Nd4jLong> vector(magicNumber);
+        std::vector<Nd4jLong> vector;
 
         for (int e = 0; e < magicNumber; e++)
-            vector[e] = this->_shapeInfo[e];
+            vector.emplace_back(this->_shapeInfo[e]);
 
         return vector;
     }
@@ -1354,8 +1354,10 @@ void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, co
 
     if (isS())
         throw std::runtime_error("NDArray::reduceAlongDimension SameOps: you can't use this method on String array!");
-    if (target == nullptr || target->_dataType != _dataType)
-        throw std::runtime_error("NDArray::reduceAlongDimension SameOps: requires target array to be present and have same dtype as input");
+    else if (target == nullptr)
+        throw std::runtime_error("NDArray::reduceAlongDimension SameOps: requires target array to be present");
+    else if (target->_dataType != _dataType)
+        throw datatype_exception::build("NDArray::reduceAlongDimension SameOps: requires target array to have same dtype as input", _dataType, target->dataType());
 
         std::vector<int> copy(dimensions);
 

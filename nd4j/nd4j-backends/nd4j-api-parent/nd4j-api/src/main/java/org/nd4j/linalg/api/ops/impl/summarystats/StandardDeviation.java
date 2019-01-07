@@ -39,31 +39,24 @@ public class StandardDeviation extends Variance {
         super(sameDiff, i_v, biasCorrected, keepDims, dimensions );
     }
 
-    public StandardDeviation(INDArray x, boolean biasCorrected) {
-        super(x, biasCorrected);
+    public StandardDeviation(INDArray x, boolean biasCorrected, int... dimension) {
+        super(x, biasCorrected, dimension);
     }
 
-    public StandardDeviation(INDArray x, INDArray y, INDArray z, long n, boolean biasCorrected) {
-        super(x, y, z, n, biasCorrected);
-    }
 
     public StandardDeviation() {
-    }
-
-    public StandardDeviation(INDArray x, INDArray y, long n) {
-        super(x, y, n);
     }
 
     public StandardDeviation(INDArray x) {
         super(x);
     }
 
-    public StandardDeviation(INDArray x, INDArray y) {
-        super(x, y);
+    public StandardDeviation(INDArray x, INDArray z, boolean biasCorrected, int... dimension) {
+        super(x, z, biasCorrected, dimension);
     }
 
-    public StandardDeviation(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
-        super(x, y, z, newFormat, keepDims, dimensions);
+    public StandardDeviation(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, z, newFormat, keepDims, dimensions);
     }
 
     @Override
@@ -88,12 +81,12 @@ public class StandardDeviation extends Variance {
 
     @Override
     public Type getOpType() {
-        return Type.VARIANCE;
+        return Type.SUMMARYSTATS;
     }
 
     @Override
     public Type opType(){
-        return Type.VARIANCE;
+        return Type.SUMMARYSTATS;
     }
 
 

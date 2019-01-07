@@ -218,7 +218,7 @@ public interface Layer extends Serializable, Cloneable, Model, Trainable {
 
 
     /**
-     * Feed forward the input mask array, setting in in the layer as appropriate. This allows different layers to
+     * Feed forward the input mask array, setting in the layer as appropriate. This allows different layers to
      * handle masks differently - for example, bidirectional RNNs and normal RNNs operate differently with masks (the
      * former sets activations to 0 outside of the data present region (and keeps the mask active for future layers like
      * dense layers), whereas normal RNNs don't zero out the activations/errors )instead relying on backpropagated error

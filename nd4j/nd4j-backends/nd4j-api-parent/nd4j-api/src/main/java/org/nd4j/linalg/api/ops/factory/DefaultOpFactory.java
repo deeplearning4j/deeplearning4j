@@ -25,7 +25,7 @@ import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.scalar.Pow;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
-import org.nd4j.linalg.api.ops.impl.scalar.RectifedLinear;
+import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
 import org.nd4j.linalg.api.ops.impl.scalar.Step;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
 
@@ -108,14 +108,14 @@ public class DefaultOpFactory implements OpFactory {
         switch (name) {
             case "mmul":
             case "std":
-                ret = new StandardDeviation(x, y,z, x.length(),(boolean) extraArgs[0]);
+                ret = new StandardDeviation(x, z,(boolean) extraArgs[0]);
                 break;
             case "var":
-                ret = new Variance(x, y, z, x.length(),(boolean) extraArgs[0]);
+                ret = new Variance(x, z, (boolean) extraArgs[0]);
                 break;
             default:
                 try {
-                    ret = (ReduceOp)  DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getConstructor(INDArray.class, INDArray.class, INDArray.class, long.class).newInstance(x, y, z, x.length());
+                    ret = (ReduceOp)  DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().getConstructor(INDArray.class, INDArray.class, INDArray.class).newInstance(x, y, z);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -187,7 +187,7 @@ public class DefaultOpFactory implements OpFactory {
 
     @Override
     public ReduceOp createAccum(String name, INDArray x, INDArray y) {
-        return createAccum(name,x,y,x,null);
+        return createAccum(name,x,y, null,null);
     }
 
     /**
@@ -282,7 +282,7 @@ public class DefaultOpFactory implements OpFactory {
                 op = new Set(x,y,z,z.length());
                 break;
             case "relu":
-                op = new RectifedLinear(x, z, x.length(),extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);
+                op = new RectifiedLinear(x, z, x.length(),extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);
                 break;
             case "step":
                 op = new Step(x, z,x.length(),extraArgs == null || extraArgs[0] == null  ? 0.0 : (double) extraArgs[0]);

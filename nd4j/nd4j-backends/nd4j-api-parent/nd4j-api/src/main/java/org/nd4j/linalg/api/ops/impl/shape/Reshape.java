@@ -21,9 +21,11 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -197,7 +199,13 @@ public class Reshape extends DynamicCustomOp {
             throw new ND4JIllegalStateException("Cannot reshape: original array input shape is null");
         }
         SDVariable ret = f().reshape(i_v.get(0), origShape);
-        return Arrays.asList(ret);
+        return Collections.singletonList(ret);
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //Output type is always same as input type
+        return Collections.singletonList(dataTypes.get(0));
     }
 
 }

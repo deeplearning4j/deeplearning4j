@@ -39,18 +39,13 @@ public class  LogEntropy extends BaseReduceFloatOp {
 
     public LogEntropy() {}
 
-    public LogEntropy(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public LogEntropy(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
-    public LogEntropy(INDArray x) {
-        super(x);
+    public LogEntropy(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
-
-    public LogEntropy(INDArray x, INDArray z) {
-        super(x, null, z, x.lengthLong());
-    }
-
 
     @Override
     public int opNum() {

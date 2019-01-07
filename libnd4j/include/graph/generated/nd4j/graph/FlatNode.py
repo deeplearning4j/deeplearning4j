@@ -283,7 +283,18 @@ class FlatNode(object):
             return self._tab.VectorLen(o)
         return 0
 
-def FlatNodeStart(builder): builder.StartObject(18)
+    # FlatNode
+    def Scalar(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(40))
+        if o != 0:
+            x = self._tab.Indirect(o + self._tab.Pos)
+            from .FlatArray import FlatArray
+            obj = FlatArray()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
+
+def FlatNodeStart(builder): builder.StartObject(19)
 def FlatNodeAddId(builder, id): builder.PrependInt32Slot(0, id, 0)
 def FlatNodeAddName(builder, name): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(name), 0)
 def FlatNodeAddOpType(builder, opType): builder.PrependInt8Slot(2, opType, 0)
@@ -312,4 +323,5 @@ def FlatNodeStartOutputNamesVector(builder, numElems): return builder.StartVecto
 def FlatNodeAddOpName(builder, opName): builder.PrependUOffsetTRelativeSlot(16, flatbuffers.number_types.UOffsetTFlags.py_type(opName), 0)
 def FlatNodeAddOutputTypes(builder, outputTypes): builder.PrependUOffsetTRelativeSlot(17, flatbuffers.number_types.UOffsetTFlags.py_type(outputTypes), 0)
 def FlatNodeStartOutputTypesVector(builder, numElems): return builder.StartVector(1, numElems, 1)
+def FlatNodeAddScalar(builder, scalar): builder.PrependUOffsetTRelativeSlot(18, flatbuffers.number_types.UOffsetTFlags.py_type(scalar), 0)
 def FlatNodeEnd(builder): return builder.EndObject()

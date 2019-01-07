@@ -35,6 +35,7 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -199,7 +200,7 @@ public class TFGraphTestAllHelper {
                     assertTrue("Predictions do not match on " + modelName + ", node " + outputNode, eq);
                 } else {
                     INDArray diff = Transforms.abs(tfPred.sub(nd4jPred), false);
-                    INDArray absErrorMask = diff.gte(minAbsErrorOverride);   //value 1 if x[i] > minAbsError; value 0 otherwise. Used to get rid of 1e-30 vs. 1e-29 type failures
+                    INDArray absErrorMask = diff.gte(minAbsErrorOverride).castTo(Nd4j.defaultFloatingPointType());   //value 1 if x[i] > minAbsError; value 0 otherwise. Used to get rid of 1e-30 vs. 1e-29 type failures
                     INDArray sumAbs = Transforms.abs(tfPred, true).addi(Transforms.abs(nd4jPred, true));
                     BooleanIndexing.replaceWhere(sumAbs, 1.0, Conditions.equals(0.0));  //Can only get 0.0 if both are zeros - need to avoid 0/0=NaN
                     INDArray relError = diff.divi(sumAbs);
@@ -211,15 +212,16 @@ public class TFGraphTestAllHelper {
                     The idea: suppose all values are small, and are excluded due to minAbsError threshold
                     i.e., all 1e-5 vs. -1e-5 with min abs error of 1e-4
                     */
-                    INDArray maxAbs = Transforms.max(Transforms.abs(tfPred, true), Transforms.abs(tfPred, true), true);
-                    long countMaxAbsGTThreshold = maxAbs.gte(minAbsErrorOverride).sumNumber().intValue();
+                    //TODO FIX ME
+                    INDArray maxAbs = Transforms.max(Transforms.abs(tfPred.castTo(DataType.DOUBLE), true), Transforms.abs(nd4jPred.castTo(DataType.DOUBLE), true), true);
+                    long countMaxAbsGTThreshold = maxAbs.gte(minAbsErrorOverride).castTo(DataType.INT).sumNumber().intValue();
                     long countNotMasked = absErrorMask.sumNumber().intValue();  //Values are 0 or 1... if all 0s -> nothing being tested
                     if(countNotMasked == 0 && countMaxAbsGTThreshold == 0){
                         fail("All values for node " + outputNode + " are masked out due to minAbsError=" + minAbsErrorOverride +
                                 " and max values are all less than minAbsError - nothing can be tested here");
                     }
 
-                    int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).z().getInt(0);
+                    int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).getInt(0);
 
                     double maxRE = -1;
                     if(countExceeds > 0){
@@ -260,9 +262,10 @@ public class TFGraphTestAllHelper {
             // to be detected before later failures)
             Set<String> varNamesSet = new HashSet<>(graph.variableMap().keySet());
             List<String> varNames = new ArrayList<>();
-            Map<String,DifferentialFunction> fns = graph.getFunctionInstancesById();  //LinkedHashMap defines execution order
-            for(Map.Entry<String,DifferentialFunction> e : fns.entrySet()){
-                String[] outputs = graph.getOutputsForFunction(e.getValue());
+//            Map<String,DifferentialFunction> fns = graph.getFunctionInstancesById();  //LinkedHashMap defines execution order
+            Map<String,SameDiffOp> fns = graph.getOps();
+            for(Map.Entry<String,SameDiffOp> e : fns.entrySet()){
+                String[] outputs = graph.getOutputsForFunction(e.getValue().getOp());
                 Collections.addAll(varNames, outputs);
             }
 
@@ -286,7 +289,7 @@ public class TFGraphTestAllHelper {
                             INDArray relError = diff.divi(sumAbs);
                             relError.muli(absErrorMask);
 
-                            int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).z().getInt(0);
+                            int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).getInt(0);
 
                             double maxRE = -1;
                             //Mainly used for analysis in debugger:
@@ -326,9 +329,9 @@ public class TFGraphTestAllHelper {
         //System.out.println(graph.summary());
         if (executeWith.equals(ExecuteWith.SAMEDIFF)) {
             if (!inputs.isEmpty()) {
-                graph.execWithPlaceHolder(inputs); //This is expected to be just one result
+                graph.exec(inputs, graph.outputs()); //This is expected to be just one result
             } else {
-                graph.execAndEndResults(); //there are graphs with no placeholders like g_00
+                graph.exec(Collections.emptyMap(), graph.outputs()); //there are graphs with no placeholders like g_00
             }
         } else if (executeWith.equals(ExecuteWith.LIBND4J)) {
             for (String input : inputs.keySet()) {
@@ -449,8 +452,10 @@ public class TFGraphTestAllHelper {
                     baseDir.mkdirs();
                     baseDir.deleteOnExit();
                     new ClassPathResource(modelDir).copyDirectory(baseDir);
-                } else
-                    throw new IllegalStateException("local directory declared but doesn't exist: " + localPath);
+                } else{
+                    throw new IllegalStateException("local directory declared but could not find files: " + baseDir.getAbsolutePath());
+                }
+
             }
 
             LinkedList<File> queue = new LinkedList<>();
@@ -524,6 +529,8 @@ public class TFGraphTestAllHelper {
 
         }
 
+//        Preconditions.checkState(!dtypes.isEmpty(), "No datatypes file was found");
+
         val dtype = Nd4j.dataType();
         for (int i = 0; i < resources.size(); i++) {
             URI u = resources.get(i).getFirst().getURI();
@@ -535,7 +542,7 @@ public class TFGraphTestAllHelper {
             varName = varName.replaceAll(".prediction.shape","");
             varName = varName.replaceAll(".prediction_inbw.shape","");
 
-            val type = dtypes.get(modelDir + "/" + varName);
+            DataType type = dtypes.get(modelDir + "/" + varName);
 
             List<String> lines; //= FileUtils.readLines(new ClassPathResource(varPath).getFile(), Charset.forName("UTF-8"));
             try(InputStream is = new BufferedInputStream(resources.get(i).getFirst().getInputStream())){
@@ -549,6 +556,12 @@ public class TFGraphTestAllHelper {
                 }
             }
 
+            if(type == null){
+                log.warn("DATATYPE NOT AVAILABLE FOR: {} - {}", modelName, varName);
+                //Soon: this will be an exception
+                type = DataType.FLOAT;
+            }
+
             INDArray varValue;
             if(filtered.size() == 0){
                 //Scalar
@@ -557,10 +570,7 @@ public class TFGraphTestAllHelper {
                     varContents = Nd4j.readNumpy(is, ",").data().asFloat();
                 }
                 Preconditions.checkState(varContents.length == 1, "Expected length 1 content for scalar shape; got length %s", varContents.length);
-                if (type == null)
-                    varValue = Nd4j.trueScalar(varContents[0]);
-                else
-                    varValue = Nd4j.scalar(type, varContents[0]);
+                varValue = Nd4j.scalar(type, varContents[0]);
             } else {
                 int[] varShape = new int[filtered.size()];
                 for( int j=0; j<filtered.size(); j++ ){
@@ -580,7 +590,7 @@ public class TFGraphTestAllHelper {
 
                     if (content.isEmpty()) {
                         if (varShape.length == 1 && varShape[0] == 0) {
-                            varValue = Nd4j.empty();
+                            varValue = Nd4j.empty(type);
                         } else {
                             throw new IllegalStateException("Empty data but non-empty shape: " + resources.get(i).getSecond());
                         }
@@ -591,21 +601,12 @@ public class TFGraphTestAllHelper {
 
                         if (varShape.length == 1) {
                             if (varShape[0] == 0) {
-                                if (type == null)
-                                    varValue = Nd4j.trueScalar(varContents[0]);
-                                else
-                                    varValue = Nd4j.scalar(type, varContents[0]);
+                                varValue = Nd4j.scalar(type, varContents[0]);
                             } else {
-                                if (type == null)
-                                    varValue = Nd4j.trueVector(varContents);
-                                else
-                                    varValue = Nd4j.create(varContents, new long[]{varContents.length}, type);
+                                varValue = Nd4j.create(varContents, new long[]{varContents.length}, type);
                             }
                         } else {
-                            if (type == null)
-                                varValue = Nd4j.create(varContents, varShape);
-                            else
-                                varValue = Nd4j.create(varContents, ArrayUtil.toLongArray(varShape), type);
+                            varValue = Nd4j.create(varContents, ArrayUtil.toLongArray(varShape), type);
                         }
                     }
                 } catch (NumberFormatException e) {

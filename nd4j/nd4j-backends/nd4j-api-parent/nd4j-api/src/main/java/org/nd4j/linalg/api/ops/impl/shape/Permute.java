@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
@@ -69,11 +70,11 @@ public class Permute extends Transpose {
 
     @Override
     public String tensorflowName() {
-        return "NonExistent";
+        throw new NoOpNameFoundException("No tensorflow op opName found for " + opName());
     }
 
     @Override
     public String onnxName() {
-        return "NonExistentAsWell";
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 }

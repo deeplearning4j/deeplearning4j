@@ -18,7 +18,9 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -27,6 +29,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +42,7 @@ import java.util.Map;
 public class HistogramFixedWidth extends DynamicCustomOp {
 
     public HistogramFixedWidth(SameDiff sameDiff, SDVariable values, SDVariable valuesRange, SDVariable numBins) {
-        super(sameDiff, new SDVariable[]{values, valuesRange}, false);
+        super(sameDiff, numBins == null ? new SDVariable[]{values, valuesRange} : new SDVariable[]{values, valuesRange, numBins}, false);
     }
 
     public HistogramFixedWidth() {
@@ -80,5 +83,14 @@ public class HistogramFixedWidth extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //1 or 2 possible: 2 for TF import (fill with specified value
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 2 || dataTypes.size() == 3),
+                "Expected 2 or 3 input datatypes for %s, got %s", getClass(), dataTypes);
+        //TODO MAKE CONFIGURABLE
+        return Collections.singletonList(DataType.INT);
     }
 }

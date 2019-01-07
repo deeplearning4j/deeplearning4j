@@ -434,7 +434,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
         int nSamples = 100;
         //Generate the training data
         INDArray x = Nd4j.linspace(-10, 10, nSamples).reshape(nSamples, 1);
-        INDArray y = Nd4j.getExecutioner().execAndReturn(new Sin(x.dup()));
+        INDArray y = Nd4j.getExecutioner().exec(new Sin(x.dup()));
         DataSet allData = new DataSet(x, y);
 
         List<DataSet> list = allData.asList();

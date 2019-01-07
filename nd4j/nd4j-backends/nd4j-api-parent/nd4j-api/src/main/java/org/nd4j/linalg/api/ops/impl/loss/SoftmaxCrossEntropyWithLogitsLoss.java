@@ -19,14 +19,18 @@ package org.nd4j.linalg.api.ops.impl.loss;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 
@@ -75,5 +79,13 @@ public class SoftmaxCrossEntropyWithLogitsLoss extends DynamicCustomOp {
     @Override
     public Op.Type opType() {
         return Op.Type.CUSTOM;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 2 || inputDataTypes.size() == 3),
+                "Expected 2 or 3 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        
+        return Collections.singletonList(inputDataTypes.get(0));    //Same as predictions
     }
 }

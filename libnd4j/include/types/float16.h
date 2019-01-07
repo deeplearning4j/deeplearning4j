@@ -27,6 +27,9 @@
 #include <iosfwd>
 #include <iostream>
 #include <pointercast.h>
+#if defined(__INTEL_COMPILER) || defined(__F16C__)
+    #include <immintrin.h>
+#endif
 
 // support for half precision conversion
 #ifdef __INTEL_COMPILER
@@ -116,7 +119,7 @@ typedef __half ihalf;
 #include <fp16_emu.h>
 
 
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) || defined(__F16C__)
 //_Pragma("omp declare simd") inline
 local_def  float cpu_ihalf2float(ihalf h) {
     return _cvtsh_ss(h.getX());
@@ -151,11 +154,12 @@ local_def float cpu_ihalf2float(ihalf h) {
 }
 #endif
 
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) || defined(__F16C__)
 //_Pragma("omp declare simd") inline
 local_def ihalf cpu_float2ihalf_rn(float f) {
     ihalf ret;
     ret.x = _cvtss_sh(f, 0);
+
     return ret;
 }
 

@@ -552,7 +552,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     /**
      * Reverse in place division
      *
-     * @param n      the number to divide by  by
+     * @param n      the number to divide by
      * @param result the result ndarray
      * @return the result ndarray
      */
@@ -1750,6 +1750,8 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray sum(int... dimension);
 
+    INDArray sum(boolean keepDims, int... dimension);
+
     /**
      * This method takes boolean condition, and returns number of elements matching this condition
      *
@@ -1859,7 +1861,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray subArray(long[] offsets, int[] shape, int[] stride);
 
     /**
-     * Returns the elements at the the specified indices
+     * Returns the elements at the specified indices
      *
      * @param indices the indices to getScalar
      * @return the array with the specified elements
@@ -1885,7 +1887,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     double getDouble(long... indices);
 
     /**
-     * Returns the elements at the the specified indices
+     * Returns the elements at the specified indices
      *
      * @param indices the indices to getScalar
      * @return the array with the specified elements
@@ -2704,4 +2706,16 @@ public interface INDArray extends Serializable, AutoCloseable {
      * PLEASE NOTE: This method is NOT safe by any means
      */
     void close();
+
+    /**
+     * This method returns empty array with the same dtype/order/shape as this one
+     * @return
+     */
+    INDArray like();
+
+    /**
+     * This method returns uninitialized array with the same dtype/order/shape as this one
+     * @return
+     */
+    INDArray ulike();
 }

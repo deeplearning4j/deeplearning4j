@@ -18,7 +18,9 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.ArrayList;
@@ -123,6 +125,12 @@ public class Eye extends DynamicCustomOp {
         } else {
             return Collections.emptyList();
         }
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //TODO this should be configurable!
+        return Collections.singletonList(DataType.FLOAT);
     }
 
 }

@@ -42,7 +42,6 @@ import java.util.List;
 @Slf4j
 @Data
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {
-    protected int finalResult;
     protected boolean keepDims = false;
     protected boolean newFormat = false;
 
@@ -65,6 +64,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         }
         this.keepDims = keepDims;
         this.newFormat = true;
+        defineDimensions(dimensions);
     }
 
     public BaseIndexAccumulation(SameDiff sameDiff,
@@ -93,51 +93,21 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         }
         this.keepDims = keepDims;
         this.newFormat = true;
+        defineDimensions(dimensions);
     }
 
 
     public BaseIndexAccumulation() {}
 
-    /**
-     * Initialize with the given
-     * input, pairwise transform, result, and number
-     * of elements
-     *
-     * @param x the input
-     * @param y the pairwise transform
-     * @param z the result
-     * @param n the number of elements
-     */
-    public BaseIndexAccumulation(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        init(x,y,z,n);
+
+    public BaseIndexAccumulation(INDArray x, int[] dimensions) {
+        this(x, null, dimensions);
     }
 
-    public BaseIndexAccumulation(INDArray x, INDArray y, long n) {
-        this(x, y, x, n);
-    }
-
-    public BaseIndexAccumulation(INDArray x) {
-        this(x, null, x, x.lengthLong());
-    }
-
-    public BaseIndexAccumulation(INDArray x, INDArray y) {
-        this(x, y, x, x.lengthLong());
-    }
-
-    @Override
-    public double zeroDouble() {
-        return 0.0;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return 0.0f;
-    }
-
-    @Override
-    public Pair<Double, Integer> zeroPair() {
-        return new Pair<>(zeroDouble(), -1);
+    public BaseIndexAccumulation(INDArray x, INDArray z, int[] dimensions) {
+        super(x, z, x.length());
+        init(x, null, z, x.length());
+        defineDimensions(dimensions);
     }
 
     private void init() {
@@ -147,43 +117,22 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        if (Nd4j.dataType() == DataType.DOUBLE) {
-            this.extraArgs = new Object[] {zeroDouble()};
-        } else if (Nd4j.dataType() == DataType.FLOAT) {
-            this.extraArgs = new Object[] {zeroFloat()};
-        } else if (Nd4j.dataType() == DataType.HALF) {
-            this.extraArgs = new Object[] {zeroHalf()};
-        }
     }
 
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        if(arg().getShape() == null)
+        if(x == null)
             return Collections.emptyList();
 
-        List<LongShapeDescriptor> ret = new ArrayList<>(1);
-        val reducedShape = Shape.getReducedShape(arg().getShape(), dimensions, keepDims, newFormat);
-        ret.add(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
-        return ret;
+        long[] reducedShape = Shape.getReducedShape(x.shape(), dimensions, keepDims, newFormat);
+        return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
     }
 
     @Override
     public Type opType() {
         return Type.INDEXREDUCE;
     }
-
-
-    @Override
-    public void setFinalResult(int idx) {
-        this.finalResult = idx;
-    }
-
-    @Override
-    public int getFinalResult() {
-        return finalResult;
-    }
-
 
     @Override
     public boolean validateDataTypes() {
@@ -193,5 +142,12 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
                     "got result array of type %s for op %s", z.dataType(), getClass());
 
         return true;
+    }
+
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //All index accumulation ops: always long output type
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
+        return Collections.singletonList(DataType.LONG);
     }
 }

@@ -21,6 +21,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -122,7 +123,7 @@ public class Transpose extends DynamicCustomOp {
         if (arr == null) {
             val arrVar = sameDiff.getVariable(arg().getVarName());
             arr = arrVar.getWeightInitScheme().create(arrVar.dataType(), arrVar.getShape());
-            sameDiff.putArrayForVarName(arg().getVarName(), arr);
+            sameDiff.setArrayForVariable(arg().getVarName(), arr);
         }
 
         if(permuteArrayOp != null){
@@ -151,7 +152,9 @@ public class Transpose extends DynamicCustomOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        if (args().length > 1) {
+        if(numInputArguments() > 1){
+            return super.calculateOutputShape();
+        } else if (args().length > 1) {
             if (args()[0].getArr() != null && args()[1].getArr() != null) {
                 return super.calculateOutputShape();
             }
@@ -174,6 +177,14 @@ public class Transpose extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = sameDiff.transpose(i_v.get(0));
         return Arrays.asList(ret);
+    }
+
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
+                "Expected list with 1 or 2 datatype for %s, got %s", getClass(), dataTypes);
+        //Output type is same as input type. Second input is permute dimensions as array
+        return Collections.singletonList(dataTypes.get(0));
     }
 
 }

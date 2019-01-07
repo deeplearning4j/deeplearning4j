@@ -126,6 +126,7 @@ public class TensorflowConversion {
                 }
                 break;
             case LONG: type = DT_INT64; break;
+            case UTF8: type = DT_STRING; break;
             default: throw new IllegalArgumentException("Unsupported data type: " + dataType);
         }
 
@@ -141,20 +142,49 @@ public class TensorflowConversion {
                 case FLOAT:  type = DT_FLOAT;  break;
                 case INT:    type = DT_INT32;  break;
                 case LONG:   type = DT_INT64;  break;
+                case UTF8: type = DT_STRING; break;
                 default: throw new IllegalArgumentException("Unsupported data type: " + dataType);
             }
         }
 
 
         LongPointer longPointer = new LongPointer(tfShape);
+        TF_Tensor tf_tensor = null;
 
-        TF_Tensor tf_tensor = TF_NewTensor(
-                type,
-                longPointer,
-                tfShape.length,
-                data.pointer(),
-                data.length() * data.getElementSize(),
-                calling,null);
+        if (type == DT_STRING) {
+            long size = 0;
+            long length = ndArray.length();
+            BytePointer[] strings = new BytePointer[(int)length];
+            for (int i = 0; i < length; i++) {
+                strings[i] = new BytePointer(ndArray.getStringUnsafe(i));
+                size += TF_StringEncodedSize(strings[i].capacity());
+            }
+            tf_tensor = TF_AllocateTensor(
+                    type,
+                    longPointer,
+                    tfShape.length,
+                    8 * length + size);
+
+            long offset = 0;
+            BytePointer tf_data = new BytePointer(TF_TensorData(tf_tensor)).capacity(TF_TensorByteSize(tf_tensor));
+            TF_Status status = TF_NewStatus();
+            for (int i = 0; i < length; i++) {
+                tf_data.position(8 * i).putLong(offset);
+                offset += TF_StringEncode(strings[i], strings[i].capacity() - 1, tf_data.position(8 * length + offset), tf_data.capacity() - tf_data.position(), status);
+                if (TF_GetCode(status) != TF_OK) {
+                    throw new IllegalStateException("ERROR: Unable to convert tensor " + TF_Message(status).getString());
+                }
+            }
+            TF_DeleteStatus(status);
+        } else {
+            tf_tensor = TF_NewTensor(
+                    type,
+                    longPointer,
+                    tfShape.length,
+                    data.pointer(),
+                    data.length() * data.getElementSize(),
+                    calling,null);
+        }
 
         return tf_tensor;
 
@@ -187,10 +217,29 @@ public class TensorflowConversion {
         DataType nd4jType = typeFor(tfType);
 
         int length = ArrayUtil.prod(ndShape);
-        Pointer pointer = TF_TensorData(tensor).capacity(length);
-        Indexer indexer = indexerForType(nd4jType,pointer);
-        DataBuffer d = Nd4j.createBuffer(indexer.pointer(),nd4jType,length,indexer);
-        INDArray array = Nd4j.create(d,ndShape);
+        INDArray array;
+        if (nd4jType == DataType.UTF8) {
+            String[] strings = new String[length];
+            BytePointer data = new BytePointer(TF_TensorData(tensor)).capacity(TF_TensorByteSize(tensor));
+            BytePointer str = new BytePointer((Pointer)null);
+            SizeTPointer size = new SizeTPointer(1);
+            TF_Status status = TF_NewStatus();
+            for (int i = 0; i < length; i++) {
+                long offset = data.position(8 * i).getLong();
+                TF_StringDecode(data.position(8 * length + offset), data.capacity() - data.position(), str, size, status);
+                if (TF_GetCode(status) != TF_OK) {
+                    throw new IllegalStateException("ERROR: Unable to convert tensor " + TF_Message(status).getString());
+                }
+                strings[i] = str.position(0).capacity(size.get()).getString();
+            }
+            TF_DeleteStatus(status);
+            array = Nd4j.create(strings);
+        } else {
+            Pointer pointer = TF_TensorData(tensor).capacity(length);
+            Indexer indexer = indexerForType(nd4jType,pointer);
+            DataBuffer d = Nd4j.createBuffer(indexer.pointer(),nd4jType,length,indexer);
+            array = Nd4j.create(d,ndShape);
+        }
         Nd4j.getAffinityManager().tagLocation(array, AffinityManager.Location.HOST);
         return array;
     }
@@ -214,6 +263,7 @@ public class TensorflowConversion {
             case DT_FLOAT: return DataType.FLOAT;
             case DT_INT32: return DataType.LONG;
             case DT_INT64: return DataType.LONG;
+            case DT_STRING: return DataType.UTF8;
             default: throw new IllegalArgumentException("Illegal type " + tensorflowType);
         }
     }

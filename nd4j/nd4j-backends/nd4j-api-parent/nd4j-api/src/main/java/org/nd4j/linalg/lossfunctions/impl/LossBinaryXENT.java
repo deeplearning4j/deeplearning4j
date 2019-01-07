@@ -131,7 +131,7 @@ public class LossBinaryXENT extends DifferentialFunction implements ILossFunctio
         INDArray scoreArr;
         if (activationFn instanceof ActivationSoftmax) {
             //Use LogSoftMax op to avoid numerical issues when calculating score
-            INDArray logsoftmax = Nd4j.getExecutioner().execAndReturn(new LogSoftMax(preOutput.dup()));
+            INDArray logsoftmax = Nd4j.getExecutioner().exec(new LogSoftMax(preOutput.dup()));
             scoreArr = logsoftmax.muli(labels);
 
         } else {
@@ -143,7 +143,7 @@ public class LossBinaryXENT extends DifferentialFunction implements ILossFunctio
                         .callInplace(true)
                         .addFloatingPointArguments(clipEps, 1.0-clipEps)
                         .build();
-                Nd4j.getExecutioner().exec(op);
+                Nd4j.getExecutioner().execAndReturn(op);
             }
             scoreArr = Transforms.log(output, true).muli(labels);
             INDArray secondTerm = output.rsubi(1);
@@ -187,7 +187,7 @@ public class LossBinaryXENT extends DifferentialFunction implements ILossFunctio
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
 
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1).muli(-1);
+        return scoreArr.sum(true,1).muli(-1);
     }
 
     @Override
@@ -203,11 +203,11 @@ public class LossBinaryXENT extends DifferentialFunction implements ILossFunctio
                     .callInplace(true)
                     .addFloatingPointArguments(clipEps, 1.0-clipEps)
                     .build();
-            Nd4j.getExecutioner().exec(op);
+            Nd4j.getExecutioner().execAndReturn(op);
         }
 
         INDArray numerator = output.sub(labels);
-        INDArray denominator = Nd4j.getExecutioner().execAndReturn(new TimesOneMinus(output)); // output * (1-output)
+        INDArray denominator = Nd4j.getExecutioner().exec(new TimesOneMinus(output)); // output * (1-output)
         INDArray dLda = numerator.divi(denominator);
 
         if (mask != null && LossUtil.isPerOutputMasking(dLda, mask)) {

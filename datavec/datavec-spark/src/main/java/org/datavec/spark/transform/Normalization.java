@@ -233,7 +233,7 @@ public class Normalization {
      * and mean of the given columns
      * The list returned is a list of size 2 where each row
      * represents the standard deviation of each column and the mean of each column
-     * @param data the data to get the standard deviation and mean for for
+     * @param data the data to get the standard deviation and mean for
      * @param columns the columns to get the
      * @return
      */

@@ -118,7 +118,7 @@ public class LossMAPE extends DifferentialFunction implements ILossFunction {
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1);
+        return scoreArr.sum(true,1);
     }
 
     @Override
@@ -129,8 +129,8 @@ public class LossMAPE extends DifferentialFunction implements ILossFunction {
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray actSubPredicted = labels.sub(output);
-        INDArray dLda = Nd4j.getExecutioner().execAndReturn(new Sign(actSubPredicted));
-        INDArray absLabels = Nd4j.getExecutioner().execAndReturn(new Abs(labels.dup()));
+        INDArray dLda = Nd4j.getExecutioner().exec(new Sign(actSubPredicted));
+        INDArray absLabels = Nd4j.getExecutioner().exec(new Abs(labels.dup()));
         dLda.divi(absLabels).muli(-100.0 / labels.size(1));
 
         //Weighted loss function

@@ -59,22 +59,22 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
     }
 
     public BaseReduceFloatOp(INDArray input, INDArray output, boolean keepDims, int... dimensions){
-        super(input, null, output, input.length());
+        super(input, null, output, dimensions);
         this.keepDims = keepDims;
         this.dimensions = dimensions;
     }
 
 
-    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z, int... dimensions) {
+        super(x, y, z, dimensions);
+    }
+    public BaseReduceFloatOp(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
-    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
-    }
 
-    public BaseReduceFloatOp(INDArray x) {
-        super(x);
+    public BaseReduceFloatOp(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
     protected BaseReduceFloatOp() {
@@ -114,19 +114,25 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        if(args().length < 1) {
-            throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
-        }
-
-        long[] argShape = arg().getShape();
-        if (argShape == null && x() == null) {
+        if(x == null)
             return Collections.emptyList();
-        }
-        long[] inputShape = (argShape == null ? x().shape() : argShape);
 
-        val ret = new ArrayList<LongShapeDescriptor>(1);
-        val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
-        ret.add(LongShapeDescriptor.fromShape(reducedShape, DataType.FLOAT));
-        return ret;
+        //Calculate reduction shape. Note that reduction on scalar - returns a scalar
+        long[] reducedShape = x.length() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims(), newFormat);
+        DataType retType = arg().dataType();
+        if(!retType.isFPType())
+            retType = Nd4j.defaultFloatingPointType();
+        return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, retType));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //Second input is dynamic axis arg
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
+                "Expected 1 or 2 input datatype for %s, got input %s", getClass(), dataTypes);
+        Preconditions.checkState(dataTypes.size() == 1 || dataTypes.get(1).isIntType(), "When executing reductions" +
+                "with 2 inputs, second input (axis) must be an integer datatype for %s, got %s", getClass(), dataTypes);
+        //Output data type: always float. TODO let's allow configuration...
+        return Collections.singletonList(Nd4j.defaultFloatingPointType());
     }
 }

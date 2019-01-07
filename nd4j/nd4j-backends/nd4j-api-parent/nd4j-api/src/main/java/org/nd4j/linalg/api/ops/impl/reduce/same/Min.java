@@ -37,19 +37,15 @@ public class Min extends BaseReduceSameOp {
     public Min() {
     }
 
-    public Min(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public Min(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
-    public Min(INDArray x) {
-        super(x);
+    public Min(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
-    public Min(INDArray x, INDArray z) {
-        super(x, null, z);
-    }
-
-    public Min(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+    public Min(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
         super(x, z, newFormat, keepDims, dimensions);
     }
 
@@ -62,21 +58,6 @@ public class Min extends BaseReduceSameOp {
     @Override
     public String opName() {
         return "reduce_min";
-    }
-
-    @Override
-    public double zeroDouble() {
-        return Double.MAX_VALUE;
-    }
-
-    @Override
-    public float zeroFloat() {
-        return Float.MAX_VALUE;
-    }
-
-    @Override
-    public float zeroHalf() {
-        return 65503.0f;
     }
 
     @Override

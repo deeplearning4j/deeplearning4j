@@ -139,9 +139,19 @@ public class LongShapeDescriptor {
     }
 
     public static LongShapeDescriptor fromShape(long[] shape, @NonNull DataType dataType) {
-        var extras = 0L;
+        long extras = 0L;
         extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
         val desc = new LongShapeDescriptor(shape, Nd4j.getStrides(shape, Nd4j.order()), 0, 1, Nd4j.order(), extras);
         return desc;
+    }
+
+    /**
+     * Return a new LongShapeDescriptor with the same shape, strides, order etc but with the specified datatype instead
+     * @param dataType Datatype of the returned descriptor
+     */
+    public LongShapeDescriptor asDataType(DataType dataType){
+        long extras = 0L;
+        extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
+        return new LongShapeDescriptor(shape, stride, offset, ews, order, extras);
     }
 }

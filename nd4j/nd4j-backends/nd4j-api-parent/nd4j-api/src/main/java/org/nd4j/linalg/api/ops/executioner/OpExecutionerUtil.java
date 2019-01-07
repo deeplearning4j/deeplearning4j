@@ -77,7 +77,7 @@ public class OpExecutionerUtil {
         int match = 0;
         if (!z.isScalar()) {
             MatchCondition condition = new MatchCondition(z, Conditions.isNan());
-            match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+            match = Nd4j.getExecutioner().exec(condition).getInt(0);
         } else {
             if (z.data().dataType() == DataType.DOUBLE) {
                 if (Double.isNaN(z.getDouble(0)))
@@ -108,7 +108,7 @@ public class OpExecutionerUtil {
         int match = 0;
         if (!z.isScalar()) {
             MatchCondition condition = new MatchCondition(z, Conditions.isInfinite());
-            match = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+            match = Nd4j.getExecutioner().exec(condition).getInt(0);
         } else {
             if (z.data().dataType() == DataType.DOUBLE) {
                 if (Double.isInfinite(z.getDouble(0)))

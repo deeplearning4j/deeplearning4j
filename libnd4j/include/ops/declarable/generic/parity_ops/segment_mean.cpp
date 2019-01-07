@@ -92,7 +92,8 @@ namespace nd4j {
         DECLARE_TYPES(segment_mean_bp) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS})
+					->setAllowedOutputTypes(1, {ALL_INTS})
                     ->setSameMode(false);
         }
     }

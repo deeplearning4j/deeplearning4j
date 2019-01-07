@@ -652,6 +652,9 @@ public class Shape {
     }
 
     private static INDArray toOffsetZeroCopyHelper(final INDArray arr, char order, boolean anyOrder) {
+        if(arr.isEmpty())
+            return arr; //Empty arrays are immutable, return as-is
+
         //Use CopyOp:
         char outOrder = (anyOrder ? arr.ordering() : order);
         if (outOrder == 'a')
@@ -2950,14 +2953,17 @@ public class Shape {
     }
 
     public static String shapeToString(LongBuffer buffer) {
+        int length = buffer.capacity();
+        long options = buffer.get(length -3);
         val shapeBuff = shapeOf(buffer);
         int rank = Shape.rank(buffer);
         val strideBuff = stride(buffer);
         StringBuilder sb = new StringBuilder();
-        sb.append("Rank: " + rank + ",");
-        sb.append("Offset: " + Shape.offset(buffer) + "\n");
-        sb.append(" Order: " + Shape.order(buffer));
-        sb.append(" Shape: [");
+        sb.append("Rank: ").append(rank).append(",")
+                .append(" DataType: ").append(ArrayOptionsHelper.dataType(options)).append(",")
+                .append(" Offset: ").append(Shape.offset(buffer)).append(",")
+                .append(" Order: ").append(Shape.order(buffer)).append(",")
+                .append(" Shape: [");
         for (int i = 0; i < rank; i++) {
             sb.append(shapeBuff.get(i));
             if (i < rank - 1)
@@ -2965,7 +2971,7 @@ public class Shape {
         }
         sb.append("], ");
 
-        sb.append(" stride: [");
+        sb.append(" Stride: [");
         for (int i = 0; i < rank; i++) {
             sb.append(strideBuff.get(i));
             if (i < rank - 1)
@@ -2973,6 +2979,11 @@ public class Shape {
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    public static String shapeToStringShort(INDArray arr){
+        long[] s = arr.shape();
+        return arr.dataType() + "," + (s == null ? "[]" : Arrays.toString(s).replace(" ","")) + "," + arr.ordering();
     }
 
 
@@ -3348,6 +3359,15 @@ public class Shape {
         if (axis == null || axis.length == 0)
             return new int[] {Integer.MAX_VALUE};
 
+        if(rank == 0){
+            if(axis.length != 1 || (axis[0] != 0 && axis[0] != Integer.MAX_VALUE)){
+                throw new ND4JIllegalStateException("Array axis for scalar (rank 0) array invalid: rank " + Arrays.toString(axis));
+            }
+            if(axis[0] == Integer.MAX_VALUE)
+                return axis;
+            return new int[]{Integer.MAX_VALUE};
+        }
+
         // first we should get rid of all negative axis
         int[] tmp = new int[axis.length];
 
@@ -3362,7 +3382,8 @@ public class Shape {
         }
 
         // now we're sorting array
-        Arrays.sort(tmp);
+        if (tmp.length > 1)
+            Arrays.sort(tmp);
 
         // and getting rid of possible duplicates
         return uniquify(tmp);
@@ -3695,5 +3716,18 @@ public class Shape {
         if(order != 'c' && order != 'f' && order != 'a'){
             throw new IllegalArgumentException("Invalid order arg: must be 'c' or 'f' (or 'a' for vectors), got '" + order + "'");
         }
+    }
+
+    /**
+     * Create an INDArray to represent the (possibly null) int[] dimensions.
+     * If null or length 0, returns an empty INT array. Otherwise, returns a 1d INT NDArray
+     * @param dimensions Dimensions to convert
+     * @return Dimenions as an INDArray
+     */
+    public static INDArray ndArrayDimFromInt(int... dimensions){
+        if (dimensions == null || dimensions.length == 0)
+            return Nd4j.empty(DataType.INT);
+        else
+            return Nd4j.createFromArray(dimensions);
     }
 }

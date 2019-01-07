@@ -225,7 +225,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                         .build();
                 Nd4j.getExecutioner().exec(op);
 
-                INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(col2d, col2d, 1));
+                INDArray isMax = Nd4j.getExecutioner().exec(new IsMax(col2d, col2d, 1));
                 isMax.muliColumnVector(epsilon1d);
                 break;
             case AVG:
@@ -241,7 +241,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                         convolutionMode == ConvolutionMode.Same, col6dPermuted);
                 INDArray pNorm = Transforms.abs(col2d, true); //dup as we need col2d again later
                 Transforms.pow(pNorm, pnorm, false);
-                pNorm = pNorm.sum(1);
+                pNorm = pNorm.sum(1).reshape(pNorm.size(0), 1);
                 Transforms.pow(pNorm, (1.0 / pnorm), false);
 
                 //dL/dIn = dL/dOut * dOut/dIn

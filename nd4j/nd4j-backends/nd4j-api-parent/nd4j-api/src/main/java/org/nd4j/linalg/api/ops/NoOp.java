@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
@@ -84,6 +85,11 @@ public class NoOp extends DynamicCustomOp {
         if(inputArguments != null && !inputArguments.isEmpty()){
             return Collections.singletonList(inputArguments.get(0).shapeDescriptor());
         }
-        return Collections.singletonList(Nd4j.empty().shapeDescriptor());
+        return Collections.singletonList(Nd4j.empty(DataType.BOOL).shapeDescriptor());
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        return Collections.singletonList(DataType.BOOL);
     }
 }

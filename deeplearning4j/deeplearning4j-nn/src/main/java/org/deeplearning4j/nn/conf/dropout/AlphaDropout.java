@@ -43,7 +43,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * {@link org.deeplearning4j.nn.weights.WeightInit#NORMAL}<br>
  * <br>
  * In conjuction with the aforementioned activation function and weight initialization, AlphaDropout attempts to keep
- * both the mean and variance of the post-dropout activations to the the same (in expectation) as before alpha
+ * both the mean and variance of the post-dropout activations to the same (in expectation) as before alpha
  * dropout was applied.<br>
  * Specifically, AlphaDropout implements a * (x * d + alphaPrime * (1-d)) + b, where d ~ Bernoulli(p), i.e., d \in {0,1}.
  * Where x is the input activations, a, b, alphaPrime are constants determined from the SELU alpha/lambda parameters.

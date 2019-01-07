@@ -21,22 +21,23 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Base scalar operation
+ * Base scalar boolean operation
  *
  * @author Adam Gibson
  */
 @Slf4j
 public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
-
     public BaseScalarBoolOp() {}
 
     public BaseScalarBoolOp(INDArray x, INDArray y, INDArray z, long n, Number num) {
@@ -100,33 +101,17 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
 
     @Override
     public INDArray z() {
-        if(z == null) {
-            if(sameDiff != null) {
-                this.z = outputVariables()[0].getArr();
-                if(this.z == null) {
-                    val var = outputVariables()[0];
-                    if(var.getShape() != null)
-                        this. z = var.storeAndAllocateNewArray();
-                    else {
-                        val argsShape = args()[0].getShape();
-                        if(argsShape != null) {
-                            sameDiff.putShapeForVarName(var.getVarName(),argsShape);
-                            this. z = var.storeAndAllocateNewArray();
-                        }
-                    }
-                }
-            }
-        }
-
         return z;
     }
 
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        List<LongShapeDescriptor> ret = new ArrayList<>(1);
-        ret.add(LongShapeDescriptor.fromShape(arg().getShape(), Shape.pickPairwiseDataType(larg().dataType(), scalarValue.dataType())));
-        return ret;
+        if(x == null)
+            return Collections.emptyList();
+
+        //Calculate reduction shape. Note that reduction on scalar - returns a scalar
+        return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), DataType.BOOL));
     }
 
     @Override
@@ -137,6 +122,11 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
     @Override
     public void setScalar(Number scalar) {
         this.scalarValue = Nd4j.scalar(scalar);
+    }
+
+    @Override
+    public void setScalar(INDArray scalar){
+        this.scalarValue = scalar;
     }
 
     @Override
@@ -154,7 +144,7 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
 
     @Override
     public void setDimension(int... dimension) {
-        this.dimensions = dimension;
+        defineDimensions(dimension);
     }
 
     @Override
@@ -170,4 +160,10 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
         return Type.SCALAR_BOOL;
     }
 
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //All scalar bool ops: output type is always bool
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
+        return Collections.singletonList(DataType.BOOL);
+    }
 }

@@ -33,7 +33,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class ManhattanDistance extends BaseReduceFloatOp {
+public class ManhattanDistance extends BaseReduce3Op {
     public static final String OP_NAME = "manhattan";
 
     public ManhattanDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
@@ -46,49 +46,28 @@ public class ManhattanDistance extends BaseReduceFloatOp {
 
     public ManhattanDistance() {}
 
-    public ManhattanDistance(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        extraArgs = new Object[]{0.0f, 0.0f};
+
+    public ManhattanDistance(INDArray x, INDArray y, int... dimensions) {
+        this(x, y, false, dimensions);
     }
 
-    public ManhattanDistance(INDArray x, INDArray y, long n) {
-        super(x, y, null, n);
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public ManhattanDistance(INDArray x) {
-        super(x);
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public ManhattanDistance(INDArray x, INDArray y) {
-        super(x, y, null);
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public ManhattanDistance(INDArray x, INDArray y, boolean allDistances) {
-        this(x, y);
+    public ManhattanDistance(INDArray x, INDArray y, boolean allDistances, int... dimensions) {
+        this(x, y, null, true, false, dimensions);
         this.isComplex = allDistances;
     }
 
-    public ManhattanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
-        this(x, y, z, x.lengthLong());
+    public ManhattanDistance(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, false, null);
+    }
+
+    public ManhattanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
+        this(x, y, z, true, false, dimensions);
         this.isComplex = allDistances;
     }
 
     public ManhattanDistance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){
         super(x, y, z, newFormat, keepDims, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    @Override
-    public Type opType() {
-        return Type.REDUCE3;
-    }
-
-    @Override
-    public Type getOpType() {
-        return opType();
     }
 
     @Override
@@ -114,21 +93,5 @@ public class ManhattanDistance extends BaseReduceFloatOp {
         SDVariable gradX = sameDiff.sign(difference).mul(gradBroadcastable);
         SDVariable gradY = f().neg(gradX);
         return Arrays.asList(gradX, gradY);
-    }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatingPointType();
     }
 }
