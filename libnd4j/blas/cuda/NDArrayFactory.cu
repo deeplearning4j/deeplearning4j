@@ -19,6 +19,7 @@
 //
 
 #include <NDArrayFactory.h>
+#include <exceptions/cuda_exception.h>
 
 namespace nd4j {
 
@@ -438,13 +439,23 @@ NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &sh
     size_t bufferSize = res.lengthOf() * res.sizeOfT();
     size_t shapeSize = shape::shapeInfoByteLength(res.shapeInfo());
 
-    cudaMalloc(&specialBuffer, bufferSize);
-    cudaMalloc(&specialShapeInfo, shapeSize);
+    if (context->getWorkspace() == nullptr) {
+        auto res = cudaMalloc(&specialBuffer, bufferSize);
+        if (res != 0)
+            throw cuda_exception::build("[DEVICE] allocation failed", res);
+
+        res = cudaMalloc(&specialShapeInfo, shapeSize);
+        if (res != 0)
+            throw cuda_exception::build("[DEVICE] allocation failed", res);
+    } else {
+        specialBuffer = reinterpret_cast<int8_t *>(context->getWorkspace()->allocateBytes(nd4j::memory::MemoryType::DEVICE, bufferSize));
+        specialShapeInfo = reinterpret_cast<Nd4jLong *>(context->getWorkspace()->allocateBytes(nd4j::memory::MemoryType::DEVICE, shapeSize));
+    }
 
     cudaMemset(specialBuffer, 0, bufferSize);
     cudaMemcpy(specialShapeInfo, res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
     res.tickWriteDevice();
-    res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
+    res.setContext(context);
     res.setSpecialBuffers(specialBuffer, specialShapeInfo);
     res.triggerAllocationFlag(true, true);
 

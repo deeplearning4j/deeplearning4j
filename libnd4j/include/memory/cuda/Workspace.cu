@@ -139,7 +139,10 @@ namespace nd4j {
 
         Workspace::~Workspace() {
             if (this->_allocatedHost && !_externalized)
-                free((void *)this->_ptrHost);
+                cudaFreeHost((void *)this->_ptrHost);
+
+            if (this->_allocatedDevice && !_externalized)
+                cudaFree((void *)this->_ptrHost);
 
             freeSpills();
         }

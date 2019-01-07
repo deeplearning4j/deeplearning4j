@@ -32,25 +32,25 @@ class CudaWorkspaceTests : public testing::Test {
 };
 
 TEST_F(CudaWorkspaceTests, Basic_Tests_1) {
-    Workspace workspace(65536);
+    Workspace workspace(65536, 65536);
 
     ASSERT_EQ(0, workspace.getCurrentOffset());
     LaunchContext ctx;
     ctx.setWorkspace(&workspace);
     auto array = NDArrayFactory::create<float>('c', {5, 5}, &ctx);
 
-    ASSERT_EQ(132, workspace.getCurrentOffset());
-    ASSERT_EQ(32, workspace.getCurrentSecondaryOffset());
+    ASSERT_EQ(164, workspace.getCurrentOffset());
+    ASSERT_EQ(64, workspace.getCurrentSecondaryOffset());
 }
 
 TEST_F(CudaWorkspaceTests, Basic_Tests_2) {
-    Workspace workspace(65536);
+    Workspace workspace(65536, 65536);
 
     ASSERT_EQ(0, workspace.getCurrentOffset());
     LaunchContext ctx;
     ctx.setWorkspace(&workspace);
     auto array = NDArrayFactory::create<float>('c', {5, 5}, {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, &ctx);
 
-    ASSERT_EQ(132, workspace.getCurrentOffset());
-    ASSERT_EQ(132, workspace.getCurrentSecondaryOffset());
+    ASSERT_EQ(164, workspace.getCurrentOffset());
+    ASSERT_EQ(164, workspace.getCurrentSecondaryOffset());
 }
