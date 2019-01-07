@@ -52,7 +52,7 @@ import java.util.Map;
  * - Per x/y/z location masking: where each spatial X/Y/Z location is present or not (all channels at a given x/y/z are masked by it).
  * Mask shape: [n,1,d,h,w] (NCDHW format) or [n,d,h,w,1] (NDHWC format).<br>
  * - Per output masking: Where each output activation value is present or not - mask shape [n,c,d,h,w] (NCDHW format) or
- * [n,d,h,w,c] (NDHWC format) - same same as input/output in both cases<br>
+ * [n,d,h,w,c] (NDHWC format) - same as input/output in both cases<br>
  *
  * @author Alex Black
  */

@@ -98,7 +98,7 @@ class Householder {
     // void biDiagonalizeUp(NDArray& matrix);
 
     // /** 
-    // *  given a matrix matrix [m,n], this function computes its singular value decomposition matrix = u * s * v^T
+    // *  given a matrix [m,n], this function computes its singular value decomposition matrix = u * s * v^T
     // *   
     // *  matrix - input 2D matrix to decompose, [m, n]
     // *  u - unitary matrix containing left singular vectors of input matrix, [m, m]

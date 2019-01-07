@@ -20251,7 +20251,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * performs singular value decomposition (SVD) of one one or more matrices, evaluates the SVD of each inner-most 2D matrix in input array:
+         * performs singular value decomposition (SVD) of one or more matrices, evaluates the SVD of each inner-most 2D matrix in input array:
          * x[..., :, :] = u[..., :, :] * s[...,:] * transpose(v[..., :, :]) 
          *
          * Input array:

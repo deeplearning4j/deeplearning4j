@@ -159,7 +159,7 @@ public interface DataBufferFactory {
 
 
     /**
-     * Create a double buffer buffer
+     * Create a double buffer
      * @param data
      * @param length
      * @return
@@ -432,7 +432,7 @@ public interface DataBufferFactory {
 
 
     /**
-     * Create a double buffer buffer
+     * Create a double buffer
      * @param data
      * @param length
      * @return

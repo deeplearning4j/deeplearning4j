@@ -26,7 +26,7 @@ import java.util.List;
 
 /**
  * DefaultRepartitioner: Repartition data so that we exactly the minimum number of objects per partition, up to a
- * specified maximum number of partitions partitions
+ * specified maximum number of partitions
  *
  * @author Alex Black
  */
