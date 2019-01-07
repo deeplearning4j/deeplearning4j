@@ -225,7 +225,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                         .build();
                 Nd4j.getExecutioner().exec(op);
 
-                INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(col2d, col2d, 1));
+                INDArray isMax = Nd4j.getExecutioner().exec(new IsMax(col2d, col2d, 1));
                 isMax.muliColumnVector(epsilon1d);
                 break;
             case AVG:

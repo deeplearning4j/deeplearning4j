@@ -39,7 +39,6 @@ import java.util.Map;
 @NoArgsConstructor
 @Slf4j
 public abstract class BaseBroadcastBoolOp extends BaseOp implements BroadcastOp {
-
     protected int[] dimension;
 
 
@@ -154,6 +153,7 @@ public abstract class BaseBroadcastBoolOp extends BaseOp implements BroadcastOp 
             if (dimension[i] < 0)
                 dimension[i] += x.rank();
 
+        defineDimensions(dimension);
     }
 
     @Override

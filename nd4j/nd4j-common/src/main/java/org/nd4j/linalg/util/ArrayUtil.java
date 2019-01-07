@@ -1178,7 +1178,7 @@ public class ArrayUtil {
 
     public static long[] removeIndex(long[] data, int... index) {
         if (index.length >= data.length) {
-            throw new IllegalStateException("Illegal remove: indexes.length > data.length (index.length="
+            throw new IllegalStateException("Illegal remove: indexes.length >= data.length (index.length="
                     + index.length + ", data.length=" + data.length + ")");
         }
         int offset = 0;

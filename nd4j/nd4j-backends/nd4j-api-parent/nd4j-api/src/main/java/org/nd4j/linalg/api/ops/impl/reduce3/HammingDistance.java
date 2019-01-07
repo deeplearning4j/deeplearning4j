@@ -44,38 +44,21 @@ public class HammingDistance extends BaseReduceFloatOp {
         passThrough = true;
     }
 
-    public HammingDistance(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
+    public HammingDistance(INDArray x, INDArray y, int... dimensions) {
+        this(x, y, null, false, dimensions);
     }
 
-    public HammingDistance(INDArray x, INDArray y, long n) {
-        super(x, y, null);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public HammingDistance(INDArray x) {
-        super(x);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public HammingDistance(INDArray x, INDArray y) {
-        super(x, y, null);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
-        extraArgs = new Object[]{0.0f, 0.0f};
-    }
-
-    public HammingDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
-        this(x, y, z, x.lengthLong());
+    public HammingDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
+        this(x, y, z, true, false, dimensions);
         this.isComplex = allDistances;
     }
 
-    public HammingDistance(INDArray x, INDArray y, boolean allDistances) {
-        this(x, y);
-        this.isComplex = allDistances;
+    public HammingDistance(INDArray x, INDArray y, boolean allDistances, int... dimensions) {
+        this(x, y, null, allDistances, dimensions);
+    }
+
+    public HammingDistance(INDArray x, INDArray y, INDArray z) {
+        this(x, y, z, false, null);
     }
 
     public HammingDistance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions){

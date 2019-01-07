@@ -86,7 +86,7 @@ public class SoftMaxDerivative extends BaseGradientOp  {
 
     @Override
     public void exec() {
-        INDArray softmaxed = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(x));
+        INDArray softmaxed = Nd4j.getExecutioner().exec(new OldSoftMax(x));
         INDArray mulled = softmaxed.muli(y);
         INDArray summed = mulled.sum(-1);
         softmaxed.muliColumnVector(summed);

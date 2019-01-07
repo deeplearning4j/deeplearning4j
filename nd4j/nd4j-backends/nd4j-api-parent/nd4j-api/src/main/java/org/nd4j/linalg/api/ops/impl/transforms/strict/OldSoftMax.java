@@ -63,12 +63,11 @@ public class OldSoftMax extends BaseTransformStrictOp {
     public OldSoftMax() {
     }
 
-    public OldSoftMax(INDArray x, INDArray z) {
+    public OldSoftMax(INDArray x, INDArray z, int... axis) {
         this(x, z, x.length());
-
     }
 
-    public OldSoftMax(INDArray x, INDArray z, long n) {
+    private OldSoftMax(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
@@ -85,7 +84,7 @@ public class OldSoftMax extends BaseTransformStrictOp {
     }
     */
 
-    public OldSoftMax(INDArray x) {
+    public OldSoftMax(INDArray x, int... dimensions) {
         super(x);
         Preconditions.checkArgument(x != null && x.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only");
     }
@@ -142,9 +141,9 @@ public class OldSoftMax extends BaseTransformStrictOp {
 
             INDArray exp;
             if (z != null) {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax, z));
+                exp = Nd4j.getExecutioner().exec(new Exp(xMinusMax, z));
             } else {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax));
+                exp = Nd4j.getExecutioner().exec(new Exp(xMinusMax));
             }
 
             INDArray sum = exp.sum(dimensions);
@@ -156,9 +155,9 @@ public class OldSoftMax extends BaseTransformStrictOp {
             double max = x.maxNumber().doubleValue();
             INDArray exp;
             if (z != null) {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(x.sub(max), z));
+                exp = Nd4j.getExecutioner().exec(new Exp(x.sub(max), z));
             } else {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(x.sub(max)));
+                exp = Nd4j.getExecutioner().exec(new Exp(x.sub(max)));
             }
             exp.divi(exp.sumNumber().doubleValue());
             this.z = exp;

@@ -37,19 +37,15 @@ public class Mean extends BaseReduceFloatOp {
     public Mean() {
     }
 
-    public Mean(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public Mean(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
-    public Mean(INDArray x) {
-        super(x);
+    public Mean(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
-    public Mean(INDArray x, INDArray z) {
-        super(x, null, z, x.lengthLong());
-    }
-
-    public Mean(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+    public Mean(INDArray x, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
         super(x, z, newFormat, keepDims, dimensions);
     }
 

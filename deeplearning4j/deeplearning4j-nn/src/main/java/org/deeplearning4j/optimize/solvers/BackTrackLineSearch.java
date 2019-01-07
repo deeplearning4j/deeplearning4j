@@ -221,8 +221,7 @@ public class BackTrackLineSearch implements LineOptimizer {
 
             // check for convergence on delta x
             if ((step < stepMin) || Nd4j.getExecutioner()
-                            .execAndReturn(new Eps(parameters, candidateParameters,
-                                            Nd4j.createUninitialized(DataType.BOOL, candidateParameters.shape(), candidateParameters.ordering()),
+                            .exec(new Eps(parameters, candidateParameters,Nd4j.createUninitialized(DataType.BOOL, candidateParameters.shape(), candidateParameters.ordering()),
                                             candidateParameters.length())).castTo(DataType.FLOAT).sumNumber().longValue() == candidateParameters.length()) {
                 score = setScoreFor(parameters, workspaceMgr);
                 log.debug("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using original params. Score = {}",

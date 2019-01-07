@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Returns the shape of N input array as as N output arrays
+ * Returns the shape of N input array as N output arrays
  *
  * @author Alex Black
  */

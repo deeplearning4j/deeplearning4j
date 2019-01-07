@@ -190,7 +190,7 @@ public class PatriciaTrieFormatter<V> {
      * @param node  node to format
      * @param keyMapper  keymapper to map keys to bits
      * @param formatBitString  true if the bits for this key should be included in the node
-     * @return formatted formatted node, not null
+     * @return formatted node, not null
      */
     private String formatNodeLabel(PatriciaTrie.PatriciaNode<V> node, KeyMapper<String> keyMapper,
                     boolean formatBitString) {

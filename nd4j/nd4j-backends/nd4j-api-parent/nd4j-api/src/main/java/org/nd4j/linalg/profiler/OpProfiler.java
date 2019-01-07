@@ -247,7 +247,7 @@ public class OpProfiler {
             }
 
         }
-        lastZ = op.z().data().address();
+        lastZ = op.z() != null ? op.z().data().address() : 0L;
         prevOpMatching = opClass;
         prevOpMatchingDetailed = opClass + " " + op.opName();
         prevOpMatchingInverted = opClass + " " + op.opName();

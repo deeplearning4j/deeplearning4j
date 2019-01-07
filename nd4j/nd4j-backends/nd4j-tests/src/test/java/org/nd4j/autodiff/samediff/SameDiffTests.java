@@ -1820,7 +1820,7 @@ public class SameDiffTests {
         //then dL/dIn = 1 if in_i == min(in) or 0 otherwise
 
         //Note that we don't have an "IsMin" op, so use IsMax(neg(in)) which is equivalent
-        INDArray exp = Nd4j.getExecutioner().execAndReturn(new IsMax(arr.neg()));
+        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.neg()));
 
         assertEquals(exp, dLdIn);
     }
@@ -1844,7 +1844,7 @@ public class SameDiffTests {
         //If L = max(in)
         //then dL/dIn = 1 if in_i == max(in) or 0 otherwise
 
-        INDArray exp = Nd4j.getExecutioner().execAndReturn(new IsMax(arr.dup()));
+        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.dup()));
 
         assertEquals(exp, dLdIn);
     }
@@ -1973,7 +1973,7 @@ public class SameDiffTests {
         INDArray a = Nd4j.rand(new long[]{3, 4, 5});
         INDArray b = Nd4j.rand(new long[]{3, 4, 5});
 
-        INDArray expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a, b), 0);
+        INDArray expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a, b, 0));
 
         val expShape = new long[]{4, 5};
 
@@ -2065,11 +2065,11 @@ public class SameDiffTests {
                     break;
                 case 7:
                     t = sd.max(in1, in2);
-                    expOut = Nd4j.getExecutioner().execAndReturn(new OldMax(ia, ib, ia.dup(), ia.length()));
+                    expOut = Nd4j.getExecutioner().exec(new OldMax(ia, ib, ia.dup(), ia.length()));
                     break;
                 case 8:
                     t = sd.min(in1, in2);
-                    expOut = Nd4j.getExecutioner().execAndReturn(new OldMin(ia, ib, ia.dup(), ia.length()));
+                    expOut = Nd4j.getExecutioner().exec(new OldMin(ia, ib, ia.dup(), ia.length()));
                     break;
                 case 9:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
