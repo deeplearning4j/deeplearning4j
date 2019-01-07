@@ -201,7 +201,9 @@ DECLARE_SHAPE_FN(range) {
             delta = INT_ARG(2);
         }
 
-        REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
+        if (limit == start)
+            return SHAPELIST(ShapeBuilders::emptyShapeInfo(nd4j::DataType::INT32, block.workspace()));
+
         REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
         if (limit > DataTypeUtils::max<int>())
@@ -229,7 +231,11 @@ DECLARE_SHAPE_FN(range) {
             delta = T_ARG(2);
         }
 
-        REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
+        //REQUIRE_TRUE(limit != start, 0, "CUSTOM RANGE OP: limit and start values should be different, but got both equal to %f !", limit);
+        if (limit == start)
+            return SHAPELIST(ShapeBuilders::emptyShapeInfo(Environment::getInstance()->defaultFloatDataType(), block.workspace()));
+
+
         REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
         steps = static_cast<Nd4jLong >((limit - start) / delta);

@@ -67,3 +67,27 @@ TEST_F(DeclarableOpsTests13, test_empty_range_1) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests13, test_empty_range_2) {
+
+    nd4j::ops::range op;
+    auto result = op.execute({}, {1.0, 1.0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_TRUE(z->isEmpty());
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests13, test_empty_range_3) {
+
+    nd4j::ops::range op;
+    auto result = op.execute({}, {}, {1, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_TRUE(z->isEmpty());
+
+    delete result;
+}
