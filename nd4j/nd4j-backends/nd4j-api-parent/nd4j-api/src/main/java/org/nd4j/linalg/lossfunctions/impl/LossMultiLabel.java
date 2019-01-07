@@ -88,7 +88,7 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
 
         final INDArray positive = labels;
         final INDArray negative = labels.eq(0.0).castTo(Nd4j.defaultFloatingPointType());
-        final INDArray normFactor = negative.sum(1).castTo(Nd4j.defaultFloatingPointType()).muli(positive.sum(1));
+        final INDArray normFactor = negative.sum(true,1).castTo(Nd4j.defaultFloatingPointType()).muli(positive.sum(true,1));
 
 
         long examples = positive.size(0);
@@ -130,7 +130,7 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
                 }
 
                 if (gradientOutput != null) {
-                    gradientOutput.getRow(i).assign(classificationDifferences.sum(0).addi(classificationDifferences.sum(1).transposei().negi()));
+                    gradientOutput.getRow(i).assign(classificationDifferences.sum(0).addi(classificationDifferences.sum(true,1)/*.transposei()*/.negi()));
                 }
             }
         }
@@ -166,7 +166,7 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1);
+        return scoreArr.sum(true,1);
     }
 
     @Override

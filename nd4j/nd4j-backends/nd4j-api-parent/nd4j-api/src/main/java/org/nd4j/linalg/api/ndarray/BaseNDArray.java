@@ -4714,7 +4714,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
-     * Returns the sum along the last dimension of this ndarray
+     * Returns the sum along the specified dimension(s) of this ndarray
      *
      * @param dimension the dimension to getScalar the sum along
      * @return the sum along the specified dimension of this ndarray
@@ -4723,6 +4723,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray sum(int... dimension) {
         validateNumericalArray("sum");
         return Nd4j.getExecutioner().exec(new Sum(this, dimension));
+    }
+
+    /**
+     * Returns the sum along the last dimension of this ndarray
+     *
+     * @param dimension the dimension to getScalar the sum along
+     * @return the sum along the specified dimension of this ndarray
+     */
+    @Override
+    public INDArray sum(boolean keepDim, int... dimension) {
+        validateNumericalArray("sum");
+        return Nd4j.getExecutioner().exec(new Sum(this, this.ulike(), true, keepDim, dimension));
     }
 
 

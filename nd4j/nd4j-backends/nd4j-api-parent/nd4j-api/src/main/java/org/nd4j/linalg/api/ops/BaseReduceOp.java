@@ -228,6 +228,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
             val keepDims = attributesForNode.get("keep_dims").getB();
             this.keepDims = keepDims;
         }
+        defineDimensions(this.dimensions);
     }
 
     protected boolean hasReductionIndices(NodeDef nodeDef) {

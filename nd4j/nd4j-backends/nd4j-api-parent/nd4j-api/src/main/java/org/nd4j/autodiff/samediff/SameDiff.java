@@ -68,6 +68,7 @@ import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
+import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -10045,8 +10046,14 @@ public class SameDiff {
                 //Also should be a floating point type, to contribute to score
                 List<SDVariable> finalOutputs = new ArrayList<>();
                 for(Variable v : sameDiff.variables.values()){
-                    if(v.getVariable().getVariableType() != VariableType.ARRAY || (v.getInputsForOp() != null && ! v.getInputsForOp().isEmpty())
-                            || !v.getVariable().dataType().isFPType()){
+                    String outputOfOp = v.getOutputOfOp();
+                    boolean isExternalGrad = false;
+                    if(outputOfOp != null && getOps().get(outputOfOp).getOp() instanceof ExternalErrorsFunction){
+                        isExternalGrad = true;
+                    }
+                    if(!isExternalGrad && (v.getVariable().getVariableType() != VariableType.ARRAY ||
+                            (v.getInputsForOp() != null && ! v.getInputsForOp().isEmpty())
+                            || !v.getVariable().dataType().isFPType())){
                         continue;
                     }
                     finalOutputs.add(v.getVariable());

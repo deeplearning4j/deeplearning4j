@@ -187,7 +187,7 @@ public class LossBinaryXENT extends DifferentialFunction implements ILossFunctio
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
 
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1).muli(-1);
+        return scoreArr.sum(true,1).muli(-1);
     }
 
     @Override

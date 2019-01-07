@@ -1307,6 +1307,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
+    public INDArray sum(boolean keepDims, int... dimension){
+        return null;
+    }
+
+    @Override
     public Number sumNumber() {
         return null;
     }
