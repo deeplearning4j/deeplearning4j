@@ -53,3 +53,17 @@ TEST_F(DeclarableOpsTests13, test_pow_1) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests13, test_empty_range_1) {
+    auto start = NDArrayFactory::create<int>(0);
+    auto limit = NDArrayFactory::create<int>(0);
+
+    nd4j::ops::range op;
+    auto result = op.execute({&start, &limit}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_TRUE(z->isEmpty());
+
+    delete result;
+}
