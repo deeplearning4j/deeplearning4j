@@ -33,7 +33,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class JaccardDistance extends BaseReduceFloatOp {
+public class JaccardDistance extends BaseReduce3Op {
 
     public JaccardDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);

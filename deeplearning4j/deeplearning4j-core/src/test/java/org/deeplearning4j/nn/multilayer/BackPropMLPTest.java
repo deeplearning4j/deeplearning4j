@@ -401,15 +401,6 @@ public class BackPropMLPTest extends BaseDL4JTest {
         return out;
     }
 
-    public static INDArray doTanh(INDArray input) {
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", input.dup()));
-    }
-
-    public static INDArray doTanhDerivative(INDArray input) {
-        return Nd4j.getExecutioner()
-                        .execAndReturn(new TanhDerivative(input.dup()));
-    }
-
     public static INDArray doSoftmax(INDArray input) {
         return Transforms.softmax(input, true);
     }
@@ -419,7 +410,7 @@ public class BackPropMLPTest extends BaseDL4JTest {
     }
 
     public static INDArray doSigmoidDerivative(INDArray input) {
-        return Nd4j.getExecutioner().execAndReturn(new SigmoidDerivative(input.dup()));
+        return Nd4j.getExecutioner().exec(new SigmoidDerivative(input.dup()));
     }
 
 }

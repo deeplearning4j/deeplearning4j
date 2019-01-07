@@ -154,9 +154,10 @@ public class TFGraphTestZooModels {
 
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
-//        if(!modelName.equals("ssd_mobilenet_v1_coco_2018_01_28")){
-//            return;
-//        }
+//        if(!modelName.equals("densenet_2018_04_27")){
+        if(!modelName.equals("nasnet_mobile_2018_04_27")){
+            return;
+        }
         currentTestDir = testDir.newFolder();
 
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);

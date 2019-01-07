@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.IrisDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
@@ -34,15 +35,13 @@ public class SameDiffTrainingTest {
             log.info("Starting: " + u);
             SameDiff sd = SameDiff.create();
 
-            SDVariable in = sd.var("input", -1, 4);
-            SDVariable label = sd.var("label", -1, 3);
-            sd.addAsPlaceHolder("input");
-            sd.addAsPlaceHolder("label");
+            SDVariable in = sd.placeHolder("input", -1, 4);
+            SDVariable label = sd.placeHolder("label", -1, 3);
 
-            SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), 4, 10);
+            SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), DataType.FLOAT, 4, 10);
             SDVariable b0 = sd.zero("b0", 1, 10);
 
-            SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), 10, 3);
+            SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), DataType.FLOAT, 10, 3);
             SDVariable b1 = sd.zero("b1", 1, 3);
 
             SDVariable z0 = in.mmul(w0).add(b0);

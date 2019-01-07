@@ -18,11 +18,14 @@ package org.nd4j.linalg.api.ops.impl.scatter;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -61,16 +64,23 @@ public class ScatterMax extends DynamicCustomOp {
         //For modified indices, dL/dref = dL/dOut if(ref[index[i],j] == max) or 0 otherwise
         //And for updates, dL/du = dL/dOut if(update[i,j]==max) or 0 otherwise
 
-        List<SDVariable> ret = new ArrayList<>(3);
-        SDVariable notModified = arg(0).eq(outputVariable());   //0 if modified, 1 otherwise
+        SDVariable notModified = arg(0).eq(outputVariable()).castTo(arg(0).dataType());   //0 if modified, 1 otherwise
         SDVariable refGrad = gradOut.get(0).mul(notModified);
 
         SDVariable gatherOut = f().gather(outputVariable(), arg(1), 0);
         SDVariable gatherGrad = f().gather(gradOut.get(0), arg(1), 0);
-        SDVariable outIsUpdate = gatherOut.eq(arg(2));
+        SDVariable outIsUpdate = gatherOut.eq(arg(2)).castTo(arg(2).dataType());
         SDVariable updateGrad = gatherGrad.mul(outIsUpdate);
 
         return Arrays.asList(refGrad, f().zerosLike(arg(1)), updateGrad);
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 3, "Expected exactly 3 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        Preconditions.checkState(inputDataTypes.get(0) == inputDataTypes.get(2), "Reference (input 0) and updates (input 2) must have exactly same data types, got %s and %s",
+                inputDataTypes.get(0), inputDataTypes.get(2));
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 
 }

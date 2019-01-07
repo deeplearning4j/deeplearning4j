@@ -86,16 +86,6 @@
 
 //#include <sys/time.h>
 
-// b40c only available for gcc :(
-#ifdef  __clang__
-// do nothing
-#elif __GNUC__
-#include <b40c/util/error_utils.cuh>
-#include <b40c/util/multiple_buffering.cuh>
-
-#include <b40c/radix_sort/enactor.cuh>
-#endif
-
 #include <curand.h>
 #include <Status.h>
 #include <helpers/DebugHelper.h>

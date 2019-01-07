@@ -25,8 +25,11 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.NoOp;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.reduce.*;
@@ -63,6 +66,7 @@ import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
+import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
@@ -141,16 +145,6 @@ public class DifferentialFunctionFactory {
                 iX.getShape());
     }
 
-
-    public SDVariable var(String iName, SDVariable iX) {
-        return SDVariable.builder()
-                .shape(iX.getShape())
-                .varName(iName)
-                .sameDiff(sameDiff())
-                .placeholderOnNullShape(false)
-                .build();
-    }
-
     public ExternalErrorsFunction externalErrors(SDVariable... inputs) {
         return externalErrors(null, inputs);
     }
@@ -163,14 +157,6 @@ public class DifferentialFunctionFactory {
         return fn;
     }
 
-    public SDVariable zero(int[] shape) {
-        return sameDiff.zero("one-" + UUID.randomUUID().toString(), shape);
-    }
-
-    public SDVariable zero(long[] shape) {
-        return sameDiff.zero("one-" + UUID.randomUUID().toString(), shape);
-    }
-
     public SDVariable zerosLike(SDVariable input) {
         return zerosLike(null, input);
     }
@@ -178,15 +164,6 @@ public class DifferentialFunctionFactory {
     public SDVariable zerosLike(String name, SDVariable input) {
         validateDifferentialFunctionsameDiff(input);
         return new ZerosLike(name, sameDiff(), input).outputVariable();
-    }
-
-
-    public SDVariable one(int[] shape) {
-        return one(ArrayUtil.toLongArray(shape));
-    }
-
-    public SDVariable one(long[] shape) {
-        return sameDiff.one("one-" + UUID.randomUUID().toString(), shape);
     }
 
     public SDVariable onesLike(String name, SDVariable input) {
@@ -204,6 +181,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable range(double from, double to, double step) {
         return new Range(sameDiff(), from, to, step).outputVariable();
+    }
+
+    public SDVariable cast(SDVariable toCast, DataType toType){
+        return new Cast(sameDiff(), toCast, toType).outputVariable();
     }
 
     public SDVariable[] meshgrid(boolean cartesian, SDVariable... inputs) {
@@ -1059,7 +1040,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable relu(SDVariable iX, double cutoff) {
-        return new RectifedLinear(sameDiff(), iX, false, cutoff).outputVariable();
+        return new RectifiedLinear(sameDiff(), iX, false, cutoff).outputVariable();
     }
 
     public SDVariable relu6(SDVariable iX, double cutoff) {
@@ -1294,8 +1275,8 @@ public class DifferentialFunctionFactory {
         return new Concat(sameDiff(), dimension, inputs).outputVariable();
     }
 
-    public SDVariable fill(SDVariable shape, double value) {
-        return new Fill(sameDiff(), shape, value).outputVariable();
+    public SDVariable fill(SDVariable shape, DataType dataType, double value) {
+        return new Fill(sameDiff(), shape, dataType, value).outputVariable();
     }
 
     public SDVariable dot(SDVariable x, SDVariable y, int... dimensions) {
@@ -2062,26 +2043,13 @@ public class DifferentialFunctionFactory {
         return new ScatterUpdate(sameDiff(), ref, indices, updates).outputVariable();
     }
 
-    /**
-     * @param func
-     * @return
-     */
-    public long getInputLength(SDVariable func) {
-        validateDifferentialFunctionsameDiff(func);
-        long[] inputShape = func.arg().getShape();
-        return ArrayUtil.prodLong(inputShape);
+
+    public SDVariable merge(SDVariable... inputs){
+        return new Merge(sameDiff(), inputs).outputVariable();
     }
 
-    public long getReductionLength(DifferentialFunction func) {
-        val inputShape = func.arg().getShape();
-        if (Shape.isWholeArray(inputShape, func.getDimensions())) {
-            return ArrayUtil.prod(inputShape);
-        }
-        int prod = 1;
-        for (int i : func.getDimensions()) {
-            prod *= inputShape[i];
-        }
-        return prod;
+    public SDVariable[] switchOp(SDVariable input, SDVariable predicate){
+        return new Switch(sameDiff(), input, predicate).outputVariables();
     }
 
 
@@ -2123,9 +2091,7 @@ public class DifferentialFunctionFactory {
 
 
     public String toString() {
-        return "DifferentialFunctionFactory{" +
-                "methodNames=" + methodNames +
-                '}';
+        return "DifferentialFunctionFactory{methodNames=" + methodNames + "}";
     }
 
 

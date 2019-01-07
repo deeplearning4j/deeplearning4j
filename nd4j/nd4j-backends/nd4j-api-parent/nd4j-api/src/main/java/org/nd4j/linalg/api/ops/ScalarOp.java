@@ -37,6 +37,8 @@ public interface ScalarOp extends Op {
      */
     void setScalar(Number scalar);
 
+    void setScalar(INDArray scalar);
+
     /**
      * This method returns target dimensions for this op
      * @return

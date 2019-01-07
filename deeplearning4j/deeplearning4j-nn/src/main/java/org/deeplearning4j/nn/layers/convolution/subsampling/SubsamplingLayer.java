@@ -241,7 +241,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                         convolutionMode == ConvolutionMode.Same, col6dPermuted);
                 INDArray pNorm = Transforms.abs(col2d, true); //dup as we need col2d again later
                 Transforms.pow(pNorm, pnorm, false);
-                pNorm = pNorm.sum(1);
+                pNorm = pNorm.sum(1).reshape(pNorm.size(0), 1);
                 Transforms.pow(pNorm, (1.0 / pnorm), false);
 
                 //dL/dIn = dL/dOut * dOut/dIn

@@ -1307,6 +1307,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
+    public INDArray sum(boolean keepDims, int... dimension){
+        return null;
+    }
+
+    @Override
     public Number sumNumber() {
         return null;
     }
@@ -1994,5 +1999,15 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public boolean none() {
         return false;
+    }
+
+    @Override
+    public INDArray like() {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public INDArray ulike() {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }

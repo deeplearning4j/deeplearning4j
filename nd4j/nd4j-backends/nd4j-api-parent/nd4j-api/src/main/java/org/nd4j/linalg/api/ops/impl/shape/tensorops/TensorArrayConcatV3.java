@@ -62,7 +62,7 @@ public class TensorArrayConcatV3 extends BaseTensorOp {
        val list = getList(sameDiff);
        val array = list.concat();
        val name = this.getOwnName();
-       sameDiff.updateVariable(name, array);
+       sameDiff.setArrayForVariable(name, array);
 
        return list;
     }

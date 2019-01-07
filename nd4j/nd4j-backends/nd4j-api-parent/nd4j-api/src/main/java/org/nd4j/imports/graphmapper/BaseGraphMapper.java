@@ -21,39 +21,38 @@ import com.github.os72.protobuf351.TextFormat;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.builder.Diff;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.io.*;
-import java.lang.reflect.Field;
 import java.util.*;
 
 /**
  * Base implementation for importing a graph
+ *
  * @param <GRAPH_TYPE> the type of graph
- * @param <NODE_TYPE> the type of node
- * @param <ATTR_TYPE> the attribute type
+ * @param <NODE_TYPE>  the type of node
+ * @param <ATTR_TYPE>  the attribute type
  */
 @Slf4j
-public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> implements GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
-
+public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_TYPE> implements GraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_TYPE> {
 
 
     @Override
     public Op.Type opTypeForNode(NODE_TYPE nodeDef) {
         DifferentialFunction opWithTensorflowName = getMappedOp(getOpType(nodeDef));
-        if(opWithTensorflowName == null)
+        if (opWithTensorflowName == null)
             throw new NoOpNameFoundException("No op found with name " + getOpType(nodeDef));
         Op.Type type = opWithTensorflowName.opType();
         return type;
@@ -61,29 +60,26 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
     }
 
 
-
     @Override
     public void mapProperties(DifferentialFunction on, NODE_TYPE node, GRAPH_TYPE graph, SameDiff sameDiff, Map<String, Map<String, PropertyMapping>> propertyMappings) {
         val mappings = propertyMappings.get(getOpType(node));
-        if(mappings == null || mappings.isEmpty()) {
+        if (mappings == null || mappings.isEmpty()) {
             return;
         }
 
 
-        for(val entry : mappings.entrySet()) {
-            mapProperty(entry.getKey(),on,node,graph,sameDiff,propertyMappings);
+        for (val entry : mappings.entrySet()) {
+            mapProperty(entry.getKey(), on, node, graph, sameDiff, propertyMappings);
         }
     }
 
 
-
     /**
-     *
      * @param inputStream
      * @return
      */
     @Override
-    public  SameDiff importGraph(InputStream inputStream) {
+    public SameDiff importGraph(InputStream inputStream) {
         GRAPH_TYPE def = readGraph(inputStream);
         return importGraph(def);
     }
@@ -116,22 +112,20 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
 
     /**
-     *
      * @param graphFile
      * @return
      */
     @Override
-    public  SameDiff importGraph(String graphFile) {
+    public SameDiff importGraph(String graphFile) {
         return importGraph(new File(graphFile));
     }
 
     /**
-     *
      * @param graphFile
      * @return
      */
     @Override
-    public  SameDiff importGraph(File graphFile) {
+    public SameDiff importGraph(File graphFile) {
         GRAPH_TYPE def = null;
         try (FileInputStream fis = new FileInputStream(graphFile)) {
             return importGraph(fis);
@@ -150,9 +144,9 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
     @Override
     public Map<String, NODE_TYPE> nameIndexForGraph(GRAPH_TYPE graph) {
         List<NODE_TYPE> nodes = getNodeList(graph);
-        Map<String,NODE_TYPE> ret = new HashMap<>();
-        for(NODE_TYPE node : nodes) {
-            ret.put(getName(node),node);
+        Map<String, NODE_TYPE> ret = new HashMap<>();
+        for (NODE_TYPE node : nodes) {
+            ret.put(getName(node), node);
         }
         return ret;
     }
@@ -160,195 +154,186 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
     @Override
     public Map<String, NODE_TYPE> nodesByName(GRAPH_TYPE graph) {
         val nodeTypes = getNodeList(graph);
-        Map<String,NODE_TYPE> ret = new LinkedHashMap<>();
-        for(int i = 0; i < nodeTypes.size(); i++) {
-            ret.put(getName(nodeTypes.get(i)),nodeTypes.get(i));
+        Map<String, NODE_TYPE> ret = new LinkedHashMap<>();
+        for (int i = 0; i < nodeTypes.size(); i++) {
+            ret.put(getName(nodeTypes.get(i)), nodeTypes.get(i));
         }
         return ret;
     }
 
     /**
      * This method converts given TF
+     *
      * @param tfGraph
      * @return
      */
     @Override
     public SameDiff importGraph(GRAPH_TYPE tfGraph) {
         SameDiff diff = SameDiff.create();
-        ImportState<GRAPH_TYPE,TENSOR_TYPE> importState = new ImportState<>();
+        ImportState<GRAPH_TYPE, TENSOR_TYPE> importState = new ImportState<>();
         importState.setSameDiff(diff);
         importState.setGraph(tfGraph);
 
-        val variablesForGraph = variablesForGraph(tfGraph);
+        Map<String,TENSOR_TYPE> variablesForGraph = variablesForGraph(tfGraph);
         importState.setVariables(variablesForGraph);
 
 
         //map the names of the nodes while accumulating the vertex ids for each variable
-        Map<String,Boolean> stringNodes = new HashMap<>();      //Key: name of string variable. Value: if it's a constant
+        Map<String, Boolean> stringNodes = new HashMap<>();      //Key: name of string variable. Value: if it's a constant
         for (Map.Entry<String, TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
-            DataType dt = dataTypeForTensor(entry.getValue());
-            if (dt == DataType.UNKNOWN && !unknownTypeNodeImportable(entry.getValue())) {
-                val var = importState.getSameDiff().var(entry.getKey(), (LongShapeDescriptor) null, new ZeroInitScheme('c'));
-                //mark as place holder for validating resolution later.
-                if (isPlaceHolder(entry.getValue())) {
-                    importState.getSameDiff().addAsPlaceHolder(var.getVarName());
-                    if (var.getShape() != null)
-                        importState.getSameDiff().setOriginalPlaceHolderShape(var.getVarName(), var.getShape());
-                } else {
-                    //Not a placeholder, but SameDiff.var(String, shape=null, ZeroInitScheme()) above marked it as such due to null shape
-                    importState.getSameDiff().removeAsPlaceholder(var.getVarName());
-                }
-
-                boolean isConst = isConstant(entry.getValue());
-                if(isStringType(entry.getValue())){
-                    stringNodes.put(entry.getKey(), isConst);
-                }
-                if(isConst){
-                    if (diff.getImportedConstants() == null) {
-                        diff.setImportedConstants(new LinkedHashSet<String>());
-                    }
-                    diff.getImportedConstants().add(entry.getKey());
-                }
-
+            if (shouldSkip((NODE_TYPE) entry.getValue())) {    //TODO only works for TF
+                //Skip some nodes, for example reduction indices (a lot of ND4J/SameDiff ops use int[] etc, not an INDArray/Variable)
                 continue;
             }
 
-            val arr = getNDArrayFromTensor(entry.getKey(), entry.getValue(), tfGraph);
-            if (arr != null) {
-                val var = importState.getSameDiff().var(entry.getKey(), arr);
-                //ensure the array is made available for later processing
-                diff.associateArrayWithVariable(arr, var);
+            DataType dt = dataTypeForTensor(entry.getValue(), 0);
+            INDArray arr = getNDArrayFromTensor(entry.getKey(), entry.getValue(), tfGraph);
+            long[] shape = hasShape((NODE_TYPE) entry.getValue()) ? getShape((NODE_TYPE) entry.getValue()) : null;   //TODO only works for TF
 
-                if (isConstant(entry.getValue())) {
-                    if (diff.getImportedConstants() == null) {
-                        diff.setImportedConstants(new LinkedHashSet<String>());
-                    }
-                    diff.getImportedConstants().add(entry.getKey());
-                }
-            }else if(getShapeFromTensor(entry.getValue()) == null) {
-                val var = importState.getSameDiff().var(entry.getKey(), (LongShapeDescriptor) null,new ZeroInitScheme('c'));
-                //mark as place holder for validating resolution later.
+            //Not all variables have datatypes available on import - we have to infer these at a later point
+            // so we'll leave datatypes as null and infer them once all variables/ops have been imported
+            if(dt == DataType.UNKNOWN)
+                dt = null;
 
-                //note that this vertex id can still be a place holder
-                //with a -1 shape. Just because a shape is "known" doesn't mean
-                //that it isn't  a place holder.
-                if (isPlaceHolder(entry.getValue())) {
-                    val originalShape = getShapeFromTensor(entry.getValue());
-                    importState.getSameDiff().addAsPlaceHolder(var.getVarName());
-                    if (var.getShape() != null)
-                        importState.getSameDiff().setOriginalPlaceHolderShape(var.getVarName(), originalShape);
-
-                } else {
-                    //Not a placeholder, but SameDiff.var(String, shape=null, ZeroInitScheme()) above marked it as such due to null shape
-                    importState.getSameDiff().removeAsPlaceholder(var.getVarName());
-                }
-
+            if (isPlaceHolder(entry.getValue())) {
+                diff.placeHolder(entry.getKey(), dt, shape);
+            } else if (isConstant(entry.getValue())) {
+                Preconditions.checkNotNull(arr, "Array is null for placeholder variable %s", entry.getKey());
+                diff.constant(entry.getKey(), arr);
             } else {
-                val originalShape = getShapeFromTensor(entry.getValue());
-                val var = importState.getSameDiff().var(entry.getKey(), originalShape);
-                //mark as place holder for validating resolution later.
+                //Could be variable, or could be array type (i.e., output of op/"activations")
+                //TODO work out which!
 
-                //note that this vertex id can still be a place holder
-                //with a -1 shape. Just because a shape is "known" doesn't mean
-                //that it isn't  a place holder.
-                if (isPlaceHolder(entry.getValue())) {
-                    importState.getSameDiff().addAsPlaceHolder(var.getVarName());
-                    importState.getSameDiff().setOriginalPlaceHolderShape(var.getVarName(), originalShape);
-                } else if(originalShape == null){
-                    //Not a placeholder, but SameDiff.var(String, shape=null, ZeroInitScheme()) above marked it as such due to null shape
-                    importState.getSameDiff().removeAsPlaceholder(var.getVarName());
+                SDVariable v;
+                if(shape == null){
+                    //No shape -> probably not a variable...
+                    v = diff.var(entry.getKey(), VariableType.ARRAY, null, dt, (long[])null);
+                } else {
+                    v = diff.var(entry.getKey(), dt, shape);
                 }
-
+                if (arr != null)
+                    diff.associateArrayWithVariable(arr, v);
             }
 
+            NODE_TYPE node = (NODE_TYPE) entry.getValue();      //TODO this only works for TF
+            List<String> controlDependencies = getControlDependencies(node);
+            if (controlDependencies != null) {
+                Variable v = diff.getVariables().get(entry.getKey());
+                v.setControlDeps(controlDependencies);
+            }
         }
 
-        //handle mapping vertex ids properly
+        //Map ops
         val tfNodesList = getNodeList(tfGraph);
         for (NODE_TYPE tfNode : tfNodesList) {
-            if(!opsToIgnore().contains(getOpType(tfNode)) || isOpIgnoreException(tfNode))
-                mapNodeType(tfNode,importState);
+            if (!opsToIgnore().contains(getOpType(tfNode)) || isOpIgnoreException(tfNode))
+                mapNodeType(tfNode, importState);
         }
 
-        //Handle edge case until multi datatypes is merged: import String constant variables as fixed value 0 variables
-        // This is used in assertions and the like - the exact String values aren't important for inference, but we
-        // can't perform inference without them
-        //Specifically: any string values that aren't the output of an op get a scalar 0 array
-        if(!stringNodes.isEmpty()){
-            for(Map.Entry<String,Boolean> e : stringNodes.entrySet()){
-                if(e.getValue()){
-                    //Is a constant String node - can't import, but probably need it for execution...
-                    //TODO fix this once dtypes are done
-                    diff.getVariable(e.getKey()).setArray(Nd4j.trueScalar(0));
-                }
+
+        /*
+        At this point, we have a few remaining things to do:
+        1. Make sure all datatypes are set on all variables. TF doesn't have datatype info an all op outputs for some reason, so we have to infer in manually
+        2. Make sure all op output variables have been created
+        3. Make sure all SameDiffOp.outputsOfOp is set
+        4. Make sure all Variable.outputOfOp is set
+         */
+
+        //Make sure Variable.outputOfOp is set
+        for(Variable v : diff.getVariables().values()){
+            if(v.getVariable().isPlaceHolder() || v.getVariable().isConstant())
+                continue;
+
+            //Expect variable names of output variables to be: opName, opName:1, opName:2, etc
+            String n = v.getName();
+            String opName = n;
+            if(v.getName().matches(".*:\\d+")){
+                //i.e., "something:2"
+                int idx = n.lastIndexOf(':');
+                opName = n.substring(0,idx);
+            }
+
+            if(diff.getOps().containsKey(opName)) {
+                //Variable is the output of an op
+                v.setOutputOfOp(opName);
+
+                //Also double check variable type...
+                if(v.getVariable().getVariableType() != VariableType.ARRAY)
+                    v.getVariable().setVariableType(VariableType.ARRAY);
             }
         }
 
-        //Build functionOutputFor - i.e., map from SDVariable -> functions it's an output for (should only ever be 1)
-        Map<String,List<DifferentialFunction>> fnOutputsFor = new LinkedHashMap<>();
-        for(DifferentialFunction df : diff.getFunctionInstancesById().values()){
-            String[] fnOutputs = df.outputVariablesNames();
-            for(String s : fnOutputs){
-                if(!fnOutputsFor.containsKey(s)){
-                    fnOutputsFor.put(s, new ArrayList<DifferentialFunction>());
-                }
-                fnOutputsFor.get(s).add(df);
-            }
+        //Initialize any missing output variables
+        for (SameDiffOp op : diff.getOps().values()) {
+            DifferentialFunction df = op.getOp();
+            initOutputVariables(diff, df);
         }
-        //Set using reflection, we don't want a public getter that users can break the internal state with
-        try {
-            Field f = SameDiff.class.getDeclaredField("functionOutputFor");
-            f.setAccessible(true);
-            f.set(diff, fnOutputsFor);
-        } catch (Exception e){
-            throw new RuntimeException(e);
+
+
+        //Infer variable datatypes to ensure all variables have datatypes...
+        boolean anyUnknown = false;
+        for(SDVariable v : diff.variables()){
+            if(v.dataType() == null)
+                anyUnknown = true;
+        }
+        if(anyUnknown){
+            Map<String,DataType> dataTypes = diff.calculateOutputDataTypes();
+            for(SDVariable v : diff.variables()){
+                if(v.dataType() == null){
+                    v.setDataType(dataTypes.get(v.getVarName()));
+                }
+            }
         }
 
         //Validate the graph structure
         validateGraphStructure(diff);
 
-
-        //We aren't guaranteed to have ops imported in the order that they can be executed, so check + fix that
-        diff.validateExecutionOrder();
-
-
-
         return diff;
     }
 
+    protected void initOutputVariables(SameDiff sd, DifferentialFunction df) {
+        String[] outNames = sd.getOutputsForFunction(df);
+        SDVariable[] outVars;
+        if (outNames == null) {
+            outVars = sd.generateOutputVariableForOp(df, df.getOwnName() != null ? df.getOwnName() : df.opName(), true);
+            outNames = new String[outVars.length];
+            for (int i = 0; i < outVars.length; i++) {
+                outNames[i] = outVars[i].getVarName();
+            }
+            sd.getOps().get(df.getOwnName()).setOutputsOfOp(Arrays.asList(outNames));
+        }
 
+        for (String s : outNames) {
+            sd.getVariables().get(s).setOutputOfOp(df.getOwnName());
+        }
+    }
 
 
     @Override
     public boolean validTensorDataType(TENSOR_TYPE tensorType) {
-        return dataTypeForTensor(tensorType) != DataType.UNKNOWN;
+        return dataTypeForTensor(tensorType, 0) != DataType.UNKNOWN;
     }
 
-    public void validateGraphStructure(SameDiff sameDiff){
+    public void validateGraphStructure(SameDiff sameDiff) {
         //First: Check placeholders. When SDVariables are added with null shapes, these can be interpreted as a placeholder
         // but null shapes might simply mean shape isn't available during import right when the variable is added
         //Idea here: if a "placeholder" is the output of any function, it's not really a placeholder
-        for(SDVariable v : sameDiff.variables()){
+        for (SDVariable v : sameDiff.variables()) {
             String name = v.getVarName();
-            if(sameDiff.isPlaceHolder(name)){
-                List<DifferentialFunction> l = sameDiff.functionOutputFor(name);
-                if(l != null && !l.isEmpty()){
-                    //Output of a function - can't be a placeholder
-                    sameDiff.removeAsPlaceholder(name);
-                }
+            if (sameDiff.isPlaceHolder(name)) {
+                String varOutputOf = sameDiff.getVariables().get(name).getOutputOfOp();
             }
         }
 
         //Second: check that all op inputs actually exist in the graph
-        Map<String,DifferentialFunction> opMap = sameDiff.getFunctionInstancesById();
-        for(Map.Entry<String,DifferentialFunction> e : opMap.entrySet()){
-            String[] inputs = sameDiff.getInputsForFunction(e.getValue());
-            if(inputs == null)
+        for (SameDiffOp op : sameDiff.getOps().values()) {
+            List<String> inputs = op.getInputsToOp();
+            if (inputs == null)
                 continue;
 
-            for(String s : inputs){
-                if(sameDiff.getVariable(s) == null){
-                    throw new IllegalStateException("Import validation failed: op \"" + e.getKey() + "\" of type " + e.getValue().getClass().getSimpleName()
+            for (String s : inputs) {
+                if (sameDiff.getVariable(s) == null) {
+                    throw new IllegalStateException("Import validation failed: op \"" + op.getName() + "\" of type " + op.getOp().getClass().getSimpleName()
                             + " has input \"" + s + "\" that does not have a corresponding variable in the graph");
                 }
             }

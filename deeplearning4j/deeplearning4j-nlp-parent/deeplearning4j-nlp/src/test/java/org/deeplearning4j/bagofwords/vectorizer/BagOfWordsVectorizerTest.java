@@ -109,7 +109,7 @@ public class BagOfWordsVectorizerTest {
         INDArray labelz = dataSet.getLabels();
         log.info("Labels array: " + labelz);
 
-        int idx2 = ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(labelz))).getFinalResult();
+        int idx2 = ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(labelz))).getFinalResult().intValue();
 
         //        assertEquals(1.0, dataSet.getLabels().getDouble(0), 0.1);
         //        assertEquals(0.0, dataSet.getLabels().getDouble(1), 0.1);
@@ -122,7 +122,7 @@ public class BagOfWordsVectorizerTest {
         assertEquals(1, dataSet.getFeatures().getDouble(vocabCache.tokenFor("1").getIndex()), 0.1);
         assertEquals(0, dataSet.getFeatures().getDouble(vocabCache.tokenFor("2").getIndex()), 0.1);
 
-        int idx1 = ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(dataSet.getLabels()))).getFinalResult();
+        int idx1 = ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(dataSet.getLabels()))).getFinalResult().intValue();
 
         //assertEquals(0.0, dataSet.getLabels().getDouble(0), 0.1);
         //assertEquals(1.0, dataSet.getLabels().getDouble(1), 0.1);

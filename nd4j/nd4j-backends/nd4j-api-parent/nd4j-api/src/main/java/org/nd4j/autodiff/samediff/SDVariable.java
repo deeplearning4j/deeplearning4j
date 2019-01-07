@@ -64,7 +64,12 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     private String varName;
     @Getter
     @Setter
+    private VariableType variableType;
+
+    @Getter
+    @Setter
     protected WeightInitScheme weightInitScheme;
+    protected long[] shape;
 
     @Getter (AccessLevel.NONE)
     @Setter
@@ -76,45 +81,18 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     // autogen_tag::sdvars::start
 
-    @Builder
-    private SDVariable(String varName,
-                       SameDiff sameDiff,
-                       long[] shape,
-                       DataType dataType,
-                       boolean placeholderOnNullShape,
-                       WeightInitScheme weightInitScheme) {
-        super(sameDiff,new Object[]{});
+
+    public SDVariable(@NonNull String varName, @NonNull VariableType varType, @NonNull SameDiff sameDiff, long[] shape, DataType dataType, WeightInitScheme weightInitScheme){
+        super(sameDiff, new Object[0]);
+        Preconditions.checkState(weightInitScheme == null || varType == VariableType.VARIABLE, "Weight initalization schemes can only be applied to VARIABLE type" +
+                " SDVariables - variable \"%s\" is of type %s but was provided a weight initialization scheme %s", varName, varType, weightInitScheme);
+        Preconditions.checkState(dataType != DataType.UNKNOWN, "Unknown datatype is not allowed for SDVariables (variable name: %s)", varName);
+
         this.varName = varName;
-        this.weightInitScheme = weightInitScheme;
+        this.variableType = varType;
         this.dataType = dataType;
-
-        if(weightInitScheme == null) {
-            // we want C order as default in ALL cases
-            this.weightInitScheme = new ZeroInitScheme('c');
-        }
-
-        if(shape == null && placeholderOnNullShape) {
-            sameDiff.addAsPlaceHolder(varName);
-        } else {
-            boolean foundPlaceHolder = false;
-            if(shape != null ) {
-                for (int i = 0; i < shape.length; i++) {
-                    if (shape[i] < 0) {
-                        sameDiff.addAsPlaceHolder(varName);
-                        sameDiff.setOriginalPlaceHolderShape(varName, shape);
-                        foundPlaceHolder = true;
-                        break;
-                    }
-                }
-            }
-
-            if(!foundPlaceHolder && shape != null)
-                sameDiff.putShapeForVarName(varName,shape);
-        }
-
-        this.sameDiff = sameDiff;
-
-
+        this.weightInitScheme = weightInitScheme;
+        this.shape = shape;
     }
 
     /**
@@ -122,7 +100,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public boolean isPlaceHolder() {
-        return sameDiff.isPlaceHolder(varName);
+        return variableType == VariableType.PLACEHOLDER;
+    }
+
+    public boolean isConstant(){
+        return variableType == VariableType.CONSTANT;
     }
 
 
@@ -172,25 +154,22 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return the allocated array
      */
     public INDArray storeAndAllocateNewArray() {
-        val shape = sameDiff.getShapeForVarName(getVarName());
-        INDArray currArr = getArr();
-        if(currArr != null && Arrays.equals(currArr.shape(),shape))
-            return getArr();
+        Preconditions.checkState(variableType == VariableType.VARIABLE, "Unable to allocate and store array for variable of type %s: only" +
+                " VARIABLE type variables can be initialized using this method", variableType);
 
-        if(varName == null)
-            throw new ND4JIllegalStateException("Unable to store array for null variable name!");
-
-        if(shape == null) {
-            throw new ND4JIllegalStateException("Unable to allocate new array. No shape found for variable " + varName);
+        if(!sameDiff.arrayAlreadyExistsForVarName(varName)){
+            long[] shape = getShape();
+            INDArray arr = getWeightInitScheme().create(dataType(), shape);
+            sameDiff.associateArrayWithVariable(arr, this);
+            if(log.isTraceEnabled()){
+                log.trace("Generated and stored new array for variable \"{}\": shape {}", getVarName(), Arrays.toString(arr.shape()));
+            }
+            return arr;
         }
 
-        val arr = getWeightInitScheme().create(dataType(), shape);
-        sameDiff.associateArrayWithVariable(arr, this);
-        if(log.isTraceEnabled()){
-            log.trace("Generated and stored new array for variable \"{}\": old shape: {}, new shape {}", getVarName(),
-                    (currArr == null ? "null" : Arrays.toString(currArr.shape())), Arrays.toString(arr.shape()));
-        }
-        return arr;
+        //Variable type SDVariables: shape should never change (i.e., these are params in the net!)
+        INDArray ret = getArr();
+        return ret;
     }
 
     /**
@@ -230,8 +209,14 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             if(log.isTraceEnabled()){
                 log.trace("getArr() for variable \"{}\" allocated new scalar array: shape {}", getVarName(), Arrays.toString(getShape()));
             }
-        }
-        else if(sameDiff.getShapeForVarName(getVarName()) == null) {
+        } else if(variableType == VariableType.VARIABLE && weightInitScheme != null && shape != null){
+            INDArray arr = weightInitScheme.create(dataType, shape);
+            sameDiff.associateArrayWithVariable(arr, this);
+            if(log.isTraceEnabled()){
+                log.trace("getArr() for variable \"{}\" allocated new array: shape {}", getVarName(), Arrays.toString(getShape()));
+            }
+            return arr;
+        } else if(sameDiff.getShapeForVarName(getVarName()) == null) {
             if (enforceExistence) {
                 throw new IllegalStateException("Cannot get array for SDVariable \"" + getVarName() + "\": no array has" +
                         " been defined, and array shape cannot be calculated");
@@ -240,14 +225,15 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                 log.trace("SDVariable.getArr(): could not get array for variable {}: shape is null", getVarName());
             }
             return null;
-        } else {
-            long[] shape = sameDiff.getShapeForVarName(getVarName());
-            INDArray newAlloc = getWeightInitScheme().create(dataType(), shape);
-            sameDiff.associateArrayWithVariable(newAlloc,this);
-            if(log.isTraceEnabled()){
-                log.trace("getArr() for variable \"{}\" allocated new array with shape {}", getVarName(), Arrays.toString(getShape()));
-            }
         }
+//        else {
+//            long[] shape = sameDiff.getShapeForVarName(getVarName());
+//            INDArray newAlloc = getWeightInitScheme().create(dataType(), shape);
+//            sameDiff.associateArrayWithVariable(newAlloc,this);
+//            if(log.isTraceEnabled()){
+//                log.trace("getArr() for variable \"{}\" allocated new array with shape {}", getVarName(), Arrays.toString(getShape()));
+//            }
+//        }
 
         return sameDiff.getArrForVarName(getVarName());
     }
@@ -284,12 +270,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
 
-/*
-    public DataType dataType() {
-        throw new UnsupportedOperationException();
-    }
-
-*/
     /**
      * Returns the shape of this variable
      * @return Shape of the variable
@@ -318,6 +298,14 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     public LongShapeDescriptor getShapeDescriptor() {
         return LongShapeDescriptor.fromShape(getShape(), this.dataType());
+    }
+
+    public SDVariable castTo(@NonNull DataType dataType){
+        return castTo(null, dataType);
+    }
+
+    public SDVariable castTo(String name, @NonNull DataType dataType){
+        return sameDiff.castTo(name, this, dataType);
     }
 
 

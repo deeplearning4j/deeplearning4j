@@ -76,13 +76,13 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
 
                 SDVariable in = sd.var("input", -1, 4);
                 SDVariable label = sd.var("label", -1, 3);
-                sd.addAsPlaceHolder("input");
-                sd.addAsPlaceHolder("label");
+//                sd.addAsPlaceHolder("input");
+//                sd.addAsPlaceHolder("label");
 
-                SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), 4, 10);
+                SDVariable w0 = null;   //sd.var("w0", new XavierInitScheme('c', 4, 10), 4, 10);
                 SDVariable b0 = sd.zero("b0", 1, 10);
 
-                SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), 10, 3);
+                SDVariable w1 = null;   //sd.var("w1", new XavierInitScheme('c', 10, 3), 10, 3);
                 SDVariable b1 = sd.zero("b1", 1, 3);
 
                 SDVariable z0 = in.mmul(w0).add(b0);

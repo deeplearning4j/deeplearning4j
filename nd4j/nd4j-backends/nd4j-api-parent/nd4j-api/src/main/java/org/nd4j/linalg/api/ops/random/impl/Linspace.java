@@ -175,8 +175,7 @@ public class Linspace extends BaseRandomOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        throw new UnsupportedOperationException();
-        //return Collections.singletonList(new long[]{length});
+        return Collections.singletonList(LongShapeDescriptor.fromShape(new long[]{length}, DataType.FLOAT));      //TODO Don't hardcode float!
     }
 
 

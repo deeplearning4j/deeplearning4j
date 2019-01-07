@@ -92,20 +92,24 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        if(args().length < 1) {
-            throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
-        }
-
-        if (x == null) {
+        if(x == null)
             return Collections.emptyList();
-        }
 
-        long[] argShape = arg().getShape();
-        long[] inputShape = (argShape == null ? x().shape() : argShape);
+        //Calculate reduction shape. Note that reduction on scalar - returns a scalar
+        boolean scalar = x.isScalar();
+        long length = x.length();
+        long[] reducedShape = x.isScalar() ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims(), newFormat);
+        return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, this.resultType()));
+    }
 
-        val ret = new ArrayList<LongShapeDescriptor>(1);
-        val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
-        ret.add(LongShapeDescriptor.fromShape(reducedShape, this.resultType()));
-        return ret;
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        //Output type: same as input type for BaseReduceSameOp
+        //Note TF uses 2 inputs - i.e., axis arg is a variable or constant
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
+                "Expected 1 or 2 input datatypes for %s, got %s", getClass(), dataTypes);
+        Preconditions.checkState(dataTypes.size() == 1 || dataTypes.get(1).isIntType(), "When executing reductions" +
+                "with 2 inputs, second input (axis) must be an integer datatype for %s, got %s", getClass(), dataTypes);
+        return Collections.singletonList(dataTypes.get(0));
     }
 }

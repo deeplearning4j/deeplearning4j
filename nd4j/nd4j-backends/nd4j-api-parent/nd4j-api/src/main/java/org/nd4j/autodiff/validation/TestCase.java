@@ -65,6 +65,7 @@ public class TestCase {
      * NOTE: The Function<INDArray,String> should return null on correct results, and an error message otherwise
      */
     private Map<String, Function<INDArray, String>> fwdTestFns;
+    private Map<String,INDArray> placeholderValues;
 
     //Gradient check configuration
     private boolean gradientCheck = true;
@@ -163,6 +164,18 @@ public class TestCase {
         if (gradCheckSkipVariables == null)
             gradCheckSkipVariables = new LinkedHashSet<>();
         Collections.addAll(gradCheckSkipVariables, toSkip);
+        return this;
+    }
+
+    public TestCase placeholderValues(Map<String,INDArray> placeholderValues){
+        this.placeholderValues = placeholderValues;
+        return this;
+    }
+
+    public TestCase placeholderValue(String variable, INDArray value){
+        if(this.placeholderValues == null)
+            this.placeholderValues = new HashMap<>();
+        this.placeholderValues.put(variable, value);
         return this;
     }
 

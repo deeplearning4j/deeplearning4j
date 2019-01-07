@@ -18,6 +18,8 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.ArrayList;
@@ -62,6 +64,12 @@ public class MeshGrid extends DynamicCustomOp {
     @Override
     public int getNumOutputs(){
         return args().length;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //Same output types as input types
+        return dataTypes;
     }
 
 }

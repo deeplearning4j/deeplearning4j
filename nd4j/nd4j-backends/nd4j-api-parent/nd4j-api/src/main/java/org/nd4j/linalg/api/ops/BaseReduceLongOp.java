@@ -90,19 +90,22 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        if(args().length < 1) {
-            throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
-        }
-
-        long[] argShape = arg().getShape();
-        if (argShape == null && x() == null) {
+        if(x == null)
             return Collections.emptyList();
-        }
-        long[] inputShape = (argShape == null ? x().shape() : argShape);
 
-        val ret = new ArrayList<LongShapeDescriptor>(1);
-        val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
-        ret.add(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
-        return ret;
+        //Calculate reduction shape. Note that reduction on scalar - returns a scalar
+        long[] reducedShape = x.length() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims(), newFormat);
+        return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, DataType.LONG));
+    }
+
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //All reduce long ops: always long output type
+        //Second input is dynamic axis arg
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
+                "Expected 1 or input datatype for %s, got input %s", getClass(), dataTypes);
+        Preconditions.checkState(dataTypes.size() == 1 || dataTypes.get(1).isIntType(), "When executing reductions" +
+                "with 2 inputs, second input (axis) must be an integer datatype for %s, got %s", getClass(), dataTypes);
+        return Collections.singletonList(DataType.LONG);
     }
 }

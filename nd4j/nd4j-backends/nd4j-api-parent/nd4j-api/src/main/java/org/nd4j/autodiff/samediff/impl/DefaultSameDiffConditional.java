@@ -29,6 +29,7 @@ public class DefaultSameDiffConditional implements SameDiffConditional {
     public SDVariable eval(SameDiff context, SameDiffFunctionDefinition body, SDVariable[] inputVars) {
         context.defineFunction("eval", body, inputVars);
         context.invokeFunctionOn("eval", context);
-        return new ArrayList<>(context.getFunctionInstancesById().values()).get(context.getFunctionInstancesById().size() - 1).outputVariables()[0];
+//        return new ArrayList<>(context.getFunctionInstancesById().values()).get(context.getFunctionInstancesById().size() - 1).outputVariables()[0];
+        throw new UnsupportedOperationException("Not yet reimplemented");
     }
 }

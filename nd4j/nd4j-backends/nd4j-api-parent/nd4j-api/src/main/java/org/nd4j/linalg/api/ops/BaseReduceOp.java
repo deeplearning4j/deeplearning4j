@@ -82,6 +82,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         }
 
         this.newFormat = true;
+        defineDimensions(dimensions);
     }
 
     public BaseReduceOp(SameDiff sameDiff,
@@ -107,6 +108,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         }
 
         this.newFormat = true;
+        defineDimensions(dimensions);
     }
 
 
@@ -226,6 +228,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
             val keepDims = attributesForNode.get("keep_dims").getB();
             this.keepDims = keepDims;
         }
+        defineDimensions(this.dimensions);
     }
 
     protected boolean hasReductionIndices(NodeDef nodeDef) {
@@ -258,6 +261,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
     @Override
     public void setDimensions(int... dimensions) {
+        this.dimensions = dimensions;
         defineDimensions(dimensions);
     }
 }

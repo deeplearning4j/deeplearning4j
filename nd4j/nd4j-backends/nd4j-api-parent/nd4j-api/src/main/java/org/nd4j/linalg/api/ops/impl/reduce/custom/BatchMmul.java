@@ -21,6 +21,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -55,8 +56,8 @@ public class BatchMmul extends DynamicCustomOp {
                      boolean transposeB) {
         super(null, sameDiff, ArrayUtils.addAll(
                 new SDVariable[]{
-                        sameDiff.var(Nd4j.ones(matrices.length / 2)), // alphas
-                        sameDiff.var(Nd4j.zeros(matrices.length / 2))}, // betas
+                        sameDiff.var(Nd4j.ones(matrices[0].dataType(), matrices.length / 2)), // alphas
+                        sameDiff.var(Nd4j.zeros(matrices[1].dataType(), matrices.length / 2))}, // betas
                 matrices));
 
         Preconditions.checkState(matrices.length % 2 == 0, "The number of provided matrices needs" +
@@ -121,6 +122,18 @@ public class BatchMmul extends DynamicCustomOp {
         Collections.addAll(ret, dLdx);
         Collections.addAll(ret, dLdy);
         return ret;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        List<DataType> out = new ArrayList<>();
+        for(int i=0; i<dataTypes.size()-2; i++ ) {  //-2 for the alpha and beta params
+            Preconditions.checkState(dataTypes.get(i).isFPType(), "Inputs to batch mmul op must all be a floating point type: got %s", dataTypes);
+            if(i%2 == 0){
+                out.add(dataTypes.get(i));
+            }
+        }
+        return out;
     }
 }
 

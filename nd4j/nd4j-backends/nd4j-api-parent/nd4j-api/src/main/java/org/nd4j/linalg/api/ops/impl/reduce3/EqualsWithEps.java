@@ -32,7 +32,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class EqualsWithEps extends BaseReduceFloatOp {
+public class EqualsWithEps extends BaseReduce3Op {
     private double eps;
 
     public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, int[] dimensions, double eps) {
@@ -73,25 +73,5 @@ public class EqualsWithEps extends BaseReduceFloatOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Arrays.asList(outputVariables()[0]);
-    }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
-    public Type getOpType() {
-        return Type.REDUCE3;
-    }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatingPointType();
     }
 }

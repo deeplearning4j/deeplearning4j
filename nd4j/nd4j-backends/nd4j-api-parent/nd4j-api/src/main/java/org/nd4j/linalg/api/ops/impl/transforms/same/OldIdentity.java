@@ -83,8 +83,7 @@ public class OldIdentity extends BaseTransformSameOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-
-        return Arrays.asList(sameDiff.one("grad-" + UUID.randomUUID().toString(), i_v.get(0).getShape()));
+        return i_v;
     }
 
 }

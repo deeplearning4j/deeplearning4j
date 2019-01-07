@@ -33,7 +33,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class HammingDistance extends BaseReduceFloatOp {
+public class HammingDistance extends BaseReduce3Op {
 
 
     public HammingDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
@@ -67,16 +67,6 @@ public class HammingDistance extends BaseReduceFloatOp {
     }
 
     @Override
-    public Type opType() {
-        return Type.REDUCE3;
-    }
-
-    @Override
-    public Type getOpType() {
-        return opType();
-    }
-
-    @Override
     public int opNum() {
         return 7;
     }
@@ -94,22 +84,5 @@ public class HammingDistance extends BaseReduceFloatOp {
         //Consequently: it's not continuously differentiable, and gradients are 0 almost everywhere (but undefined
         // when x_i == y_i)
         return Arrays.asList(sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
-    }
-
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatingPointType();
     }
 }

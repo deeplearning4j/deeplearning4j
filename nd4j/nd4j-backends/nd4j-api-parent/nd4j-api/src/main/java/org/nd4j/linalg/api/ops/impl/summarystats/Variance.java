@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.summarystats;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -112,7 +113,7 @@ public class Variance extends BaseReduceOp {
 
     @Override
     public boolean isPassThrough() {
-        return true;
+        return false;
     }
 
 
@@ -192,5 +193,14 @@ public class Variance extends BaseReduceOp {
     @Override
     public Type opType(){
         return Type.VARIANCE;
+    }
+
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
+        //Variance and stdev reduction: Always FP out, but if FP in is float/double/half then it's float/double/half out
+        //If not FP in, then return default FP type out
+        if(dataTypes.get(0).isFPType())
+            return dataTypes;
+        return Collections.singletonList(Nd4j.defaultFloatingPointType());
     }
 }

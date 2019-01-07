@@ -27,6 +27,7 @@ public final class FlatVariable extends Table {
   public FlatArray ndarray() { return ndarray(new FlatArray()); }
   public FlatArray ndarray(FlatArray obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public int device() { int o = __offset(14); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
+  public byte variabletype() { int o = __offset(16); return o != 0 ? bb.get(o + bb_pos) : 0; }
 
   public static int createFlatVariable(FlatBufferBuilder builder,
       int idOffset,
@@ -34,18 +35,20 @@ public final class FlatVariable extends Table {
       byte dtype,
       int shapeOffset,
       int ndarrayOffset,
-      int device) {
-    builder.startObject(6);
+      int device,
+      byte variabletype) {
+    builder.startObject(7);
     FlatVariable.addDevice(builder, device);
     FlatVariable.addNdarray(builder, ndarrayOffset);
     FlatVariable.addShape(builder, shapeOffset);
     FlatVariable.addName(builder, nameOffset);
     FlatVariable.addId(builder, idOffset);
+    FlatVariable.addVariabletype(builder, variabletype);
     FlatVariable.addDtype(builder, dtype);
     return FlatVariable.endFlatVariable(builder);
   }
 
-  public static void startFlatVariable(FlatBufferBuilder builder) { builder.startObject(6); }
+  public static void startFlatVariable(FlatBufferBuilder builder) { builder.startObject(7); }
   public static void addId(FlatBufferBuilder builder, int idOffset) { builder.addOffset(0, idOffset, 0); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(1, nameOffset, 0); }
   public static void addDtype(FlatBufferBuilder builder, byte dtype) { builder.addByte(2, dtype, 0); }
@@ -54,6 +57,7 @@ public final class FlatVariable extends Table {
   public static void startShapeVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
   public static void addNdarray(FlatBufferBuilder builder, int ndarrayOffset) { builder.addOffset(4, ndarrayOffset, 0); }
   public static void addDevice(FlatBufferBuilder builder, int device) { builder.addInt(5, device, 0); }
+  public static void addVariabletype(FlatBufferBuilder builder, byte variabletype) { builder.addByte(6, variabletype, 0); }
   public static int endFlatVariable(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

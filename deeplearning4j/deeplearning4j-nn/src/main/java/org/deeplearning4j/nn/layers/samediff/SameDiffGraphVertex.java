@@ -99,7 +99,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         }
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            sameDiff.clearExecutionCache();
+//            sameDiff.clearExecutionCache();
             for(int i=0; i<inputs.length; i++ ){
                 String name = config.getVertexParams().getInputs().get(i);
                 sameDiff.associateArrayWithVariable(inputs[i].dup(), sameDiff.getVariable(name));
@@ -121,7 +121,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
         INDArray[] dLdIns;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            sameDiff.clearExecutionCache();
+//            sameDiff.clearExecutionCache();
             //Set inputs
             for(int i=0; i<inputs.length; i++ ){
                 String name = config.getVertexParams().getInputs().get(i);

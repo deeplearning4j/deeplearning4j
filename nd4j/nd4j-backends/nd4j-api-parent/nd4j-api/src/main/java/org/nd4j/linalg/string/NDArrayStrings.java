@@ -19,6 +19,7 @@ package org.nd4j.linalg.string;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -171,6 +172,9 @@ public class NDArrayStrings {
             } else if (arr.isB()) {
                 int arrElement = arr.getInt(0);
                 return arrElement == 0 ? "false" : "true";
+            } else if (arr.dataType() == DataType.UTF8){
+                String s = arr.getStringUnsafe(0);
+                return "\"" + s.replaceAll("\n","\\n") + "\"";
             } else
                 throw new ND4JIllegalStateException();
         } else if (rank == 1) {
@@ -256,6 +260,10 @@ public class NDArrayStrings {
                 } else if (arr.isB()) {
                     int arrElement = arr.getInt(i);
                     sb.append(String.format("%1$" + padding + "s", arrElement == 0 ? "false" : "true"));
+                } else if(arr.dataType() == DataType.UTF8){
+                    String s = arr.getStringUnsafe(i);
+                    s = "\"" + s.replaceAll("\n", "\\n") + "\"";
+                    sb.append(s);
                 }
             }
             if (i < l - 1) {
