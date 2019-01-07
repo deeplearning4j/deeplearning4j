@@ -166,7 +166,7 @@ public class BooleanIndexing {
 
     /**
      * Based on the matching elements
-     * op to based on condition to with function function
+     * op to based on condition to with function
      *
      * @param to        the ndarray to op
      * @param condition the condition on op
@@ -349,7 +349,7 @@ public class BooleanIndexing {
 
     /**
      * Based on the matching elements
-     * op to based on condition to with function function
+     * op to based on condition to with function
      *
      * @param to        the ndarray to op
      * @param condition the condition on op

@@ -41,8 +41,6 @@ public class KerasOptimizerUtils {
     public static IUpdater mapOptimizer(Map<String, Object> optimizerConfig)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
 
-        System.out.println(optimizerConfig);
-
         if (!optimizerConfig.containsKey("class_name")) {
             throw new InvalidKerasConfigurationException("Optimizer config does not contain a name field.");
         }

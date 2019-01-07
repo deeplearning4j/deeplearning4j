@@ -18,6 +18,7 @@ package org.nd4j.linalg.crash;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import lombok.var;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -676,6 +677,37 @@ public class SpecialTests extends BaseNd4jTest {
 
         Broadcast.mul(mask, object, mask, 0, 2, 3);
         Nd4j.getExecutioner().commit();
+    }
+
+    @Test
+    public void testReshape(){
+        INDArray c = Nd4j.linspace(1,6,6, DataType.DOUBLE).reshape('c', 2,3);
+        INDArray f = c.dup('f');
+        val fr = f.reshape('f', 3, 2).dup('f');
+
+        log.info("FO: {}", f.data().asFloat());
+        log.info("FR: {}", fr.data().asFloat());
+
+        INDArray outC = Nd4j.create(DataType.DOUBLE, 3,2);
+        INDArray outF = Nd4j.create(DataType.DOUBLE, 3,2);
+
+        var op = DynamicCustomOp.builder("reshape")
+                .addInputs(c)
+                .addOutputs(outC)
+                .addIntegerArguments(3,2)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        op = DynamicCustomOp.builder("reshape")
+                .addInputs(f)
+                .addOutputs(outF)
+                .addIntegerArguments(-99, 3,2)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(outC, outF);
     }
 
     @Override

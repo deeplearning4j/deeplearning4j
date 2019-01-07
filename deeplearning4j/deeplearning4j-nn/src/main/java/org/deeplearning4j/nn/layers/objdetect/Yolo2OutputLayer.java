@@ -602,11 +602,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray labelProbabilities(INDArray examples) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
     public void fit(INDArray examples, INDArray labels) {
         throw new UnsupportedOperationException("Not supported");
     }

@@ -55,9 +55,9 @@ TEST_F(DataTypesValidationTests, Basic_Test_1) {
 }
 
 TEST_F(DataTypesValidationTests, Basic_Test_2) {
-    auto input = NDArrayFactory::create<int8_t>('c', {1, 1, 1, 4});
-    auto weights = NDArrayFactory::create<float16>('c', {1, 1, 1, 4});
-    auto exp = NDArrayFactory::create<float16>('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
+    auto input = NDArrayFactory::create<uint8_t>('c', {1, 1, 1, 4});
+    auto weights = NDArrayFactory::create<float>('c', {1, 1, 1, 4});
+    auto exp = NDArrayFactory::create<float>('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
 
     weights.assign(2.0);
     input.linspace(1);
@@ -102,4 +102,13 @@ TEST_F(DataTypesValidationTests, Basic_Test_4) {
     nd4j::ops::conv2d op;
     auto result = op.execute({&input, &weights}, {&out}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0}, {});
     ASSERT_EQ(ND4J_STATUS_VALIDATION, result);
+}
+
+TEST_F(DataTypesValidationTests, cast_1) {
+
+    float16 x = static_cast<float16>(1.f);
+    float y = static_cast<float16>(x);
+
+    ASSERT_TRUE(1.f == x);
+    ASSERT_TRUE(y == x);
 }

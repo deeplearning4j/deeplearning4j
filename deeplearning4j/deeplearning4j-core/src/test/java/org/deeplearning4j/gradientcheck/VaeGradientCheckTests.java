@@ -27,18 +27,14 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 
 import java.util.Arrays;
@@ -105,13 +101,13 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                             .layer(0, new VariationalAutoencoder.Builder().nIn(4)
                                     .nOut(3).encoderLayerSizes(encoderSizes)
                                     .decoderLayerSizes(decoderSizes)
-                                    .weightInit(WeightInit.DISTRIBUTION)
+
                                     .dist(new NormalDistribution(0, 1))
                                     .activation(afn)
                                     .build())
                             .layer(1, new OutputLayer.Builder(lf)
                                     .activation(outputActivation).nIn(3).nOut(3)
-                                    .weightInit(WeightInit.DISTRIBUTION)
+
                                     .dist(new NormalDistribution(0, 1))
                                     .build())
                             .build();
@@ -267,7 +263,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.3)
                     .updater(new NoOp())
-                    .seed(12345L).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                    .seed(12345L).dist(new NormalDistribution(0, 1))
                     .list().layer(0,
                             new VariationalAutoencoder.Builder().nIn(inOutSize).nOut(3)
                                     .encoderLayerSizes(5).decoderLayerSizes(6)

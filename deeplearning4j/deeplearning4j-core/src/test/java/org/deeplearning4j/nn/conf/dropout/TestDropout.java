@@ -169,7 +169,7 @@ public class TestDropout extends BaseDL4JTest {
 
         @Override
         public IDropout clone() {
-            throw new UnsupportedOperationException();
+            return this;
         }
     }
 

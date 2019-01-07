@@ -415,9 +415,161 @@ else
 }
 
 
+#ifdef HAVE_MKLDNN
+using namespace mkldnn;
+
+void ConvolutionUtils::getMKLDNNMemoryDescConv2d(
+        int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, bool isNCHW,
+        int bS, int iC, int iH, int iW, int oC, int oH, int oW, const NDArray* src, const NDArray* diff_src,
+        const NDArray* weights, const NDArray* diff_weights, const NDArray* bias, const NDArray* dst,
+        mkldnn::memory::desc* conv_src_md, mkldnn::memory::desc* conv_diff_src_md, mkldnn::memory::desc* conv_weights_md,
+        mkldnn::memory::desc* conv_diff_weights_md, mkldnn::memory::desc* conv_bias_md, mkldnn::memory::desc* conv_dst_md,
+        mkldnn::memory::dims& conv_strides, mkldnn::memory::dims& conv_padding, mkldnn::memory::dims& conv_padding_r) {
+    mkldnn::memory::dims conv_src_tz = { bS, iC, iH, iW };
+    mkldnn::memory::dims conv_weights_tz = { oC, iC, kH, kW };
+    mkldnn::memory::dims conv_bias_tz = { oC };
+    mkldnn::memory::dims conv_dst_tz = { bS, oC, oH, oW };
+
+    conv_strides = { sH, sW };
+    conv_padding = { pH, pW };
+    conv_padding_r = { (oH - 1) * sH - iH + kH - pH,
+                       (oW - 1) * sW - iW + kW - pW };
+
+    auto type = mkldnn::memory::data_type::f32;
+    auto format = isNCHW ? mkldnn::memory::format::nchw : mkldnn::memory::format::nhwc;
+    auto formatw = mkldnn::memory::format::hwio;
+
+    if (src != nullptr && conv_src_md != nullptr) {
+        *conv_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
+        conv_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        conv_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCHW ? 0 : 0];
+        conv_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCHW ? 1 : 3];
+        conv_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCHW ? 2 : 1];
+        conv_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCHW ? 3 : 2];
+    }
+
+    if (diff_src != nullptr && conv_diff_src_md != nullptr) {
+        *conv_diff_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
+        conv_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        conv_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCHW ? 0 : 0];
+        conv_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCHW ? 1 : 3];
+        conv_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCHW ? 2 : 1];
+        conv_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCHW ? 3 : 2];
+    }
+
+    if (weights != nullptr && conv_weights_md != nullptr) {
+        *conv_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
+        conv_weights_md->data.format = mkldnn_blocked; // overrides "formatw = hwio"
+        conv_weights_md->data.layout_desc.blocking.strides[0][0] = weights->stridesOf()[3];
+        conv_weights_md->data.layout_desc.blocking.strides[0][1] = weights->stridesOf()[2];
+        conv_weights_md->data.layout_desc.blocking.strides[0][2] = weights->stridesOf()[0];
+        conv_weights_md->data.layout_desc.blocking.strides[0][3] = weights->stridesOf()[1];
+    }
+
+    if (diff_weights != nullptr && conv_diff_weights_md != nullptr) {
+        *conv_diff_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
+        conv_diff_weights_md->data.format = mkldnn_blocked; // overrides "formatw = hwio"
+        conv_diff_weights_md->data.layout_desc.blocking.strides[0][0] = diff_weights->stridesOf()[3];
+        conv_diff_weights_md->data.layout_desc.blocking.strides[0][1] = diff_weights->stridesOf()[2];
+        conv_diff_weights_md->data.layout_desc.blocking.strides[0][2] = diff_weights->stridesOf()[0];
+        conv_diff_weights_md->data.layout_desc.blocking.strides[0][3] = diff_weights->stridesOf()[1];
+    }
+
+    if (bias != nullptr && conv_bias_md != nullptr) {
+        *conv_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::x);
+    }
+
+    if (dst != nullptr && conv_dst_md != nullptr) {
+        *conv_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, format);
+        conv_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        conv_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCHW ? 0 : 0];
+        conv_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCHW ? 1 : 3];
+        conv_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCHW ? 2 : 1];
+        conv_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCHW ? 3 : 2];
+    }
+}
+
+void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
+        int kD, int kH, int kW, int sD, int sH, int sW, int pD, int pH, int pW, int dD, int dH, int dW, bool isSameMode, bool isNCDHW,
+        int bS, int iC, int iD, int iH, int iW, int oC, int oD, int oH, int oW, const NDArray* src, const NDArray* diff_src,
+        const NDArray* weights, const NDArray* diff_weights, const NDArray* bias, const NDArray* dst,
+        mkldnn::memory::desc* conv_src_md, mkldnn::memory::desc* conv_diff_src_md, mkldnn::memory::desc* conv_weights_md,
+        mkldnn::memory::desc* conv_diff_weights_md, mkldnn::memory::desc* conv_bias_md, mkldnn::memory::desc* conv_dst_md,
+        mkldnn::memory::dims& conv_strides, mkldnn::memory::dims& conv_padding, mkldnn::memory::dims& conv_padding_r) {
+    mkldnn::memory::dims conv_src_tz = { bS, iC, iD, iH, iW };
+    mkldnn::memory::dims conv_weights_tz = { oC, iC, kD, kH, kW };
+    mkldnn::memory::dims conv_bias_tz = { oC };
+    mkldnn::memory::dims conv_dst_tz = { bS, oC, oD, oH, oW };
+
+    conv_strides = { sD, sH, sW };
+    conv_padding = { pD, pH, pW };
+    conv_padding_r = { (oD - 1) * sD - iD + kD - pD,
+                       (oH - 1) * sH - iH + kH - pH,
+                       (oW - 1) * sW - iW + kW - pW };
+
+    auto type = mkldnn::memory::data_type::f32;
+    auto format = isNCDHW ? mkldnn::memory::format::ncdhw : mkldnn::memory::format::ndhwc;
+    auto formatw = mkldnn::memory::format::dhwio;
+
+    if (src != nullptr && conv_src_md != nullptr) {
+        *conv_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
+        conv_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
+        conv_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCDHW ? 0 : 0];
+        conv_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCDHW ? 1 : 4];
+        conv_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCDHW ? 2 : 1];
+        conv_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCDHW ? 3 : 2];
+        conv_src_md->data.layout_desc.blocking.strides[0][4] = src->stridesOf()[isNCDHW ? 4 : 3];
+    }
+
+    if (diff_src != nullptr && conv_diff_src_md != nullptr) {
+        *conv_diff_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
+        conv_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
+        conv_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCDHW ? 0 : 0];
+        conv_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCDHW ? 1 : 4];
+        conv_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCDHW ? 2 : 1];
+        conv_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCDHW ? 3 : 2];
+        conv_diff_src_md->data.layout_desc.blocking.strides[0][4] = diff_src->stridesOf()[isNCDHW ? 4 : 3];
+    }
+
+    if (weights != nullptr && conv_weights_md != nullptr) {
+        *conv_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
+        conv_weights_md->data.format = mkldnn_blocked; // overrides "formatw = dhwio"
+        conv_weights_md->data.layout_desc.blocking.strides[0][0] = weights->stridesOf()[4];
+        conv_weights_md->data.layout_desc.blocking.strides[0][1] = weights->stridesOf()[3];
+        conv_weights_md->data.layout_desc.blocking.strides[0][2] = weights->stridesOf()[0];
+        conv_weights_md->data.layout_desc.blocking.strides[0][3] = weights->stridesOf()[1];
+        conv_weights_md->data.layout_desc.blocking.strides[0][4] = weights->stridesOf()[2];
+    }
+
+    if (diff_weights != nullptr && conv_diff_weights_md != nullptr) {
+        *conv_diff_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
+        conv_diff_weights_md->data.format = mkldnn_blocked; // overrides "formatw = dhwio"
+        conv_diff_weights_md->data.layout_desc.blocking.strides[0][0] = diff_weights->stridesOf()[4];
+        conv_diff_weights_md->data.layout_desc.blocking.strides[0][1] = diff_weights->stridesOf()[3];
+        conv_diff_weights_md->data.layout_desc.blocking.strides[0][2] = diff_weights->stridesOf()[0];
+        conv_diff_weights_md->data.layout_desc.blocking.strides[0][3] = diff_weights->stridesOf()[1];
+        conv_diff_weights_md->data.layout_desc.blocking.strides[0][4] = diff_weights->stridesOf()[2];
+    }
+
+    if (bias != nullptr && conv_bias_md != nullptr) {
+        *conv_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::x);
+    }
+
+    if (dst != nullptr && conv_dst_md != nullptr) {
+        *conv_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, format);
+        conv_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
+        conv_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCDHW ? 0 : 0];
+        conv_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCDHW ? 1 : 4];
+        conv_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCDHW ? 2 : 1];
+        conv_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCDHW ? 3 : 2];
+        conv_dst_md->data.layout_desc.blocking.strides[0][4] = dst->stridesOf()[isNCDHW ? 4 : 3];
+    }
+}
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void conv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
 
     // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights [kH, kW, iC, oC] always
@@ -439,14 +591,59 @@ static void conv2d_(const NDArray* input, const NDArray* weights, const NDArray*
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
     ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
+    if(isSameMode)                       // SAME
+        ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+
+#ifdef HAVE_MKLDNN
+    if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<X, Y>()) {
+        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
+        if (streams.empty()) {
+            streams.push_back(MKLDNNStream("conv2d"));
+        }
+
+        if (streams[0].checkAndReset({input, weights, bias}, {output}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW})) {
+            mkldnn_memory_desc_t empty;
+            mkldnn::memory::desc conv_src_md(empty), conv_weights_md(empty), conv_bias_md(empty), conv_dst_md(empty);
+            mkldnn::memory::dims conv_strides, conv_padding, conv_padding_r;
+
+            ConvolutionUtils::getMKLDNNMemoryDescConv2d(kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
+                    bS, iC, iH, iW, oC, oH, oW, input, nullptr, weights, nullptr, bias, output,
+                    &conv_src_md, nullptr, &conv_weights_md, nullptr, &conv_bias_md, &conv_dst_md,
+                    conv_strides, conv_padding, conv_padding_r);
+
+            auto conv_desc = bias != nullptr
+                    ? convolution_forward::desc(prop_kind::forward,
+                            convolution_direct, conv_src_md, conv_weights_md, conv_bias_md,
+                            conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero)
+                    : convolution_forward::desc(prop_kind::forward,
+                            convolution_direct, conv_src_md, conv_weights_md,
+                            conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
+
+            auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc, streams[0].getEngine());
+            auto conv_src_memory = mkldnn::memory(conv_prim_desc.src_primitive_desc(), const_cast<NDArray*>(input)->buffer());
+            auto conv_weights_memory = mkldnn::memory(conv_prim_desc.weights_primitive_desc(), const_cast<NDArray*>(weights)->buffer());
+            auto conv_dst_memory = mkldnn::memory(conv_prim_desc.dst_primitive_desc(), output->buffer());
+            if (bias != nullptr) {
+                auto conv_bias_memory = mkldnn::memory(conv_prim_desc.bias_primitive_desc(), const_cast<NDArray*>(bias)->buffer());
+                streams[0].setMemory({conv_src_memory, conv_weights_memory, conv_bias_memory, conv_dst_memory});
+                streams[0].setOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_bias_memory, conv_dst_memory));
+            } else {
+                streams[0].setMemory({conv_src_memory, conv_weights_memory, conv_dst_memory});
+                streams[0].setOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_dst_memory));
+            }
+        }
+
+        streams[0].submitAndWait();
+        return;
+    }
+#endif
+    nd4j_debug("MKL-DNN is not used for conv2d!\n", 0);
+
     std::vector<int> permutForOutput;
     if(!isNCHW)
         input = input->permute({0, 3, 1, 2});                                       // [bS, iH, iW, iC] -> [bS, iC, iH, iW] if NHWC
     else
         permutForOutput = {0, indOoH, indOoH+1, indIOioC};                          // [bS, oC, oH, oW] -> [bS, oH, oW, oC]
-
-    if(isSameMode)                       // SAME
-        ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
     NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getWorkspace());
 
@@ -465,7 +662,7 @@ static void conv2d_(const NDArray* input, const NDArray* weights, const NDArray*
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void conv2dBP_(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
 
     // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights [kH, kW, iC, oC] always
@@ -491,6 +688,89 @@ static void conv2dBP_(const NDArray* input, const NDArray* weights, const NDArra
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
     ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
+    if(isSameMode)                       // SAME
+        ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+
+#ifdef HAVE_MKLDNN
+    if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<X, Y>()) {
+        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
+        if (streams.empty()) {
+            streams.push_back(MKLDNNStream("conv2d_bp_weights"));
+            streams.push_back(MKLDNNStream("conv2d_bp_data"));
+        }
+
+        bool resetW = streams[0].checkAndReset({input, weights, bias, gradO}, {gradI, gradW, gradB}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW});
+        bool resetI = streams[1].checkAndReset({input, weights, bias, gradO}, {gradI, gradW, gradB}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW});
+        if (resetW || resetI) {
+            mkldnn_memory_desc_t empty;
+            mkldnn::memory::desc conv_src_md(empty), conv_diff_src_md(empty), conv_weights_md(empty),
+                                 conv_diff_weights_md(empty), conv_bias_md(empty), conv_dst_md(empty);
+            mkldnn::memory::dims conv_strides, conv_padding, conv_padding_r;
+
+            ConvolutionUtils::getMKLDNNMemoryDescConv2d(kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
+                    bS, iC, iH, iW, oC, oH, oW, input, gradI, weights, gradW, gradB, gradO,
+                    &conv_src_md, &conv_diff_src_md, &conv_weights_md, &conv_diff_weights_md, &conv_bias_md, &conv_dst_md,
+                    conv_strides, conv_padding, conv_padding_r);
+
+            auto conv_desc = gradB != nullptr
+                    ? convolution_forward::desc(prop_kind::forward,
+                            convolution_direct, conv_src_md, conv_weights_md, conv_bias_md,
+                            conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero)
+                    : convolution_forward::desc(prop_kind::forward,
+                            convolution_direct, conv_src_md, conv_weights_md,
+                            conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
+
+            auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc, streams[0].getEngine());
+
+            if (gradW != nullptr) {
+                auto convW_desc = gradB != nullptr
+                        ? convolution_backward_weights::desc(
+                                convolution_direct, conv_src_md, conv_diff_weights_md, conv_bias_md,
+                                conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero)
+                        : convolution_backward_weights::desc(
+                                convolution_direct, conv_src_md, conv_diff_weights_md,
+                                conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
+
+                auto convW_prim_desc = convolution_backward_weights::primitive_desc(convW_desc, streams[0].getEngine(), conv_prim_desc);
+                auto convW_src_memory = mkldnn::memory(convW_prim_desc.src_primitive_desc(), const_cast<NDArray*>(input)->buffer());
+                auto convW_weights_memory = mkldnn::memory(convW_prim_desc.diff_weights_primitive_desc(), gradW->buffer());
+                auto convW_dst_memory = mkldnn::memory(convW_prim_desc.diff_dst_primitive_desc(), const_cast<NDArray*>(gradO)->buffer());
+                if (gradB != nullptr) {
+                    auto convW_bias_memory = mkldnn::memory(convW_prim_desc.diff_bias_primitive_desc(), gradB->buffer());
+                    streams[0].setMemory({convW_src_memory, convW_dst_memory, convW_weights_memory, convW_bias_memory});
+                    streams[0].setOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory, convW_bias_memory));
+                } else {
+                    streams[0].setMemory({convW_src_memory, convW_dst_memory, convW_weights_memory});
+                    streams[0].setOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory));
+                }
+            }
+
+            if (gradI != nullptr) {
+                auto convI_desc =
+                        convolution_backward_data::desc(
+                                convolution_direct, conv_diff_src_md, conv_weights_md,
+                                conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
+
+                auto convI_prim_desc = convolution_backward_data::primitive_desc(convI_desc, streams[1].getEngine(), conv_prim_desc);
+                auto convI_src_memory = mkldnn::memory(convI_prim_desc.diff_src_primitive_desc(), gradI->buffer());
+                auto convI_weights_memory = mkldnn::memory(convI_prim_desc.weights_primitive_desc(), const_cast<NDArray*>(weights)->buffer());
+                auto convI_dst_memory = mkldnn::memory(convI_prim_desc.diff_dst_primitive_desc(), const_cast<NDArray*>(gradO)->buffer());
+                streams[1].setMemory({convI_dst_memory, convI_weights_memory, convI_src_memory});
+                streams[1].setOperation(convolution_backward_data(convI_prim_desc, convI_dst_memory, convI_weights_memory, convI_src_memory));
+            }
+        }
+
+        if (gradW != nullptr) {
+            streams[0].submitAndWait();
+        }
+        if (gradI != nullptr) {
+            streams[1].submitAndWait();
+        }
+        return;
+    }
+#endif
+    nd4j_debug("MKL-DNN is not used for conv2d_bp!\n", 0);
+
     std::vector<int> gradOaxesForDot;
 
     if(!isNCHW) {
@@ -500,9 +780,6 @@ static void conv2dBP_(const NDArray* input, const NDArray* weights, const NDArra
     }
     else
         gradOaxesForDot  = {0, 2, 3};                                           // bS, oH, oW
-
-    if(isSameMode)                       // SAME
-        ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
     NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getWorkspace());
 
@@ -673,7 +950,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void sconv2d_(const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+static void sconv2d_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
 
     // input         [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
     // weightsDepth  [kH, kW, iC, mC]  always
@@ -706,7 +983,7 @@ static void sconv2d_(const NDArray* input, const NDArray* weightsDepth, const ND
 
     // ----- perform pointwise convolution (oH = iH, oW = iW) ----- //
     if (weightsPoint) {
-        ConvolutionUtils::conv2d(outputDepth, weightsPoint, bias, output, 1,1, 1,1, 0,0, 1,1, isSameMode, isNCHW);             // in this case oH=iH, oW=iW
+        ConvolutionUtils::conv2d(block, outputDepth, weightsPoint, bias, output, 1,1, 1,1, 0,0, 1,1, isSameMode, isNCHW);             // in this case oH=iH, oW=iW
         delete outputDepth;
     }
 }
@@ -866,9 +1143,115 @@ static void upsampling3dBP_(const NDArray& gradO, NDArray& gradI, const bool isN
 }
 
 
+#ifdef HAVE_MKLDNN
+using namespace mkldnn;
+
+void ConvolutionUtils::getMKLDNNMemoryDescPool2d(
+        int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, int poolingMode, int extraParam0, bool isNCHW,
+        int bS, int iC, int iH, int iW, int oC, int oH, int oW,
+        const NDArray* src, const NDArray* diff_src, const NDArray* dst,
+        mkldnn::memory::desc* pool_src_md, mkldnn::memory::desc* pool_diff_src_md, mkldnn::memory::desc* pool_dst_md, mkldnn::algorithm& algorithm,
+        mkldnn::memory::dims& pool_strides, mkldnn::memory::dims& pool_kernel, mkldnn::memory::dims& pool_padding, mkldnn::memory::dims& pool_padding_r) {
+    mkldnn::memory::dims pool_src_tz = { bS, iC, iH, iW };
+    mkldnn::memory::dims pool_dst_tz = { bS, oC, oH, oW };
+
+    pool_strides = { sH, sW };
+    pool_kernel = { kH, kW };
+    pool_padding = { pH, pW };
+    pool_padding_r = { (oH - 1) * sH - iH + kH - pH,
+                       (oW - 1) * sW - iW + kW - pW };
+
+    algorithm = poolingMode == 0 ? pooling_max
+                                 : extraParam0 == 0 ? pooling_avg_exclude_padding
+                                                    : pooling_avg_include_padding;
+    auto type = mkldnn::memory::data_type::f32;
+    auto format = isNCHW ? mkldnn::memory::format::nchw : mkldnn::memory::format::nhwc;
+
+    if (src != nullptr && src->getBuffer() != nullptr && pool_src_md != nullptr) {
+        *pool_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
+        pool_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        pool_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCHW ? 0 : 0];
+        pool_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCHW ? 1 : 3];
+        pool_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCHW ? 2 : 1];
+        pool_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCHW ? 3 : 2];
+    }
+
+    if (diff_src != nullptr && diff_src->getBuffer() != nullptr && pool_diff_src_md != nullptr) {
+        *pool_diff_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
+        pool_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        pool_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCHW ? 0 : 0];
+        pool_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCHW ? 1 : 3];
+        pool_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCHW ? 2 : 1];
+        pool_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCHW ? 3 : 2];
+    }
+
+    if (dst != nullptr && dst->getBuffer() != nullptr && pool_dst_md != nullptr) {
+        *pool_dst_md = mkldnn::memory::desc({ pool_dst_tz }, type, format);
+        pool_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
+        pool_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCHW ? 0 : 0];
+        pool_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCHW ? 1 : 3];
+        pool_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCHW ? 2 : 1];
+        pool_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCHW ? 3 : 2];
+    }
+}
+
+void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
+        int kD, int kH, int kW, int sD, int sH, int sW, int pD, int pH, int pW, int dD, int dH, int dW, int poolingMode, int extraParam0, bool isNCDHW,
+        int bS, int iC, int iD, int iH, int iW, int oC, int oD, int oH, int oW,
+        const NDArray* src, const NDArray* diff_src, const NDArray* dst,
+        mkldnn::memory::desc* pool_src_md, mkldnn::memory::desc* pool_diff_src_md, mkldnn::memory::desc* pool_dst_md, mkldnn::algorithm& algorithm,
+        mkldnn::memory::dims& pool_strides, mkldnn::memory::dims& pool_kernel, mkldnn::memory::dims& pool_padding, mkldnn::memory::dims& pool_padding_r) {
+    mkldnn::memory::dims pool_src_tz = { bS, iC, iD, iH, iW };
+    mkldnn::memory::dims pool_dst_tz = { bS, oC, oD, oH, oW };
+
+    pool_strides = { sD, sH, sW };
+    pool_kernel = { kD, kH, kW };
+    pool_padding = { pD, pH, pW };
+    pool_padding_r = { (oD - 1) * sD - iD + kD - pD,
+                       (oH - 1) * sH - iH + kH - pH,
+                       (oW - 1) * sW - iW + kW - pW };
+
+    algorithm = poolingMode == 0 ? pooling_max
+                                 : extraParam0 == 0 ? pooling_avg_exclude_padding
+                                                    : pooling_avg_include_padding;
+    auto type = mkldnn::memory::data_type::f32;
+    auto format = isNCDHW ? mkldnn::memory::format::ncdhw : mkldnn::memory::format::ndhwc;
+
+    if (src != nullptr && src->getBuffer() != nullptr && pool_src_md != nullptr) {
+        *pool_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
+        pool_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
+        pool_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCDHW ? 0 : 0];
+        pool_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCDHW ? 1 : 4];
+        pool_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCDHW ? 2 : 1];
+        pool_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCDHW ? 3 : 2];
+        pool_src_md->data.layout_desc.blocking.strides[0][4] = src->stridesOf()[isNCDHW ? 4 : 3];
+    }
+
+    if (diff_src != nullptr && diff_src->getBuffer() != nullptr && pool_diff_src_md != nullptr) {
+        *pool_diff_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
+        pool_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
+        pool_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCDHW ? 0 : 0];
+        pool_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCDHW ? 1 : 4];
+        pool_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCDHW ? 2 : 1];
+        pool_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCDHW ? 3 : 2];
+        pool_diff_src_md->data.layout_desc.blocking.strides[0][4] = diff_src->stridesOf()[isNCDHW ? 4 : 3];
+    }
+
+    if (dst != nullptr && dst->getBuffer() != nullptr && pool_dst_md != nullptr) {
+        *pool_dst_md = mkldnn::memory::desc({ pool_dst_tz }, type, format);
+        pool_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
+        pool_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCDHW ? 0 : 0];
+        pool_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCDHW ? 1 : 4];
+        pool_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCDHW ? 2 : 1];
+        pool_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCDHW ? 3 : 2];
+        pool_dst_md->data.layout_desc.blocking.strides[0][4] = dst->stridesOf()[isNCDHW ? 4 : 3];
+    }
+}
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void pooling2d_(const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
     // input is  [bS, iC, iH, iW]
     // output is [bS, iC, oH, oW]
     T* out = output.bufferAsT<T>();
@@ -881,8 +1264,44 @@ static void pooling2d_(const NDArray& input, NDArray& output, const int kH, cons
     const Nd4jLong iC = input.sizeAt(1);
     const Nd4jLong iH = input.sizeAt(2);
     const Nd4jLong iW = input.sizeAt(3);
+    const Nd4jLong oC = output.sizeAt(1);
     const Nd4jLong oH = output.sizeAt(2);
     const Nd4jLong oW = output.sizeAt(3);
+
+#ifdef HAVE_MKLDNN
+    if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
+        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
+        if (streams.empty()) {
+            streams.push_back(MKLDNNStream("pooling2d"));
+        }
+
+        if (streams[0].checkAndReset({&input}, {&output}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0})) {
+            mkldnn_memory_desc_t empty;
+            mkldnn::memory::desc pool_src_md(empty), pool_dst_md(empty);
+            mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
+            mkldnn::algorithm algorithm;
+
+            ConvolutionUtils::getMKLDNNMemoryDescPool2d(kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0, true,
+                    bS, iC, iH, iW, oC, oH, oW, &input, nullptr, &output,
+                    &pool_src_md, nullptr, &pool_dst_md, algorithm,
+                    pool_strides, pool_kernel, pool_padding, pool_padding_r);
+
+            auto pool_desc = pooling_forward::desc(prop_kind::forward_inference, algorithm, pool_src_md, pool_dst_md,
+                    pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
+
+            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, streams[0].getEngine());
+            auto pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc(), const_cast<NDArray&>(input).buffer());
+            auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc(), output.buffer());
+            streams[0].setMemory({pool_src_memory, pool_dst_memory});
+            streams[0].setOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory));
+        }
+
+        streams[0].submitAndWait();
+        return;
+    }
+#endif
+    nd4j_debug("MKL-DNN is not used for pooling2d!\n", 0);
+
     const Nd4jLong iStride0 = input.stridesOf()[0];
     const Nd4jLong iStride1 = input.stridesOf()[1];
     const Nd4jLong iStride2 = input.stridesOf()[2];
@@ -1039,7 +1458,7 @@ static void pooling2d_(const NDArray& input, NDArray& output, const int kH, cons
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void pooling3d_(const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
     // input is  [bS, iC, iD, iH, iW]
     // output is [bS, iC, oD, oH, oW]
     T* out = output.bufferAsT<T>();
@@ -1054,9 +1473,45 @@ static void pooling3d_(const NDArray& input, NDArray& output, const int kD, cons
     const Nd4jLong iD = input.sizeAt(2);
     const Nd4jLong iH = input.sizeAt(3);
     const Nd4jLong iW = input.sizeAt(4);
+    const Nd4jLong oC = output.sizeAt(1);
     const Nd4jLong oD = output.sizeAt(2);
     const Nd4jLong oH = output.sizeAt(3);
     const Nd4jLong oW = output.sizeAt(4);
+
+#ifdef HAVE_MKLDNN
+    if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
+        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
+        if (streams.empty()) {
+            streams.push_back(MKLDNNStream("pooling3d"));
+        }
+
+        if (streams[0].checkAndReset({&input}, {&output}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0})) {
+            mkldnn_memory_desc_t empty;
+            mkldnn::memory::desc pool_src_md(empty), pool_dst_md(empty);
+            mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
+            mkldnn::algorithm algorithm;
+
+            ConvolutionUtils::getMKLDNNMemoryDescPool3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0, true,
+                    bS, iC, iD, iH, iW, oC, oD, oH, oW, &input, nullptr, &output,
+                    &pool_src_md, nullptr, &pool_dst_md, algorithm,
+                    pool_strides, pool_kernel, pool_padding, pool_padding_r);
+
+            auto pool_desc = pooling_forward::desc(prop_kind::forward_inference, algorithm, pool_src_md, pool_dst_md,
+                    pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
+
+            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, streams[0].getEngine());
+            auto pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc(), const_cast<NDArray&>(input).buffer());
+            auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc(), output.buffer());
+            streams[0].setMemory({pool_src_memory, pool_dst_memory});
+            streams[0].setOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory));
+        }
+
+        streams[0].submitAndWait();
+        return;
+    }
+#endif
+    nd4j_debug("MKL-DNN is not used for pooling3d!\n", 0);
+
     const Nd4jLong iStride0 = input.stridesOf()[0];
     const Nd4jLong iStride1 = input.stridesOf()[1];
     const Nd4jLong iStride2 = input.stridesOf()[2];
@@ -1251,7 +1706,7 @@ static void pooling3d_(const NDArray& input, NDArray& output, const int kD, cons
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void pooling2dBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
     // input [bS, iC, iH, iW]
     // gradI [bS, iC, iH, iW] -> gradI is output in this function
     // gradO [bS, iC, oH, oW]    
@@ -1282,8 +1737,68 @@ static void pooling2dBP_(const NDArray& input, const NDArray& gradO, NDArray& gr
     const Nd4jLong iC = gradI.sizeAt(1);
     const Nd4jLong iH = gradI.sizeAt(2);
     const Nd4jLong iW = gradI.sizeAt(3);
+    const Nd4jLong oC = gradO.sizeAt(1);
     const Nd4jLong oH = gradO.sizeAt(2);
     const Nd4jLong oW = gradO.sizeAt(3);
+
+#ifdef HAVE_MKLDNN
+    if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
+        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
+        if (streams.empty()) {
+            streams.push_back(MKLDNNStream("pooling2d_bp"));
+        }
+
+        if (streams[0].checkAndReset({&input, &gradO}, {&gradI}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0})) {
+            mkldnn_memory_desc_t empty;
+            mkldnn::memory::desc pool_src_md(empty), pool_diff_src_md(empty), pool_dst_md(empty);
+            mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
+            mkldnn::algorithm algorithm;
+
+            ConvolutionUtils::getMKLDNNMemoryDescPool2d(kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0, true,
+                    bS, iC, iH, iW, oC, oH, oW, &input, &gradI, &gradO,
+                    &pool_src_md, &pool_diff_src_md, &pool_dst_md, algorithm,
+                    pool_strides, pool_kernel, pool_padding, pool_padding_r);
+
+            // input is sometimes null, so we can't rely on pool_src_md being valid
+            auto pool_desc = pooling_forward::desc(prop_kind::forward, algorithm,
+                    const_cast<NDArray&>(input).buffer() != nullptr ? pool_src_md : pool_diff_src_md,
+                    pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
+
+            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, streams[0].getEngine());
+
+            auto poolB_desc = pooling_backward::desc(algorithm, pool_diff_src_md, pool_dst_md,
+                    pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
+
+            auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, streams[0].getEngine(), pool_prim_desc);
+            auto poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_primitive_desc(), gradI.buffer());
+            auto poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_primitive_desc(), const_cast<NDArray&>(gradO).buffer());
+            if (algorithm == mkldnn::pooling_max) {
+                auto pool_workspace_memory = mkldnn::memory(pool_prim_desc.workspace_primitive_desc());
+                if (streams.size() < 2) {
+                    streams.push_back(MKLDNNStream("pooling2d"));
+                }
+                auto pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc(), const_cast<NDArray&>(input).buffer());
+                auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
+                streams[1].setMemory({pool_src_memory, pool_dst_memory});
+                streams[1].setOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory, pool_workspace_memory));
+
+                streams[0].setMemory({poolB_dst_memory, pool_workspace_memory, poolB_src_memory});
+                streams[0].setOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, pool_workspace_memory, poolB_src_memory));
+            } else {
+                streams[0].setMemory({poolB_dst_memory, poolB_src_memory});
+                streams[0].setOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, poolB_src_memory));
+            }
+        }
+
+        if (streams.size() > 1) {
+            streams[1].submitAndWait();
+        }
+        streams[0].submitAndWait();
+        return;
+    }
+#endif
+    nd4j_debug("MKL-DNN is not used for pooling2d_bp!\n", 0);
+
     const Nd4jLong iStride0 = gradI.stridesOf()[0];
     const Nd4jLong iStride1 = gradI.stridesOf()[1];
     const Nd4jLong iStride2 = gradI.stridesOf()[2];
@@ -1446,7 +1961,7 @@ static void pooling2dBP_(const NDArray& input, const NDArray& gradO, NDArray& gr
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void pooling3dBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
     // input [bS, iC, iD, iH, iW]
     // gradI [bS, iC, iD, iH, iW] -> gradI is output in this function
     // gradO [bS, iC, oD, oH, oW]
@@ -1481,9 +1996,69 @@ static void pooling3dBP_(const NDArray& input, const NDArray& gradO, NDArray& gr
     const Nd4jLong iD = gradI.sizeAt(2);
     const Nd4jLong iH = gradI.sizeAt(3);
     const Nd4jLong iW = gradI.sizeAt(4);
+    const Nd4jLong oC = gradO.sizeAt(1);
     const Nd4jLong oD = gradO.sizeAt(2);
     const Nd4jLong oH = gradO.sizeAt(3);
     const Nd4jLong oW = gradO.sizeAt(4);
+
+#ifdef HAVE_MKLDNN
+    if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
+        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
+        if (streams.empty()) {
+            streams.push_back(MKLDNNStream("pooling3d_bp"));
+        }
+
+        if (streams[0].checkAndReset({&input, &gradO}, {&gradI}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0})) {
+            mkldnn_memory_desc_t empty;
+            mkldnn::memory::desc pool_src_md(empty), pool_diff_src_md(empty), pool_dst_md(empty);
+            mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
+            mkldnn::algorithm algorithm;
+
+            ConvolutionUtils::getMKLDNNMemoryDescPool3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0, true,
+                    bS, iC, iD, iH, iW, oC, oD, oH, oW, &input, &gradI, &gradO,
+                    &pool_src_md, &pool_diff_src_md, &pool_dst_md, algorithm,
+                    pool_strides, pool_kernel, pool_padding, pool_padding_r);
+
+            // input is sometimes null, so we can't rely on pool_src_md being valid
+            auto pool_desc = pooling_forward::desc(prop_kind::forward, algorithm,
+                    const_cast<NDArray&>(input).buffer() != nullptr ? pool_src_md : pool_diff_src_md,
+                    pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
+
+            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, streams[0].getEngine());
+
+            auto poolB_desc = pooling_backward::desc(algorithm, pool_diff_src_md, pool_dst_md,
+                    pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
+
+            auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, streams[0].getEngine(), pool_prim_desc);
+            auto poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_primitive_desc(), gradI.buffer());
+            auto poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_primitive_desc(), const_cast<NDArray&>(gradO).buffer());
+            if (algorithm == mkldnn::pooling_max) {
+                auto pool_workspace_memory = mkldnn::memory(pool_prim_desc.workspace_primitive_desc());
+                if (streams.size() < 2) {
+                    streams.push_back(MKLDNNStream("pooling3d"));
+                }
+                auto pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc(), const_cast<NDArray&>(input).buffer());
+                auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
+                streams[1].setMemory({pool_src_memory, pool_dst_memory});
+                streams[1].setOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory, pool_workspace_memory));
+
+                streams[0].setMemory({poolB_dst_memory, pool_workspace_memory, poolB_src_memory});
+                streams[0].setOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, pool_workspace_memory, poolB_src_memory));
+            } else {
+                streams[0].setMemory({poolB_dst_memory, poolB_src_memory});
+                streams[0].setOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, poolB_src_memory));
+            }
+        }
+
+        if (streams.size() > 1) {
+            streams[1].submitAndWait();
+        }
+        streams[0].submitAndWait();
+        return;
+    }
+#endif
+    nd4j_debug("MKL-DNN is not used for pooling3d_bp!\n", 0);
+
     const Nd4jLong iStride0 = gradI.stridesOf()[0];
     const Nd4jLong iStride1 = gradI.stridesOf()[1];
     const Nd4jLong iStride2 = gradI.stridesOf()[2];
@@ -1686,11 +2261,11 @@ static void pooling3dBP_(const NDArray& input, const NDArray& gradO, NDArray& gr
 
 
 
-void ConvolutionUtils::conv2d(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-    BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), conv2d_, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+void ConvolutionUtils::conv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+    BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), conv2d_, (block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 }
-void ConvolutionUtils::conv2dBP(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-    BUILD_DOUBLE_SELECTOR(input->dataType(), gradO->dataType(), conv2dBP_, (input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+void ConvolutionUtils::conv2dBP(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+    BUILD_DOUBLE_SELECTOR(input->dataType(), gradO->dataType(), conv2dBP_, (block, input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 }
 void ConvolutionUtils::depthwiseConv2d(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
     BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), depthwiseConv2d_, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
@@ -1698,8 +2273,8 @@ void ConvolutionUtils::depthwiseConv2d(const NDArray* input, const NDArray* weig
 void ConvolutionUtils::depthwiseConv2dBP(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
     BUILD_DOUBLE_SELECTOR(input->dataType(), gradO->dataType(), depthwiseConv2dBP_, (input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 }
-void ConvolutionUtils::sconv2d(const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-    BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sconv2d_, (input, weightsDepth, weightsPoint, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+void ConvolutionUtils::sconv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+    BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sconv2d_, (block, input, weightsDepth, weightsPoint, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 }
 void ConvolutionUtils::vol2col(const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
     BUILD_SINGLE_SELECTOR(volume.dataType(), vol2col_, (volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW), LIBND4J_TYPES);
@@ -1722,25 +2297,25 @@ void ConvolutionUtils::upsampling3dBP(const NDArray& gradO, NDArray& gradI, cons
 
 
 
-void ConvolutionUtils::pooling2d(const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
-    BUILD_SINGLE_SELECTOR(input.dataType(), pooling2d_, (input, output, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+void ConvolutionUtils::pooling2d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), pooling2d_, (block, input, output, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
 }
-void ConvolutionUtils::pooling3d(const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
-    BUILD_SINGLE_SELECTOR(input.dataType(), pooling3d_, (input, output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+void ConvolutionUtils::pooling3d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), pooling3d_, (block, input, output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
 }
-void ConvolutionUtils::pooling2dBP(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
-    BUILD_SINGLE_SELECTOR(input.dataType(), pooling2dBP_, (input, gradO, gradI, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+void ConvolutionUtils::pooling2dBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), pooling2dBP_, (block, input, gradO, gradI, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
 }
-void ConvolutionUtils::pooling3dBP(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
-    BUILD_SINGLE_SELECTOR(input.dataType(), pooling3dBP_, (input, gradO, gradI, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+void ConvolutionUtils::pooling3dBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), pooling3dBP_, (block, input, gradO, gradI, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
 }
 
 
-BUILD_DOUBLE_TEMPLATE(template void conv2d_,            (const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void conv2dBP_,          (const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void conv2d_,            (nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void conv2dBP_,          (nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 BUILD_DOUBLE_TEMPLATE(template void depthwiseConv2d_,   (const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 BUILD_DOUBLE_TEMPLATE(template void depthwiseConv2dBP_, (const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void sconv2d_,           (const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void sconv2d_,           (nd4j::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 
 BUILD_SINGLE_TEMPLATE(template void upsampling2d_,   (const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void upsampling3d_,   (const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW), LIBND4J_TYPES);
@@ -1748,10 +2323,10 @@ BUILD_SINGLE_TEMPLATE(template void upsampling2dBP_, (const NDArray& gradO, NDAr
 BUILD_SINGLE_TEMPLATE(template void upsampling3dBP_, (const NDArray& gradO, NDArray& gradI, const bool isNCHW), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void vol2col_,        (const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void col2vol_,        (const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void pooling2d_,      (const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void pooling3d_,      (const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void pooling2dBP_,    (const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void pooling3dBP_,    (const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void pooling2d_,      (nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void pooling3d_,      (nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void pooling2dBP_,    (nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void pooling3dBP_,    (nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
 
 }
 }

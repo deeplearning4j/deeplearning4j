@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.graph;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
@@ -33,6 +34,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.dropout.GaussianNoise;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
@@ -50,7 +52,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerTest;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.AfterClass;
@@ -577,7 +578,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                         .l2(2e-4).graphBuilder().addInputs("in")
                         .addLayer("layer0",
                                 new VariationalAutoencoder.Builder().nIn(4).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                         .dist(new UniformDistribution(0,
                                                 1))
                                         .activation(Activation.TANH)
@@ -586,7 +587,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 "in")
                         .addLayer("layer1",
                                 new VariationalAutoencoder.Builder().nIn(4).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                         .dist(new UniformDistribution(0,
                                                 1))
                                         .activation(Activation.TANH)
@@ -595,7 +596,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 "in")
                         .addLayer("layer2",
                                 new VariationalAutoencoder.Builder().nIn(3).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                         .dist(new UniformDistribution(0,
                                                 1))
                                         .activation(Activation.TANH)
@@ -604,7 +605,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 "layer1")
                         .addLayer("out", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(3 + 3).nOut(3)
-                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                         .dist(new UniformDistribution(0, 1))
                                         .activation(Activation.SOFTMAX).build(),
                                 "layer0", "layer2")
@@ -1880,5 +1881,65 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
         assertEquals(outMap.get("1"), outSpecific[0]);
         assertEquals(outMap.get("3"), outSpecific[1]);
+    }
+
+    @Test
+    public void singleInputElemVertex() {
+        final InputType inputType = InputType.convolutional(10, 10, 2);
+        final ComputationGraph graph = new ComputationGraph(new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .setInputTypes(inputType)
+                .addInputs("input")
+                .setOutputs("output")
+                .addLayer("0", new ConvolutionLayer.Builder().nOut(5).convolutionMode(ConvolutionMode.Same).build(),"input" )
+                .addVertex("dummyAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "0")
+                .addLayer("output", new CnnLossLayer(), "dummyAdd")
+                .build());
+        graph.init();
+        graph.outputSingle(Nd4j.randn(1, 2, 10, 10));
+    }
+
+
+    @Test
+    public void testCloneDropoutIndependence(){
+
+        val modelConf = new NeuralNetConfiguration.Builder()
+                .updater(new Adam(0.01))
+                .weightInit(WeightInit.XAVIER_UNIFORM)
+                .biasInit(0)
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer(
+                        "dense",
+                        new DenseLayer.Builder()
+                                .nIn(10)
+                                .nOut(10)
+                                .activation(Activation.RELU)
+                                .hasBias(true)
+                                .dropOut(0.9)
+                                .build(),
+                        "input")
+                .addLayer("output",
+                        new OutputLayer.Builder()
+                                .nIn(10)
+                                .nOut(1)
+                                .lossFunction(LossFunctions.LossFunction.XENT)
+                                .activation(Activation.SIGMOID)
+                                .hasBias(false)
+                                .build(),
+                        "dense")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph model = new ComputationGraph(modelConf);
+        model.init();
+
+        ComputationGraph cg2 = model.clone();
+
+        IDropout d1 = model.getLayer(0).conf().getLayer().getIDropout();
+        IDropout d2 = cg2.getLayer(0).conf().getLayer().getIDropout();
+
+        assertFalse(d1 == d2);  //Should not be same object!
+        assertEquals(d1, d2);   //But should be equal
     }
 }

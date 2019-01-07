@@ -402,12 +402,26 @@ public interface INDArray extends Serializable, AutoCloseable {
 
 
     /**
-     * Returns the binary ndarray for "Greter" comparison.
+     * Returns the binary ndarray for "Greater Than" comparison.
      *
      * @param other the ndarray to compare.
-     * @return the binary ndarray for "Greter" comparison.
+     * @return the binary ndarray for "Greater Than" comparison.
      */
     INDArray gt(INDArray other);
+
+    /**
+     * Returns the binary NDArray with value true where this array's entries are infinite, or false where they
+     * are not infinite
+     */
+    INDArray isInfinite();
+
+    /**
+     * Returns the binary NDArray with value true where this array's entries are NaN, or false where they
+     * are not infinite
+     */
+    INDArray isNaN();
+
+
 
     /**
      * Returns the ndarray negative (cloned)
@@ -538,7 +552,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     /**
      * Reverse in place division
      *
-     * @param n      the number to divide by  by
+     * @param n      the number to divide by
      * @param result the result ndarray
      * @return the result ndarray
      */
@@ -849,22 +863,12 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray putSlice(int slice, INDArray put);
 
     /**
-     * 1 in the ndarray if the element matches
-     * the condition 0 otherwise
+     * Returns a binary INDArray with value 'true' if the element matches the specified condition and 'false' otherwise
      *
      * @param condition Condition to apply
      * @return Copy of this array with values 0 (condition does not apply), or one (condition applies)
      */
     INDArray cond(Condition condition);
-
-    /**
-     * In-place: 1 in the ndarray if the element matches the condition 0 otherwise
-     *
-     * @param condition Condition to apply
-     * @return This array, modified with values 0 (condition does not apply), or one (condition applies)
-     */
-    INDArray condi(Condition condition);
-
 
 
     /**
@@ -1855,7 +1859,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray subArray(long[] offsets, int[] shape, int[] stride);
 
     /**
-     * Returns the elements at the the specified indices
+     * Returns the elements at the specified indices
      *
      * @param indices the indices to getScalar
      * @return the array with the specified elements
@@ -1881,7 +1885,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     double getDouble(long... indices);
 
     /**
-     * Returns the elements at the the specified indices
+     * Returns the elements at the specified indices
      *
      * @param indices the indices to getScalar
      * @return the array with the specified elements

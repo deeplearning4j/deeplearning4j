@@ -126,6 +126,11 @@ public class PlayUIServer extends UIServer {
         }
 
         if(((DefaultI18N)I18NProvider.getInstance()).noI18NData()){
+            Throwable t = ((DefaultI18N)I18NProvider.getInstance()).getLanguageLoadingException();
+            if(t != null){
+                throw new RuntimeException("Exception encountered during loading UI Language (Internationalization) data", t);
+            }
+
             log.error("Error loading UI Language (Internationalization) data: no language resource data files were" +
                     "found on the classpath. This usually occurs when running DL4J's UI from an uber-jar, which was " +
                     "built incorrectly (without language resource files). See https://deeplearning4j.org/visualization#issues" +
@@ -321,10 +326,10 @@ public class PlayUIServer extends UIServer {
             Pair<StatsStorage, StatsStorageListener> p = iterator.next();
             if (p.getFirst() == statsStorage) { //Same object, not equality
                 statsStorage.deregisterStatsStorageListener(p.getSecond());
-                iterator.remove();
                 found = true;
             }
         }
+        statsStorageInstances.remove(statsStorage);
         for (UIModule uiModule : uiModules) {
             uiModule.onDetach(statsStorage);
         }

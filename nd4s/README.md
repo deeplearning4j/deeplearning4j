@@ -18,13 +18,13 @@ With IntelliJ, incorporation of ND4S is easy: just create a new Scala project, g
 As an alternative, one may simply add the line below to `build.sbt` and re-build project.
 
 ```scala
-val nd4jVersion = "0.7.2"
+val nd4jVersion = "1.0.0-alpha"
 
 libraryDependencies += "org.nd4j" % "nd4j-native-platform" % nd4jVersion
 libraryDependencies += "org.nd4j" %% "nd4s" % nd4jVersion
 ```
 
-One may want to check our [maven repository page](https://mvnrepository.com/artifact/org.nd4j/nd4s_2.11) and replace `0.7.2` with the latest version.
+One may want to check our [maven repository page](https://mvnrepository.com/artifact/org.nd4j/nd4s_2.11) and replace `1.0.0-alpha` with the latest version.
 
 No need for git-cloning & compiling!
 

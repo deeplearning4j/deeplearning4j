@@ -76,7 +76,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * And the backward movement, if memory isn't used anymore (like if originating INDArray was trashed by JVM GC), or it's not popular enough to hold in device memory
  *
  * Mechanism is as lock-free, as possible. This achieved using three-state memory state signalling: Tick/Tack/Toe.
- * Tick: memory chunk (or its part) is accessed on on device
+ * Tick: memory chunk (or its part) is accessed on device
  * Tack: memory chink (or its part) device access session was finished
  * Toe: memory chunk is locked for some reason. Possible reasons:
  *              Memory synchronization is ongoing, host->gpu or gpu->host
@@ -99,7 +99,7 @@ public class AtomicAllocator implements Allocator {
 
     private AtomicLong objectsTracker = new AtomicLong(0);
 
-    // we have single tracking point for allocation points, since we're not going to cycle through it it any time soon
+    // we have single tracking point for allocation points, since we're not going to cycle through it any time soon
     private Map<Long, AllocationPoint> allocationsMap = new ConcurrentHashMap<>();
 
     private static Logger log = LoggerFactory.getLogger(AtomicAllocator.class);

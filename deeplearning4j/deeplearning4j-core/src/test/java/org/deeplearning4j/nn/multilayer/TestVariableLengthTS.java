@@ -300,7 +300,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                         MultiLayerConfiguration conf =
                                         new NeuralNetConfiguration.Builder().seed(12345L).list()
                                                         .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp()).build())
                                                         .layer(1, new RnnOutputLayer.Builder(
@@ -363,7 +363,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                         MultiLayerConfiguration conf =
                                         new NeuralNetConfiguration.Builder().seed(12345L).list()
                                                         .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp()).build())
                                                         .layer(1, new RnnOutputLayer.Builder(
@@ -379,7 +379,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                         MultiLayerConfiguration conf2 =
                                         new NeuralNetConfiguration.Builder().seed(12345L).list()
                                                         .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp()).build())
                                                         .layer(1, new RnnOutputLayer.Builder(

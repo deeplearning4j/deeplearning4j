@@ -281,6 +281,8 @@ cnpy::NpyArray cnpy::loadNpyFromFile(FILE *fp) {
     return arr;
 }
 
+
+
 /**
     *
     * @param data
@@ -333,19 +335,13 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
     return arr;
 }
 
-
-
 /**
  * Load the numpy z archive
- * @param fname the fully qualified path
- * @return the
+ * @param fp FILE pointer
+ * @return the arrays
  */
-cnpy::npz_t cnpy::npzLoad(std::string fname) {
-    FILE* fp = fopen(fname.c_str(),"rb");
 
-    if(!fp) printf("npz_load: Error! Unable to open file %s!\n",fname.c_str());
-    assert(fp);
-
+cnpy::npz_t cnpy::npzLoad(FILE* fp){
     cnpy::npz_t arrays;
 
     while(1) {
@@ -364,7 +360,7 @@ cnpy::npz_t cnpy::npzLoad(std::string fname) {
         if(vname_res != name_len)
             throw std::runtime_error("npz_load: failed fread");
 
-        //erase the lagging .npy        
+        //erase the lagging .npy
         varname.erase(varname.end() - 4,varname.end());
 
         //read in the extra field
@@ -376,11 +372,55 @@ cnpy::npz_t cnpy::npzLoad(std::string fname) {
                 throw std::runtime_error("npz_load: failed fread");
         }
 
-        // arrays[varname] = loadArrayFromFile(fp);
+        arrays[varname] = loadNpyFromFile(fp);
     }
+    return arrays;
+}
 
+/**
+ * Load the numpy z archive
+ * @param fname the fully qualified path
+ * @return the arrays
+ */
+cnpy::npz_t cnpy::npzLoad(std::string fname) {
+    FILE* fp = fopen(fname.c_str(),"rb");
+
+    if(!fp) printf("npz_load: Error! Unable to open file %s!\n",fname.c_str());
+    assert(fp);
+    cnpy::npz_t arrays;
+    while(1) {
+        std::vector<char> local_header(30);
+        size_t headerres = fread(&local_header[0],sizeof(char),30,fp);
+        if(headerres != 30)
+            throw std::runtime_error("npz_load: failed fread");
+
+        //if we've reached the global header, stop reading
+        if(local_header[2] != 0x03 || local_header[3] != 0x04) break;
+
+        //read in the variable name
+        unsigned short name_len = *(unsigned short*) &local_header[26];
+        std::string varname(name_len,' ');
+        size_t vname_res = fread(&varname[0],sizeof(char),name_len,fp);
+        if(vname_res != name_len)
+            throw std::runtime_error("npz_load: failed fread");
+
+        //erase the lagging .npy
+        varname.erase(varname.end() - 4,varname.end());
+
+        //read in the extra field
+        unsigned short extra_field_len = *(unsigned short*) &local_header[28];
+        if(extra_field_len > 0) {
+            std::vector<char> buff(extra_field_len);
+            size_t efield_res = fread(&buff[0],sizeof(char),extra_field_len,fp);
+            if(efield_res != extra_field_len)
+                throw std::runtime_error("npz_load: failed fread");
+        }
+
+        arrays[varname] = loadNpyFromFile(fp);
+    }
     fclose(fp);
     return arrays;
+
 }
 
 /**

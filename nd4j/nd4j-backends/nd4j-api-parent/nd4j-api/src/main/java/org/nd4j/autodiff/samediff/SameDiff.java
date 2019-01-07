@@ -660,7 +660,7 @@ public class SameDiff {
      * vertex ids should also delete redundant shapes stored to avoid redundant sources of information.
      *
      * @param varName the vertex id to get the shape for
-     * @return the shape for the given vertex if if any.
+     * @return the shape for the given vertex if any.
      */
     public long[] getShapeForVarName(String varName) {
         if (variableNameToArr.containsKey(varName)) {
@@ -4210,7 +4210,7 @@ public class SameDiff {
 
     /**
      * Elementwise atan (arctangent, inverse tangent) operation: out = atan2(x,y).
-     * Similar to atan(y/x) but sigts of x and y are used to determine the the location of the result
+     * Similar to atan(y/x) but sigts of x and y are used to determine the location of the result
      *
      * @param y Input Y variable
      * @param x Input X variable
@@ -4222,7 +4222,7 @@ public class SameDiff {
 
     /**
      * Elementwise atan (arctangent, inverse tangent) operation: out = atan2(x,y).
-     * Similar to atan(y/x) but sigts of x and y are used to determine the the location of the result
+     * Similar to atan(y/x) but sigts of x and y are used to determine the location of the result
      *
      * @param name Name of the output variable
      * @param y    Input Y variable
@@ -8772,7 +8772,7 @@ public class SameDiff {
 
     /**
      * Jaccard similarity reduction operation. The output contains the Jaccard distance for each
-     * tensor along the the specified dimensions.
+     * tensor along the specified dimensions.
      *
      * @param x          Input variable x
      * @param y          Input variable y
@@ -8785,7 +8785,7 @@ public class SameDiff {
 
     /**
      * Jaccard similarity reduction operation. The output contains the Jaccard distance for each
-     * tensor along the the specified dimensions.
+     * tensor along the specified dimensions.
      *
      * @param name       Name of the output variable
      * @param x          Input variable x
@@ -10488,7 +10488,7 @@ public class SameDiff {
     }
 
     /**
-     * Add one or or more place holder variables for the given vertex id.
+     * Add one or more place holder variables for the given vertex id.
      * <p>
      * Note that if a vertex id in placeHolderVariables isn't present in this samediff instance anyways,
      * an {@link ND4JIllegalStateException} is thrown
