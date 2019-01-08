@@ -455,6 +455,18 @@
             <id>cuda</id>
             <activation>
                 <property>
+                    <name>libnd4j.chip</name>
+                    <value>cuda</value>
+                </property>
+            </activation>
+            <modules>
+                <module>deeplearning4j-cuda</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>cuda2</id>
+            <activation>
+                <property>
                     <name>libnd4j.cuda</name>
                 </property>
             </activation>
