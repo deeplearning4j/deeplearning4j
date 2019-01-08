@@ -513,11 +513,13 @@ NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::graph::Launch
 
     cudaMemcpy(specialBuffer, res.buffer(), bufferSize, cudaMemcpyHostToDevice);
     cudaMemcpy(specialShapeInfo, res.shapeInfo(), shapeSize * sizeof(Nd4jLong), cudaMemcpyHostToDevice);
+    res.setBuffer(buffer);
     res.setSpecialBuffers(specialBuffer, specialShapeInfo);
 
-    res.setBuffer(buffer);        
     res.triggerAllocationFlag(true, true);
     res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
+    res.tickWriteDevice();
+    res.tickReadHost();
     return res;
 }
 template NDArray NDArrayFactory::create(const std::vector<double> &values, nd4j::graph::LaunchContext* context);
