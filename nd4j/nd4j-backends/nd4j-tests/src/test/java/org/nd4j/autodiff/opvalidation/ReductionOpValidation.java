@@ -337,8 +337,8 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 int nOut = 4;
                 int minibatch = 10;
-                SDVariable input = sd.var("in", DataType.DOUBLE, new int[]{-1, nOut});
-                SDVariable label = sd.var("label", DataType.DOUBLE, new int[]{-1, nOut});
+                SDVariable input = sd.placeHolder("in", DataType.DOUBLE, -1, nOut);
+                SDVariable label = sd.placeHolder("label", DataType.DOUBLE, -1, nOut);
 
                 SDVariable diff = input.sub(label);
                 SDVariable sqDiff = diff.mul(diff);

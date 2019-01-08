@@ -9938,12 +9938,8 @@ public class SameDiff {
             createGradFunction();
         }
 
-        if (log.isTraceEnabled()) {
-            log.trace("About to execute backward function");
-        }
-
-        //Collect list of gradient names...
-        List<String> varGradNames = new ArrayList<>();
+        //Collect (unique) list of gradient names...
+        Set<String> varGradNames = new HashSet<>();
         for(Variable v : variables.values()){
             if(v.getVariable().getVariableType() == VariableType.VARIABLE){
                 SDVariable g = v.getVariable().gradient();
@@ -9956,7 +9952,21 @@ public class SameDiff {
             return;
         }
 
-        sameDiffFunctionInstances.get("grad").exec(placeholders, varGradNames);
+        List<String> vargradNamesList = new ArrayList<>(varGradNames);
+        execBackwards(placeholders, vargradNamesList);
+    }
+
+    public void execBackwards(Map<String,INDArray> placeholders, List<String> variableGradNamesList){
+        if (getFunction("grad") == null) {
+            createGradFunction();
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("About to execute backward function");
+        }
+
+
+        sameDiffFunctionInstances.get("grad").exec(placeholders, variableGradNamesList);
     }
 
     /**
