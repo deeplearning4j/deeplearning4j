@@ -104,7 +104,7 @@ public class Transforms {
     }
 
     public static INDArray dot(INDArray x, INDArray y){
-        return Nd4j.getExecutioner().exec(new Dot(x,y)).z();
+        return Nd4j.getExecutioner().exec(new Dot(x,y));
     }
 
     public static INDArray cross(INDArray x, INDArray y){
@@ -394,7 +394,7 @@ public class Transforms {
 
 
     public static INDArray relu(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().exec(new RectifedLinear(in, (copy ? in.ulike() : in)));
+        return Nd4j.getExecutioner().exec(new RectifiedLinear(in, (copy ? in.ulike() : in)));
     }
 
     public static INDArray relu6(INDArray arr) {

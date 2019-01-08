@@ -25,7 +25,7 @@ import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.scalar.Pow;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
-import org.nd4j.linalg.api.ops.impl.scalar.RectifedLinear;
+import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
 import org.nd4j.linalg.api.ops.impl.scalar.Step;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
 
@@ -282,7 +282,7 @@ public class DefaultOpFactory implements OpFactory {
                 op = new Set(x,y,z,z.length());
                 break;
             case "relu":
-                op = new RectifedLinear(x, z, x.length(),extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);
+                op = new RectifiedLinear(x, z, x.length(),extraArgs == null || extraArgs[0] == null ? 0.0 : (double) extraArgs[0]);
                 break;
             case "step":
                 op = new Step(x, z,x.length(),extraArgs == null || extraArgs[0] == null  ? 0.0 : (double) extraArgs[0]);

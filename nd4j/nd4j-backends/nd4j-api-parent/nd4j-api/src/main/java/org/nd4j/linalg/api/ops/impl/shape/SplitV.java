@@ -18,16 +18,16 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.val;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * SplitV op
@@ -88,6 +88,16 @@ public class SplitV extends DynamicCustomOp {
     @Override
     public int getNumOutputs(){
         return numSplit;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //Output types are same as first input type - just numSplits of them...
+        List<DataType> out = new ArrayList<>(numSplit);
+        for( int i=0; i<numSplit; i++ ){
+            out.add(dataTypes.get(0));
+        }
+        return out;
     }
 
 }

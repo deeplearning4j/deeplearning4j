@@ -211,6 +211,9 @@ public class ArrayOptionsHelper {
                 return DataType.DOUBLE;
             case "string":
                 return DataType.UTF8;
+            case "uint8":
+            case "ubyte":
+                return DataType.UBYTE;
             default:
                 throw new ND4JIllegalStateException("Unknown data type used: [" + dataType + "]");
         }

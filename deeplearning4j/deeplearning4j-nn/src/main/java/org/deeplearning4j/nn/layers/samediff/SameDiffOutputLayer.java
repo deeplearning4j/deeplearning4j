@@ -32,7 +32,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -100,7 +100,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
         //TODO optimize
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            sameDiff.clearExecutionCache();
+//            sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
             if(layerConf().labelsRequired() && labels != null) {
                 sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));
@@ -134,7 +134,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
         INDArray dLdIn;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            sameDiff.clearExecutionCache();
+//            sameDiff.clearExecutionCache();
             INDArray castInput = input.castTo(Nd4j.defaultFloatingPointType());
             if(castInput.isAttached())
                 castInput = castInput.dup();

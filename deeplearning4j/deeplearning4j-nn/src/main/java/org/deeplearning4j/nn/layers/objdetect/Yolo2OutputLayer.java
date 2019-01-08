@@ -263,7 +263,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                     .addi(classPredictionLoss)
                     .dup('c');
 
-            scoreForExamples = scoreForExamples.reshape('c', mb, b*h*w).sum(1).addi(fullNetworkL1 + fullNetworkL2);
+            scoreForExamples = scoreForExamples.reshape('c', mb, b*h*w).sum(true, 1).addi(fullNetworkL1 + fullNetworkL2);
 
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreForExamples);
         }

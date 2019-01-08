@@ -21,6 +21,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -118,7 +119,7 @@ public class TensorArrayV3 extends  BaseTensorOp {
         if (getSameDiff().variableMap().containsKey(name)){
             return getSameDiff().variableMap().get(name);
         }
-        return getSameDiff().var(list.getName(), new long[]{1});
+        return getSameDiff().var(list.getName(), DataType.FLOAT, 1);
     }
 
     @Override

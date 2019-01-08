@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -75,11 +76,8 @@ public class Tan extends BaseTransformStrictOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //d(tan(x))/dx = (sec(x))^2 = 1 / (cos(x))^2
-
-        SDVariable oneDivCos2 = sameDiff.square(sameDiff.cos(arg())).rdiv(1.0);
-        SDVariable ret = oneDivCos2.mul(i_v.get(0));
-        return Arrays.asList(ret);
+        SDVariable cosx = outputVariable();
+        SDVariable cosSqx = sameDiff.square(cosx);
+        return Collections.singletonList(i_v.get(0).div(cosSqx));
     }
-
-
 }

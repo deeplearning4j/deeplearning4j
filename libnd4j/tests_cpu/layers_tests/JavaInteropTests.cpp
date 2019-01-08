@@ -807,6 +807,47 @@ TEST_F(JavaInteropTests, Test_Mixed_Add_1) {
     ASSERT_EQ(arrayE, arrayZ);
 }
 
+TEST_F(JavaInteropTests, Test_Add_1) {
+    auto x = NDArrayFactory::create<int>('c', {5}, {1, 1, 1, 1, 1});
+    auto y = NDArrayFactory::create<int>('c', {5}, {1, 1, 1, 1, 1});
+    auto e = NDArrayFactory::create<int>('c', {5}, {2, 2, 2, 2, 2});
+
+    NativeOps nativeOps;
+    nd4j::ops::add op;
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), y.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), y.getShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) x.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) x.getShapeInfo()};
+
+    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(JavaInteropTests, zeta_test10) {
+
+    auto x = NDArrayFactory::create<double>('c', {3, 4}, {1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.01, 1.11, 1.12});
+    auto q = NDArrayFactory::create<double>('c', {3, 4}, {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.01, 0.11, 0.12});
+    auto z = NDArrayFactory::create<double>('c', {3, 4});
+
+    auto e = NDArrayFactory::create<double>('c', {3, 4}, {23.014574, 12.184081, 8.275731, 6.1532226, 4.776538, 3.7945523, 3.0541048, 2.4765317, 2.0163891, 205.27448, 21.090889, 19.477398});
+
+    NativeOps nativeOps;
+    nd4j::ops::zeta op;
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), q.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), q.getShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
+
+    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+
+    ASSERT_EQ(e, z);
+}
+
 TEST_F(JavaInteropTests, Test_Is_Max_1) {
     auto arrayX = NDArrayFactory::create<float>({1, 2, 1, 1});
     auto arrayZ = NDArrayFactory::create<bool>({0, 0, 0, 0});

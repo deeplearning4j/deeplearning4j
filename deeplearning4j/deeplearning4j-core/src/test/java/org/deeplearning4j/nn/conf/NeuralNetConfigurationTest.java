@@ -253,12 +253,12 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         System.out.println("======================");
         System.out.println("Exec and Return: Leaky Relu transformation with alpha = 0.5 ..");
         System.out.println("======================");
-        INDArray outDef = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(leakyVector.dup(), myAlpha));
+        INDArray outDef = Nd4j.getExecutioner().exec(new LeakyReLU(leakyVector.dup(), myAlpha));
         System.out.println(outDef);
 
         String confActivation = "leakyrelu";
         Object[] confExtra = {myAlpha};
-        INDArray outMine = Nd4j.getExecutioner().execAndReturn(new LeakyReLU(leakyVector.dup(), myAlpha));
+        INDArray outMine = Nd4j.getExecutioner().exec(new LeakyReLU(leakyVector.dup(), myAlpha));
         System.out.println("======================");
         System.out.println("Exec and Return: Leaky Relu transformation with a value via getOpFactory");
         System.out.println("======================");

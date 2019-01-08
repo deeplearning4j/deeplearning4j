@@ -19,9 +19,12 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.dataset.DataSet;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -79,7 +82,8 @@ public class DynamicStitch extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
+//        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
+        this.numPartitions = (int)attributesForNode.get("N").getI();
     }
 
 
@@ -100,4 +104,12 @@ public class DynamicStitch extends DynamicCustomOp {
         throw new NoOpNameFoundException("No onnx name found for shape " + opName());
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2*numPartitions, "Expected %s input datatypes for %s partitions for %s, got %s",
+                2*numPartitions, numPartitions, getClass(), dataTypes);
+        //Output type: same as (data) input type... only 1 output, however
+        DataType inputType = dataTypes.get(dataTypes.size()-1);
+        return Collections.singletonList(inputType);
+    }
 }

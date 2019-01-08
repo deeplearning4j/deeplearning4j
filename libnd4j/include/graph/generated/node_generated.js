@@ -336,10 +336,19 @@ nd4j.graph.FlatNode.prototype.outputTypesArray = function() {
 };
 
 /**
+ * @param {nd4j.graph.FlatArray=} obj
+ * @returns {nd4j.graph.FlatArray|null}
+ */
+nd4j.graph.FlatNode.prototype.scalar = function(obj) {
+  var offset = this.bb.__offset(this.bb_pos, 40);
+  return offset ? (obj || new nd4j.graph.FlatArray).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
+};
+
+/**
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.FlatNode.startFlatNode = function(builder) {
-  builder.startObject(18);
+  builder.startObject(19);
 };
 
 /**
@@ -694,6 +703,14 @@ nd4j.graph.FlatNode.createOutputTypesVector = function(builder, data) {
  */
 nd4j.graph.FlatNode.startOutputTypesVector = function(builder, numElems) {
   builder.startVector(1, numElems, 1);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} scalarOffset
+ */
+nd4j.graph.FlatNode.addScalar = function(builder, scalarOffset) {
+  builder.addFieldOffset(18, scalarOffset, 0);
 };
 
 /**

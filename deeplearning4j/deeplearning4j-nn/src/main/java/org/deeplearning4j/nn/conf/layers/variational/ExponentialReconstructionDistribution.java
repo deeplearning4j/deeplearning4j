@@ -97,7 +97,7 @@ public class ExponentialReconstructionDistribution implements ReconstructionDist
         activationFn.getActivation(gamma, false);
 
         INDArray lambda = Transforms.exp(gamma, true);
-        return lambda.muli(x).rsubi(gamma).sum(1).negi();
+        return lambda.muli(x).rsubi(gamma).sum(true, 1).negi();
     }
 
     @Override

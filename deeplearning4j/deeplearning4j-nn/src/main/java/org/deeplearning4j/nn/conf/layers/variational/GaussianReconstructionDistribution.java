@@ -98,7 +98,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
 
         INDArray[] logProbArrays = calcLogProbArrayExConstants(x, preOutDistributionParams);
 
-        return logProbArrays[0].sum(1).muli(0.5).subi(size * NEG_HALF_LOG_2PI).addi(logProbArrays[1].sum(1));
+        return logProbArrays[0].sum(true, 1).muli(0.5).subi(size * NEG_HALF_LOG_2PI).addi(logProbArrays[1].sum(true, 1));
     }
 
     private INDArray[] calcLogProbArrayExConstants(INDArray x, INDArray preOutDistributionParams) {

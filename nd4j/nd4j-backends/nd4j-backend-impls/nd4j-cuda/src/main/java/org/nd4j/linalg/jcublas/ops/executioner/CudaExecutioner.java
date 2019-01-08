@@ -25,6 +25,7 @@ import lombok.var;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -1634,7 +1635,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     batch.getSample().maxArguments(), batch.getSample().maxShapes(),
                     batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
                     batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(),
-                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context), SameDiff.getDataTypeAsByte(DataType.FLOAT));
+                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context), FlatBuffersMapper.getDataTypeAsByte(DataType.FLOAT));
 
         surfacePoint.tickHostWrite();
     }
@@ -1729,7 +1730,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     (IntPointer) AtomicAllocator.getInstance().getPointer(intBuffer, context),
                     numIndexArguments, iPtr, numIntArrays,
                     AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
-                    numRealArguments, SameDiff.getDataTypeAsByte(dataType));
+                    numRealArguments, FlatBuffersMapper.getDataTypeAsByte(dataType));
     }
 
     /**

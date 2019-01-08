@@ -20,19 +20,18 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Stack operation. Stacks n input tensors along provided axis.
@@ -123,4 +122,14 @@ public class Stack extends DynamicCustomOp {
         return Arrays.asList(f().unstack(f1.get(0), jaxis, args().length));
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        DataType first = dataTypes.get(0);
+        for( int i=1; i<dataTypes.size(); i++ ){
+            DataType dt = dataTypes.get(i);
+            Preconditions.checkState(first == dt, "All inputs must have same datatype - got %s and %s for inputs 0 and %s respectively", first, dt, i);
+        }
+        //Output type is same as input types
+        return Collections.singletonList(first);
+    }
 }

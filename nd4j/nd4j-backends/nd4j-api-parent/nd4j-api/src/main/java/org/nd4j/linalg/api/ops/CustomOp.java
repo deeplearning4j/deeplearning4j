@@ -119,11 +119,4 @@ public interface CustomOp {
      * otherwise throws an {@link org.nd4j.linalg.exception.ND4JIllegalStateException}
      */
     void assertValidForExecution();
-
-    /**
-     * Attempt to populate inputs and outputs from samediff.
-     * This method will not attempt to fill in integer or double aruguments.
-     */
-    void populateInputsAndOutputsFromSameDiff();
-
 }

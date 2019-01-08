@@ -24,6 +24,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @Slf4j
 public class StringArrayTests {
@@ -38,6 +39,9 @@ public class StringArrayTests {
         assertEquals(DataType.UTF8, array.dataType());
 
         assertEquals("alpha", array.getStringUnsafe(0));
+        String s = array.toString();
+        assertTrue(s, s.contains("alpha"));
+        System.out.println(s);
     }
 
     @Test
@@ -52,5 +56,10 @@ public class StringArrayTests {
         assertEquals("alpha", array.getStringUnsafe(0));
         assertEquals("beta", array.getStringUnsafe(1));
         assertEquals("gamma", array.getStringUnsafe(2));
+        String s = array.toString();
+        assertTrue(s, s.contains("alpha"));
+        assertTrue(s, s.contains("beta"));
+        assertTrue(s, s.contains("gamma"));
+        System.out.println(s);
     }
 }

@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 
@@ -63,7 +64,17 @@ public class IdentityN extends DynamicCustomOp {
     }
 
     @Override
+    public int getNumOutputs(){
+        return args().length;
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         return Collections.singletonList(sameDiff.zerosLike(arg()));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> list){
+        return list;
     }
 }

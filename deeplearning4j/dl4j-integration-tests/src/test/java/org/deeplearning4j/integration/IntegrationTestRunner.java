@@ -847,8 +847,8 @@ public class IntegrationTestRunner {
     }
 
     private static INDArray relativeError(@NonNull INDArray a1, @NonNull INDArray a2, double minAbsError) {
-        long numNaN1 = Nd4j.getExecutioner().exec(new MatchCondition(a1, Conditions.isNan()), Integer.MAX_VALUE).getInt(0);
-        long numNaN2 = Nd4j.getExecutioner().exec(new MatchCondition(a2, Conditions.isNan()), Integer.MAX_VALUE).getInt(0);
+        long numNaN1 = Nd4j.getExecutioner().exec(new MatchCondition(a1, Conditions.isNan(), Integer.MAX_VALUE)).getInt(0);
+        long numNaN2 = Nd4j.getExecutioner().exec(new MatchCondition(a2, Conditions.isNan(), Integer.MAX_VALUE)).getInt(0);
         Preconditions.checkState(numNaN1 == 0, "Array 1 has NaNs");
         Preconditions.checkState(numNaN2 == 0, "Array 2 has NaNs");
 

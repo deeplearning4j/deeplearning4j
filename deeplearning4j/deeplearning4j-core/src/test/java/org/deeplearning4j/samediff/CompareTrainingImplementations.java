@@ -33,6 +33,7 @@ import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -74,15 +75,13 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 log.info("Starting: {}", testName);
                 SameDiff sd = SameDiff.create();
 
-                SDVariable in = sd.var("input", -1, 4);
-                SDVariable label = sd.var("label", -1, 3);
-                sd.addAsPlaceHolder("input");
-                sd.addAsPlaceHolder("label");
+                SDVariable in = sd.placeHolder("input", DataType.DOUBLE, -1, 4);
+                SDVariable label = sd.placeHolder("label", DataType.DOUBLE, -1, 3);
 
-                SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), 4, 10);
+                SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), DataType.DOUBLE, 4, 10);
                 SDVariable b0 = sd.zero("b0", 1, 10);
 
-                SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), 10, 3);
+                SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), DataType.DOUBLE, 10, 3);
                 SDVariable b1 = sd.zero("b1", 1, 3);
 
                 SDVariable z0 = in.mmul(w0).add(b0);

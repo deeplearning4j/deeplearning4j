@@ -28,7 +28,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -80,7 +80,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         }
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            sameDiff.clearExecutionCache();
+//            sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
             for(String s : paramTable.keySet() ) {
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
@@ -101,7 +101,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
         INDArray dLdIn;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            sameDiff.clearExecutionCache();
+//            sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
             fn.updateVariable(outputVar.getVarName(), epsilon.dup());
 

@@ -52,6 +52,17 @@ TEST_F(DeclarableOpsTests15, Test_NormalizeMoments_1) {
     ASSERT_EQ(Status::OK(), result);
 }
 
+TEST_F(DeclarableOpsTests15, Test_Add_1) {
+    auto x = NDArrayFactory::create<int>('c', {5}, {1, 1, 1, 1, 1});
+    auto y = NDArrayFactory::create<int>('c', {5}, {1, 1, 1, 1, 1});
+    auto e = NDArrayFactory::create<int>('c', {5}, {2, 2, 2, 2, 2});
+
+    nd4j::ops::add op;
+    auto result = op.execute({&x, &y}, {&x}, {}, {}, {});
+    ASSERT_EQ(Status::OK(), result);
+    ASSERT_EQ(e, x);
+}
+
 TEST_F(DeclarableOpsTests15, Test_Half_assign_1) {
     auto x = NDArrayFactory::create<float16>('c', {2, 5});
     int y = 1;

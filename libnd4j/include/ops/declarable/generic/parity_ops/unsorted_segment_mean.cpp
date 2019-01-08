@@ -73,7 +73,8 @@ namespace nd4j {
 
         DECLARE_TYPES(unsorted_segment_mean_bp) {
             getOpDescriptor()
-                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS})
+					->setAllowedOutputTypes(1, {ALL_INTS})
                     ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
                     ->setSameMode(false);
         }

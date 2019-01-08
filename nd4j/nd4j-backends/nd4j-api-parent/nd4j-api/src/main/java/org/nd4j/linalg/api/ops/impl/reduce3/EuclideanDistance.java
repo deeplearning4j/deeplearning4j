@@ -33,7 +33,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class EuclideanDistance extends BaseReduceFloatOp {
+public class EuclideanDistance extends BaseReduce3Op {
     public static final String OP_NAME = "euclidean";
 
     public EuclideanDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
@@ -76,16 +76,6 @@ public class EuclideanDistance extends BaseReduceFloatOp {
     }
 
     @Override
-    public Type opType() {
-        return Type.REDUCE3;
-    }
-
-    @Override
-    public Type getOpType() {
-        return opType();
-    }
-
-    @Override
     public int opNum() {
         return 1;
     }
@@ -108,21 +98,5 @@ public class EuclideanDistance extends BaseReduceFloatOp {
         SDVariable gradX = difference.mul(divBroadcastable);
         SDVariable gradY = f().neg(gradX);
         return Arrays.asList(gradX, gradY);
-    }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatingPointType();
     }
 }

@@ -38,7 +38,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class CosineSimilarity extends BaseReduceFloatOp {
+public class CosineSimilarity extends BaseReduce3Op {
     public static final String OP_NAME = "cosinesimilarity";
 
     public CosineSimilarity(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
@@ -82,16 +82,6 @@ public class CosineSimilarity extends BaseReduceFloatOp {
     }
 
     @Override
-    public Type opType() {
-        return Type.REDUCE3;
-    }
-
-    @Override
-    public Type getOpType() {
-        return opType();
-    }
-
-    @Override
     public int opNum() {
         return 2;
     }
@@ -128,21 +118,5 @@ public class CosineSimilarity extends BaseReduceFloatOp {
         SDVariable dcdy = x.sub(y.mul(a).div(l2ySq)).div(b);
 
         return Arrays.asList(dcdx.mul(broadcastableGrad), dcdy.mul(broadcastableGrad));
-    }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
-    public DataType resultType() {
-        return Nd4j.defaultFloatingPointType();
     }
 }

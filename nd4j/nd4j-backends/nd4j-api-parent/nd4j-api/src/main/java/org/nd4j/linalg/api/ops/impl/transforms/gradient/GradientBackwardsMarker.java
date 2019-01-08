@@ -105,7 +105,7 @@ public class GradientBackwardsMarker extends BaseGradientOp  {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException();
+        return i_v;
     }
 
     @Override
@@ -114,5 +114,10 @@ public class GradientBackwardsMarker extends BaseGradientOp  {
             return x().dataType();
 
         return Nd4j.defaultFloatingPointType();
+    }
+
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        return dataTypes;
     }
 }
