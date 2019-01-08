@@ -172,27 +172,6 @@ public class StridedSlice extends DynamicCustomOp {
 
         addIArgument((int) nm.getI());
         addIArgument((int) sm.getI());
-
-        val beginArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",beginNode,graph);
-        val endArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",endNode,graph);
-        val stridesArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",strides,graph);
-
-        if (beginArr != null && endArr != null && stridesArr != null) {
-
-            for (int e = 0; e < beginArr.length(); e++)
-                addIArgument(beginArr.getInt(e));
-
-            for (int e = 0; e <  endArr.length(); e++)
-                addIArgument(endArr.getInt(e));
-
-            for (int e = 0; e < stridesArr.length(); e++)
-                addIArgument(stridesArr.getInt(e));
-        } else {
-            // do nothing
-        }
-
-
-
     }
 
 

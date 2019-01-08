@@ -19,58 +19,49 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
- * This is compatibility op for ReverseV2
+ * Log Matrix Determinant op
+ *
+ * Given input with shape [..., N, N] output the log determinant for each sub-matrix.
+ *
+ * @author Alex Black
  */
-public class ReverseV2 extends DynamicCustomOp {
-    protected final boolean isLegacy = true;
+public class LogMatrixDeterminant extends DynamicCustomOp {
 
-    public ReverseV2() {
-        iArguments.add(isLegacy ? 1L : 0L);
+    public LogMatrixDeterminant() {
+        //
     }
+
+    public LogMatrixDeterminant(SameDiff sameDiff, SDVariable in, boolean inPlace) {
+        super(null, sameDiff, new SDVariable[]{in}, inPlace);
+    }
+
 
     @Override
     public String opName() {
-        return "reverse_v2";
-    }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
+        return "log_matrix_determinant";
     }
 
     @Override
     public String tensorflowName() {
-        return "ReverseV2";
+        return "LogMatrixDeterminant";
     }
 
     @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        iArguments.clear();
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("BP mode isn't supported for this op");
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        //2nd input is dynamic axis
-        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
-                "Expected 1 or 2 input datatypes for %s, got %s", getClass(), dataTypes);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got %s", getClass(), dataTypes);
+        Preconditions.checkState(dataTypes.get(0).isFPType(), "Input datatype must be a floating point type, got %s", dataTypes.get(0));
         return Collections.singletonList(dataTypes.get(0));
     }
-
 }

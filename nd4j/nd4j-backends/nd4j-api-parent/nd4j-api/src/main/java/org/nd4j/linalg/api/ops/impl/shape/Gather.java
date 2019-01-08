@@ -85,7 +85,7 @@ public class Gather extends DynamicCustomOp {
 
     @Override
     public void resolvePropertiesFromSameDiffBeforeExecution() {
-        super.resolvePropertiesFromSameDiffBeforeExecution();
+//        super.resolvePropertiesFromSameDiffBeforeExecution();
         if (indices != null && numInputArguments() < 2) {
             if (numInputArguments() == 0) {
                 INDArray a = Nd4j.create(indices, new long[]{indices.length}, new long[]{1}, 'c', DataType.INT);
