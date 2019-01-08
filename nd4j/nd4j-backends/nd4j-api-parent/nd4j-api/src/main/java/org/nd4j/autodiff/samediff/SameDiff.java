@@ -68,7 +68,7 @@ import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
-import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;

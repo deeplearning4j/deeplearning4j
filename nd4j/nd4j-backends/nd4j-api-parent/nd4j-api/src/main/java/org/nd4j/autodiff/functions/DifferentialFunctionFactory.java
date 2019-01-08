@@ -85,7 +85,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.*;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.*;
-import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;

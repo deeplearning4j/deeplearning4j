@@ -28,7 +28,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
