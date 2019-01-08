@@ -45,4 +45,5 @@ if not "%CUDA%" == "" (
     set "EXTRA_OPTIONS=-pl !nd4j-uberjar,!nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!nd4j-backends/nd4j-tests"
 )
 bash -c "bash change-scala-versions.sh $SCALA"
-call mvn clean %MAVEN_PHASE% -B -U --settings .\ci\settings.xml -Dmaven.test.skip=true -Dlocal.software.repository=sonatype %EXTRA_OPTIONS%
+call mvn clean %MAVEN_PHASE% -B -U --settings .\ci\settings.xml -Dmaven.test.skip=true -Dlocal.software.repository=sonatype ^
+    -Dlibnd4j.extension=%EXT% %EXTRA_OPTIONS%
