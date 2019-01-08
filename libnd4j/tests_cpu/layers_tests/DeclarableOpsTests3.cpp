@@ -1957,6 +1957,31 @@ TEST_F(DeclarableOpsTests3, zeta_test7) {
     delete results;
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, zeta_test8) {
+
+    auto x= NDArrayFactory::create<float>('c', {3,4}, {1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.01,1.11,1.12});
+    auto q= NDArrayFactory::create<float>('c', {3,4}, {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.01, 0.11, 0.12});
+
+    //q.linspace(1.);
+    //x.assign(10.);
+
+    auto expected= NDArrayFactory::create<float>('c', {3,4}, {23.014574, 12.184081, 8.275731, 6.1532226, 4.776538, 3.7945523, 3.0541048, 2.4765317, 2.0163891, 205.27448, 21.090889, 19.477398});
+
+    nd4j::ops::zeta op;
+    auto results = op.execute({&x, &q}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+
 TEST_F(DeclarableOpsTests3, Test_SplitV_Validation_1) {
     auto x = NDArrayFactory::create<float>('c', {8, 7});
     auto indices = NDArrayFactory::create<int>('c',{2}, {5, 3});
