@@ -280,7 +280,7 @@ public class BackPropMLPTest extends BaseDL4JTest {
                 INDArray prevActivations = (i == 0 ? x : layerActivations[i - 1]);
                 //Raw gradients, so not yet divided by mini-batch size (division is done in BaseUpdater)
                 dLdw[i] = deltas[i].transpose().mmul(prevActivations).transpose(); //Shape: [nIn, nOut]
-                dLdb[i] = deltas[i].sum(0); //Shape: [1,nOut]
+                dLdb[i] = deltas[i].sum(true, 0); //Shape: [1,nOut]
 
                 int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
                 int nOut = (i < nLayers - 1 ? hiddenLayerSizes[i] : 3);

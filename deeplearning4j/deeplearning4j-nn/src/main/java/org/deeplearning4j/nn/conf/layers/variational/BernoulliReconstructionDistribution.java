@@ -95,7 +95,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
     public INDArray exampleNegLogProbability(INDArray x, INDArray preOutDistributionParams) {
         INDArray logProb = calcLogProbArray(x, preOutDistributionParams);
 
-        return logProb.sum(1).negi();
+        return logProb.sum(true, 1).negi();
     }
 
     private INDArray calcLogProbArray(INDArray x, INDArray preOutDistributionParams) {
