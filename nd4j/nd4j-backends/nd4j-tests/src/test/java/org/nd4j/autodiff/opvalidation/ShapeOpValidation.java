@@ -1249,7 +1249,8 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSegmentOps(){
-        //https://github.com/deeplearning4j/deeplearning4j/issues/6876
+        OpValidationSuite.ignoreFailing();
+        //https://github.com/deeplearning4j/deeplearning4j/issues/6952
         INDArray s = Nd4j.create(new double[]{0,0,0,1,2,2,3,3}, new long[]{8}).castTo(DataType.INT);
         INDArray d = Nd4j.create(new double[]{5,1,7,2,3,4,1,3}, new long[]{8});
         int numSegments = 4;

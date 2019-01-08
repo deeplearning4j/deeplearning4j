@@ -286,7 +286,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             if(z == null || !outputShape.get(0).equals(z.shapeDescriptor()) || isLoop){
                 if(log.isTraceEnabled()){
                     log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
-                            op.getClass().getSimpleName(), Arrays.toString(z.shape()), outputShape.get(0).toString());
+                            op.getClass().getSimpleName(), (z == null ? null : Arrays.toString(z.shape())), outputShape.get(0).toString());
                 }
                 z = Nd4j.create(outputShape.get(0), false);
                 op.setZ(z);
