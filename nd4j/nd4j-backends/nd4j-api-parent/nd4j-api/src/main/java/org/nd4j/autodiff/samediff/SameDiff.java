@@ -128,8 +128,8 @@ import java.util.zip.ZipOutputStream;
 @Slf4j
 public class SameDiff {
 
-    //New fields. Not yet used anywhere
-    @Getter     //TODO use package private instead of public getters??
+    //Fields for graph structure and execution
+    @Getter     //TODO use package private instead of public getters?
     private final Map<String,Variable> variables = new HashMap<>();         //TODO concurrent maps required? Or lock?
     @Getter
     private final Map<String,SameDiffOp> ops = new HashMap<>();
@@ -143,6 +143,7 @@ public class SameDiff {
     private final Map<Long,Map<String,INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
     ///////////////////////////////////////
+    //Fields related to training
     @Getter
     private TrainingConfig trainingConfig;                          //Configuration for training. Must be set for training/evaluation, but not for other operations
     @Getter
@@ -759,7 +760,7 @@ public class SameDiff {
      * @param varName Variable name to get the array for
      * @return Array, or null if none exists
      */
-    public INDArray getArrForVarName(String varName) {
+    public INDArray getArrForVarName(@NonNull String varName) {
         Preconditions.checkState(variables.containsKey(varName), "No variable found with name \"%s\"", varName);
         SDVariable v = variables.get(varName).getVariable();
         switch(v.getVariableType()){
