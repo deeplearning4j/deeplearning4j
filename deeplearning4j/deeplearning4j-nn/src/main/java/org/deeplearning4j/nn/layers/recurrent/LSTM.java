@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -224,5 +225,10 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         }
 
         return outAct;
+    }
+
+    @Override
+    public LayerHelper getHelper() {
+        return helper;
     }
 }
