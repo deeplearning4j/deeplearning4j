@@ -1734,7 +1734,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         return result;
     }
-    void NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, const NDArray* target, const std::vector<int>& dimensions, const ExtraArguments *extraParams) const {
+    void NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, NDArray* target, const std::vector<int>& dimensions, const ExtraArguments *extraParams) const {
         if (isS())
             throw std::runtime_error("NDArray::applyIndexReduce: you can't use this method on String array!");
 

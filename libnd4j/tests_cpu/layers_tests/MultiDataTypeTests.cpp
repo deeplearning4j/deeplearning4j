@@ -1614,22 +1614,39 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test1) {
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test2) {
 
-    NDArray x1('c', {2,3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::DOUBLE);
-    NDArray scalar('c', {0}, {5}, nd4j::DataType::INT64);
-    NDArray vec1('c', {2}, {2,2}, nd4j::DataType::INT64);
-    NDArray vec2('c', {3}, {1,1,1}, nd4j::DataType::INT64);
-    NDArray exp1('c', {0}, {5}, nd4j::DataType::INT64);
-    NDArray exp2('c', {2}, {2,2}, nd4j::DataType::INT64);
-    NDArray exp3('c', {3}, {1,1,1}, nd4j::DataType::INT64);
+    NDArray x1('c', {2,3}, {0, 10, 1, 2, 2.5,-4}, nd4j::DataType::DOUBLE);
+    
+    NDArray scalar('c', {0}, {100}, nd4j::DataType::INT64);
+    NDArray vec1('c', {2}, {100,100}, nd4j::DataType::INT64);
+    NDArray vec2('c', {3}, {100,100,100}, nd4j::DataType::INT64);
+    
+    NDArray exp1('c', {0}, {1}, nd4j::DataType::INT64);
+    NDArray exp2('c', {2}, {1,1}, nd4j::DataType::INT64);
+    NDArray exp3('c', {3}, {1,0,0}, nd4j::DataType::INT64);
+
+    NDArray exp4('c', {0}, {2}, nd4j::DataType::INT64);
+    NDArray exp5('c', {2}, {1,1}, nd4j::DataType::INT64);
+    NDArray exp6('c', {3}, {1,0,0}, nd4j::DataType::INT64);
     
     x1.applyIndexReduce(nd4j::indexreduce::IndexMax, &scalar, {0,1});
-    ASSERT_EQ(scalar, exp1);
+    scalar.printIndexedBuffer();
 
     x1.applyIndexReduce(nd4j::indexreduce::IndexMax, &vec1, {1});    
-    ASSERT_EQ(vec1, exp2);
+    vec1.printIndexedBuffer();
 
     x1.applyIndexReduce(nd4j::indexreduce::IndexMax, &vec2, {0});
-    ASSERT_EQ(vec2, exp3);
+    vec2.printIndexedBuffer();
+
+    x1.permutei({1,0});
+
+    x1.applyIndexReduce(nd4j::indexreduce::IndexMax, &scalar, {0,1});
+    scalar.printIndexedBuffer();
+
+    x1.applyIndexReduce(nd4j::indexreduce::IndexMax, &vec1, {0});        
+    vec1.printIndexedBuffer();
+
+    x1.applyIndexReduce(nd4j::indexreduce::IndexMax, &vec2, {1});
+    vec2.printIndexedBuffer();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1985,3 +2002,4 @@ TEST_F(MultiDataTypeTests, divide_bool_test1) {
         ASSERT_TRUE(1);    
     }        
 }
+

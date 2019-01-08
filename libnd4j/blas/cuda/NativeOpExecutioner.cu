@@ -1225,8 +1225,7 @@ void NativeOpExecutioner::execReduce3All(nd4j::graph::LaunchContext *lc,
 
     auto stream = lc->getCudaStream();
     auto allocationPointer = lc->getAllocationPointer();
-	auto reductionPointer  = lc->getReductionPointer();
-    auto hTADShapeInfo = nullptr;
+	auto reductionPointer  = lc->getReductionPointer();    
 
     if (nd4j::Environment::getInstance()->isDebugAndVerbose())
         printf("D119 opNum:[%i]\n", opNum);    

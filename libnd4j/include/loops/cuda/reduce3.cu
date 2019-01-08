@@ -247,7 +247,7 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 											int *allocationPointer,
 											Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
 											Nd4jLong *yTadShapeInfo,Nd4jLong *yOffsets) {
-
+    
 	auto dx = reinterpret_cast<X*>(vx);
 	auto dy = reinterpret_cast<X*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
