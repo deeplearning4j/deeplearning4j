@@ -44,9 +44,11 @@ public struct FlatResult : IFlatbufferObject
   public static void AddId(FlatBufferBuilder builder, long id) { builder.AddLong(0, id, 0); }
   public static void AddVariables(FlatBufferBuilder builder, VectorOffset variablesOffset) { builder.AddOffset(1, variablesOffset.Value, 0); }
   public static VectorOffset CreateVariablesVector(FlatBufferBuilder builder, Offset<FlatVariable>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateVariablesVectorBlock(FlatBufferBuilder builder, Offset<FlatVariable>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartVariablesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddTiming(FlatBufferBuilder builder, VectorOffset timingOffset) { builder.AddOffset(2, timingOffset.Value, 0); }
   public static VectorOffset CreateTimingVector(FlatBufferBuilder builder, Offset<FlatTiming>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateTimingVectorBlock(FlatBufferBuilder builder, Offset<FlatTiming>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartTimingVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddFootprintForward(FlatBufferBuilder builder, long footprintForward) { builder.AddLong(3, footprintForward, 0); }
   public static void AddFootprintBackward(FlatBufferBuilder builder, long footprintBackward) { builder.AddLong(4, footprintBackward, 0); }
