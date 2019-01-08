@@ -807,6 +807,25 @@ TEST_F(JavaInteropTests, Test_Mixed_Add_1) {
     ASSERT_EQ(arrayE, arrayZ);
 }
 
+TEST_F(JavaInteropTests, Test_Add_1) {
+    auto x = NDArrayFactory::create<int>('c', {5}, {1, 1, 1, 1, 1});
+    auto y = NDArrayFactory::create<int>('c', {5}, {1, 1, 1, 1, 1});
+    auto e = NDArrayFactory::create<int>('c', {5}, {2, 2, 2, 2, 2});
+
+    NativeOps nativeOps;
+    nd4j::ops::add op;
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), y.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), y.getShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) x.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) x.getShapeInfo()};
+
+    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+
+    ASSERT_EQ(e, x);
+}
+
 TEST_F(JavaInteropTests, Test_Is_Max_1) {
     auto arrayX = NDArrayFactory::create<float>({1, 2, 1, 1});
     auto arrayZ = NDArrayFactory::create<bool>({0, 0, 0, 0});
