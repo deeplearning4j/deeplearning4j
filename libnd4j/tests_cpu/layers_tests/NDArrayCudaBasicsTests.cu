@@ -611,6 +611,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveNeg_2) {
 TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_1) {
     auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<double>('c', {5});
+    auto exp = NDArrayFactory::create<double>('c', {5}, {0.540302, -0.416147, -0.989992, -0.653644, 0.283662});
 
     ASSERT_TRUE(x.isActualOnDeviceSide());
     ASSERT_TRUE(x.isActualOnHostSide());
@@ -624,9 +625,11 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_1) {
     //auto res = cudaStreamSynchronize(*y.getContext()->getCudaStream());
     //ASSERT_EQ(0, res);
     y.syncToHost();
-    y.printBuffer("Cosine2");
+    //y.printBuffer("Cosine2");
     //delete x;
     //delete y;
+    ASSERT_TRUE(exp.isSameShape(y));
+    ASSERT_TRUE(exp.equalsTo(y));
 }
 
 TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_2) {
@@ -646,8 +649,8 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_2) {
     //ASSERT_EQ(0, res);
     y.syncToHost();
     //exp.syncToHost();
-    y.printBuffer("PrimitiveCosine2");
-    exp.printBuffer("Primitive Cosine exp");
+    //y.printBuffer("PrimitiveCosine2");
+    //exp.printBuffer("Primitive Cosine exp");
     ASSERT_TRUE(exp.isSameShape(y));
     ASSERT_TRUE(exp.dataType() == y.dataType());
     //for (int e = 0; e < y.lengthOf(); e++) {
@@ -676,16 +679,16 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_3) {
     //ASSERT_EQ(0, res);
     y.syncToHost();
     //exp.syncToHost();
-    y.printBuffer("PrimitiveCosine3");
-    exp.printBuffer("Primitive Cosine3 exp");
-    y.printShapeInfo("Y shape");
-    exp.printShapeInfo("Exp Shape");
+//    y.printBuffer("PrimitiveCosine3");
+//    exp.printBuffer("Primitive Cosine3 exp");
+//    y.printShapeInfo("Y shape");
+//    exp.printShapeInfo("Exp Shape");
     ASSERT_TRUE(exp.isSameShape(y));
-
-    for (int e = 0; e < y.lengthOf(); e++) {
-        printf("%lf == %lf\n", exp.e<double>(e), y.e<double>(e));
-//        ASSERT_NEAR(exp.e<double>(e), y.e<double>(e), 1e-5);
-    }
+//
+//    for (int e = 0; e < y.lengthOf(); e++) {
+//        printf("%lf == %lf\n", exp.e<double>(e), y.e<double>(e));
+////        ASSERT_NEAR(exp.e<double>(e), y.e<double>(e), 1e-5);
+//    }
 
     ASSERT_TRUE(exp.equalsTo(y));
     //delete x;
@@ -1110,4 +1113,26 @@ TEST_F(NDArrayCudaBasicsTests, TestReduceSum_1) {
     x.printBuffer("X = ");
     y.printBuffer("Y = ");
     ASSERT_NEAR(y.e<double>(0), 15, 1e-5);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, TestDup1) {
+    float arr1[6] = {1,2,3,4,5,6};
+    Nd4jLong shape1[8] = {2,2,3,3,1,8192,1,99};
+    NDArray array(arr1, shape1);
+    array.printBuffer("Array at start");
+    auto arrC = array.dup('c');
+    auto arrF = array.dup('f');
+    arrC->printBuffer("arrC");
+    arrF->printBuffer("arrF");
+    //arrC->printShapeInfo("C shape");
+    //arrF->printShapeInfo("F shape");
+
+    ASSERT_TRUE(array.equalsTo(arrF));
+    ASSERT_TRUE(array.equalsTo(arrC));
+
+    ASSERT_TRUE(arrF->equalsTo(arrC));
+
+    delete arrC;
+    delete arrF;
 }

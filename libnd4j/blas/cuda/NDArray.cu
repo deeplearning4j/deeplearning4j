@@ -272,7 +272,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
     if(_buffer != nullptr)
         cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);    
-    
+    syncShape();
     triggerAllocationFlag(false, true);
     
     tickWriteDevice();
@@ -1042,6 +1042,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 if (!this->isEmpty() && !other.isEmpty()) {
                     BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign,
                                           (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
+                    syncToDevice();
                 }
                 else if (this->isEmpty() != other.isEmpty()) { // need assign non-empty scalar to empty
                     if (other.isEmpty()) {
@@ -1053,6 +1054,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 }
             }
             else {
+                syncToDevice();
                 NativeOpExecutioner::execScalar(_context, scalar::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr);
             }
             tickWriteDevice();
@@ -1066,13 +1068,17 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("Lengths of arrays are mismatched");
         }
 
+        //syncToDevice();
+
         // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1)
+        if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1) {
             cudaMemcpy(_bufferD, other._bufferD, _length * sizeOfT(), cudaMemcpyDeviceToDevice);
+        }
         else if(_dataType == other._dataType)
             NativeOpExecutioner::execTransformSame(_context, transform::Copy, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, nullptr, nullptr);
         else
             NativeOpExecutioner::execPairwiseTransform(_context, pairwise::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr);
+        syncToHost();
 
         tickWriteDevice();
     }
@@ -1085,11 +1091,12 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         auto outShapeInfo = ShapeBuilders::createShapeInfo(_dataType, order, getShapeAsVector(), _context->getWorkspace());
         void* outBuffer = nullptr;
-        int8_t* outBufferD = nullptr;
-        Nd4jLong* outShapeD = nullptr;
+        //int8_t* outBufferD = nullptr;
+        //Nd4jLong* outShapeD = nullptr;
         ALLOCATE(outBuffer, _context->getWorkspace(), _length * sizeOfT(), int8_t);
         auto result = new NDArray(outBuffer, outShapeInfo, _context, true, true);
-        result->setSpecialBuffers(outBufferD, outShapeD);
+        //result->setSpecialBuffers(outBufferD, outShapeD);
+        //syncToDevice();
         result->assign(*this);
 
         return result;
