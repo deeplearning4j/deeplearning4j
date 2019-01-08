@@ -17,13 +17,18 @@
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This is compatibility op for ReverseV2
@@ -48,6 +53,11 @@ public class ReverseV2 extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "ReverseV2";
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        iArguments.clear();
     }
 
     @Override
