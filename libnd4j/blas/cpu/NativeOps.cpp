@@ -1996,7 +1996,7 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
             // FIXME: revisit this.
             bool canNullify = true;
             for (int i = 0; i < numInputs; i++) {
-                void *ibuffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
+                void *ibuffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[i];
                 if (ibuffer == buffer) {
                     canNullify = false;
                     break;
