@@ -13400,6 +13400,27 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                 }
 //         #endif
+
+        /**
+         * Broadcastable pow implementation
+         * \tparam T
+         */
+//         #if NOT_EXCLUDED(OP_Pow)
+        @Namespace("nd4j::ops") public static class Pow extends BroadcastableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public Pow(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public Pow(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public Pow position(long position) {
+                return (Pow)super.position(position);
+            }
+        
+                                                                                    public Pow() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+//         #endif
     
 
 
