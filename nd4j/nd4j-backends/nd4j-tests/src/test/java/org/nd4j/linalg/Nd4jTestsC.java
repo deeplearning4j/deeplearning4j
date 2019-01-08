@@ -2958,16 +2958,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testRdivScalar() {
-        INDArray div = Nd4j.valueArrayOf(new long[] {1, 4}, 4);
+        INDArray div = Nd4j.valueArrayOf(new long[] {1, 4}, 4).castTo(DataType.DOUBLE);
         INDArray rdiv = div.rdiv(1);
-        INDArray answer = Nd4j.valueArrayOf(new long[] {1, 4}, 0.25);
+        INDArray answer = Nd4j.valueArrayOf(new long[] {1, 4}, 0.25).castTo(DataType.DOUBLE);
         assertEquals(rdiv, answer);
     }
 
     @Test
     public void testRDivi() {
-        INDArray n2 = Nd4j.valueArrayOf(new long[] {1, 2}, 4);
-        INDArray n2Assertion = Nd4j.valueArrayOf(new long[] {1, 2}, 0.5);
+        INDArray n2 = Nd4j.valueArrayOf(new long[] {1, 2}, 4).castTo(DataType.DOUBLE);
+        INDArray n2Assertion = Nd4j.valueArrayOf(new long[] {1, 2}, 0.5).castTo(DataType.DOUBLE);
         INDArray nRsubi = n2.rdivi(2);
         assertEquals(n2Assertion, nRsubi);
     }

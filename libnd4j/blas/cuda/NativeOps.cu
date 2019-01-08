@@ -3234,7 +3234,19 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer*
 			// we want to keep original output shape intact
 			auto shape = shape::copyShape(reinterpret_cast<Nd4jLong *>(outputShapes[e]));
 			void *buffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e];
-			memset((uint8_t*)buffer, '\0', shape::length(shape) * DataTypeUtils::sizeOfElement(ArrayOptions::dataType(shape)));
+
+			// FIXME: revisit this.
+			bool canNullify = true;
+			for (int i = 0; i < numInputs; i++) {
+				void *ibuffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[i];
+				if (ibuffer == buffer) {
+					canNullify = false;
+					break;
+				}
+			}
+
+			if (canNullify)
+				memset((uint8_t *) buffer, '\0', shape::length(shape) * DataTypeUtils::sizeOfElement(ArrayOptions::dataType(shape)));
 
 			auto array = new nd4j::NDArray(buffer, shape);
 			outputs[e] = array;
