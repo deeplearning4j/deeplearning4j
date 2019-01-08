@@ -194,6 +194,11 @@ namespace nd4j {
                 case VarType_VARIABLE: {
 
                         // ?????
+                        if (flatVariable->ndarray() != nullptr) {
+                            auto ar = flatVariable->ndarray();
+                            _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
+                            _ndarray->triggerAllocationFlag(true, true);
+                        }
 
                         _variableType = VariableType::NDARRAY;
                     }
@@ -212,6 +217,11 @@ namespace nd4j {
                 case VarType_ARRAY: {
 
                         // ?????
+                        if (flatVariable->ndarray() != nullptr) {
+                            auto ar = flatVariable->ndarray();
+                            _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
+                            _ndarray->triggerAllocationFlag(true, true);
+                        }
 
                         _variableType = VariableType::NDARRAY;
                     }
@@ -221,11 +231,8 @@ namespace nd4j {
                             throw std::runtime_error("PLACEHOLDER variable must have shape defined");
 
                         int shapeLen = flatVariable->shape()->Length();
-                        std::vector<Nd4jLong> shape(flatVariable->shape()->size());
                         for (int i = 0; i < flatVariable->shape()->size(); i++)
-                            shape[i] = flatVariable->shape()->Get(i);
-
-                        // DO SOMETHING HERE
+                            _shape.emplace_back(flatVariable->shape()->Get(i));
 
                         _variableType = VariableType::PLACEHOLDER;
                     }
@@ -235,6 +242,9 @@ namespace nd4j {
             }
         }
 
+        std::vector<Nd4jLong>& nd4j::graph::Variable::shape() {
+            return _shape;
+        }
         
         nd4j::graph::Variable::Variable(bool placeholder) {
             _placeholder = placeholder;

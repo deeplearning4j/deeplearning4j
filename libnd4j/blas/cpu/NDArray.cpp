@@ -468,6 +468,15 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     return vector;
 }
 
+std::vector<int64_t> NDArray::getShapeAsFlatVector() {
+    std::vector<int64_t> vector;
+
+    for (int e = 0; e < this->rankOf(); e++)
+        vector.emplace_back(static_cast<int64_t>(this->sizeAt(e)));
+
+    return vector;
+}
+
 ////////////////////////////////////////////////////////////////////////
     std::vector<Nd4jLong> NDArray::getShapeInfoAsVector() {
         int magicNumber = shape::shapeInfoLength(this->rankOf());
