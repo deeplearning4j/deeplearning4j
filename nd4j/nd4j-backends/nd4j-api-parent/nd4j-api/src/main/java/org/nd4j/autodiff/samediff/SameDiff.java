@@ -9949,6 +9949,7 @@ public class SameDiff {
 
         //Edge case: if no variables, no variable gradients to calculate...
         if(varGradNames.isEmpty()){
+            log.trace("Skipping gradient execution - no variables to be calculated (variableGradNamesList is empty)");
             return;
         }
 
@@ -9961,8 +9962,12 @@ public class SameDiff {
             createGradFunction();
         }
 
-        if (log.isTraceEnabled()) {
-            log.trace("About to execute backward function");
+        log.trace("About to execute backward function");
+
+        //Edge case: if no variables, no variable gradients to calculate...
+        if(variableGradNamesList.isEmpty()){
+            log.trace("Skipping gradient execution - no variables to be calculated (variableGradNamesList is empty)");
+            return;
         }
 
 
