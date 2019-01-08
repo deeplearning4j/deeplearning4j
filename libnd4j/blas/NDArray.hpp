@@ -646,18 +646,14 @@ NDArray* NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::vect
 //////////////////////////////////////////////////////////////////////////
 // eventually method reduces array by excluding its shapes along axes present in dimensions vector
 NDArray NDArray::reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
-
-    if (isS())
-        throw std::runtime_error("NDArray::reduceAlongDims FloatOps: you can't use this method on String array!");
-
+    
     std::vector<int> copy(dimensions);
 
     auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
     if(!isR())
         ArrayOptions::setDataType(newShape, Environment::getInstance()->defaultFloatDataType());
 
-    NDArray result(newShape, true, _context);
-    RELEASE(newShape, _context->getWorkspace());
+    NDArray result(newShape, true, _context, true);    
 
     reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
@@ -667,15 +663,11 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<in
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::reduceAlongDims(nd4j::reduce::SameOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
 
-    if (isS())
-        throw std::runtime_error("NDArray::reduceAlongDims SameOps: you can't use this method on String array!");
-
     std::vector<int> copy(dimensions);
 
     auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
 
-    NDArray result(newShape, true, _context);
-    RELEASE(newShape, _context->getWorkspace());
+    NDArray result(newShape, true, _context, true);
 
     reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
@@ -685,17 +677,13 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::SameOps op, const std::vector<int
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
 
-    if (isS())
-        throw std::runtime_error("NDArray::reduceAlongDims BoolOps: you can't use this method on String array!");
-
     std::vector<int> copy(dimensions);
 
     auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
     if(!isB())
         ArrayOptions::setDataType(newShape, DataType::BOOL);
 
-    NDArray result(newShape, true, _context);
-    RELEASE(newShape, _context->getWorkspace());
+    NDArray result(newShape, true, _context, true);
 
     reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
@@ -704,53 +692,20 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::reduceAlongDims(nd4j::reduce::LongOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
-
-    if (isS())
-        throw std::runtime_error("NDArray::reduceAlongDims LongOps: you can't use this method on String array!");
-
+    
     std::vector<int> copy(dimensions);
 
     auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
     if(_dataType != DataType::INT64)
         ArrayOptions::setDataType(newShape, DataType::INT64);
 
-    NDArray result(newShape, true, _context);
-    RELEASE(newShape, _context->getWorkspace());
+    NDArray result(newShape, true, _context, true);    
 
     reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
     return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
-// method reduces array by excluding its shapes along axes present in dimensions vector
-void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
-
-    if (isS())
-        throw std::runtime_error("NDArray::reduceAlongDimension FloatOps: you can't use this method on String array!");
-    if (target == nullptr || !target->isR())
-        throw std::invalid_argument("NDArray::reduceAlongDimension FloatOps: requires target array to be present and have type form real space!");
-
-    std::vector<int> copy(dimensions);
-
-    if(checkTargetShape) {
-        auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
-        if(!shape::shapeEquals(newShape, target->getShapeInfo()))
-            throw std::runtime_error("NDArray::reduceAlongDimension FloatOps: wrong target shape!");
-        RELEASE(newShape, _context->getWorkspace());
-    }
-
-    if(rankOf() == copy.size() || copy.empty())
-        //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
-        NativeOpExecutioner::execReduceFloatScalar(_context, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
-    else {
-        shape::TAD tad(_shapeInfo, copy.data(), copy.size());
-        tad.createTadOnlyShapeInfo();
-        tad.createOffsets();
-
-        NativeOpExecutioner::execReduceFloat(_context, op, this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), copy.data(), copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
-    }
-}
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
