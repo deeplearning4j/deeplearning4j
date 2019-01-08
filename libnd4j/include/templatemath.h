@@ -181,8 +181,7 @@ namespace nd4j {
 
         template<typename T, typename Z>
         math_def inline Z nd4j_tan(T tval) {
-        	auto val = static_cast<Z>(tval);
-            return nd4j_log<Z, Z>((val + (Z)1.f / ((Z) 1.f - val)) * (Z) 0.5f);
+            return p_tan<Z>(static_cast<Z>(tval));
         }
 
         template<typename T, typename Z>
