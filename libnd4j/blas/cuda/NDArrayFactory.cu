@@ -507,17 +507,18 @@ NDArray NDArrayFactory::create(const std::vector<T> &values, nd4j::graph::Launch
 
     size_t bufferSize = res.lengthOf() * sizeof(T);
     size_t shapeSize = shape::shapeInfoLength(res.shapeInfo());
+    res.setBuffer(buffer);
 
     ALLOCATE_SPECIAL(specialShapeInfo, context->getWorkspace(), shapeSize, Nd4jLong);
     ALLOCATE_SPECIAL(specialBuffer, context->getWorkspace(), bufferSize, int8_t);
 
     cudaMemcpy(specialBuffer, res.buffer(), bufferSize, cudaMemcpyHostToDevice);
     cudaMemcpy(specialShapeInfo, res.shapeInfo(), shapeSize * sizeof(Nd4jLong), cudaMemcpyHostToDevice);
-    res.setBuffer(buffer);
+
     res.setSpecialBuffers(specialBuffer, specialShapeInfo);
 
     res.triggerAllocationFlag(true, true);
-    res.setContext(context == nullptr ? nd4j::graph::LaunchContext::defaultContext() : context);
+    res.setContext(context);
     res.tickWriteDevice();
     res.tickReadHost();
     return res;
