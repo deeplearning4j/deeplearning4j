@@ -136,9 +136,9 @@ struct FlatArray FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_SHAPE) &&
-           verifier.Verify(shape()) &&
+           verifier.VerifyVector(shape()) &&
            VerifyOffset(verifier, VT_BUFFER) &&
-           verifier.Verify(buffer()) &&
+           verifier.VerifyVector(buffer()) &&
            VerifyField<int8_t>(verifier, VT_DTYPE) &&
            VerifyField<int8_t>(verifier, VT_BYTEORDER) &&
            verifier.EndTable();

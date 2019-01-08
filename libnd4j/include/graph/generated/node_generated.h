@@ -98,38 +98,38 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
            VerifyOffset(verifier, VT_NAME) &&
-           verifier.Verify(name()) &&
+           verifier.VerifyString(name()) &&
            VerifyField<int8_t>(verifier, VT_OPTYPE) &&
            VerifyField<int64_t>(verifier, VT_OPNUM) &&
            VerifyOffset(verifier, VT_PROPERTIES) &&
-           verifier.Verify(properties()) &&
+           verifier.VerifyVector(properties()) &&
            verifier.VerifyVectorOfTables(properties()) &&
            VerifyOffset(verifier, VT_INPUT) &&
-           verifier.Verify(input()) &&
+           verifier.VerifyVector(input()) &&
            VerifyOffset(verifier, VT_INPUTPAIRED) &&
-           verifier.Verify(inputPaired()) &&
+           verifier.VerifyVector(inputPaired()) &&
            verifier.VerifyVectorOfTables(inputPaired()) &&
            VerifyOffset(verifier, VT_OUTPUT) &&
-           verifier.Verify(output()) &&
+           verifier.VerifyVector(output()) &&
            VerifyOffset(verifier, VT_EXTRAPARAMS) &&
-           verifier.Verify(extraParams()) &&
+           verifier.VerifyVector(extraParams()) &&
            VerifyOffset(verifier, VT_EXTRAINTEGER) &&
-           verifier.Verify(extraInteger()) &&
+           verifier.VerifyVector(extraInteger()) &&
            VerifyOffset(verifier, VT_EXTRABOOLS) &&
-           verifier.Verify(extraBools()) &&
+           verifier.VerifyVector(extraBools()) &&
            VerifyOffset(verifier, VT_DIMENSIONS) &&
-           verifier.Verify(dimensions()) &&
+           verifier.VerifyVector(dimensions()) &&
            VerifyField<int32_t>(verifier, VT_DEVICE) &&
            VerifyField<int32_t>(verifier, VT_SCOPE_ID) &&
            VerifyOffset(verifier, VT_SCOPE_NAME) &&
-           verifier.Verify(scope_name()) &&
+           verifier.VerifyString(scope_name()) &&
            VerifyOffset(verifier, VT_OUTPUTNAMES) &&
-           verifier.Verify(outputNames()) &&
+           verifier.VerifyVector(outputNames()) &&
            verifier.VerifyVectorOfStrings(outputNames()) &&
            VerifyOffset(verifier, VT_OPNAME) &&
-           verifier.Verify(opName()) &&
+           verifier.VerifyString(opName()) &&
            VerifyOffset(verifier, VT_OUTPUTTYPES) &&
-           verifier.Verify(outputTypes()) &&
+           verifier.VerifyVector(outputTypes()) &&
            VerifyOffset(verifier, VT_SCALAR) &&
            verifier.VerifyTable(scalar()) &&
            verifier.EndTable();
