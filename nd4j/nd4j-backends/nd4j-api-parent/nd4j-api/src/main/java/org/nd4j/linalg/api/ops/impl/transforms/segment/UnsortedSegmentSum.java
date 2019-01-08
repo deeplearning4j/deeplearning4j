@@ -21,9 +21,11 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -69,10 +71,7 @@ public class UnsortedSegmentSum extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected exactly 2 input data types for %s, got %s", getClass(), inputDataTypes);
-        List<DataType> out = new ArrayList<>();
-        for( int i=0; i<numSegments; i++ ){
-            out.add(inputDataTypes.get(0));
-        }
-        return out;
+        //TODO Allow customizing output type
+        return Collections.singletonList(Nd4j.defaultFloatingPointType());
     }
 }

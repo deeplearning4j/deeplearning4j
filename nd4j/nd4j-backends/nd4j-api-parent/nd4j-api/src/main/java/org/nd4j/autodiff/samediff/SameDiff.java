@@ -9942,7 +9942,6 @@ public class SameDiff {
             log.trace("About to execute backward function");
         }
 
-        exec("grad");
         //Collect list of gradient names...
         List<String> varGradNames = new ArrayList<>();
         for(Variable v : variables.values()){
@@ -9951,6 +9950,12 @@ public class SameDiff {
                 varGradNames.add(g.getVarName());
             }
         }
+
+        //Edge case: if no variables, no variable gradients to calculate...
+        if(varGradNames.isEmpty()){
+            return;
+        }
+
         sameDiffFunctionInstances.get("grad").exec(placeholders, varGradNames);
     }
 
