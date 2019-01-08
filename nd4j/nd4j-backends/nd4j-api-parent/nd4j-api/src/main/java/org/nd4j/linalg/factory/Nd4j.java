@@ -3806,8 +3806,6 @@ public class Nd4j {
             return trueScalar(data[0]);
         }
 
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] != data.length)
                 throw new ND4JIllegalStateException("Shape of the new array doesn't match data length");
@@ -3825,8 +3823,6 @@ public class Nd4j {
             return trueScalar(data[0]);
         }
 
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] != data.length)
                 throw new ND4JIllegalStateException("Shape of the new array doesn't match data length");
@@ -3843,8 +3839,6 @@ public class Nd4j {
         if (shape.length == 0 && data.length == 1) {
             return trueScalar(data[0]);
         }
-
-        shape = getEnsuredShape(shape);
 
         if (shape.length == 1) {
             if (shape[0] != data.length)
@@ -3866,8 +3860,6 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(double[] data, int[] shape) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] != data.length)
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape) + " doesn't match data length: " + data.length);
@@ -3890,8 +3882,6 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(double[] data, int[] shape, int[] stride, long offset) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] == data.length) {
                 shape = new int[] {1, data.length};
@@ -3909,8 +3899,6 @@ public class Nd4j {
 
 
     public static INDArray create(double[] data, long[] shape, long[] stride, long offset, char order) {
-        shape = getEnsuredShape(shape);
-
         checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, stride, order, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -3964,8 +3952,6 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(float[] data, int[] shape, long offset) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] == data.length) {
                 shape = new int[] {1, data.length};
@@ -3982,8 +3968,6 @@ public class Nd4j {
     }
 
     public static INDArray create(float[] data, long[] shape, long offset) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] == data.length) {
                 shape = new long[] {1, data.length};
@@ -4007,8 +3991,6 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(double[] data, int[] shape, long offset, char ordering) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] == data.length) {
                 shape = new int[] {1, data.length};
@@ -4025,8 +4007,6 @@ public class Nd4j {
     }
 
     public static INDArray create(double[] data, long[] shape, long offset, char ordering) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] == data.length) {
                 shape = new long[] {1, data.length};
@@ -4051,8 +4031,6 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(float[] data, int[] shape, int[] stride, long offset) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] == data.length) {
                 shape = new int[] {1, data.length};
@@ -4075,8 +4053,6 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(List<INDArray> list, int[] shape) {
-        shape = getEnsuredShape(shape);
-
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(list, shape);
@@ -4085,8 +4061,6 @@ public class Nd4j {
     }
 
     public static INDArray create(List<INDArray> list, long[] shape) {
-        shape = getEnsuredShape(shape);
-
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(list, shape);
@@ -4125,8 +4099,6 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int[] shape, int[] stride, long offset) {
-        shape = getEnsuredShape(shape);
-
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(shape, stride, offset);
@@ -4233,8 +4205,6 @@ public class Nd4j {
      * @return
      */
     public static INDArray create(float[] data, int[] shape, int[] stride, char ordering, long offset) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] == data.length) {
                 shape = new int[] {1, data.length};
@@ -4259,8 +4229,6 @@ public class Nd4j {
      * @return
      */
     public static INDArray create(float[] data, int[] shape, char ordering, long offset) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] != data.length)
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape) + " doesn't match data length: " + data.length);
@@ -4275,8 +4243,6 @@ public class Nd4j {
 
 
     public static INDArray create(double[] data, int[] shape, char ordering, long offset) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] != data.length)
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape) + " doesn't match data length: " + data.length);
@@ -4298,8 +4264,6 @@ public class Nd4j {
      * @return
      */
     public static INDArray create(DataBuffer data, int[] shape, int[] strides, long offset) {
-        shape = getEnsuredShape(shape);
-
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(data, shape, strides, offset);
@@ -4308,8 +4272,6 @@ public class Nd4j {
     }
 
     public static INDArray create(DataBuffer data, long[] shape, long[] strides, long offset) {
-        shape = getEnsuredShape(shape);
-
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(data, shape, strides, offset);
@@ -4325,8 +4287,6 @@ public class Nd4j {
      * @return
      */
     public static INDArray create(DataBuffer data, int[] shape, long offset) {
-        shape = getEnsuredShape(shape);
-
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(data, shape, getStrides(shape), offset);
@@ -4414,8 +4374,6 @@ public class Nd4j {
      */
     public static INDArray create(float[] data, int rows, int columns, int[] stride, long offset, char ordering) {
         int[] shape = new int[] {rows, columns};
-        shape = getEnsuredShape(shape);
-
         checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
@@ -4430,8 +4388,6 @@ public class Nd4j {
      * @return
      */
     public static INDArray create(int[] shape, DataType dataType) {
-        shape = getEnsuredShape(shape);
-
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(shape, dataType, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -4455,8 +4411,6 @@ public class Nd4j {
         if (data.length == 1 && shape.length == 0)
             return trueScalar(data[0]);
 
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] != data.length)
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
@@ -4478,8 +4432,6 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(double[] data, int[] shape, char ordering) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] == data.length) {
                 shape = new int[] {1, data.length};
@@ -4504,8 +4456,6 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(float[] data, int[] shape, char ordering) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] == data.length) {
                 shape = new int[] {1, data.length};
@@ -4522,8 +4472,6 @@ public class Nd4j {
     }
 
     public static INDArray create(float[] data, long[] shape, char ordering) {
-        shape = getEnsuredShape(shape);
-
         checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, ordering), ordering, DataType.FLOAT);
@@ -4532,8 +4480,6 @@ public class Nd4j {
     }
 
     public static INDArray create(double[] data, long[] shape, char ordering) {
-        shape = getEnsuredShape(shape);
-
         checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, ordering), ordering, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -4552,8 +4498,7 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(double[] data, int rows, int columns, int[] stride, long offset, char ordering) {
-        int[] shape = getEnsuredShape(rows, columns);
-
+        int[] shape = new int[]{rows,columns};
         checkShapeValues(data.length, shape);
 
         INDArray ret = INSTANCE.create(Nd4j.createBuffer(data), shape, stride, offset, ordering);
@@ -4570,8 +4515,6 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(float[] data, int[] shape, int[] stride, long offset, char ordering) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] == data.length) {
                 shape = new int[] {1, data.length};
@@ -4594,8 +4537,6 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(List<INDArray> list, int[] shape, char ordering) {
-        shape = getEnsuredShape(shape);
-
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(list, shape, ordering);
@@ -4613,8 +4554,7 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int rows, int columns, int[] stride, long offset, char ordering) {
-        int[] shape = getEnsuredShape(rows, columns);
-
+        int[] shape = new int[]{rows, columns};
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(shape, stride, offset, ordering);
@@ -4636,8 +4576,7 @@ public class Nd4j {
      */
     public static INDArray create(int[] shape, int[] stride, long offset, char ordering) {
         if(shape.length == 0)
-            return Nd4j.trueScalar(0.0);
-        shape = getEnsuredShape(shape);
+            return Nd4j.scalar(0.0);
 
         checkShapeValues(shape);
 
@@ -4657,8 +4596,7 @@ public class Nd4j {
      */
     public static INDArray create(long[] shape, long[] stride, long offset, char ordering) {
         if(shape.length == 0)
-            return Nd4j.trueScalar(0.0);
-        shape = getEnsuredShape(shape);
+            return Nd4j.scalar(0.0);
 
         checkShapeValues(shape);
 
@@ -4681,8 +4619,7 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int rows, int columns, int[] stride, char ordering) {
-        int[] shape = getEnsuredShape(rows, columns);
-
+        int[] shape = new int[]{rows, columns};
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.create(shape, stride, 0, ordering);
@@ -4704,7 +4641,6 @@ public class Nd4j {
     public static INDArray create(int[] shape, int[] stride, char ordering) {
         if(shape.length == 0)
             return Nd4j.trueScalar(0.0);
-        shape = getEnsuredShape(shape);
 
         checkShapeValues(shape);
 
@@ -4716,7 +4652,6 @@ public class Nd4j {
     public static INDArray create(long[] shape, long[] stride, char ordering) {
         if(shape.length == 0)
             return Nd4j.trueScalar(0.0);
-        shape = getEnsuredShape(shape);
 
         checkShapeValues(shape);
 
@@ -4876,13 +4811,6 @@ public class Nd4j {
         if (shape.length == 0)
             return trueScalar(0.0);
 
-        shape = getEnsuredShape(shape);
-        // now we allow 1D vectors
-        /*else if (shape.length == 1) {
-            shape = new int[] {1, shape[0]};
-        }
-        */
-
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.createUninitialized(shape, ordering);
@@ -4898,13 +4826,6 @@ public class Nd4j {
         if (shape.length == 0)
             return scalar(type, 0);
 
-        shape = getEnsuredShape(shape);
-        // now we allow 1D vectors
-        /*else if (shape.length == 1) {
-            shape = new int[] {1, shape[0]};
-        }
-        */
-
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.createUninitialized(type, shape, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -4915,13 +4836,6 @@ public class Nd4j {
     public static INDArray createUninitialized(long[] shape, char ordering) {
         if (shape.length == 0)
             return trueScalar(0.0);
-
-        shape = getEnsuredShape(shape);
-        // now we allow 1D vectors
-        /*else if (shape.length == 1) {
-            shape = new int[] {1, shape[0]};
-        }
-        */
 
         checkShapeValues(shape);
 
@@ -5075,8 +4989,6 @@ public class Nd4j {
      * @return
      */
     public static INDArray create(double[] data, int[] shape, long offset) {
-        shape = getEnsuredShape(shape);
-
         if (shape.length == 1) {
             if (shape[0] == data.length) {
                 shape = new int[] {1, data.length};
@@ -6175,36 +6087,6 @@ public class Nd4j {
             return false;
         }
         return (fallback.equalsIgnoreCase("true") || fallback.equalsIgnoreCase("1"));
-    }
-
-    /**
-     * Get ensured shapes that wind up being scalar end up with the write shape
-     * @param shape
-     * @return
-     */
-    private static int[] getEnsuredShape(int[] shape) {
-        if (shape.length == 1 && shape[0] == 0) {
-            return new int[]{1, 1};
-        }
-        return shape;
-    }
-
-
-    private static long[] getEnsuredShape(long[] shape) {
-        if (shape.length == 1 && shape[0] == 0) {
-            return new long[]{1, 1};
-        }
-        return shape;
-    }
-
-    /**
-     * Get ensured shapes that wind up being scalar end up with the write shape
-     * @param rows
-     * @param columns
-     * @return
-     */
-    private static int[] getEnsuredShape(int rows, int columns) {
-        return getEnsuredShape(new int[] {rows, columns});
     }
 
     /**
