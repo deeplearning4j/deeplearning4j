@@ -206,7 +206,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
         // FIXME: int cast
         INDArray scoreArrayTs = TimeSeriesUtils.reshapeVectorToTimeSeriesMask(scoreArray, (int) input.size(0));
-        INDArray summedScores = scoreArrayTs.sum(1);
+        INDArray summedScores = scoreArrayTs.sum(true, 1);
 
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if (l1l2 != 0.0) {

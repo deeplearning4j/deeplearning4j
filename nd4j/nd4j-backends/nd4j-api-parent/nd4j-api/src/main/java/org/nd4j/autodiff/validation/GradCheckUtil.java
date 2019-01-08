@@ -230,7 +230,15 @@ public class GradCheckUtil {
         //TODO also check that all inputs are non-zero (otherwise: consider out = sum(x * y) with all x and y being 0
         // in this case, gradients of x and y are all 0 too
 
-        sd.execBackwards(placeholderValues);
+        //Collect variables to get gradients for - we want placeholders AND variables
+        Set<String> gradVarNames = new HashSet<>();
+        for(Variable v : sd.getVariables().values()){
+            if(v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER){
+                gradVarNames.add(v.getVariable().getGradient().getVarName());
+            }
+        }
+
+        sd.execBackwards(placeholderValues, new ArrayList<>(gradVarNames));
         Map<String,INDArray> grad = new HashMap<>();
         for(SDVariable v : sd.variables()){
             if (fnOutputs.contains(v.getVarName())) {

@@ -130,7 +130,7 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
                 }
 
                 if (gradientOutput != null) {
-                    gradientOutput.getRow(i).assign(classificationDifferences.sum(0).addi(classificationDifferences.sum(true,1)/*.transposei()*/.negi()));
+                    gradientOutput.getRow(i).assign(classificationDifferences.sum(true, 0).addi(classificationDifferences.sum(true,1).transposei().negi()));
                 }
             }
         }

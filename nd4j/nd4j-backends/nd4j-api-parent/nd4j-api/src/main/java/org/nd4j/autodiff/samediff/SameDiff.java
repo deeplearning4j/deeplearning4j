@@ -68,7 +68,7 @@ import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
-import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -628,21 +628,6 @@ public class SameDiff {
         return LongShapeDescriptor.fromShape(variableNameToShape.get(varName), Nd4j.dataType());
     }
 
-
-    /**
-     * Update a vertex id with the given shape.<br>
-     * Note that you should use {@link #putShapeForVarName(String, long[])} if you want to add a new shape.
-     * Update is meant to be an in place replacement of the shape for the vertex id *only*.
-     *
-     * @param varName the vertex id to associate
-     * @param shape   the shape to associate with
-     * @see #putShapeForVarName(String, long[])
-     * @see #putOrUpdateShapeForVarName(String, long[], boolean)
-     */
-    public void updateShapeForVarName(String varName, long[] shape) {
-        updateShapeForVarName(varName, shape, false);
-    }
-
     /**
      * Update a vertex id with the given shape.<br>
      * Note that you should use {@link #putShapeForVarName(String, long[])} if you want to add a new shape.
@@ -732,15 +717,6 @@ public class SameDiff {
             putShapeForVarName(varName, shape);
         }
     }
-
-    public void putOrUpdateShapeForVarName(String varName, @NonNull LongShapeDescriptor shape, boolean clearArrayOnShapeMismatch){
-        if(variableNameToShape.containsKey(varName)){
-            updateShapeForVarName(varName, shape.getShape(), clearArrayOnShapeMismatch);
-        } else {
-            putShapeForVarName(varName, shape);
-        }
-    }
-
 
     /**
      * Returns true if the given vertex id and shape already exist.
@@ -1586,7 +1562,7 @@ public class SameDiff {
                 resolveVariablesWith(placeholders);
 
                 //Calculate gradients:
-                execBackwards();
+                execBackwards(placeholders);
 
 
                 //Apply updater:
@@ -1597,8 +1573,8 @@ public class SameDiff {
                 int e = trainingConfig.getEpochCount();
                 for (String s : trainingConfig.getTrainableParams()) {
                     //TODO fix using inference session
-                    INDArray param = null;  //variableMap.get(s).getArr();
-                    INDArray grad = null;   //variableMap.get(s).getGradient().getArr();
+                    INDArray param = variables.get(s).getVariable().getArr();
+                    INDArray grad = variables.get(s).getVariable().getGradient().getArr();
                     //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
                     // which should flow through to here
 
@@ -1884,22 +1860,23 @@ public class SameDiff {
         if(!iterator.hasNext() && iterator.resetSupported())
             iterator.reset();
 
+        List<String> reqVars = new ArrayList<>(variableEvals.keySet());
+
         while(iterator.hasNext()){
             MultiDataSet ds = iterator.next();
             Map<String,INDArray> placeholderMap = toPlaceholderMap(ds);
-            resolveVariablesWith(placeholderMap, false);
 
-//            exec(); //TODO partial exec
-//            for(Map.Entry<String,List<IEvaluation>> e : variableEvals.entrySet()){
-//                INDArray prediction = variableNameToArr.get(e.getKey());
-//                for(IEvaluation eval : e.getValue()){
-//                    //TODO masking, time series, etc
-//
-//                    INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
-//                    eval.eval(label, prediction);
-//                }
-//            }
-            throw new UnsupportedOperationException("Not yet reimplemented");       //Use InferenceSession
+            Map<String,INDArray> m = exec(placeholderMap, reqVars);
+
+            for(Map.Entry<String,List<IEvaluation>> e : variableEvals.entrySet()){
+                INDArray prediction = m.get(e.getKey());
+                for(IEvaluation eval : e.getValue()){
+                    //TODO masking, time series, etc
+
+                    INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
+                    eval.eval(label, prediction);
+                }
+            }
         }
     }
 
@@ -9961,11 +9938,40 @@ public class SameDiff {
             createGradFunction();
         }
 
-        if (log.isTraceEnabled()) {
-            log.trace("About to execute backward function");
+        //Collect (unique) list of gradient names...
+        Set<String> varGradNames = new HashSet<>();
+        for(Variable v : variables.values()){
+            if(v.getVariable().getVariableType() == VariableType.VARIABLE){
+                SDVariable g = v.getVariable().gradient();
+                varGradNames.add(g.getVarName());
+            }
         }
 
-        exec("grad");
+        //Edge case: if no variables, no variable gradients to calculate...
+        if(varGradNames.isEmpty()){
+            log.trace("Skipping gradient execution - no variables to be calculated (variableGradNamesList is empty)");
+            return;
+        }
+
+        List<String> vargradNamesList = new ArrayList<>(varGradNames);
+        execBackwards(placeholders, vargradNamesList);
+    }
+
+    public void execBackwards(Map<String,INDArray> placeholders, List<String> variableGradNamesList){
+        if (getFunction("grad") == null) {
+            createGradFunction();
+        }
+
+        log.trace("About to execute backward function");
+
+        //Edge case: if no variables, no variable gradients to calculate...
+        if(variableGradNamesList.isEmpty()){
+            log.trace("Skipping gradient execution - no variables to be calculated (variableGradNamesList is empty)");
+            return;
+        }
+
+
+        sameDiffFunctionInstances.get("grad").exec(placeholders, variableGradNamesList);
     }
 
     /**
@@ -10262,8 +10268,6 @@ public class SameDiff {
                 }
             }
 
-
-            updateShapeForVarName(entry.getKey(), entry.getValue().shape(), true);
             associateArrayWithVariable(entry.getValue(), getVariable(entry.getKey()));
             setArrayForVariable(entry.getKey(), entry.getValue());
         }

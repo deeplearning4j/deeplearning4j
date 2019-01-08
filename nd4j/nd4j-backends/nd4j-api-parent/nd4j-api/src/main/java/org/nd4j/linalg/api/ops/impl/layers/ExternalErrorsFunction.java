@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.temp;
+package org.nd4j.linalg.api.ops.impl.layers;
 
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -62,6 +62,7 @@ public class ExternalErrorsFunction extends DifferentialFunction {
     public SDVariable[] outputVariables(String baseName) {
         if(out == null){
             out = sameDiff.zero("dummyOutput", DataType.FLOAT, 1);
+            sameDiff.getOps().get(getOwnName()).setOutputsOfOp(Collections.singletonList(out.getVarName()));
         }
         return new SDVariable[]{out};
     }

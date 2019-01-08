@@ -193,11 +193,7 @@ public class Reshape extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        val origShape = arg().getShape();
-        if (origShape == null) {
-            //TODO need a more robust way to do this
-            throw new ND4JIllegalStateException("Cannot reshape: original array input shape is null");
-        }
+        SDVariable origShape = f().shape(arg());
         SDVariable ret = f().reshape(i_v.get(0), origShape);
         return Collections.singletonList(ret);
     }

@@ -334,15 +334,14 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         //Order here: original shape, begin, size
         List<Triple<int[], int[], int[]>> testCases = new ArrayList<>();
-//        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{0, 0}, new int[]{3, 4}));
+        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{0, 0}, new int[]{3, 4}));
         testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 1}, new int[]{2, 2}));
         testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 2}, new int[]{2, 2}));
         testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{0, 0, 0}, new int[]{3, 4, 5}));
         testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 1, 1}, new int[]{2, 3, 4}));
-        testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 0, 2}, new int[]{2, 3, 2}));
 
         Map<Integer,INDArrayIndex[]> indices = new HashMap<>();
-//        indices.put(0, new INDArrayIndex[]{all(), all()});
+        indices.put(0, new INDArrayIndex[]{all(), all()});
         indices.put(1, new INDArrayIndex[]{interval(1,3), interval(1,3)});
         indices.put(2, new INDArrayIndex[]{interval(1,3), interval(2,4)});
         indices.put(3, new INDArrayIndex[]{all(), all(), all()});
@@ -355,7 +354,8 @@ public class ShapeOpValidation extends BaseOpValidation {
             int[] os = t.getFirst();
             int[] b = t.getSecond();
             int[] e = t.getThird();
-            INDArray arr = Nd4j.rand(DataType.DOUBLE, os);
+            int prod = ArrayUtil.prod(os);
+            INDArray arr = Nd4j.linspace(1, prod, prod, DataType.DOUBLE).reshape(os);
 
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", arr);
@@ -1249,7 +1249,8 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSegmentOps(){
-        //https://github.com/deeplearning4j/deeplearning4j/issues/6876
+        OpValidationSuite.ignoreFailing();
+        //https://github.com/deeplearning4j/deeplearning4j/issues/6952
         INDArray s = Nd4j.create(new double[]{0,0,0,1,2,2,3,3}, new long[]{8}).castTo(DataType.INT);
         INDArray d = Nd4j.create(new double[]{5,1,7,2,3,4,1,3}, new long[]{8});
         int numSegments = 4;
