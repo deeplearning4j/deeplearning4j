@@ -190,60 +190,49 @@ namespace nd4j {
 
             int8_t *buffer = nullptr;
 
-            if (flatVariable->ndarray() != nullptr) {
-                 auto ar = flatVariable->ndarray();
-                _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
-                _ndarray->triggerAllocationFlag(true, true);
-            } else if (flatVariable->shape() != nullptr) {
-                int shapeLen = flatVariable->shape()->Length();
-                //int *shape = new int[shapeLen];
+            switch (flatVariable->variabletype()) {
+                case VarType_VARIABLE: {
 
-                std::vector<Nd4jLong> shapeInfo(flatVariable->shape()->size());
-                for (int i = 0; i < flatVariable->shape()->size(); i++) {
-                    shapeInfo[i] = flatVariable->shape()->Get(i);
-                }
+                        // ?????
 
-                // we just create empty array here
-                std::vector<Nd4jLong> shape(shapeInfo.at(0));
-                for (int i = 0; i < shapeInfo.at(0); i++) {
-                    shape[i] = shapeInfo.at(i + 1);
-                }
+                        _variableType = VariableType::NDARRAY;
+                    }
+                    break;
+                case VarType_CONSTANT: {
+                        if (flatVariable->ndarray() == nullptr)
+                            throw std::runtime_error("CONSTANT variable must have NDArray bundled");
 
-                _ndarray = new NDArray((char) shapeInfo.at(shapeInfo.size() - 1), shape, DataTypeUtils::fromFlatDataType(flatVariable->dtype()));
-            } else {
-                nd4j_printf("Either shape or NDArray should be defined in FlatResult variable\n","");
-                throw std::runtime_error("Empty variable");
+                        auto ar = flatVariable->ndarray();
+                        _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
+                        _ndarray->triggerAllocationFlag(true, true);
+
+                        _variableType = VariableType::NDARRAY;
+                    }
+                    break;
+                case VarType_ARRAY: {
+
+                        // ?????
+
+                        _variableType = VariableType::NDARRAY;
+                    }
+                    break;
+                case VarType_PLACEHOLDER: {
+                        if (flatVariable->shape() == nullptr)
+                            throw std::runtime_error("PLACEHOLDER variable must have shape defined");
+
+                        int shapeLen = flatVariable->shape()->Length();
+                        std::vector<Nd4jLong> shape(flatVariable->shape()->size());
+                        for (int i = 0; i < flatVariable->shape()->size(); i++)
+                            shape[i] = flatVariable->shape()->Get(i);
+
+                        // DO SOMETHING HERE
+
+                        _variableType = VariableType::PLACEHOLDER;
+                    }
+                    break;
+                default:
+                    throw std::runtime_error("Unknown variable type used");
             }
-
-            /*
-            if (flatVariable->values() != nullptr && flatVariable->values()->Length() > 0) {
-                int bufLen = (int) flatVariable->values()->Length();
-                 buffer = new T[bufLen];
-
-#pragma omp parallel for simd
-                for (int e = 0; e < bufLen; e++) {
-                    buffer[e] = (T) flatVariable->values()->Get(e);
-                }
-            }
-
-            if (flatVariable->buffer() != nullptr && flatVariable->buffer()->size() > 0) {
-                auto dtype = DataTypeUtils::fromFlatDataType(flatVariable->dataType());
-                auto bo = ByteOrderUtils::fromFlatByteOrder(flatVariable->order());
-
-                auto bufLen = shape::length(shape);
-                buffer = new T[bufLen];
-
-                // TODO: byteorder should be honored here
-
-                // TODO: we want to have variable datatype, so in future we should replace explicit conversion with simple migration
-                auto flatBuf = (void *) flatVariable->buffer()->data();
-
-                DataTypeConversions::convertType(buffer, flatBuf, dtype, bufLen);
-            }
-            */
-
-            //_ndarray = new NDArray(buffer, shape);
-            _variableType = VariableType::NDARRAY;
         }
 
         
