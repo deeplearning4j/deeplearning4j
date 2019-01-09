@@ -226,7 +226,7 @@ if(CUDA_BLAS)
         file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES false ../include/ops/declarable/helpers/cpu/*.cpp)
         file(GLOB_RECURSE OPS_SOURCES false ../include/ops/impl/*.cpp ../include/ops/declarable/impl/*.cpp  ../include/ops/*.h)
         file(GLOB_RECURSE INDEXING_SOURCES false ../include/indexing/*.cpp ../include/indexing/*.h)
-        file(GLOB_RECURSE HELPERS_SOURCES false ../include/helpers/*.cpp ../include/helpers/*.h)
+        file(GLOB_RECURSE HELPERS_SOURCES false ../include/helpers/impl/*.cpp ../include/helpers/cuda/*.cu ../include/helpers/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES false ../include/loops/*.cpp ../include/loops/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA false ../include/loops/*.cu)
 
@@ -258,7 +258,7 @@ if(CUDA_BLAS)
         endif()
 
 
-		target_link_libraries(${LIBND4J_NAME} ${CUDA_LIBRARIES})
+		target_link_libraries(${LIBND4J_NAME} ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
 	    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)
 
 		install(TARGETS ${LIBND4J_NAME} DESTINATION .)
