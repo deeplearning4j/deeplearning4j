@@ -102,10 +102,10 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray x2 = Nd4j.create(data, new long[] {2, 3, 3});
         data = Nd4j.linspace(1, 12, 9, DataType.FLOAT).data();
         INDArray y2 = Nd4j.create(data, new long[] {3, 3});
-        INDArray z2 = Nd4j.create(new long[] {3, 2}, 'f');
+        INDArray z2 = Nd4j.create(DataType.FLOAT, new long[] {3, 2}, 'f');
         z2.putColumn(0, y2.getColumn(0));
         z2.putColumn(1, y2.getColumn(1));
-        INDArray nofOffset = Nd4j.create(new long[] {3, 3}, 'f');
+        INDArray nofOffset = Nd4j.create(DataType.FLOAT, new long[] {3, 3}, 'f');
         nofOffset.assign(x2.slice(0));
         assertEquals(nofOffset, x2.slice(0));
 
@@ -116,7 +116,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
 
         INDArray slice1 = x2.slice(1);
-        INDArray noOffset2 = Nd4j.create(slice1.shape());
+        INDArray noOffset2 = Nd4j.create(DataType.FLOAT, slice1.shape());
         noOffset2.assign(slice1);
         assertEquals(slice1, noOffset2);
 
@@ -250,7 +250,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(), 1, false);
         INDArray sorted2 = Nd4j.sort(toSort.dup(), 1, false);
         assertEquals(sorted[1], sorted2);
-        INDArray shouldIndex = Nd4j.create(new float[] {1, 1, 0, 0}, new long[] {2, 2});
+        INDArray shouldIndex = Nd4j.create(new double[] {1, 1, 0, 0}, new long[] {2, 2});
         assertEquals(getFailureMessage(), shouldIndex, sorted[0]);
 
 
@@ -264,7 +264,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(), 1, true);
         INDArray sorted2 = Nd4j.sort(toSort.dup(), 1, true);
         assertEquals(sorted[1], sorted2);
-        INDArray shouldIndex = Nd4j.create(new float[] {0, 0, 1, 1}, new long[] {2, 2});
+        INDArray shouldIndex = Nd4j.create(new double[] {0, 0, 1, 1}, new long[] {2, 2});
         assertEquals(getFailureMessage(), shouldIndex, sorted[0]);
 
 
@@ -324,7 +324,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     public void testDivide() {
         INDArray two = Nd4j.create(new float[] {2, 2, 2, 2});
         INDArray div = two.div(two);
-        assertEquals(getFailureMessage(), Nd4j.ones(4), div);
+        assertEquals(getFailureMessage(), Nd4j.ones(DataType.FLOAT, 4), div);
 
         INDArray half = Nd4j.create(new float[] {0.5f, 0.5f, 0.5f, 0.5f}, new long[] {2, 2});
         INDArray divi = Nd4j.create(new float[] {0.3f, 0.6f, 0.9f, 0.1f}, new long[] {2, 2});
@@ -851,15 +851,15 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testAddScalar() {
-        INDArray div = Nd4j.valueArrayOf(new long[] {1, 4}, 4);
+        INDArray div = Nd4j.valueArrayOf(new long[] {1, 4}, 4.0);
         INDArray rdiv = div.add(1);
-        INDArray answer = Nd4j.valueArrayOf(new long[] {1, 4}, 5);
+        INDArray answer = Nd4j.valueArrayOf(new long[] {1, 4}, 5.0);
         assertEquals(answer, rdiv);
     }
 
     @Test
     public void testRdivScalar() {
-        INDArray div = Nd4j.valueArrayOf(new long[] {1, 4}, 4);
+        INDArray div = Nd4j.valueArrayOf(new long[] {1, 4}, 4.0);
         INDArray rdiv = div.rdiv(1);
         INDArray answer = Nd4j.valueArrayOf(new long[] {1, 4}, 0.25);
         assertEquals(rdiv, answer);
@@ -867,7 +867,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testRDivi() {
-        INDArray n2 = Nd4j.valueArrayOf(new long[] {1, 2}, 4);
+        INDArray n2 = Nd4j.valueArrayOf(new long[] {1, 2}, 4.0);
         INDArray n2Assertion = Nd4j.valueArrayOf(new long[] {1, 2}, 0.5);
         INDArray nRsubi = n2.rdivi(2);
         assertEquals(n2Assertion, nRsubi);

@@ -67,7 +67,7 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
     }
 
     public static void compareArrays(int rank, char ordering, TemporaryFolder testDir) throws Exception {
-        List<Pair<INDArray, String>> all = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,ordering, DataType.FLOAT);
+        List<Pair<INDArray, String>> all = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,ordering, Nd4j.defaultFloatingPointType());
         Iterator<Pair<INDArray,String>> iter = all.iterator();
         int cnt = 0;
         while (iter.hasNext()) {
@@ -96,13 +96,13 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
             List<Pair<INDArray, String>> l = null;
             switch (testShape.length){
                 case 2:
-                    l = NDArrayCreationUtil.getAllTestMatricesWithShape(testShape[0], testShape[1], 12345, DataType.FLOAT);
+                    l = NDArrayCreationUtil.getAllTestMatricesWithShape(testShape[0], testShape[1], 12345, Nd4j.defaultFloatingPointType());
                     break;
                 case 3:
-                    l = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, testShape, DataType.FLOAT);
+                    l = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, testShape, Nd4j.defaultFloatingPointType());
                     break;
                 case 4:
-                    l = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, testShape, DataType.FLOAT);
+                    l = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, testShape, Nd4j.defaultFloatingPointType());
                     break;
                 default:
                     throw new RuntimeException();

@@ -882,6 +882,10 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     .getAttrOrThrow("Tidx").getType();
         }
 
+        return convertType(tfType);
+    }
+
+    public static org.nd4j.linalg.api.buffer.DataType convertType(org.tensorflow.framework.DataType tfType){
         switch(tfType) {
             case DT_DOUBLE: return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
             case DT_FLOAT: return org.nd4j.linalg.api.buffer.DataType.FLOAT;

@@ -1414,7 +1414,7 @@ public class DifferentialFunctionFactory {
 
     public SDVariable logSoftmax(SDVariable i_v) {
         validateDifferentialFunctionsameDiff(i_v);
-        return new LogSoftMax(sameDiff(), i_v, null).outputVariable();
+        return new LogSoftMax(sameDiff(), i_v).outputVariable();
 
     }
 

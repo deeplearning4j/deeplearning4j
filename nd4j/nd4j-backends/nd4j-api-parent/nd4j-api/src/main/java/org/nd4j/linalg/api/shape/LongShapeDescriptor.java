@@ -45,6 +45,7 @@ public class LongShapeDescriptor {
     @Getter
     private long[] stride;
 
+    @Getter
     private long extras;
 
     public LongShapeDescriptor(long[] shape, long[] stride, long offset, long ews, char order, long extras) {
@@ -153,5 +154,9 @@ public class LongShapeDescriptor {
         long extras = 0L;
         extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
         return new LongShapeDescriptor(shape, stride, offset, ews, order, extras);
+    }
+
+    public boolean isEmpty(){
+        return ArrayOptionsHelper.hasBitSet(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
     }
 }

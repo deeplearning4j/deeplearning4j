@@ -49,6 +49,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell;
@@ -128,8 +129,8 @@ import java.util.zip.ZipOutputStream;
 @Slf4j
 public class SameDiff {
 
-    //New fields. Not yet used anywhere
-    @Getter     //TODO use package private instead of public getters??
+    //Fields for graph structure and execution
+    @Getter     //TODO use package private instead of public getters?
     private final Map<String,Variable> variables = new HashMap<>();         //TODO concurrent maps required? Or lock?
     @Getter
     private final Map<String,SameDiffOp> ops = new HashMap<>();
@@ -143,6 +144,7 @@ public class SameDiff {
     private final Map<Long,Map<String,INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
     ///////////////////////////////////////
+    //Fields related to training
     @Getter
     private TrainingConfig trainingConfig;                          //Configuration for training. Must be set for training/evaluation, but not for other operations
     @Getter
@@ -759,7 +761,7 @@ public class SameDiff {
      * @param varName Variable name to get the array for
      * @return Array, or null if none exists
      */
-    public INDArray getArrForVarName(String varName) {
+    public INDArray getArrForVarName(@NonNull String varName) {
         Preconditions.checkState(variables.containsKey(varName), "No variable found with name \"%s\"", varName);
         SDVariable v = variables.get(varName).getVariable();
         switch(v.getVariableType()){
@@ -1459,9 +1461,10 @@ public class SameDiff {
     public List<String> outputs(){
         List<String> out = new ArrayList<>();
         for(Variable v : variables.values()){
-            if(v.getVariable().isConstant() || v.getVariable().isPlaceHolder() ||               //Exclude constants and placeholders
-                    (v.getInputsForOp() != null && !v.getInputsForOp().isEmpty()) ||            //Exclude variables that are inputs to ops
-                    (v.getControlDepsForOp() != null && !v.getControlDepsForOp().isEmpty())) {  //Exclude variables are control dependency inputs to ops
+            if(v.getVariable().isConstant() || v.getVariable().isPlaceHolder() ||                   //Exclude constants and placeholders
+                    (v.getInputsForOp() != null && !v.getInputsForOp().isEmpty()) ||                //Exclude variables that are inputs to ops
+                    (v.getControlDepsForOp() != null && !v.getControlDepsForOp().isEmpty()) ||      //Exclude variables that are control dependency inputs to ops
+                    (v.getControlDepsForVar() != null && !v.getControlDepsForVar().isEmpty())) {    //Exclude variables that are control dependency inputs to other variables (mainly for import of cond etc ops)
                 continue;
             }
 
@@ -1472,7 +1475,15 @@ public class SameDiff {
                 if(o.getOp() instanceof Assert){
                     continue;
                 }
+
+                //A bit of a hack for TF import: some TF graphs have Switch ops, where the output of one branch isn't consumed
+                // by any ops. Consequently, during execution this "output" might never be available. So we'll exclude the output of execution here
+                if(o.getOp() instanceof Switch){
+                    continue;
+                }
             }
+
+
             out.add(v.getName());
         }
         return out;

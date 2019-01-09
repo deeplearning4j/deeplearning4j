@@ -1492,7 +1492,7 @@ public class ConvolutionTests extends BaseNd4jTest {
         int sx = 1;
         int ph = 1;
         int pw = 1;
-        INDArray linspaced = Nd4j.linspace(1, 64, 64, DataType.FLOAT).reshape(2, 2, 2, 2, 2, 2);
+        INDArray linspaced = Nd4j.linspace(1, 64, 64, Nd4j.defaultFloatingPointType()).reshape(2, 2, 2, 2, 2, 2);
         INDArray newTest = Convolution.col2im(linspaced, sy, sx, ph, pw, 2, 2);
         INDArray assertion = OldConvolution.col2im(linspaced, sy, sx, ph, pw, 2, 2);
 
@@ -1514,7 +1514,7 @@ public class ConvolutionTests extends BaseNd4jTest {
         int[] padding = {1, 2};
         int prod = nEx * depth * width * height;
 
-        INDArray in = Nd4j.linspace(1, prod, prod, DataType.FLOAT).reshape(nEx, depth, width, height);
+        INDArray in = Nd4j.linspace(1, prod, prod, Nd4j.defaultFloatingPointType()).reshape(nEx, depth, width, height);
 
         INDArray assertim2col = OldConvolution.im2col(in, kernel, stride, padding);
         INDArray im2col = Convolution.im2col(in, kernel, stride, padding);

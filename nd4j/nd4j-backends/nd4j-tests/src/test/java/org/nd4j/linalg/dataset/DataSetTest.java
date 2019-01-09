@@ -1055,7 +1055,7 @@ public class DataSetTest extends BaseNd4jTest {
 
         assertNotEquals(next1, next2);
 
-        INDArray arr = Nd4j.create(4,1,5,5);
+        INDArray arr = Nd4j.create(DataType.DOUBLE, 4,1,5,5);
         for( int i=0; i<4; i++ ){
             arr.get(point(i), all(), all(), all()).assign(i);
         }
@@ -1065,11 +1065,11 @@ public class DataSetTest extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         DataSet ds2 = ds.sample(2);
 
-        assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, next1), ds2.getFeatures().get(point(0), all(), all(), all()));
-        assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, next2), ds2.getFeatures().get(point(1), all(), all(), all()));
+        assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, (double)next1), ds2.getFeatures().get(point(0), all(), all(), all()));
+        assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, (double)next2), ds2.getFeatures().get(point(1), all(), all(), all()));
 
-        assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, next1), ds2.getLabels().get(point(0), all(), all(), all()));
-        assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, next2), ds2.getLabels().get(point(1), all(), all(), all()));
+        assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, (double)next1), ds2.getLabels().get(point(0), all(), all(), all()));
+        assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, (double)next2), ds2.getLabels().get(point(1), all(), all(), all()));
     }
 
     @Test
