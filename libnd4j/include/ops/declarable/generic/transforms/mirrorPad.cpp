@@ -37,7 +37,7 @@ CUSTOM_OP_IMPL(mirror_pad, 2, 1, false, 0, 1) {
     const int mode = INT_ARG(0);    // 0 - REFLECT, else - SYMMETRIC
     const int includeBorder = mode ? 0 : 1;
 
-    if(input->rankOf() <= 1) {  // when in put scalar or vector;
+    if(input->rankOf() <= 1) {  // when input is scalar or vector;
         REQUIRE_TRUE(paddings->lengthOf() == 2, 0, "MIRROR_PAD OP: the length of paddings array must be equal 2, when input array is vector or scalar, bot but got %i instead !", paddings->rankOf());
         REQUIRE_TRUE( (paddings->e<Nd4jLong>(0) <= (input->lengthOf() - includeBorder)) && (paddings->e<Nd4jLong>(1) <= (input->lengthOf() - includeBorder)), 0, "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then length of input array (being vector or scalar) for symmetric mode (or length-1 for reflect mode) !");
     }
@@ -68,7 +68,7 @@ DECLARE_SHAPE_FN(mirror_pad) {
     const int rank = input->rankOf() ? input->rankOf() : 1;                 // if scalar is input then vector is output
     const int includeBorder = static_cast<bool>(INT_ARG(0)) ? 0 : 1;        // 0 - REFLECT, else - SYMMETRIC
 
-    if(rank == 1) {  // when in put scalar or vector;
+    if(rank == 1) {  // when input is scalar or vector;
         REQUIRE_TRUE(paddings->lengthOf() == 2, 0, "MIRROR_PAD OP: the length of paddings array must be equal 2, when input array is vector or scalar, bot but got %i instead !", paddings->rankOf());
         REQUIRE_TRUE( (paddings->e<Nd4jLong>(0) <= (input->lengthOf() - includeBorder)) && (paddings->e<Nd4jLong>(1) <= (input->lengthOf() - includeBorder)), 0, "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then length of input array (being vector or scalar) for symmetric mode (or length-1 for reflect mode) !");
     }
