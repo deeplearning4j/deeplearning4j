@@ -587,14 +587,17 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer create(Pointer pointer, DataType type, long length, @NonNull Indexer indexer) {
         switch (type) {
+            case SHORT:
+                return new Int16Buffer(pointer, indexer, length);
             case INT:
                 return new IntBuffer(pointer, indexer, length);
+            case LONG:
+                return new LongBuffer(pointer, indexer, length);
             case DOUBLE:
                 return new DoubleBuffer(pointer, indexer, length);
             case FLOAT:
                 return new FloatBuffer(pointer, indexer, length);
-            case LONG:
-                return new LongBuffer(pointer, indexer, length);
+
         }
         throw new IllegalArgumentException("Invalid opType " + type);
     }
