@@ -5205,6 +5205,18 @@ public class Nd4j {
     }
 
     /**
+     * Creates an ndarray with the specified value as the only value in the INTEGER datatype NDArray.
+     * Equivalent to Numpy's np.full
+     *
+     * @param shape the shape of the ndarray
+     * @param value the value to assign
+     * @return the created ndarray
+     */
+    public static INDArray valueArrayOf(long[] shape, int value) {
+        return valueArrayOf(shape, (double)value, DataType.INT);
+    }
+
+    /**
      * Creates an ndarray with the specified value
      * as the  only value in the ndarray.
      * Some people may know this as np.full
