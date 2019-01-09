@@ -1604,25 +1604,27 @@ NDArray NDArray::transp() const {
         // the size of outShape == rank
         int rank = rankOf();            // = outShape.size()
 
-        auto newShape = new Nd4jLong[rank];
+        std::vector<Nd4jLong> newShape(rank);
         for (int i = 0; i < rank; i++)
             newShape[i] = outShape[i];
 
         auto ret = new NDArray('c', outShape, _dataType,  _context);
 
-        auto repeatDelta = shape::prodLong(newShape, rank) / this->lengthOf();
+        auto repeatDelta = shape::prodLong(newShape.data(), rank) / this->lengthOf();
         auto numTads = this->tensorsAlongDimension({dimension});
+        printf("Repeat delta %lld, numTads %lld\n", repeatDelta, numTads);
         for (int i = 0; i < numTads; i++) {
             auto thisTensor = this->tensorAlongDimension(i, {dimension});
             auto retTensor = ret->tensorAlongDimension(i, {dimension});
-            int retIdx = 0;
-            for (int k = 0; k < thisTensor->lengthOf(); k++) {
+            Nd4jLong retIdx = 0;
+
+            for (Nd4jLong k = 0; k < thisTensor->lengthOf(); k++) {
                 auto s = thisTensor->e(k);
-                for (int j = 0; j < repeatDelta; j++) {
+                for (Nd4jLong j = 0; j < repeatDelta; j++) {
                     retTensor->p(retIdx++, s);
+                    printf("Iteration is %lld\n", retIdx);
                 }
             }
-//
 //            if (isR()) {
 //            } else {
 //                for (int k = 0; k < thisTensor->lengthOf(); k++) {
@@ -1636,8 +1638,6 @@ NDArray NDArray::transp() const {
             delete thisTensor;
             delete retTensor;
         }
-
-        delete[] newShape;
 
         return ret;
     }
@@ -1872,69 +1872,13 @@ NDArray NDArray::transp() const {
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::r(const Nd4jLong) const, LIBND4J_TYPES);
 
-
-//////////////////////////////////////////////////////////////////////////
-// Returns value from 2D matrix by coordinates/indexes
-    template <typename T>
-    T NDArray::e(const Nd4jLong i, const Nd4jLong j) const {
-        if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
-            throw std::invalid_argument("NDArray::e(i,j): one of input indexes is out of array length or rank!=2 !");
-
-        auto xType = this->dataType();
-        Nd4jLong coords[2] = {i, j};
-        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-        //return (*this)(i, j);
-        BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
-        return static_cast<T>(119);
-    }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
-
-//////////////////////////////////////////////////////////////////////////
-// returns value from 3D tensor by coordinates
-    template <typename T>
-    T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
-        //return (*this)(i, j, k);
-        if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
-            throw std::invalid_argument("NDArray::e(i,j,k): one of input indexes is out of array length or rank!=3 !");
-
-        auto xType = this->dataType();
-        Nd4jLong coords[3] = {i, j, k};
-        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-        BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
-        return static_cast<T>(119);
-    }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
-
-    // returns value from 3D tensor by coordinates
-    template <typename T>
-    T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const {
-        //return (*this)(i, j, k);
-        if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
-            throw std::invalid_argument("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
-
-        auto xType = this->dataType();
-        Nd4jLong coords[4] = {i, j, k, l};
-        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-        BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
-
-        return static_cast<T>(119);
-    }
-    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
-
-//////////////////////////////////////////////////////////////////////////
-NDArray NDArray::e(const Nd4jLong i) const {
-    if (i >= _length)
-            throw std::invalid_argument("scalar NDArray::e(i): input index is out of array length !");
-    NDArray scalar(_dataType, _context);
-    BUILD_SINGLE_SELECTOR(_dataType, scalar.templatedSet, (scalar._buffer, 0, dataType(), bufferWithOffset(getOffset(i))), LIBND4J_TYPES);
-    return scalar;
-}
-
+    //////////////////////////////////////////////////////////////////////////
     template <>
     std::string* NDArray::bufferAsT() const {
         throw std::runtime_error("This method is NOT supposed to be used");
     }
-
+    
+    //////////////////////////////////////////////////////////////////////////
     template <typename T>
     T * NDArray::bufferAsT() const {
         if (isS())

@@ -1449,45 +1449,7 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_float_test1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_float_test2) {
-    
-    NDArray x('c', {2,3,2}, {1,2,3,4,5,6,7,8,-1,-2,-3,-4,}, nd4j::DataType::INT64);
-
-    NDArray exp1('c', {0}, {2.166667}, nd4j::DataType::FLOAT32);    
-    NDArray exp2('c', {2,2}, {3,4,1,0.666667}, nd4j::DataType::FLOAT32);
-    NDArray exp3('c', {3}, {4.5,1,1}, nd4j::DataType::FLOAT32);
-    NDArray exp4('c', {3,2}, {4,5,1,1,1,1}, nd4j::DataType::FLOAT32);
-    NDArray exp5('c', {2}, {3.5,0.833333}, nd4j::DataType::FLOAT32);
-    
-    auto z = x.reduceAlongDimension(nd4j::reduce::Mean, {0,1,2});    
-    ASSERT_TRUE(z->equalsTo(&exp1));
-    delete z;
-    
-    z = x.reduceAlongDimension(nd4j::reduce::Mean, {1});
-    ASSERT_TRUE(z->equalsTo(&exp2));
-    delete z;
-
-    z = x.reduceAlongDimension(nd4j::reduce::Mean, {0,2});
-    ASSERT_TRUE(z->equalsTo(&exp3));
-    delete z;
-
-    x.permutei({1,0,2});    // 3x2x2
-
-    z = x.reduceAlongDimension(nd4j::reduce::Mean, {0,1,2});    
-    ASSERT_TRUE(z->equalsTo(&exp1));
-    delete z;
-
-    z = x.reduceAlongDimension(nd4j::reduce::Mean, {1});
-    ASSERT_TRUE(z->equalsTo(&exp4));
-    delete z;
-
-    z = x.reduceAlongDimension(nd4j::reduce::Mean, {0,2});
-    ASSERT_TRUE(z->equalsTo(&exp5));  
-    delete z;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayCudaBasicsTests, ndarray_reduceAlongDimension_float_test3) {
+TEST_F(NDArrayCudaBasicsTests, ndarray_reduceAlongDimension_float_test2) {
     
     NDArray x('c', {2,3,2}, {1,2,3,4,5,6,7,8,-1,-2,-3,-4,}, nd4j::DataType::DOUBLE);
 
@@ -1517,15 +1479,6 @@ TEST_F(NDArrayCudaBasicsTests, ndarray_reduceAlongDimension_float_test3) {
     NDArray z6 = x.reduceAlongDims(nd4j::reduce::Mean, {0,2});
     ASSERT_TRUE(z6.equalsTo(&exp5));      
 }
-
-// printCudaGlobal<double><<<1,1,0,*stream>>>(dX, 6);
-//     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(dXShapeInfo, 8);
-//     printCudaGlobal<double><<<1,1,0,*stream>>>(dZ, 2);
-//     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(dZShapeInfo, 6);
-//     printCudaGlobal<int><<<1,1,0,*stream>>>(dimension, 1);
-//     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(tadShapeInfo, 6);
-//     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(tadOffsets, 2);
-//     cudaStreamSynchronize(*stream);  
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, EqualityTest1) {
@@ -1581,7 +1534,7 @@ TEST_F(NDArrayCudaBasicsTests, TestTad1) {
 
     ASSERT_TRUE(row2->isView());
     ASSERT_EQ(3, row2->lengthOf());
-    array->assign(0.f);
+    //array->assign(0.f);
     //array->syncToDevice();
     //nd4j_printf("Assigning 1.0 double to float Tensor.\n", "");
     row2->assign(1.0);
@@ -1603,17 +1556,14 @@ TEST_F(NDArrayCudaBasicsTests, TestRepeat1) {
     auto exp = new NDArray(eBuffer, eShape);
     for (int e = 0; e < array->lengthOf(); e++)
         array->p(e, e + 1);
-
-    array->printBuffer("Array filled");
+array->printBuffer("Array filled");
     nd4j_printf("What else?\n", "");
     auto rep = array->repeat(0, {2});
-    rep->syncToHost();
+    //rep->syncToHost();
     rep->printBuffer("Repeated:");
     rep->printShapeInfo("Repeated shape");
     ASSERT_EQ(4, rep->sizeAt(0));
     ASSERT_EQ(2, rep->sizeAt(1));
-
-    //rep->printBuffer();
 
     ASSERT_TRUE(exp->equalsTo(rep));
 
@@ -1623,3 +1573,44 @@ TEST_F(NDArrayCudaBasicsTests, TestRepeat1) {
     delete exp;
     delete rep;
 }
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, ndarray_reduceAlongDimension_same_test1) {
+    
+    NDArray x('c', {2,3,2}, {1,2,3,4,5,6,7,8,-1,-2,-3,-4,}, nd4j::DataType::DOUBLE);
+
+    NDArray exp1('c', {0}, {2.166667}, nd4j::DataType::DOUBLE);    
+    NDArray exp2('c', {2,2}, {3,4,1,0.666667}, nd4j::DataType::DOUBLE);
+    NDArray exp3('c', {3}, {4.5,1,1}, nd4j::DataType::DOUBLE);
+    NDArray exp4('c', {3,2}, {4,5,1,1,1,1}, nd4j::DataType::DOUBLE);
+    NDArray exp5('c', {2}, {3.5,0.833333}, nd4j::DataType::DOUBLE);
+    
+    NDArray z1 = x.reduceAlongDims(nd4j::reduce::Mean, {0,1,2});
+    ASSERT_TRUE(z1.equalsTo(&exp1));    
+    
+    NDArray z2 = x.reduceAlongDims(nd4j::reduce::Mean, {1});
+    ASSERT_TRUE(z2.equalsTo(&exp2));    
+
+    NDArray z3 = x.reduceAlongDims(nd4j::reduce::Mean, {0,2});
+    ASSERT_TRUE(z3.equalsTo(&exp3));    
+
+    x.permutei({1,0,2});    // 3x2x2
+
+    NDArray z4 = x.reduceAlongDims(nd4j::reduce::Mean, {0,1,2});    
+    ASSERT_TRUE(z4.equalsTo(&exp1));
+
+    NDArray z5 = x.reduceAlongDims(nd4j::reduce::Mean, {1});
+    ASSERT_TRUE(z5.equalsTo(&exp4));
+
+    NDArray z6 = x.reduceAlongDims(nd4j::reduce::Mean, {0,2});
+    ASSERT_TRUE(z6.equalsTo(&exp5));      
+}
+
+
+// printCudaGlobal<double><<<1,1,0,*stream>>>(dX, 6);
+//     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(dXShapeInfo, 8);
+//     printCudaGlobal<double><<<1,1,0,*stream>>>(dZ, 2);
+//     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(dZShapeInfo, 6);
+//     printCudaGlobal<int><<<1,1,0,*stream>>>(dimension, 1);
+//     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(tadShapeInfo, 6);
+//     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(tadOffsets, 2);
+//     cudaStreamSynchronize(*stream);  
