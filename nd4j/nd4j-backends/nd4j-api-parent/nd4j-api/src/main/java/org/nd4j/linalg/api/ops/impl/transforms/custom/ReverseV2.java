@@ -57,7 +57,7 @@ public class ReverseV2 extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-//        iArguments.clear();
+
     }
 
     @Override

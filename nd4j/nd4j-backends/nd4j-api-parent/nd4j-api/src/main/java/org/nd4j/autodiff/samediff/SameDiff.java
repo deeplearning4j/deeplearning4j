@@ -1451,9 +1451,10 @@ public class SameDiff {
     public List<String> outputs(){
         List<String> out = new ArrayList<>();
         for(Variable v : variables.values()){
-            if(v.getVariable().isConstant() || v.getVariable().isPlaceHolder() ||               //Exclude constants and placeholders
-                    (v.getInputsForOp() != null && !v.getInputsForOp().isEmpty()) ||            //Exclude variables that are inputs to ops
-                    (v.getControlDepsForOp() != null && !v.getControlDepsForOp().isEmpty())) {  //Exclude variables are control dependency inputs to ops
+            if(v.getVariable().isConstant() || v.getVariable().isPlaceHolder() ||                   //Exclude constants and placeholders
+                    (v.getInputsForOp() != null && !v.getInputsForOp().isEmpty()) ||                //Exclude variables that are inputs to ops
+                    (v.getControlDepsForOp() != null && !v.getControlDepsForOp().isEmpty()) ||      //Exclude variables that are control dependency inputs to ops
+                    (v.getControlDepsForVar() != null && !v.getControlDepsForVar().isEmpty())) {    //Exclude variables that are control dependency inputs to other variables (mainly for import of cond etc ops)
                 continue;
             }
 

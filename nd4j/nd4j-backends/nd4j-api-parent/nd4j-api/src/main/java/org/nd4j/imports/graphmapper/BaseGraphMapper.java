@@ -237,6 +237,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
         2. Make sure all op output variables have been created
         3. Make sure all SameDiffOp.outputsOfOp is set
         4. Make sure all Variable.outputOfOp is set
+        5. Make sure all Variable.controlDepsForVar have been populated (reverse lookup of Variable.controlDeps)
          */
 
         //Make sure Variable.outputOfOp is set
@@ -281,6 +282,25 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
             for(SDVariable v : diff.variables()){
                 if(v.dataType() == null){
                     v.setDataType(dataTypes.get(v.getVarName()));
+                }
+            }
+        }
+
+        //Make sure all Variable.controlDepsForVar have been populated (reverse lookup of Variable.controlDeps)
+        //i.e., if control dependency x -> y exists, then:
+        // (a) x.controlDepsForVar should contain "y"
+        // (b) y.controlDeps should contain "x"
+        for(Map.Entry<String,Variable> e : diff.getVariables().entrySet()){
+            Variable v = e.getValue();
+            if(v.getControlDeps() != null){
+                for(String s : v.getControlDeps()){
+                    Variable v2 = diff.getVariables().get(s);
+                    if(v2.getControlDepsForVar() == null)
+                        v2.setControlDepsForVar(new ArrayList<String>());
+                    if(!v2.getControlDepsForVar().contains(e.getKey())){
+                        //Control dep v2 -> v exists, so put v.name into v2.controlDepsForVar
+                        v2.getControlDepsForVar().add(e.getKey());
+                    }
                 }
             }
         }
