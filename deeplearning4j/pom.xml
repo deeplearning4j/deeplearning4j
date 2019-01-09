@@ -464,7 +464,7 @@
             </modules>
         </profile>
         <profile>
-            <id>cuda2</id>
+            <id>libnd4j-cuda</id>
             <activation>
                 <property>
                     <name>libnd4j.cuda</name>
