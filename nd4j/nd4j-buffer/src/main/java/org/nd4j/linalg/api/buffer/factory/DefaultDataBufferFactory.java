@@ -349,18 +349,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createSame(DataBuffer buffer, boolean init) {
-        switch (buffer.dataType()) {
-            case INT:
-                return createInt(buffer.length(), init);
-            case FLOAT:
-                return createFloat(buffer.length(), init);
-            case DOUBLE:
-                return createDouble(buffer.length(), init);
-            case HALF:
-                return createHalf(buffer.length(), init);
-            default:
-                throw new UnsupportedOperationException("Unknown dataType: " + buffer.dataType());
-        }
+        return create(buffer.dataType(), buffer.length(), init);
     }
 
     /**
@@ -587,17 +576,24 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer create(Pointer pointer, DataType type, long length, @NonNull Indexer indexer) {
         switch (type) {
+            case BOOL:
+                return new BoolBuffer(pointer, indexer, length);
+            case BYTE:
+                return new Int8Buffer(pointer, indexer, length);
+            case UBYTE:
+                return new UInt8Buffer(pointer, indexer, length);
             case SHORT:
                 return new Int16Buffer(pointer, indexer, length);
             case INT:
                 return new IntBuffer(pointer, indexer, length);
             case LONG:
                 return new LongBuffer(pointer, indexer, length);
-            case DOUBLE:
-                return new DoubleBuffer(pointer, indexer, length);
+            case HALF:
+                return new HalfBuffer(pointer, indexer, length);
             case FLOAT:
                 return new FloatBuffer(pointer, indexer, length);
-
+            case DOUBLE:
+                return new DoubleBuffer(pointer, indexer, length);
         }
         throw new IllegalArgumentException("Invalid opType " + type);
     }
