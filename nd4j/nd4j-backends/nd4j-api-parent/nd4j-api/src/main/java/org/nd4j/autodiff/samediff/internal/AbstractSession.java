@@ -265,7 +265,7 @@ public abstract class AbstractSession<T, O> {
             if (!subgraph.contains(varName)) {
                 String[] opInputs = opName == null ? null : sameDiff.getInputsForFunction(sameDiff.getFunctionById(opName));
                 List<String> controlDeps = sameDiff.getVariables().get(varName).getControlDeps();
-                int numInputs = opInputs == null ? 0 : opInputs.length;
+                int numInputs = (opInputs == null ? 0 : opInputs.length);
                 if (controlDeps != null) {
                     //Also count variable control dependencies as inputs - even a constant may not be available for use
                     // until after execution of some other ops (for example, in conditional operations)
@@ -280,7 +280,7 @@ public abstract class AbstractSession<T, O> {
 
                 if(controlDeps != null){
                     //If variable has control dependencies, it's not available right away... to make it available,
-                    // we need the "inputs" to be available
+                    // we need the "inputs" to be available first. This is mainly used for TF import.
                     for(String s : controlDeps){
                         if(!subgraph.contains(s)){
                             processingQueue.add(s);
@@ -324,6 +324,7 @@ public abstract class AbstractSession<T, O> {
         List<String> l = sameDiff.getVariables().get(executedVar.getVariable()).getInputsForOp();
         String[] inputForOps = l == null ? null : l.toArray(new String[l.size()]);  //Just executed variable is input to these ops
         List<String> controlDepForVars = var.getControlDepsForVar();                //Just executed variable is a control dependency for these variables
+        List<String> controlDepForOps = var.getControlDepsForOp();                  //Just executed variable is a control dependency for these ops
 
 
         SDVariable v = var.getVariable();
@@ -488,10 +489,67 @@ public abstract class AbstractSession<T, O> {
                     VarId outVarId = newVarId(s, OUTER_FRAME, 0);
                     availableForExec.add(outVarId);
                     log.trace("Marked variable as available for execution: {} - control dependency {} -> {} exists", outVarId, executedVar.getVariable(), s);
+                } else {
+                    //Another edge case: OpX has output varY (with no inputs), and control dependency executedVar -> varY exists
+                    //We should check if OpX is now available for execution...
+                    String opName = sameDiff.getVariables().get(s).getOutputOfOp();
+                    if(opName != null){
+                        SameDiffOp op = sameDiff.getOps().get(opName);
+                        if(op.getInputsToOp() == null || op.getInputsToOp().isEmpty()){
+                            //No inputs, so we just need to make sure that all control dependencies are available
+                            boolean allControlDepsAvailable = true;
+                            if(op.getControlDeps() != null){
+                                for(String cd : op.getControlDeps()){
+                                    VarId vid = newVarId(cd, executedVar.getFrame(), executedVar.getIteration());     //Note: is array type, therefore has same frame/iter as parent
+                                    allControlDepsAvailable &= nodeOutputs.containsKey(vid);
+                                    if(!allControlDepsAvailable)
+                                        break;
+                                }
+                            }
+                            if(allControlDepsAvailable){
+                                for(String opOutput : op.getOutputsOfOp()){
+                                    Variable v2 = sameDiff.getVariables().get(opOutput);
+                                    if(v2.getControlDeps() != null){
+                                        for(String s2 : v2.getControlDeps()){
+                                            VarId vid = newVarId(s2, executedVar.getFrame(), executedVar.getIteration());     //Note: is array type, therefore has same frame/iter as parent
+                                            allControlDepsAvailable &= nodeOutputs.containsKey(vid);
+                                            if(!allControlDepsAvailable)
+                                                break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if(allControlDepsAvailable){
+                                VarId outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
+                                availableForExec.add(outVarId);
+                                log.trace("Marked variable as available for execution: {} - is output of op {} with no inputs (but has control dependencies)", outVarId, op.getName());
+                            }
+                        }
+                    }
                 }
             }
         }
 
+        //Edge case: if control dependency varX->opY exists, and opY doesn't have any inputs, it also can't be triggeered
+        // (made available for execution) by any of the previous checks. For any ops that DO have inputs, they will
+        // be triggered already
+        if(controlDepForOps != null){
+            for(String opName : controlDepForOps){
+                SameDiffOp op = sameDiff.getOps().get(opName);
+                if(op.getInputsToOp() == null || op.getInputsToOp().isEmpty()){
+                    for(String out : op.getOutputsOfOp()){
+                        if (!subgraph.contains(out))
+                            continue;       //Don't need this variable to calculate requested outputs - so don't mark as available for execution
+
+                        //TODO is it possible to have both variable and op control dependencies??
+                        VarId outVarId = newVarId(out, OUTER_FRAME, 0);
+                        availableForExec.add(outVarId);
+                        log.trace("Marked variable as available for execution: {} - op control dependency variable {} -> op {} exists", outVarId, executedVar.getVariable(), opName);
+                    }
+                }
+            }
+        }
     }
 
     /**

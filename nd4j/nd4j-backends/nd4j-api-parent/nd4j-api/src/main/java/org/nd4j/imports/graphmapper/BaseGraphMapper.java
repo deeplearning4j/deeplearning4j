@@ -290,6 +290,21 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
             }
         }
 
+        //Same thing for op control dependencies...
+        for(Map.Entry<String,SameDiffOp> e : diff.getOps().entrySet()){
+            SameDiffOp op = e.getValue();
+            if(op.getControlDeps() != null){
+                for(String s : op.getControlDeps()){
+                    //Control dependency varS -> op exists
+                    Variable v = diff.getVariables().get(s);
+                    if(v.getControlDepsForOp() == null)
+                        v.setControlDepsForOp(new ArrayList<String>());
+                    if(!v.getControlDepsForOp().contains(e.getKey()))
+                        v.getControlDepsForOp().add(e.getKey());
+                }
+            }
+        }
+
 
         //Infer variable datatypes to ensure all variables have datatypes...
         boolean anyUnknown = false;
