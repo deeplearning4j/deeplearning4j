@@ -1109,36 +1109,6 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         fflush(stdout);
     }
 
-    NDArray* NDArray::tensorAlongDimension(Nd4jLong index, const std::vector<int>& dimensions) const {
-        std::vector<int> copy(dimensions);
-        shape::checkDimensions(rankOf(), copy);
-
-        Nd4jLong tadLength = shape::tadLength(this->_shapeInfo, copy.data(), copy.size());
-        Nd4jLong numTads = this->lengthOf() / tadLength;
-
-        if (index >= numTads)
-            throw std::runtime_error("Can't get index higher than total number of TADs");
-
-        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
-        tad.createTadOnlyShapeInfo();
-        tad.createOffsets();
-
-        Nd4jLong* shapeInfo;
-        if (_context->getWorkspace() == nullptr) {
-            shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad.tadOnlyShapeInfo)];
-        } else {
-            shapeInfo = reinterpret_cast<Nd4jLong *>(_context->getWorkspace()->allocateBytes(shape::shapeInfoByteLength(tad.tadOnlyShapeInfo)));
-        }
-        std::memcpy(shapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-
-        auto array = new NDArray(bufferWithOffset(tad.tadOffsets[index]), shapeInfo, _context);
-        array->_isBuffAlloc = false;
-        array->_isShapeAlloc = true;
-        array->_isView = true;
-
-        return array;
-    }
-
     template <typename T>
     void* NDArray::templatedPointerShift(const Nd4jLong offset) const {
         return reinterpret_cast<T*>(_buffer) + offset;

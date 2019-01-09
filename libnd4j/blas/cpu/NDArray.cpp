@@ -2092,6 +2092,36 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const bool value);
 
+    NDArray* NDArray::tensorAlongDimension(Nd4jLong index, const std::vector<int>& dimensions) const {
+        std::vector<int> copy(dimensions);
+        shape::checkDimensions(rankOf(), copy);
+
+        Nd4jLong tadLength = shape::tadLength(this->_shapeInfo, copy.data(), copy.size());
+        Nd4jLong numTads = this->lengthOf() / tadLength;
+
+        if (index >= numTads)
+            throw std::runtime_error("Can't get index higher than total number of TADs");
+
+        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
+        tad.createTadOnlyShapeInfo();
+        tad.createOffsets();
+
+        Nd4jLong* shapeInfo;
+        if (_context->getWorkspace() == nullptr) {
+            shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad.tadOnlyShapeInfo)];
+        } else {
+            shapeInfo = reinterpret_cast<Nd4jLong *>(_context->getWorkspace()->allocateBytes(shape::shapeInfoByteLength(tad.tadOnlyShapeInfo)));
+        }
+        std::memcpy(shapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+
+        auto array = new NDArray(bufferWithOffset(tad.tadOffsets[index]), shapeInfo, _context);
+        array->_isBuffAlloc = false;
+        array->_isShapeAlloc = true;
+        array->_isView = true;
+
+        return array;
+    }
+
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*
 #ifndef __CLION_IDE__

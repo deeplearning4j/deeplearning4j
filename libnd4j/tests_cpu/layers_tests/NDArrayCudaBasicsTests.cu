@@ -1572,3 +1572,25 @@ TEST_F(NDArrayCudaBasicsTests, EqualityTest1) {
     delete arrayD;
     delete arrayE;
 }
+
+TEST_F(NDArrayCudaBasicsTests, TestTad1) {
+    auto array = NDArrayFactory::create_<float>('c', {3, 3});
+    //nd4j_printf("Tensor with axe 1 is near to be invoked.\n", "");
+    auto row2 = array->tensorAlongDimension(1, {1});
+    //nd4j_printf("Tensor with axe 1 was invoked.\n", "");
+
+    ASSERT_TRUE(row2->isView());
+    ASSERT_EQ(3, row2->lengthOf());
+    array->assign(0.f);
+    //array->syncToDevice();
+    //nd4j_printf("Assigning 1.0 double to float Tensor.\n", "");
+    row2->assign(1.0);
+    //row2->syncToDevice();
+    //row2->syncToHost();
+    //array->syncToHost();
+    //array->printBuffer("TAD fixed output");
+    ASSERT_NEAR(3.0f, array->sumNumber().e<float>(0), 1e-5);
+
+    delete row2;
+    delete array;
+}

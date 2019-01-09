@@ -235,7 +235,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, _context->getWorkspace()));
 
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
-
+    cudaMemset(_bufferD, '\0', _length * sizeOfT()); // zero all memory
     triggerAllocationFlag(true, true);
 
     tickWriteDevice();
@@ -2438,7 +2438,40 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const bool value);
 
+    void* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
+        return _bufferD + (offset * sizeOfT());
+    }
 
+    NDArray* NDArray::tensorAlongDimension(Nd4jLong index, const std::vector<int>& dimensions) const {
+        std::vector<int> copy(dimensions);
+        shape::checkDimensions(rankOf(), copy);
+
+        Nd4jLong tadLength = shape::tadLength(this->_shapeInfo, copy.data(), copy.size());
+        Nd4jLong numTads = this->lengthOf() / tadLength;
+
+        if (index >= numTads)
+            throw std::runtime_error("Can't get index higher than total number of TADs");
+
+        shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
+        tad.createTadOnlyShapeInfo();
+        tad.createOffsets();
+
+        Nd4jLong* shapeInfo;
+        if (_context->getWorkspace() == nullptr) {
+            shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad.tadOnlyShapeInfo)];
+        } else {
+            shapeInfo = reinterpret_cast<Nd4jLong *>(_context->getWorkspace()->allocateBytes(shape::shapeInfoByteLength(tad.tadOnlyShapeInfo)));
+        }
+        std::memcpy(shapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+        auto array = new NDArray(shapeInfo, _context);
+        cudaFree(array->_bufferD);
+        array->_bufferD = (int8_t*)specialBufferWithOffset(tad.tadOffsets[index]); //, array->lengthOf() * DataTypeUtils::sizeOf(dataType()), cudaMemcpyDeviceToDevice);
+        array->_isBuffAlloc = false;
+        array->_isShapeAlloc = true;
+        array->_isView = true;
+
+        return array;
+    }
 
 
 
