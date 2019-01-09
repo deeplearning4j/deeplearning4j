@@ -2364,6 +2364,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (_buffer, rp, scalar.dataType(), scalar.getBuffer()), LIBND4J_TYPES);
         // void NDArray::templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, void *value)
         syncToDevice();
+        //tickWriteDevice();
+        //tickWriteHost();
     }
 
 

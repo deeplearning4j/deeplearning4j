@@ -1616,21 +1616,22 @@ NDArray NDArray::transp() const {
             auto thisTensor = this->tensorAlongDimension(i, {dimension});
             auto retTensor = ret->tensorAlongDimension(i, {dimension});
             int retIdx = 0;
-            if (isR()) {
-                for (int k = 0; k < thisTensor->lengthOf(); k++) {
-                    auto s = thisTensor->e<double>(k);
-                    for (int j = 0; j < repeatDelta; j++) {
-                        retTensor->p<double>(retIdx++, s);
-                    }
-                }
-            } else {
-                for (int k = 0; k < thisTensor->lengthOf(); k++) {
-                    auto s = thisTensor->e<Nd4jLong>(k);
-                    for (int j = 0; j < repeatDelta; j++) {
-                        retTensor->p<Nd4jLong>(retIdx++, s);
-                    }
+            for (int k = 0; k < thisTensor->lengthOf(); k++) {
+                auto s = thisTensor->e(k);
+                for (int j = 0; j < repeatDelta; j++) {
+                    retTensor->p(retIdx++, s);
                 }
             }
+//
+//            if (isR()) {
+//            } else {
+//                for (int k = 0; k < thisTensor->lengthOf(); k++) {
+//                    auto s = thisTensor->e<Nd4jLong>(k);
+//                    for (int j = 0; j < repeatDelta; j++) {
+//                        retTensor->p<Nd4jLong>(retIdx++, s);
+//                    }
+//                }
+//            }
 
             delete thisTensor;
             delete retTensor;

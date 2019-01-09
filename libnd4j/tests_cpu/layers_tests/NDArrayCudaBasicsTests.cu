@@ -1594,3 +1594,32 @@ TEST_F(NDArrayCudaBasicsTests, TestTad1) {
     delete row2;
     delete array;
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, TestRepeat1) {
+    auto eBuffer = new float[8] {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
+    auto eShape = new Nd4jLong[8]{2, 4, 2, 2, 1, 8192, 1, 99};
+    auto array = NDArrayFactory::create_<float>('c', {2, 2});
+    auto exp = new NDArray(eBuffer, eShape);
+    for (int e = 0; e < array->lengthOf(); e++)
+        array->p(e, e + 1);
+
+    array->printBuffer("Array filled");
+    nd4j_printf("What else?\n", "");
+    auto rep = array->repeat(0, {2});
+    rep->syncToHost();
+    rep->printBuffer("Repeated:");
+    rep->printShapeInfo("Repeated shape");
+    ASSERT_EQ(4, rep->sizeAt(0));
+    ASSERT_EQ(2, rep->sizeAt(1));
+
+    //rep->printBuffer();
+
+    ASSERT_TRUE(exp->equalsTo(rep));
+
+    delete[] eBuffer;
+    delete[] eShape;
+    delete array;
+    delete exp;
+    delete rep;
+}
