@@ -77,7 +77,7 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
             dToPreProcess = d.copy();
             preProcessor.preProcess(dToPreProcess);
             INDArray percentagesNow = dToPreProcess.getLabelsMaskArray().sum(1).div(shortSeq);
-            assertTrue(Nd4j.valueArrayOf(percentagesNow.shape(), 1 - someTargets[i]).equalsWithEps(percentagesNow,
+            assertTrue(Nd4j.valueArrayOf(percentagesNow.shape(), 1 - someTargets[i]).castTo(Nd4j.defaultFloatingPointType()).equalsWithEps(percentagesNow,
                             tolerancePerc));
         }
     }
@@ -101,8 +101,8 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
             dToPreProcess = d.copy();
             preProcessor.preProcess(dToPreProcess);
             INDArray percentagesNow = dToPreProcess.getLabelsMaskArray().sum(1).div(shortSeq);
-            assertTrue(Nd4j.valueArrayOf(percentagesNow.shape(), 1 - someTargets[i]).equalsWithEps(percentagesNow,
-                    tolerancePerc));
+            assertTrue(Nd4j.valueArrayOf(percentagesNow.shape(), 1 - someTargets[i])
+                    .castTo(Nd4j.defaultFloatingPointType()).equalsWithEps(percentagesNow,tolerancePerc));
         }
     }
 
@@ -311,12 +311,12 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
         Will return as a one-hot vector if twoClass = true
      */
     public static DataSet makeDataSetSameL(int batchSize, int timesteps, float[] minorityDist, boolean twoClass) {
-        INDArray features = Nd4j.rand(batchSize, 2, timesteps);
+        INDArray features = Nd4j.rand(Nd4j.defaultFloatingPointType(), batchSize, 2, timesteps);
         INDArray labels;
         if (twoClass) {
-            labels = Nd4j.zeros(new int[] {batchSize, 2, timesteps});
+            labels = Nd4j.zeros(Nd4j.defaultFloatingPointType(), batchSize, 2, timesteps);
         } else {
-            labels = Nd4j.zeros(new int[] {batchSize, 1, timesteps});
+            labels = Nd4j.zeros(Nd4j.defaultFloatingPointType(), batchSize, 1, timesteps);
         }
         for (int i = 0; i < batchSize; i++) {
             INDArray l;

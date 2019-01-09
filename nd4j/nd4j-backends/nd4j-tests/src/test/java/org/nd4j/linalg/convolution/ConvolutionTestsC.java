@@ -214,7 +214,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                     for (int kh : sizeH) {
                                         for (int kw : sizeW) {
 
-                                            INDArray in = Nd4j.linspace(1, (m * d * h * w), (m * d * h * w), DataType.FLOAT).reshape(new int[]{m, d, h, w});
+                                            INDArray in = Nd4j.linspace(1, (m * d * h * w), (m * d * h * w), Nd4j.defaultFloatingPointType()).reshape(new int[]{m, d, h, w});
 
                                             int[] outSize = getOutputSize(in, new int[]{kh, kw}, new int[]{sh, sw}, null, true);
 
@@ -313,7 +313,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         int sx = 1;
         int ph = 1;
         int pw = 1;
-        INDArray linspaced = Nd4j.linspace(1, 64, 64, DataType.FLOAT).reshape(2, 2, 2, 2, 2, 2);
+        INDArray linspaced = Nd4j.linspace(1, 64, 64, Nd4j.defaultFloatingPointType()).reshape(2, 2, 2, 2, 2, 2);
         INDArray newTest = Convolution.col2im(linspaced, sy, sx, ph, pw, 2, 2);
         INDArray assertion = OldConvolution.col2im(linspaced, sy, sx, ph, pw, 2, 2);
 
@@ -332,7 +332,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         int[] padding = {1, 2};
         int prod = nEx * depth * width * height;
 
-        INDArray in = Nd4j.linspace(1, prod, prod, DataType.FLOAT).reshape(nEx, depth, width, height);
+        INDArray in = Nd4j.linspace(1, prod, prod, Nd4j.defaultFloatingPointType()).reshape(nEx, depth, width, height);
 
         INDArray assertim2col = OldConvolution.im2col(in, kernel, stride, padding);
         INDArray im2col = Convolution.im2col(in, kernel, stride, padding);
@@ -376,12 +376,12 @@ public class ConvolutionTestsC extends BaseNd4jTest {
             //a[9]: Not used with max pooling
             a[10] = 0;  //For NCHW
 
-            List<Pair<INDArray, String>> inputs = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, inputShape, DataType.FLOAT);
+            List<Pair<INDArray, String>> inputs = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, inputShape, Nd4j.defaultFloatingPointType());
 
             for(Pair<INDArray,String> pIn : inputs){
                 INDArray input = pIn.getFirst();
                 int[] outShapeHW = getOutputSize(input, kernel, strides, pad, same);
-                List<Pair<INDArray, String>> eps = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, new int[]{inputShape[0], inputShape[1], outShapeHW[0], outShapeHW[1]}, DataType.FLOAT);
+                List<Pair<INDArray, String>> eps = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, new int[]{inputShape[0], inputShape[1], outShapeHW[0], outShapeHW[1]}, Nd4j.defaultFloatingPointType());
                 for(Pair<INDArray,String> pEps : eps){
                     INDArray epsilon = pEps.getFirst();
                     INDArray epsNext = Nd4j.create(inputShape, 'c');

@@ -100,7 +100,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray input = Nd4j.linspace(1,4,4, DataType.FLOAT).reshape(2,2);
         INDArray dup = input.dup();
         Nd4j.getExecutioner().exec(new OldSoftMax(dup));
-        INDArray result = Nd4j.zeros(2,2);
+        INDArray result = Nd4j.zeros(DataType.FLOAT, 2,2);
         Nd4j.getExecutioner().exec(new OldSoftMax(input,result));
         assertEquals(dup,result);
 
@@ -108,13 +108,10 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         dup = input.dup();
         Nd4j.getExecutioner().exec(new LogSoftMax(dup));
 
-        result = Nd4j.zeros(2,2);
+        result = Nd4j.zeros(DataType.FLOAT,2,2);
         Nd4j.getExecutioner().exec(new LogSoftMax(input,result));
 
         assertEquals(dup,result);
-
-
-
     }
 
     @Test

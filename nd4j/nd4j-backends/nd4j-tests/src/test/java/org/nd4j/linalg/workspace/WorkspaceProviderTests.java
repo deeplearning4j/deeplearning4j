@@ -277,6 +277,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
     @Test
     public void testNestedWorkspacesOverlap1() throws Exception {
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
         try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1")
                         .notifyScopeEntered()) {
