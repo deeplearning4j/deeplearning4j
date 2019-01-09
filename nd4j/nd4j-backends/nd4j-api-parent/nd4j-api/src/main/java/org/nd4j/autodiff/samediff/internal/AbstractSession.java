@@ -136,7 +136,7 @@ public abstract class AbstractSession<T, O> {
         (b) For variables as outputs of ops: actually executing the op
 
         After execution, we look at the graph structure and determine what that now executed/calculated variable is
-        an input to. If all inputs are available for the op, we mark all outputs of that op as available for execution.
+        an input to. If all inputs are available for the op, we mark all output variables of that op as available for execution.
 
         We stop computation once all the required outputs are available. At this point, subgraph may NOT be empty - for example,
         switch ops may cause entire branches of the graph to be skipped.
@@ -264,10 +264,12 @@ public abstract class AbstractSession<T, O> {
 
             if (!subgraph.contains(varName)) {
                 String[] opInputs = opName == null ? null : sameDiff.getInputsForFunction(sameDiff.getFunctionById(opName));
-                String[] controlDeps = null;
+                List<String> controlDeps = sameDiff.getVariables().get(varName).getControlDeps();
                 int numInputs = opInputs == null ? 0 : opInputs.length;
                 if (controlDeps != null) {
-                    numInputs += controlDeps.length;
+                    //Also count variable control dependencies as inputs - even a constant may not be available for use
+                    // until after execution of some other ops (for example, in conditional operations)
+                    numInputs += controlDeps.size();
                 }
                 if (numInputs == 0) {
                     VarId vid = newVarId(varName, OUTER_FRAME, 0);
@@ -275,6 +277,16 @@ public abstract class AbstractSession<T, O> {
                     execInputs.put(vid, new HashSet<VarId>());
                 }
                 subgraph.add(varName);
+
+                if(controlDeps != null){
+                    //If variable has control dependencies, it's not available right away... to make it available,
+                    // we need the "inputs" to be available
+                    for(String s : controlDeps){
+                        if(!subgraph.contains(s)){
+                            processingQueue.add(s);
+                        }
+                    }
+                }
             }
 
             if (opName != null) {
@@ -286,8 +298,8 @@ public abstract class AbstractSession<T, O> {
                     }
                 }
 
-                //TODO To execute op - and hence get this variable - we also need control deps
-                String[] opControlDeps = null;
+                //To execute op - and hence get this variable - we also need control deps
+                List<String> opControlDeps = sameDiff.getOps().get(opName).getControlDeps();
                 if (opControlDeps != null) {
                     for (String s2 : opControlDeps) {
                         if (!subgraph.contains(s2)) {
@@ -307,11 +319,14 @@ public abstract class AbstractSession<T, O> {
      */
     protected void updateDescendentsForExec(VarId executedVar) {
         String varName = executedVar.getVariable();
+        Variable var = sameDiff.getVariables().get(executedVar.getVariable());
         //Find any ops (or variables with control dependencies) that this is required for execution of and check if now available for exec
         List<String> l = sameDiff.getVariables().get(executedVar.getVariable()).getInputsForOp();
-        String[] inputForOps = l == null ? null : l.toArray(new String[l.size()]);
+        String[] inputForOps = l == null ? null : l.toArray(new String[l.size()]);  //Just executed variable is input to these ops
+        List<String> controlDepForVars = var.getControlDepsForVar();                //Just executed variable is a control dependency for these variables
 
-        SDVariable v = sameDiff.getVariable(executedVar.getVariable());
+
+        SDVariable v = var.getVariable();
         boolean isConstOrPhInput = v.isPlaceHolder() || v.isConstant();
 
         //After a variable becomes available, we should look at the ops this is an input to, and check if we can execute this op now...
@@ -387,7 +402,7 @@ public abstract class AbstractSession<T, O> {
                 boolean allInputsAvailable = true;
                 if (inputsThisOp != null) {
                     for (String in : inputsThisOp) {
-                        //The input (for normal ops - not Enter/Exit/NextITeration) have the same frame and iteration number as the just executed var
+                        //The input (for normal ops - not Enter/Exit/NextIteration) have the same frame and iteration number as the just executed var
                         //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame
                         //Exception 2 to this: placeholders. As above
                         //TODO Add SameDiff.isConstant(String) method... or SDVariable.isConstant() (or both)
@@ -443,13 +458,13 @@ public abstract class AbstractSession<T, O> {
 
                     if (allInputsAvailable) {
                         //Op can be executed -> variables as output are available for exec
-                        //TODO what about variable control depes?
+                        //TODO what about variable control deps?
 
                         for (String s : opOutputs) {
                             if (!subgraph.contains(s))
                                 continue;       //Don't need this variable to calculate requested outputs - so don't mark as available for execution
                             VarId vid = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
-                            availableForExec.add(vid);
+                            availableForExec.add(vid);      //TODO let's avoid adding and logging duplicates... result is same (checks if already executed) but logged multiple times here...
                             log.trace("Marked variable as available for execution: {} - output of op {} ({}) with op inputs {}", vid, opName,
                                     sameDiff.getFunctionById(opName).getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
                         }
@@ -458,6 +473,25 @@ public abstract class AbstractSession<T, O> {
 
             }
         }
+
+        //Also check variable control dependencies... if control dependency varX->varY exists and varY is a constant/placeholder/variable,
+        // then it's not going to be triggered by the op-based check above
+        if(controlDepForVars != null){
+            for(String s : controlDepForVars){
+                if (!subgraph.contains(s))
+                    continue;       //Don't need this variable to calculate requested outputs - so don't mark as available for execution
+
+                SDVariable depFor = sameDiff.getVariable(s);
+                if(depFor.getVariableType() != VariableType.ARRAY){
+                    //Control dependency executedVar -> s exists, where "s" is not the output of an op
+                    //TODO what about nested control dependencies - i.e., control dependency in an execution frame?
+                    VarId outVarId = newVarId(s, OUTER_FRAME, 0);
+                    availableForExec.add(outVarId);
+                    log.trace("Marked variable as available for execution: {} - control dependency {} -> {} exists", outVarId, executedVar.getVariable(), s);
+                }
+            }
+        }
+
     }
 
     /**
