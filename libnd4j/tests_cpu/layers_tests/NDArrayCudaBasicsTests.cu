@@ -1526,3 +1526,49 @@ TEST_F(NDArrayCudaBasicsTests, ndarray_reduceAlongDimension_float_test3) {
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(tadShapeInfo, 6);
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(tadOffsets, 2);
 //     cudaStreamSynchronize(*stream);  
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, EqualityTest1) {
+    auto arrayA = NDArrayFactory::create_<float>('f', {3, 5});
+    auto arrayB = NDArrayFactory::create_<float>('f', {3, 5});
+    auto arrayC = NDArrayFactory::create_<float>('f', {3, 5});
+
+    auto arrayD = NDArrayFactory::create_<float>('f', {2, 4});
+    auto arrayE = NDArrayFactory::create_<float>('f', {1, 15});
+
+    for (int i = 0; i < arrayA->rows(); i++) {
+        for (int k = 0; k < arrayA->columns(); k++) {
+            arrayA->p(i, k, (float) i);
+        }
+    }
+    arrayA->printBuffer("arrayA is ");
+    for (int i = 0; i < arrayB->rows(); i++) {
+        for (int k = 0; k < arrayB->columns(); k++) {
+            arrayB->p(i, k, (float) i);
+        }
+    }
+    arrayB->printBuffer("arrayB is ");
+
+    for (int i = 0; i < arrayC->rows(); i++) {
+        for (int k = 0; k < arrayC->columns(); k++) {
+            arrayC->p(i, k, (float) i+1);
+        }
+    }
+    arrayC->printBuffer("arrayC is ");
+
+
+
+    ASSERT_TRUE(arrayA->equalsTo(arrayB, 1e-5));
+
+    ASSERT_FALSE(arrayC->equalsTo(arrayB, 1e-5));
+
+    ASSERT_FALSE(arrayD->equalsTo(arrayB, 1e-5));
+
+    ASSERT_FALSE(arrayE->equalsTo(arrayB, 1e-5));
+
+    delete arrayA;
+    delete arrayB;
+    delete arrayC;
+    delete arrayD;
+    delete arrayE;
+}

@@ -2319,7 +2319,124 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
     NDArray::registerSpecialUse({target}, {this});
 }
 
+//////////////////////////////////////////////////////////////////////////
+// This method sets value in linear buffer to position i
+    template <typename T>
+    void NDArray::p(const Nd4jLong i, const T value) {
+        lazyAllocateBuffer();
+        if (isActualOnDeviceSide() && !isActualOnHostSide())
+            syncToHost();
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::p(i, value): input index is out of array length !");
 
+        auto rp = getOffset(i);
+        const void *pV = reinterpret_cast<const void*>(const_cast<T *>(&value));
+        BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), templatedSet<, T>(this->_buffer, rp, pV), LIBND4J_TYPES);
+        syncToDevice();
+    }
+    template void NDArray::p(const Nd4jLong i, const double value);
+    template void NDArray::p(const Nd4jLong i, const float value);
+    template void NDArray::p(const Nd4jLong i, const float16 value);
+    template void NDArray::p(const Nd4jLong i, const bfloat16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong value);
+    template void NDArray::p(const Nd4jLong i, const int value);
+    template void NDArray::p(const Nd4jLong i, const int8_t value);
+    template void NDArray::p(const Nd4jLong i, const uint8_t value);
+    template void NDArray::p(const Nd4jLong i, const int16_t value);
+    template void NDArray::p(const Nd4jLong i, const bool value);
+
+    void NDArray::p(const Nd4jLong i, const NDArray& scalar) {
+        if(!scalar.isScalar())
+            throw std::invalid_argument("NDArray::p method: input array must be scalar!");
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::p(i, NDArray_scalar): input index is out of array length !");
+        // probably wrong args order
+        lazyAllocateBuffer();
+        auto rp = getOffset(i);
+        BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (_buffer, rp, scalar.dataType(), scalar.getBuffer()), LIBND4J_TYPES);
+        // void NDArray::templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, void *value)
+        syncToDevice();
+    }
+
+
+//////////////////////////////////////////////////////////////////////////
+// This method sets value in 2D matrix to position i, j
+
+    template <typename T>
+    void NDArray::p(const Nd4jLong i, const Nd4jLong j, const T value) {
+        //(*this)(i,j) = value;
+        if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
+            throw std::invalid_argument("NDArray:pe(i,j, value): one of input indexes is out of array length or rank!=2 !");
+
+        lazyAllocateBuffer();
+        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
+        auto xType = this->dataType();
+        Nd4jLong coords[2] = {i, j};
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
+        syncToDevice();
+    }
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const double value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const float value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const float16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const bfloat16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const uint8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const int16_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const bool value);
+    // template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const utf8string value);
+
+//////////////////////////////////////////////////////////////////////////
+// This method sets value in 3D matrix to position i,j,k
+    template <typename T>
+    void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T value) {
+        //(*this)(i,j,k) = value;
+        if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
+            throw std::invalid_argument("NDArray:pe(i,j,k, value): one of input indexes is out of array length or rank!=3 !");
+        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
+        auto xType = this->dataType();
+        Nd4jLong coords[3] = {i, j, k};
+        lazyAllocateBuffer();
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
+        syncToDevice();
+    }
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const double value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const float value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const float16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const bfloat16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const uint8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int16_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const bool value);
+
+    template <typename T>
+    void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const T value) {
+        //(*this)(i,j,k) = value;
+        if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
+            throw std::invalid_argument("NDArray::p(i,j,k,l, value): one of input indexes is out of array length or rank!=4 !");
+        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
+        auto xType = this->dataType();
+        Nd4jLong coords[4] = {i, j, k, l};
+        lazyAllocateBuffer();
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
+        syncToDevice();
+    }
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const double value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const float value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const float16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const bfloat16 value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const Nd4jLong value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const uint8_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int16_t value);
+    template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const bool value);
 
 
 
