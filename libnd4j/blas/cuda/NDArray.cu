@@ -1133,7 +1133,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             syncToHost();
 
         auto rp = getOffset(i);
-        tickReadHost();
+        
         return *(reinterpret_cast<utf8string**>(_buffer)[rp]);
     }
 
@@ -1147,7 +1147,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         auto u = e<utf8string>(i);
         std::string r(u._buffer);
-        tickReadHost();
+        
         return r;
     }
 
@@ -1165,8 +1165,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         auto rp = getOffset(i);
 
         BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
-
-        tickReadHost();
+        
 //        return static_cast<T>(119);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
@@ -1189,8 +1188,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         //return (*this)(i, j);
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
-        
-        tickReadHost();
+                
         return static_cast<T>(119);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
@@ -1211,8 +1209,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         Nd4jLong coords[3] = {i, j, k};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
-        
-        tickReadHost();
+                
         return static_cast<T>(119);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
@@ -1233,8 +1230,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         Nd4jLong coords[4] = {i, j, k, l};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
-
-        tickReadHost();
+        
         return static_cast<T>(119);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
@@ -2357,9 +2353,9 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
 void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
 
     if (isS())
-        throw std::runtime_error("NDArray::reduceAlongDimension FloatOps: you can't use this method on String array!");
+        throw std::runtime_error("NDArray::reduceAlongDimension FloatOps cuda: you can't use this method on String array!");
     if (target == nullptr || !target->isR())
-        throw std::invalid_argument("NDArray::reduceAlongDimension FloatOps: requires target array to be present and have type form real space!");
+        throw std::invalid_argument("NDArray::reduceAlongDimension FloatOps cuda: requires target array to be present and have type form real space!");
 
     std::vector<int> copy(dimensions);
     shape::checkDimensions(rankOf(), copy);
@@ -2367,7 +2363,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
     if(checkTargetShape) {
         auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
         if(!shape::shapeEquals(newShape, target->getShapeInfo()))
-            throw std::runtime_error("NDArray::reduceAlongDimension FloatOps: wrong target shape!");
+            throw std::runtime_error("NDArray::reduceAlongDimension FloatOps cuda: wrong target shape!");
         RELEASE(newShape, _context->getWorkspace());
     }
 
@@ -2375,7 +2371,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         NativeOpExecutioner::execReduceFloatScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD,nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);        
 
         auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda failed !", cudaResult);
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension FloatOps cuda failed !", cudaResult);
     }
     else {
 
@@ -2388,13 +2384,13 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         int *dims;     
         
         auto cudaResult = cudaMalloc(reinterpret_cast<void **>(&dims), copy.size() * sizeof(int));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda memory allocation failed !", cudaResult);
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension FloatOps cuda memory allocation failed !", cudaResult);
 
         cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadShapeInfo), shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda memory allocation failed !", cudaResult);
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension FloatOps cuda memory allocation failed !", cudaResult);
 
         cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadOffsets), xTad.numTads * sizeof(Nd4jLong));
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda memory allocation failed !", cudaResult);
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension FloatOps cuda memory allocation failed !", cudaResult);
 
         cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());  
         cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
@@ -2403,7 +2399,181 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         NativeOpExecutioner::execReduceFloat(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, dims, copy.size(), xTadShapeInfo, xTadOffsets);
 
         cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
-        if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda failed !", cudaResult);
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension FloatOps cuda failed !", cudaResult);
+
+        cudaFree(dims); cudaFree(xTadShapeInfo); cudaFree(xTadOffsets);
+    }
+    NDArray::registerSpecialUse({target}, {this});
+}
+
+//////////////////////////////////////////////////////////////////////////
+// method reduces array by excluding its shapes along axes present in dimensions vector
+void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
+
+    if (isS())
+        throw std::runtime_error("NDArray::reduceAlongDimension SameOps cuda: you can't use this method on String array!");
+    if (target == nullptr || target->_dataType != _dataType)
+        throw std::runtime_error("NDArray::reduceAlongDimension SameOps cuda: requires target array to be present and have same dtype as input");
+
+    std::vector<int> copy(dimensions);
+    shape::checkDimensions(rankOf(), copy);
+
+    if(checkTargetShape) {
+        auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
+        if(!shape::shapeEquals(newShape, target->getShapeInfo()))
+            throw std::runtime_error("NDArray::reduceAlongDimension SameOps cuda: wrong target shape!");
+        RELEASE(newShape, _context->getWorkspace());
+    }
+
+    if(rankOf() == copy.size() || copy.empty()) {        
+        NativeOpExecutioner::execReduceSameScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);        
+
+        auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension SameOps cuda failed !", cudaResult);
+    }
+    else {
+
+        shape::TAD xTad(_shapeInfo, copy.data(), copy.size());
+        xTad.createTadOnlyShapeInfo();
+        xTad.createOffsets();
+
+         // device memory allocation for tads
+        Nd4jLong *xTadShapeInfo, *xTadOffsets;
+        int *dims;     
+        
+        auto cudaResult = cudaMalloc(reinterpret_cast<void **>(&dims), copy.size() * sizeof(int));
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension SameOps cuda memory allocation failed !", cudaResult);
+
+        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadShapeInfo), shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension SameOps cuda memory allocation failed !", cudaResult);
+
+        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadOffsets), xTad.numTads * sizeof(Nd4jLong));
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension SameOps cuda memory allocation failed !", cudaResult);
+
+        cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());  
+        cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
+        cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
+
+        NativeOpExecutioner::execReduceSame(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, dims, copy.size(), xTadShapeInfo, xTadOffsets);
+
+        cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension SameOps cuda failed !", cudaResult);
+
+        cudaFree(dims); cudaFree(xTadShapeInfo); cudaFree(xTadOffsets);
+    }
+    NDArray::registerSpecialUse({target}, {this});
+}
+
+//////////////////////////////////////////////////////////////////////////
+// method reduces array by excluding its shapes along axes present in dimensions vector
+void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
+
+    if (isS())
+        throw std::runtime_error("NDArray::reduceAlongDimension BoolOps cuda: you can't use this method on String array!");
+    if (target == nullptr || !target->isB())
+        throw std::invalid_argument("NDArray::reduceAlongDimension BoolOps cuda: requires target array to be present and have BOOL type!");    
+
+    std::vector<int> copy(dimensions);
+    shape::checkDimensions(rankOf(), copy);
+
+    if(checkTargetShape) {
+        auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
+        if(!shape::shapeEquals(newShape, target->getShapeInfo()))
+            throw std::runtime_error("NDArray::reduceAlongDimension BoolOps cuda: wrong target shape!");
+        RELEASE(newShape, _context->getWorkspace());
+    }
+
+    if(rankOf() == copy.size() || copy.empty()) {        
+        NativeOpExecutioner::execReduceBoolScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);        
+
+        auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension BoolOps cuda failed !", cudaResult);
+    }
+    else {
+
+        shape::TAD xTad(_shapeInfo, copy.data(), copy.size());
+        xTad.createTadOnlyShapeInfo();
+        xTad.createOffsets();
+
+         // device memory allocation for tads
+        Nd4jLong *xTadShapeInfo, *xTadOffsets;
+        int *dims;     
+        
+        auto cudaResult = cudaMalloc(reinterpret_cast<void **>(&dims), copy.size() * sizeof(int));
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension BoolOps cuda memory allocation failed !", cudaResult);
+
+        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadShapeInfo), shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension BoolOps cuda memory allocation failed !", cudaResult);
+
+        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadOffsets), xTad.numTads * sizeof(Nd4jLong));
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension BoolOps cuda memory allocation failed !", cudaResult);
+
+        cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());  
+        cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
+        cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
+
+        NativeOpExecutioner::execReduceBool(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, dims, copy.size(), xTadShapeInfo, xTadOffsets);
+
+        cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension BoolOps cuda failed !", cudaResult);
+
+        cudaFree(dims); cudaFree(xTadShapeInfo); cudaFree(xTadOffsets);
+    }
+    NDArray::registerSpecialUse({target}, {this});
+}
+
+//////////////////////////////////////////////////////////////////////////
+// method reduces array by excluding its shapes along axes present in dimensions vector
+void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
+
+    if (isS())
+        throw std::runtime_error("NDArray::reduceAlongDimension LongOps cuda: you can't use this method on String array!");
+    if (target == nullptr || target->_dataType != DataType::INT64)
+        throw std::runtime_error("NDArray::reduceAlongDimension LongOps cuda: requires target array to be present and have type of INT64");
+
+    std::vector<int> copy(dimensions);
+    shape::checkDimensions(rankOf(), copy);
+
+    if(checkTargetShape) {
+        auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
+        if(!shape::shapeEquals(newShape, target->getShapeInfo()))
+            throw std::runtime_error("NDArray::reduceAlongDimension LongOps cuda: wrong target shape!");
+        RELEASE(newShape, _context->getWorkspace());
+    }
+
+    if(rankOf() == copy.size() || copy.empty()) {        
+        NativeOpExecutioner::execReduceLongScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);        
+
+        auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension LongOps cuda failed !", cudaResult);
+    }
+    else {
+
+        shape::TAD xTad(_shapeInfo, copy.data(), copy.size());
+        xTad.createTadOnlyShapeInfo();
+        xTad.createOffsets();
+
+         // device memory allocation for tads
+        Nd4jLong *xTadShapeInfo, *xTadOffsets;
+        int *dims;     
+        
+        auto cudaResult = cudaMalloc(reinterpret_cast<void **>(&dims), copy.size() * sizeof(int));
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension LongOps cuda memory allocation failed !", cudaResult);
+
+        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadShapeInfo), shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension LongOps cuda memory allocation failed !", cudaResult);
+
+        cudaResult = cudaMalloc(reinterpret_cast<void **>(&xTadOffsets), xTad.numTads * sizeof(Nd4jLong));
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension LongOps cuda memory allocation failed !", cudaResult);
+
+        cudaMemcpyAsync(dims, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());  
+        cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
+        cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
+
+        NativeOpExecutioner::execReduceLong(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, dims, copy.size(), xTadShapeInfo, xTadOffsets);
+
+        cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
+        if (cudaResult != 0) throw cuda_exception::build("NDArray::reduceAlongDimension LongOps cuda failed !", cudaResult);
 
         cudaFree(dims); cudaFree(xTadShapeInfo); cudaFree(xTadOffsets);
     }
