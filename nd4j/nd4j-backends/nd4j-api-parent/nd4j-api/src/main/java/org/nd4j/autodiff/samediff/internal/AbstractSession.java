@@ -217,10 +217,7 @@ public abstract class AbstractSession<T, O> {
                         String frame = ((Enter) parameterizedOp).getFrameName();
                         outputVarId = newVarId(opOutputVarNames[i], frame, varToExec.getIteration());
                     } else if (parameterizedOp instanceof Exit) {
-                        //Exit node forwards input to parent frame
-//                        FrameIter parentFrame = frameParents.get(varToExec.getFrame());
-//                        Preconditions.checkNotNull(parentFrame, "Parent frame must not be null for exit op: variable to exec is %s", varToExec);
-
+                        //Exit node forwards input to parent frame (which is already reflected in varToExec)
                         outputVarId = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration());
                     } else if (parameterizedOp instanceof NextIteration) {
                         //NextIteration op: forwards its single input to its output varible in the current frame, but increments the iteration number
@@ -404,14 +401,22 @@ public abstract class AbstractSession<T, O> {
                 if (inputsThisOp != null) {
                     for (String in : inputsThisOp) {
                         //The input (for normal ops - not Enter/Exit/NextIteration) have the same frame and iteration number as the just executed var
-                        //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame
+                        //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame (unless variable control dep exists)
                         //Exception 2 to this: placeholders. As above
                         //TODO Add SameDiff.isConstant(String) method... or SDVariable.isConstant() (or both)
                         SDVariable sdv = sameDiff.getVariable(in);
+                        Variable variable = sameDiff.getVariables().get(in);
                         VarId vid;
                         if (sdv.isConstant() || sdv.isPlaceHolder()) {
                             //Constant
-                            vid = newVarId(in, OUTER_FRAME, 0);
+                            if(variable.getControlDeps() == null || variable.getControlDeps().isEmpty()){
+                                //Standard case - do a lookup of placeholder/constant
+                                vid = newVarId(in, OUTER_FRAME, 0);
+                            } else {
+                                //Edge case: control dependency x -> constant exists
+                                //We should look up based on x's frame/iteration
+                                vid = newVarId(in, executedVar.getFrame(), executedVar.getIteration());
+                            }
                         } else {
                             //Normal (non-constant)
                             vid = newVarId(in, executedVar.getFrame(), executedVar.getIteration());
@@ -440,14 +445,22 @@ public abstract class AbstractSession<T, O> {
                 if (opOutputs != null) {
 
                     for (String s : opOutputs) {
-                        //The input (for normal ops - not Enter/Exit/NextITeration) have the same frame and iteration number as the just executed var
-                        //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame
+                        //The input (for normal ops - not Enter/Exit/NextIteration) have the same frame and iteration number as the just executed var
+                        //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame  (unless variable control dep exists)
                         //Exception 2 to this: placeholders. As above
                         SDVariable sdv = sameDiff.getVariable(s);
+                        Variable variable = sameDiff.getVariables().get(s);
                         VarId outVarId;
                         if (sdv.isConstant() || sdv.isPlaceHolder()) {
                             //Constant
-                            outVarId = newVarId(s, OUTER_FRAME, 0);
+                            if(variable.getControlDeps() == null || var.getControlDeps().isEmpty()){
+                                //Standard case - do a lookup of placeholder/constant
+                                outVarId = newVarId(s, OUTER_FRAME, 0);
+                            } else {
+                                //Edge case: control dependency x -> constant exists
+                                //We should look up based on x's frame/iteration
+                                outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
+                            }
                         } else {
                             //Normal (non-constant)
                             outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
@@ -485,8 +498,9 @@ public abstract class AbstractSession<T, O> {
                 SDVariable depFor = sameDiff.getVariable(s);
                 if(depFor.getVariableType() != VariableType.ARRAY){
                     //Control dependency executedVar -> s exists, where "s" is not the output of an op
-                    //TODO what about nested control dependencies - i.e., control dependency in an execution frame?
-                    VarId outVarId = newVarId(s, OUTER_FRAME, 0);
+                    //Even thought this is a constant, we'll inherit the frame and iteration from the control dependency
+                    // otherwise, we lose this frame/iteration information for any downstream variables using the constant within a frame
+                    VarId outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
                     availableForExec.add(outVarId);
                     log.trace("Marked variable as available for execution: {} - control dependency {} -> {} exists", outVarId, executedVar.getVariable(), s);
                 } else {
