@@ -227,12 +227,18 @@ namespace nd4j {
                     }
                     break;
                 case VarType_PLACEHOLDER: {
-                        if (flatVariable->shape() == nullptr)
+                        if (flatVariable->shape() == nullptr && flatVariable->ndarray() == nullptr)
                             throw std::runtime_error("PLACEHOLDER variable must have shape defined");
 
-                        int shapeLen = flatVariable->shape()->Length();
-                        for (int i = 0; i < flatVariable->shape()->size(); i++)
-                            _shape.emplace_back(flatVariable->shape()->Get(i));
+                        if (flatVariable->shape() != nullptr) {
+                            int shapeLen = flatVariable->shape()->Length();
+                            for (int i = 0; i < flatVariable->shape()->size(); i++)
+                                _shape.emplace_back(flatVariable->shape()->Get(i));
+                        } else {
+                            auto ar = flatVariable->ndarray();
+                            _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
+                            _ndarray->triggerAllocationFlag(true, true);
+                        }
 
                         _variableType = VariableType::PLACEHOLDER;
                     }

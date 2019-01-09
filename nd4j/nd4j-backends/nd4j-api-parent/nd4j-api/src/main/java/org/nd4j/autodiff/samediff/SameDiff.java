@@ -818,6 +818,9 @@ public class SameDiff {
             throw new ND4JIllegalArgumentException("Array must not be null");
         }
 
+        if (variable.dataType() != arr.dataType())
+            arr = arr.castTo(variable.dataType());
+
         Preconditions.checkState(variable.dataType() == arr.dataType(), "Variable \"%s\" has datatype %s: cannot associate array with type %s with this variable",
                 variable.getVarName(), variable.dataType(), arr.dataType());
 
