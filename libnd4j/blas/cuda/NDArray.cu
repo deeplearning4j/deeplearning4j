@@ -94,9 +94,10 @@ NDArray::NDArray(const NDArray& other) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::lazyAllocateBuffer() {
+void NDArray::lazyAllocateBuffer() const {
     if (_buffer == nullptr && !this->isEmpty()) {
-        ALLOCATE(_buffer, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
+        int8_t* pB = const_cast<int8_t*>(_buffer);
+        ALLOCATE(pB, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
         syncToHost();
     }
 }
@@ -172,9 +173,9 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std
     for(Nd4jLong i=0; i < _length; ++i) {
         BUILD_SINGLE_PARTIAL_SELECTOR(dtype, templatedDoubleAssign<, double>(_buffer, i, reinterpret_cast<const void *>(data.data()), i), LIBND4J_TYPES);
     }
-    
+        
+    syncToDevice();
     tickReadHost();
-    syncToDevice();    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -265,8 +266,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     if(_buffer != nullptr)
         cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
         
-    tickReadHost();    
-    tickWriteDevice();    
+    tickWriteDevice();
+    tickReadHost(); 
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1127,41 +1128,136 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (!isS())
             throw std::runtime_error("This method is available for String arrays only");
 
+        lazyAllocateBuffer();
         if(!isActualOnHostSide()) 
             syncToHost();
 
         auto rp = getOffset(i);
+        tickReadHost();
         return *(reinterpret_cast<utf8string**>(_buffer)[rp]);
     }
 
+//////////////////////////////////////////////////////////////////////////
     template <>
     std::string NDArray::e(const Nd4jLong i) const {
         
+        lazyAllocateBuffer();
         if(!isActualOnHostSide())
             syncToHost();
 
         auto u = e<utf8string>(i);
         std::string r(u._buffer);
+        tickReadHost();
         return r;
     }
 
+//////////////////////////////////////////////////////////////////////////
     template <typename T>
     T NDArray::e(const Nd4jLong i) const {
 
         if (i >= _length)
             throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
 
+        lazyAllocateBuffer();
         if(!isActualOnHostSide())
             syncToHost();
 
         auto rp = getOffset(i);
 
         BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
+
+        tickReadHost();
 //        return static_cast<T>(119);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong) const, LIBND4J_TYPES);
-
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
+
+
+//////////////////////////////////////////////////////////////////////////
+// Returns value from 2D matrix by coordinates/indexes
+    template <typename T>
+    T NDArray::e(const Nd4jLong i, const Nd4jLong j) const {
+        if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
+            throw std::invalid_argument("NDArray::e(i,j): one of input indexes is out of array length or rank!=2 !");
+
+        lazyAllocateBuffer();
+        if(!isActualOnHostSide()) 
+            syncToHost();
+
+        auto xType = this->dataType();
+        Nd4jLong coords[2] = {i, j};
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        //return (*this)(i, j);
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
+        
+        tickReadHost();
+        return static_cast<T>(119);
+    }
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+// returns value from 3D tensor by coordinates
+    template <typename T>
+    T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
+        //return (*this)(i, j, k);
+        if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
+            throw std::invalid_argument("NDArray::e(i,j,k): one of input indexes is out of array length or rank!=3 !");
+
+        lazyAllocateBuffer();
+        if(!isActualOnHostSide()) 
+            syncToHost();
+
+        auto xType = this->dataType();
+        Nd4jLong coords[3] = {i, j, k};
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
+        
+        tickReadHost();
+        return static_cast<T>(119);
+    }
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+    // returns value from 3D tensor by coordinates
+    template <typename T>
+    T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const {
+        //return (*this)(i, j, k);
+        if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
+            throw std::invalid_argument("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
+
+        lazyAllocateBuffer();
+        if(!isActualOnHostSide()) 
+            syncToHost();
+
+        auto xType = this->dataType();
+        Nd4jLong coords[4] = {i, j, k, l};
+        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
+
+        tickReadHost();
+        return static_cast<T>(119);
+    }
+    BUILD_SINGLE_UNCHAINED_TEMPLATE(template , NDArray::e(const Nd4jLong, const Nd4jLong, const Nd4jLong, const Nd4jLong) const, LIBND4J_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+NDArray NDArray::e(const Nd4jLong i) const {
+    if (i >= _length)
+        throw std::invalid_argument("scalar NDArray::e(i): input index is out of array length !");
+    
+    NDArray scalar(_dataType, _context);
+    
+    if(isActualOnHostSide()) {
+        cudaMemcpy(scalar._bufferD, bufferWithOffset(getOffset(i)), sizeOfT(), cudaMemcpyHostToDevice);
+        tickReadHost();
+    }
+    else {
+        cudaMemcpy(scalar._bufferD, specialBufferWithOffset(getOffset(i)), sizeOfT(), cudaMemcpyDeviceToDevice);
+        tickReadDevice();
+    }
+
+    scalar.tickWriteDevice();
+    return scalar;
+}    
 
 ////////////////////////////////////////////////////////////////////////
 #ifndef __JAVACPP_HACK__
@@ -2275,15 +2371,12 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         RELEASE(newShape, _context->getWorkspace());
     }
 
-    if(rankOf() == copy.size() || copy.empty())
-        //target->_buffer[0] = functions::reduce::ReduceFloatFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
-        NativeOpExecutioner::execReduceFloatScalar(_context, op, 
-                                    _buffer, _shapeInfo, _bufferD, _shapeInfoD,
-                                    nullptr, 
-                                    target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);
-        
+    if(rankOf() == copy.size() || copy.empty()) {        
+        NativeOpExecutioner::execReduceFloatScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD,nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD);        
+
         auto cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
         if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda failed !", cudaResult);
+    }
     else {
 
         shape::TAD xTad(_shapeInfo, copy.data(), copy.size());
@@ -2307,12 +2400,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         cudaMemcpyAsync(xTadShapeInfo, xTad.tadOnlyShapeInfo, shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
         cudaMemcpyAsync(xTadOffsets, xTad.tadOffsets, xTad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
 
-        NativeOpExecutioner::execReduceFloat(_context, op, 
-                                            _buffer, _shapeInfo, _bufferD, _shapeInfoD, 
-                                            nullptr, 
-                                            target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, 
-                                            dims, copy.size(), 
-                                            xTadShapeInfo, xTadOffsets);
+        NativeOpExecutioner::execReduceFloat(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, dims, copy.size(), xTadShapeInfo, xTadOffsets);
 
         cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
         if (cudaResult != 0) throw cuda_exception::build("NDArray::applyAllReduce3 cuda failed !", cudaResult);
@@ -2417,6 +2505,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const bool value);
 
+//////////////////////////////////////////////////////////////////////////
     template <typename T>
     void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const T value) {
         //(*this)(i,j,k) = value;
@@ -2441,10 +2530,12 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const int16_t value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const bool value);
 
+//////////////////////////////////////////////////////////////////////////
     void* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
         return _bufferD + (offset * sizeOfT());
     }
 
+//////////////////////////////////////////////////////////////////////////    
     NDArray* NDArray::tensorAlongDimension(Nd4jLong index, const std::vector<int>& dimensions) const {
         std::vector<int> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
