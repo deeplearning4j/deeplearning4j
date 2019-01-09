@@ -819,6 +819,11 @@ public class SameDiff {
         Preconditions.checkState(variable.dataType() == arr.dataType(), "Variable \"%s\" has datatype %s: cannot associate array with type %s with this variable",
                 variable.getVarName(), variable.dataType(), arr.dataType());
 
+        // FIXME: remove this before release
+        if (sessions.get(Thread.currentThread().getId()) == null) {
+            sessions.put(Thread.currentThread().getId(), new InferenceSession(this));
+        }
+
         switch(variable.getVariableType()){
             case VARIABLE:
                 variablesArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr));
@@ -827,7 +832,11 @@ public class SameDiff {
                 constantArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr));
                 break;
             case ARRAY:
-                throw new UnsupportedOperationException("Cannot associate array with SDVariable of type ARRAY");
+                // FIXME: remove this before release
+                val session = sessions.get(Thread.currentThread().getId());
+                val varId = session.newVarId(variable.getVarName(), AbstractSession.OUTER_FRAME, 0);
+                session.getNodeOutputs().put(varId, arr);
+                //throw new UnsupportedOperationException("Cannot associate array with SDVariable of type ARRAY");
             case PLACEHOLDER:
                 long tid = Thread.currentThread().getId();
                 if(!placeholdersPerThread.containsKey(tid)){
