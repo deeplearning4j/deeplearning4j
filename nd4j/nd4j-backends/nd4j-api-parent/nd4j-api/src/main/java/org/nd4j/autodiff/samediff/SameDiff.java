@@ -49,6 +49,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell;
@@ -1465,7 +1466,15 @@ public class SameDiff {
                 if(o.getOp() instanceof Assert){
                     continue;
                 }
+
+                //A bit of a hack for TF import: some TF graphs have Switch ops, where the output of one branch isn't consumed
+                // by any ops. Consequently, during execution this "output" might never be available. So we'll exclude the output of execution here
+                if(o.getOp() instanceof Switch){
+                    continue;
+                }
             }
+
+
             out.add(v.getName());
         }
         return out;
