@@ -295,7 +295,7 @@
         <javacpp.platform.root/>      <!-- -Djavacpp.platform.root=/path/to/android-ndk/ -->
         <javacpp.platform.compiler/>  <!-- -Djavacpp.platform.compiler=/path/to/arm-linux-androideabi-g++ -->
         <javacpp.platform.sysroot/>   <!-- -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
-        <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=avx512 -->
+        <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
         <javacpp.version>1.4.4-SNAPSHOT</javacpp.version>

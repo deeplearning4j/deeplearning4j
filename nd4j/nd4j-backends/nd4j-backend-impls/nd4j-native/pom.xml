@@ -330,7 +330,7 @@
             <id>avx2</id>
             <activation>
                 <property>
-                    <name>javacpp.extension</name>
+                    <name>libnd4j.extension</name>
                     <value>avx2</value>
                 </property>
             </activation>
@@ -342,7 +342,7 @@
             <id>avx512</id>
             <activation>
                 <property>
-                    <name>javacpp.extension</name>
+                    <name>libnd4j.extension</name>
                     <value>avx512</value>
                 </property>
             </activation>
