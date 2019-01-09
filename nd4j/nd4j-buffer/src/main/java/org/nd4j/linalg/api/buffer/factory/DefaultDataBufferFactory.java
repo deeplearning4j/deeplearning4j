@@ -361,18 +361,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createSame(DataBuffer buffer, boolean init, MemoryWorkspace workspace) {
-        switch (buffer.dataType()) {
-            case INT:
-                return createInt(buffer.length(), init, workspace);
-            case FLOAT:
-                return createFloat(buffer.length(), init, workspace);
-            case DOUBLE:
-                return createDouble(buffer.length(), init, workspace);
-            case HALF:
-                return createHalf(buffer.length(), init, workspace);
-            default:
-                throw new UnsupportedOperationException("Unknown dataType: " + buffer.dataType());
-        }
+        return create(buffer.dataType(), buffer.length(), init, workspace);
     }
 
     @Override
