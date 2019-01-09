@@ -857,15 +857,6 @@ namespace nd4j {
             this->_variableSpace = variableSpace == nullptr ? new VariableSpace() : variableSpace;
             bool trusted = flatGraph != nullptr;
 
-            // creating RNG for this instance
-#ifndef __CUDABLAS__
-            // FIXME: we temporary skip this random init for CUDA
-            NativeOps nativeOps;
-            auto buffer = new uint64_t[1000000];
-            auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 119, 1000000, (Nd4jPointer) buffer);
-            this->_variableSpace->setRNG(rng);
-#endif
-
             // add 0 layer
             this->expandOnion(0);
 
