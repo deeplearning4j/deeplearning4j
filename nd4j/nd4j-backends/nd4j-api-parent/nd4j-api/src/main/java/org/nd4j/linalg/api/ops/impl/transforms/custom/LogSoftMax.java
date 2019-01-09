@@ -14,17 +14,17 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.transforms.gradient;
-
+package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseGradientOp;
+import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -33,52 +33,49 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * Log(softmax(X))
  *
+ * @author Alex Black
  */
-public class LogSoftMaxDerivative extends DynamicCustomOp {
-    public LogSoftMaxDerivative(SameDiff sameDiff, SDVariable in, SDVariable gradO) {
-        super(sameDiff, new SDVariable[]{in, gradO});
+
+public class LogSoftMax extends DynamicCustomOp {
+    public LogSoftMax(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v);
     }
 
-    public LogSoftMaxDerivative() {
+    public LogSoftMax() {
     }
 
-    public LogSoftMaxDerivative(INDArray in, INDArray gradO, INDArray out) {
-        super(null, new INDArray[]{in, gradO}, new INDArray[]{out});
+    public LogSoftMax(INDArray x, INDArray z) {
+        super(null, x, z, null, null);
     }
 
-    /**
-     * The opName of this operation
-     *
-     * @return the opName of this operation
-     */
+    public LogSoftMax(INDArray x) {
+        this(x, null);
+    }
+
+
     @Override
     public String opName() {
-        return "log_softmax_bp";
+        return "log_softmax";
     }
-
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-    }
-
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+        return "LogSoftmax";
     }
-
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException("Differentation of op not supported: " + getClass().getName());
+        SDVariable ret = f().logSoftmaxDerivative(arg(), i_v.get(0));
+        return Collections.singletonList(ret);
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inTypes){
-        Preconditions.checkState(inTypes != null && inTypes.size() == 2, "Expected 2 input datatypes for %s, got %s",
+        Preconditions.checkState(inTypes != null && inTypes.size() == 1, "Expected 1 input datatype for %s, got %s",
                 getClass(), inTypes);
-        return Collections.singletonList(inTypes.get(0));
+        if(inTypes.get(0).isFPType())
+            return Collections.singletonList(inTypes.get(0));
+        return Collections.singletonList(Nd4j.defaultFloatingPointType());
     }
 }

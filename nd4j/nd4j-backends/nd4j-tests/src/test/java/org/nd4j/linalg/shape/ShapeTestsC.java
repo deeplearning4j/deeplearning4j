@@ -264,7 +264,7 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     @Test
     public void testColumnSum() {
-        INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
+        INDArray twoByThree = Nd4j.linspace(1, 600, 600, DataType.FLOAT).reshape(150, 4);
         INDArray columnVar = twoByThree.sum(0);
         INDArray assertion = Nd4j.create(new float[] {44850.0f, 45000.0f, 45150.0f, 45300.0f});
         assertEquals(getFailureMessage(), assertion, columnVar);

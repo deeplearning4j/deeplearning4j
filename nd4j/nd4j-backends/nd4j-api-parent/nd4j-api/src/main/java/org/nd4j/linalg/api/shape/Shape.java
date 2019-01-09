@@ -872,8 +872,8 @@ public class Shape {
 
     public static long getOffset(LongBuffer shapeInformation, long... indices) {
         int rank = rank(shapeInformation);
-        if (indices.length != rank)
-            throw new IllegalArgumentException("Indexes must be same length as array rank");
+        Preconditions.checkState(indices.length == rank, "Number of indices (got %s) must be same as array rank (%s) - indices %s",
+                indices.length, rank);
         long offset = 0;
         for (int i = 0; i < rank; i++) {
             int size_dimi = (int) size(shapeInformation, i);
@@ -3375,8 +3375,9 @@ public class Shape {
         for (val v: axis) {
             val t = v < 0 ? v + rank : v;
 
-            if ((t >= rank && t != Integer.MAX_VALUE)|| t < 0)
-                throw new ND4JIllegalStateException("Axis array " + Arrays.toString(axis) + " contains values above rank " + rank);
+            if ((t >= rank && t != Integer.MAX_VALUE)|| t < 0) {
+                throw new ND4JIllegalStateException("Axis array " + Arrays.toString(axis) + " contains values above array rank (rank=" + rank + ")");
+            }
 
             tmp[cnt++] = t;
         }

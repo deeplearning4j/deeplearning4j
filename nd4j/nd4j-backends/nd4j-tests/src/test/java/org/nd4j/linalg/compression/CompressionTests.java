@@ -99,6 +99,7 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testNoOpCompression1() {
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         INDArray array = Nd4j.linspace(1, 10000, 20000, DataType.FLOAT);
         INDArray exp = Nd4j.linspace(1, 10000, 20000, DataType.FLOAT);
         INDArray mps = Nd4j.linspace(1, 10000, 20000, DataType.FLOAT);
@@ -124,6 +125,7 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testJVMCompression3() throws Exception {
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         INDArray exp = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("NOOP");
@@ -429,6 +431,7 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testBitmapEncoding3() throws Exception {
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         INDArray initial = Nd4j.create(new float[] {0.0f, -6e-4f, 1e-3f, -1e-3f, 0.0f, 0.0f});
         INDArray exp_0 = Nd4j.create(new float[] {0.0f, -1e-4f, 0.0f, 0.0f, 0.0f, 0.0f});
         INDArray exp_1 = Nd4j.create(new float[] {0.0f, -5e-4f, 1e-3f, -1e-3f, 0.0f, 0.0f});

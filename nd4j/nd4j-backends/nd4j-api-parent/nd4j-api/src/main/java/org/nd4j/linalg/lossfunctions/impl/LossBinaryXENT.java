@@ -27,11 +27,13 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.same.TimesOneMinus;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -130,8 +132,9 @@ public class LossBinaryXENT extends DifferentialFunction implements ILossFunctio
 
         INDArray scoreArr;
         if (activationFn instanceof ActivationSoftmax) {
-            //Use LogSoftMax op to avoid numerical issues when calculating score
-            INDArray logsoftmax = Nd4j.getExecutioner().exec(new LogSoftMax(preOutput.dup()));
+            //TODO Post GPU support for custom ops: Use LogSoftMax op to avoid numerical issues when calculating score
+            INDArray logsoftmax = Nd4j.getExecutioner().exec(new OldSoftMax(preOutput.dup()));
+            Transforms.log(logsoftmax, false);
             scoreArr = logsoftmax.muli(labels);
 
         } else {

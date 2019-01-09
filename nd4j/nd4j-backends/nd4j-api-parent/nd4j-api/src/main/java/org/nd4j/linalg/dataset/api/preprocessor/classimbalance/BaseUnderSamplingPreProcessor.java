@@ -101,7 +101,7 @@ public abstract class BaseUnderSamplingPreProcessor {
     */
     private INDArray calculateBernoulli(INDArray minorityLabels, INDArray labelMask, double targetMinorityDist) {
 
-        INDArray minorityClass = minorityLabels.castTo(DataType.FLOAT).muli(labelMask);
+        INDArray minorityClass = minorityLabels.castTo(Nd4j.defaultFloatingPointType()).muli(labelMask);
         INDArray majorityClass = minorityLabels.rsub(1.0).muli(labelMask);      //rsub(1.0) is equivalent to swapping 0s and 1s
 
         //all minorityLabel class, keep masks as is

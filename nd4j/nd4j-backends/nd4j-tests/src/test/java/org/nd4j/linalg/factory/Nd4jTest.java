@@ -218,7 +218,7 @@ public class Nd4jTest extends BaseNd4jTest {
 
     @Test
     public void testNumpyConversion() throws Exception {
-        INDArray linspace = Nd4j.linspace(1,4,4);
+        INDArray linspace = Nd4j.linspace(1,4,4, DataType.FLOAT);
         Pointer convert = Nd4j.getNDArrayFactory().convertToNumpy(linspace);
         convert.position(0);
 
