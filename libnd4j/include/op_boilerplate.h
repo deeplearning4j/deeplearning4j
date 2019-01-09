@@ -1449,8 +1449,10 @@
 
 #ifdef __CUDABLAS__
 #define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT) if (WORKSPACE == nullptr) {auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT)); if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] allocation failed", erc_##VARIABLE);}; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(nd4j::memory::MemoryType::DEVICE, LENGTH * sizeof(TT))); }
+#define RELEASE_SPECIAL(VARIABLE, WORKSPACE) if (WORKSPACE == nullptr) { auto erc_##VARIABLE = cudaFree(reinterpret_cast<void *>(VARIABLE));  if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE);}; };
 #else
 #define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT) VARIABLE = nullptr;
+#define RELEASE_SPECIAL(VARIABLE, WORKSPACE)
 #endif
 
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }
