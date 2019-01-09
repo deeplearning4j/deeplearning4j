@@ -77,7 +77,7 @@ NDArray::NDArray(const NDArray& other) {
     setShapeInfo(ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace()));    
 
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
-
+    _isBuffDAlloc = true;
     if(other.isActualOnHostSide()) {
         auto res = cudaMemcpy(_bufferD, other._buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
         if (res != 0)
@@ -108,13 +108,12 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
     setShapeInfo(ShapeBuilders::createScalarShapeInfo(dtype, context->getWorkspace()));
 
     ALLOCATE_SPECIAL(_bufferD, context->getWorkspace(), sizeOfT(), int8_t);
-    ALLOCATE_SPECIAL(_shapeInfoD, context->getWorkspace(), shape::shapeInfoLength(_shapeInfo), Nd4jLong);
+    _isBuffDAlloc = true;
     cudaMemset(_bufferD, 0, sizeOfT());
     cudaMemcpy(_shapeInfoD, _shapeInfo, shape::shapeInfoByteLength(_shapeInfo), cudaMemcpyHostToDevice);
 
     triggerAllocationFlag(true, true);
-
-    tickWriteDevice(); 
+    tickWriteDevice();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -139,15 +138,16 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::Launc
     }
 
     _isShapeAlloc = true;
-
     if (this->isEmpty()) {
         _length = 0;
         _isBuffAlloc = false;
+        _isBuffDAlloc = false;
     }
     else {
         ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
 
         cudaMemset(_bufferD, 0, _length * sizeOfT());
+        _isBuffDAlloc = true;
         _isBuffAlloc = true;
     }
 
@@ -174,6 +174,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, const std
 
     ALLOCATE(_buffer, _context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * DataTypeUtils::sizeOf(dtype), int8_t);
+    _isBuffDAlloc = true;
 
     triggerAllocationFlag(true, true);
 
@@ -217,7 +218,8 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
             cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
             tickReadHost();
         }
-        _isBuffAlloc = isBuffAlloc;        
+        _isBuffAlloc = isBuffAlloc;
+        _isBuffDAlloc = true;
     }            
 }
 
@@ -235,6 +237,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
     setShapeInfo(ShapeBuilders::createShapeInfo(dtype, order, shape, _context->getWorkspace()));
 
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
+    _isBuffDAlloc = true;
+
     cudaMemset(_bufferD, '\0', _length * sizeOfT()); // zero all memory
     triggerAllocationFlag(true, true);
 
@@ -249,7 +253,8 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::graph::Laun
     setShapeInfo(ShapeBuilders::copyShapeInfo(other->_shapeInfo, copyStrides, _context->getWorkspace()));
     
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
-                
+    _isBuffDAlloc = true;
+
     triggerAllocationFlag(true, true);    
 
     tickWriteDevice();
@@ -270,11 +275,12 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
     _buffer = reinterpret_cast<int8_t *>(buffer);
     ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
+    _isBuffDAlloc = true;
     if(_buffer != nullptr)
-        cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);    
+        cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
     syncShape();
     triggerAllocationFlag(false, true);
-    
+    triggerSpecialAllocationFlag(true, true);
     tickWriteDevice();
     tickReadHost();
 }
@@ -308,6 +314,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
               
         setShapeInfo(ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace()));    
         ALLOCATE_SPECIAL(_bufferD, _context->getWorkspace(), _length * sizeOfT(), int8_t);
+        _isBuffDAlloc = true;
 
         triggerAllocationFlag(true, true);        
                 
@@ -2156,10 +2163,10 @@ NDArray::~NDArray() noexcept {
     }
     if (_isShapeAlloc  && _context->getWorkspace() == nullptr && _shapeInfo != nullptr)
         delete[] _shapeInfo;
-    if (_isBuffAlloc)
-        cudaFree(_shapeInfoD);
-    if (_isShapeAlloc)
-        cudaFree(_bufferD);
+    if (_isShapeDAlloc)
+        RELEASE_SPECIAL(_shapeInfoD, _context->getWorkspace());
+    if (_isBuffDAlloc)
+        RELEASE_SPECIAL(_bufferD, _context->getWorkspace());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2181,6 +2188,7 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
     }
 
     ALLOCATE_SPECIAL(_shapeInfoD, _context->getWorkspace(), shape::shapeInfoLength(_shapeInfo), Nd4jLong);
+    _isShapeDAlloc = true;
     syncShape();
 }
 
@@ -2464,10 +2472,12 @@ void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, c
         }
         std::memcpy(shapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
         auto array = new NDArray(shapeInfo, _context);
-        cudaFree(array->_bufferD);
+        //cudaFree(array->_bufferD);
         array->_bufferD = (int8_t*)specialBufferWithOffset(tad.tadOffsets[index]); //, array->lengthOf() * DataTypeUtils::sizeOf(dataType()), cudaMemcpyDeviceToDevice);
         array->_isBuffAlloc = false;
+        array->_isBuffDAlloc = false;
         array->_isShapeAlloc = true;
+        array->_isShapeDAlloc = true;
         array->_isView = true;
 
         return array;

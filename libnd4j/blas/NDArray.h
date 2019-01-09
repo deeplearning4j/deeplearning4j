@@ -131,6 +131,8 @@ namespace nd4j {
         */  
         bool _isShapeAlloc = false;                    
         bool _isBuffAlloc = false;
+        bool _isShapeDAlloc = false;
+        bool _isBuffDAlloc = false;
 
         // indicates if array's buffer is within workspace
         bool _isAttached = false;
@@ -1176,7 +1178,8 @@ namespace nd4j {
         *  set _isBuffAlloc and _isShapeAlloc
         */
         FORCEINLINE void triggerAllocationFlag(bool bufferAllocated, bool shapeAllocated);
-        
+        FORCEINLINE void triggerSpecialAllocationFlag(bool bufferAllocated, bool shapeAllocated);
+
         /**
         *  returns the value of "dim" dimension 
         */
@@ -1484,6 +1487,13 @@ namespace nd4j {
     void NDArray::triggerAllocationFlag(bool bufferAllocated, bool shapeAllocated) {
         _isBuffAlloc = bufferAllocated;
         _isShapeAlloc = shapeAllocated;
+        _isBuffDAlloc = bufferAllocated? bufferAllocated: _isBuffDAlloc;
+        _isShapeDAlloc = shapeAllocated? shapeAllocated: _isShapeDAlloc;
+    }
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::triggerSpecialAllocationFlag(bool bufferAllocated, bool shapeAllocated) {
+        _isBuffDAlloc = bufferAllocated;
+        _isShapeDAlloc = shapeAllocated;
     }
 
     //////////////////////////////////////////////////////////////////////////
