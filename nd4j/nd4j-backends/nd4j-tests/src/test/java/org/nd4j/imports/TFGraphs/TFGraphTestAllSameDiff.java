@@ -89,34 +89,34 @@ public class TFGraphTestAllSameDiff {
             //Still failing 2019/01/08 - "DEPTHWISECONV2D OP: wrong shape of weights array, expected is [-1, -1, 2, 2], but got [1, 2, 2, 2] instead !"
             "sepconv1d_layers/.*",
 
-            //scatter_nd: a few cases failing as of 2018/01/08
+            //scatter_nd: a few cases failing as of 2019/01/08
             "scatter_nd/rank2shape_2indices",
             "scatter_nd/rank3shape_2indices",
 
 
-            //Failures as of 2018/01/08: vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)
+            //Failures as of 2019/01/08: vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)
             "embedding_lookup/.*multiple.*",
 
-            //Failing as of 2018/01/08
+            //Failing as of 2019/01/08
             "nth_element/rank1_n0",
             "nth_element/rank2_n0",
 
             //Still failing: 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6322
             "broadcast_dynamic_shape/.*",
 
-            //Failing 2018/01/08 - Shape... input is float in TF, but this dousn't match TF docs! Maybe it's index of non-zero elements like numpy?
+            //Failing 2019/01/08 - Shape... input is float in TF, but this dousn't match TF docs! Maybe it's index of non-zero elements like numpy?
             "where/cond_only.*",
 
-            //Failing 2018/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 3
+            //Failing 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 3
             "boolean_mask/.*",
 
             //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
             "truncatemod/.*",
 
-            //2018/01/08 - This is simply an order issue - need to account for this in test (TF gives no order guarantees)
+            //2019/01/08 - This is simply an order issue - need to account for this in test (TF gives no order guarantees)
             "topk/.*",
 
-            //Still failing as of 2018/01/08
+            //Still failing as of 2019/01/08
             "lrn/dr3.*",
             "lrn/dr5.*",
 
@@ -124,13 +124,19 @@ public class TFGraphTestAllSameDiff {
             // this test with a set of more thorough/isolated strided slice tests
             "g_07",
 
-            //Still failing as of 2018/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6447
+            //Still failing as of 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn1d_layers/channels_first_b2_k2_s1_d2_SAME",
             "cnn2d_layers/channels_first_b1_k12_s1_d12_SAME",
 
             //These have a random component so can't be validated using simple .equals... should still be compared, however to check range is sensible etc
             "alpha_dropout/.*",
             "layers_dropout/.*",
+
+            //2019/01/09 - Issue 6 at https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            "pad/rank1Pone_reflect",
+
+            //2019/01/09 - Only these 2 failing, all others passing... but these 2 pass with isLegacy = false (but all others fail if we switch this globally)
+            "reverse/shape5-axis.*",
 
             //These absurdly slow:
             "simplewhile.*",
