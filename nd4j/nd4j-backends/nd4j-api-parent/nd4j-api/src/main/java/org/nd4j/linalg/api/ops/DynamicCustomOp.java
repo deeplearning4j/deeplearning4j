@@ -79,6 +79,14 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         tArguments = new ArrayList<>();
     }
 
+    public DynamicCustomOp(SameDiff sameDiff, SDVariable arg) {
+        this(sameDiff, new SDVariable[]{arg});
+    }
+
+    public DynamicCustomOp(SameDiff sameDiff, SDVariable[] args) {
+        this(null, sameDiff, args);
+    }
+
     public DynamicCustomOp(String opName, SameDiff sameDiff, SDVariable[] args) {
         super(sameDiff, args);
         this.opName = opName;

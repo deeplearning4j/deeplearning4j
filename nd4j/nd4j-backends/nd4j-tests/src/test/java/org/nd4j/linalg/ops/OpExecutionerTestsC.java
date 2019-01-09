@@ -29,7 +29,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
@@ -57,7 +56,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Log;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -68,7 +67,6 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -634,7 +632,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testLogSoftmaxVector() {
         INDArray temp = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0});
-        INDArray logsoftmax = Nd4j.getExecutioner().exec(new LogSoftMax(temp.dup()));
+        INDArray logsoftmax = Nd4j.getExecutioner().exec(new LogSoftMax(temp.dup()))[0];
         INDArray assertion = Nd4j.create(new double[] {-3.4401898, -2.4401898, -1.4401897, -0.44018975});
         assertEquals(assertion, logsoftmax);
 

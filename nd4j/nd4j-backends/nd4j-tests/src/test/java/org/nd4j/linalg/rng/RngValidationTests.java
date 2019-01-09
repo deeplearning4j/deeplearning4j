@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.nd4j.OpValidationSuite;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -81,6 +82,7 @@ public class RngValidationTests {
 
     @Test
     public void validateRngDistributions(){
+        OpValidationSuite.ignoreFailing();      //https://github.com/deeplearning4j/deeplearning4j/issues/6958 - 2018-01-09
 
         List<TestCase> testCases = new ArrayList<>();
         for(DataType type : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
