@@ -71,6 +71,9 @@ namespace nd4j {
     }
 
     Nd4jLong* ShapeList::at(int idx) {
+        if (_shapes.size() <= idx)
+            throw std::runtime_error("Can't find requested variable by index");
+
         return _shapes.at(idx);
     }
 

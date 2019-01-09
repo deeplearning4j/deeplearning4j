@@ -234,13 +234,15 @@ namespace nd4j {
                             int shapeLen = flatVariable->shape()->Length();
                             for (int i = 0; i < flatVariable->shape()->size(); i++)
                                 _shape.emplace_back(flatVariable->shape()->Get(i));
+
+                            _variableType = VariableType::PLACEHOLDER;
                         } else {
                             auto ar = flatVariable->ndarray();
                             _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
                             _ndarray->triggerAllocationFlag(true, true);
-                        }
 
-                        _variableType = VariableType::PLACEHOLDER;
+                            _variableType = VariableType::NDARRAY;
+                        }
                     }
                     break;
                 default:
