@@ -23,6 +23,8 @@
 #include <Status.h>
 #include <helpers/ShapeUtils.h>
 #include <NDArrayFactory.h>
+#include <graph/exceptions/graph_exception.h>
+#include <graph/exceptions/unresolved_input_exception.h>
 
 namespace nd4j {
     namespace ops {
@@ -148,6 +150,9 @@ namespace nd4j {
                     auto var = ctx.variable(p);
                     if (var->variableType() == VariableType::NDARRAY) {
                         NDArray *array = var->getNDArray();
+                        if (array == nullptr)
+                            throw unresolved_input_exception::build("Variable wasn't resolved prior shape calculation", p);
+
                         inSha.push_back(array->getShapeInfo());
 
                     }

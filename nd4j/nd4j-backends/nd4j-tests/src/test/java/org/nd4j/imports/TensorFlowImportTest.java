@@ -1130,6 +1130,13 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/unfrozen_simple_ae.pb").getInputStream());
     }
 
+    @Test
+    public void testRandomGraph() throws Exception {
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/avg_pooling3d/channels_first_b1_k2_s1_SAME/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/avg_pooling3d.fb"));
+    }
 
     @Test
     public void testControlDependencies1() throws Exception {
