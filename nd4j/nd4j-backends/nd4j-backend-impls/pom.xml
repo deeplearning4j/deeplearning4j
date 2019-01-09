@@ -27,15 +27,6 @@
 
     <name>nd4j-backend-impls</name>
 
-    <modules>
-        <module>nd4j-native</module>
-        <module>nd4j-native-platform</module>
-        <module>nd4j-cuda</module>
-        <module>nd4j-cuda-platform</module>
-    </modules>
-    <dependencies>
-    </dependencies>
-
     <properties>
         <!-- Hack to load only at runtime platform specific dependency with Maven -->
         <dependency.groupId>${project.groupId}</dependency.groupId>
@@ -181,6 +172,45 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>cpu</id>
+            <activation>
+                <property>
+                    <name>libnd4j.chip</name>
+                    <value>!cuda</value>
+                </property>
+            </activation>
+            <modules>
+                <module>nd4j-native</module>
+                <module>nd4j-native-platform</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>cuda</id>
+            <activation>
+                <property>
+                    <name>libnd4j.chip</name>
+                    <value>cuda</value>
+                </property>
+            </activation>
+            <modules>
+                <module>nd4j-cuda</module>
+                <module>nd4j-cuda-platform</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>libnd4j-cuda</id>
+            <activation>
+                <property>
+                    <name>libnd4j.cuda</name>
+                </property>
+            </activation>
+            <modules>
+                <module>nd4j-cuda</module>
+                <module>nd4j-cuda-platform</module>
+            </modules>
+        </profile>
+
         <profile>
             <id>javacpp-platform-default</id>
             <activation>

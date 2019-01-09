@@ -16,7 +16,7 @@
 
 <assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
-    <id>${libnd4j.classifier}</id>
+    <id>${libnd4j.platform}-cuda-${cuda.version}</id>
     <formats>
         <format>zip</format>
     </formats>
@@ -37,7 +37,7 @@
             <outputDirectory>/</outputDirectory>
             <useDefaultExcludes>true</useDefaultExcludes>
             <includes>
-                <include>blasbuild/${libnd4j.chip}/**</include>
+                <include>blasbuild/cuda/**</include>
             </includes>
         </fileSet>
     </fileSets>
