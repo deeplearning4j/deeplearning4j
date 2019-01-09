@@ -270,6 +270,26 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
             initOutputVariables(diff, df);
         }
 
+        //Make sure all Variable.controlDepsForVar have been populated (reverse lookup of Variable.controlDeps)
+        //i.e., if control dependency x -> y exists, then:
+        // (a) x.controlDepsForVar should contain "y"
+        // (b) y.controlDeps should contain "x"
+        //Need to do this before output datatype calculation, as these control dep info is used in sessions
+        for(Map.Entry<String,Variable> e : diff.getVariables().entrySet()){
+            Variable v = e.getValue();
+            if(v.getControlDeps() != null){
+                for(String s : v.getControlDeps()){
+                    Variable v2 = diff.getVariables().get(s);
+                    if(v2.getControlDepsForVar() == null)
+                        v2.setControlDepsForVar(new ArrayList<String>());
+                    if(!v2.getControlDepsForVar().contains(e.getKey())){
+                        //Control dep v2 -> v exists, so put v.name into v2.controlDepsForVar
+                        v2.getControlDepsForVar().add(e.getKey());
+                    }
+                }
+            }
+        }
+
 
         //Infer variable datatypes to ensure all variables have datatypes...
         boolean anyUnknown = false;
@@ -282,25 +302,6 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
             for(SDVariable v : diff.variables()){
                 if(v.dataType() == null){
                     v.setDataType(dataTypes.get(v.getVarName()));
-                }
-            }
-        }
-
-        //Make sure all Variable.controlDepsForVar have been populated (reverse lookup of Variable.controlDeps)
-        //i.e., if control dependency x -> y exists, then:
-        // (a) x.controlDepsForVar should contain "y"
-        // (b) y.controlDeps should contain "x"
-        for(Map.Entry<String,Variable> e : diff.getVariables().entrySet()){
-            Variable v = e.getValue();
-            if(v.getControlDeps() != null){
-                for(String s : v.getControlDeps()){
-                    Variable v2 = diff.getVariables().get(s);
-                    if(v2.getControlDepsForVar() == null)
-                        v2.setControlDepsForVar(new ArrayList<String>());
-                    if(!v2.getControlDepsForVar().contains(e.getKey())){
-                        //Control dep v2 -> v exists, so put v.name into v2.controlDepsForVar
-                        v2.getControlDepsForVar().add(e.getKey());
-                    }
                 }
             }
         }
