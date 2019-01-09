@@ -4025,7 +4025,7 @@ TEST_F(DeclarableOpsTests1, Reverse_1 ) {
     NDArray output(shapeInfo);
 
     nd4j::ops::reverse op;
-    auto results = op.execute({&input}, {}, {});
+    auto results = op.execute({&input}, {}, {0,1,2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -4041,7 +4041,7 @@ TEST_F(DeclarableOpsTests1, Reverse_1 ) {
 TEST_F(DeclarableOpsTests1, Reverse_2 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
-    float expBuff[] = {24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13., 12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1.};
+    float expBuff[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
     ArrayOptions::setDataType(shapeInfo, nd4j::DataType::FLOAT32);
 
@@ -4075,7 +4075,7 @@ TEST_F(DeclarableOpsTests1, Reverse_3 ) {
     NDArray output(shapeInfo);
 
     nd4j::ops::reverse op;
-    auto results = op.execute({&input}, {}, {0});
+    auto results = op.execute({&input}, {}, {1,2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -4101,7 +4101,7 @@ TEST_F(DeclarableOpsTests1, Reverse_4 ) {
     NDArray output(shapeInfo);
 
     nd4j::ops::reverse op;
-    auto results = op.execute({&input}, {}, {1});
+    auto results = op.execute({&input}, {}, {0,2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -4127,7 +4127,7 @@ TEST_F(DeclarableOpsTests1, Reverse_5 ) {
     NDArray output(shapeInfo);
 
     nd4j::ops::reverse op;
-    auto results = op.execute({&input}, {}, {2});
+    auto results = op.execute({&input}, {}, {0,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -4152,7 +4152,7 @@ TEST_F(DeclarableOpsTests1, Reverse_6 ) {
     NDArray output(shapeInfo);
 
     nd4j::ops::reverse op;
-    auto results = op.execute({&input}, {}, {0,1}, {}, true);
+    auto results = op.execute({&input}, {}, {2}, {}, true);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -4179,7 +4179,7 @@ TEST_F(DeclarableOpsTests1, Reverse_7 ) {
     NDArray output(shapeInfo);
 
     nd4j::ops::reverse op;
-    auto results = op.execute({&input}, {}, {0,2});
+    auto results = op.execute({&input}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -4193,11 +4193,12 @@ TEST_F(DeclarableOpsTests1, Reverse_7 ) {
 }
 
 
-////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Reverse_8 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
-    float expBuff[] = {9., 10., 11., 12., 5., 6., 7., 8., 1., 2., 3., 4., 21., 22., 23., 24., 17., 18., 19., 20., 13., 14., 15., 16.};
+    float expBuff[] = {12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1., 24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13.};
     Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
     ArrayOptions::setDataType(shapeInfo, nd4j::DataType::FLOAT32);
 
@@ -4206,7 +4207,7 @@ TEST_F(DeclarableOpsTests1, Reverse_8 ) {
     NDArray output(shapeInfo);
 
     nd4j::ops::reverse op;
-    auto results = op.execute({&input}, {}, {2,0});
+    auto results = op.execute({&input}, {}, {2,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -4218,7 +4219,6 @@ TEST_F(DeclarableOpsTests1, Reverse_8 ) {
 
     delete results;
 }
-
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Reverse_9 ) {
@@ -4233,7 +4233,7 @@ TEST_F(DeclarableOpsTests1, Reverse_9 ) {
     NDArray output(shapeInfo);
 
     nd4j::ops::reverse op;
-    auto results = op.execute({&input}, {}, {1,2});
+    auto results = op.execute({&input}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -4251,7 +4251,7 @@ TEST_F(DeclarableOpsTests1, Reverse_10 ) {
     auto e = NDArrayFactory::create<double>('c', {4, 3}, {0.09966054, 0.1592365, 1.5375735,  -1.0355669, 1.144433, 0.677872,   0.85020787, -0.67863184, 0.48456487,  -1.1660044, 0.20998026, 0.13950661});
 
     nd4j::ops::reverse op;
-    auto result = op.execute({&x, &i}, {}, {1}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x, &i}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     auto z = result->at(0);
 
@@ -4330,11 +4330,11 @@ TEST_F(DeclarableOpsTests1, Reverse_14 ) {
 
 
     auto input = NDArrayFactory::create<double>({0.f, 1.f, 2.f, 3.f, 4.f});
-    auto expected = NDArrayFactory::create<double>({4.f, 3.f, 2.f, 1.f, 0.f});
+    auto expected = NDArrayFactory::create<double>({0.f, 1.f, 2.f, 3.f, 4.f});
 
     //input.linspace(1);
     nd4j::ops::reverse op;
-    auto results = op.execute({&input}, {}, {1}, {}, false, nd4j::DataType::DOUBLE);
+    auto results = op.execute({&input}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 

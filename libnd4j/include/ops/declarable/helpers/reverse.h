@@ -32,7 +32,7 @@ namespace helpers {
 
 	void reverseSequence(const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim);
 
-	void reverse(const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isLegacy);
+	void reverse(const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isBackProp);
 
     
 
