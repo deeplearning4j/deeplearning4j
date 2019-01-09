@@ -32,6 +32,7 @@ namespace nd4j {
             unresolved_input_exception(std::string message);
             ~unresolved_input_exception() = default;
 
+            static unresolved_input_exception build(std::string message, int nodeId, std::pair<int, int> &varIndex);
             static unresolved_input_exception build(std::string message, std::pair<int, int> &varIndex);
             static unresolved_input_exception build(std::string message, std::string &varName);
         };

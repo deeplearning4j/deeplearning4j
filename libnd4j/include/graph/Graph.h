@@ -78,10 +78,14 @@ namespace nd4j {
             void printOutNode(Node* node);
 
             void prepareOutputs();
+
         public:
             Graph(const FlatGraph *flatGraph = nullptr, VariableSpace *variableSpace = nullptr);
 
             ~Graph();
+
+            // this method applies toposort to nodes
+            void toposortNodes();
 
             // method that'll print out graph
             Nd4jStatus validate();

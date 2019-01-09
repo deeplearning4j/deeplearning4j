@@ -27,6 +27,13 @@ namespace nd4j {
             //
         }
 
+        unresolved_input_exception unresolved_input_exception::build(std::string message, int nodeId, std::pair<int, int> &varIndex) {
+            auto node = StringUtils::valueToString<int>(nodeId);
+            auto varId = StringUtils::valueToString<int>(varIndex.first);
+            auto outputIdx = StringUtils::valueToString<int>(varIndex.second);
+            message += "; Node: [" + node +":0]; Variable: [" + varId + ":" +  outputIdx + "]";
+            return unresolved_input_exception(message);
+        }
 
         unresolved_input_exception unresolved_input_exception::build(std::string message, std::pair<int, int> &varIndex) {
             auto nodeId = StringUtils::valueToString<int>(varIndex.first);
