@@ -74,16 +74,16 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         INDArray labelDelta = Transforms.abs(theoreticallabelMean.sub(myNormalizer.getLabelMean()));
         INDArray meanDeltaPerc = meanDelta.div(theoreticalMean).mul(100);
         INDArray labelDeltaPerc = labelDelta.div(theoreticallabelMean).mul(100);
-        double maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0, 0);
+        double maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0);
         assertTrue(maxMeanDeltaPerc < tolerancePerc);
-        assertTrue(labelDeltaPerc.max(1).getDouble(0, 0) < tolerancePerc);
+        assertTrue(labelDeltaPerc.max(1).getDouble(0) < tolerancePerc);
 
         INDArray stdDelta = Transforms.abs(theoreticalStd.sub(myNormalizer.getStd()));
         INDArray stdDeltaPerc = stdDelta.div(theoreticalStd).mul(100);
         INDArray stdlabelDeltaPerc =
                         Transforms.abs(theoreticallabelStd.sub(myNormalizer.getLabelStd())).div(theoreticallabelStd);
-        double maxStdDeltaPerc = stdDeltaPerc.max(1).mul(100).getDouble(0, 0);
-        double maxlabelStdDeltaPerc = stdlabelDeltaPerc.max(1).getDouble(0, 0);
+        double maxStdDeltaPerc = stdDeltaPerc.max(1).mul(100).getDouble(0);
+        double maxlabelStdDeltaPerc = stdlabelDeltaPerc.max(1).getDouble(0);
         assertTrue(maxStdDeltaPerc < tolerancePerc);
         assertTrue(maxlabelStdDeltaPerc < tolerancePerc);
 
@@ -96,12 +96,12 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
 
         meanDelta = Transforms.abs(theoreticalMean.sub(myNormalizer.getMean()));
         meanDeltaPerc = meanDelta.div(theoreticalMean).mul(100);
-        maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0, 0);
+        maxMeanDeltaPerc = meanDeltaPerc.max(1).getDouble(0);
         assertTrue(maxMeanDeltaPerc < tolerancePerc);
 
         stdDelta = Transforms.abs(theoreticalMean.sub(myNormalizer.getMean()));
         stdDeltaPerc = stdDelta.div(theoreticalStd).mul(100);
-        maxStdDeltaPerc = stdDeltaPerc.max(1).getDouble(0, 0);
+        maxStdDeltaPerc = stdDeltaPerc.max(1).getDouble(0);
         assertTrue(maxStdDeltaPerc < tolerancePerc);
     }
 
@@ -138,15 +138,15 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         double tolerancePerc = 0.5; //within 0.5%
         sampleMean = myNormalizer.getMean();
         sampleMeanDelta = Transforms.abs(sampleMean.sub(normData.theoreticalMean));
-        assertTrue(sampleMeanDelta.mul(100).div(normData.theoreticalMean).max(1).getDouble(0, 0) < tolerancePerc);
+        assertTrue(sampleMeanDelta.mul(100).div(normData.theoreticalMean).max().getDouble(0) < tolerancePerc);
         //sanity check to see if it's within the theoretical standard error of mean
-        sampleMeanSEM = sampleMeanDelta.div(normData.theoreticalSEM).max(1).getDouble(0, 0);
+        sampleMeanSEM = sampleMeanDelta.div(normData.theoreticalSEM).max().getDouble(0);
         assertTrue(String.valueOf(sampleMeanSEM), sampleMeanSEM < 2.6); //99% of the time it should be within this many SEMs
 
         tolerancePerc = 5; //within 5%
         sampleStd = myNormalizer.getStd();
         sampleStdDelta = Transforms.abs(sampleStd.sub(normData.theoreticalStd));
-        assertTrue(sampleStdDelta.div(normData.theoreticalStd).max(1).mul(100).getDouble(0, 0) < tolerancePerc);
+        assertTrue(sampleStdDelta.div(normData.theoreticalStd).max().mul(100).getDouble(0) < tolerancePerc);
 
         tolerancePerc = 1; //within 1%
         normIterator.setPreProcessor(myNormalizer);
@@ -159,7 +159,7 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
             delta = Transforms.abs(after.sub(expected));
             deltaPerc = delta.div(before.sub(expected));
             deltaPerc.muli(100);
-            maxDeltaPerc = deltaPerc.max(0, 1).getDouble(0, 0);
+            maxDeltaPerc = deltaPerc.max(0, 1).getDouble(0);
             //System.out.println("=== BEFORE ===");
             //System.out.println(before);
             //System.out.println("=== AFTER ===");

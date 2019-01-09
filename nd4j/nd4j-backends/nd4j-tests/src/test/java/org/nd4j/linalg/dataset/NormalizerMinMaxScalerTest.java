@@ -61,8 +61,8 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
         DataSet sampleDataSet = new DataSet(featureSet, labelSet);
 
         //expected min and max
-        INDArray theoreticalMin = Nd4j.create(new double[] {x, y, z}, new long[]{1,3}).castTo(DataType.FLOAT);
-        INDArray theoreticalMax = Nd4j.create(new double[] {nSamples * x, nSamples * y, nSamples * z}, new long[]{1,3}).castTo(DataType.FLOAT);
+        INDArray theoreticalMin = Nd4j.create(new double[] {x, y, z}, new long[]{1,3});
+        INDArray theoreticalMax = Nd4j.create(new double[] {nSamples * x, nSamples * y, nSamples * z}, new long[]{1,3});
         INDArray theoreticalRange = theoreticalMax.sub(theoreticalMin);
 
         NormalizerMinMaxScaler myNormalizer = new NormalizerMinMaxScaler();
@@ -70,10 +70,10 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
 
         INDArray minDataSet = myNormalizer.getMin();
         INDArray maxDataSet = myNormalizer.getMax();
-        INDArray minDiff = minDataSet.sub(theoreticalMin).max(1);
-        INDArray maxDiff = maxDataSet.sub(theoreticalMax).max(1);
-        assertEquals(minDiff.getDouble(0, 0), 0.0, 0.000000001);
-        assertEquals(maxDiff.max(1).getDouble(0, 0), 0.0, 0.000000001);
+        INDArray minDiff = minDataSet.sub(theoreticalMin).max();
+        INDArray maxDiff = maxDataSet.sub(theoreticalMax).max();
+        assertEquals(minDiff.getDouble(0), 0.0, 0.000000001);
+        assertEquals(maxDiff.max().getDouble(0), 0.0, 0.000000001);
 
         // SAME TEST WITH THE ITERATOR
         int bSize = 1;
@@ -81,8 +81,8 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
         myNormalizer.fit(sampleIter);
         minDataSet = myNormalizer.getMin();
         maxDataSet = myNormalizer.getMax();
-        assertEquals(minDataSet.sub(theoreticalMin).max(1).getDouble(0, 0), 0.0, 0.000000001);
-        assertEquals(maxDataSet.sub(theoreticalMax).max(1).getDouble(0, 0), 0.0, 0.000000001);
+        assertEquals(minDataSet.sub(theoreticalMin).max(1).getDouble(0), 0.0, 0.000000001);
+        assertEquals(maxDataSet.sub(theoreticalMax).max(1).getDouble(0), 0.0, 0.000000001);
 
         sampleIter.setPreProcessor(myNormalizer);
         INDArray actual, expected, delta;
@@ -91,7 +91,7 @@ public class NormalizerMinMaxScalerTest extends BaseNd4jTest {
             expected = theoreticalMin.mul(i - 1).div(theoreticalRange);
             actual = sampleIter.next().getFeatures();
             delta = Transforms.abs(actual.sub(expected));
-            assertTrue(delta.max(1).getDouble(0, 0) < 0.0001);
+            assertTrue(delta.max(1).getDouble(0) < 0.0001);
             i++;
         }
 

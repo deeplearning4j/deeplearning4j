@@ -58,8 +58,8 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
         int timeSteps = 15;
         int samples = 100;
         //multiplier for the features
-        INDArray featureScaleA = Nd4j.create(new double[] {1, -2, 3}).reshape(3, 1).castTo(DataType.FLOAT);
-        INDArray featureScaleB = Nd4j.create(new double[] {2, 2, 3}).reshape(3, 1).castTo(DataType.FLOAT);
+        INDArray featureScaleA = Nd4j.create(new double[] {1, -2, 3}).reshape(3, 1);
+        INDArray featureScaleB = Nd4j.create(new double[] {2, 2, 3}).reshape(3, 1);
 
         Construct3dDataSet caseA = new Construct3dDataSet(featureScaleA, timeSteps, samples, 1);
         Construct3dDataSet caseB = new Construct3dDataSet(featureScaleB, timeSteps, samples, 1);
@@ -96,7 +96,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
 
         //generating a dataset with consecutive numbers as feature values. Dataset also has masks
         int samples = 100;
-        INDArray featureScale = Nd4j.create(new float[] {1, 2, 10}).reshape(3, 1);
+        INDArray featureScale = Nd4j.create(new double[] {1, 2, 10}).reshape(3, 1);
         int timeStepsU = 5;
         Construct3dDataSet sampleU = new Construct3dDataSet(featureScale, timeStepsU, samples, 1);
         int timeStepsV = 3;

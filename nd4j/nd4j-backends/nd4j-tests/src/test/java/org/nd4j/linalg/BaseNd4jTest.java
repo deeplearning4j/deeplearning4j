@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -185,6 +186,7 @@ public abstract class BaseNd4jTest {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         Nd4j.getExecutioner().enableDebugMode(false);
         Nd4j.getExecutioner().enableVerboseMode(false);
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
     }
 
     @After

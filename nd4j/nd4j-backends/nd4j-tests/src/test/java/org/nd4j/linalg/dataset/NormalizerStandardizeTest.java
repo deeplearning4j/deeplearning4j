@@ -127,16 +127,16 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         double tolerancePerc = 0.10; //within 0.1%
         sampleMean = myNormalizer.getMean();
         sampleMeanDelta = Transforms.abs(sampleMean.sub(normData.theoreticalMean));
-        assertTrue(sampleMeanDelta.mul(100).div(normData.theoreticalMean).max(1).getDouble(0, 0) < tolerancePerc);
+        assertTrue(sampleMeanDelta.mul(100).div(normData.theoreticalMean).max().getDouble(0) < tolerancePerc);
         //sanity check to see if it's within the theoretical standard error of mean
-        sampleMeanSEM = sampleMeanDelta.div(normData.theoreticalSEM).max(1).getDouble(0, 0);
+        sampleMeanSEM = sampleMeanDelta.div(normData.theoreticalSEM).max().getDouble(0);
         assertTrue(sampleMeanSEM < 2.6); //99% of the time it should be within this many SEMs
 
         tolerancePerc = 1; //within 1% - std dev value
         sampleStd = myNormalizer.getStd();
         sampleStdDelta = Transforms.abs(sampleStd.sub(normData.theoreticalStd));
 
-        double actualmaxDiff = sampleStdDelta.div(normData.theoreticalStd).max(1).mul(100).getDouble(0, 0);
+        double actualmaxDiff = sampleStdDelta.div(normData.theoreticalStd).max().mul(100).getDouble(0);
         assertTrue(actualmaxDiff < tolerancePerc);
 
         tolerancePerc = 1; //within 1%
@@ -149,7 +149,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
             delta = Transforms.abs(after.sub(expected));
             deltaPerc = delta.div(Transforms.abs(before.sub(expected)));
             deltaPerc.muli(100);
-            maxDeltaPerc = deltaPerc.max(0, 1).getDouble(0, 0);
+            maxDeltaPerc = deltaPerc.max(0, 1).getDouble(0);
             /*
             System.out.println("=== BEFORE ===");
             System.out.println(before);

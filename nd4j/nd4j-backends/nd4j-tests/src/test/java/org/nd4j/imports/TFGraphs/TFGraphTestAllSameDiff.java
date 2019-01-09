@@ -76,10 +76,8 @@ public class TFGraphTestAllSameDiff {
     };
 
     public static final String[] IGNORE_REGEXES = new String[]{
-            //No tensorflow op found for SparseTensorDenseAdd
+            //2019/01/08 - No tensorflow op found for SparseTensorDenseAdd
             "confusion/.*",
-            //Still failing 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6182
-            "zeta.*",
 
             //Failing 2019/01/08 - expected/actual difference
             "log_determinant/.*",
