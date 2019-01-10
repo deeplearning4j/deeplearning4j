@@ -633,10 +633,10 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveAssign_1) { // strict
     auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<double>('c', {5});
     //auto exp = NDArrayFactory::create<double>({1.000000, 1.414214, 1.732051, 2.000000, 2.236068});
-    ASSERT_TRUE(x.isActualOnDeviceSide());
-    ASSERT_TRUE(x.isActualOnHostSide());
+    //ASSERT_TRUE(x.isActualOnDeviceSide());
+    //ASSERT_TRUE(x.isActualOnHostSide());
 
-    x.applyTransform(transform::AnyOps::Assign, &y, nullptr);
+    x.applyTransform(transform::Assign, &y, nullptr);
     //ASSERT_TRUE(x->isActualOnDeviceSide());
     //ASSERT_FALSE(x->isActualOnHostSide());
 
@@ -644,8 +644,12 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveAssign_1) { // strict
     //ASSERT_TRUE(y->isActualOnHostSide());
     //auto res = cudaStreamSynchronize(*y.getContext()->getCudaStream());
     //ASSERT_EQ(0, res);
-    //ASSERT_TRUE(y.equalsTo(exp));
-    y.printBuffer("Assign output");
+    y.syncToHost();
+    printf("Assigned to another array\n");
+    y.printBuffer("OUput");
+    ASSERT_TRUE(y.equalsTo(x));
+    //y.syncToHost();
+    //y.printBuffer("IsMax output");
     //delete x;
     //delete y;
 }

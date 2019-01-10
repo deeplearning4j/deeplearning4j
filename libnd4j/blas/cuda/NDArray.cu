@@ -1581,24 +1581,21 @@ NDArray NDArray::e(const Nd4jLong i) const {
             throw std::runtime_error("NDArray::applyTransform FloatOps: target array must have one of FLOAT types");
 
         NativeOpExecutioner::execTransformFloat(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr, nullptr, nullptr);
-        if (target != nullptr)
-            target->tickWriteDevice();
-        else
-            this->tickWriteDevice();
+        target->tickWriteDevice();
     }
 
     void NDArray::applyTransform(nd4j::transform::AnyOps op, NDArray *target, ExtraArguments *extraParams) {
-        nd4j_printf("Float op %i transform:\n", (int)op);
+        nd4j_printf("Any op %i transform:\n", (int)op);
 
         if (isS())
-            throw std::runtime_error("NDArray::applyTransform FloatOps: you can't use this method on String array!");
+            throw std::runtime_error("NDArray::applyTransform AnyOps: you can't use this method on String array!");
 
         if (target == nullptr)
             target = this;
 
-        NDArray::registerSpecialUse({target}, {this});
-        NativeOpExecutioner::execTransformFloat(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr, nullptr, nullptr);
-        //target->tickWriteDevice();
+//        NDArray::registerSpecialUse({target}, {this});
+        NativeOpExecutioner::execTransformAny(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr, nullptr, nullptr);
+        target->tickWriteDevice();
     }
 
     void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray *target, ExtraArguments *extraParams) {
@@ -1611,9 +1608,9 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         if (target->dataType() != this->dataType())
             throw std::runtime_error("NDArray::applyTransform SameOps: target array must have the same data type as original array");
-        NDArray::registerSpecialUse({target}, {this});
+//        NDArray::registerSpecialUse({target}, {this});
         NativeOpExecutioner::execTransformSame(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentAsT(target->dataType()) : nullptr, nullptr, nullptr);
-//        target->tickWriteDevice();
+        target->tickWriteDevice();
     }
 
     void NDArray::applyTransform(nd4j::transform::BoolOps op, NDArray *target, ExtraArguments *extraParams) {
