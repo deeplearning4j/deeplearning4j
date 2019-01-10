@@ -6669,7 +6669,7 @@ public class Nd4j {
                         val len = end - start;
                         val builder = new StringBuilder();
                         for (int c = 0; c < len; c++) {
-                            builder.append(dis.readChar());
+                            builder.append((char) dis.readByte());
                         }
                         list.add(builder.toString());
                     }

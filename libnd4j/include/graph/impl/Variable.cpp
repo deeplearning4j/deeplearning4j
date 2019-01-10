@@ -299,10 +299,11 @@ namespace nd4j {
             if (this->hasNDArray()) {
                 auto array = this->getNDArray();
                 auto fShape = builder.CreateVector(array->getShapeInfoAsFlatVector());
+
                 auto fBuffer = builder.CreateVector(array->asByteVector());
 
                 // packing array
-                auto fArray = CreateFlatArray(builder, fShape, fBuffer, nd4j::graph::DataType::DataType_FLOAT);
+                auto fArray = CreateFlatArray(builder, fShape, fBuffer, (nd4j::graph::DataType) array->dataType());
 
                 // packing id/index of this var
                 auto fVid = CreateIntPair(builder, this->_id, this->_index);

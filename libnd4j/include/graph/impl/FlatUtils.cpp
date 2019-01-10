@@ -79,7 +79,6 @@ namespace nd4j {
                     memcpy(c, charPtr + start, len);
 
                     std::string val(c);
-                    nd4j_printf("String [%i]: <%s>\n", e, val.c_str());
                     substrings[e] = val;
                     free(c);
                 }

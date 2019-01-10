@@ -799,19 +799,54 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
 
 ////////////////////////////////////////////////////////////////////////
     std::vector<int8_t> NDArray::asByteVector() {
-        std::vector<int8_t> result((unsigned long long) this->lengthOf() * sizeOfT());
+        // string tensors require special treatment
+        if (this->dataType() == UTF8) {
+            // length + number of elements + last offset
+            auto prefixLength = 1 + this->lengthOf() + 1;
+            std::vector<Nd4jLong> prefix(prefixLength);
 
-        if (this->isView()) {
-            auto tmp = this->dup(this->ordering());
+            // total number of string elements goes first
+            prefix[0] = this->lengthOf();
 
-            memcpy(result.data(), tmp->_buffer, (unsigned long long) tmp->lengthOf() * sizeOfT());
+            // now rolling through elements, to fill cumulative
+            auto dataLength = 0;
+            for (Nd4jLong e = 0; e < lengthOf(); e++) {
+                auto s = this->e<utf8string>(e);
+                prefix[e+1] = dataLength;
+                dataLength += s._length;
+            }
 
-            delete tmp;
+            // final prefix
+            prefix[lengthOf()] = dataLength;
+
+            // preallocating all at once
+            std::vector<int8_t> result((prefixLength * sizeof(Nd4jLong)) + dataLength);
+            auto charPtr = result.data() + (prefixLength * sizeof(Nd4jLong));
+            for (int e = 0; e < this->lengthOf(); e++) {
+                auto s = this->e<utf8string>(e);
+                auto cPtr = charPtr + prefix[e+1];
+                memcpy(cPtr, s._buffer, s._length);
+            }
+
+            // copying prefix data to result buffer
+            memcpy(result.data(), prefix.data(), prefix.size() * sizeof(Nd4jLong));
+
+            return result;
         } else {
-            memcpy(result.data(), _buffer, (unsigned long long) this->lengthOf() * sizeOfT());
-        }
+            std::vector<int8_t> result((unsigned long long) this->lengthOf() * sizeOfT());
 
-        return result;
+            if (this->isView()) {
+                auto tmp = this->dup(this->ordering());
+
+                memcpy(result.data(), tmp->_buffer, (unsigned long long) tmp->lengthOf() * sizeOfT());
+
+                delete tmp;
+            } else {
+                memcpy(result.data(), _buffer, (unsigned long long) this->lengthOf() * sizeOfT());
+            }
+
+            return result;
+        }
     }
 
     void NDArray::linspace(const double start) {

@@ -6332,7 +6332,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             val ub = (Utf8Buffer) buffer;
             // writing length first
-            dos.writeLong(length());
+            val t = length();
+            dos.writeLong(t);
 
             // FIXME: probably we don't want int limitation here?
             val list = new ArrayList<String>((int) length());
@@ -6350,7 +6351,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             // now write all strings
             for (int i = 0; i < list.size(); i++) {
-                dos.writeChars(list.get(i));
+                dos.writeBytes(list.get(i));
             }
 
             return FlatArray.createBufferVector(builder, bos.toByteArray());
