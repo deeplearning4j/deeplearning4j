@@ -101,7 +101,7 @@ public class TFGraphTestAllSameDiff {
             "nth_element/rank1_n0",
             "nth_element/rank2_n0",
 
-            //Still failing: 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6322
+            //Still failing: 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6322 and https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 1
             "broadcast_dynamic_shape/.*",
 
             //Failing 2019/01/08 - Shape... input is float in TF, but this dousn't match TF docs! Maybe it's index of non-zero elements like numpy?
@@ -134,9 +134,6 @@ public class TFGraphTestAllSameDiff {
 
             //2019/01/09 - Issue 6 at https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "pad/rank1Pone_reflect",
-
-            //2019/01/09 - Only these 2 failing, all others passing... but these 2 pass with isLegacy = false (but all others fail if we switch this globally)
-            "reverse/shape5-axis.*",
 
             //These absurdly slow:
             "simplewhile.*",

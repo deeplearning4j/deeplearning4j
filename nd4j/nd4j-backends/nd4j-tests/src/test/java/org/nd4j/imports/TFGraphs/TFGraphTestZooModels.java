@@ -17,6 +17,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.BiFunction;
+import org.nd4j.nativeblas.Nd4jCpu;
 import org.nd4j.resources.Downloader;
 import org.nd4j.util.ArchiveUtils;
 
@@ -36,16 +37,14 @@ public class TFGraphTestZooModels {
     public static TemporaryFolder classTestDir = new TemporaryFolder();
 
     public static final String[] IGNORE_REGEXES = {
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6462
-            "inception_v4_2018_04_27",
-            "inception_resnet_v2_2018_04_27",
+            //2019/01/10 - Need to fix: "IllegalStateException: Unable to execute variable VarId("image_tensor:0","main",0) of type ARRAY"
+            "ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03",
+            "ssd_mobilenet_v1_coco_2018_01_28",
 
-            //Need control dependencies to be fixed: https://github.com/deeplearning4j/deeplearning4j/issues/6738
+            //2019/01/10 - Blocked by resize bilinear edge case - issue 8, https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            //Also xception (deeplabv3_pascal_train_aug_2018_01_04) is VERY slow - may simply be large input image size (513x513)
             "deeplabv3_pascal_train_aug_2018_01_04",
             "deeplab_mobilenetv2_coco_voc_trainval",
-
-            //Need to fix order inference... currently assumes DAG, whereas with loops etc graph has cycles
-            "ssd_.*",
     };
 
     @Rule
@@ -154,13 +153,14 @@ public class TFGraphTestZooModels {
 
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
-//        if(!modelName.equals("densenet_2018_04_27")){
-        if(!modelName.equals("nasnet_mobile_2018_04_27")){
-            return;
-        }
+//        if(!modelName.startsWith("deeplab")){
+//        if(!modelName.startsWith("deeplab_mobilenet")){
+//            OpValidationSuite.ignoreFailing();
+//        }
         currentTestDir = testDir.newFolder();
 
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
+//        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
+        Nd4j.getMemoryManager().setAutoGcWindow(2000);
 
         Nd4j.create(1);
         for(String s : IGNORE_REGEXES){
@@ -175,6 +175,8 @@ public class TFGraphTestZooModels {
         currentTestDir = testDir.newFolder();
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
                 LOADER, maxRE, minAbs);
+
+
 
 
 //        Double maxRE = 1e-2;

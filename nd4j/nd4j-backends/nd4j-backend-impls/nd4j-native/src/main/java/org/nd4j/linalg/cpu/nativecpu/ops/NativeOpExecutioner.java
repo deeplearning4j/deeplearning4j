@@ -543,9 +543,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     /**
-     * ScalarOp along dimension
-     * @param op
-     * @param dimension
+     * ScalarOp execution
+     * @param op Op to execute
      */
     private void invokeScalarAlongDimension(ScalarOp op) {
         val dimension = op.dimensions().toIntVector();
@@ -1800,7 +1799,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         sb.append("), (");
                     sb.append(Shape.shapeToStringShort(outputArgs[i]));
                 }
-                sb.append(")]");
+                sb.append(")]. tArgs: ");
+                if(op.numTArguments() > 0){
+                    sb.append(Arrays.toString(op.tArgs()));
+                } else {
+                    sb.append("-");
+                }
+                sb.append(". iArgs: ");
+                if(op.numIArguments() > 0){
+                    sb.append(Arrays.toString(op.iArgs()));
+                } else {
+                    sb.append("-");
+                }
                 log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
                                 String.valueOf(op.numInputArguments()) + " inputs, " +
                                 String.valueOf(op.numOutputArguments()) + " outputs, "+
