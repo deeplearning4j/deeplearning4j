@@ -631,6 +631,15 @@ public abstract class AbstractSession<T, O> {
     }
 
 
+    protected static VarId lookup(String name, Collection<VarId> varIds){
+        for(VarId vid : varIds){
+            if(vid.getVariable().equals(name)){
+                return vid;
+            }
+        }
+        throw new RuntimeException("Could not find VarId to input " + name);
+    }
+
     /*
     VarId: identifies a variable in a specific frame and frame iteration
     Used for 2 places:

@@ -19,8 +19,13 @@ package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.list.compat.TensorList;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class TensorArrayWriteV3 extends BaseTensorOp {
 
@@ -58,4 +63,10 @@ public class TensorArrayWriteV3 extends BaseTensorOp {
    public Op.Type opType() {
       return Op.Type.CUSTOM;
    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+        //Dummy float variable
+        return Collections.singletonList(DataType.FLOAT);
+    }
 }

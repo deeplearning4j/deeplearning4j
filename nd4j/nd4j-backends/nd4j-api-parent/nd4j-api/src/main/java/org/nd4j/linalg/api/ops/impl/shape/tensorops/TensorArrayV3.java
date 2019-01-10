@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
+import lombok.Getter;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -37,7 +38,9 @@ import java.util.Map;
 
 public class TensorArrayV3 extends  BaseTensorOp {
 
-    TensorList list;
+    @Getter
+    protected DataType tensorArrayDataType;
+    protected TensorList list;
     @Override
     public String tensorflowName() {
         return "TensorArrayV3";
@@ -80,6 +83,8 @@ public class TensorArrayV3 extends  BaseTensorOp {
             addIArgument(idx);
         }
         this.list = new TensorList(this.getOwnName());
+
+        this.tensorArrayDataType = TFGraphMapper.convertType(attributesForNode.get("dtype").getType());
     }
 
 

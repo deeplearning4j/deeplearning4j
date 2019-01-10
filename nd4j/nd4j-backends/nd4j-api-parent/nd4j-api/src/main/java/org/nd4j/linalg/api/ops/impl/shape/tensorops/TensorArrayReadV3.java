@@ -20,8 +20,12 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.list.compat.TensorList;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class TensorArrayReadV3 extends BaseTensorOp {
@@ -60,5 +64,14 @@ public class TensorArrayReadV3 extends BaseTensorOp {
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+        //Same output type as the TensorArray - which is defined by input 0
+        SDVariable tArr = arg(0);
+        TensorArrayV3 t3 = (TensorArrayV3) sameDiff.getVariableOutputFunction(tArr.getVarName());
+        DataType dt = t3.getTensorArrayDataType();
+        return Collections.singletonList(dt);
     }
 }
