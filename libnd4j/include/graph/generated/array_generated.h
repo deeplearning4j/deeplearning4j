@@ -58,11 +58,12 @@ enum DataType {
   DataType_UINT64 = 14,
   DataType_QINT8 = 15,
   DataType_QINT16 = 16,
+  DataType_UTF8 = 17,
   DataType_MIN = DataType_INHERIT,
-  DataType_MAX = DataType_QINT16
+  DataType_MAX = DataType_UTF8
 };
 
-inline const DataType (&EnumValuesDataType())[17] {
+inline const DataType (&EnumValuesDataType())[18] {
   static const DataType values[] = {
     DataType_INHERIT,
     DataType_BOOL,
@@ -80,7 +81,8 @@ inline const DataType (&EnumValuesDataType())[17] {
     DataType_UINT32,
     DataType_UINT64,
     DataType_QINT8,
-    DataType_QINT16
+    DataType_QINT16,
+    DataType_UTF8
   };
   return values;
 }
@@ -104,6 +106,7 @@ inline const char * const *EnumNamesDataType() {
     "UINT64",
     "QINT8",
     "QINT16",
+    "UTF8",
     nullptr
   };
   return names;

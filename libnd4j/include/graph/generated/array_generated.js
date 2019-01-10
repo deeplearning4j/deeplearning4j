@@ -40,7 +40,8 @@ nd4j.graph.DataType = {
   UINT32: 13,
   UINT64: 14,
   QINT8: 15,
-  QINT16: 16
+  QINT16: 16,
+  UTF8: 17
 };
 
 /**

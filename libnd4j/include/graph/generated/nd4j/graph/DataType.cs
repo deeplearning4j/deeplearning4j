@@ -24,6 +24,7 @@ public enum DataType : sbyte
  UINT64 = 14,
  QINT8 = 15,
  QINT16 = 16,
+ UTF8 = 17,
 };
 
 
