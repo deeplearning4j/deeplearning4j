@@ -6650,6 +6650,35 @@ public class Nd4j {
 
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.BOOL);
             }
+            case UTF8: {
+                try {
+                    val list = new ArrayList<String>(prod);
+                    val sb = bb.order(_order);
+                    val pos = bb.position();
+                    val bytes = Arrays.copyOfRange(bb.array(), pos, bb.array().length);
+                    val bis = new ByteArrayInputStream(bytes);
+                    val dis = new DataInputStream(bis);
+                    val length = (int) dis.readLong();
+                    val offsets = new long[length+1];
+                    for (int e = 0; e <= length; e++)
+                        offsets[e] = dis.readLong();
+
+                    for (int e = 0; e < length; e++) {
+                        val start = offsets[e];
+                        val end = offsets[e+1];
+                        val len = end - start;
+                        val builder = new StringBuilder();
+                        for (int c = 0; c < len; c++) {
+                            builder.append(dis.readChar());
+                        }
+                        list.add(builder.toString());
+                    }
+
+                    return Nd4j.create(list, shapeOf);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
             default:
                 throw new UnsupportedOperationException("Unknown datatype: [" + _dtype + "]");
         }

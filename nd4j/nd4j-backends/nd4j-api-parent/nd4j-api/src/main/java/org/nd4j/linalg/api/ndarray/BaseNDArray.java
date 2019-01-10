@@ -6345,6 +6345,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 dos.writeLong(lastLength);
                 lastLength += string.length();
             }
+            // writing out last value
+            dos.writeLong(lastLength);
 
             // now write all strings
             for (int i = 0; i < list.size(); i++) {
