@@ -1082,14 +1082,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         char order = newOrder == 'a' ? ordering() : newOrder;
 
-        auto outShapeInfo = ShapeBuilders::createShapeInfo(_dataType, order, getShapeAsVector(), _context->getWorkspace());
-        void* outBuffer = nullptr;
-        //int8_t* outBufferD = nullptr;
-        //Nd4jLong* outShapeD = nullptr;
-        ALLOCATE(outBuffer, _context->getWorkspace(), _length * sizeOfT(), int8_t);
-        auto result = new NDArray(outBuffer, outShapeInfo, _context, true, true);
-        //result->setSpecialBuffers(outBufferD, outShapeD);
-        //syncToDevice();
+        auto outShapeInfo = ShapeBuilders::createShapeInfo(_dataType, order, getShapeAsVector(), _context->getWorkspace());        
+        auto result = new NDArray(outShapeInfo, true, _context, true);
         result->assign(*this);
 
         return result;

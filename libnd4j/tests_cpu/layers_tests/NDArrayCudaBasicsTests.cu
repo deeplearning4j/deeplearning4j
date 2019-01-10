@@ -1761,7 +1761,7 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_long_test2) {
     NDArray exp4('c', {3,2}, {1,1,0,2,0,0}, nd4j::DataType::INT64);
     NDArray exp5('c', {2}, {2,2}, nd4j::DataType::INT64);
     
-   NDArray z1 = x.reduceAlongDims(nd4j::reduce::CountZero, {0,1,2});
+    NDArray z1 = x.reduceAlongDims(nd4j::reduce::CountZero, {0,1,2});
     ASSERT_TRUE(z1.equalsTo(&exp1));    
     
     NDArray z2 = x.reduceAlongDims(nd4j::reduce::CountZero, {1});

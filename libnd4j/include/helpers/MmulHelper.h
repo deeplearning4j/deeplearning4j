@@ -34,13 +34,15 @@ namespace nd4j {
         // multiptication Matrix to vector
         template <typename X, typename Y, typename Z>
         static nd4j::NDArray* mmulMxV(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0);
-        // multiptication Matrix to Matrix
-        template <typename X, typename Y, typename Z>
-        static nd4j::NDArray* mmulMxM(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0);
+        
 
         template <typename X, typename Y, typename Z>
         static void _dot(void* vA, void* vB, void* vC, Nd4jLong length);
     public:
+
+        // multiptication Matrix to Matrix
+        template <typename X, typename Y, typename Z>
+        static nd4j::NDArray* mmulMxM(const nd4j::NDArray* A, const nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0);
 
         static nd4j::NDArray* mmul(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C = nullptr, double alpha = 1.0, double beta = 0.0);
 

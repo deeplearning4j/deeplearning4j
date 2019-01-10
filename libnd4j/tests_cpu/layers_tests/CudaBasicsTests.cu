@@ -27,6 +27,7 @@
 #include <graph/VariableSpace.h>
 #include <specials_cuda.h>
 #include <TAD.h>
+#include <MmulHelper.h>
 
 #include <cuda.h>
 #include <cuda_launch_config.h>
@@ -3043,4 +3044,61 @@ TEST_F(CudaBasicsTests, execRandom_4) {
 	// delete cuda stream
 	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
 }
+
+//////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, mmulMxM_1) {
+
+	const Nd4jLong M = 3;
+	const Nd4jLong K = 4;
+	const Nd4jLong N = 5;
+
+	NDArray a('f', {M,K}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+	NDArray b('f', {K,N}, {1,-2,3,-4,5,-6,7,-8,9,-10,11,-12,13,-14,15,-16,17,-18,19,-20}, nd4j::DataType::DOUBLE);
+	NDArray c('f', {M,N}, nd4j::DataType::DOUBLE);
+
+	NDArray exp('f', {M,N}, {0.1, 0.3, 0.5, 2.5, 2.7, 2.9, 4.9, 5.1, 5.3, 7.3, 7.5, 7.7, 9.7, 9.9, 10.1}, nd4j::DataType::DOUBLE);
+
+	nd4j::MmulHelper::mmulMxM<double,double,double>(&a, &b, &c, 1., 0.);	
+	// c.printIndexedBuffer();
+
+	ASSERT_TRUE(c.equalsTo(&exp));
+}
+
+//////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, mmulMxM_2) {
+
+	const Nd4jLong M = 3;
+	const Nd4jLong K = 4;
+	const Nd4jLong N = 5;
+
+	NDArray a('c', {M,K}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+	NDArray b('f', {K,N}, {1,-2,3,-4,5,-6,7,-8,9,-10,11,-12,13,-14,15,-16,17,-18,19,-20}, nd4j::DataType::DOUBLE);
+	NDArray c('f', {M,N}, nd4j::DataType::DOUBLE);
+
+	NDArray exp('f', {M,N}, {-1.6, -0.7, 0.2, -0.8, 0.1, 1., -0., 0.9, 1.8, 0.8, 1.7, 2.6, 1.6, 2.5, 3.4}, nd4j::DataType::DOUBLE);
+
+	nd4j::MmulHelper::mmulMxM<double,double,double>(&a, &b, &c, 1., 0.);		
+
+	ASSERT_TRUE(c.equalsTo(&exp));
+}
+
+//////////////////////////////////////////////////////////////////////////
+TEST_F(CudaBasicsTests, mmulMxM_3) {
+
+	const Nd4jLong M = 3;
+	const Nd4jLong K = 4;
+	const Nd4jLong N = 5;
+
+	NDArray a('f', {M,K}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+	NDArray b('c', {K,N}, {1,-2,3,-4,5,-6,7,-8,9,-10,11,-12,13,-14,15,-16,17,-18,19,-20}, nd4j::DataType::DOUBLE);
+	NDArray c('f', {M,N}, nd4j::DataType::DOUBLE);
+
+	NDArray exp('f', {M,N}, {-1.9, -0.9, 0.1, 1.3, 0.3, -0.7, -0.7, 0.3, 1.3, 0.1, -0.9, -1.9, 0.5, 1.5, 2.5}, nd4j::DataType::DOUBLE);
+
+	nd4j::MmulHelper::mmulMxM<double,double,double>(&a, &b, &c, 1., 0.);	
+
+	ASSERT_TRUE(c.equalsTo(&exp));
+}
+
+
 
