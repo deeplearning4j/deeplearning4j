@@ -2748,6 +2748,309 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         return array;
     }
 
+//////////////////////////////////////////////////////////////////////////
+    void NDArray::addRowVector(const NDArray *row, NDArray *target) const {
+
+        if (isS())
+            throw std::runtime_error("NDArray::addRowVector: you can't use this method on String array!");
+        if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->lengthOf())
+            throw std::invalid_argument("NDArray::addRowVector: wrong arguments !");
+        if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType) && !(isR() && row->isR() && target->isR()))
+            throw std::invalid_argument("NDArray::addRowVector: wrong type of target array !");
+
+        int dimension[1] = {1};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+        std::vector<std::pair<void*,size_t>> hostData;
+        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
+        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+
+        // create cuda stream and LaunchContext
+        cudaError_t cudaResult;
+        //cudaStream_t stream;
+        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+        cudaStream_t* stream = this->getContext()->getCudaStream();
+        // allocate required amount of global device memory and copy host data to it
+//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
+        }
+
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
+    }
+
+//////////////////////////////////////////////////////////////////////////
+    void NDArray::subRowVector(const NDArray *row, NDArray * target) const {
+
+        if (isS())
+            throw std::runtime_error("NDArray::subRowVector: you can't use this method on String array!");
+        if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
+            throw std::invalid_argument("NDArray::subRowVector: wrong arguments !");
+        if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType))
+            throw std::invalid_argument("NDArray::subRowVector: wrong type of target array !");
+
+        int dimension[1] = {1};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+
+        std::vector<std::pair<void*,size_t>> hostData;
+        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
+        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+
+        // create cuda stream and LaunchContext
+        cudaError_t cudaResult;
+        //cudaStream_t stream;
+        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+        cudaStream_t* stream = this->getContext()->getCudaStream();
+        // allocate required amount of global device memory and copy host data to it
+//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
+        }
+
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Subtract, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
+    }
+
+//////////////////////////////////////////////////////////////////////////
+    void NDArray::mulRowVector(const NDArray *row, NDArray *target) const {
+
+        if (isS())
+            throw std::runtime_error("NDArray::mulRowVector: you can't use this method on String array!");
+        if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
+            throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
+        if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType))
+            throw std::invalid_argument("NDArray::mulRowVector: wrong type of target array !");
+
+        int dimension[1] = {1};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+        std::vector<std::pair<void*,size_t>> hostData;
+        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
+        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+
+        // create cuda stream and LaunchContext
+        cudaError_t cudaResult;
+        //cudaStream_t stream;
+        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+        cudaStream_t* stream = this->getContext()->getCudaStream();
+        // allocate required amount of global device memory and copy host data to it
+//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
+        }
+
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
+    }
+
+//////////////////////////////////////////////////////////////////////////
+    void NDArray::divRowVector(const NDArray *row, NDArray *target) const {
+
+        if (isS())
+            throw std::runtime_error("NDArray::divRowVector: you can't use this method on String array!");
+        if (row->isB())
+            throw std::runtime_error("NDArray::divRowVector: you can't divide by bool row!");
+        if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
+            throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
+        if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, row->_dataType))
+            throw std::invalid_argument("NDArray::divRowVector: wrong type of target array !");
+
+        int dimension[1] = {1};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+        std::vector<std::pair<void*,size_t>> hostData;
+        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
+        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+
+        // create cuda stream and LaunchContext
+        cudaError_t cudaResult;
+        //cudaStream_t stream;
+        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+        cudaStream_t* stream = this->getContext()->getCudaStream();
+        // allocate required amount of global device memory and copy host data to it
+//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
+        }
+
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Divide, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
+
+    }
+
+//////////////////////////////////////////////////////////////////////////
+// This method adds given row to all rows in this NDArray, this array becomes affected
+    void NDArray::addiRowVector(const NDArray *row) {
+
+        if (isS())
+            throw std::runtime_error("NDArray::addiRowVector: you can't use this method on String array!");
+        if (rankOf() != 2 || !row->isRowVector() || columns() != row->lengthOf())
+            throw std::invalid_argument("NDArray::addiRowVector: wrong arguments !");
+
+        int dimension[1] = {1};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+
+        std::vector<std::pair<void*,size_t>> hostData;
+        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
+        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+
+        // create cuda stream and LaunchContext
+        cudaError_t cudaResult;
+        //cudaStream_t stream;
+        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+        cudaStream_t* stream = this->getContext()->getCudaStream();
+        // allocate required amount of global device memory and copy host data to it
+//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
+        }
+
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, row->_buffer, row->_shapeInfo, row->_bufferD, row->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
+    }
+
+//////////////////////////////////////////////////////////////////////////
+    void NDArray::addColumnVector(const NDArray *column, NDArray *target) const {
+        if (isS())
+            throw std::runtime_error("NDArray::addColumnVector: you can't use this method on String array!");
+        if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !column->isColumnVector() || rows() != column->lengthOf())
+            throw std::invalid_argument("NDArray::addColumnVector: wrong arguments !");
+        if(target->_dataType !=  DataTypeUtils::pickPairwiseResultType(_dataType, column->_dataType))
+            throw std::invalid_argument("NDArray::addColumnVector: wrong type of target array !");
+
+        int dimension[1] = {0};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+        std::vector<std::pair<void*,size_t>> hostData;
+        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
+        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+
+        // create cuda stream and LaunchContext
+        cudaError_t cudaResult;
+        //cudaStream_t stream;
+        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+        cudaStream_t* stream = this->getContext()->getCudaStream();
+        // allocate required amount of global device memory and copy host data to it
+//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
+        }
+
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
+    }
+
+//////////////////////////////////////////////////////////////////////////
+// This method adds given column to all columns in this NDArray, this array becomes affected
+    void NDArray::addiColumnVector(const NDArray *column) {
+        if (isS())
+            throw std::runtime_error("NDArray::addiColumnVector: you can't use this method on String array!");
+        if (rankOf() != 2 || !column->isColumnVector() || rows() != column->lengthOf())
+            throw std::invalid_argument("NDArray::addiColumnVector: wrong arguments !");
+
+        int dimension[1] = {0};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+        std::vector<std::pair<void*,size_t>> hostData;
+        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
+        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+
+        // create cuda stream and LaunchContext
+        cudaError_t cudaResult;
+        //cudaStream_t stream;
+        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+        cudaStream_t* stream = this->getContext()->getCudaStream();
+        // allocate required amount of global device memory and copy host data to it
+//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
+        }
+
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
+    }
+
+//////////////////////////////////////////////////////////////////////////
+// This method multiplies each column of this array by given argument-column, this array becomes affected
+    void NDArray::muliColumnVector(const NDArray *column) {
+        if (isS())
+            throw std::runtime_error("NDArray::muliColumnVector: you can't use this method on String array!");
+        if (rankOf() != 2 || !column->isColumnVector() || rows() != column->lengthOf())
+            throw std::invalid_argument("NDArray::muliColumnVector: wrong arguments !");
+
+        int dimension[1] = {0};
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, dimension, 1));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+        std::vector<std::pair<void*,size_t>> hostData;
+        hostData.emplace_back(dimension, sizeof(int));							// 0 -- dimensions
+        hostData.emplace_back(tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tad->tadOffsets, tad->numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+
+        // create cuda stream and LaunchContext
+        cudaError_t cudaResult;
+        //cudaStream_t stream;
+        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+        cudaStream_t* stream = this->getContext()->getCudaStream();
+        // allocate required amount of global device memory and copy host data to it
+//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
+        }
+
+        NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
+    }
+
 
 
 
