@@ -37,6 +37,8 @@ namespace nd4j {
         template <typename T>
         static NDArray* empty(nd4j::memory::Workspace* workspace = nullptr);
 
+        static NDArray* empty(nd4j::DataType dataType, nd4j::memory::Workspace* workspace = nullptr);
+
         template <typename T>
         static NDArray* valueOf(const std::initializer_list<Nd4jLong>& shape, T value, char order = 'c',  nd4j::memory::Workspace* workspace = nullptr);
 

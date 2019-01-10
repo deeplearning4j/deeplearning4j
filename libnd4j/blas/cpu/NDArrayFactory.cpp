@@ -441,6 +441,15 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::m
     }
     BUILD_SINGLE_TEMPLATE(template NDArray* NDArrayFactory::empty, (nd4j::memory::Workspace* workspace), LIBND4J_TYPES);
 
+    NDArray* empty(nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
+        auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
+        ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
+        auto result = new NDArray(nullptr, shapeInfo, workspace);
+        result->triggerAllocationFlag(false, true);
+
+        return result;
+    }
+
 ////////////////////////////////////////////////////////////////////////
     NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const NDArray& value, const char order, nd4j::memory::Workspace* workspace) {
         auto res = NDArrayFactory::create_(order, shape, value.dataType(), workspace);

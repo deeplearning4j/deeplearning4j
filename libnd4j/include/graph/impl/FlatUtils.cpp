@@ -40,15 +40,17 @@ namespace nd4j {
             auto newShape = new Nd4jLong[shape::shapeInfoLength(rank)];
             memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength(rank));
 
+            auto length = shape::length(newShape);
+            auto dtype = DataTypeUtils::fromFlatDataType(flatArray->dtype());
+
             // empty arrays is special case, nothing to restore here
             if (shape::isEmpty(newShape)) {
                 delete[] newShape;
                 // FIXME: probably should be not a static float
-                return NDArrayFactory::empty<float>(nullptr);
+                return NDArrayFactory::empty(dtype, nullptr);
             }
 
-            auto length = shape::length(newShape);
-            auto dtype = DataTypeUtils::fromFlatDataType(flatArray->dtype());
+
             auto newBuffer = new int8_t[length * DataTypeUtils::sizeOf(dtype)];
 
             BUILD_SINGLE_SELECTOR(dtype, DataTypeConversions, ::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length), LIBND4J_TYPES);
