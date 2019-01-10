@@ -72,25 +72,26 @@ public abstract  class BaseTensorOp extends DynamicCustomOp {
     }
 
     protected TensorList getList(SameDiff sameDiff) {
-        /**
-         * First argument is TensorList.
-         */
-        val arg0 = this.arg(0);
-        val tName = arg0.getVarName();
-
-        val list = sameDiff.getListByName(tName);
-
-        if (list == null) {
-
-            if(sameDiff.getParent() != null && sameDiff.getParent().getListByName(tName) != null){
-                return sameDiff.getParent().getListByName(tName);
-            }
-            else{
-                throw new ND4JIllegalStateException("There's no TensorList with name [" + tName + "] registered");
-            }
-        }
-
-        return list;
+//        /**
+//         * First argument is TensorList.
+//         */
+//        val arg0 = this.arg(0);
+//        val tName = arg0.getVarName();
+//
+//        val list = sameDiff.getListByName(tName);
+//
+//        if (list == null) {
+//
+//            if(sameDiff.getParent() != null && sameDiff.getParent().getListByName(tName) != null){
+//                return sameDiff.getParent().getListByName(tName);
+//            }
+//            else{
+//                throw new ND4JIllegalStateException("There's no TensorList with name [" + tName + "] registered");
+//            }
+//        }
+//
+//        return list;
+        throw new UnsupportedOperationException("Not yet reimplemented");
     }
 
     @Override

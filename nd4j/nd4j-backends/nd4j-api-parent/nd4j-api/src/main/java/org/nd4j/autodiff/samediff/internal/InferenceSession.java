@@ -14,6 +14,10 @@ import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayReadV3;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayWriteV3;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -123,6 +127,48 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             Preconditions.checkNotNull(arr, "Input to LoopCond op must not be null");
             Preconditions.checkState(arr.isScalar() && arr.dataType() == DataType.BOOL, "LoopCond input must be a scalar boolean, got %ndShape");
             return new INDArray[]{arr};
+        } else if(op instanceof BaseTensorOp){
+            //TensorOps - special cases...
+            if(op instanceof TensorArrayV3){
+                //Create a TensorArray
+                VarId vid = newVarId(op.outputVariable().getVarName(), outputFrameIter);
+                Preconditions.checkState(!tensorArrays.containsKey(vid), "TensorArray already exists for %s when executing TensorArrayV3", vid);
+                tensorArrays.put(vid, new ArrayList<INDArray>());
+
+                // Note that TensorArray has 2 outputs - a 'dummy' SDVariable that represents it, and a second output (return a scalar 0.0)
+                return new INDArray[]{Nd4j.scalar(true), Nd4j.scalar(0.0f)};
+            } else if(op instanceof TensorArrayReadV3){
+                //Do lookup and return
+                //Index is array 1...
+                INDArray idx = ((TensorArrayReadV3) op).getInputArgument(1);
+                Preconditions.checkState(idx.isScalar(), "TensorArrayRead input argument 1 should be scalar - has shape %ndShape", idx);
+                int i = idx.getInt(0);
+
+                SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+                //Work out the frame/iteration:
+                VarId v = null;
+                for(VarId vid : opInputs){
+                    if(vid.getVariable().equals(inTensorArray.getVarName())){
+                        v = vid;
+                        break;
+                    }
+                }
+                Preconditions.checkState(v != null, "Could not find VarId input corresponding to TensorArray %s", inTensorArray.getVarName());
+
+                List<INDArray> list = getTensorArrays().get(v);
+                Preconditions.checkState(list != null, "Could not find TensorList for %s", v);
+                Preconditions.checkState(list.size() > i, "Cannot get index %s from TensorList of size %s (array not present?) - VarId=%s", i, v);
+
+                INDArray out = list.get(i);
+                return new INDArray[]{out};
+            } else if(op instanceof TensorArrayWriteV3){
+                //TensorArrayWrite - also has a scalar 0.0 that it returns...
+
+                return new INDArray[]{Nd4j.scalar(0.0f)};
+            } else {
+                throw new IllegalStateException("Execution support not yet implemented for: " + op.getClass().getName());
+            }
+
         } else if(op instanceof CustomOp){
             CustomOp c = (CustomOp)op;
             Nd4j.getExecutioner().exec(c);
@@ -149,13 +195,15 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
         DifferentialFunction df = sameDiff.getFunctionById(opName);
 
-        //TODO We should clone these - probably - as we don't want them shared between threads/sessions!
+        //TODO We should clone these ops - probably - as we don't want them shared between threads/sessions!
         //But let's only clone them *once* and cache in inference session - not on every exec
 
         Preconditions.checkNotNull(df, "No differential function fond with name %s", opName);
 
         if(df instanceof LoopCond || df instanceof Enter || df instanceof Exit || df instanceof NextIteration ||
-                df instanceof Merge || df instanceof Switch || df instanceof If || df instanceof While){
+                df instanceof Merge || df instanceof Switch || df instanceof If || df instanceof While ||
+                df instanceof BaseTensorOp){
+            //Control dependencies and tensor ops (like TensorArray, TensorArrayRead etc) don't need inputs set, execution is a special case
             return df;
         }
 

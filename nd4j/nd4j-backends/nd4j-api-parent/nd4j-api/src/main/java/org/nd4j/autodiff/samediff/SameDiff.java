@@ -167,8 +167,6 @@ public class SameDiff {
     @Deprecated //TO BE REMOVED - to Variable
     private Map<String, SDVariable> forwardVarForGrad;
 
-    private Map<String, TensorList> lists = new HashMap<>();    // Key - node name; Value - TensorList
-
     // counter for auto-naming variables
     private int variableId = 0;
 
@@ -9744,15 +9742,6 @@ public class SameDiff {
      */
     public SameDiff getFunction(String functionName) {
         return sameDiffFunctionInstances.get(functionName);
-    }
-
-
-    public TensorList getListByName(@NonNull String name) {
-        return lists.get(name);
-    }
-
-    public void putListByName(@NonNull String name, TensorList list) {
-        lists.put(name, list);
     }
 
 

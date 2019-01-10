@@ -30,6 +30,9 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class TensorArrayV3 extends  BaseTensorOp {
@@ -114,11 +117,11 @@ public class TensorArrayV3 extends  BaseTensorOp {
     private SDVariable getVar(){
         // get var associated with the tensor list
 
-        getSameDiff().putListByName(list.getName(), list);
-        val name = list.getName();
-        if (getSameDiff().variableMap().containsKey(name)){
-            return getSameDiff().variableMap().get(name);
-        }
+//        getSameDiff().putListByName(list.getName(), list);
+//        val name = list.getName();
+//        if (getSameDiff().variableMap().containsKey(name)){
+//            return getSameDiff().variableMap().get(name);
+//        }
         return getSameDiff().var(list.getName(), DataType.FLOAT, 1);
     }
 
@@ -193,5 +196,13 @@ public class TensorArrayV3 extends  BaseTensorOp {
                 new SDVariable[]{getVar(),
                         intToVar(-1),
                         value}).outputVariables();//);
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+        //The SDVariable that is the output of this "function" is just a dummy variable anyway...
+        //Usually 2 outputs... seems like first one is dummy, second one is a float??
+        //TODO work out exactly what this second output is for (it's used in TensorArrayWrite for example...
+        return Arrays.asList(DataType.BOOL, DataType.FLOAT);
     }
 }
