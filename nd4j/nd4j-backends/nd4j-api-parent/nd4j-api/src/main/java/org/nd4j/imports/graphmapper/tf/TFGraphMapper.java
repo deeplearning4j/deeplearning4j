@@ -391,6 +391,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         if(ret.endsWith("/read")) {
             ret = ret.replace("/read","");
         }
+        if(ret.endsWith(":0")){
+            ret = ret.substring(0, ret.length()-2);
+        }
         return ret;
     }
 

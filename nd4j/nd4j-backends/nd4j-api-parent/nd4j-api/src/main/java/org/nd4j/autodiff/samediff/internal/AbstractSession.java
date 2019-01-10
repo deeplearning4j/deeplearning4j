@@ -239,7 +239,8 @@ public abstract class AbstractSession<T, O> {
                     }
                 }
             } else {
-                throw new IllegalStateException("Unable to execute variable " + varToExec + " of type " + sameDiff.getVariable(varToExec.getVariable()).getVariableType());
+                Variable v = sameDiff.getVariables().get(varToExec.getVariable());
+                throw new IllegalStateException("Unable to execute variable " + varToExec + " of type " + v.getVariable().getVariableType());
             }
         }
 
