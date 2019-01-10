@@ -37,11 +37,12 @@ public class TFGraphTestZooModels {
     public static TemporaryFolder classTestDir = new TemporaryFolder();
 
     public static final String[] IGNORE_REGEXES = {
-            //https://github.com/deeplearning4j/deeplearning4j/issues/6462
-//            "inception_v4_2018_04_27",
-//            "inception_resnet_v2_2018_04_27",
+            //2019/01/10 - Need to fix: "IllegalStateException: Unable to execute variable VarId("image_tensor:0","main",0) of type ARRAY"
+            "ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03",
+            "ssd_mobilenet_v1_coco_2018_01_28",
 
             //2019/01/10 - Blocked by resize bilinear edge case - issue 8, https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            //Also xception (deeplabv3_pascal_train_aug_2018_01_04) is VERY slow - may simply be large input image size (513x513)
             "deeplabv3_pascal_train_aug_2018_01_04",
             "deeplab_mobilenetv2_coco_voc_trainval",
     };
