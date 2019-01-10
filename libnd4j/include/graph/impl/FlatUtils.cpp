@@ -46,8 +46,39 @@ namespace nd4j {
             // empty arrays is special case, nothing to restore here
             if (shape::isEmpty(newShape)) {
                 delete[] newShape;
-                // FIXME: probably should be not a static float
                 return NDArrayFactory::empty(dtype, nullptr);
+            }
+
+            if (dtype == UTF8) {
+                std::vector<std::string> substrings(length);
+                std::vector<Nd4jLong> shapeVector(rank);
+                for (int e = 0; e < rank; e++)
+                    shapeVector[e] = newShape[e+1];
+
+                auto rawPtr = (void *)flatArray->buffer()->data();
+                auto longPtr = reinterpret_cast<Nd4jLong *>(rawPtr);
+                auto charPtr = reinterpret_cast<char *>(longPtr + length + 2);
+                auto offsets = new Nd4jLong[length+1];
+                for (int e = 0; e <= length; e++)
+                    offsets[e] = longPtr[e+1];
+
+                for (int e = 0; e < length; e++) {
+                    auto start = offsets[e];
+                    auto end = offsets[e+1];
+                    auto len = end - start;
+
+                    auto c = (char *) malloc(len+1);
+                    memset(c, '\0', len + 1);
+                    memcpy(c, charPtr + start, len);
+
+                    std::string val(c);
+                    substrings[e] = val;
+                    free(c);
+                }
+
+                delete[] offsets;
+
+                return NDArrayFactory::string_(shape::order(newShape), shapeVector, substrings);
             }
 
 
