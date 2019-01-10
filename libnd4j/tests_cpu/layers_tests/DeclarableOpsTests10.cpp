@@ -199,13 +199,13 @@ TEST_F(DeclarableOpsTests10, MirrorPad_SGO_Test_1) {
     auto pad = NDArrayFactory::create<int>('c', {1, 2}, {1, 1});
 //    auto value(10.0);
 
-    auto exp = NDArrayFactory::create<double>({5., 1., 2., 3., 4., 5., 1.});
+    auto exp = NDArrayFactory::create<double>({2., 1., 2., 3., 4., 5., 4.});
 
     nd4j::ops::mirror_pad op;
 
     auto res = op.execute({&in, &pad}, {10.0}, {0}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    res->at(0)->printIndexedBuffer("Mirror pad:");
+    res->at(0);
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
     delete res;
 }
