@@ -59,3 +59,15 @@ TEST_F(OneOffTests, test_non2d_0A_1) {
     ASSERT_EQ(Status::OK(), status);
     delete graph;
 }
+
+TEST_F(OneOffTests, test_assert_scalar_float32_1) {
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/scalar_float32.fb");
+
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    delete graph;
+}

@@ -19,6 +19,7 @@
 //
 
 #include <graph/FlatUtils.h>
+#include <array/ByteOrder.h>
 #include <array/DataTypeConversions.h>
 #include <array/DataTypeUtils.h>
 #include <array/ByteOrderUtils.h>
@@ -50,6 +51,9 @@ namespace nd4j {
             }
 
             if (dtype == UTF8) {
+                bool isBe = BitwiseUtils::isBE();
+                bool canKeep = (isBe && flatArray->byteOrder() == nd4j::graph::ByteOrder_BE) || (!isBe && flatArray->byteOrder() == nd4j::graph::ByteOrder_LE);
+
                 std::vector<std::string> substrings(length);
                 std::vector<Nd4jLong> shapeVector(rank);
                 for (int e = 0; e < rank; e++)
@@ -59,8 +63,10 @@ namespace nd4j {
                 auto longPtr = reinterpret_cast<Nd4jLong *>(rawPtr);
                 auto charPtr = reinterpret_cast<char *>(longPtr + length + 2);
                 auto offsets = new Nd4jLong[length+1];
-                for (int e = 0; e <= length; e++)
-                    offsets[e] = longPtr[e+1];
+                for (int e = 0; e <= length; e++) {
+                    auto v = canKeep ?  longPtr[e+1] : BitwiseUtils::swap_bytes<Nd4jLong>(longPtr[e+1]);
+                    offsets[e] = v;
+                }
 
                 for (int e = 0; e < length; e++) {
                     auto start = offsets[e];
@@ -68,10 +74,12 @@ namespace nd4j {
                     auto len = end - start;
 
                     auto c = (char *) malloc(len+1);
+                    CHECK_ALLOC(c, "Failed temp allocation");
                     memset(c, '\0', len + 1);
                     memcpy(c, charPtr + start, len);
 
                     std::string val(c);
+                    nd4j_printf("String [%i]: <%s>\n", e, val.c_str());
                     substrings[e] = val;
                     free(c);
                 }
