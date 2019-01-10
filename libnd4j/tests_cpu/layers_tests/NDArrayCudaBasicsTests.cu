@@ -608,7 +608,49 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveNeg_2) {
     //delete y;
 }
 
-TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_1) {
+TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveSqrt_1) { // strict
+    auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create<double>('c', {5});
+    auto exp = NDArrayFactory::create<double>({1.000000, 1.414214, 1.732051, 2.000000, 2.236068});
+    ASSERT_TRUE(x.isActualOnDeviceSide());
+    ASSERT_TRUE(x.isActualOnHostSide());
+
+    x.applyTransform(transform::Sqrt, &y, nullptr);
+    //ASSERT_TRUE(x->isActualOnDeviceSide());
+    //ASSERT_FALSE(x->isActualOnHostSide());
+
+    //ASSERT_TRUE(y->isActualOnDeviceSide());
+    //ASSERT_TRUE(y->isActualOnHostSide());
+    //auto res = cudaStreamSynchronize(*y.getContext()->getCudaStream());
+    //ASSERT_EQ(0, res);
+    ASSERT_TRUE(y.equalsTo(exp));
+    //y.printBuffer("SQRT output");
+    //delete x;
+    //delete y;
+}
+
+TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveAssign_1) { // strict
+    auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 4, 5});
+    auto y = NDArrayFactory::create<double>('c', {5});
+    //auto exp = NDArrayFactory::create<double>({1.000000, 1.414214, 1.732051, 2.000000, 2.236068});
+    ASSERT_TRUE(x.isActualOnDeviceSide());
+    ASSERT_TRUE(x.isActualOnHostSide());
+
+    x.applyTransform(transform::AnyOps::Assign, &y, nullptr);
+    //ASSERT_TRUE(x->isActualOnDeviceSide());
+    //ASSERT_FALSE(x->isActualOnHostSide());
+
+    //ASSERT_TRUE(y->isActualOnDeviceSide());
+    //ASSERT_TRUE(y->isActualOnHostSide());
+    //auto res = cudaStreamSynchronize(*y.getContext()->getCudaStream());
+    //ASSERT_EQ(0, res);
+    //ASSERT_TRUE(y.equalsTo(exp));
+    y.printBuffer("Assign output");
+    //delete x;
+    //delete y;
+}
+
+TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_1) { // strict
     auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, 4, 5});
     auto y = NDArrayFactory::create<double>('c', {5});
 
@@ -1524,28 +1566,6 @@ TEST_F(NDArrayCudaBasicsTests, EqualityTest1) {
     delete arrayC;
     delete arrayD;
     delete arrayE;
-}
-
-TEST_F(NDArrayCudaBasicsTests, TestTad1) {
-    auto array = NDArrayFactory::create_<float>('c', {3, 3});
-    //nd4j_printf("Tensor with axe 1 is near to be invoked.\n", "");
-    auto row2 = array->tensorAlongDimension(1, {1});
-    //nd4j_printf("Tensor with axe 1 was invoked.\n", "");
-
-    ASSERT_TRUE(row2->isView());
-    ASSERT_EQ(3, row2->lengthOf());
-    //array->assign(0.f);
-    //array->syncToDevice();
-    //nd4j_printf("Assigning 1.0 double to float Tensor.\n", "");
-    row2->assign(1.0);
-    //row2->syncToDevice();
-    //row2->syncToHost();
-    //array->syncToHost();
-    //array->printBuffer("TAD fixed output");
-    ASSERT_NEAR(3.0f, array->sumNumber().e<float>(0), 1e-5);
-
-    delete row2;
-    delete array;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
