@@ -1093,62 +1093,27 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
     
     // mode:  0 - REFLECT, else - SYMMETRIC
     const int reflBorder = (bool)mode ? 1 : 0;
-    const int symmBorder = (bool)mode ? 0 : 1;
-
     const int rank        = input.rankOf();
     const Nd4jLong outLen = output.lengthOf();
-    const Nd4jLong inLen  = input.lengthOf();    
 
     if(rank <= 1) {
 
-        const auto leftSide  = paddings.e<Nd4jLong>(0);
-        const auto rightSide = paddings.e<Nd4jLong>(1);
-        if (mode == 0) {// REFLECT
-            for(int i = 0; i < outLen; ++i) {
-                if (i < leftSide) {
-                    // put
-                    output.p(i, input.e<T>(inLen - i  - 1));
-                }
-                else if (i > outLen - rightSide - 1) {
-                    output.p(i, input.e<T>(leftSide - i + outLen - rightSide - 1));
-                }
-                else
-                    output.p(i, input.e<T>(i - leftSide));
-            }
-        }
-        else {
-            for(int i = 0; i < outLen; ++i) {
-                if (i < leftSide) {
-                    // put
-                    output.p(i, input.e<T>(leftSide - i - 1));
-                }
-                else if (i > outLen - rightSide - 1) {
-                    output.p(i, input.e<T>(inLen + outLen - i - rightSide - 1)); //
-                }
-                else
-                    output.p(i, input.e<T>(i - leftSide));
-            }
-        }
-        /*
-//#pragma omp parallel for if(outLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        const Nd4jLong inLen         = input.lengthOf();
+        const auto leftSide          = paddings.e<Nd4jLong>(0);
+        const auto leftSideCorrected = leftSide - reflBorder;
+        const Nd4jLong len           = 2*(inLen-1) + leftSide + reflBorder;        
+
         for(int i = 0; i < outLen; ++i) {
             
-            for(int j = 0; j < leftSide; ++j) {
-                Nd4jLong iindex = inLen - leftSide + symmBorder + j;
-                if (iindex >= inLen ) iindex = inLen - 1;
-                if (iindex < 0) iindex = 0;
-                output.p(j, input.e<T>(iindex));
-            }
-            for(int j = 0; j < inLen; ++j)
-                output.p(j + leftSide, input.e<T>(j));
-            for(int j = 0; j < rightSide; ++j) {
-                Nd4jLong iindex = inLen - 1 - symmBorder - j;
-                if (iindex < 0) iindex = 0;
-                if (iindex >= inLen) iindex = inLen - 1;
-                output.p(leftSide + inLen + j, input.e<T>(iindex));
-            }
+            if (i < leftSide)                                   // left side 
+                output.p(i, input.e<T>(leftSideCorrected - i));            
+            
+            else if(i >= leftSide && i < leftSide + inLen)      // middle
+                output.p(i, input.e<T>(i - leftSide));
+            
+            else                                                // right side
+                output.p(i, input.e<T>(len - i));
         }
-         */
     }
     else {
 
@@ -1160,16 +1125,19 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
 
             for(int j = 0; j < rank; ++j) {
             
-                const auto leftSide  = paddings.e<T>(j, 0);
+                const Nd4jLong inLen         = input.sizeAt(j);
+                const auto leftSide          = paddings.e<T>(j, 0);
+                const auto leftSideCorrected = leftSide - reflBorder;
+                const Nd4jLong len           = 2*(inLen-1) + leftSide + reflBorder;
 
-                if(outIdx[j] < leftSide) 
-                    inIdx[j] = leftSide - outIdx[j] - reflBorder;
+                if(outIdx[j] < leftSide)                                        // left side
+                    inIdx[j] = leftSideCorrected - outIdx[j];
 
-                else if(outIdx[j] >= leftSide && outIdx[j] < leftSide + input.sizeAt(j)) 
+                else if(outIdx[j] >= leftSide && outIdx[j] < leftSide + inLen)  // middle
                     inIdx[j] = outIdx[j] - leftSide;
 
-                else
-                    inIdx[j] = 2 * input.sizeAt(j) + leftSide - outIdx[j] - 1 - symmBorder;                
+                else                                                            // right side
+                    inIdx[j] = len - outIdx[j];
             }
     
             auto outOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), outIdx.data(), rank);

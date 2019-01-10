@@ -633,3 +633,19 @@ TEST_F(DeclarableOpsTests12, mirrorPad_test17) {
     ASSERT_TRUE(exp2.equalsTo(z));    
 }
 
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, mirrorPad_test18) {
+    
+    NDArray x('c', {3}, {1,2,3}, nd4j::DataType::DOUBLE);
+    NDArray padding('c', {2}, {1,1}, nd4j::DataType::INT32);
+    NDArray z('c', {5}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {5}, {2,1,2,3,2}, nd4j::DataType::DOUBLE);
+        
+    nd4j::ops::mirror_pad op;    
+    Nd4jStatus status = op.execute({&x, &padding}, {&z}, {}, {0}, {});      // reflect    
+    
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));    
+}
+

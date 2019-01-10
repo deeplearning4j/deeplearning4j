@@ -66,7 +66,7 @@ DECLARE_SHAPE_FN(mirror_pad) {
     auto paddings = INPUT_VARIABLE(1);
 
     const int rank = input->rankOf() ? input->rankOf() : 1;                 // if scalar is input then vector is output
-    const int includeBorder = static_cast<bool>(INT_ARG(0)) ? 0 : 1;        // 0 - REFLECT, else - SYMMETRIC
+    const int includeBorder = static_cast<bool>(INT_ARG(0)) ? 0 : 1;        
 
     if(rank == 1) {  // when input is scalar or vector;
         REQUIRE_TRUE(paddings->lengthOf() == 2, 0, "MIRROR_PAD OP: the length of paddings array must be equal 2, when input array is vector or scalar, bot but got %i instead !", paddings->rankOf());
