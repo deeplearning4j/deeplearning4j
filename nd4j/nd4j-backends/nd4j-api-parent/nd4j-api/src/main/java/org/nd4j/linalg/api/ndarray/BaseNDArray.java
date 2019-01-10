@@ -5118,6 +5118,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray n = (INDArray) o;
 
+        if (n == this)
+            return true;
+
         if (n.isSparse()) {
             return n.equals(this);
         }
@@ -5130,6 +5133,22 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (this.isEmpty() && n.isEmpty())
             return true;
+
+        if (this.dataType() != n.dataType())
+            return false;
+
+        // meh
+        if (this.dataType() == DataType.UTF8 && n.dataType() == DataType.UTF8) {
+            for (long e = 0; e < this.length(); e++) {
+                val str1 = this.getStringUnsafe(e);
+                val str2 = n.getStringUnsafe(e);
+
+                if (!str1.equals(str2))
+                    return false;
+            }
+
+            return true;
+        }
 
         //epsilon equals
         if (isScalar() && n.isScalar()) {

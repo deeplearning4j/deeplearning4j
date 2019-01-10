@@ -22,9 +22,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class StringArrayTests {
@@ -61,5 +59,16 @@ public class StringArrayTests {
         assertTrue(s, s.contains("beta"));
         assertTrue(s, s.contains("gamma"));
         System.out.println(s);
+    }
+
+    @Test
+    public void testBasicStrings_3() throws Exception {
+        val arrayX = Nd4j.create("alpha", "beta", "gamma");
+        val arrayY = Nd4j.create("alpha", "beta", "gamma");
+        val arrayZ = Nd4j.create("Alpha", "bEta", "gamma");
+
+        assertEquals(arrayX, arrayX);
+        assertEquals(arrayX, arrayY);
+        assertNotEquals(arrayX, arrayZ);
     }
 }

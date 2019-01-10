@@ -32,6 +32,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -161,6 +163,24 @@ public class ByteOrderTests  extends BaseNd4jTest {
         val restored = Nd4j.createFromFlatArray(flat);
 
         assertEquals(scalar, restored);
+    }
+
+    @Test
+    public void testStringEncoding_1() {
+        val strings = Arrays.asList("alpha", "beta", "gamma");
+        val vector = Nd4j.create(strings, 3);
+
+        val bufferBuilder = new FlatBufferBuilder(0);
+
+        val fb = vector.toFlatArray(bufferBuilder);
+        bufferBuilder.finish(fb);
+        val db = bufferBuilder.dataBuffer();
+
+        val flat = FlatArray.getRootAsFlatArray(db);
+
+        val restored = Nd4j.createFromFlatArray(flat);
+
+        assertEquals(vector, restored);
     }
 
     @Override
