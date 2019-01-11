@@ -53,6 +53,7 @@ namespace nd4j {
             if (dtype == UTF8) {
                 bool isBe = BitwiseUtils::isBE();
                 bool canKeep = (isBe && flatArray->byteOrder() == nd4j::graph::ByteOrder_BE) || (!isBe && flatArray->byteOrder() == nd4j::graph::ByteOrder_LE);
+                auto order = shape::order(newShape);
 
                 std::vector<std::string> substrings(length);
                 std::vector<Nd4jLong> shapeVector(rank);
@@ -84,8 +85,9 @@ namespace nd4j {
                 }
 
                 delete[] offsets;
+                delete[] newShape;
 
-                return NDArrayFactory::string_(shape::order(newShape), shapeVector, substrings);
+                return NDArrayFactory::string_(order, shapeVector, substrings);
             }
 
 

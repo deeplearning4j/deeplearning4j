@@ -495,9 +495,9 @@ namespace nd4j {
                 } else {
                     if (this->opType() != OpType_LOGIC) {
                         if (this->_name.size() > 0) {
-                            nd4j_printf("Node [%i:<%s>] do not have any inputs defined\n", this->_id, this->_name.c_str());
+                            nd4j_debug("Node [%i:<%s>] has no inputs defined\n", this->_id, this->_name.c_str());
                         } else {
-                            nd4j_printf("Node [%i:<noname>] do not have any inputs defined\n", this->_id);
+                            nd4j_debug("Node [%i:<noname>] has no inputs defined\n", this->_id);
                         }
                     }
                 }

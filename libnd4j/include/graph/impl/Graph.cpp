@@ -307,7 +307,7 @@ namespace nd4j {
             }
 
             auto cname = node->getName() == nullptr ? nullptr : node->getName()->c_str();
-            auto nodeState = new Variable(nullptr, cname, node->id());
+            auto nodeState = _variableSpace->hasVariable(node->id()) ? _variableSpace->getVariable(node->id()) :new Variable(nullptr, cname, node->id());
             if (node->getName() != nullptr)
                 nodeState->setName(node->getName());
 

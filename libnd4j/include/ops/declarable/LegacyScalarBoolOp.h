@@ -32,7 +32,6 @@ namespace nd4j {
         protected:
             Nd4jStatus validateAndExecute(Context& block);
 
-            NDArray _scalar;
         public:
             LegacyScalarBoolOp();
             LegacyScalarBoolOp(int opNum);
