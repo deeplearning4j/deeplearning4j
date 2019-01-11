@@ -817,7 +817,7 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() {
             }
 
             // final prefix
-            prefix[lengthOf()] = dataLength;
+            prefix[lengthOf()+1] = dataLength;
 
             // preallocating all at once
             std::vector<int8_t> result((prefixLength * sizeof(Nd4jLong)) + dataLength);

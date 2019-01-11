@@ -6655,7 +6655,12 @@ public class Nd4j {
                     val list = new ArrayList<String>(prod);
                     val sb = bb.order(_order);
                     val pos = bb.position();
-                    val bytes = Arrays.copyOfRange(bb.array(), pos, bb.array().length);
+                    val arr = new byte[sb.limit()];
+                    for (int e = 0; e < arr.length; e++) {
+                        arr[e] = sb.get(e);
+                    }
+
+                    val bytes = Arrays.copyOfRange(arr, pos, arr.length);
                     val bis = new ByteArrayInputStream(bytes);
                     val dis = new DataInputStream(bis);
                     val length = (int) dis.readLong();
