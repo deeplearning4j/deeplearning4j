@@ -23,10 +23,12 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -74,5 +76,16 @@ public abstract  class BaseTensorOp extends DynamicCustomOp {
         return opName();
     }
 
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        //Not used/not required
+        return Collections.emptyList();
+    }
+
+    @Override
+    public int getNumOutputs(){
+        //1 output in allay cases - sometimes just a dummy output, however
+        return 1;
+    }
 
 }

@@ -2029,7 +2029,7 @@ public class Nd4j {
     public static INDArray linspace(long lower, long upper, long num, @NonNull DataType dtype) {
         // for now we'll temporarily keep original impl
         if(lower == upper && num == 1) {
-            return Nd4j.scalar(lower);
+            return Nd4j.scalar(dtype, lower);
         }
 
 
@@ -3741,37 +3741,59 @@ public class Nd4j {
      * PLEASE NOTE: Temporary method, added to ensure backward compatibility
      * @param scalar
      * @return
+     * @deprecated Use Nd4j.scalar methods, such as {@link #scalar(double)} or {@link #scalar(DataType, Number)}
      */
+    @Deprecated
     public static INDArray trueScalar(Number scalar) {
         val ret = INSTANCE.trueScalar(scalar);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     * @deprecated Use {@link #createFromArray(boolean...)}
+     */
+    @Deprecated
     public static INDArray trueVector(boolean[] data) {
         val ret = INSTANCE.trueVector(data);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     * @deprecated Use {@link #createFromArray(long...)}
+     */
+    @Deprecated
     public static INDArray trueVector(long[] data) {
         val ret = INSTANCE.trueVector(data);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     * @deprecated Use {@link #createFromArray(int...)}
+     */
+    @Deprecated
     public static INDArray trueVector(int[] data) {
         val ret = INSTANCE.trueVector(data);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     * @deprecated Use {@link #createFromArray(float...)}
+     */
+    @Deprecated
     public static INDArray trueVector(float[] data) {
         val ret = INSTANCE.trueVector(data);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     * @deprecated Use {@link #createFromArray(double...)}
+     */
+    @Deprecated
     public static INDArray trueVector(double[] data) {
         val ret = INSTANCE.trueVector(data);
         logCreationIfNecessary(ret);
@@ -3779,15 +3801,19 @@ public class Nd4j {
     }
 
     /**
-     * This method creates "empty" INDArray
+     * This method creates "empty" INDArray with datatype determined by {@link #dataType()}
      *
-     * PLEASE NOTE: this feature isn't production ready yet
-     * @return
+     * @return Empty INDArray
      */
     public static INDArray empty() {
         return empty(Nd4j.dataType());
     }
 
+    /**
+     * This method creates "empty" INDArray of the specified datatype
+     *
+     * @return Empty INDArray
+     */
     public static INDArray empty(DataType type) {
         val ret = INSTANCE.empty(type);
         logCreationIfNecessary(ret);
@@ -3803,7 +3829,7 @@ public class Nd4j {
      */
     public static INDArray create(float[] data, int[] shape) {
         if (shape.length == 0 && data.length == 1) {
-            return trueScalar(data[0]);
+            return scalar(data[0]);
         }
 
         if (shape.length == 1) {
@@ -3820,7 +3846,7 @@ public class Nd4j {
 
     public static INDArray create(float[] data, long[] shape) {
         if (shape.length == 0 && data.length == 1) {
-            return trueScalar(data[0]);
+            return scalar(data[0]);
         }
 
         if (shape.length == 1) {
@@ -3837,7 +3863,7 @@ public class Nd4j {
 
     public static INDArray create(double[] data, long[] shape) {
         if (shape.length == 0 && data.length == 1) {
-            return trueScalar(data[0]);
+            return scalar(data[0]);
         }
 
         if (shape.length == 1) {
@@ -4409,7 +4435,7 @@ public class Nd4j {
      */
     public static INDArray create(double[] data, int[] shape, int[] stride, long offset, char ordering) {
         if (data.length == 1 && shape.length == 0)
-            return trueScalar(data[0]);
+            return scalar(data[0]);
 
         if (shape.length == 1) {
             if (shape[0] != data.length)
@@ -4640,7 +4666,7 @@ public class Nd4j {
      */
     public static INDArray create(int[] shape, int[] stride, char ordering) {
         if(shape.length == 0)
-            return Nd4j.trueScalar(0.0);
+            return Nd4j.scalar(Nd4j.dataType(), 0.0);
 
         checkShapeValues(shape);
 
@@ -4651,7 +4677,7 @@ public class Nd4j {
 
     public static INDArray create(long[] shape, long[] stride, char ordering) {
         if(shape.length == 0)
-            return Nd4j.trueScalar(0.0);
+            return Nd4j.scalar(Nd4j.dataType(), 0.0);
 
         checkShapeValues(shape);
 
@@ -4701,7 +4727,7 @@ public class Nd4j {
      */
     public static INDArray create(@NonNull int[] shape, char ordering) {
         if(shape.length == 0)
-            return Nd4j.trueScalar(0.0);
+            return Nd4j.scalar(dataType(), 0.0);
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -4724,7 +4750,7 @@ public class Nd4j {
      */
     public static INDArray create(@NonNull long[] shape, char ordering) {
         if(shape.length == 0)
-            return Nd4j.trueScalar(0.0);
+            return Nd4j.scalar(dataType(), 0.0);
         //ensure shapes that wind up being scalar end up with the write shape
 
         checkShapeValues(shape);
@@ -4809,7 +4835,7 @@ public class Nd4j {
      */
     public static INDArray createUninitialized(int[] shape, char ordering) {
         if (shape.length == 0)
-            return trueScalar(0.0);
+            return scalar(dataType(), 0.0);
 
         checkShapeValues(shape);
 
@@ -4835,7 +4861,7 @@ public class Nd4j {
 
     public static INDArray createUninitialized(long[] shape, char ordering) {
         if (shape.length == 0)
-            return trueScalar(0.0);
+            return scalar(dataType(), 0.0);
 
         checkShapeValues(shape);
 
@@ -4853,7 +4879,7 @@ public class Nd4j {
      */
     public static INDArray createUninitializedDetached(int[] shape, char ordering) {
         if (shape.length == 0)
-            return trueScalar(0.0);
+            return scalar(dataType(), 0.0);
 
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
@@ -4877,7 +4903,7 @@ public class Nd4j {
      */
     public static INDArray createUninitializedDetached(long[] shape, char ordering) {
         if (shape.length == 0)
-            return trueScalar(0.0);
+            return scalar(dataType(), 0.0);
 
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
@@ -4902,7 +4928,7 @@ public class Nd4j {
      */
     public static INDArray createUninitialized(int[] shape) {
         if(shape.length == 0)
-            return Nd4j.trueScalar(0.0);
+            return Nd4j.scalar(dataType(), 0.0);
         checkShapeValues(shape);
         //ensure shapes that wind up being scalar end up with the write shape
         return createUninitialized(shape, Nd4j.order());
@@ -5183,7 +5209,7 @@ public class Nd4j {
      */
     public static INDArray valueArrayOf(int[] shape, double value) {
         if (shape.length == 0)
-            return trueScalar(value);
+            return scalar(value);
 
         checkShapeValues(shape);
 
@@ -5227,7 +5253,7 @@ public class Nd4j {
      */
     public static INDArray valueArrayOf(long[] shape, double value) {
         if (shape.length == 0)
-            return trueScalar(value);
+            return scalar(value);
 
         checkShapeValues(shape);
 
@@ -5717,7 +5743,7 @@ public class Nd4j {
      */
     public static INDArray ones(@NonNull int... shape) {
         if(shape.length == 0)
-            return Nd4j.trueScalar(1.0);
+            return Nd4j.scalar(dataType(), 1.0);
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.ones(shape);
@@ -5728,7 +5754,7 @@ public class Nd4j {
 
     public static INDArray ones(@NonNull long... shape) {
         if(shape.length == 0)
-            return Nd4j.trueScalar(1.0);
+            return Nd4j.scalar(dataType(), 1.0);
         checkShapeValues(shape);
 
         INDArray ret = INSTANCE.ones(shape);
@@ -5737,17 +5763,23 @@ public class Nd4j {
     }
 
     /**
-     * Create a scalar ndarray with the specified offset
+     * Create a scalar ndarray with the specified value
      *
      * @param value the value to initialize the scalar with
      * @return the created ndarray
      */
     public static INDArray scalar(Number value) {
-        INDArray ret = INSTANCE.trueScalar(value);
+        INDArray ret = INSTANCE.scalar(value);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     * Create a scalar ndarray with the specified value and datatype
+     *
+     * @param value the value to initialize the scalar with
+     * @return the created ndarray
+     */
     public static INDArray scalar(DataType dataType, Number value) {
         INDArray ret = INSTANCE.trueScalar(dataType, value);
         logCreationIfNecessary(ret);
@@ -5755,31 +5787,53 @@ public class Nd4j {
     }
 
     /**
-     * Create a scalar nd array with the specified value and offset
+     * Create a scalar nd array with the specified value
      *
      * @param value the value of the scalar
-     *              =     * @return the scalar nd array
+     * @return the scalar nd array
      */
     public static INDArray scalar(double value) {
-        INDArray ret = INSTANCE.trueScalar(value);
-        logCreationIfNecessary(ret);
-        return ret;
+        return scalar(DataType.DOUBLE, value);
     }
 
     /**
-     * Create a scalar nd array with the specified value and offset
+     * Create a scalar NDArray with the specified value and FLOAT datatype
      *
      * @param value the value of the scalar
-     *              =     * @return the scalar nd array
+     * @return the scalar nd array
      */
     public static INDArray scalar(float value) {
-        INDArray ret = INSTANCE.trueScalar(value);
-        logCreationIfNecessary(ret);
-        return ret;
+        return scalar(DataType.FLOAT, value);
     }
 
+    /**
+     * Create a scalar NDArray with the specified value and BOOLEAN datatype
+     *
+     * @param value the value of the scalar
+     * @return the scalar nd array
+     */
     public static INDArray scalar(boolean value) {
         return INSTANCE.trueScalar(DataType.BOOL, value ? 1 : 0);
+    }
+
+    /**
+     * Create a scalar NDArray with the specified value and INT datatype
+     *
+     * @param value the value of the scalar
+     * @return the scalar nd array
+     */
+    public static INDArray scalar(int value) {
+        return scalar(DataType.INT, value);
+    }
+
+    /**
+     * Create a scalar NDArray with the specified value and LONG datatype
+     *
+     * @param value the value of the scalar
+     * @return the scalar nd array
+     */
+    public static INDArray scalar(long value) {
+        return scalar(DataType.LONG, value);
     }
 
     /**

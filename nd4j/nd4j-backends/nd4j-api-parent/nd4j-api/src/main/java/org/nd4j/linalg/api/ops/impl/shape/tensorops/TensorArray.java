@@ -190,4 +190,9 @@ public class TensorArray extends  BaseTensorOp {
         //TODO work out exactly what this second output is for (it's used in TensorArrayWrite for example...
         return Arrays.asList(DataType.BOOL, DataType.FLOAT);
     }
+
+    @Override
+    public int getNumOutputs(){
+        return 2;
+    }
 }

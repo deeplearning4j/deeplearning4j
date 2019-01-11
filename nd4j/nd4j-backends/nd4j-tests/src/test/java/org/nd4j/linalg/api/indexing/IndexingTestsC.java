@@ -271,7 +271,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         assertEquals(firstAndSecondRow, firstAndSecondRowTest);
 
         INDArray individualElement = twoByTwo.get(interval(1, 2), interval(1, 2));
-        assertEquals(Nd4j.create(new float[] {4}), individualElement);
+        assertEquals(Nd4j.create(new double[] {4}), individualElement);
     }
 
     @Test

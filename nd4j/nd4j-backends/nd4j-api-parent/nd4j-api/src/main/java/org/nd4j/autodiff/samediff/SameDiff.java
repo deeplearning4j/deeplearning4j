@@ -779,7 +779,7 @@ public class SameDiff {
                 InferenceSession s = sessions.get(Thread.currentThread().getId());
                 if(s == null)
                     return null;
-                return s.get(varName, InferenceSession.OUTER_FRAME, 0);
+                return s.get(varName, InferenceSession.OUTER_FRAME, 0, false);
             case PLACEHOLDER:
                 long tid = Thread.currentThread().getId();
                 if(placeholdersPerThread.get(tid) == null || !placeholdersPerThread.get(tid).containsKey(varName))
