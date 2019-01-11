@@ -969,6 +969,17 @@ NDArray& NDArray::operator=(NDArray&& other) noexcept {
     ////////////////////////////////////////////////////////////////////////
     template<typename T>
     NDArray& NDArray::operator=(const T scalar) {
+        if (this->_buffer == nullptr) {
+            ALLOCATE(_buffer, _workspace, DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>()), int8_t);
+            _isBuffAlloc = true;
+        }
+
+        if (this->_shapeInfo == nullptr) {
+            auto shapeInfo = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), _workspace);
+            this->setShapeInfo(shapeInfo);
+            _isShapeAlloc = true;
+        }
+
         this->assign(scalar);
         return *this;
     }
