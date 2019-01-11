@@ -587,3 +587,65 @@ TEST_F(DeclarableOpsTests12, TestMinimumBP_1) {
     ASSERT_TRUE(output1.equalsTo(exp1));
     ASSERT_TRUE(output2.equalsTo(exp2));
 }
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, reverse_test15) {
+    
+    NDArray x('c', {5}, {1,2,3,4,5}, nd4j::DataType::DOUBLE);
+    NDArray axis('c', {0}, {0}, nd4j::DataType::INT32);
+    NDArray z('c', {5}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {5}, {5,4,3,2,1}, nd4j::DataType::DOUBLE);
+    
+
+    nd4j::ops::reverse op;
+    // auto result = op.execute({&x, &axis}, {}, {1}, {});
+    Nd4jStatus status = op.execute({&x, &axis}, {&z}, {}, {1}, {});    
+    // auto z = result->at(0);
+    // z->printIndexedBuffer();
+
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));    
+    // delete result;
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, mirrorPad_test17) {
+    
+    NDArray x('c', {2,3}, {1,2,3,4,5,6}, nd4j::DataType::DOUBLE);
+    NDArray padding('c', {2,2}, {1,1,2,2}, nd4j::DataType::INT32);
+    NDArray z('c', {4,7}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {4,7}, {6, 5, 4, 5, 6, 5, 4,3, 2, 1, 2, 3, 2, 1,6, 5, 4, 5, 6, 5, 4,3, 2, 1, 2, 3, 2, 1}, nd4j::DataType::DOUBLE);
+    NDArray exp2('c', {4,7}, {2, 1, 1, 2, 3, 3, 2,2, 1, 1, 2, 3, 3, 2,5, 4, 4, 5, 6, 6, 5,5, 4, 4, 5, 6, 6, 5}, nd4j::DataType::DOUBLE);
+    
+    nd4j::ops::mirror_pad op;    
+    Nd4jStatus status = op.execute({&x, &padding}, {&z}, {}, {0}, {});      // reflect
+    
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(exp1.isSameShape(z));
+    ASSERT_TRUE(exp1.equalsTo(z));
+
+    z = 0.;
+    status = op.execute({&x, &padding}, {&z}, {}, {1}, {});                 // symmetric
+
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(exp2.isSameShape(z));
+    ASSERT_TRUE(exp2.equalsTo(z));    
+}
+
+/////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, mirrorPad_test18) {
+    
+    NDArray x('c', {3}, {1,2,3}, nd4j::DataType::DOUBLE);
+    NDArray padding('c', {2}, {1,1}, nd4j::DataType::INT32);
+    NDArray z('c', {5}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {5}, {2,1,2,3,2}, nd4j::DataType::DOUBLE);
+        
+    nd4j::ops::mirror_pad op;    
+    Nd4jStatus status = op.execute({&x, &padding}, {&z}, {}, {0}, {});      // reflect    
+    
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));    
+}
+

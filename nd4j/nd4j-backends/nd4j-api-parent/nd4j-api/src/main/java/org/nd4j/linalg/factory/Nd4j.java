@@ -6834,6 +6834,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(double[][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.DOUBLE);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.DOUBLE);
@@ -6846,6 +6847,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(float[][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.FLOAT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.FLOAT);
@@ -6858,6 +6860,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(long[][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.LONG);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.LONG);
@@ -6870,6 +6873,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(int[][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.INT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.INT);
@@ -6882,6 +6886,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(short[][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.SHORT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.SHORT);
@@ -6894,6 +6899,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(byte[][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.BYTE);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.BYTE);
@@ -6906,6 +6912,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(boolean[][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0)
             return Nd4j.empty(DataType.BOOL);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length}, DataType.BOOL);
@@ -6920,6 +6927,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(double[][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.DOUBLE);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.DOUBLE);
@@ -6932,6 +6940,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(float[][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.FLOAT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.FLOAT);
@@ -6944,6 +6953,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(long[][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.LONG);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.LONG);
@@ -6956,6 +6966,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(int[][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.INT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.INT);
@@ -6968,6 +6979,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(short[][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.SHORT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.SHORT);
@@ -6980,6 +6992,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(byte[][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.BYTE);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.BYTE);
@@ -6992,6 +7005,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(boolean[][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0)
             return Nd4j.empty(DataType.BOOL);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length}, DataType.BOOL);
@@ -7006,6 +7020,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(double[][][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.DOUBLE);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.DOUBLE);
@@ -7018,6 +7033,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(float[][][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.FLOAT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.FLOAT);
@@ -7030,6 +7046,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(long[][][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.LONG);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.LONG);
@@ -7042,6 +7059,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(int[][][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.INT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.INT);
@@ -7054,6 +7072,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(short[][][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.SHORT);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.SHORT);
@@ -7066,6 +7085,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(byte[][][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.BYTE);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.BYTE);
@@ -7078,6 +7098,7 @@ public class Nd4j {
      */
     public static INDArray createFromArray(boolean[][][][] array) {
         Preconditions.checkNotNull(array, "Cannot create INDArray from null Java array");
+        ArrayUtil.assertNotRagged(array);
         if(array.length == 0 || array[0].length == 0 || array[0][0].length == 0 || array[0][0][0].length == 0)
             return Nd4j.empty(DataType.BOOL);
         return create(ArrayUtil.flatten(array), new long[]{array.length, array[0].length, array[0][0].length, array[0][0][0].length}, DataType.BOOL);

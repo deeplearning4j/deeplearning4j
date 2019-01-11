@@ -5068,7 +5068,7 @@ template void NDArray::operator/=(const bool scalar);
 
         // we need to sort dimensions (?)
         if (dimensions.size() > 1)
-            std::sort (copy.begin(), copy.end());
+            std::sort(copy.begin(), copy.end());
 
         if(copy.back() >= rankOf())
             throw std::runtime_error("NDArray::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");

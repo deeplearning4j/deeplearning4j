@@ -36,8 +36,9 @@ public class ArgMax extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected 1 input datatype to argmax, got %s", inputDataTypes);
-        //TODO make this configurable!
+        Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 1 || inputDataTypes.size() == 2),
+                "Expected 1 or 2 input datatype to argmax, got %s", inputDataTypes);    //2nd input: axis
+        //TODO make this output datatype configurable! (long/int)
         return Collections.singletonList(DataType.LONG);
     }
 }

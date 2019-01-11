@@ -40,38 +40,12 @@ public class OpExecutionerUtil {
 
     private OpExecutionerUtil() {}
 
-    /** Can we do the op (X = Op(X)) directly on the arrays without breaking X up into 1d tensors first?
-     * In general, this is possible if the elements of X are contiguous in the buffer, OR if every element
-     * of X is at position offset+i*elementWiseStride in the buffer
-     * */
-    public static boolean canDoOpDirectly(INDArray x) {
-        if (x.elementWiseStride() < 1)
-            return false;
-        if (x.isVector())
-            return true;
-
-        //For a single NDArray all we require is that the elements are contiguous in the buffer or every nth element
-
-        //Full buffer -> implies all elements are contiguous (and match)
-        long l1 = x.lengthLong();
-        long dl1 = x.data().length();
-        if (l1 == dl1)
-            return true;
-
-        //Strides are same as a zero offset NDArray -> all elements are contiguous (even if not offset 0)
-        long[] shape1 = x.shape();
-        long[] stridesAsInit =
-                        (x.ordering() == 'c' ? ArrayUtil.calcStrides(shape1) : ArrayUtil.calcStridesFortran(shape1));
-        boolean stridesSameAsInit = Arrays.equals(x.stride(), stridesAsInit);
-        return stridesSameAsInit;
-    }
-
     public static void checkForNaN(INDArray z) {
         if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC
                         && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
             return;
 
-        if(z.isEmpty())
+        if(z.isEmpty() || !z.dataType().isFPType())
             return;
 
         int match = 0;
@@ -102,7 +76,7 @@ public class OpExecutionerUtil {
                         && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
             return;
 
-        if(z.isEmpty())
+        if(z.isEmpty() || !z.dataType().isFPType())
             return;
 
         int match = 0;

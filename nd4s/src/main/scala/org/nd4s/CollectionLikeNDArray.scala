@@ -35,7 +35,6 @@ trait CollectionLikeNDArray[A <: INDArray] {
     val shape = underlying.shape()
     ev.reshape(Nd4j.getExecutioner
                  .exec(FilterOps(ev.linearView(underlying), f): Op)
-                 .z()
                  .asInstanceOf[A],
                shape.map(_.toInt): _*)
   }
@@ -44,7 +43,6 @@ trait CollectionLikeNDArray[A <: INDArray] {
     val shape = underlying.shape()
     ev.reshape(Nd4j.getExecutioner
                  .exec(BitFilterOps(ev.linearView(underlying), f): Op)
-                 .z()
                  .asInstanceOf[A],
                shape.map(_.toInt): _*)
   }
@@ -53,7 +51,6 @@ trait CollectionLikeNDArray[A <: INDArray] {
     val shape = underlying.shape()
     ev.reshape(Nd4j.getExecutioner
                  .exec(MapOps(ev.linearView(underlying), f): Op)
-                 .z()
                  .asInstanceOf[A],
                shape.map(_.toInt): _*)
   }
