@@ -273,7 +273,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
 ////////////////////////////////////////////////////////////////////////
     std::vector<int8_t> NDArray::asByteVector() {
         std::vector<int8_t> result((unsigned long long) this->lengthOf() * sizeOfT());
-
+        lazyAllocateBuffer();
         if (this->isView()) {
             auto tmp = this->dup(this->ordering());
 

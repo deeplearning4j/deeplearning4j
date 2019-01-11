@@ -46,12 +46,12 @@ TEST_F(NDArrayTest2, Test_ByteVector_1) {
 }
 
 TEST_F(NDArrayTest2, Test_ByteVector_2) {
-    auto x = NDArrayFactory::create<float16>('c', {10, 10});
+    auto x = NDArrayFactory::create<bfloat16>('c', {10, 10});
     x.linspace(1);
 
     auto vec = x.asByteVector();
 
-    auto restored = new NDArray((float16 *)vec.data(), x.shapeInfo());
+    auto restored = new NDArray((bfloat16 *)vec.data(), x.shapeInfo());
     restored->triggerAllocationFlag(false, false);
 
     ASSERT_TRUE(x.equalsTo(restored));

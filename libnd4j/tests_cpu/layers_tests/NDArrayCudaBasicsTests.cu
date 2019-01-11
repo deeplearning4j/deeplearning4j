@@ -1852,6 +1852,46 @@ TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest2) {
     delete row;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, TestBroadcast_1) {
+    double _expB[] = {1.000000, 1.000000, 1.000000, 1.000000, 2.000000, 2.000000, 2.000000, 2.000000, 3.000000, 3.000000, 3.000000, 3.000000, 1.000000, 1.000000, 1.000000, 1.000000, 2.000000, 2.000000, 2.000000, 2.000000, 3.000000, 3.000000, 3.000000, 3.000000};
+    Nd4jLong _expS[] = {4, 2, 3, 2, 2, 12, 4, 2, 1, 16384, 1, 99};
+    NDArray exp(_expB, _expS);
+    exp.triggerAllocationFlag(false, false);
+
+    auto input = NDArrayFactory::create<double>('c',{ 2, 3, 2, 2});
+    auto bias = NDArrayFactory::create<double>('c', {1, 3});
+
+    bias.linspace(1);
+    input.printIndexedBuffer("X=");
+    bias.printIndexedBuffer("Y=");
+    exp.printShapeInfo("Output shape expected");
+    input.applyBroadcast(broadcast::Add, {1}, &bias);
+
+    input.printBuffer("result");
+    ASSERT_TRUE(exp.equalsTo(&input));
+}
+
+TEST_F(NDArrayCudaBasicsTests, TestFloat16_1) {
+    auto x = NDArrayFactory::create<float16>({1,2,3,4,5,7,8,9});
+    auto y = NDArrayFactory::create<float16>({1,2,3,4,5,7,8,9});
+    ASSERT_TRUE(x.equalsTo(&y));
+}
+
+TEST_F(NDArrayCudaBasicsTests, TestFloat16_2) {
+    auto x = NDArrayFactory::create<float16>('c', {9}, {1,2,3,4,5,7,8,9});
+    auto y = NDArrayFactory::create<float16>('c', {9}, {1,2,3,4,5,7,8,9});
+    //ASSERT_TRUE(x.equalsTo(&y));
+    for (int e = 0; e < x.lengthOf(); e++)
+        ASSERT_NEAR(x.e<float16>(e), y.e<float16>(e), 1.e-5f);
+}
+
+TEST_F(NDArrayCudaBasicsTests, TestFloat16_3) {
+    auto x = NDArrayFactory::create<bfloat16>({1,2,3,4,5,7,8,9});
+    auto y = NDArrayFactory::create<bfloat16>({1,2,3,4,5,7,8,9});
+    ASSERT_TRUE(x.equalsTo(&y));
+}
+
 // printCudaGlobal<double><<<1,1,0,*stream>>>(dX, 6);
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(dXShapeInfo, 8);
 //     printCudaGlobal<double><<<1,1,0,*stream>>>(dZ, 2);

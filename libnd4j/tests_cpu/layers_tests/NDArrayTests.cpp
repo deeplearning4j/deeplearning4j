@@ -175,8 +175,8 @@ TEST_F(NDArrayTest, EqualityTest1) {
             arrayC->p(i, k, (float) i+1);
         }
     }
-
-
+    arrayB->printBuffer("B =");
+    arrayC->printBuffer("C =");
 
     ASSERT_TRUE(arrayA->equalsTo(arrayB, 1e-5));
 

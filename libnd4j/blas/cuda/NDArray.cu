@@ -2317,12 +2317,10 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
 
         ExtraArguments extras({eps}); 
         NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extras.argumentAsT(DataType::FLOAT32), other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
-
         auto res = cudaStreamSynchronize(*_context->getCudaStream());
         if (res != 0)
             throw cuda_exception::build("NDArray::equalsTo failed", res);
-
-        if (tmp.e<int>(0) > 0)
+        if (nd4j::math::nd4j_abs(tmp.e<float>(0)) > eps)
             return false;
 
         return true;
