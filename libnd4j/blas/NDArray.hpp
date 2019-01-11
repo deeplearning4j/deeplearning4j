@@ -880,6 +880,8 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
     void NDArray::printBuffer(const char* msg, Nd4jLong limit) const{
+        if (!isActualOnHostSide())
+            syncToHost();
         if (limit == -1)
             limit = (int) this->lengthOf();
 
@@ -987,6 +989,8 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
     void NDArray::printIndexedBuffer(const char* msg, Nd4jLong limit) const {
+        syncToHost();
+
         Nd4jLong rank = this->rankOf();
 
         bool rowFlag = (rank < 2) || (rank == 2 && this->sizeAt(0) == 1);
@@ -2245,6 +2249,7 @@ void NDArray::operator+=(const NDArray& other) {
         }
         RELEASE(bShape, this->_context->getWorkspace());
     }
+    tickWriteDevice();
 }
 
 void NDArray::operator-=(const NDArray& other) {
@@ -2276,6 +2281,7 @@ void NDArray::operator-=(const NDArray& other) {
         }
         RELEASE(bShape, this->_context);
     }
+    tickWriteDevice();
 }
 
 void NDArray::operator*=(const NDArray& other) {
@@ -2638,46 +2644,6 @@ template void NDArray::operator/=(const bool scalar);
                 throw std::runtime_error("Bad index");
             }
 
-            auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), shapeInfo);
-            result->push_back(array);
-        }
-
-        // if we have no indices - just delete shapeInfo
-        if (result->size() > 0)
-            result->at(0)->triggerAllocationFlag(false, true);
-        else
-            delete[] shapeInfo;
-
-        return result;
-    }
-
-    ////////////////////////////////////////////////////////////////////////
-    ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
-        auto result = new ResultSet();
-
-        if(dimensions.size() == 0)
-            return result;
-
-        std::vector<int> copy(dimensions);
-
-        // we need to sort dimensions (?)
-        if (dimensions.size() > 1)
-            std::sort (copy.begin(), copy.end());
-
-        if(copy.back() >= rankOf())
-            throw std::runtime_error("NDArray::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");
-
-        auto tadLength = shape::tadLength(_shapeInfo, copy.data(), copy.size());
-        auto numTads = _length / tadLength;
-
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, copy.data(), copy.size()));
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
-
-        auto shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
-        std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
-
-        for (int idx = 0; idx < numTads; idx++ ) {
             auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), shapeInfo);
             result->push_back(array);
         }

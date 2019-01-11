@@ -1800,7 +1800,9 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         if (dimensions.size() == 0)
             return;
-        auto result = target == nullptr ? this : target;
+        auto result = (NDArray*)this;// == nullptr ? this : target;
+        if (target != nullptr)
+            result = target;
 
         if(result->_dataType != DataTypeUtils::pickPairwiseResultType(_shapeInfo, tadArray->_shapeInfo))
             throw std::invalid_argument("NDArray::applyBroadcast method: wrong type of target array !");
@@ -1836,22 +1838,23 @@ NDArray NDArray::e(const Nd4jLong i) const {
         cudaError_t cudaResult;
         //cudaStream_t stream;
         //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
-        cudaStream_t* stream = this->getContext()->getCudaStream();
+        //cudaStream_t* stream = this->getContext()->getCudaStream();
         // allocate required amount of global device memory and copy host data to it
 //    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
         for(int i = 0; i < devicePtrs.size(); ++i) {
 
             cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
             if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
-            cudaMemcpyAsync(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice, *stream);
+            cudaResult = cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot copy memory block for tads on device", cudaResult);
         }
 
+        //NDArray::registerSpecialUse({result}, {this, const_cast<NDArray*>(tadArray)});
+
         // call cuda kernel which calculates result
-
-        NDArray::registerSpecialUse({target}, {this, const_cast<NDArray*>(tadArray)});
-
         // TODO: eventually we want separate tads here
         NativeOpExecutioner::execBroadcast(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, (int*)devicePtrs[0], (int)copy.size(), (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
+        result->tickWriteDevice();
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -1888,12 +1891,34 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         if (!tadArray->isActualOnDeviceSide())
             tadArray->syncToDevice();
+        // prepare input arrays for prepareDataForCuda function
+        std::vector<std::pair<void*,size_t>> hostData;
+        hostData.emplace_back(copy.data(), copy.size() * sizeof(int));							// 0 -- dimensions
+        hostData.emplace_back(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        std::vector<void*> devicePtrs(hostData.size(), nullptr);
 
-        NDArray::registerSpecialUse({target}, {this, tadArray});
+        // create cuda stream and LaunchContext
+        cudaError_t cudaResult;
+        //cudaStream_t stream;
+        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+        cudaStream_t* stream = this->getContext()->getCudaStream();
+        // allocate required amount of global device memory and copy host data to it
+//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaMemcpyAsync(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice, *stream);
+        }
+
+        // call cuda kernel which calculates result
+        //NDArray::registerSpecialUse({target}, {this, tadArray});
         // TODO: eventually we want separate tads here
         NativeOpExecutioner::execBroadcastBool(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD,
                                                tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD,
-                                               result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, copy.data(), (int)copy.size(), tad.tadOnlyShapeInfo, tad.tadOffsets, nullptr, nullptr);
+                                               result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, (int*)devicePtrs[0], (int)copy.size(), (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
+        result->tickWriteDevice();
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -3043,6 +3068,46 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         }
 
         NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), (int*)devicePtrs[0], 1, (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
+        auto result = new ResultSet();
+
+        if(dimensions.size() == 0)
+            return result;
+
+        std::vector<int> copy(dimensions);
+
+        // we need to sort dimensions (?)
+        if (dimensions.size() > 1)
+            std::sort (copy.begin(), copy.end());
+
+        if(copy.back() >= rankOf())
+            throw std::runtime_error("NDArray::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");
+
+        auto tadLength = shape::tadLength(_shapeInfo, copy.data(), copy.size());
+        auto numTads = _length / tadLength;
+
+        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, copy.data(), copy.size()));
+        tad->createTadOnlyShapeInfo();
+        tad->createOffsets();
+
+        auto shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
+        std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
+
+        for (int idx = 0; idx < numTads; idx++ ) {
+            auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), shapeInfo);
+            result->push_back(array);
+        }
+
+        // if we have no indices - just delete shapeInfo
+        if (result->size() > 0)
+            result->at(0)->triggerAllocationFlag(false, true);
+        else
+            delete[] shapeInfo;
+
+        return result;
     }
 
 
