@@ -173,14 +173,14 @@ TEST_F(VariableTests, Test_FlatVariableDataType_3) {
 TEST_F(VariableTests, Test_FlatVariableDataType_4) {
     flatbuffers::FlatBufferBuilder builder(1024);
     auto original = NDArrayFactory::create<float>('c', {5, 10});
-
+    std::vector<Nd4jLong> exp({5, 10});
 
     auto vec = original.asByteVector();
 
-    auto fShape = builder.CreateVector(original.getShapeInfoAsFlatVector());
+    auto fShape = builder.CreateVector(original.getShapeAsFlatVector());
     auto fVid = CreateIntPair(builder, 37, 12);
 
-    auto flatVar = CreateFlatVariable(builder, fVid, 0, nd4j::graph::DataType::DataType_FLOAT, fShape, 0);
+    auto flatVar = CreateFlatVariable(builder, fVid, 0, nd4j::graph::DataType::DataType_FLOAT, fShape, 0, 0, VarType_PLACEHOLDER);
 
     builder.Finish(flatVar);
 
@@ -193,10 +193,12 @@ TEST_F(VariableTests, Test_FlatVariableDataType_4) {
     ASSERT_EQ(37, rv->id());
     ASSERT_EQ(12, rv->index());
 
-    auto restoredArray = rv->getNDArray();
+    //auto restoredArray = rv->getNDArray();
+    ASSERT_EQ(PLACEHOLDER, rv->variableType());
+    ASSERT_EQ(exp, rv->shape());
 
-    ASSERT_TRUE(original.isSameShape(restoredArray));
-    ASSERT_TRUE(original.equalsTo(restoredArray));
+    //ASSERT_TRUE(original.isSameShape(restoredArray));
+    //ASSERT_TRUE(original.equalsTo(restoredArray));
 
     delete rv;
 }

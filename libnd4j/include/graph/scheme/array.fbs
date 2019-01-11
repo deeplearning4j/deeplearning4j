@@ -25,6 +25,8 @@ enum DataType:byte {
     UINT64,
     QINT8,
     QINT16,
+    BFLOAT16 = 17,
+    UTF8 = 50,
 }
 
 // this structure describe NDArray

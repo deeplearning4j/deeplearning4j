@@ -23,6 +23,10 @@
 
 namespace nd4j {
     namespace graph {
+        graph_exception::graph_exception(std::string message) : std::runtime_error(message) {
+            //
+        }
+
         graph_exception::graph_exception(std::string message, Nd4jLong graphId) : std::runtime_error(message) {
             this->_message = message;
             this->_graphId = graphId;

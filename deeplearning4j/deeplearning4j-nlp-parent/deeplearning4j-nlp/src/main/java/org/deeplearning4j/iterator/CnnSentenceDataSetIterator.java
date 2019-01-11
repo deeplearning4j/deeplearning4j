@@ -376,31 +376,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
                 }
             }
 
-            if (minLength != maxLength) {
-                int idxSeq;
-                if(sentencesAlongHeight){
-                    featuresMask = Nd4j.create(currMinibatchSize, 1, maxLength, 1);
-                    idxSeq = 2;
-                } else {
-                    featuresMask = Nd4j.create(currMinibatchSize, 1, 1, maxLength);
-                    idxSeq = 3;
-                }
-
-                INDArrayIndex[] idxs = new INDArrayIndex[4];
-                idxs[1] = NDArrayIndex.all();
-                idxs[2] = NDArrayIndex.all();   //One of [2] and [3] will get replaced, depending on sentencesAlongHeight
-                idxs[3] = NDArrayIndex.all();
-                for (int i = 0; i < currMinibatchSize; i++) {
-                    idxs[0] = NDArrayIndex.point(i);
-                    int sentenceLength = tokenizedSentences.get(i).getFirst().size();
-                    if (sentenceLength >= maxLength) {
-                        idxs[idxSeq] = NDArrayIndex.all();
-                    } else {
-                        idxs[idxSeq] = NDArrayIndex.interval(0,sentenceLength);
-                    }
-                    featuresMask.get(idxs).assign(1.0);
-                }
-            }
+            F {
         }
 
         DataSet ds = new DataSet(features, labels, featuresMask, null);

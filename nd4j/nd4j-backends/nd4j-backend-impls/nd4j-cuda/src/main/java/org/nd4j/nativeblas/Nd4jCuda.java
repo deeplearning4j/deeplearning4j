@@ -2982,7 +2982,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public static final int
             NDARRAY = 0,
             ARRAY_LIST = 1,
-            FLOW = 2;
+            FLOW = 2,
+            CONSTANT = 3,
+            PLACEHOLDER = 4;
     
 
 
@@ -3683,6 +3685,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("Nd4jLong*") @StdVector LongPointer getShapeAsVector();
         public native @Cast("Nd4jLong*") @StdVector LongPointer getShapeInfoAsVector();
         public native @Cast("int64_t*") @StdVector LongPointer getShapeInfoAsFlatVector();
+        public native @Cast("int64_t*") @StdVector LongPointer getShapeAsFlatVector();
 				
         /**
         *  set new order and shape in case of suitable array length (in-place operation)
@@ -4958,6 +4961,8 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
             public native @StdString @Cast({"char*", "std::string*"}) BytePointer getName();
             public native void setName(@StdString @Cast({"char*", "std::string*"}) BytePointer name);
+
+            public native @Cast("Nd4jLong*") @StdVector LongPointer shape();
 
 // #ifndef __JAVACPP_HACK__
 // #endif

@@ -75,9 +75,7 @@ import org.nd4j.linalg.util.LongUtils;
 import org.nd4j.linalg.util.NDArrayMath;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.*;
@@ -5120,6 +5118,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray n = (INDArray) o;
 
+        if (n == this)
+            return true;
+
         if (n.isSparse()) {
             return n.equals(this);
         }
@@ -5132,6 +5133,22 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (this.isEmpty() && n.isEmpty())
             return true;
+
+        if (this.dataType() != n.dataType())
+            return false;
+
+        // meh
+        if (this.dataType() == DataType.UTF8 && n.dataType() == DataType.UTF8) {
+            for (long e = 0; e < this.length(); e++) {
+                val str1 = this.getStringUnsafe(e);
+                val str2 = n.getStringUnsafe(e);
+
+                if (!str1.equals(str2))
+                    return false;
+            }
+
+            return true;
+        }
 
         //epsilon equals
         if (isScalar() && n.isScalar()) {
@@ -6307,13 +6324,49 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
+    protected int stringBuffer(FlatBufferBuilder builder, DataBuffer buffer) {
+        Preconditions.checkArgument(buffer.dataType() == DataType.UTF8, "This method can be called on UTF8 buffers only");
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(bos);
+
+            val ub = (Utf8Buffer) buffer;
+            // writing length first
+            val t = length();
+            dos.writeLong(t);
+
+            // FIXME: probably we don't want int limitation here?
+            val list = new ArrayList<String>((int) length());
+
+            // now write all offsets
+            int lastLength = 0;
+            for (int i = 0; i < length(); i++) {
+                val string = Nd4j.getExecutioner().getString(ub, i);
+                list.add(string);
+                dos.writeLong(lastLength);
+                lastLength += string.length();
+            }
+            // writing out last value
+            dos.writeLong(lastLength);
+
+            // now write all strings
+            for (int i = 0; i < list.size(); i++) {
+                dos.writeBytes(list.get(i));
+            }
+
+            return FlatArray.createBufferVector(builder, bos.toByteArray());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public int toFlatArray(FlatBufferBuilder builder) {
         if(isView()){
             return dup(this.ordering()).toFlatArray(builder);
         }
         int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());
-        int buffer = this.isEmpty() ? 0 : FlatArray.createBufferVector(builder, this.data().asBytes());
+        int buffer = this.isEmpty() ? 0 : this.dataType() == DataType.UTF8 ? stringBuffer(builder, this.data()) : FlatArray.createBufferVector(builder, this.data().asBytes());
         val type = this.isEmpty() ? FlatBuffersMapper.getDataTypeAsByte(Nd4j.dataType()) : FlatBuffersMapper.getDataTypeAsByte(this.data().dataType());
         int array = FlatArray.createFlatArray(builder, shape, buffer, type, ByteOrder.BE);
 

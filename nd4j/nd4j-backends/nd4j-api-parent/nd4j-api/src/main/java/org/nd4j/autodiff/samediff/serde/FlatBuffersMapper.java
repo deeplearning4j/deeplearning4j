@@ -51,6 +51,8 @@ public class FlatBuffersMapper {
                 return DataType.INT8;
             case UBYTE:
                 return DataType.UINT8;
+            case UTF8:
+                return DataType.UTF8;
             default:
                 throw new ND4JIllegalStateException("Unknown or unsupported DataType used: [" + type + "]");
         }
@@ -81,6 +83,8 @@ public class FlatBuffersMapper {
             return org.nd4j.linalg.api.buffer.DataType.UBYTE;
         else if (val == DataType.INT16)
             return org.nd4j.linalg.api.buffer.DataType.SHORT;
+        else if (val == DataType.UTF8)
+            return org.nd4j.linalg.api.buffer.DataType.UTF8;
         else
             throw new RuntimeException("Unknown datatype: " + val);
     }
