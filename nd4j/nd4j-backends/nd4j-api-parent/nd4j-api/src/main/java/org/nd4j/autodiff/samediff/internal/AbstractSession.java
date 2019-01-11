@@ -30,6 +30,8 @@ public abstract class AbstractSession<T, O> {
     protected final SameDiff sameDiff;
     @Getter
     protected final Map<VarId, T> nodeOutputs = new HashMap<>();
+    @Getter
+    protected final Map<VarId, List<T>> tensorArrays = new HashMap<>(); //Stores the outputs for a TensorArray ops
     protected final Queue<VarId> availableForExec = new LinkedList<>();
     /**
      * Contains variables we *might* need to execute in process of getting outputs we want.
@@ -120,6 +122,7 @@ public abstract class AbstractSession<T, O> {
         execInputs.clear();
         execConstInputs.clear();
         nodeOutputs.clear();            //TODO eventually we'll have cache here for later execs... main challenge is detecting in-place array modifications and invalidating old results
+        tensorArrays.clear();
 
         //Step 1: determine subgraph structure we actually need to execute
         //Basic plan: work backwards from the variables we want, based on the graph structure, to work out what
@@ -239,7 +242,8 @@ public abstract class AbstractSession<T, O> {
                     }
                 }
             } else {
-                throw new IllegalStateException("Unable to execute variable " + varToExec + " of type " + sameDiff.getVariable(varToExec.getVariable()).getVariableType());
+                Variable v = sameDiff.getVariables().get(varToExec.getVariable());
+                throw new IllegalStateException("Unable to execute variable " + varToExec + " of type " + v.getVariable().getVariableType());
             }
         }
 
@@ -626,6 +630,15 @@ public abstract class AbstractSession<T, O> {
         }
     }
 
+
+    protected static VarId lookup(String name, Collection<VarId> varIds){
+        for(VarId vid : varIds){
+            if(vid.getVariable().equals(name)){
+                return vid;
+            }
+        }
+        throw new RuntimeException("Could not find VarId to input " + name);
+    }
 
     /*
     VarId: identifies a variable in a specific frame and frame iteration

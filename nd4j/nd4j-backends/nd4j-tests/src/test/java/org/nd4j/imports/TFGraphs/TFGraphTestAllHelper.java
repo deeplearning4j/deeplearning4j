@@ -180,7 +180,7 @@ public class TFGraphTestAllHelper {
                 if(maxRelErrorOverride == null) {
                     long[] sTf = tfPred.shape();
                     long[] sNd4j = nd4jPred.shape();
-                    assertArrayEquals("Shapes are not equal: " + Arrays.toString(sTf) + " vs " + Arrays.toString(sNd4j), sTf, sNd4j);
+                    assertArrayEquals("Shapes for node \"" + outputNode + "\" are not equal: " + Arrays.toString(sTf) + " vs " + Arrays.toString(sNd4j), sTf, sNd4j);
 
                     // TODO: once we add more dtypes files - this should be removed
                     if (tfPred.dataType() != nd4jPred.dataType())

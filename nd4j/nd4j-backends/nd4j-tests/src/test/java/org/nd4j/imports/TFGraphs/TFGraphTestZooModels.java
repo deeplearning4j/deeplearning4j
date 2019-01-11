@@ -37,7 +37,7 @@ public class TFGraphTestZooModels {
     public static TemporaryFolder classTestDir = new TemporaryFolder();
 
     public static final String[] IGNORE_REGEXES = {
-            //2019/01/10 - Need to fix: "IllegalStateException: Unable to execute variable VarId("image_tensor:0","main",0) of type ARRAY"
+            //2019/01/10 - Need TensorArray support - https://github.com/deeplearning4j/deeplearning4j/issues/6972
             "ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03",
             "ssd_mobilenet_v1_coco_2018_01_28",
 
@@ -154,7 +154,7 @@ public class TFGraphTestZooModels {
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
 //        if(!modelName.startsWith("deeplab")){
-//        if(!modelName.startsWith("deeplab_mobilenet")){
+//        if(!modelName.startsWith("ssd")){
 //            OpValidationSuite.ignoreFailing();
 //        }
         currentTestDir = testDir.newFolder();
