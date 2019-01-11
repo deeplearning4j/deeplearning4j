@@ -71,3 +71,24 @@ TEST_F(OneOffTests, test_assert_scalar_float32_1) {
     ASSERT_EQ(Status::OK(), status);
     delete graph;
 }
+
+TEST_F(OneOffTests, test_pad_1D_1) {
+    auto e = NDArrayFactory::create<float>('c', {7}, {10.f,    0.778786f, 0.801198f, 0.724375f, 0.230894f, 0.727141f,   10.f});
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/pad_1D.fb");
+
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(4));
+
+    auto z = graph->getVariableSpace()->getVariable(4)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    z->printIndexedBuffer("z");
+
+    ASSERT_EQ(e, *z);
+}
