@@ -74,13 +74,23 @@ public abstract class AbstractSession<T, O> {
     }
 
     /**
-     * Get a previously calculated output
+     * Get a previously calculated output; throws an exception if the output does not exist
      */
     public T get(String variable, String frame, int iteration) {
+        return get(variable, frame, iteration, true);
+    }
+
+    /**
+     * Get a previously calculated output
+     * @param enforceExistence If true: throw an exception if the array does not exist
+     */
+    public T get(String variable, String frame, int iteration, boolean enforceExistence) {
         //TODO eventually we'll cache and reuse VarId objects here to avoid garbage generation on lookup etc
         VarId varId = newVarId(variable, frame, iteration);
         T out = nodeOutputs.get(varId);
-        Preconditions.checkNotNull(out, "No output found for variable %s (frame %s, iteration %s)", variable, frame, iteration);
+        if(enforceExistence) {
+            Preconditions.checkNotNull(out, "No output found for variable %s (frame %s, iteration %s)", variable, frame, iteration);
+        }
         return out;
     }
 

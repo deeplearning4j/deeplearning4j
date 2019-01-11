@@ -1603,7 +1603,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testScalar() {
-        INDArray a = Nd4j.scalar(1.0);
+        INDArray a = Nd4j.scalar(1.0f);
         assertEquals(true, a.isScalar());
 
         INDArray n = Nd4j.create(new float[] {1.0f}, new long[] {1, 1});
@@ -1952,7 +1952,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray innerProduct = n.mmul(transposed);
 
-        INDArray scalar = Nd4j.scalar(385);
+        INDArray scalar = Nd4j.scalar(385.0);
         assertEquals(getFailureMessage(), scalar, innerProduct);
 
         INDArray outerProduct = transposed.mmul(n);
@@ -2610,7 +2610,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testSliceConstructor() throws Exception {
         List<INDArray> testList = new ArrayList<>();
         for (int i = 0; i < 5; i++)
-            testList.add(Nd4j.scalar(i + 1));
+            testList.add(Nd4j.scalar(i + 1.0f));
 
         INDArray test = Nd4j.create(testList, new long[] {1, testList.size()}).reshape(1, 5);
         INDArray expected = Nd4j.create(new float[] {1, 2, 3, 4, 5}, new long[] {1, 5});
@@ -3065,22 +3065,22 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testElementWiseOps() {
-        INDArray n1 = Nd4j.scalar(1);
-        INDArray n2 = Nd4j.scalar(2);
+        INDArray n1 = Nd4j.scalar(1.0);
+        INDArray n2 = Nd4j.scalar(2.0);
         INDArray nClone = n1.add(n2);
-        assertEquals(Nd4j.scalar(3), nClone);
+        assertEquals(Nd4j.scalar(3.0), nClone);
         assertFalse(n1.add(n2).equals(n1));
 
-        INDArray n3 = Nd4j.scalar(3);
-        INDArray n4 = Nd4j.scalar(4);
+        INDArray n3 = Nd4j.scalar(3.0);
+        INDArray n4 = Nd4j.scalar(4.0);
         INDArray subbed = n4.sub(n3);
         INDArray mulled = n4.mul(n3);
         INDArray div = n4.div(n3);
 
         assertFalse(subbed.equals(n4));
         assertFalse(mulled.equals(n4));
-        assertEquals(Nd4j.scalar(1), subbed);
-        assertEquals(Nd4j.scalar(12), mulled);
+        assertEquals(Nd4j.scalar(1.0), subbed);
+        assertEquals(Nd4j.scalar(12.0), mulled);
         assertEquals(Nd4j.scalar(1.333333333333333333333), div);
     }
 
@@ -6628,10 +6628,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray uninit = Nd4j.createUninitialized(s).assign(0);
         INDArray rand = Nd4j.rand(s);
 
-        INDArray tsZero = Nd4j.trueScalar(0);
-        INDArray tsOne = Nd4j.trueScalar(1);
+        INDArray tsZero = Nd4j.scalar(0.0);
+        INDArray tsOne = Nd4j.scalar(1.0);
         Nd4j.getRandom().setSeed(12345);
-        INDArray tsRand = Nd4j.trueScalar(Nd4j.rand(new int[]{1,1}).getDouble(0));
+        INDArray tsRand = Nd4j.scalar(Nd4j.rand(new int[]{1,1}).getDouble(0));
         assertEquals(tsZero, create);
         assertEquals(tsZero, zeros);
         assertEquals(tsOne, ones);
