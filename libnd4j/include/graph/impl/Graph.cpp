@@ -1093,11 +1093,12 @@ namespace nd4j {
                     if (v->hasNDArray()) {
                         auto shape = ShapeUtils::shapeAsString(v->getNDArray());
                         auto values = v->getNDArray()->asString(16);
+                        auto dtype = DataTypeUtils::asString(v->getNDArray()->dataType());
 
                         if (v->getName() != nullptr && !v->getName()->empty()) {
-                            nd4j_printf("<%s> <%i:%i> shape: %s; values: %s;\n", v->getName()->c_str(), v->id(), v->index(), shape.c_str(), values.c_str());
+                            nd4j_printf("<%s> <%i:%i> dtype: %s; shape: %s; values: %s;\n", v->getName()->c_str(), v->id(), v->index(), dtype.c_str(), shape.c_str(), values.c_str());
                         } else {
-                            nd4j_printf("<%i:%i> shape: %s; values: %s;\n", v->id(), v->index(), shape.c_str(), values.c_str());
+                            nd4j_printf("<%i:%i> dtype: %s; shape: %s; values: %s;\n", v->id(), v->index(), dtype.c_str(), shape.c_str(), values.c_str());
                         }
                     } else if (v->hasNDArrayList()) {
                         // TODO: add better NDArrayList printout
