@@ -36,7 +36,7 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
-import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
@@ -2660,7 +2660,7 @@ public class SameDiffTests {
     @Test
     public void testTensorArray1(){
         SameDiff sd = SameDiff.create();
-        TensorArrayV3 tensorArray = sd.tensorArray();
+        TensorArray tensorArray = sd.tensorArray(DataType.FLOAT);
         INDArray arr1 = Nd4j.create(new double[]{1,2,3,4}, new int[]{2, 2});
         SDVariable var1 = sd.var(arr1);
         INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
@@ -2674,7 +2674,7 @@ public class SameDiffTests {
     @Test
     public void testTensorArray2(){
         SameDiff sd = SameDiff.create();
-        TensorArrayV3 tensorArray = sd.tensorArray();
+        TensorArray tensorArray = sd.tensorArray(DataType.FLOAT);
         INDArray arr1 = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
         SDVariable var1 = sd.var(arr1);
         INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
@@ -2690,7 +2690,7 @@ public class SameDiffTests {
     @Test
     public void testTensorArray3(){
         SameDiff sd = SameDiff.create();
-        TensorArrayV3 tensorArray = sd.tensorArray();
+        TensorArray tensorArray = sd.tensorArray(DataType.FLOAT);
         INDArray arr1 = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{ 2, 2});
         INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
         INDArray arr3 = Nd4j.pile(arr1, arr2);

@@ -128,7 +128,7 @@ public class FailingSameDiffTests {
     public void testTensorArray4(){
         OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
-        TensorArray ta = sd.tensorArray();
+        TensorArray ta = sd.tensorArray(DataType.FLOAT);
 
         // while loop
         val predicate = new DefaultSameDiffConditional();
