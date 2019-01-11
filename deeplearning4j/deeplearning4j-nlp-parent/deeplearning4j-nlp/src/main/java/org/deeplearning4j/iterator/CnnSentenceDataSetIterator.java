@@ -375,8 +375,6 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
                     features.put(indices, vector);
                 }
             }
-
-            F {
         }
 
         DataSet ds = new DataSet(features, labels, featuresMask, null);
