@@ -226,7 +226,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 }
                 INDArray out = Nd4j.pile(newList);
                 return new INDArray[]{out};
-            } else if(op instanceof TensorArrayScatterV3){
+            } else if(op instanceof TensorArrayScatterV3) {
                 //Scatter values from a rank (N+1)d tensor into specific indices
                 //Input 0: the TensorArray
                 //Input 1: the indices (1d integer vector)
@@ -248,9 +248,8 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 SDVariable valuesSDV = sameDiff.getVariable(valuesName);
                 INDArray valuesArr = getArray(valuesSDV, opInputs);
 
-                int[] axis = ArrayUtil.range(1, valuesArr.rank());
                 INDArrayIndex[] idx = ArrayUtil.nTimes(valuesArr.rank(), NDArrayIndex.all(), INDArrayIndex.class);
-                for( int i=0; i<idxs.length; i++ ){
+                for (int i = 0; i < idxs.length; i++) {
                     idx[0] = NDArrayIndex.point(i);
                     INDArray get = valuesArr.get(idx).dup();
                     int outIdx = idxs[i];

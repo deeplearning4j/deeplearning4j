@@ -5004,7 +5004,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 && indexes[0] instanceof PointIndex && indexes[0].offset() == 0
                 && indexes[1] instanceof NDArrayIndexAll
                 || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
-                && indexes[0] instanceof NDArrayIndexAll)))
+                && indexes[0] instanceof NDArrayIndexAll)) ||
+                (rank() == 1 && length() == 1 && indexes.length == 1 && indexes[0] instanceof PointIndex && indexes[0].current() == 0))  //Last one: point index on rank 1 size 1
             return this;
 
         indexes = NDArrayIndex.resolve(shapeInfoDataBuffer(), indexes);
