@@ -3095,9 +3095,12 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
         auto shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
         std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
-
+        //lazyAllocateBuffer();
         for (int idx = 0; idx < numTads; idx++ ) {
-            auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), shapeInfo);
+            auto array = new NDArray(shapeInfo); //ordering(), shapeInfo);
+            //array->_shapeInfo = shapeInfo;
+            array->_bufferD = (int8_t*)specialBufferWithOffset(tad->tadOffsets[idx]);
+            array->_isBuffDAlloc = false;
             result->push_back(array);
         }
 
