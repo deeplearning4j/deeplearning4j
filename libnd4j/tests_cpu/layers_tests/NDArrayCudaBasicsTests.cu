@@ -1782,6 +1782,40 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_long_test2) {
     ASSERT_TRUE(z6.equalsTo(&exp5));
 }
 
+TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest1) {
+
+    auto x = NDArrayFactory::create<float>('c', {5, 5});
+    auto z = NDArrayFactory::create<float>('c', {5, 5});
+    auto row = NDArrayFactory::linspace(1.0f, 5.0f, 5);
+    float *brow = new float[5]{1,2,3,4,5};
+    auto bshape = new Nd4jLong[8]{2, 1, 5, 1, 1, 8192, 1, 99};
+    float *ebuf = new float[25] {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};
+    auto eshape = new Nd4jLong[8] {2, 5, 5, 5, 1, 8192, 1, 99};
+    NDArray expRow(brow, bshape);
+    NDArray exp(ebuf, eshape);
+    //x.assign(4.f);
+    ASSERT_TRUE(row->equalsTo(&expRow));
+    nd4j_printf("Broadcast ADD with 5x5 and row (1x5)\n", "");
+    x.printIndexedBuffer("X");
+    row->printBuffer("Row");
+    //x -= 4.f;
+    //row->syncToDevice();
+    nd4j_printf("And hop!!! ADD with 5x5 and row (1x5)\n", "");
+    x.syncToDevice();
+    x.applyBroadcast(broadcast::Add, {1}, row, &z, nullptr);
+    nd4j_printf("Broadcast ADD RESULT with 5x5 and row (1x5) is \n", "");
+    z.syncToHost();
+    z.printBuffer("Result Z");
+
+    ASSERT_TRUE(z.equalsTo(&exp));
+
+    delete[] brow;
+    delete[] bshape;
+    delete[] ebuf;
+    delete[] eshape;
+    delete row;
+}
+
 // printCudaGlobal<double><<<1,1,0,*stream>>>(dX, 6);
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(dXShapeInfo, 8);
 //     printCudaGlobal<double><<<1,1,0,*stream>>>(dZ, 2);
