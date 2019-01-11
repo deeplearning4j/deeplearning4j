@@ -298,9 +298,9 @@
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
-        <javacpp.version>1.4.4-SNAPSHOT</javacpp.version>
-        <javacpp-presets.version>1.4.4-SNAPSHOT</javacpp-presets.version>
-        <javacv.version>1.4.4-SNAPSHOT</javacv.version>
+        <javacpp.version>1.4.4</javacpp.version>
+        <javacpp-presets.version>1.4.4</javacpp-presets.version>
+        <javacv.version>1.4.4</javacv.version>
         <openblas.version>0.3.5</openblas.version>
         <mkl.version>2019.1</mkl.version>
         <mkl-dnn.version>0.17.2</mkl-dnn.version>

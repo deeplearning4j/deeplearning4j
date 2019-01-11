@@ -25,7 +25,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
-import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -128,7 +128,7 @@ public class FailingSameDiffTests {
     public void testTensorArray4(){
         OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
-        TensorArrayV3 ta = sd.tensorArray();
+        TensorArray ta = sd.tensorArray(DataType.FLOAT);
 
         // while loop
         val predicate = new DefaultSameDiffConditional();

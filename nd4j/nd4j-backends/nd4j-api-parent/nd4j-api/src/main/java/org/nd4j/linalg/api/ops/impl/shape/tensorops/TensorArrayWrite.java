@@ -16,37 +16,27 @@
 
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.list.compat.TensorList;
 
-public class TensorArrayWriteV3 extends BaseTensorOp {
+import java.util.Collections;
+import java.util.List;
 
-   public TensorArrayWriteV3(String name, SameDiff sameDiff, SDVariable[] args){
+public class TensorArrayWrite extends BaseTensorOp {
+
+   public TensorArrayWrite(String name, SameDiff sameDiff, SDVariable[] args){
       super(name, sameDiff, args);
    }
-   public TensorArrayWriteV3(SameDiff sameDiff, SDVariable[] args){
+   public TensorArrayWrite(SameDiff sameDiff, SDVariable[] args){
       super(null, sameDiff, args);
    }
 
-   public TensorArrayWriteV3(){}
+   public TensorArrayWrite(){}
    @Override
    public String tensorflowName() {
       return "TensorArrayWriteV3";
-   }
-
-   @Override
-   public TensorList execute(SameDiff sameDiff) {
-      val list = getList(sameDiff);
-
-      val ids =getArgumentArray(1).getInt(0);
-      val array = getArgumentArray(2);
-
-      list.put(ids, array);
-
-      return list;
    }
 
    @Override
@@ -58,4 +48,10 @@ public class TensorArrayWriteV3 extends BaseTensorOp {
    public Op.Type opType() {
       return Op.Type.CUSTOM;
    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+        //Dummy float variable
+        return Collections.singletonList(DataType.FLOAT);
+    }
 }

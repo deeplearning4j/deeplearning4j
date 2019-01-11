@@ -16,24 +16,25 @@
 
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
-import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.list.compat.TensorList;
+import org.nd4j.linalg.api.buffer.DataType;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
-public class TensorArrayReadV3 extends BaseTensorOp {
+public class TensorArrayRead extends BaseTensorOp {
 
-    public TensorArrayReadV3(String name, SameDiff sameDiff, SDVariable[] args){
+    public TensorArrayRead(String name, SameDiff sameDiff, SDVariable[] args){
         super(name, sameDiff, args);
     }
-    public TensorArrayReadV3(SameDiff sameDiff, SDVariable[] args){
+    public TensorArrayRead(SameDiff sameDiff, SDVariable[] args){
         super(null, sameDiff, args);
     }
 
-    public TensorArrayReadV3(){}
+    public TensorArrayRead(){}
     @Override
     public String tensorflowName() {
         return "TensorArrayReadV3";
@@ -42,23 +43,19 @@ public class TensorArrayReadV3 extends BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarrayreadv3";
-    }
-
-    @Override
-    public TensorList execute(SameDiff sameDiff) {
-        val list = getList(sameDiff);
-
-        val id = getArgumentArray(1).getInt(0);
-
-        val array = list.get(id);
-
-        sameDiff.setArrayForVariable(this.getOwnName(), array);
-
-        return list;
+        return "tensorarrayread";
     }
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+        //Same output type as the TensorArray - which is defined by input 0
+        SDVariable tArr = arg(0);
+        TensorArray t3 = (TensorArray) sameDiff.getVariableOutputFunction(tArr.getVarName());
+        DataType dt = t3.getTensorArrayDataType();
+        return Collections.singletonList(dt);
     }
 }

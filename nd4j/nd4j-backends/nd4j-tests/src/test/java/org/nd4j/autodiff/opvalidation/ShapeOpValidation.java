@@ -952,12 +952,12 @@ public class ShapeOpValidation extends BaseOpValidation {
     public void testSize() {
         SameDiff sameDiff = SameDiff.create();
         val shape = new long[]{2, 3};
-        SDVariable x = sameDiff.var("x", shape);
+        SDVariable x = sameDiff.var("x", DataType.FLOAT, shape);
         SDVariable result = sameDiff.size(x);
 
         String err = OpValidation.validate(new TestCase(sameDiff)
                 .gradientCheck(false)
-                .expected(result, Nd4j.trueScalar(6)));
+                .expected(result, Nd4j.scalar(6L)));
 
         assertNull(err);
     }

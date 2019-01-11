@@ -16,15 +16,11 @@
 
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
-import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.list.compat.TensorList;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -33,7 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class TensorSizeV3 extends BaseTensorOp {
+public class TensorArraySize extends BaseTensorOp {
    @Override
    public String tensorflowName() {
       return "TensorArraySizeV3";
@@ -42,21 +38,7 @@ public class TensorSizeV3 extends BaseTensorOp {
 
    @Override
    public String opName() {
-      return "tensorarraysizev3";
-   }
-
-
-   @Override
-   public TensorList execute(SameDiff sameDiff) {
-      val list = getList(sameDiff);
-
-      val result = Nd4j.trueScalar(list.size());
-      val ownName = this.getOwnName();
-
-      // storing our size
-      sameDiff.setArrayForVariable(ownName, result);
-
-      return list;
+      return "tensorarraysize";
    }
 
    @Override
@@ -77,5 +59,11 @@ public class TensorSizeV3 extends BaseTensorOp {
 
    @Override
    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+   }
+
+   @Override
+   public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+      //Size is always int32
+      return Collections.singletonList(DataType.INT);
    }
 }

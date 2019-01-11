@@ -16,8 +16,8 @@
 
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
+import lombok.Getter;
 import lombok.val;
-import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -25,42 +25,43 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.list.compat.TensorList;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
-public class TensorArrayV3 extends  BaseTensorOp {
+public class TensorArray extends  BaseTensorOp {
 
-    TensorList list;
+    @Getter
+    protected DataType tensorArrayDataType;
     @Override
     public String tensorflowName() {
         return "TensorArrayV3";
     }
 
-    public TensorArrayV3(String name, SameDiff sameDiff){
+    public TensorArray(String name, SameDiff sameDiff, DataType dataType){
         super(name, sameDiff, new SDVariable[]{});
-        this.list = new TensorList(this.getOwnName());
+        this.tensorArrayDataType = dataType;
     }
-    public TensorArrayV3(SameDiff sameDiff){
+    public TensorArray(SameDiff sameDiff, DataType dataType){
         super(sameDiff, new SDVariable[]{});
-        this.list = new TensorList(this.getOwnName());
+        this.tensorArrayDataType = dataType;
     }
 
-    public TensorArrayV3(TensorArrayV3 ta){
+    public TensorArray(TensorArray ta){
         super(ta.sameDiff, new SDVariable[]{});
-        this.list = ta.list;
+        this.tensorArrayDataType = ta.tensorArrayDataType;
     }
-    public TensorArrayV3(TensorArrayV3 ta, SDVariable[] inputs){
+    public TensorArray(TensorArray ta, SDVariable[] inputs){
         super(ta.sameDiff, inputs);
-        this.list = ta.list;
+        this.tensorArrayDataType = ta.tensorArrayDataType;
     }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
         val idd = nodeDef.getInput(nodeDef.getInputCount() - 1);
         NodeDef iddNode = null;
         for(int i = 0; i < graph.getNodeCount(); i++) {
@@ -69,29 +70,23 @@ public class TensorArrayV3 extends  BaseTensorOp {
             }
         }
 
-
         val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",iddNode,graph);
 
         if (arr != null) {
             int idx = arr.getInt(0);
             addIArgument(idx);
         }
-        this.list = new TensorList(this.getOwnName());
+
+        this.tensorArrayDataType = TFGraphMapper.convertType(attributesForNode.get("dtype").getType());
     }
 
 
-    public TensorArrayV3(){
-        this.list = new TensorList(this.getOwnName());
+    public TensorArray(){
+        this(DataType.FLOAT);
     }
 
-    @Override
-    public TensorList execute(SameDiff sameDiff) {
-        /*val list = new TensorList(this.getOwnName());
-
-        // we might have size here
-
-        return list;*/
-        return this.list;
+    public TensorArray(DataType dataType){
+        this.tensorArrayDataType = dataType;
     }
 
     @Override
@@ -101,7 +96,7 @@ public class TensorArrayV3 extends  BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarrayv3";
+        return "tensorarray";
     }
 
 
@@ -112,14 +107,7 @@ public class TensorArrayV3 extends  BaseTensorOp {
 
 
     private SDVariable getVar(){
-        // get var associated with the tensor list
-
-        getSameDiff().putListByName(list.getName(), list);
-        val name = list.getName();
-        if (getSameDiff().variableMap().containsKey(name)){
-            return getSameDiff().variableMap().get(name);
-        }
-        return getSameDiff().var(list.getName(), DataType.FLOAT, 1);
+        return getSameDiff().var(DataType.FLOAT);
     }
 
     @Override
@@ -138,29 +126,29 @@ public class TensorArrayV3 extends  BaseTensorOp {
 
     //----------- read ops-----------------\\
     public SDVariable read(int index){
-        return new TensorArrayReadV3(getSameDiff(), new SDVariable[]{getVar(), intToVar(index)}).outputVariable();
+        return new TensorArrayRead(getSameDiff(), new SDVariable[]{getVar(), intToVar(index)}).outputVariable();
     }
     public SDVariable read(SDVariable index){
-        return new TensorArrayReadV3(getSameDiff(), new SDVariable[]{getVar(), index}).outputVariable();
+        return new TensorArrayRead(getSameDiff(), new SDVariable[]{getVar(), index}).outputVariable();
     }
     public SDVariable gather(int... indices){
-        return new TensorArrayGatherV3(getSameDiff(), new SDVariable[]{getVar(), intToVar(indices)}).outputVariable();
+        return new TensorArrayGather(getSameDiff(), new SDVariable[]{getVar(), intToVar(indices)}).outputVariable();
     }
     public SDVariable gather(SDVariable indices){
-        return new TensorArrayGatherV3(getSameDiff(), new SDVariable[]{getVar(), indices}).outputVariable();
+        return new TensorArrayGather(getSameDiff(), new SDVariable[]{getVar(), indices}).outputVariable();
     }
     public SDVariable stack(){
-        return new TensorArrayGatherV3(getSameDiff(), new SDVariable[]{getVar(), intToVar(-1)}).outputVariable();
+        return new TensorArrayGather(getSameDiff(), new SDVariable[]{getVar(), intToVar(-1)}).outputVariable();
     }
 
     public SDVariable concat(){
-        return new TensorArrayConcatV3(getSameDiff(), new SDVariable[]{getVar()}).outputVariable();
+        return new TensorArrayConcat(getSameDiff(), new SDVariable[]{getVar()}).outputVariable();
     }
 
     //----------- write ops-----------------\\
     public void write(int index, SDVariable value){
         //return new TensorArrayV3(this,
-        new TensorArrayWriteV3(getSameDiff(),
+        new TensorArrayWrite(getSameDiff(),
                 new SDVariable[]{getVar(),
                         intToVar(index), value}).outputVariables();//);
 
@@ -168,30 +156,43 @@ public class TensorArrayV3 extends  BaseTensorOp {
     public void write(SDVariable index, SDVariable value){
         System.out.println("TA write  - " + this.sameDiff);
         //return new TensorArrayV3(this,
-        new TensorArrayWriteV3(getSameDiff(),
+        new TensorArrayWrite(getSameDiff(),
                 new SDVariable[]{getVar(),
                         index, value}).outputVariables();//);
 
     }
     public void scatter(SDVariable value, int... indices){
         //return new TensorArrayV3(this,
-        new TensorArrayScatterV3(getSameDiff(),
+        new TensorArrayScatter(getSameDiff(),
                 new SDVariable[]{getVar(),
                         intToVar(indices),
                         value}).outputVariables();//);
     }
     public void scatter(SDVariable value, SDVariable indices){
         //return new TensorArrayV3(this,
-        new TensorArrayScatterV3(getSameDiff(),
+        new TensorArrayScatter(getSameDiff(),
                 new SDVariable[]{getVar(),
                         indices,
                         value}).outputVariables();//);
     }
     public void unstack(SDVariable value){
         //return new TensorArrayV3(this,
-        new TensorArrayScatterV3(getSameDiff(),
+        new TensorArrayScatter(getSameDiff(),
                 new SDVariable[]{getVar(),
                         intToVar(-1),
                         value}).outputVariables();//);
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+        //The SDVariable that is the output of this "function" is just a dummy variable anyway...
+        //Usually 2 outputs... seems like first one is dummy, second one is a float??
+        //TODO work out exactly what this second output is for (it's used in TensorArrayWrite for example...
+        return Arrays.asList(DataType.BOOL, DataType.FLOAT);
+    }
+
+    @Override
+    public int getNumOutputs(){
+        return 2;
     }
 }

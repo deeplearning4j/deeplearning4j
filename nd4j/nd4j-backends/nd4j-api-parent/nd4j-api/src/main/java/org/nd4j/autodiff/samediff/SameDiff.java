@@ -41,6 +41,7 @@ import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.graph.*;
 import org.nd4j.jackson.objectmapper.holder.ObjectMapperHolder;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -66,7 +67,7 @@ import org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
-import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
@@ -92,7 +93,6 @@ import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
-import org.nd4j.list.compat.TensorList;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ConstantInitScheme;
@@ -166,8 +166,6 @@ public class SameDiff {
     private Map<String, long[]> variableNameToShape;                //Key: SDVariable name. Value: shape for that variable
     @Deprecated //TO BE REMOVED - to Variable
     private Map<String, SDVariable> forwardVarForGrad;
-
-    private Map<String, TensorList> lists = new HashMap<>();    // Key - node name; Value - TensorList
 
     // counter for auto-naming variables
     private int variableId = 0;
@@ -781,7 +779,7 @@ public class SameDiff {
                 InferenceSession s = sessions.get(Thread.currentThread().getId());
                 if(s == null)
                     return null;
-                return s.get(varName, InferenceSession.OUTER_FRAME, 0);
+                return s.get(varName, InferenceSession.OUTER_FRAME, 0, false);
             case PLACEHOLDER:
                 long tid = Thread.currentThread().getId();
                 if(placeholdersPerThread.get(tid) == null || !placeholdersPerThread.get(tid).containsKey(varName))
@@ -9759,15 +9757,6 @@ public class SameDiff {
     }
 
 
-    public TensorList getListByName(@NonNull String name) {
-        return lists.get(name);
-    }
-
-    public void putListByName(@NonNull String name, TensorList list) {
-        lists.put(name, list);
-    }
-
-
     /**
      * Creates a while statement
      *
@@ -9812,8 +9801,8 @@ public class SameDiff {
     }
 
 
-    public TensorArrayV3 tensorArray() {
-        return new TensorArrayV3(this);
+    public TensorArray tensorArray(DataType dataType) {
+        return new TensorArray(this, dataType);
     }
 
     /**

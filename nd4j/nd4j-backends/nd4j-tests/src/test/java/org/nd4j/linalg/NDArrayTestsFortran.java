@@ -380,7 +380,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
     @Test
     public void testScalar() {
-        INDArray a = Nd4j.scalar(1.0);
+        INDArray a = Nd4j.scalar(1.0f);
         assertEquals(true, a.isScalar());
 
         INDArray n = Nd4j.create(new float[] {1.0f}, new long[] {1, 1});
@@ -604,7 +604,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
         INDArray innerProduct = n.mmul(transposed);
 
-        INDArray scalar = Nd4j.scalar(385);
+        INDArray scalar = Nd4j.scalar(385.0);
         assertEquals(getFailureMessage(), scalar, innerProduct);
 
 
@@ -1016,16 +1016,16 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray n1PlusN2 = n1.add(n2);
         assertFalse(getFailureMessage(), n1PlusN2.equals(n1));
 
-        INDArray n3 = Nd4j.scalar(3);
-        INDArray n4 = Nd4j.scalar(4);
+        INDArray n3 = Nd4j.scalar(3.0);
+        INDArray n4 = Nd4j.scalar(4.0);
         INDArray subbed = n4.sub(n3);
         INDArray mulled = n4.mul(n3);
         INDArray div = n4.div(n3);
 
         assertFalse(subbed.equals(n4));
         assertFalse(mulled.equals(n4));
-        assertEquals(Nd4j.scalar(1), subbed);
-        assertEquals(Nd4j.scalar(12), mulled);
+        assertEquals(Nd4j.scalar(1.0), subbed);
+        assertEquals(Nd4j.scalar(12.0), mulled);
         assertEquals(Nd4j.scalar(1.333333333333333333333), div);
     }
 
