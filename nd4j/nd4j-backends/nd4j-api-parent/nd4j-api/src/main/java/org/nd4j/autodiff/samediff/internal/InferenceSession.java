@@ -2,7 +2,6 @@ package org.nd4j.autodiff.samediff.internal;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -129,7 +128,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             return new INDArray[]{arr};
         } else if(op instanceof BaseTensorOp){
             //TensorOps - special cases...
-            if(op instanceof TensorArrayV3){
+            if(op instanceof TensorArray){
                 //Create a TensorArray
                 VarId vid = newVarId(op.outputVariable().getVarName(), outputFrameIter);
                 Preconditions.checkState(!tensorArrays.containsKey(vid), "TensorArray already exists for %s when executing TensorArrayV3", vid);
@@ -137,7 +136,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 // Note that TensorArray has 2 outputs - a 'dummy' SDVariable that represents it, and a second output (return a scalar 0.0)
                 return new INDArray[]{Nd4j.scalar(true), Nd4j.scalar(0.0f)};
-            } else if(op instanceof TensorArrayReadV3){
+            } else if(op instanceof TensorArrayRead){
                 //Do lookup and return
                 //Input 0 is the TensorArray (or dummy variable that represents it)
                 //Input 1 is the index
@@ -156,7 +155,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 INDArray out = list.get(i);
                 return new INDArray[]{out};
-            } else if(op instanceof TensorArrayWriteV3) {
+            } else if(op instanceof TensorArrayWrite) {
                 //TensorArrayWrite - also has a scalar 0.0 that it returns...
 
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
@@ -189,7 +188,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 //Return dummy array
                 return new INDArray[]{Nd4j.scalar(0.0f)};
-            } else if(op instanceof TensorArraySizeV3) {
+            } else if(op instanceof TensorArraySize) {
                 //Index 0 is the TensorArray (or dummy variable that represents it)
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
                 //Work out the varid (frame/iteration) of the tensor array:
@@ -197,14 +196,14 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 List<INDArray> l = tensorArrays.get(tArr);
                 Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
                 return new INDArray[]{Nd4j.scalar(DataType.INT, l.size())};
-            } else if(op instanceof TensorArrayConcatV3) {
+            } else if(op instanceof TensorArrayConcat) {
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
                 VarId tArr = lookup(inTensorArray.getVarName(), opInputs);
                 List<INDArray> l = tensorArrays.get(tArr);
                 //TODO - empty checks. But is size 0 OK?
                 INDArray concat = Nd4j.concat(0, l.toArray(new INDArray[l.size()]));
                 return new INDArray[]{concat};
-            } else if(op instanceof TensorArrayGatherV3) {
+            } else if(op instanceof TensorArrayGather) {
                 //Input 0: the TensorArray
                 //Input 1: the indices (1d integer vector)
 
@@ -226,8 +225,8 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 }
                 INDArray out = Nd4j.pile(newList);
                 return new INDArray[]{out};
-            } else if(op instanceof TensorArrayScatterV3) {
-                //Scatter values from a rank (N+1)d tensor into specific indices
+            } else if(op instanceof TensorArrayScatter) {
+                //Scatter values from a rank (N+1)d tensor into specific indices of the TensorArray
                 //Input 0: the TensorArray
                 //Input 1: the indices (1d integer vector)
                 //Input 2: The values to scatter
@@ -248,18 +247,55 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 SDVariable valuesSDV = sameDiff.getVariable(valuesName);
                 INDArray valuesArr = getArray(valuesSDV, opInputs);
 
+                while (l.size() <= idxs.length) { //Can't use set(int, E) if index >= size
+                    l.add(null);
+                }
+
                 INDArrayIndex[] idx = ArrayUtil.nTimes(valuesArr.rank(), NDArrayIndex.all(), INDArrayIndex.class);
                 for (int i = 0; i < idxs.length; i++) {
                     idx[0] = NDArrayIndex.point(i);
                     INDArray get = valuesArr.get(idx).dup();
                     int outIdx = idxs[i];
-                    while (l.size() <= outIdx) {
-                        //Can't use set(int, E) if index >= size
-                        l.add(null);
-                    }
                     l.set(outIdx, get);
                 }
 
+                //Return dummy array
+                return new INDArray[]{Nd4j.scalar(0.0f)};
+            } else if(op instanceof TensorArraySplit){
+                //Split values from a rank (N+1)d tensor into sequential indices of the TensorArray
+                //For example, orig=[8,2] sizearray with split (4,4) means TensorArray[0] = orig[0:4,:] and TensorArray[1] = orig[4:8,:]
+                //Input 0: the TensorArray
+                //Input 1: The values to split
+                //Input 2: the size of each split (1d integer vector)
+
+                SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+                VarId tArr = lookup(inTensorArray.getVarName(), opInputs);
+                List<INDArray> l = tensorArrays.get(tArr);
+                Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
+
+                String splitName = op.arg(1).getVarName();
+                INDArray splitArr = getArray(sameDiff.getVariable(splitName), opInputs);
+
+
+                String sizeName = op.arg(2).getVarName();
+                SDVariable sizeSDV = sameDiff.getVariable(sizeName);
+                INDArray sizeArr = getArray(sizeSDV, opInputs);
+                Preconditions.checkState(sizeArr.isVector(), "Indices variable for TensorArraySplit should be a vector, got %ndShape for %s", sizeArr, sizeName);
+                Preconditions.checkState(sizeArr.dataType().isIntType(), "Indices variable for TensorArraySplit should be an integer type, got %s for array %s", sizeArr.dataType(), sizeName);
+                int[] sizes = sizeArr.toIntVector();
+
+                while (l.size() <= sizes.length) { //Can't use set(int, E) if index >= size
+                    l.add(null);
+                }
+
+                INDArrayIndex[] idx = ArrayUtil.nTimes(splitArr.rank(), NDArrayIndex.all(), INDArrayIndex.class);
+                int soFar = 0;
+                for( int i=0; i<sizes.length; i++ ){
+                    idx[0] = NDArrayIndex.interval(soFar, soFar + sizes[i]);
+                    INDArray sub = splitArr.get(idx).dup();
+                    l.set(i, sub);
+                    soFar += sizes[i];
+                }
                 //Return dummy array
                 return new INDArray[]{Nd4j.scalar(0.0f)};
             } else {

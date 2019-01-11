@@ -16,44 +16,38 @@
 
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
-import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.Op;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
-public class TensorArraySplit extends BaseTensorOp {
-    public TensorArraySplit(String name, SameDiff sameDiff, SDVariable[] args){
-        super(name, sameDiff, args);
-    }
-    public TensorArraySplit(SameDiff sameDiff, SDVariable[] args){
-        super(null, sameDiff, args);
-    }
+public class TensorArrayWrite extends BaseTensorOp {
 
-    public TensorArraySplit(){}
+   public TensorArrayWrite(String name, SameDiff sameDiff, SDVariable[] args){
+      super(name, sameDiff, args);
+   }
+   public TensorArrayWrite(SameDiff sameDiff, SDVariable[] args){
+      super(null, sameDiff, args);
+   }
 
-    @Override
-    public String tensorflowName() {
-        return "TensorArraySplitV3";
-    }
+   public TensorArrayWrite(){}
+   @Override
+   public String tensorflowName() {
+      return "TensorArrayWriteV3";
+   }
 
-    @Override
-    public String toString() {
-        return opName();
-    }
+   @Override
+   public String opName() {
+      return "tensorarraywritev3";
+   }
 
-    @Override
-    public String opName() {
-        return "tensorarraysplit";
-    }
-
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-    }
+   @Override
+   public Op.Type opType() {
+      return Op.Type.CUSTOM;
+   }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){

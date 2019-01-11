@@ -16,57 +16,46 @@
 
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
-import lombok.val;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.list.compat.TensorList;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
-public class TensorArrayWriteV3 extends BaseTensorOp {
+public class TensorArrayRead extends BaseTensorOp {
 
-   public TensorArrayWriteV3(String name, SameDiff sameDiff, SDVariable[] args){
-      super(name, sameDiff, args);
-   }
-   public TensorArrayWriteV3(SameDiff sameDiff, SDVariable[] args){
-      super(null, sameDiff, args);
-   }
+    public TensorArrayRead(String name, SameDiff sameDiff, SDVariable[] args){
+        super(name, sameDiff, args);
+    }
+    public TensorArrayRead(SameDiff sameDiff, SDVariable[] args){
+        super(null, sameDiff, args);
+    }
 
-   public TensorArrayWriteV3(){}
-   @Override
-   public String tensorflowName() {
-      return "TensorArrayWriteV3";
-   }
+    public TensorArrayRead(){}
+    @Override
+    public String tensorflowName() {
+        return "TensorArrayReadV3";
+    }
 
-   @Override
-   public TensorList execute(SameDiff sameDiff) {
-      val list = getList(sameDiff);
 
-      val ids =getArgumentArray(1).getInt(0);
-      val array = getArgumentArray(2);
+    @Override
+    public String opName() {
+        return "tensorarrayread";
+    }
 
-      list.put(ids, array);
-
-      return list;
-   }
-
-   @Override
-   public String opName() {
-      return "tensorarraywritev3";
-   }
-
-   @Override
-   public Op.Type opType() {
-      return Op.Type.CUSTOM;
-   }
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
-        //Dummy float variable
-        return Collections.singletonList(DataType.FLOAT);
+        //Same output type as the TensorArray - which is defined by input 0
+        SDVariable tArr = arg(0);
+        TensorArray t3 = (TensorArray) sameDiff.getVariableOutputFunction(tArr.getVarName());
+        DataType dt = t3.getTensorArrayDataType();
+        return Collections.singletonList(dt);
     }
 }

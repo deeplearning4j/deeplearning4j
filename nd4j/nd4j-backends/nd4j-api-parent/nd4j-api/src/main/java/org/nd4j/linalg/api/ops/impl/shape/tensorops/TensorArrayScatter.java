@@ -16,39 +16,29 @@
 
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
-import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.list.compat.TensorList;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class TensorArrayGatherV3 extends BaseTensorOp {
-
-    public TensorArrayGatherV3(String name, SameDiff sameDiff, SDVariable[] args){
+public class TensorArrayScatter extends BaseTensorOp {
+    public TensorArrayScatter(String name, SameDiff sameDiff, SDVariable[] args){
         super(name, sameDiff, args);
     }
-    public TensorArrayGatherV3(SameDiff sameDiff, SDVariable[] args){
+    public TensorArrayScatter(SameDiff sameDiff, SDVariable[] args){
         super(null, sameDiff, args);
     }
 
-    public TensorArrayGatherV3(){}
-   @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op name found for " + opName());
-    }
+    public TensorArrayScatter(){}
 
     @Override
     public String tensorflowName() {
-        return "TensorArrayGatherV3";
+        return "TensorArrayScatterV3";
     }
-
 
     @Override
     public String toString() {
@@ -57,36 +47,17 @@ public class TensorArrayGatherV3 extends BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarraygatherv3";
+        return "tensorarrayscatterv3";
     }
 
-    @Override
-    public TensorList execute(SameDiff sameDiff) {
-       val list = getList(sameDiff);
-       val indices = getArgumentArray(1);
-       val array = list.gather(indices);
-       val name = this.getOwnName();
-       sameDiff.setArrayForVariable(name, array);
-
-       return list;
-    }
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
-    }
-
-    @Override
-    public List<DataType> calculateOutputDataTypes(java.util.List<org.nd4j.linalg.api.buffer.DataType> inputDataType){
-        //Same output type as the TensorArray - which is defined by input 0
-        SDVariable tArr = arg(0);
-        TensorArrayV3 t3 = (TensorArrayV3) sameDiff.getVariableOutputFunction(tArr.getVarName());
-        org.nd4j.linalg.api.buffer.DataType dt = t3.getTensorArrayDataType();
-        return Collections.singletonList(dt);
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+        //Dummy float variable
+        return Collections.singletonList(DataType.FLOAT);
     }
 }

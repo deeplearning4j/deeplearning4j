@@ -21,11 +21,8 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.list.compat.TensorList;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -58,40 +55,7 @@ public abstract  class BaseTensorOp extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("Differentiation not supported yet.");
-
-    }
-
-    public abstract TensorList execute(SameDiff sameDiff);
-
-    protected INDArray getArgumentArray(int index) {
-        val arg = this.arg(index);
-        val array = this.sameDiff.getArrForVarName(arg.getVarName());
-
-        return array;
-    }
-
-    protected TensorList getList(SameDiff sameDiff) {
-//        /**
-//         * First argument is TensorList.
-//         */
-//        val arg0 = this.arg(0);
-//        val tName = arg0.getVarName();
-//
-//        val list = sameDiff.getListByName(tName);
-//
-//        if (list == null) {
-//
-//            if(sameDiff.getParent() != null && sameDiff.getParent().getListByName(tName) != null){
-//                return sameDiff.getParent().getListByName(tName);
-//            }
-//            else{
-//                throw new ND4JIllegalStateException("There's no TensorList with name [" + tName + "] registered");
-//            }
-//        }
-//
-//        return list;
-        throw new UnsupportedOperationException("Not yet reimplemented");
+        throw new UnsupportedOperationException("Differentiation not yet implemented for " + getClass().getName());
     }
 
     @Override
