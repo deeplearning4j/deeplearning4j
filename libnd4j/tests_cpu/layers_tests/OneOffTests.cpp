@@ -91,4 +91,28 @@ TEST_F(OneOffTests, test_pad_1D_1) {
     z->printIndexedBuffer("z");
 
     ASSERT_EQ(e, *z);
+    delete graph;
+}
+
+TEST_F(OneOffTests, test_scatter_nd_update_1) {
+    auto e = NDArrayFactory::create<float>('c', {10, 7}, {1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 0.20446908f, 0.37918627f, 0.99792874f, 0.71881700f, 0.18677747f, 0.78299069f, 0.55216062f, 0.40746713f, 0.92128086f, 0.57195139f, 0.44686234f, 0.30861020f, 0.31026053f, 0.09293187f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 0.95073712f, 0.45613325f, 0.95149803f, 0.88341522f, 0.54366302f, 0.50060666f, 0.39031255f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/scatter_nd_update.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(6));
+
+    auto z = graph->getVariableSpace()->getVariable(6)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    z->printIndexedBuffer("z");
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
 }
