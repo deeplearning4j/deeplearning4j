@@ -28,7 +28,6 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN
-template<typename X, typename Y, typename Z>
 void MmulHelper::basicGemm(const NDArray* A, const NDArray* B, NDArray* C, double alpha, double beta) {
 
 	const int M = A->sizeAt(0);
@@ -87,7 +86,6 @@ void MmulHelper::basicGemm(const NDArray* A, const NDArray* B, NDArray* C, doubl
     else
     	throw std::runtime_error("MmulHelper::basicGemm cuda: not implemented for given data types !");
    
-
    	if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
 
    	auto cudaResult = cudaStreamSynchronize(*A->getContext()->getCudaStream());
@@ -138,7 +136,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 	if(C->ews() != 1 || C->ordering() == 'c')
 		pC = pC->dup('f');
 
-	MmulHelper::basicGemm<X,Y,Z>(pA, pB, pC, alpha, beta);
+	MmulHelper::basicGemm(pA, pB, pC, alpha, beta);
 
     if(pC != C) {
     	C->assign(pC);

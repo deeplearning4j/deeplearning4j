@@ -39,9 +39,9 @@ namespace nd4j {
         template <typename X, typename Y, typename Z>
         static void _dot(void* vA, void* vB, void* vC, Nd4jLong length);
 
-        // this method requires all three arrays to have continuous buffers and f (column-major) order
-        template <typename X, typename Y, typename Z>
+        // this method requires all three arrays to have continuous buffers and f (column-major) order        
         static void basicGemm(const NDArray* A, const NDArray* B, NDArray* C, double alpha, double beta);
+        
     public:
 
         // multiptication Matrix to Matrix
