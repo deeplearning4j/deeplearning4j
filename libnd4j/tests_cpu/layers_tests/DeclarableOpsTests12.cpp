@@ -649,3 +649,18 @@ TEST_F(DeclarableOpsTests12, mirrorPad_test18) {
     ASSERT_TRUE(exp.equalsTo(z));    
 }
 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, pad_tests26) {
+
+    NDArray input('c', {5}, {0.778786, 0.801198, 0.724375, 0.230894, 0.727141}, nd4j::DataType::FLOAT32);
+    NDArray paddings('c', {1,2}, {1,1}, nd4j::DataType::INT32);
+    NDArray expected('c', {7}, {10., 0.778786, 0.801198, 0.724375, 0.230894, 0.727141, 10.}, nd4j::DataType::FLOAT32);    
+    NDArray z('c', {7}, nd4j::DataType::FLOAT32);    
+
+    nd4j::ops::pad op;    
+    Nd4jStatus status = op.execute({&input, &paddings}, {&z}, {10}, {0}, {});      // constant    
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    ASSERT_TRUE(expected.isSameShapeStrict(&z));
+    ASSERT_TRUE(expected.equalsTo(z));
+}
