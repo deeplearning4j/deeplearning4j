@@ -208,7 +208,11 @@ namespace nd4j {
                             throw std::runtime_error("CONSTANT variable must have NDArray bundled");
 
                         auto ar = flatVariable->ndarray();
-                        _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
+                        if (ar->dtype() == DataType_UTF8) {
+                            _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
+                        } else {
+                            _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
+                        }
                         _ndarray->triggerAllocationFlag(true, true);
 
                         _variableType = VariableType::NDARRAY;
