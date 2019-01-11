@@ -14,10 +14,7 @@ import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
-import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
-import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayReadV3;
-import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
-import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayWriteV3;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.*;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -139,21 +136,10 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 return new INDArray[]{Nd4j.scalar(true), Nd4j.scalar(0.0f)};
             } else if(op instanceof TensorArrayReadV3){
                 //Do lookup and return
-                //Index is array 1...
-//                INDArray idx = ((TensorArrayReadV3) op).getInputArgument(1);
-//                Preconditions.checkState(idx.isScalar(), "TensorArrayRead input argument 1 should be scalar - has shape %ndShape", idx);
-//                int i = idx.getInt(0);
+                //Input 0 is the TensorArray (or dummy variable that represents it)
+                //Input 1 is the index
                 SDVariable idxSDV = op.arg(1);
-                String idxName = idxSDV.getVarName();
-//                VarId idxVarId = lookup(idxName, opInputs);
-//                INDArray idxArr = nodeOutputs.get(idxVarId);
-                INDArray idxArr;
-                if(idxSDV.getVariableType() == VariableType.CONSTANT || idxSDV.getVariableType() == VariableType.VARIABLE){
-                    idxArr = getConstantOrVariable(idxName);
-                } else {
-                    VarId inVarId = lookup(idxName, opInputs);
-                    idxArr = nodeOutputs.get(inVarId);
-                }
+                INDArray idxArr = getArray(idxSDV, opInputs);
                 Preconditions.checkState(idxArr.isScalar(), "TensorArrayRead input argument 1 should be scalar - has shape %ndShape", idxArr);
                 int i = idxArr.getInt(0);
 
@@ -167,7 +153,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 INDArray out = list.get(i);
                 return new INDArray[]{out};
-            } else if(op instanceof TensorArrayWriteV3){
+            } else if(op instanceof TensorArrayWriteV3) {
                 //TensorArrayWrite - also has a scalar 0.0 that it returns...
 
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
@@ -178,43 +164,42 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 //Input 1 is the index
                 //Input 2 is the value to write
 
-                //TODO CODE DUPLICATION - clean this up...
                 String idxName = op.arg(1).getVarName();
                 SDVariable idxSDV = sameDiff.getVariable(idxName);
-//                VarId idxVarId = lookup(idxName, opInputs);
-//                INDArray idxArr = nodeOutputs.get(idxVarId);
-                INDArray idxArr;
-                if(idxSDV.getVariableType() == VariableType.CONSTANT || idxSDV.getVariableType() == VariableType.VARIABLE){
-                    idxArr = getConstantOrVariable(idxName);
-                } else {
-                    VarId inVarId = lookup(idxName, opInputs);
-                    idxArr = nodeOutputs.get(inVarId);
-                }
-//                Preconditions.checkState(idxArr != null, "Could not find array for %s", idxVarId);
+                INDArray idxArr = getArray(idxSDV, opInputs);
                 Preconditions.checkState(idxArr.isScalar(), "Index variable ID for TensorArrayWrite should be a scalar, got %ndShape", idxArr);
                 int idx = idxArr.getInt(0);
 
                 String inName = op.arg(2).getVarName();
                 SDVariable inSDV = sameDiff.getVariable(inName);
-                INDArray arr;
-                if(inSDV.getVariableType() == VariableType.CONSTANT || inSDV.getVariableType() == VariableType.VARIABLE){
-                    arr = getConstantOrVariable(inName);
-                } else {
-                    VarId inVarId = lookup(inName, opInputs);
-                    arr = nodeOutputs.get(inVarId);
-                }
+                INDArray arr = getArray(inSDV, opInputs);
                 Preconditions.checkState(arr != null, "Could not find array for %s", inName);
 
                 Preconditions.checkState(tensorArrays.containsKey(tArr), "Tensor array does not exist for %s", tArr);
                 //TODO is this always safe to insert by index for all execution orders?
                 List<INDArray> l = tensorArrays.get(tArr); //.set(idx, arr);
-                while(l.size() <= idx){
+                while (l.size() <= idx) {
                     //Can't use set(int, E) if index >= size
                     l.add(null);
                 }
                 l.set(idx, arr);
 
                 return new INDArray[]{Nd4j.scalar(0.0f)};
+            } else if(op instanceof TensorArraySizeV3) {
+                //Index 0 is the TensorArray (or dummy variable that represents it)
+                SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+                //Work out the varid (frame/iteration) of the tensor array:
+                VarId tArr = lookup(inTensorArray.getVarName(), opInputs);
+                List<INDArray> l = tensorArrays.get(tArr);
+                Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
+                return new INDArray[]{Nd4j.scalar(DataType.INT, l.size())};
+            } else if(op instanceof TensorArrayConcatV3){
+                SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+                VarId tArr = lookup(inTensorArray.getVarName(), opInputs);
+                List<INDArray> l = tensorArrays.get(tArr);
+                //TODO - empty checks. But is size 0 OK?
+                INDArray concat = Nd4j.concat(0, l.toArray(new INDArray[l.size()]));
+                return new INDArray[]{concat};
             } else {
                 throw new IllegalStateException("Execution support not yet implemented for: " + op.getClass().getName());
             }
@@ -393,5 +378,16 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         }
 
         return df;
+    }
+
+
+    protected INDArray getArray(SDVariable sdv, Collection<VarId> opInputs){
+        String n = sdv.getVarName();
+        if(sdv.getVariableType() == VariableType.CONSTANT || sdv.getVariableType() == VariableType.VARIABLE){
+            return getConstantOrVariable(n);
+        } else {
+            VarId inVarId = lookup(n, opInputs);
+            return nodeOutputs.get(inVarId);
+        }
     }
 }

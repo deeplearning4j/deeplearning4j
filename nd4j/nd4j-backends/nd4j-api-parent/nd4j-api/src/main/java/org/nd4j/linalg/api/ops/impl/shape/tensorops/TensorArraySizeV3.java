@@ -33,7 +33,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class TensorSizeV3 extends BaseTensorOp {
+public class TensorArraySizeV3 extends BaseTensorOp {
    @Override
    public String tensorflowName() {
       return "TensorArraySizeV3";
@@ -77,5 +77,11 @@ public class TensorSizeV3 extends BaseTensorOp {
 
    @Override
    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+   }
+
+   @Override
+   public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+      //Size is always int32
+      return Collections.singletonList(DataType.INT);
    }
 }
