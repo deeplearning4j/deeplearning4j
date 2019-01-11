@@ -149,6 +149,15 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static <T> T[] nTimes(int n, T toReplicate, Class<T> tClass){
+        Preconditions.checkState(n>=0, "Invalid number of times to replicate: must be >= 0, got %s", n);
+        T[] out = (T[])Array.newInstance(tClass, n);
+        for( int i=0; i<n; i++ ){
+            out[i] = toReplicate;
+        }
+        return out;
+    }
+
     /**
      * Returns true if all of the elements in the
      * given int array are unique

@@ -20,11 +20,14 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.list.compat.TensorList;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class TensorArrayScatterV3 extends BaseTensorOp {
@@ -76,5 +79,11 @@ public class TensorArrayScatterV3 extends BaseTensorOp {
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+        //Dummy float variable
+        return Collections.singletonList(DataType.FLOAT);
     }
 }

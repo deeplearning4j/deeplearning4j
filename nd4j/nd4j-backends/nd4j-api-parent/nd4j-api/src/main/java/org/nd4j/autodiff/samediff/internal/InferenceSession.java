@@ -18,6 +18,9 @@ import org.nd4j.linalg.api.ops.impl.shape.tensorops.*;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
@@ -184,6 +187,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 }
                 l.set(idx, arr);
 
+                //Return dummy array
                 return new INDArray[]{Nd4j.scalar(0.0f)};
             } else if(op instanceof TensorArraySizeV3) {
                 //Index 0 is the TensorArray (or dummy variable that represents it)
@@ -193,13 +197,72 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 List<INDArray> l = tensorArrays.get(tArr);
                 Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
                 return new INDArray[]{Nd4j.scalar(DataType.INT, l.size())};
-            } else if(op instanceof TensorArrayConcatV3){
+            } else if(op instanceof TensorArrayConcatV3) {
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
                 VarId tArr = lookup(inTensorArray.getVarName(), opInputs);
                 List<INDArray> l = tensorArrays.get(tArr);
                 //TODO - empty checks. But is size 0 OK?
                 INDArray concat = Nd4j.concat(0, l.toArray(new INDArray[l.size()]));
                 return new INDArray[]{concat};
+            } else if(op instanceof TensorArrayGatherV3) {
+                //Input 0: the TensorArray
+                //Input 1: the indices (1d integer vector)
+
+                SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+                VarId tArr = lookup(inTensorArray.getVarName(), opInputs);
+                List<INDArray> l = tensorArrays.get(tArr);
+                Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
+
+                String indicesName = op.arg(1).getVarName();
+                SDVariable indicesSDV = sameDiff.getVariable(indicesName);
+                INDArray idxArr = getArray(indicesSDV, opInputs);
+                Preconditions.checkState(idxArr.isVector(), "Indices variable for TensorArrayGather should be a vector, got %ndShape for %s", idxArr, indicesName);
+                Preconditions.checkState(idxArr.dataType().isIntType(), "Indices variable for TensorArrayGather should be an integer type, got %s for array %s", idxArr.dataType(), indicesName);
+
+                int[] idxArrInt = idxArr.toIntVector();
+                ArrayList<INDArray> newList = new ArrayList<>();
+                for (int id : idxArrInt) {
+                    newList.add(l.get(id));
+                }
+                INDArray out = Nd4j.pile(newList);
+                return new INDArray[]{out};
+            } else if(op instanceof TensorArrayScatterV3){
+                //Scatter values from a rank (N+1)d tensor into specific indices
+                //Input 0: the TensorArray
+                //Input 1: the indices (1d integer vector)
+                //Input 2: The values to scatter
+
+                SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+                VarId tArr = lookup(inTensorArray.getVarName(), opInputs);
+                List<INDArray> l = tensorArrays.get(tArr);
+                Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
+
+                String indicesName = op.arg(1).getVarName();
+                SDVariable indicesSDV = sameDiff.getVariable(indicesName);
+                INDArray idxArr = getArray(indicesSDV, opInputs);
+                Preconditions.checkState(idxArr.isVector(), "Indices variable for TensorArrayScatter should be a vector, got %ndShape for %s", idxArr, indicesName);
+                Preconditions.checkState(idxArr.dataType().isIntType(), "Indices variable for TensorArrayScatter should be an integer type, got %s for array %s", idxArr.dataType(), indicesName);
+                int[] idxs = idxArr.toIntVector();
+
+                String valuesName = op.arg(2).getVarName();
+                SDVariable valuesSDV = sameDiff.getVariable(valuesName);
+                INDArray valuesArr = getArray(valuesSDV, opInputs);
+
+                int[] axis = ArrayUtil.range(1, valuesArr.rank());
+                INDArrayIndex[] idx = ArrayUtil.nTimes(valuesArr.rank(), NDArrayIndex.all(), INDArrayIndex.class);
+                for( int i=0; i<idxs.length; i++ ){
+                    idx[0] = NDArrayIndex.point(i);
+                    INDArray get = valuesArr.get(idx).dup();
+                    int outIdx = idxs[i];
+                    while (l.size() <= outIdx) {
+                        //Can't use set(int, E) if index >= size
+                        l.add(null);
+                    }
+                    l.set(outIdx, get);
+                }
+
+                //Return dummy array
+                return new INDArray[]{Nd4j.scalar(0.0f)};
             } else {
                 throw new IllegalStateException("Execution support not yet implemented for: " + op.getClass().getName());
             }
