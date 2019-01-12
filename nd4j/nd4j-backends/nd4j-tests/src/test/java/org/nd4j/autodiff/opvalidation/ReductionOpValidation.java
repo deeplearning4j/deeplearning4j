@@ -141,7 +141,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 //Not gradient checkable for 0 and 1 values
                 ia = Nd4j.create(new int[]{2, 2}, new float[]{0, 1, 0, 1});
             } else {
-                ia = Nd4j.rand(2, 2);
+                ia = Nd4j.rand(DataType.FLOAT, 2, 2);
             }
 
             SDVariable input = sd.var("in", new int[]{2, 2});
@@ -150,7 +150,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             SDVariable zeroFraction = sd.zeroFraction(input);
 
             String error = OpValidation.validate(new TestCase(sd)
-                    .expectedOutput(zeroFraction.getVarName(), Nd4j.trueScalar(i == 0 ? 0.5 : 0.0))
+                    .expectedOutput(zeroFraction.getVarName(), Nd4j.scalar(i == 0 ? 0.5f : 0.0f))
                     .gradientCheck(i != 0)
             );
             if (error != null)
@@ -783,14 +783,14 @@ public class ReductionOpValidation extends BaseOpValidation {
     @Test
     public void testAllAny() {
 
-        INDArray allZeros = Nd4j.create(3, 4);
-        INDArray allOnes = Nd4j.ones(3, 4);
-        INDArray mixed = Nd4j.zeros(3, 4);
+        INDArray allZeros = Nd4j.zeros(DataType.FLOAT, 3, 4);
+        INDArray allOnes = Nd4j.ones(DataType.FLOAT, 3, 4);
+        INDArray mixed = Nd4j.zeros(DataType.FLOAT, 3, 4);
         mixed.getRow(1).assign(1.0);
 
         INDArray[] in = new INDArray[]{allZeros, allOnes, mixed};
-        double[] expAll = new double[]{0, 1, 0};
-        double[] expAny = new double[]{0, 1, 1};
+        boolean[] expAll = new boolean[]{false, true, false};
+        boolean[] expAny = new boolean[]{false, true, true};
 
         for (int i = 0; i < 3; i++) {
             SameDiff sd = SameDiff.create();
@@ -801,8 +801,8 @@ public class ReductionOpValidation extends BaseOpValidation {
 
             String err = OpValidation.validate(new TestCase(sd)
                     .gradientCheck(false)
-                    .expected(all, Nd4j.create(new double[]{expAll[i]}))
-                    .expected(any, Nd4j.create(new double[]{expAny[i]})));
+                    .expected(all, Nd4j.create(new boolean[]{expAll[i]}))
+                    .expected(any, Nd4j.create(new boolean[]{expAny[i]})));
 
             assertNull(err);
         }

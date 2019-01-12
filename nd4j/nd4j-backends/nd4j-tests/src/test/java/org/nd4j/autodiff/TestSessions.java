@@ -199,7 +199,7 @@ public class TestSessions {
             Map<String, INDArray> m = is.output(Arrays.asList(n, n2), Collections.emptyMap());
             assertEquals(2, m.size());
 
-            INDArray exp = Nd4j.scalar((double)numIter);
+            INDArray exp = Nd4j.scalar((float)numIter);
 
             assertEquals(exp, m.get(n));
             assertEquals(exp, m.get(n2));
@@ -220,7 +220,7 @@ public class TestSessions {
             //Check 2: Add should be executed numIter times...
             for( int i=0; i<numIter; i++ ){
                 expVarId = new AbstractSession.VarId("while/add","while/while_context", i);
-                INDArray expAddVal = Nd4j.scalar(i+1);  //Starts at 0, so post exec it's 1 higher than iter number
+                INDArray expAddVal = Nd4j.scalar((float)(i+1));  //Starts at 0, so post exec it's 1 higher than iter number
                 assertTrue(outputs.containsKey(expVarId));
                 assertEquals(expAddVal, outputs.get(expVarId));
             }

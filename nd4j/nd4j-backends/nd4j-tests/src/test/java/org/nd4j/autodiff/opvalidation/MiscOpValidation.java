@@ -1424,22 +1424,4 @@ public class MiscOpValidation extends BaseOpValidation {
 
         assertEquals(failed.toString(), 0, failed.size());
     }
-
-    @Test
-    public void testInplaceSubi() {
-        OpValidationSuite.ignoreFailing();
-        SameDiff sameDiffOuter = SameDiff.create();
-        Map<String, INDArray> params = new HashMap<>();
-        params.put("x", Nd4j.ones(4));
-        sameDiffOuter.defineFunction("inplacesubi", new SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable inplace = sameDiff.var("x", inputs.get("x"));
-                return new SDVariable[]{inplace.subi(1.0)};
-            }
-        }, params);
-
-        sameDiffOuter.getFunction("inplacesubi").eval(params);
-        assertEquals(Nd4j.zeros(4), params.get("x"));
-    }
 }

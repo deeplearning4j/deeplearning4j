@@ -1351,67 +1351,6 @@ public class SameDiff {
         return new SameDiff();
     }
 
-
-    /**
-     * Evaluate the given inputs based on the current graph
-     *
-     * @param inputs the inputs to evaluate
-     * @return
-     */
-    @Deprecated //TO BE REMOVED - need better API + way of specifying what to return. "Final" ops are usually scores, not predictions that users care about
-    public INDArray[] eval(Map<String, INDArray> inputs) {
-        SameDiff execPipeline = dup();
-        for(Map.Entry<String,INDArray> entry : inputs.entrySet()) {
-            execPipeline.associateArrayWithVariable(entry.getValue(),entry.getKey());
-        }
-
-        List<DifferentialFunction> opExecAction = execPipeline.exec().getRight();
-        if (opExecAction.isEmpty())
-            throw new IllegalStateException("No ops found to execute.");
-        INDArray[] ret = new INDArray[opExecAction.size()];
-        for (int i = 0; i < ret.length; i++) {
-            val varName = opExecAction.get(i).outputVariables()[0].getVarName();
-            ret[i] = execPipeline.getArrForVarName(varName);
-        }
-        return ret;
-    }
-
-    /**
-     * Evaluate the inputs
-     * using {@link #eval(Map)}
-     * using the order of the place holders
-     * from the {@link #inputs()} - note that
-     * each input array should match
-     * the exact index order of the variable names
-     * returned from {@link #inputs()}
-     * @param inputs the input arrays
-     * @return
-     */
-    @Deprecated //TO BE REMOVED - need better API + way of specifying what to return. "Final" ops are usually scores, not predictions that users care about
-    public INDArray[] eval(INDArray[] inputs) {
-        List<String> inputVariables = inputs();
-        if(inputVariables.isEmpty()) {
-            throw new ND4JIllegalStateException("No placeholders found!");
-        }
-
-        if(inputs.length != inputVariables.size()) {
-            throw new IllegalArgumentException("Number of inputs " + inputs.length + " does not match placeholder values amount " + inputVariables.size());
-        }
-
-        int count = 0;
-        Map<String,INDArray> inputMap = new LinkedHashMap<>();
-        for(String s : inputVariables) {
-            inputMap.put(s,inputs[count]);
-            count++;
-        }
-
-        return eval(inputMap);
-    }
-
-
-
-
-
     /**
      * Clone/duplicate the SameDiff instance, including arrays etc. The returned SameDiff instance should have no
      * shared state with the original instance
@@ -10422,7 +10361,7 @@ public class SameDiff {
 
         //Check that all placeholders are provided
         if(phNames != null && phNames.size() > 0) {
-            Preconditions.checkNotNull(placeholders, "No placeholders were provided. Network has placeholders: %s", placeholders);
+            Preconditions.checkNotNull(placeholders, "No placeholders were provided. Network has placeholders: %s", phNames);
             for (String s : phNames) {
                 Preconditions.checkState(placeholders.containsKey(s), "No placeholder variable was provided for variable \"%s\"." +
                         " Cannot execute without all placeholders set", s);
