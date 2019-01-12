@@ -17,7 +17,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.BiFunction;
-import org.nd4j.nativeblas.Nd4jCpu;
 import org.nd4j.resources.Downloader;
 import org.nd4j.util.ArchiveUtils;
 
