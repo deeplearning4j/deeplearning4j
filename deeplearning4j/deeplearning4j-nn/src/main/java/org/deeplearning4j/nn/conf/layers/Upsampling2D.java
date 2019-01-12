@@ -171,6 +171,11 @@ public class Upsampling2D extends BaseUpsamplingLayer {
         public Upsampling2D build() {
             return new Upsampling2D(this);
         }
+
+        @Override
+        public void setSize(int[] size) {
+            size(size);
+        }
     }
 
 }

@@ -16,10 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
@@ -75,7 +72,11 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
     }
 
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+        @Getter
+        @Setter
         protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
+        @Getter
+        @Setter
         protected double visibleBiasInit = 0.0;
 
         public Builder() {}

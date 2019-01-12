@@ -112,8 +112,14 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
     @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
+        @Getter
+        @Setter
         private boolean hasBias = false;
+        @Getter
+        @Setter
         private int inputLength = 1;
+        @Getter
+        @Setter
         private boolean inferInputLength = true;
 
         /**

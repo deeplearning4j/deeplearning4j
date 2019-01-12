@@ -139,7 +139,11 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
     @NoArgsConstructor
     public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
 
+        @Getter
+        @Setter
         private double forgetGateBiasInit = 1.0;
+        @Getter
+        @Setter
         private IActivation gateActivationFn = new ActivationSigmoid();
 
         /** Set forget gate bias initalizations. Values in range 1-5 can potentially

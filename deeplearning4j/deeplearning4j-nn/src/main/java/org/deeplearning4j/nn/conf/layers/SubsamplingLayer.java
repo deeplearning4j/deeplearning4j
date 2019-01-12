@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import com.google.common.base.Preconditions;
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -208,6 +209,8 @@ public class SubsamplingLayer extends NoParamLayer {
     @NoArgsConstructor
     public static class Builder extends BaseSubsamplingBuilder<Builder> {
 
+        @Getter
+        @Setter
         private int[] dilation = new int[]{1,1};
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
@@ -317,19 +320,65 @@ public class SubsamplingLayer extends NoParamLayer {
 
             return new SubsamplingLayer(this);
         }
+
+        @Override
+        public void setKernelSize(int[] kernelSize) {
+            Preconditions.checkArgument(kernelSize.length == 1 || kernelSize.length == 2, "Must have 1 or 2 kernelSize values - got %s", kernelSize);
+
+            if(kernelSize.length == 1)
+                super.setKernelSize(new int[]{kernelSize[0], kernelSize[0]});
+            else
+                super.setKernelSize(kernelSize);
+        }
+
+        @Override
+        public void setStride(int[] stride) {
+            Preconditions.checkArgument(stride.length == 1 || stride.length == 2, "Must have 1 or 2 stride values - got %s", stride);
+
+            if(stride.length == 1)
+                super.setStride(new int[]{stride[0], stride[0]});
+            else
+                super.setStride(stride);
+        }
+
+        @Override
+        public void setPadding(int[] padding) {
+            Preconditions.checkArgument(kernelSize.length == 1 || stride.length == 2, "Must have 1 or 2 padding values - got %s", padding);
+
+            if(padding.length == 1)
+                super.setPadding(new int[]{padding[0], padding[0]});
+            else
+                super.setPadding(padding);
+        }
     }
 
     @NoArgsConstructor
     protected static abstract class BaseSubsamplingBuilder<T extends BaseSubsamplingBuilder<T>>
                     extends Layer.Builder<T> {
+        @Getter
+        @Setter
         protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType =
                         org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
+        @Getter
+        @Setter
         protected int[] kernelSize = new int[] {1, 1}; // Same as filter size from the last conv layer
+        @Getter
+        @Setter
         protected int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
+        @Getter
+        @Setter
         protected int[] padding = new int[] {0, 0};
+        @Getter
+        @Setter
         protected ConvolutionMode convolutionMode = null;
+        @Getter
+        @Setter
         protected int pnorm;
+        @Getter
+        @Setter
         protected double eps = 1e-8;
+        @Getter
+        @Setter
         protected boolean cudnnAllowFallback = true;
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {

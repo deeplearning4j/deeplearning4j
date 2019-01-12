@@ -16,10 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers.variational;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.val;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -175,10 +172,26 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
     public static class Builder extends BasePretrainNetwork.Builder<Builder> {
 
+        @Getter
         private int[] encoderLayerSizes = new int[] {100};
+
+        public void setEncoderLayerSizes(int[] encoderLayerSizes) {
+            encoderLayerSizes(encoderLayerSizes);
+        }
+        @Getter
         private int[] decoderLayerSizes = new int[] {100};
+
+        public void setDecoderLayerSizes(int[] decoderLayerSizes) {
+            decoderLayerSizes(decoderLayerSizes);
+        }
+        @Getter
+        @Setter
         private ReconstructionDistribution outputDistribution = new GaussianReconstructionDistribution(Activation.TANH);
+        @Getter
+        @Setter
         private IActivation pzxActivationFn = new ActivationIdentity();
+        @Getter
+        @Setter
         private int numSamples = 1;
 
         /**

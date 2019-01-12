@@ -113,7 +113,17 @@ public class Cropping1D extends NoParamLayer {
 
     public static class Builder extends Layer.Builder<Builder> {
 
+        @Getter
         private int[] cropping = new int[]{0, 0};
+
+        public void setCropping(int[] cropping) {
+            if(cropping.length == 2)
+                this.cropping = cropping;
+            else if(cropping.length == 1)
+                this.cropping = new int[] {cropping[0], cropping[0]};
+            else
+                org.nd4j.base.Preconditions.checkArgument(false, "Must have 1 or 2 cropping values - got %s", this.cropping);
+        }
 
         public Builder() {
 

@@ -82,7 +82,11 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
 
 
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+        @Getter
+        @Setter
         protected ILossFunction lossFn = new LossMCXENT();
+        @Getter
+        @Setter
         private boolean hasBias = true;
 
         public Builder() {}

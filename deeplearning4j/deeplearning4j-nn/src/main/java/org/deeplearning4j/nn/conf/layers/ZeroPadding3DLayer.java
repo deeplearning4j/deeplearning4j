@@ -16,9 +16,8 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import com.google.common.base.Preconditions;
+import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -132,7 +131,21 @@ public class ZeroPadding3DLayer extends NoParamLayer {
 
     public static class Builder extends Layer.Builder<Builder> {
 
+        @Getter
         private int[] padding = new int[]{0, 0, 0, 0, 0, 0}; // [padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW]
+
+
+        public void setPadding(int[] padding) {
+            if (padding.length == 3) {
+                this.padding = new int[]{padding[0], padding[0], padding[1], padding[1], padding[2], padding[2]};
+            } else if (padding.length == 6) {
+                this.padding = padding;
+            } else if (padding.length == 1) {
+                this.padding = new int[]{padding[0], padding[0], padding[0], padding[0], padding[0], padding[0]};
+            } else {
+                throw new IllegalStateException("Padding length has to be either 1, 3 or 6, got " + padding.length);
+            }
+        }
 
         /**
          * @param padding Padding for both the left and right in all three spatial dimensions

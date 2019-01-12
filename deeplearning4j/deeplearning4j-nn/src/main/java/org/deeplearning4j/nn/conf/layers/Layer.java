@@ -16,8 +16,11 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import jdk.nashorn.internal.objects.annotations.Property;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
@@ -236,10 +239,25 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
 
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {
+
+        @Getter
+        @Setter
         protected String layerName = null;
+
+        @Getter
+        @Setter
         protected List<LayerConstraint> allParamConstraints;
+
+        @Getter
+        @Setter
         protected List<LayerConstraint> weightConstraints;
+
+        @Getter
+        @Setter
         protected List<LayerConstraint> biasConstraints;
+
+        @Getter
+        @Setter
         protected IDropout iDropout;
 
         /**

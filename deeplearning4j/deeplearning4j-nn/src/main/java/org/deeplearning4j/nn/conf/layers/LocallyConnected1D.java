@@ -16,9 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.val;
+import lombok.*;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -217,15 +215,35 @@ public class LocallyConnected1D extends SameDiffLayer {
 
     public static class Builder extends SameDiffLayer.Builder<Builder> {
 
+        @Getter
+        @Setter
         private int nIn;
+        @Getter
+        @Setter
         private int nOut;
+        @Getter
+        @Setter
         private Activation activation = Activation.TANH;
+        @Getter
+        @Setter
         private int kernel = 2;
+        @Getter
+        @Setter
         private int stride = 1;
+        @Getter
+        @Setter
         private int padding = 0;
+        @Getter
+        @Setter
         private int dilation = 1;
+        @Getter
+        @Setter
         private int inputSize;
+        @Getter
+        @Setter
         private ConvolutionMode cm = ConvolutionMode.Same;
+        @Getter
+        @Setter
         private boolean hasBias = true;
 
         /**

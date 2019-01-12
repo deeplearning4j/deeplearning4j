@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import com.google.common.base.Preconditions;
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -198,6 +199,8 @@ public class Subsampling3DLayer extends NoParamLayer {
     @NoArgsConstructor
     public static class Builder extends BaseSubsamplingBuilder<Builder> {
 
+        @Getter
+        @Setter
         protected Convolution3D.DataFormat dataFormat = Convolution3D.DataFormat.NCDHW;
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
@@ -296,18 +299,71 @@ public class Subsampling3DLayer extends NoParamLayer {
             Convolution3DUtils.validateCnn3DKernelStridePadding(kernelSize, stride, padding);
             return new Subsampling3DLayer(this);
         }
+
+        @Override
+        public void setKernelSize(int[] kernelSize) {
+            Preconditions.checkArgument(kernelSize.length == 1 || kernelSize.length == 3, "Must have 1 or 3 kernelSize values - got %s", kernelSize);
+
+            if(kernelSize.length == 1)
+                super.setKernelSize(new int[]{kernelSize[0], kernelSize[0], kernelSize[0]});
+            else
+                super.setKernelSize(kernelSize);
+        }
+
+        @Override
+        public void setStride(int[] stride) {
+            Preconditions.checkArgument(stride.length == 1 || stride.length == 3, "Must have 1 or 3 stride values - got %s", stride);
+
+            if(stride.length == 1)
+                super.setStride(new int[]{stride[0], stride[0], stride[0]});
+            else
+                super.setStride(stride);
+        }
+
+        @Override
+        public void setPadding(int[] padding) {
+            Preconditions.checkArgument(kernelSize.length == 1 || stride.length == 3, "Must have 1 or 3 padding values - got %s", padding);
+
+            if(padding.length == 1)
+                super.setPadding(new int[]{padding[0], padding[0], padding[0]});
+            else
+                super.setPadding(padding);
+        }
     }
 
     @NoArgsConstructor
     protected static abstract class BaseSubsamplingBuilder<T extends BaseSubsamplingBuilder<T>>
             extends Layer.Builder<T> {
+        @Getter
+        @Setter
         protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType =
                 org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
+        @Getter
+        @Setter
         protected int[] kernelSize = new int[]{1, 1, 1};
+        @Getter
+        @Setter
         protected int[] stride = new int[]{2, 2, 2};
+        @Getter
+        @Setter
         protected int[] padding = new int[]{0, 0, 0};
+
+        public void setDilation(int[] dilation) {
+            Preconditions.checkArgument(dilation.length == 1 || dilation.length == 3, "Must have 1 or 3 dilation values - got %s", dilation);
+            
+            if(dilation.length == 1)
+                dilation(dilation[0], dilation[0], dilation[0]);
+            else
+                dilation(dilation[0], dilation[1], dilation[2]);
+        }
+
+        @Getter
         protected int[] dilation = new int[]{1, 1, 1};
+        @Getter
+        @Setter
         protected ConvolutionMode convolutionMode = ConvolutionMode.Same;
+        @Getter
+        @Setter
         protected boolean cudnnAllowFallback = true;
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {

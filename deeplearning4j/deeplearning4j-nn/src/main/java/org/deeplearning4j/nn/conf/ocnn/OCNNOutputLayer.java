@@ -150,11 +150,23 @@ public class OCNNOutputLayer extends BaseOutputLayer {
 
     @NoArgsConstructor
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
+        @Getter
+        @Setter
         protected  int hiddenLayerSize;
+        @Getter
+        @Setter
         protected  double nu = 0.04;
+        @Getter
+        @Setter
         protected int windowSize = 10000;
+        @Getter
+        @Setter
         protected IActivation activation = new ActivationIdentity();
+        @Getter
+        @Setter
         protected  double initialRValue = 0.1;
+        @Getter
+        @Setter
         protected boolean configureR = true;
 
         /**

@@ -17,9 +17,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import com.google.common.base.Preconditions;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -108,7 +106,21 @@ public class ZeroPaddingLayer extends NoParamLayer {
 
     public static class Builder extends Layer.Builder<Builder> {
 
+
+        @Getter
         private int[] padding = new int[] {0, 0, 0, 0}; //Padding: top, bottom, left, right
+
+
+        public void setPadding(int[] padding) {
+            if(padding.length == 2)
+                this.padding = new int[]{padding[0], padding[0], padding[1], padding[1]};
+            else if(padding.length == 1)
+                this.padding = new int[] {padding[0], padding[0], padding[0], padding[0]};
+            else if(padding.length == 4)
+                this.padding = padding;
+            else
+                Preconditions.checkArgument(false, "Must have 1, 2, or 4 padding values - got %s", padding);
+        }
 
         /**
          *

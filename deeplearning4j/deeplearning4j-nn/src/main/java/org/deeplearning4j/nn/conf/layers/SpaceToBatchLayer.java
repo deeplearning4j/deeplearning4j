@@ -16,10 +16,8 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import com.google.common.base.Preconditions;
+import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -160,8 +158,23 @@ public class SpaceToBatchLayer extends NoParamLayer {
 
     @NoArgsConstructor
     public static class Builder<T extends Builder<T>> extends Layer.Builder<T>{
+        @Getter
         protected int[] blocks;
+
+        public void setBlocks(int[] blocks) {
+            Preconditions.checkArgument(blocks.length == 2, "Must have 2 block values - got %s", blocks);
+            this.blocks = blocks;
+        }
+
+        @Getter
         protected int[][] padding;
+
+        public void setPadding(int[][] padding) {
+            Preconditions.checkArgument(padding.length == 2 && padding[0].length == 2 && padding[1].length == 2, "Padding must be a 2d array of shape [[padTop, padBottom], [padLeft, padRight]] - got %s", padding);
+            this.padding = padding;
+        }
+
+
 
         /**
          * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width dimensions

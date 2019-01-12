@@ -139,7 +139,11 @@ public class PReLULayer extends BaseLayer {
     @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<PReLULayer.Builder> {
 
+        @Getter
+        @Setter
         private long[] inputShape = null;
+        @Getter
+        @Setter
         private long[] sharedAxes = null;
 
         /**

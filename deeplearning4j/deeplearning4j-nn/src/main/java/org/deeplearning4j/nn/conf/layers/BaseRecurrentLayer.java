@@ -16,10 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -77,8 +74,14 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
 
     @NoArgsConstructor
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+        @Getter
+        @Setter
         protected List<LayerConstraint> recurrentConstraints;
+        @Getter
+        @Setter
         protected List<LayerConstraint> inputWeightConstraints;
+        @Getter
+        @Setter
         protected IWeightInit weightInitFnRecurrent;
 
         /**

@@ -18,6 +18,8 @@ package org.deeplearning4j.nn.conf.layers.samediff;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -202,11 +204,23 @@ public abstract class AbstractSameDiffLayer extends Layer {
 
     public static abstract class Builder<T extends Builder<T>> extends Layer.Builder<T> {
 
+        @Getter
+        @Setter
         protected double l1 = Double.NaN;
+        @Getter
+        @Setter
         protected double l2 = Double.NaN;
+        @Getter
+        @Setter
         protected double l1Bias = Double.NaN;
+        @Getter
+        @Setter
         protected double l2Bias = Double.NaN;
+        @Getter
+        @Setter
         protected IUpdater updater = null;
+        @Getter
+        @Setter
         protected IUpdater biasUpdater = null;
 
         /**

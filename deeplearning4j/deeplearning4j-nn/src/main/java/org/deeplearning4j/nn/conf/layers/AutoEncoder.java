@@ -102,7 +102,11 @@ public class AutoEncoder extends BasePretrainNetwork {
 
     @AllArgsConstructor
     public static class Builder extends BasePretrainNetwork.Builder<Builder> {
+        @Getter
+        @Setter
         private double corruptionLevel = 3e-1f;
+        @Getter
+        @Setter
         private double sparsity = 0f;
 
         public Builder() {}

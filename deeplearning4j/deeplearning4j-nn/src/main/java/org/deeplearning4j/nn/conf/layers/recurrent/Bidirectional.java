@@ -244,7 +244,15 @@ public class Bidirectional extends Layer {
     @AllArgsConstructor
     public static class Builder extends Layer.Builder<Bidirectional.Builder> {
 
+        @Getter
+        @Setter
         private Mode mode;
+
+        public void setLayer(Layer layer) {
+            rnnLayer(layer);
+        }
+
+        @Getter
         private Layer layer;
 
         public Builder mode(Mode mode) {

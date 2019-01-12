@@ -123,6 +123,8 @@ public class ActivationLayer extends NoParamLayer {
     @NoArgsConstructor
     public static class Builder extends org.deeplearning4j.nn.conf.layers.Layer.Builder<Builder> {
 
+        @Getter
+        @Setter
         private IActivation activationFn = null;
 
         /**

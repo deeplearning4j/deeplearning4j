@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.regressiontest.customlayer100a;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -136,6 +138,8 @@ public class CustomLayer extends FeedForwardLayer {
     //Note that we are inheriting all of the FeedForwardLayer.Builder options: things like n
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
+        @Getter
+        @Setter
         private IActivation secondActivationFunction;
 
         //This is an example of a custom property in the configuration

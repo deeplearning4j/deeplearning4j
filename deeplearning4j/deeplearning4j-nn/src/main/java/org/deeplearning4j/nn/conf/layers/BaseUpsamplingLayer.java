@@ -16,10 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -63,6 +60,8 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
     @NoArgsConstructor
     protected static abstract class UpsamplingBuilder<T extends UpsamplingBuilder<T>>
                     extends Layer.Builder<T> {
+        @Getter
+        @Setter
         protected int[] size = new int[] {1};
 
         /**

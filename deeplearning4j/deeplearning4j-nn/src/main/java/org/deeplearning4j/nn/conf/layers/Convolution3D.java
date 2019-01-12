@@ -147,6 +147,8 @@ public class Convolution3D extends ConvolutionLayer {
     @AllArgsConstructor
     public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
 
+        @Getter
+        @Setter
         private DataFormat dataFormat = DataFormat.NCDHW;
 
         public Builder() {

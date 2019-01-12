@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import com.google.common.base.Preconditions;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -211,6 +212,24 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         public Subsampling1DLayer.Builder padding(int padding) {
             this.padding[0] = padding;
             return this;
+        }
+
+        @Override
+        public void setKernelSize(int[] kernelSize) {
+            Preconditions.checkArgument(kernelSize.length == 1, "Must have 1 kernelSize value - got %s", kernelSize);
+            super.setKernelSize(kernelSize);
+        }
+
+        @Override
+        public void setStride(int[] stride) {
+            Preconditions.checkArgument(stride.length == 1, "Must have 1 stride value - got %s", stride);
+            super.setStride(stride);
+        }
+
+        @Override
+        public void setPadding(int[] padding) {
+            Preconditions.checkArgument(kernelSize.length == 1, "Must have 1 padding value - got %s", padding);
+            super.setPadding(padding);
         }
     }
 }

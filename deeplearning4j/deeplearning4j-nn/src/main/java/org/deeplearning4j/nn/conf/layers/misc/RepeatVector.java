@@ -122,6 +122,14 @@ public class RepeatVector extends FeedForwardLayer {
 
         private int n = 1; // no repetition by default
 
+        public int getRepetitionFactor() {
+            return n;
+        }
+
+        public void setRepetitionFactor(int n) {
+            this.n = n;
+        }
+
         public Builder(int n) {
             this.n = n;
         }

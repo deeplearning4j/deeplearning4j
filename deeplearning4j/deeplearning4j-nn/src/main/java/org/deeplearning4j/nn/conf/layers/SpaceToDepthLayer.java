@@ -16,10 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -158,7 +155,11 @@ public class SpaceToDepthLayer extends NoParamLayer {
 
     @NoArgsConstructor
     public static class Builder<T extends Builder<T>> extends Layer.Builder<T>{
+        @Getter
+        @Setter
         protected int blockSize;
+        @Getter
+        @Setter
         protected DataFormat dataFormat = DataFormat.NCHW;
 
         /**

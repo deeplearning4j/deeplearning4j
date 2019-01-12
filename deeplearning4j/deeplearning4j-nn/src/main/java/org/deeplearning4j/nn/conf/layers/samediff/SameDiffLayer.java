@@ -18,6 +18,8 @@ package org.deeplearning4j.nn.conf.layers.samediff;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -94,6 +96,8 @@ public abstract class SameDiffLayer extends AbstractSameDiffLayer {
     @SuppressWarnings("unchecked")
     public static abstract class Builder<T extends Builder<T>> extends AbstractSameDiffLayer.Builder<T> {
 
+        @Getter
+        @Setter
         protected WeightInit weightInit = WeightInit.XAVIER;
 
         /**

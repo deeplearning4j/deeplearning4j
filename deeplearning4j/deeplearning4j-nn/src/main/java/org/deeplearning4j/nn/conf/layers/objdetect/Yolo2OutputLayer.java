@@ -17,6 +17,8 @@
 package org.deeplearning4j.nn.conf.layers.objdetect;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -178,10 +180,20 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     public static class Builder extends org.deeplearning4j.nn.conf.layers.Layer.Builder<Builder> {
 
+        @Getter
+        @Setter
         private double lambdaCoord = 5;
+        @Getter
+        @Setter
         private double lambdaNoObj = 0.5;
+        @Getter
+        @Setter
         private ILossFunction lossPositionScale = new LossL2();
+        @Getter
+        @Setter
         private ILossFunction lossClassPredictions = new LossL2();
+        @Getter
+        @Setter
         private INDArray boundingBoxes;
 
         /**

@@ -16,10 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
@@ -186,6 +183,8 @@ public class SeparableConvolution2D extends ConvolutionLayer {
 
     public static class Builder extends BaseConvBuilder<Builder> {
 
+        @Getter
+        @Setter
         public int depthMultiplier = 1;
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {

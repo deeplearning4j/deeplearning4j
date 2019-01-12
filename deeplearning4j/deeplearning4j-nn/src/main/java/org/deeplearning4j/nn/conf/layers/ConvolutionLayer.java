@@ -335,17 +335,41 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     public static abstract class BaseConvBuilder<T extends BaseConvBuilder<T>> extends FeedForwardLayer.Builder<T> {
+        @Getter
+        @Setter
         protected int convolutionDim = 2; // 2D convolution by default
+        @Getter
+        @Setter
         protected boolean hasBias = true;
+        @Getter
+        @Setter
         protected ConvolutionMode convolutionMode;
+        @Getter
+        @Setter
         protected int[] dilation = new int[]{1, 1};
+        @Getter
+        @Setter
         public int[] kernelSize = new int[]{5, 5};
+        @Getter
+        @Setter
         protected int[] stride = new int[]{1, 1};
+        @Getter
+        @Setter
         protected int[] padding = new int[]{0, 0};
+        @Getter
+        @Setter
         protected AlgoMode cudnnAlgoMode = null;
+        @Getter
+        @Setter
         protected FwdAlgo cudnnFwdAlgo;
+        @Getter
+        @Setter
         protected BwdFilterAlgo cudnnBwdFilterAlgo;
+        @Getter
+        @Setter
         protected BwdDataAlgo cudnnBwdDataAlgo;
+        @Getter
+        @Setter
         protected boolean cudnnAllowFallback = true;
 
 

@@ -17,10 +17,7 @@
 package org.deeplearning4j.nn.conf.layers.convolutional;
 
 import com.google.common.base.Preconditions;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -132,7 +129,19 @@ public class Cropping3D extends NoParamLayer {
 
     public static class Builder extends Layer.Builder<Builder> {
 
+        @Getter
         private int[] cropping = new int[]{0, 0, 0, 0, 0, 0};
+
+        public void setCropping(int[] cropping) {
+            Preconditions.checkArgument(cropping.length == 1 || cropping.length == 3 || cropping.length == 6, "Must have 1, 3, or 6 cropping values - got %s", cropping);
+            if(cropping.length == 1)
+                this.cropping = new int[] {cropping[0], cropping[0], cropping[0], cropping[0], cropping[0], cropping[0]};
+            else if (cropping.length == 3) {
+                this.cropping = new int[]{cropping[0], cropping[0], cropping[1], cropping[1], cropping[2], cropping[2]};
+            } else {
+                this.cropping = cropping;
+            }
+        }
 
         public Builder() {
 

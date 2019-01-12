@@ -72,7 +72,11 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
     @NoArgsConstructor
     public static abstract class Builder<T extends Builder<T>> extends BaseRecurrentLayer.Builder<T> {
 
+        @Getter
+        @Setter
         protected double forgetGateBiasInit = 1.0;
+        @Getter
+        @Setter
         protected IActivation gateActivationFn = new ActivationSigmoid();
 
         /** Set forget gate bias initalizations. Values in range 1-5 can potentially

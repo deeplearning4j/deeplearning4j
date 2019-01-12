@@ -226,15 +226,35 @@ public class BatchNormalization extends FeedForwardLayer {
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
+        @Getter
+        @Setter
         protected double decay = 0.9;
+        @Getter
+        @Setter
         protected double eps = 1e-5;
+        @Getter
+        @Setter
         protected boolean isMinibatch = true; // TODO auto set this if layer conf is batch
+        @Getter
+        @Setter
         protected boolean lockGammaBeta = false;
+        @Getter
+        @Setter
         protected double gamma = 1.0;
+        @Getter
+        @Setter
         protected double beta = 0.0;
+        @Getter
+        @Setter
         protected List<LayerConstraint> betaConstraints;
+        @Getter
+        @Setter
         protected List<LayerConstraint> gammaConstraints;
+        @Getter
+        @Setter
         protected boolean cudnnAllowFallback = true;
+        @Getter
+        @Setter
         protected boolean useLogStd = true;
 
         public Builder(double decay, boolean isMinibatch) {

@@ -16,10 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
@@ -134,7 +131,11 @@ public abstract class FeedForwardLayer extends BaseLayer {
     }
 
     public abstract static class Builder<T extends Builder<T>> extends BaseLayer.Builder<T> {
+        @Getter
+        @Setter
         protected int nIn = 0;
+        @Getter
+        @Setter
         protected int nOut = 0;
 
         /**

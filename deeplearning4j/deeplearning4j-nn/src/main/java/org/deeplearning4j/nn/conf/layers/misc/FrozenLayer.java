@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.conf.layers.misc;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -166,6 +167,8 @@ public class FrozenLayer extends Layer {
     }
 
     public static class Builder extends Layer.Builder<Builder> {
+        @Getter
+        @Setter
         private Layer layer;
 
         public Builder layer(Layer layer) {

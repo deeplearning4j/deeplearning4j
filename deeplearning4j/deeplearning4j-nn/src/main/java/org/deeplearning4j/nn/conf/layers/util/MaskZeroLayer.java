@@ -17,7 +17,9 @@
 package org.deeplearning4j.nn.conf.layers.util;
 
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -110,7 +112,9 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     @NoArgsConstructor
     public static class Builder extends Layer.Builder<Builder> {
 
+        @Getter
         private Layer underlying;
+        @Getter
         private double maskValue;
 
         public Builder setUnderlying(Layer underlying) {

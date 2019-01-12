@@ -16,9 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -118,17 +116,41 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
 
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
+        @Getter
+        @Setter
         protected IActivation activationFn = null;
+        @Getter
+        @Setter
         protected IWeightInit weightInitFn = null;
+        @Getter
+        @Setter
         protected double biasInit = Double.NaN;
+        @Getter
+        @Setter
         protected double l1 = Double.NaN;
+        @Getter
+        @Setter
         protected double l2 = Double.NaN;
+        @Getter
+        @Setter
         protected double l1Bias = Double.NaN;
+        @Getter
+        @Setter
         protected double l2Bias = Double.NaN;
+        @Getter
+        @Setter
         protected IUpdater iupdater = null;
+        @Getter
+        @Setter
         protected IUpdater biasUpdater = null;
+        @Getter
+        @Setter
         protected GradientNormalization gradientNormalization = null;
+        @Getter
+        @Setter
         protected double gradientNormalizationThreshold = Double.NaN;
+        @Getter
+        @Setter
         protected IWeightNoise weightNoise;
 
         /**

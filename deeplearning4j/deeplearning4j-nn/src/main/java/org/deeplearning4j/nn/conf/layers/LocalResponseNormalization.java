@@ -152,10 +152,20 @@ public class LocalResponseNormalization extends Layer {
     @AllArgsConstructor
     public static class Builder extends Layer.Builder<Builder> {
         // defaults based on AlexNet model
+        @Getter
+        @Setter
         private double k = 2;
+        @Getter
+        @Setter
         private double n = 5;
+        @Getter
+        @Setter
         private double alpha = 1e-4;
+        @Getter
+        @Setter
         private double beta = 0.75;
+        @Getter
+        @Setter
         protected boolean cudnnAllowFallback = true;
 
         public Builder(double k, double n, double alpha, double beta){
