@@ -563,7 +563,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable varMul = varMulPre.mul("d", sdVariable1);
         SDVariable sum = sameDiff.sum("ret", varMul, Integer.MAX_VALUE);
 
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> mapListPair = sameDiff.execBackwards();
+        sameDiff.execBackwards(Collections.emptyMap());
 
         SDVariable finalResult = sameDiff.grad(sum.getVarName());
 
@@ -714,7 +714,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable B2 = sd.var("B2", B);
 
         SDVariable[] batchMul = sd.batchMmul(new SDVariable[] {A1, A2}, new SDVariable[] {B1, B2});
-        sd.exec();
+        sd.exec(Collections.emptyMap(), sd.outputs());
 
         INDArray resultingMatrix = batchMul[0].getArr();
         System.out.print(resultingMatrix);
@@ -1223,7 +1223,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable sum = shape.castTo(DataType.DOUBLE).sum();
 
         sd.execAndEndResult();
-        sd.execBackwards();
+        sd.execBackwards(Collections.emptyMap());
     }
 
 
@@ -1236,7 +1236,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable sum = sd.sum(merged);
 
         sd.execAndEndResult();
-        sd.execBackwards();
+        sd.execBackwards(Collections.emptyMap());
 
         INDArray out = merged.getArr();
         assertEquals(1, out.rank());

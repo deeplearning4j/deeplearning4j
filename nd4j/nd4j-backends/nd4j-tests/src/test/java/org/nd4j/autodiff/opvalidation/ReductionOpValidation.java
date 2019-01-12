@@ -50,10 +50,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -1059,7 +1056,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             INDArray result = sd.execAndEndResult();
             assertEquals(1, result.length());
 
-            Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> p = sd.execBackwards();
+            sd.execBackwards(Collections.emptyMap());
         }
     }
 }

@@ -1638,7 +1638,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public INDArray eval() {
-        sameDiff.exec(null, getOwnName());
+        sameDiff.exec(null, getVarName());
         return getArr();
     }
 

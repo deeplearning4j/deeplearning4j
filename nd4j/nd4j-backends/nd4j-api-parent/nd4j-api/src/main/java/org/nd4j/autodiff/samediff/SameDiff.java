@@ -9716,7 +9716,10 @@ public class SameDiff {
 
 
     public TensorArray tensorArray(DataType dataType) {
-        return new TensorArray(this, dataType);
+        TensorArray ta = new TensorArray(this, dataType);
+        SDVariable[] outVars = ta.outputVariables();
+        addOutgoingFor(outVars, ta);
+        return ta;
     }
 
     /**

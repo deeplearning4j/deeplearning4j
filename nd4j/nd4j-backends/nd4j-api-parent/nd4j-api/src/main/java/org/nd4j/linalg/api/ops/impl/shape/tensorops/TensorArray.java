@@ -154,8 +154,6 @@ public class TensorArray extends  BaseTensorOp {
 
     }
     public void write(SDVariable index, SDVariable value){
-        System.out.println("TA write  - " + this.sameDiff);
-        //return new TensorArrayV3(this,
         new TensorArrayWrite(getSameDiff(),
                 new SDVariable[]{getVar(),
                         index, value}).outputVariables();//);

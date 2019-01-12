@@ -1319,10 +1319,7 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable log = sameDiff.log(input);
         SDVariable sum = sameDiff.sum(log, Integer.MAX_VALUE);
         INDArray result = null;
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards = sameDiff.execBackwards();
-        System.out.println(execBackwards);
-        //INDArray assertion = Nd4j.create(new double[]{1, 0.5, 0.33, 0.25});
-        // assertTrue(assertion.equalsWithEps(result, 1e-2));
+        sameDiff.execBackwards(Collections.emptyMap());
     }
 
 
@@ -1335,7 +1332,7 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable input = sameDiff.var("x", inputs.get("x"));
         SDVariable sigmoid = sameDiff.sigmoid(input);
         SDVariable sum = sameDiff.sum(sigmoid, Integer.MAX_VALUE);
-        sameDiff.execBackwards();
+        sameDiff.execBackwards(Collections.emptyMap());
         INDArray arr = input.gradient().getArr();
         assertTrue(Nd4j.create(new double[][]{
                 {0.1966, 0.1050},
@@ -1361,7 +1358,7 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(8, d0, 0);
 
         SDVariable v2 = sd.sum(sd.var(Nd4j.create(new double[]{4, 4}))).div(2.0);
-        sd.exec();
+        sd.exec(Collections.emptyMap());
         double d1 = v2.getArr().getDouble(0);
         assertEquals(4, d1, 0);
     }

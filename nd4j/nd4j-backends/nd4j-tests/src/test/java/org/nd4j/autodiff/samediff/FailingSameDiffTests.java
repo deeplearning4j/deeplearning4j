@@ -31,6 +31,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -89,12 +90,7 @@ public class FailingSameDiffTests {
 
         });
 
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec = sameDiff.exec();
-        assertFalse(exec.getRight().isEmpty());
-        While function = (While) exec.getRight().get(exec.getRight().size() - 1);
-        assumeNotNull(function.getOutputVars());
-        assertEquals(1, function.getNumLooped());
-        sameDiff.toString();
+        sameDiff.exec(Collections.emptyMap());
     }
 
     @Test(timeout = 10000L)
@@ -119,9 +115,8 @@ public class FailingSameDiffTests {
 
         });
 
-        sameDiff.execBackwards();
+        sameDiff.execBackwards(Collections.emptyMap());
         SameDiff exec = sameDiff.getFunction("grad");
-        System.out.println(exec);
     }
 
     @Test(timeout = 10000L)
@@ -193,12 +188,7 @@ public class FailingSameDiffTests {
 
         });
 
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec = sameDiff.exec();
-        assertFalse(exec.getRight().isEmpty());
-        While function = (While) exec.getRight().get(exec.getRight().size() - 1);
-        assumeNotNull(function.getOutputVars());
-        assertEquals(1, function.getNumLooped());
-        sameDiff.toString();
+        sameDiff.exec(Collections.emptyMap(), sameDiff.outputs());
     }
 
     @Test
@@ -260,7 +250,7 @@ public class FailingSameDiffTests {
 
         //Generate gradient function, and exec
         SDVariable loss = mmul.std(true);
-        sd.execBackwards();
+        sd.execBackwards(Collections.emptyMap());
 
         in.setArray(Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape(3,4));
         sd.execAndEndResult();
