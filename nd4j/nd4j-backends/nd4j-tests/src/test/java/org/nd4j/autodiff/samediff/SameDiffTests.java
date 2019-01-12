@@ -2438,15 +2438,6 @@ public class SameDiffTests {
     }
 
     @Test
-    public void testRollAxis() {
-        INDArray inArr = Nd4j.create(new long[]{2, 3, 4});
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", inArr);
-        SDVariable rolled = sd.rollAxis(in, 2);
-        assertArrayEquals(new long[]{4, 2, 3}, rolled.eval().shape());
-    }
-
-    @Test
     public void testReciprocal() {
         INDArray inArr = Nd4j.linspace(1,4,4, DataType.FLOAT).reshape(2,2);
         INDArray expected = Nd4j.onesLike(inArr).divi(inArr);

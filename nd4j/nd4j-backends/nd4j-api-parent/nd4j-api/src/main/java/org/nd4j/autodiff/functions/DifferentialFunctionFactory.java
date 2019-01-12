@@ -1083,11 +1083,6 @@ public class DifferentialFunctionFactory {
         return new LogSigmoid(sameDiff(), iX, null).outputVariable();
     }
 
-
-    public SDVariable logSigmoidDerivative(SDVariable iX, SDVariable wrt) {
-        return new LogSigmoidDerivative(sameDiff(), iX, wrt).outputVariable();
-    }
-
     public SDVariable powDerivative(SDVariable iX, double pow) {
         return new PowDerivative(sameDiff(), iX, false, pow).outputVariable();
     }

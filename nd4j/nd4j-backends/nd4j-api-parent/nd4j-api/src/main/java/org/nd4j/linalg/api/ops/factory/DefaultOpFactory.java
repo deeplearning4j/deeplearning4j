@@ -27,7 +27,6 @@ import org.nd4j.linalg.api.ops.impl.scalar.Pow;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
 import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
 import org.nd4j.linalg.api.ops.impl.scalar.Step;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
 
 import java.lang.reflect.Constructor;
 
@@ -39,25 +38,7 @@ import java.lang.reflect.Constructor;
  */
 @Slf4j
 public class DefaultOpFactory implements OpFactory {
-
-
     public DefaultOpFactory() {
-    }
-
-
-    @Override
-    public GradientOp createGradientOp(String name, INDArray x, INDArray y, INDArray z) {
-        switch(name) {
-            case "softmaxderivative":
-                return new SoftMaxDerivative(x,y,z);
-            case "sigmoidderivative":
-                return new org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative(x,y,z);
-            case "tanhderivative":
-                return new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(x,y,z);
-            case "gradientbackwards":
-                return new org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker(x,y,z);
-            default: throw new IllegalStateException("Illegal opName " + name);
-        }
     }
 
     /**

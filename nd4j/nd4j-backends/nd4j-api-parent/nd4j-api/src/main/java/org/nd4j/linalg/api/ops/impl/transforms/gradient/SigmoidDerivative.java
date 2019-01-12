@@ -35,15 +35,11 @@ public class SigmoidDerivative extends DynamicCustomOp {
         super(sameDiff, new SDVariable[]{i_v1, i_v2});
     }
 
-    public SigmoidDerivative(INDArray x, INDArray z) {
-        super(null, x, z, null,  null);
+    public SigmoidDerivative(INDArray x, INDArray y, INDArray z) {
+        super(null, new INDArray[]{x,y}, new INDArray[]{z}, null,  (int[])null);
     }
 
     public SigmoidDerivative() {
-    }
-
-    public SigmoidDerivative(INDArray x) {
-        this(x, null);
     }
 
     @Override

@@ -61,9 +61,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryMinimalRelativeErr
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SwishDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.TanDerivative;
 import org.nd4j.linalg.api.ops.persistence.RestoreV2;
@@ -812,11 +810,9 @@ public class OpValidation {
                 SELUDerivative.class,
                 SigmoidDerivative.class,
                 org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative.class,
-                SoftMaxDerivative.class,
                 org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative.class,
                 SoftSignDerivative.class,
                 TanhDerivative.class,
-                LogSigmoidDerivative.class,
                 SwishDerivative.class,
                 TanDerivative.class,
                 TanhDerivative.class,

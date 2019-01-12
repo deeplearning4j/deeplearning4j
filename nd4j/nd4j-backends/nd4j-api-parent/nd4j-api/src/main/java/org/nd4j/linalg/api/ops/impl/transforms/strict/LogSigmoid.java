@@ -82,8 +82,9 @@ public class LogSigmoid extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().logSigmoidDerivative(arg(), i_v.get(0));
-        return Arrays.asList(ret);
+//        SDVariable ret = f().logSigmoidDerivative(arg(), i_v.get(0));
+//        return Arrays.asList(ret);
+        throw new UnsupportedOperationException("Not yet implemneted");
     }
 
 
