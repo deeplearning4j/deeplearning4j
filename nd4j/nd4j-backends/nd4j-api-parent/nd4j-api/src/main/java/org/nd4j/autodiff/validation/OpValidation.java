@@ -150,7 +150,7 @@ public class OpValidation {
         if (testCase.fwdTestFns() != null && testCase.fwdTestFns().size() > 0) {
             SameDiff sd = testCase.sameDiff();
             try {
-                sd.exec();
+                sd.exec(null, sd.outputs());
             } catch (Exception e) {
                 throw new RuntimeException("Error during forward pass testing" + testCase.testNameErrMsg(), e);
             }

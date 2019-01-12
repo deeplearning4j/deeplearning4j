@@ -285,6 +285,14 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return initialShape;
     }
 
+    public long[] placeholderShape(){
+        if(variableType != VariableType.PLACEHOLDER){
+            throw new IllegalStateException("placeholderShape() can only be used for placeholder variables: variable \"" + getVarName()
+                    + " is a variable of type " + variableType);
+        }
+        return shape;
+    }
+
     public DataType dataType() {
         if(this.dataType == null){
             //Try to infer datatype instead of returning null
@@ -1630,7 +1638,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public INDArray eval() {
-        sameDiff.exec();
+        sameDiff.exec(null, getOwnName());
         return getArr();
     }
 

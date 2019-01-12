@@ -5348,7 +5348,7 @@ public class Nd4j {
      * @return ones in the shape of the given array
      */
     public static INDArray zerosLike(INDArray arr) {
-        return create(arr.shape());
+        return zeros(arr.dataType(), arr.shape());
     }
 
     /**
@@ -5368,7 +5368,7 @@ public class Nd4j {
      * @return ones in the shape of the given array
      */
     public static INDArray onesLike(INDArray arr) {
-        return ones(arr.shape());
+        return ones(arr.dataType(), arr.shape());
     }
 
     /**

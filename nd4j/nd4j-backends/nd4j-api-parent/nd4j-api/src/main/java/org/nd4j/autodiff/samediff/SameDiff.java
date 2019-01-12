@@ -110,19 +110,13 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 /**
- * SameDiff is the
- * entrypoint for
- * nd4j's autodiff.
+ * SameDiff is the entrypoint for ND4J's automatic differentiation functionality.
  * <p>
  * You define a graph symbolically.
  * <p>
  * That graph accumulates operations.
  * <p>
- * In order to execute the graph, you run
- * {@link #exec()} to get all the operations
- * {@link #exec(List)} for an already created set of ops
- * {@link #execAndEndResult()} for the end result only
- * {@link #execAndEndResult(List)} for a cached set of ops
+ * In order to execute the graph, you run one of the execution methods, such as {@link #exec(Map, String...)}
  */
 @AllArgsConstructor
 @Builder
@@ -9790,19 +9784,6 @@ public class SameDiff {
 
     }
 
-
-    /**
-     * Exec a given SameDiff function instance
-     *
-     * @param functionName the name of the SameDiff function instance to invoke
-     * @return Output of the final variable after execution
-     */
-    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
-    public INDArray execAndEndResult(String functionName) {
-//        return sameDiffFunctionInstances.get(functionName).execAndEndResult();
-        throw new UnsupportedOperationException("Not yet reimplemented");
-    }
-
     @Deprecated
     public INDArray execAndEndResult(){
         List<String> outputs = outputs();
@@ -9812,59 +9793,13 @@ public class SameDiff {
         return execSingle(placeholders, outputs.get(0));
     }
 
-
-    /**
-     * Execute the specified SameDiff function instance
-     *
-     * @param functionName the name of the SameDiff function instance to invoke
-     * @return
-     */
-    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
-    public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec(String functionName) {
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> ret;
-        if (debugMode) {
-            ret = sameDiffFunctionInstances.get(functionName).enableDebugMode().exec();
-        } else
-            ret = sameDiffFunctionInstances.get(functionName).exec();
-
-        //Ensure all variables are associated with this SameDiff instance after possible execBackwards() etc
-        associateSameDiffWithOpsAndVariables();
-
-        return ret;
-    }
-
-
     /**
      * Execute the gradient (backward pass) function on this graph.<br>
      * Constructs a backwards graph (differentiating the defined graph) if it does not already exist, and the executes
      * the operations on that graph, calculating gradients for all variables.<br>
      * Note that after execBackwards() has completed, the gradient arrays for a each variable can be accessed using
      * {@link SDVariable#getGradient()} followed by  {@link SDVariable#getArr()} or by using {@link #getGradForVariable(String)}
-     *
-     * @return Result of execution
      */
-    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
-    public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards() {
-        if (getFunction("grad") == null) {
-            createGradFunction();
-        }
-
-
-        if (log.isTraceEnabled()) {
-            log.trace("About to execute backward function");
-        }
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> forward = exec("grad");
-        SameDiff grad = getFunction("grad");
-        if (grad.isDebugMode()) {
-            //ensure all gradients are present for all variables
-            for (SDVariable sdVariable : grad.variables()) {
-                sdVariable.gradient();
-            }
-        }
-
-        return forward;
-    }
-
     public void execBackwards(Map<String,INDArray> placeholders){
         if (getFunction("grad") == null) {
             createGradFunction();
@@ -10159,30 +10094,19 @@ public class SameDiff {
      * @param arrays the arrays to resolve.
      */
     public void resolveVariablesWith(Map<String, INDArray> arrays) {
-        resolveVariablesWith(arrays, true);
-    }
-
-    /**
-     * Resolve the variables with the given input.
-     * @param arrays a map of input variable names to arrays
-     * @param resolveProperties whether to verify if properties should be resolved or not
-     */
-    public void resolveVariablesWith(Map<String, INDArray> arrays, boolean resolveProperties) {
-        for (val arrayEntry : arrays.entrySet()) {
-            val varForName = getVariable(arrayEntry.getKey());
+        for (Map.Entry<String,INDArray> e : arrays.entrySet()) {
+            SDVariable varForName = getVariable(e.getKey());
             if (varForName == null) {
-                throw new ND4JIllegalStateException("No variable name found for " + arrayEntry.getKey());
+                throw new ND4JIllegalStateException("No variable name found for " + e.getKey());
             }
 
-            if (placeHolderOriginalShapes.containsKey(arrayEntry.getKey())) {
-                val originalShape = placeHolderOriginalShapes.get(arrayEntry.getKey());
-                if (originalShape.length == arrayEntry.getValue().rank()) {
-                    for (int i = 0; i < originalShape.length; i++) {
-                        if (originalShape[i] != arrayEntry.getValue().shape()[i] && originalShape[i] >= 1) {
-                            throw new ND4JIllegalStateException("Incompatible shape passed for variable. " + Arrays.toString(arrayEntry.getValue().shape()));
-                        }
-                    }
-                }
+            Variable v = variables.get(e.getKey());
+            if(varForName.getVariableType() == VariableType.PLACEHOLDER){
+                //Check shape:
+                long[] shape = varForName.placeholderShape();
+                long[] newShape = e.getValue().shape();
+                Preconditions.checkState(shape.length == newShape.length, "Placeholder shape not compatible (mismatched rank): placeholder \"%s\" " +
+                        "shape %s, got incompatible shape %s", e.getKey(), shape, newShape);
             }
         }
 
@@ -10207,35 +10131,6 @@ public class SameDiff {
         //declare resolved
         resolvedVariables = true;
     }
-
-    /**
-     * Creates and executes a list of operations based on the given variables passed in.<br>
-     * {@link #resolveVariablesWith(Map)} is called
-     *
-     * @return
-     */
-    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return. Final output is usually 'score' which isn't available (no label) or users don't care about at inference time
-    public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execWithPlaceHolder(Map<String, INDArray> inputs) {
-        resolveVariablesWith(inputs);
-        return exec();
-    }
-
-    /**
-     * Get the {@link SDVariable} associated with each function based on the
-     * {@link DifferentialFunction#outputVariables()} ()}
-     *
-     * @param functions the functions to get the variables for
-     * @return the list of variables associated with the given {@link DifferentialFunction}
-     */
-    public List<SDVariable> getVariablesAssociatedWithFunctions(List<DifferentialFunction> functions) {
-        List<SDVariable> ret = new ArrayList<>(functions.size());
-        for (DifferentialFunction function : functions) {
-            ret.addAll(Arrays.asList(function.outputVariables()));
-        }
-
-        return ret;
-    }
-
 
     /**
      * Updates the variable name property on the passed in variable, the reference in samediff, and returns the variable.
@@ -10373,41 +10268,6 @@ public class SameDiff {
         return ret;
     }
 
-
-    /**
-     * Execute the SameDiff instance using the current state<br>
-     * After execution, the arrays for variables can be obtained using {@link #getArrForVarName(String)} or
-     * {@link SDVariable#getArr()}<br>
-     * @return Execution results
-     */
-    @Deprecated //TO BE REMOVED (from public API); move logic to InferenceSession - need better API + way of specifying what to exec/return\
-    public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec() {
-        List<String> outputs = new ArrayList<>();
-        for(Variable v : variables.values()){
-            outputs.add(v.getName());
-        }
-
-        List<String> placeholders = inputs();
-        if(placeholders == null || placeholders.isEmpty()) {
-            exec(Collections.<String, INDArray>emptyMap(), outputs.toArray(new String[outputs.size()]));
-        } else {
-            //If user is using this method: they should have set placeholders earlier...
-            Map<String,INDArray> setPlaceholders = placeholdersPerThread.get(Thread.currentThread().getId());
-            if(setPlaceholders == null )
-                throw new IllegalStateException("Cannot execute: placeholders have not been set, expected " + placeholders.size() + " placeholders");
-            for(String s : placeholders){
-                if(!setPlaceholders.containsKey(s)){
-                    throw new IllegalStateException("Cannot execute: placeholder \"" + s + "\" has not been set");
-                }
-            }
-
-            exec(setPlaceholders, outputs.toArray(new String[outputs.size()]));
-        }
-
-        return null;    //TODO
-    }
-
-
     /**
      * Print the given function for debugging (will not print functions)
      *
@@ -10441,8 +10301,6 @@ public class SameDiff {
             realShapes.append(" Output shape for " + arg.getVarName() + " is  " + Arrays.
                     toString(getShapeForVarName(arg.getVarName())));
         }
-
-//        log.info(realShapes.toString());
     }
 
 
