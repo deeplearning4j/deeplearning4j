@@ -16092,7 +16092,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates regularized incomplete beta integral Ix(a, b).
         * Implementation is based on two algorithms depending on input values of a and b:
         * - when a and b are both >  maxValue (3000.), then apply Gauss-Legendre quadrature method
-        * - when a and b are both <= maxValue (3000.), then apply modified Lentz’s algorithm for continued fractions
+        * - when a and b are both <= maxValue (3000.), then apply modified Lentz's algorithm for continued fractions
         *
         * Input arrays:
         *    a: define power t^{a-1}, must be > 0, type float.
