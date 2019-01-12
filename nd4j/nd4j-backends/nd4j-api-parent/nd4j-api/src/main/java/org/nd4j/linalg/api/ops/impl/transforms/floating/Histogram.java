@@ -106,11 +106,6 @@ public class Histogram extends BaseTransformFloatOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

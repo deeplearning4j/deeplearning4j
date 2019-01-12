@@ -106,7 +106,6 @@ public class LegacyOpMapper {
             case META:
             case CUSTOM:
             case GRADIENT:
-            case SHAPE:
             case CONDITIONAL:
             case LOOP:
             case LOOP_COND:

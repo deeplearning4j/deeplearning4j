@@ -81,12 +81,6 @@ public class LogSigmoidDerivative extends BaseGradientOp implements TransformStr
     }
 
     @Override
-    public void exec(){
-        Nd4j.getExecutioner().exec(new Sigmoid(x,z));
-        z.muli(Transforms.exp(x.neg(),false)).muli(y);
-    }
-
-       @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
        throw new UnsupportedOperationException();
     }

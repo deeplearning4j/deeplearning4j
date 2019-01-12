@@ -7952,25 +7952,6 @@ public class SameDiff {
     }
 
     /**
-     * @param x
-     * @param axis
-     * @return
-     */
-    public SDVariable rollAxis(SDVariable x, int axis) {
-        return rollAxis(null, x, axis);
-    }
-
-    /**
-     * @param x
-     * @param axis
-     * @return
-     */
-    public SDVariable rollAxis(String name, SDVariable x, int axis) {
-        SDVariable result = functionFactory.rollAxis(x, axis);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
      * @see #concat(String, int, SDVariable...)
      */
     public SDVariable concat(int dimension, SDVariable... inputs) {

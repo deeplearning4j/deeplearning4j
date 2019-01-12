@@ -1267,10 +1267,6 @@ public class DifferentialFunctionFactory {
         return new SequenceMask(sameDiff(), lengths).outputVariable();
     }
 
-    public SDVariable rollAxis(SDVariable iX, int axis) {
-        return new RollAxis(sameDiff(), iX, axis).outputVariable();
-    }
-
     public SDVariable concat(int dimension, SDVariable... inputs) {
         return new Concat(sameDiff(), dimension, inputs).outputVariable();
     }

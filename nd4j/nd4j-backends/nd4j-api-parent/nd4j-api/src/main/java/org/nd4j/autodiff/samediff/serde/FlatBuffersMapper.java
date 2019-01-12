@@ -179,8 +179,6 @@ public class FlatBuffersMapper {
                 return Op.Type.META;
             case OpType.CUSTOM:
                 return Op.Type.CUSTOM;
-            case OpType.SHAPE:
-                return Op.Type.SHAPE;
             case OpType.PAIRWISE:
                 return Op.Type.PAIRWISE;
             case OpType.PAIRWISE_BOOL:
@@ -247,8 +245,6 @@ public class FlatBuffersMapper {
                 return OpType.LOGIC;
             case CUSTOM:
                 return OpType.CUSTOM;
-            case SHAPE:
-                return OpType.SHAPE;
             case PAIRWISE:
                 return OpType.PAIRWISE;
             case PAIRWISE_BOOL:
