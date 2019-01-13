@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -79,11 +76,10 @@ public class SpaceToBatchLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> trainingListeners,
-            int layerIndex, INDArray layerParamsView,
-            boolean initializeParams) {
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.SpaceToBatch ret =
-                new org.deeplearning4j.nn.layers.convolution.SpaceToBatch(conf);
+                        new org.deeplearning4j.nn.layers.convolution.SpaceToBatch(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -99,23 +95,20 @@ public class SpaceToBatchLayer extends NoParamLayer {
         InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
 
         return new LayerMemoryReport.Builder(layerName, SpaceToBatchLayer.class, inputType, outputType)
-                .standardMemory(0, 0) //No params
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(0, 0) //No params
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN input, got " + inputType);
+                            + "\"): Expected CNN input, got " + inputType);
         }
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
-        return InputType.convolutional(
-                (i.getHeight() + padding[0][0] + padding[0][1]) / blocks[0],
-                (i.getWidth() + padding[1][0] + padding[1][1]) / blocks[1],
-                i.getChannels()
-        );
+        return InputType.convolutional((i.getHeight() + padding[0][0] + padding[0][1]) / blocks[0],
+                        (i.getWidth() + padding[1][0] + padding[1][1]) / blocks[1], i.getChannels());
     }
 
     @Override
@@ -133,7 +126,7 @@ public class SpaceToBatchLayer extends NoParamLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for space to batch layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
@@ -186,7 +179,8 @@ public class SpaceToBatchLayer extends NoParamLayer {
          */
         public void setPadding(int[][] padding) {
             Preconditions.checkArgument(padding.length == 2 && padding[0].length == 2 && padding[1].length == 2,
-                    "Padding must be a 2d array of shape [[padTop, padBottom], [padLeft, padRight]] - got %s", padding);
+                            "Padding must be a 2d array of shape [[padTop, padBottom], [padLeft, padRight]] - got %s",
+                            padding);
             this.padding = padding;
         }
 
@@ -197,7 +191,7 @@ public class SpaceToBatchLayer extends NoParamLayer {
          */
         public Builder(int[] blocks) {
             this.blocks = blocks;
-            this.padding = new int[][]{{0, 0}, {0, 0}};
+            this.padding = new int[][] {{0, 0}, {0, 0}};
         }
 
         /**

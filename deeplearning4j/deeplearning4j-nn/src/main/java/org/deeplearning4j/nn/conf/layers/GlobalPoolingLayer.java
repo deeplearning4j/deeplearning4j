@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -85,10 +82,10 @@ public class GlobalPoolingLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-            boolean initializeParams) {
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer ret =
-                new org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer(conf);
+                        new org.deeplearning4j.nn.layers.pooling.GlobalPoolingLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -109,8 +106,8 @@ public class GlobalPoolingLayer extends NoParamLayer {
         switch (inputType.getType()) {
             case FF:
                 throw new UnsupportedOperationException(
-                        "Global max pooling cannot be applied to feed-forward input type. Got input type = "
-                                + inputType);
+                                "Global max pooling cannot be applied to feed-forward input type. Got input type = "
+                                                + inputType);
             case RNN:
                 InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
                 if (collapseDimensions) {
@@ -157,8 +154,8 @@ public class GlobalPoolingLayer extends NoParamLayer {
         switch (inputType.getType()) {
             case FF:
                 throw new UnsupportedOperationException(
-                        "Global max pooling cannot be applied to feed-forward input type. Got input type = "
-                                + inputType);
+                                "Global max pooling cannot be applied to feed-forward input type. Got input type = "
+                                                + inputType);
             case RNN:
             case CNN:
             case CNN3D:
@@ -203,11 +200,11 @@ public class GlobalPoolingLayer extends NoParamLayer {
         }
 
         return new LayerMemoryReport.Builder(layerName, GlobalPoolingLayer.class, inputType, outputType)
-                .standardMemory(0, 0) //No params
-                //Train + Inference: no additional working memory (except pnorm) - the reduction is the output activations
-                .workingMemory(0, fwdTrainInferenceWorkingPerEx, 0, fwdTrainInferenceWorkingPerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(0, 0) //No params
+                        //Train + Inference: no additional working memory (except pnorm) - the reduction is the output activations
+                        .workingMemory(0, fwdTrainInferenceWorkingPerEx, 0, fwdTrainInferenceWorkingPerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     public static class Builder extends Layer.Builder<Builder> {

@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -55,7 +52,7 @@ public class Convolution3D extends ConvolutionLayer {
         NCDHW, NDHWC
     }
 
-    private ConvolutionMode mode = ConvolutionMode.Same;  // in libnd4j: 0 - same mode, 1 - valid mode
+    private ConvolutionMode mode = ConvolutionMode.Same; // in libnd4j: 0 - same mode, 1 - valid mode
     private DataFormat dataFormat = DataFormat.NCDHW; // in libnd4j: 1 - NCDHW, 0 - NDHWC
 
     /**
@@ -94,7 +91,7 @@ public class Convolution3D extends ConvolutionLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> iterationListeners,
-            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("Convolution3D", getLayerName(), layerIndex, getNIn(), getNOut());
 
         Convolution3DLayer ret = new Convolution3DLayer(conf);
@@ -116,17 +113,17 @@ public class Convolution3D extends ConvolutionLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN3D) {
             throw new IllegalStateException("Invalid input for Convolution3D layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN3D input, got " + inputType);
+                            + "\"): Expected CNN3D input, got " + inputType);
         }
-        return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, kernelSize, stride, padding, dilation,
-                convolutionMode, nOut, layerIndex, getLayerName(), Convolution3DLayer.class);
+        return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
+                        nOut, layerIndex, getLayerName(), Convolution3DLayer.class);
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Convolution3D layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
 
         return InputTypeUtil.getPreProcessorForInputTypeCnn3DLayers(inputType, getLayerName());
@@ -137,7 +134,7 @@ public class Convolution3D extends ConvolutionLayer {
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN3D) {
             throw new IllegalStateException("Invalid input for Convolution 3D layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN3D input, got " + inputType);
+                            + "\"): Expected CNN3D input, got " + inputType);
         }
 
         if (nIn <= 0 || override) {
@@ -159,7 +156,7 @@ public class Convolution3D extends ConvolutionLayer {
         private DataFormat dataFormat = DataFormat.NCDHW;
 
         public Builder() {
-            super(new int[]{2, 2, 2}, new int[]{1, 1, 1}, new int[]{0, 0, 0}, new int[]{1, 1, 1}, 3);
+            super(new int[] {2, 2, 2}, new int[] {1, 1, 1}, new int[] {0, 0, 0}, new int[] {1, 1, 1}, 3);
         }
 
         public Builder(int[] kernelSize, int[] stride, int[] padding, int[] dilation) {
@@ -171,15 +168,15 @@ public class Convolution3D extends ConvolutionLayer {
         }
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
-            this(kernelSize, stride, padding, new int[]{1, 1, 1});
+            this(kernelSize, stride, padding, new int[] {1, 1, 1});
         }
 
         public Builder(int[] kernelSize, int[] stride) {
-            this(kernelSize, stride, new int[]{0, 0, 0});
+            this(kernelSize, stride, new int[] {0, 0, 0});
         }
 
         public Builder(int... kernelSize) {
-            this(kernelSize, new int[]{1, 1, 1});
+            this(kernelSize, new int[] {1, 1, 1});
         }
 
         /**

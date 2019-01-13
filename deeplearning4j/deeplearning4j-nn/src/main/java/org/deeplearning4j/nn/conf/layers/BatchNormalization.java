@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -57,7 +54,7 @@ public class BatchNormalization extends FeedForwardLayer {
     protected double beta = 0.0;
     protected boolean lockGammaBeta = false;
     protected boolean cudnnAllowFallback = true;
-    protected boolean useLogStd = false;            //Default for deserialized models (1.0.0-beta3) and earlier: store variance as variance. Post 1.0.0-beta3: use log stdev instead
+    protected boolean useLogStd = false; //Default for deserialized models (1.0.0-beta3) and earlier: store variance as variance. Post 1.0.0-beta3: use log stdev instead
 
     private BatchNormalization(Builder builder) {
         super(builder);
@@ -73,7 +70,7 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     public BatchNormalization() {
-        this(new Builder());    //Defaults from builder
+        this(new Builder()); //Defaults from builder
     }
 
     @Override
@@ -84,11 +81,11 @@ public class BatchNormalization extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNOutSet("BatchNormalization", getLayerName(), layerIndex, getNOut());
 
         org.deeplearning4j.nn.layers.normalization.BatchNormalization ret =
-                new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
+                        new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -108,8 +105,8 @@ public class BatchNormalization extends FeedForwardLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException(
-                    "Invalid input type: Batch norm layer expected input of type CNN, got null for layer \""
-                            + getLayerName() + "\"");
+                            "Invalid input type: Batch norm layer expected input of type CNN, got null for layer \""
+                                            + getLayerName() + "\"");
         }
 
         //Can handle CNN, flat CNN, CNN3D or FF input formats only
@@ -121,9 +118,9 @@ public class BatchNormalization extends FeedForwardLayer {
                 return inputType; //OK
             default:
                 throw new IllegalStateException(
-                        "Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got "
-                                + inputType + " for layer index " + layerIndex + ", layer name = "
-                                + getLayerName());
+                                "Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got "
+                                                + inputType + " for layer index " + layerIndex + ", layer name = "
+                                                + getLayerName());
         }
     }
 
@@ -144,8 +141,8 @@ public class BatchNormalization extends FeedForwardLayer {
                     nIn = ((InputType.InputTypeConvolutionalFlat) inputType).getDepth();
                 default:
                     throw new IllegalStateException(
-                            "Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got "
-                                    + inputType + " for layer " + getLayerName() + "\"");
+                                    "Invalid input type: Batch norm layer expected input of type CNN, CNN Flat or FF, got "
+                                                    + inputType + " for layer " + getLayerName() + "\"");
             }
             nOut = nIn;
         }
@@ -210,14 +207,13 @@ public class BatchNormalization extends FeedForwardLayer {
         val trainWorkFixed = 2 * nOut;
         //During backprop: multiple working arrays... output size, 2 * output size (indep. of example size),
         val trainWorkingSizePerExample = inferenceWorkingSize //Inference during backprop
-                + (outputType.arrayElementsPerExample() + 2 * nOut); //Backprop gradient calculation
+                        + (outputType.arrayElementsPerExample() + 2 * nOut); //Backprop gradient calculation
 
         return new LayerMemoryReport.Builder(layerName, BatchNormalization.class, inputType, outputType)
-                .standardMemory(numParams, updaterStateSize)
-                .workingMemory(0, 0, trainWorkFixed,
-                        trainWorkingSizePerExample) //No additional memory (beyond activations) for inference
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(numParams, updaterStateSize)
+                        .workingMemory(0, 0, trainWorkFixed, trainWorkingSizePerExample) //No additional memory (beyond activations) for inference
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @Override
@@ -350,8 +346,7 @@ public class BatchNormalization extends FeedForwardLayer {
             this.lockGammaBeta = lockGammaBeta;
         }
 
-        public Builder() {
-        }
+        public Builder() {}
 
         /**
          * If doing minibatch training or not. Default: true. Under most circumstances, this should be set to true. If

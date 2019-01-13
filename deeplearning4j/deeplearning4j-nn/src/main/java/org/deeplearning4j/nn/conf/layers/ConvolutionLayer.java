@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -49,7 +46,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     protected boolean hasBias = true;
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate; //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
-    protected int dilation[] = new int[]{1, 1};
+    protected int dilation[] = new int[] {1, 1};
     protected int[] kernelSize; // Square filter
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
@@ -160,11 +157,11 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("ConvolutionLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.ConvolutionLayer ret =
-                new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -183,18 +180,18 @@ public class ConvolutionLayer extends FeedForwardLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN input, got " + inputType);
+                            + "\"): Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation,
-                convolutionMode, nOut, layerIndex, getLayerName(), ConvolutionLayer.class);
+        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
+                        nOut, layerIndex, getLayerName(), ConvolutionLayer.class);
     }
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN input, got " + inputType);
+                            + "\"): Expected CNN input, got " + inputType);
         }
 
         if (nIn <= 0 || override) {
@@ -207,7 +204,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
 
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
@@ -248,8 +245,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
         //TODO convolution helper memory use... (CuDNN etc)
 
         //During forward pass: im2col array, mmul (result activations), in-place broadcast add
-        val im2colSizePerEx =
-                c.getChannels() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
+        val im2colSizePerEx = c.getChannels() * outputType.getHeight() * outputType.getWidth() * kernelSize[0]
+                        * kernelSize[1];
 
         //During training: have im2col array, in-place gradient calculation, then epsilons...
         //But: im2col array may be cached...
@@ -280,10 +277,10 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         return new LayerMemoryReport.Builder(layerName, ConvolutionLayer.class, inputType, outputType)
-                .standardMemory(paramSize, updaterStateSize)
-                //im2col caching -> only variable size caching
-                .workingMemory(0, im2colSizePerEx, MemoryReport.CACHE_MODE_ALL_ZEROS, trainWorkingMemoryPerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, cachedPerEx).build();
+                        .standardMemory(paramSize, updaterStateSize)
+                        //im2col caching -> only variable size caching
+                        .workingMemory(0, im2colSizePerEx, MemoryReport.CACHE_MODE_ALL_ZEROS, trainWorkingMemoryPerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, cachedPerEx).build();
 
     }
 
@@ -370,19 +367,19 @@ public class ConvolutionLayer extends FeedForwardLayer {
          */
         @Getter
         @Setter
-        protected int[] dilation = new int[]{1, 1};
+        protected int[] dilation = new int[] {1, 1};
 
         @Getter
         @Setter
-        public int[] kernelSize = new int[]{5, 5};
+        public int[] kernelSize = new int[] {5, 5};
 
         @Getter
         @Setter
-        protected int[] stride = new int[]{1, 1};
+        protected int[] stride = new int[] {1, 1};
 
         @Getter
         @Setter
-        protected int[] padding = new int[]{0, 0};
+        protected int[] padding = new int[] {0, 0};
 
         /**
          * Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
@@ -464,8 +461,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
             this.kernelSize = kernelSize;
         }
 
-        protected BaseConvBuilder() {
-        }
+        protected BaseConvBuilder() {}
 
         /**
          * If true (default): include bias parameters in the model. False: no bias.

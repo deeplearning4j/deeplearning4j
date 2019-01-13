@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -68,15 +65,11 @@ public abstract class AbstractSameDiffLayer extends Layer {
         try {
             getClass().getDeclaredConstructor();
         } catch (NoSuchMethodException e) {
-            log.warn(
-                    "***SameDiff layer {} does not have a zero argument (no-arg) constructor.***\nA no-arg constructor "
-                            +
-                            "is required for JSON deserialization, which is used for both model saving and distributed (Spark) "
-                            +
-                            "training.\nA no-arg constructor (private, protected or public) as well as setters (or simply a "
-                            +
-                            "Lombok @Data annotation) should be added to avoid JSON errors later.",
-                    getClass().getName());
+            log.warn("***SameDiff layer {} does not have a zero argument (no-arg) constructor.***\nA no-arg constructor "
+                            + "is required for JSON deserialization, which is used for both model saving and distributed (Spark) "
+                            + "training.\nA no-arg constructor (private, protected or public) as well as setters (or simply a "
+                            + "Lombok @Data annotation) should be added to avoid JSON errors later.",
+                            getClass().getName());
         } catch (SecurityException e) {
             //Ignore
         }
@@ -127,8 +120,8 @@ public abstract class AbstractSameDiffLayer extends Layer {
 
     @Override
     public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> trainingListeners,
-            int layerIndex, INDArray layerParamsView, boolean initializeParams);
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams);
 
     //==================================================================================================================
 

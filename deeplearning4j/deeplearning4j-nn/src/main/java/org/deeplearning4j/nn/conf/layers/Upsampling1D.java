@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -62,10 +59,10 @@ public class Upsampling1D extends BaseUpsamplingLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-            boolean initializeParams) {
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D ret =
-                new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D(conf);
+                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling1D(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -85,8 +82,8 @@ public class Upsampling1D extends BaseUpsamplingLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D Upsampling layer (layer index = " + layerIndex
-                    + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
-                    + inputType);
+                            + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
+                            + inputType);
         }
         InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
         long outLength = recurrent.getTimeSeriesLength();
@@ -100,7 +97,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Upsampling layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
@@ -116,18 +113,17 @@ public class Upsampling1D extends BaseUpsamplingLayer {
             trainingWorkingSizePerEx += inputType.arrayElementsPerExample();
         }
 
-        return new LayerMemoryReport.Builder(layerName, Upsampling1D.class, inputType, outputType)
-                .standardMemory(0, 0) //No params
-                .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+        return new LayerMemoryReport.Builder(layerName, Upsampling1D.class, inputType, outputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @NoArgsConstructor
     public static class Builder extends UpsamplingBuilder<Builder> {
 
         public Builder(int size) {
-            super(new int[]{size, size});
+            super(new int[] {size, size});
         }
 
         /**
@@ -137,7 +133,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
          */
         public Builder size(int size) {
 
-            this.size = new int[]{size, size};
+            this.size = new int[] {size, size};
             return this;
         }
 
@@ -148,7 +144,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
          */
         public Builder size(int[] size) {
             Preconditions.checkArgument(size.length == 1, "Input array must be length 1");
-            this.size = new int[]{size[0], size[0]}; // Since this is 2D under the hood, we need to hide this.
+            this.size = new int[] {size[0], size[0]}; // Since this is 2D under the hood, we need to hide this.
             return this;
         }
 

@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -72,10 +69,10 @@ public class Upsampling2D extends BaseUpsamplingLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-            boolean initializeParams) {
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D ret =
-                new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D(conf);
+                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -89,7 +86,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Upsampling 2D layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN input, got " + inputType);
+                            + "\"): Expected CNN input, got " + inputType);
         }
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
         val inHeight = i.getHeight();
@@ -103,7 +100,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Upsampling 2D layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
@@ -114,8 +111,8 @@ public class Upsampling2D extends BaseUpsamplingLayer {
         InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
 
         // During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
-        val im2colSizePerEx = c.getChannels() * outputType.getHeight() * outputType.getWidth()
-                * size[0] * size[1] * size[2];
+        val im2colSizePerEx =
+                        c.getChannels() * outputType.getHeight() * outputType.getWidth() * size[0] * size[1] * size[2];
 
         // Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         long trainingWorkingSizePerEx = im2colSizePerEx;
@@ -124,11 +121,10 @@ public class Upsampling2D extends BaseUpsamplingLayer {
             trainingWorkingSizePerEx += inputType.arrayElementsPerExample();
         }
 
-        return new LayerMemoryReport.Builder(layerName, Upsampling2D.class, inputType, outputType)
-                .standardMemory(0, 0) //No params
-                .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+        return new LayerMemoryReport.Builder(layerName, Upsampling2D.class, inputType, outputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
 
@@ -136,7 +132,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
     public static class Builder extends UpsamplingBuilder<Builder> {
 
         public Builder(int size) {
-            super(new int[]{size, size});
+            super(new int[] {size, size});
         }
 
         /**
@@ -146,7 +142,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
          */
         public Builder size(int size) {
 
-            this.size = new int[]{size, size};
+            this.size = new int[] {size, size};
             return this;
         }
 

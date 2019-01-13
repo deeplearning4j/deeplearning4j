@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -56,8 +53,8 @@ public class ZeroPaddingLayer extends NoParamLayer {
         super(builder);
         if (builder.padding == null || builder.padding.length != 4) {
             throw new IllegalArgumentException(
-                    "Invalid padding values: must have exactly 4 values [top, bottom, left, right]." +
-                            " Got: " + (builder.padding == null ? null : Arrays.toString(builder.padding)));
+                            "Invalid padding values: must have exactly 4 values [top, bottom, left, right]." + " Got: "
+                                            + (builder.padding == null ? null : Arrays.toString(builder.padding)));
         }
 
         this.padding = builder.padding;
@@ -65,10 +62,10 @@ public class ZeroPaddingLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-            boolean initializeParams) {
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer ret =
-                new org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
@@ -89,7 +86,7 @@ public class ZeroPaddingLayer extends NoParamLayer {
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         Preconditions.checkArgument(inputType != null, "Invalid input for ZeroPaddingLayer layer (layer name=\""
-                + getLayerName() + "\"): InputType is null");
+                        + getLayerName() + "\"): InputType is null");
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
 
@@ -98,11 +95,11 @@ public class ZeroPaddingLayer extends NoParamLayer {
         InputType outputType = getOutputType(-1, inputType);
 
         return new LayerMemoryReport.Builder(layerName, ZeroPaddingLayer.class, inputType, outputType)
-                .standardMemory(0, 0) //No params
-                //Inference and training is same - just output activations, no working memory in addition to that
-                .workingMemory(0, 0, MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(0, 0) //No params
+                        //Inference and training is same - just output activations, no working memory in addition to that
+                        .workingMemory(0, 0, MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     public static class Builder extends Layer.Builder<Builder> {
@@ -111,16 +108,16 @@ public class ZeroPaddingLayer extends NoParamLayer {
          * Padding value for top, bottom, left, and right. Must be length 4 array
          */
         @Getter
-        private int[] padding = new int[]{0, 0, 0, 0}; //Padding: top, bottom, left, right
+        private int[] padding = new int[] {0, 0, 0, 0}; //Padding: top, bottom, left, right
 
         /**
          * @param padding Padding value for top, bottom, left, and right. Must be length 4 array
          */
         public void setPadding(int[] padding) {
             if (padding.length == 2) {
-                this.padding = new int[]{padding[0], padding[0], padding[1], padding[1]};
+                this.padding = new int[] {padding[0], padding[0], padding[1], padding[1]};
             } else if (padding.length == 1) {
-                this.padding = new int[]{padding[0], padding[0], padding[0], padding[0]};
+                this.padding = new int[] {padding[0], padding[0], padding[0], padding[0]};
             } else if (padding.length == 4) {
                 this.padding = padding;
             } else {
@@ -143,7 +140,7 @@ public class ZeroPaddingLayer extends NoParamLayer {
          * @param padRight Right padding value
          */
         public Builder(int padTop, int padBottom, int padLeft, int padRight) {
-            this(new int[]{padTop, padBottom, padLeft, padRight});
+            this(new int[] {padTop, padBottom, padLeft, padRight});
         }
 
         /**
@@ -152,10 +149,10 @@ public class ZeroPaddingLayer extends NoParamLayer {
          */
         public Builder(int[] padding) {
             if (padding.length == 2) {
-                padding = new int[]{padding[0], padding[0], padding[1], padding[1]};
+                padding = new int[] {padding[0], padding[0], padding[1], padding[1]};
             } else if (padding.length != 4) {
                 throw new IllegalArgumentException(
-                        "Padding must have exactly 2 or 4 values - got " + Arrays.toString(padding));
+                                "Padding must have exactly 2 or 4 values - got " + Arrays.toString(padding));
             }
             this.padding = padding;
         }
@@ -166,9 +163,9 @@ public class ZeroPaddingLayer extends NoParamLayer {
             for (int p : padding) {
                 if (p < 0) {
                     throw new IllegalStateException(
-                            "Invalid zero padding layer config: padding [top, bottom, left, right]"
-                                    + " must be > 0 for all elements. Got: "
-                                    + Arrays.toString(padding));
+                                    "Invalid zero padding layer config: padding [top, bottom, left, right]"
+                                                    + " must be > 0 for all elements. Got: "
+                                                    + Arrays.toString(padding));
                 }
             }
 

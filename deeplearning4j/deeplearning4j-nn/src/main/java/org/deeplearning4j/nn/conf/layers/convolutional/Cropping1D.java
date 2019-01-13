@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -74,8 +71,8 @@ public class Cropping1D extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> trainingListeners,
-            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         Cropping1DLayer ret = new Cropping1DLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
@@ -89,8 +86,8 @@ public class Cropping1D extends NoParamLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D Cropping layer (layer index = " + layerIndex
-                    + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
-                    + inputType);
+                            + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
+                            + inputType);
         }
         InputType.InputTypeRecurrent cnn1d = (InputType.InputTypeRecurrent) inputType;
         val length = cnn1d.getTimeSeriesLength();
@@ -101,7 +98,7 @@ public class Cropping1D extends NoParamLayer {
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         Preconditions.checkArgument(inputType != null, "Invalid input for Cropping1D layer (layer name=\""
-                + getLayerName() + "\"): InputType is null");
+                        + getLayerName() + "\"): InputType is null");
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
 
@@ -116,7 +113,7 @@ public class Cropping1D extends NoParamLayer {
          * Cropping amount for top/bottom (in that order). Must be length 1 or 2 array.
          */
         @Getter
-        private int[] cropping = new int[]{0, 0};
+        private int[] cropping = new int[] {0, 0};
 
         /**
          * @param cropping Cropping amount for top/bottom (in that order). Must be length 1 or 2 array.
@@ -125,10 +122,10 @@ public class Cropping1D extends NoParamLayer {
             if (cropping.length == 2) {
                 this.cropping = cropping;
             } else if (cropping.length == 1) {
-                this.cropping = new int[]{cropping[0], cropping[0]};
+                this.cropping = new int[] {cropping[0], cropping[0]};
             } else {
-                org.nd4j.base.Preconditions
-                        .checkArgument(false, "Must have 1 or 2 cropping values - got %s", this.cropping);
+                org.nd4j.base.Preconditions.checkArgument(false, "Must have 1 or 2 cropping values - got %s",
+                                this.cropping);
             }
         }
 
@@ -141,12 +138,13 @@ public class Cropping1D extends NoParamLayer {
          */
         public Builder(@NonNull int[] cropping) {
             Preconditions.checkArgument(cropping.length == 2 || cropping.length == 1,
-                    "Two cropping values, i.e. top and bottom, or one value for bot top and bottom" +
-                            "must be provided. Got " + cropping.length + " values: " + Arrays.toString(cropping));
+                            "Two cropping values, i.e. top and bottom, or one value for bot top and bottom"
+                                            + "must be provided. Got " + cropping.length + " values: "
+                                            + Arrays.toString(cropping));
             if (cropping.length == 2) {
                 this.cropping = cropping;
             } else {
-                this.cropping = new int[]{cropping[0], cropping[0]};
+                this.cropping = new int[] {cropping[0], cropping[0]};
             }
         }
 
@@ -162,10 +160,10 @@ public class Cropping1D extends NoParamLayer {
          * @param cropBottom Amount of cropping to apply to the bottom of the input activations
          */
         public Builder(int cropTop, int cropBottom) {
-            this.cropping = new int[]{cropTop, cropBottom};
+            this.cropping = new int[] {cropTop, cropBottom};
             Preconditions.checkArgument(cropTop >= 0 && cropBottom >= 0,
-                    "Invalid arguments: crop dimensions must be > 0. Got [t,b] = "
-                            + Arrays.toString(this.cropping));
+                            "Invalid arguments: crop dimensions must be > 0. Got [t,b] = "
+                                            + Arrays.toString(this.cropping));
         }
 
         public Cropping1D build() {

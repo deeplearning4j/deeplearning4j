@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -45,8 +42,8 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for RNN layer (layer index = " + layerIndex
-                    + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
-                    + inputType);
+                            + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
+                            + inputType);
         }
 
         InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
@@ -58,7 +55,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for RNN layer (layer name = \"" + getLayerName()
-                    + "\"): expect RNN input type with size > 0. Got: " + inputType);
+                            + "\"): expect RNN input type with size > 0. Got: " + inputType);
         }
 
         if (nIn <= 0 || override) {
@@ -149,7 +146,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
         public T weightInitRecurrent(WeightInit weightInit) {
             if (weightInit == WeightInit.DISTRIBUTION) {
                 throw new UnsupportedOperationException(
-                        "Not supported!, Use weightInit(Distribution distribution) instead!");
+                                "Not supported!, Use weightInit(Distribution distribution) instead!");
             }
 
             this.weightInitFnRecurrent = weightInit.getWeightInitFunction();

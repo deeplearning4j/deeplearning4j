@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -110,11 +107,10 @@ public class Subsampling3DLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> iterationListeners,
-            int layerIndex, INDArray layerParamsView,
-            boolean initializeParams) {
+                    Collection<TrainingListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling3DLayer ret =
-                new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling3DLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling3DLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -133,15 +129,13 @@ public class Subsampling3DLayer extends NoParamLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN3D) {
             throw new IllegalStateException("Invalid input for Subsampling 3D layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN input, got " + inputType);
+                            + "\"): Expected CNN input, got " + inputType);
         }
 
         // FIXME: int cast
-        return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, kernelSize, stride, padding,
-                new int[]{1, 1, 1}, // no dilation
-                convolutionMode,
-                (int) ((InputType.InputTypeConvolutional3D) inputType).getChannels(), layerIndex, getLayerName(),
-                Subsampling3DLayer.class);
+        return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, kernelSize, stride, padding, new int[] {1, 1, 1}, // no dilation
+                        convolutionMode, (int) ((InputType.InputTypeConvolutional3D) inputType).getChannels(),
+                        layerIndex, getLayerName(), Subsampling3DLayer.class);
     }
 
     @Override
@@ -153,7 +147,7 @@ public class Subsampling3DLayer extends NoParamLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Subsampling 3D layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
 
         return InputTypeUtil.getPreProcessorForInputTypeCnn3DLayers(inputType, getLayerName());
@@ -179,13 +173,12 @@ public class Subsampling3DLayer extends NoParamLayer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
-        InputType.InputTypeConvolutional3D outputType = (InputType.InputTypeConvolutional3D) getOutputType(-1,
-                inputType);
+        InputType.InputTypeConvolutional3D outputType =
+                        (InputType.InputTypeConvolutional3D) getOutputType(-1, inputType);
         val actElementsPerEx = outputType.arrayElementsPerExample();
 
         //During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
-        val im2colSizePerEx =
-                c.getChannels() * outputType.getHeight() * outputType.getWidth() * outputType.getDepth()
+        val im2colSizePerEx = c.getChannels() * outputType.getHeight() * outputType.getWidth() * outputType.getDepth()
                         * kernelSize[0] * kernelSize[1];
 
         //Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
@@ -196,10 +189,10 @@ public class Subsampling3DLayer extends NoParamLayer {
         }
 
         return new LayerMemoryReport.Builder(layerName, Subsampling3DLayer.class, inputType, outputType)
-                .standardMemory(0, 0) //No params
-                .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(0, 0) //No params
+                        .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @NoArgsConstructor
@@ -231,7 +224,7 @@ public class Subsampling3DLayer extends NoParamLayer {
         }
 
         public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize, int[] stride,
-                int[] padding) {
+                        int[] padding) {
             super(poolingType, kernelSize, stride, padding);
         }
 
@@ -322,10 +315,10 @@ public class Subsampling3DLayer extends NoParamLayer {
         @Override
         public void setKernelSize(int[] kernelSize) {
             Preconditions.checkArgument(kernelSize.length == 1 || kernelSize.length == 3,
-                    "Must have 1 or 3 kernelSize values - got %s", kernelSize);
+                            "Must have 1 or 3 kernelSize values - got %s", kernelSize);
 
             if (kernelSize.length == 1) {
-                super.setKernelSize(new int[]{kernelSize[0], kernelSize[0], kernelSize[0]});
+                super.setKernelSize(new int[] {kernelSize[0], kernelSize[0], kernelSize[0]});
             } else {
                 super.setKernelSize(kernelSize);
             }
@@ -338,12 +331,11 @@ public class Subsampling3DLayer extends NoParamLayer {
          */
         @Override
         public void setStride(int[] stride) {
-            Preconditions
-                    .checkArgument(stride.length == 1 || stride.length == 3, "Must have 1 or 3 stride values - got %s",
-                            stride);
+            Preconditions.checkArgument(stride.length == 1 || stride.length == 3,
+                            "Must have 1 or 3 stride values - got %s", stride);
 
             if (stride.length == 1) {
-                super.setStride(new int[]{stride[0], stride[0], stride[0]});
+                super.setStride(new int[] {stride[0], stride[0], stride[0]});
             } else {
                 super.setStride(stride);
             }
@@ -357,10 +349,10 @@ public class Subsampling3DLayer extends NoParamLayer {
         @Override
         public void setPadding(int[] padding) {
             Preconditions.checkArgument(kernelSize.length == 1 || stride.length == 3,
-                    "Must have 1 or 3 padding values - got %s", padding);
+                            "Must have 1 or 3 padding values - got %s", padding);
 
             if (padding.length == 1) {
-                super.setPadding(new int[]{padding[0], padding[0], padding[0]});
+                super.setPadding(new int[] {padding[0], padding[0], padding[0]});
             } else {
                 super.setPadding(padding);
             }
@@ -369,28 +361,28 @@ public class Subsampling3DLayer extends NoParamLayer {
 
     @NoArgsConstructor
     protected static abstract class BaseSubsamplingBuilder<T extends BaseSubsamplingBuilder<T>>
-            extends Layer.Builder<T> {
+                    extends Layer.Builder<T> {
 
         @Getter
         @Setter
         protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType =
-                org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
+                        org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
 
         @Getter
         @Setter
-        protected int[] kernelSize = new int[]{1, 1, 1};
+        protected int[] kernelSize = new int[] {1, 1, 1};
 
         @Getter
         @Setter
-        protected int[] stride = new int[]{2, 2, 2};
+        protected int[] stride = new int[] {2, 2, 2};
 
         @Getter
         @Setter
-        protected int[] padding = new int[]{0, 0, 0};
+        protected int[] padding = new int[] {0, 0, 0};
 
         public void setDilation(int[] dilation) {
             Preconditions.checkArgument(dilation.length == 1 || dilation.length == 3,
-                    "Must have 1 or 3 dilation values - got %s", dilation);
+                            "Must have 1 or 3 dilation values - got %s", dilation);
 
             if (dilation.length == 1) {
                 dilation(dilation[0], dilation[0], dilation[0]);
@@ -400,7 +392,7 @@ public class Subsampling3DLayer extends NoParamLayer {
         }
 
         @Getter
-        protected int[] dilation = new int[]{1, 1, 1};
+        protected int[] dilation = new int[] {1, 1, 1};
 
         /**
          * Set the convolution mode for the Convolution layer. See {@link ConvolutionMode} for more details
@@ -443,7 +435,7 @@ public class Subsampling3DLayer extends NoParamLayer {
         }
 
         protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize,
-                int[] stride, int[] padding) {
+                        int[] stride, int[] padding) {
             this.poolingType = poolingType;
             this.kernelSize = kernelSize;
             this.stride = stride;
@@ -489,7 +481,7 @@ public class Subsampling3DLayer extends NoParamLayer {
         }
 
         public T dilation(int dDepth, int dHeight, int dWidth) {
-            this.dilation = new int[]{dDepth, dHeight, dWidth};
+            this.dilation = new int[] {dDepth, dHeight, dWidth};
             return (T) this;
         }
 

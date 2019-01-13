@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -80,8 +77,8 @@ public class Cropping2D extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> trainingListeners,
-            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         Cropping2DLayer ret = new Cropping2DLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
@@ -103,7 +100,7 @@ public class Cropping2D extends NoParamLayer {
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         Preconditions.checkArgument(inputType != null, "Invalid input for Cropping2D layer (layer name=\""
-                + getLayerName() + "\"): InputType is null");
+                        + getLayerName() + "\"): InputType is null");
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
 
@@ -119,18 +116,18 @@ public class Cropping2D extends NoParamLayer {
          * Cropping amount for top/bottom/left/right (in that order). A length 4 array.
          */
         @Getter
-        private int[] cropping = new int[]{0, 0, 0, 0};
+        private int[] cropping = new int[] {0, 0, 0, 0};
 
         /**
          * @param cropping Cropping amount for top/bottom/left/right (in that order). Must be length 1, 2, or 4 array.
          */
         public void setCropping(int[] cropping) {
             Preconditions.checkArgument(cropping.length == 1 || cropping.length == 2 || cropping.length == 4,
-                    "Must have 1, 2, or 4 cropping values - got %s", cropping);
+                            "Must have 1, 2, or 4 cropping values - got %s", cropping);
             if (cropping.length == 1) {
-                this.cropping = new int[]{cropping[0], cropping[0], cropping[0], cropping[0]};
+                this.cropping = new int[] {cropping[0], cropping[0], cropping[0], cropping[0]};
             } else if (cropping.length == 2) {
-                this.cropping = new int[]{cropping[0], cropping[0], cropping[1], cropping[1]};
+                this.cropping = new int[] {cropping[0], cropping[0], cropping[1], cropping[1]};
             } else {
                 this.cropping = cropping;
             }
@@ -145,11 +142,11 @@ public class Cropping2D extends NoParamLayer {
          */
         public Builder(@NonNull int[] cropping) {
             Preconditions.checkArgument(cropping.length == 4 || cropping.length == 2,
-                    "Either 2 or 4 cropping values,  i.e. (top/bottom. left/right) or (top, bottom," +
-                            " left, right) must be provided. Got " + cropping.length + " values: " + Arrays
-                            .toString(cropping));
+                            "Either 2 or 4 cropping values,  i.e. (top/bottom. left/right) or (top, bottom,"
+                                            + " left, right) must be provided. Got " + cropping.length + " values: "
+                                            + Arrays.toString(cropping));
             if (cropping.length == 2) {
-                this.cropping = new int[]{cropping[0], cropping[0], cropping[1], cropping[1]};
+                this.cropping = new int[] {cropping[0], cropping[0], cropping[1], cropping[1]};
             } else {
                 this.cropping = cropping;
             }
@@ -170,10 +167,10 @@ public class Cropping2D extends NoParamLayer {
          * @param cropRight Amount of cropping to apply to the right of the input activations
          */
         public Builder(int cropTop, int cropBottom, int cropLeft, int cropRight) {
-            this.cropping = new int[]{cropTop, cropBottom, cropLeft, cropRight};
+            this.cropping = new int[] {cropTop, cropBottom, cropLeft, cropRight};
             Preconditions.checkArgument(cropTop >= 0 && cropBottom >= 0 && cropLeft >= 0 && cropRight >= 0,
-                    "Invalid arguments: crop dimensions must be > 0. Got [t,b,l,r] = " + Arrays
-                            .toString(this.cropping));
+                            "Invalid arguments: crop dimensions must be > 0. Got [t,b,l,r] = "
+                                            + Arrays.toString(this.cropping));
         }
 
         public Cropping2D build() {

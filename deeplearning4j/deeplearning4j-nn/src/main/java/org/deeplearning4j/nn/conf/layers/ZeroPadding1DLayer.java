@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -63,10 +60,10 @@ public class ZeroPadding1DLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-            boolean initializeParams) {
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.ZeroPadding1DLayer ret =
-                new org.deeplearning4j.nn.layers.convolution.ZeroPadding1DLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.ZeroPadding1DLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
@@ -84,12 +81,11 @@ public class ZeroPadding1DLayer extends NoParamLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer index = " + layerIndex
-                    + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
-                    + inputType);
+                            + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
+                            + inputType);
         }
         InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
-        return InputType.recurrent(recurrent.getSize(),
-                recurrent.getTimeSeriesLength() + padding[0] + padding[1]);
+        return InputType.recurrent(recurrent.getSize(), recurrent.getTimeSeriesLength() + padding[0] + padding[1]);
     }
 
     @Override
@@ -101,7 +97,7 @@ public class ZeroPadding1DLayer extends NoParamLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for ZeroPadding1DLayer layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
 
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
@@ -127,10 +123,10 @@ public class ZeroPadding1DLayer extends NoParamLayer {
         InputType outputType = getOutputType(-1, inputType);
 
         return new LayerMemoryReport.Builder(layerName, ZeroPaddingLayer.class, inputType, outputType)
-                .standardMemory(0, 0) //No params
-                .workingMemory(0, 0, MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(0, 0) //No params
+                        .workingMemory(0, 0, MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     public static class Builder extends Layer.Builder<Builder> {
@@ -139,7 +135,7 @@ public class ZeroPadding1DLayer extends NoParamLayer {
          * Padding value for left and right. Must be length 2 array
          */
         @Getter
-        private int[] padding = new int[]{0, 0}; //Padding: left, right
+        private int[] padding = new int[] {0, 0}; //Padding: left, right
 
         /**
          * @param padding Padding value for left and right. Must be length 2 array
@@ -148,7 +144,7 @@ public class ZeroPadding1DLayer extends NoParamLayer {
             if (padding.length == 2) {
                 this.padding = padding;
             } else if (padding.length == 1) {
-                this.padding = new int[]{padding[0], padding[0]};
+                this.padding = new int[] {padding[0], padding[0]};
             } else {
                 Preconditions.checkArgument(false, "Must have 1 or 2 padding values - got %s", padding);
             }
@@ -167,7 +163,7 @@ public class ZeroPadding1DLayer extends NoParamLayer {
          * @param padRight Padding value for right
          */
         public Builder(int padLeft, int padRight) {
-            this(new int[]{padLeft, padRight});
+            this(new int[] {padLeft, padRight});
         }
 
         /**
@@ -183,10 +179,8 @@ public class ZeroPadding1DLayer extends NoParamLayer {
         public ZeroPadding1DLayer build() {
             for (int p : padding) {
                 if (p < 0) {
-                    throw new IllegalStateException(
-                            "Invalid zero padding layer config: padding [left, right]"
-                                    + " must be > 0 for all elements. Got: "
-                                    + Arrays.toString(padding));
+                    throw new IllegalStateException("Invalid zero padding layer config: padding [left, right]"
+                                    + " must be > 0 for all elements. Got: " + Arrays.toString(padding));
                 }
             }
             return new ZeroPadding1DLayer(this);

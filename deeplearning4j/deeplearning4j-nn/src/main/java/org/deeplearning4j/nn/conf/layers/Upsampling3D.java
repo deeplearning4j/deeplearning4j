@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -57,11 +54,10 @@ public class Upsampling3D extends BaseUpsamplingLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> iterationListeners,
-            int layerIndex, INDArray layerParamsView,
-            boolean initializeParams) {
+                    Collection<TrainingListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling3D ret =
-                new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling3D(conf);
+                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling3D(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -75,7 +71,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN3D) {
             throw new IllegalStateException("Invalid input for Upsampling 3D layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN3D input, got " + inputType);
+                            + "\"): Expected CNN3D input, got " + inputType);
         }
         InputType.InputTypeConvolutional3D i = (InputType.InputTypeConvolutional3D) inputType;
 
@@ -85,15 +81,14 @@ public class Upsampling3D extends BaseUpsamplingLayer {
         int inDepth = (int) i.getDepth();
         int inChannels = (int) i.getChannels();
 
-        return InputType.convolutional3D(
-                size[0] * inDepth, size[1] * inHeight, size[2] * inWidth, inChannels);
+        return InputType.convolutional3D(size[0] * inDepth, size[1] * inHeight, size[2] * inWidth, inChannels);
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Upsampling 3D layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
         return InputTypeUtil.getPreProcessorForInputTypeCnn3DLayers(inputType, getLayerName());
     }
@@ -102,11 +97,11 @@ public class Upsampling3D extends BaseUpsamplingLayer {
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
         InputType.InputTypeConvolutional3D outputType =
-                (InputType.InputTypeConvolutional3D) getOutputType(-1, inputType);
+                        (InputType.InputTypeConvolutional3D) getOutputType(-1, inputType);
 
         // During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
-        val im2colSizePerEx = c.getChannels() & outputType.getDepth() * outputType.getHeight()
-                * outputType.getWidth() * size[0] * size[1] * size[2];
+        val im2colSizePerEx = c.getChannels() & outputType.getDepth() * outputType.getHeight() * outputType.getWidth()
+                        * size[0] * size[1] * size[2];
 
         // Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         long trainingWorkingSizePerEx = im2colSizePerEx;
@@ -115,11 +110,10 @@ public class Upsampling3D extends BaseUpsamplingLayer {
             trainingWorkingSizePerEx += inputType.arrayElementsPerExample();
         }
 
-        return new LayerMemoryReport.Builder(layerName, Upsampling3D.class, inputType, outputType)
-                .standardMemory(0, 0) //No params
-                .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+        return new LayerMemoryReport.Builder(layerName, Upsampling3D.class, inputType, outputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
 
@@ -127,7 +121,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
     public static class Builder extends UpsamplingBuilder<Builder> {
 
         public Builder(int size) {
-            super(new int[]{size, size, size});
+            super(new int[] {size, size, size});
         }
 
         /**
@@ -137,7 +131,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
          */
         public Builder size(int size) {
 
-            this.size = new int[]{size, size, size};
+            this.size = new int[] {size, size, size};
             return this;
         }
 

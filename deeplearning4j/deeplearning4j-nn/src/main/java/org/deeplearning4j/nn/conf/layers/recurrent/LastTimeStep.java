@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -37,9 +34,9 @@ import java.util.Collection;
  */
 public class LastTimeStep extends BaseWrapperLayer {
 
-    private LastTimeStep(){ }
+    private LastTimeStep() {}
 
-    public LastTimeStep(Layer underlying){
+    public LastTimeStep(Layer underlying) {
         super(underlying);
         this.layerName = underlying.getLayerName(); // needed for keras import to match names
     }
@@ -50,20 +47,22 @@ public class LastTimeStep extends BaseWrapperLayer {
 
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                                                       int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         NeuralNetConfiguration conf2 = conf.clone();
-        conf2.setLayer(((LastTimeStep)conf2.getLayer()).getUnderlying());
-        return new LastTimeStepLayer(underlying.instantiate(conf2, trainingListeners, layerIndex, layerParamsView, initializeParams));
+        conf2.setLayer(((LastTimeStep) conf2.getLayer()).getUnderlying());
+        return new LastTimeStepLayer(underlying.instantiate(conf2, trainingListeners, layerIndex, layerParamsView,
+                        initializeParams));
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if(inputType.getType() != InputType.Type.RNN){
+        if (inputType.getType() != InputType.Type.RNN) {
             throw new IllegalArgumentException("Require RNN input type - got " + inputType);
         }
         InputType outType = underlying.getOutputType(layerIndex, inputType);
-        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent)outType;
+        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) outType;
         return InputType.feedForward(r.getSize());
     }
 }

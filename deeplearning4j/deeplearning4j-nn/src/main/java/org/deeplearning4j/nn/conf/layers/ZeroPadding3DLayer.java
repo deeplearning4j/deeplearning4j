@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -53,11 +50,10 @@ public class ZeroPadding3DLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> iterationListeners,
-            int layerIndex, INDArray layerParamsView,
-            boolean initializeParams) {
+                    Collection<TrainingListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.ZeroPadding3DLayer ret =
-                new org.deeplearning4j.nn.layers.convolution.ZeroPadding3DLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.ZeroPadding3DLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
@@ -75,15 +71,13 @@ public class ZeroPadding3DLayer extends NoParamLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN3D) {
             throw new IllegalStateException("Invalid input for 3D CNN layer (layer index = " + layerIndex
-                    + ", layer name = \"" + getLayerName() + "\"): expect CNN3D input type with size > 0. Got: "
-                    + inputType);
+                            + ", layer name = \"" + getLayerName() + "\"): expect CNN3D input type with size > 0. Got: "
+                            + inputType);
         }
         InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
-        return InputType.convolutional3D(
-                c.getDepth() + padding[0] + padding[1],
-                c.getHeight() + padding[2] + padding[3],
-                c.getWidth() + padding[4] + padding[5],
-                c.getChannels());
+        return InputType.convolutional3D(c.getDepth() + padding[0] + padding[1],
+                        c.getHeight() + padding[2] + padding[3], c.getWidth() + padding[4] + padding[5],
+                        c.getChannels());
     }
 
     @Override
@@ -95,7 +89,7 @@ public class ZeroPadding3DLayer extends NoParamLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for ZeroPadding3DLayer layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
 
         return InputTypeUtil.getPreProcessorForInputTypeCnn3DLayers(inputType, getLayerName());
@@ -121,11 +115,10 @@ public class ZeroPadding3DLayer extends NoParamLayer {
         InputType outputType = getOutputType(-1, inputType);
 
         return new LayerMemoryReport.Builder(layerName, ZeroPadding3DLayer.class, inputType, outputType)
-                .standardMemory(0, 0) //No params
-                .workingMemory(0, 0, MemoryReport.CACHE_MODE_ALL_ZEROS,
-                        MemoryReport.CACHE_MODE_ALL_ZEROS)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(0, 0) //No params
+                        .workingMemory(0, 0, MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     public static class Builder extends Layer.Builder<Builder> {
@@ -134,19 +127,18 @@ public class ZeroPadding3DLayer extends NoParamLayer {
          * [padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW]
          */
         @Getter
-        private int[] padding = new int[]{0, 0, 0, 0, 0,
-                0};
+        private int[] padding = new int[] {0, 0, 0, 0, 0, 0};
 
         /**
          * [padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW]
          */
         public void setPadding(int[] padding) {
             if (padding.length == 3) {
-                this.padding = new int[]{padding[0], padding[0], padding[1], padding[1], padding[2], padding[2]};
+                this.padding = new int[] {padding[0], padding[0], padding[1], padding[1], padding[2], padding[2]};
             } else if (padding.length == 6) {
                 this.padding = padding;
             } else if (padding.length == 1) {
-                this.padding = new int[]{padding[0], padding[0], padding[0], padding[0], padding[0], padding[0]};
+                this.padding = new int[] {padding[0], padding[0], padding[0], padding[0], padding[0], padding[0]};
             } else {
                 throw new IllegalStateException("Padding length has to be either 1, 3 or 6, got " + padding.length);
             }
@@ -181,19 +173,17 @@ public class ZeroPadding3DLayer extends NoParamLayer {
          * @param padLeftW Width padding left
          * @param padRightW Width padding right
          */
-        public Builder(int padLeftD, int padRightD,
-                int padLeftH, int padRightH,
-                int padLeftW, int padRightW) {
-            this(new int[]{padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW});
+        public Builder(int padLeftD, int padRightD, int padLeftH, int padRightH, int padLeftW, int padRightW) {
+            this(new int[] {padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW});
         }
 
         public Builder(int[] padding) {
             if (padding.length == 3) {
-                this.padding = new int[]{padding[0], padding[0], padding[1], padding[1], padding[2], padding[2]};
+                this.padding = new int[] {padding[0], padding[0], padding[1], padding[1], padding[2], padding[2]};
             } else if (padding.length == 6) {
                 this.padding = padding;
             } else if (padding.length == 1) {
-                this.padding = new int[]{padding[0], padding[0], padding[0], padding[0], padding[0], padding[0]};
+                this.padding = new int[] {padding[0], padding[0], padding[0], padding[0], padding[0], padding[0]};
             } else {
                 throw new IllegalStateException("Padding length has to be either 1, 3 or 6, got " + padding.length);
             }
@@ -205,7 +195,7 @@ public class ZeroPadding3DLayer extends NoParamLayer {
             for (int p : padding) {
                 if (p < 0) {
                     throw new IllegalStateException("Invalid zero padding layer config: padding [left, right]"
-                            + " must be > 0 for all elements. Got: " + Arrays.toString(padding));
+                                    + " must be > 0 for all elements. Got: " + Arrays.toString(padding));
                 }
             }
             return new ZeroPadding3DLayer(this);

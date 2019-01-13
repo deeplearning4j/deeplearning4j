@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -57,11 +54,11 @@ public class RnnOutputLayer extends BaseOutputLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("RnnOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer ret =
-                new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
+                        new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -80,7 +77,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer index = " + layerIndex
-                    + ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
+                            + ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
         }
         InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
 
@@ -91,7 +88,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer name=\"" + getLayerName()
-                    + "\"): Expected RNN input, got " + inputType);
+                            + "\"): Expected RNN input, got " + inputType);
         }
 
         if (nIn <= 0 || override) {

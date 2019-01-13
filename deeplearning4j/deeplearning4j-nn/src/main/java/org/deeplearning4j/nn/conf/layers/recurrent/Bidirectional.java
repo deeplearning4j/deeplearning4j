@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -96,10 +93,10 @@ public class Bidirectional extends Layer {
      */
     public Bidirectional(@NonNull Mode mode, @NonNull Layer layer) {
         if (!(layer instanceof BaseRecurrentLayer || layer instanceof LastTimeStep
-                || layer instanceof BaseWrapperLayer)) {
-            throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: " +
-                    "config must extend BaseRecurrentLayer or LastTimeStep " +
-                    "Got class: " + layer.getClass());
+                        || layer instanceof BaseWrapperLayer)) {
+            throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: "
+                            + "config must extend BaseRecurrentLayer or LastTimeStep " + "Got class: "
+                            + layer.getClass());
         }
         this.fwd = layer;
         this.bwd = layer.clone();
@@ -124,8 +121,8 @@ public class Bidirectional extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> trainingListeners, int layerIndex,
-            INDArray layerParamsView, boolean initializeParams) {
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         NeuralNetConfiguration c1 = conf.clone();
         NeuralNetConfiguration c2 = conf.clone();
         c1.setLayer(fwd);
@@ -134,11 +131,9 @@ public class Bidirectional extends Layer {
         long n = layerParamsView.length() / 2;
         INDArray fp = layerParamsView.get(point(0), interval(0, n));
         INDArray bp = layerParamsView.get(point(0), interval(n, 2 * n));
-        org.deeplearning4j.nn.api.Layer f
-                = fwd.instantiate(c1, trainingListeners, layerIndex, fp, initializeParams);
+        org.deeplearning4j.nn.api.Layer f = fwd.instantiate(c1, trainingListeners, layerIndex, fp, initializeParams);
 
-        org.deeplearning4j.nn.api.Layer b
-                = bwd.instantiate(c2, trainingListeners, layerIndex, bp, initializeParams);
+        org.deeplearning4j.nn.api.Layer b = bwd.instantiate(c2, trainingListeners, layerIndex, bp, initializeParams);
 
         BidirectionalLayer ret = new BidirectionalLayer(conf, f, b, layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
@@ -236,7 +231,7 @@ public class Bidirectional extends Layer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         LayerMemoryReport lmr = fwd.getMemoryReport(inputType);
-        lmr.scale(2);   //Double all memory use
+        lmr.scale(2); //Double all memory use
         return lmr;
     }
 
@@ -261,10 +256,10 @@ public class Bidirectional extends Layer {
 
         public Builder rnnLayer(Layer layer) {
             if (!(layer instanceof BaseRecurrentLayer || layer instanceof LastTimeStep
-                    || layer instanceof BaseWrapperLayer)) {
-                throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: " +
-                        "config must extend BaseRecurrentLayer or LastTimeStep " +
-                        "Got class: " + layer.getClass());
+                            || layer instanceof BaseWrapperLayer)) {
+                throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: "
+                                + "config must extend BaseRecurrentLayer or LastTimeStep " + "Got class: "
+                                + layer.getClass());
             }
             this.layer = layer;
             return this;

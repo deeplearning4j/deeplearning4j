@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -93,9 +90,9 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ret = new org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer(
-                conf);
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ret =
+                        new org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -112,7 +109,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        return inputType;   //Same shape output as input
+        return inputType; //Same shape output as input
     }
 
     @Override
@@ -138,17 +135,17 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     @Override
     public double getL1ByParam(String paramName) {
-        return 0;   //No params
+        return 0; //No params
     }
 
     @Override
     public double getL2ByParam(String paramName) {
-        return 0;   //No params
+        return 0; //No params
     }
 
     @Override
     public boolean isPretrainParam(String paramName) {
-        return false;   //No params
+        return false; //No params
     }
 
     @Override
@@ -167,10 +164,9 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
         //This is a VERY rough estimate...
         return new LayerMemoryReport.Builder(layerName, Yolo2OutputLayer.class, inputType, inputType)
-                .standardMemory(0, 0)   //No params
-                .workingMemory(0, numValues, 0, 6 * numValues)
-                .cacheMemory(0, 0)  //No cache
-                .build();
+                        .standardMemory(0, 0) //No params
+                        .workingMemory(0, numValues, 0, 6 * numValues).cacheMemory(0, 0) //No cache
+                        .build();
     }
 
     public static class Builder extends org.deeplearning4j.nn.conf.layers.Layer.Builder<Builder> {
@@ -285,7 +281,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
             if (boundingBoxes.rank() != 2 || boundingBoxes.size(1) != 2) {
                 throw new IllegalStateException("Bounding box priors must have shape [nBoxes, 2]. Has shape: "
-                        + Arrays.toString(boundingBoxes.shape()));
+                                + Arrays.toString(boundingBoxes.shape()));
             }
 
             return new Yolo2OutputLayer(this);

@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -50,7 +47,7 @@ import java.util.Map;
 public abstract class SameDiffOutputLayer extends AbstractSameDiffLayer {
 
 
-    protected SameDiffOutputLayer(){
+    protected SameDiffOutputLayer() {
         //No op constructor for Jackson
     }
 
@@ -63,7 +60,7 @@ public abstract class SameDiffOutputLayer extends AbstractSameDiffLayer {
      * @return The final layer variable corresponding to the score/loss during forward pass. This must be a single scalar value.
      */
     public abstract SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, SDVariable labels,
-                                           Map<String,SDVariable> paramTable);
+                    Map<String, SDVariable> paramTable);
 
     /**
      * Output layers should terminate in a single scalar value (i.e., a score) - however, sometimes the output activations
@@ -81,16 +78,18 @@ public abstract class SameDiffOutputLayer extends AbstractSameDiffLayer {
      * this can be set to false.
      * @return True if labels are required to calculate the score/output, false otherwise.
      */
-    public boolean labelsRequired(){
+    public boolean labelsRequired() {
         return true;
     }
 
     //==================================================================================================================
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                                                       int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.samediff.SameDiffOutputLayer ret = new org.deeplearning4j.nn.layers.samediff.SameDiffOutputLayer(conf);
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
+        org.deeplearning4j.nn.layers.samediff.SameDiffOutputLayer ret =
+                        new org.deeplearning4j.nn.layers.samediff.SameDiffOutputLayer(conf);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

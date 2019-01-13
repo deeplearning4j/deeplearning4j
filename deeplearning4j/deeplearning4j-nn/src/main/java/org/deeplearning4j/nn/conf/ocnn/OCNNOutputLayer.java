@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -85,8 +82,9 @@ public class OCNNOutputLayer extends BaseOutputLayer {
     @JsonCreator
     @SuppressWarnings("unused")
     public OCNNOutputLayer(@JsonProperty("hiddenSize") int hiddenSize, @JsonProperty("nu") double nu,
-            @JsonProperty("activation") IActivation activation, @JsonProperty("windowSize") int windowSize,
-            @JsonProperty("initialRValue") double initialRValue, @JsonProperty("configureR") boolean configureR) {
+                    @JsonProperty("activation") IActivation activation, @JsonProperty("windowSize") int windowSize,
+                    @JsonProperty("initialRValue") double initialRValue,
+                    @JsonProperty("configureR") boolean configureR) {
         this.hiddenSize = hiddenSize;
         this.nu = nu;
         this.activationFn = activation;
@@ -102,11 +100,11 @@ public class OCNNOutputLayer extends BaseOutputLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("OCNNOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer ret = new org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer(
-                conf);
+        org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer ret =
+                        new org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -265,7 +263,7 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         @Override
         public Builder nOut(int nOut) {
             throw new UnsupportedOperationException(
-                    "Unable to specify number of outputs with ocnn. Outputs are fixed to 1.");
+                            "Unable to specify number of outputs with ocnn. Outputs are fixed to 1.");
         }
 
         @Override

@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -72,9 +69,9 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer ret =
-                new org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -92,9 +89,10 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || (inputType.getType() != InputType.Type.CNN3D
-                && inputType.getType() != InputType.Type.CNNFlat)) {
+                        && inputType.getType() != InputType.Type.CNNFlat)) {
             throw new IllegalStateException("Invalid input type for CnnLossLayer (layer index = " + layerIndex
-                    + ", layer name=\"" + getLayerName() + "\"): Expected CNN3D or CNNFlat input, got " + inputType);
+                            + ", layer name=\"" + getLayerName() + "\"): Expected CNN3D or CNNFlat input, got "
+                            + inputType);
         }
         return inputType;
     }
@@ -107,11 +105,10 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         //During inference and training: dup the input array. But, this counts as *activations* not working memory
-        return new LayerMemoryReport.Builder(layerName, getClass(), inputType, inputType)
-                .standardMemory(0, 0) //No params
-                .workingMemory(0, 0, 0, 0)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+        return new LayerMemoryReport.Builder(layerName, getClass(), inputType, inputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, 0, 0, 0)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @Override
@@ -141,14 +138,14 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
         @SuppressWarnings("unchecked")
         public Builder nIn(int nIn) {
             throw new UnsupportedOperationException(
-                    "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
+                            "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public Builder nOut(int nOut) {
             throw new UnsupportedOperationException(
-                    "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
+                            "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
         }
 
         @Override

@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -75,11 +72,11 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("VariationalAutoencoder", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.variational.VariationalAutoencoder ret =
-                new org.deeplearning4j.nn.layers.variational.VariationalAutoencoder(conf);
+                        new org.deeplearning4j.nn.layers.variational.VariationalAutoencoder(conf);
 
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
@@ -164,10 +161,10 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         }
 
         return new LayerMemoryReport.Builder(layerName, VariationalAutoencoder.class, inputType, outputType)
-                .standardMemory(numParams, updaterStateSize)
-                .workingMemory(0, inferenceWorkingMemSizePerEx, 0, trainWorkingMemSize)
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(numParams, updaterStateSize)
+                        .workingMemory(0, inferenceWorkingMemSizePerEx, 0, trainWorkingMemSize)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     public static class Builder extends BasePretrainNetwork.Builder<Builder> {
@@ -178,7 +175,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          *
          */
         @Getter
-        private int[] encoderLayerSizes = new int[]{100};
+        private int[] encoderLayerSizes = new int[] {100};
 
         /**
          * Size of the encoder layers, in units. Each encoder layer is functionally equivalent to a {@link
@@ -198,7 +195,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          *
          */
         @Getter
-        private int[] decoderLayerSizes = new int[]{100};
+        private int[] decoderLayerSizes = new int[] {100};
 
         /**
          * Size of the decoder layers, in units. Each decoder layer is functionally equivalent to a {@link

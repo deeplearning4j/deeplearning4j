@@ -1,15 +1,12 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
+ * This program and the accompanying materials are made available under the terms of the Apache License, Version 2.0
+ * which is available at https://www.apache.org/licenses/LICENSE-2.0.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -60,10 +57,10 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-            Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-            boolean initializeParams) {
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer ret =
-                new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(conf);
+                        new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -77,7 +74,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for Subsampling1D layer (layer name=\"" + getLayerName()
-                    + "\"): Expected RNN input, got " + inputType);
+                            + "\"): Expected RNN input, got " + inputType);
         }
         InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
         long inputTsLength = r.getTimeSeriesLength();
@@ -86,9 +83,8 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             //Probably: user did InputType.recurrent(x) without specifying sequence length
             outLength = -1;
         } else {
-            outLength = Convolution1DUtils
-                    .getOutputSize((int) inputTsLength, kernelSize[0], stride[0], padding[0], convolutionMode,
-                            dilation[0]);
+            outLength = Convolution1DUtils.getOutputSize((int) inputTsLength, kernelSize[0], stride[0], padding[0],
+                            convolutionMode, dilation[0]);
         }
         return InputType.recurrent(r.getSize(), outLength);
     }
@@ -102,7 +98,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Subsampling1D layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
 
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
@@ -130,7 +126,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     public static class Builder extends SubsamplingLayer.BaseSubsamplingBuilder<Builder> {
 
         private static final org.deeplearning4j.nn.conf.layers.PoolingType DEFAULT_POOLING =
-                org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
+                        org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
         private static final int DEFAULT_KERNEL = 2;
         private static final int DEFAULT_STRIDE = 1;
         private static final int DEFAULT_PADDING = 0;
@@ -172,19 +168,19 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         }
 
         public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int kernelSize, int stride,
-                int padding) {
-            super(poolingType, new int[]{kernelSize, 1}, new int[]{stride, 1}, new int[]{padding, 0});
+                        int padding) {
+            super(poolingType, new int[] {kernelSize, 1}, new int[] {stride, 1}, new int[] {padding, 0});
         }
 
         public Builder(PoolingType poolingType, int kernelSize, int stride, int padding) {
-            super(poolingType, new int[]{kernelSize, 1}, new int[]{stride, 1}, new int[]{padding, 0});
+            super(poolingType, new int[] {kernelSize, 1}, new int[] {stride, 1}, new int[] {padding, 0});
         }
 
         @SuppressWarnings("unchecked")
         public Subsampling1DLayer build() {
             if (poolingType == org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0) {
                 throw new IllegalStateException(
-                        "Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
+                                "Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
             }
             ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
