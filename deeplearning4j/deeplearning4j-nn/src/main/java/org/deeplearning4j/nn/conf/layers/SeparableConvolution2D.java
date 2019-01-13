@@ -219,6 +219,14 @@ public class SeparableConvolution2D extends ConvolutionLayer {
             return this;
         }
 
+        /**
+         * Set constraints to be applied to the point-wise convolution weight parameters of this layer. Default: no
+         * constraints.<br> Constraints can be used to enforce certain conditions (non-negativity of parameters,
+         * max-norm regularization, etc). These constraints are applied at each iteration, after the parameters have
+         * been updated.
+         */
+        @Getter
+        @Setter
         protected List<LayerConstraint> pointWiseConstraints;
 
         /**
