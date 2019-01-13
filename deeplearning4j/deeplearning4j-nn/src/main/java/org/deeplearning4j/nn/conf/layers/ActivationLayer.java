@@ -53,14 +53,14 @@ public class ActivationLayer extends NoParamLayer {
     /**
      * @param activation Activation function for the layer
      */
-    public ActivationLayer(Activation activation){
+    public ActivationLayer(Activation activation) {
         this(new Builder().activation(activation));
     }
 
     /**
      * @param activationFn Activation function for the layer
      */
-    public ActivationLayer(IActivation activationFn){
+    public ActivationLayer(IActivation activationFn) {
         this(new Builder().activation(activationFn));
     }
 
@@ -72,7 +72,7 @@ public class ActivationLayer extends NoParamLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.ActivationLayer ret = new org.deeplearning4j.nn.layers.ActivationLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
@@ -90,8 +90,9 @@ public class ActivationLayer extends NoParamLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null)
+        if (inputType == null) {
             throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
+        }
         return inputType;
     }
 
@@ -106,12 +107,12 @@ public class ActivationLayer extends NoParamLayer {
         val actElementsPerEx = inputType.arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(layerName, ActivationLayer.class, inputType, inputType)
-                        .standardMemory(0, 0) //No params
-                        //During inference: modify input activation in-place
-                        //During  backprop: dup the input for later re-use
-                        .workingMemory(0, 0, 0, actElementsPerEx)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                        .build();
+                .standardMemory(0, 0) //No params
+                //During inference: modify input activation in-place
+                //During  backprop: dup the input for later re-use
+                .workingMemory(0, 0, 0, actElementsPerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
     @Override
@@ -123,15 +124,17 @@ public class ActivationLayer extends NoParamLayer {
     @NoArgsConstructor
     public static class Builder extends org.deeplearning4j.nn.conf.layers.Layer.Builder<Builder> {
 
+        /**
+         * Activation function for the layer
+         */
         @Getter
         @Setter
         private IActivation activationFn = null;
 
         /**
-         * Layer activation function.
-         * Typical values include:<br>
-         * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
-         * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
+         * Layer activation function. Typical values include:<br> "relu" (rectified linear), "tanh", "sigmoid",
+         * "softmax", "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
+         *
          * @deprecated Use {@link #activation(Activation)} or {@link @activation(IActivation)}
          */
         @Deprecated

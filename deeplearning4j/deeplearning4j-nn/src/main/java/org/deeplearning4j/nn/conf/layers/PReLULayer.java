@@ -62,9 +62,9 @@ public class PReLULayer extends BaseLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.feedforward.PReLU ret =
-                        new org.deeplearning4j.nn.layers.feedforward.PReLU(conf);
+                new org.deeplearning4j.nn.layers.feedforward.PReLU(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -76,8 +76,9 @@ public class PReLULayer extends BaseLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null)
+        if (inputType == null) {
             throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
+        }
         return inputType;
     }
 
@@ -130,31 +131,42 @@ public class PReLULayer extends BaseLayer {
         val updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         return new LayerMemoryReport.Builder(layerName, PReLULayer.class, inputType, outputType)
-                        .standardMemory(numParams, updaterStateSize)
-                        .workingMemory(0, 0, 0, 0)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)
-                        .build();
+                .standardMemory(numParams, updaterStateSize)
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .build();
     }
 
     @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<PReLULayer.Builder> {
 
+        /**
+         * Explicitly set input shape of incoming activations so that parameters can be initialized properly. This
+         * explicitly excludes the mini-batch dimension.
+         *
+         */
         @Getter
         @Setter
         private long[] inputShape = null;
+
+        /**
+         * Set the broadcasting axes of PReLU's alpha parameter.
+         *
+         * For instance, given input data of shape [mb, channels, height, width], setting axes to [2,3] will set alpha
+         * to shape [channels, 1, 1] and broadcast alpha across height and width dimensions of each channel.
+         *
+         */
         @Getter
         @Setter
         private long[] sharedAxes = null;
 
         /**
-         * Explicitly set input shape of incoming activations so that parameters
-         * can be initialized properly. This explicitly excludes the mini-batch
-         * dimension.
+         * Explicitly set input shape of incoming activations so that parameters can be initialized properly. This
+         * explicitly excludes the mini-batch dimension.
          *
          * @param shape shape of input data
-         * @return
          */
-        public Builder inputShape(long... shape){
+        public Builder inputShape(long... shape) {
             this.inputShape = shape;
             return this;
         }
@@ -162,10 +174,8 @@ public class PReLULayer extends BaseLayer {
         /**
          * Set the broadcasting axes of PReLU's alpha parameter.
          *
-         * For instance, given input data of shape
-         * [mb, channels, height, width], setting axes to [2,3] will
-         * set alpha to shape [channels, 1, 1] and broadcast alpha across
-         * height and width dimensions of each channel.
+         * For instance, given input data of shape [mb, channels, height, width], setting axes to [2,3] will set alpha
+         * to shape [channels, 1, 1] and broadcast alpha across height and width dimensions of each channel.
          *
          * @param axes shared/broadcasting axes
          * @return Builder

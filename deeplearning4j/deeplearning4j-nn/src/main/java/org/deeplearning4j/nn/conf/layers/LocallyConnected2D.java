@@ -220,48 +220,100 @@ public class LocallyConnected2D extends SameDiffLayer {
 
     public static class Builder extends SameDiffLayer.Builder<Builder> {
 
+        /**
+         * Number of inputs to the layer (input size)
+         */
         @Getter
         @Setter
         private int nIn;
+
+        /**
+         * Number of outputs (output size)
+         */
         @Getter
         @Setter
         private int nOut;
+
+        /**
+         * Activation function for the layer
+         */
         @Getter
         @Setter
         private Activation activation = Activation.TANH;
+
+        /**
+         * Kernel size for the layer. Must be 2 values (height/width)
+         */
         @Getter
         private int[] kernel = new int[]{2, 2};
 
+        /**
+         * @param kernel Kernel size for the layer. Must be 2 values (height/width)
+         */
         public void setKernel(int[] kernel) {
             Preconditions.checkArgument(kernel.length == 2, "Must have 2 kernel values - got %s", kernel);
             this.kernel = kernel;
         }
+
+        /**
+         * Stride for the layer. Must be 2 values (height/width)
+         */
         @Getter
         private int[] stride = new int[]{1, 1};
 
+        /**
+         * @param stride Stride for the layer. Must be 2 values (height/width)
+         */
         public void setStride(int[] stride) {
             Preconditions.checkArgument(stride.length == 2, "Must have 2 stride values - got %s", stride);
             this.stride = stride;
         }
+
+        /**
+         * Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
+         */
         @Getter
         private int[] padding = new int[]{0, 0};
 
+        /**
+         * @param padding Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
+         */
         public void setPadding(int[] padding) {
             Preconditions.checkArgument(padding.length == 2, "Must have 2 padding values - got %s", padding);
             this.padding = padding;
         }
+
+        /**
+         * Dilation for the layer. Must be 2 values (height/width)
+         */
         @Getter
         private int[] dilation = new int[]{1, 1};
 
+        /**
+         * @param dilation Dilation for the layer. Must be 2 values (height/width)
+         */
         public void setDilation(int[] dilation) {
             Preconditions.checkArgument(dilation.length == 2, "Must have 2 dilation values - got %s", dilation);
             this.dilation = dilation;
         }
+
+        /**
+         * Set input filter size (h,w) for this locally connected 2D layer
+         *
+         */
         @Getter
         private int[] inputSize;
+
+        /**
+         * Convolution mode for the layer. See {@link ConvolutionMode} for details
+         */
         @Getter
         @Setter
         private ConvolutionMode cm = ConvolutionMode.Same;
+
+        /**
+         * If true (default is false) the layer will have a bias
+         */
         @Getter
         @Setter
         private boolean hasBias = true;

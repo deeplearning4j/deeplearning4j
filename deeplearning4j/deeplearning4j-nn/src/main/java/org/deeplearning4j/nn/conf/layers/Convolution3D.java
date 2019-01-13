@@ -46,10 +46,10 @@ import java.util.Map;
 public class Convolution3D extends ConvolutionLayer {
 
     /**
-     * An optional dataFormat: "NDHWC" or "NCDHW". Defaults to "NCDHW".<br>
-     * The data format of the input and output data. <br>
-     * For "NCDHW" (also known as 'channels first' format), the data storage order is: [batchSize, inputChannels, inputDepth, inputHeight, inputWidth].<br>
-     * For "NDHWC" ('channels last' format), the data is stored in the order of: [batchSize, inputDepth, inputHeight, inputWidth, inputChannels].
+     * An optional dataFormat: "NDHWC" or "NCDHW". Defaults to "NCDHW".<br> The data format of the input and output
+     * data. <br> For "NCDHW" (also known as 'channels first' format), the data storage order is: [batchSize,
+     * inputChannels, inputDepth, inputHeight, inputWidth].<br> For "NDHWC" ('channels last' format), the data is stored
+     * in the order of: [batchSize, inputDepth, inputHeight, inputWidth, inputChannels].
      */
     public enum DataFormat {
         NCDHW, NDHWC
@@ -59,11 +59,9 @@ public class Convolution3D extends ConvolutionLayer {
     private DataFormat dataFormat = DataFormat.NCDHW; // in libnd4j: 1 - NCDHW, 0 - NDHWC
 
     /**
-     * 3-dimensional convolutional layer configuration
-     * nIn in the input layer is the number of channels
-     * nOut is the number of filters to be used in the net or in other words the depth
-     * The builder specifies the filter/kernel size, the stride and padding
-     * The pooling layer takes the kernel size
+     * 3-dimensional convolutional layer configuration nIn in the input layer is the number of channels nOut is the
+     * number of filters to be used in the net or in other words the depth The builder specifies the filter/kernel size,
+     * the stride and padding The pooling layer takes the kernel size
      */
     public Convolution3D(Builder builder) {
         super(builder);
@@ -79,20 +77,24 @@ public class Convolution3D extends ConvolutionLayer {
     @Override
     public Convolution3D clone() {
         Convolution3D clone = (Convolution3D) super.clone();
-        if (clone.kernelSize != null)
+        if (clone.kernelSize != null) {
             clone.kernelSize = clone.kernelSize.clone();
-        if (clone.stride != null)
+        }
+        if (clone.stride != null) {
             clone.stride = clone.stride.clone();
-        if (clone.padding != null)
+        }
+        if (clone.padding != null) {
             clone.padding = clone.padding.clone();
-        if (clone.dilation != null)
+        }
+        if (clone.dilation != null) {
             clone.dilation = clone.dilation.clone();
+        }
         return clone;
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> iterationListeners,
-                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("Convolution3D", getLayerName(), layerIndex, getNIn(), getNOut());
 
         Convolution3DLayer ret = new Convolution3DLayer(conf);
@@ -147,6 +149,11 @@ public class Convolution3D extends ConvolutionLayer {
     @AllArgsConstructor
     public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
 
+        /**
+         * The data format for input and output activations.<br> NCDHW: activations (in/out) should have shape
+         * [minibatch, channels, depth, height, width]<br> NDHWC: activations (in/out) should have shape [minibatch,
+         * depth, height, width, channels]<br>
+         */
         @Getter
         @Setter
         private DataFormat dataFormat = DataFormat.NCDHW;
@@ -164,15 +171,15 @@ public class Convolution3D extends ConvolutionLayer {
         }
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
-            this(kernelSize, stride, padding, new int[]{1,1,1});
+            this(kernelSize, stride, padding, new int[]{1, 1, 1});
         }
 
         public Builder(int[] kernelSize, int[] stride) {
-            this(kernelSize, stride, new int[]{0,0,0});
+            this(kernelSize, stride, new int[]{0, 0, 0});
         }
 
         public Builder(int... kernelSize) {
-            this(kernelSize, new int[]{1,1,1});
+            this(kernelSize, new int[]{1, 1, 1});
         }
 
         /**
@@ -230,9 +237,9 @@ public class Convolution3D extends ConvolutionLayer {
         }
 
         /**
-         * The data format for input and output activations.<br>
-         * NCDHW: activations (in/out) should have shape [minibatch, channels, depth, height, width]<br>
-         * NDHWC: activations (in/out) should have shape [minibatch, depth, height, width, channels]<br>
+         * The data format for input and output activations.<br> NCDHW: activations (in/out) should have shape
+         * [minibatch, channels, depth, height, width]<br> NDHWC: activations (in/out) should have shape [minibatch,
+         * depth, height, width, channels]<br>
          *
          * @param dataFormat Data format to use for activations
          */
@@ -240,6 +247,47 @@ public class Convolution3D extends ConvolutionLayer {
             this.dataFormat = dataFormat;
             return this;
         }
+
+        /**
+         * Set kernel size for 3D convolutions in (depth, height, width) order
+         *
+         * @param kernelSize kernel size
+         */
+        @Override
+        public void setKernelSize(int[] kernelSize) {
+            kernelSize(kernelSize);
+        }
+
+        /**
+         * Set stride size for 3D convolutions in (depth, height, width) order
+         *
+         * @param stride kernel size
+         */
+        @Override
+        public void setStride(int[] stride) {
+            stride(stride);
+        }
+
+        /**
+         * Set padding size for 3D convolutions in (depth, height, width) order
+         *
+         * @param padding kernel size
+         */
+        @Override
+        public void setPadding(int[] padding) {
+            padding(padding);
+        }
+
+        /**
+         * Set dilation size for 3D convolutions in (depth, height, width) order
+         *
+         * @param dilation kernel size
+         */
+        @Override
+        public void setDilation(int[] dilation) {
+            dilation(dilation);
+        }
+
 
 
         @Override

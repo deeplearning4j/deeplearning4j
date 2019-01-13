@@ -38,7 +38,7 @@ import java.util.Map;
 /**
  * A version of {@link OutputLayer} for recurrent neural networks. Expects inputs of size [minibatch,nIn,sequenceLength]
  * and labels of shape [minibatch,nOut,sequenceLength]. It also supports mask arrays.
- *<br>
+ * <br>
  * Note that RnnOutputLayer can also be used for 1D CNN layers, which also have [minibatch,nOut,sequenceLength]
  * activations/labels shape.
  *
@@ -57,11 +57,11 @@ public class RnnOutputLayer extends BaseOutputLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("RnnOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer ret =
-                        new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
+                new org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -80,7 +80,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer index = " + layerIndex
-                            + ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
+                    + ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
         }
         InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
 
@@ -91,7 +91,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer name=\"" + getLayerName()
-                            + "\"): Expected RNN input, got " + inputType);
+                    + "\"): Expected RNN input, got " + inputType);
         }
 
         if (nIn <= 0 || override) {

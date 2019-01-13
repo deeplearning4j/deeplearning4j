@@ -33,8 +33,8 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * 1D (temporal) subsampling layer - also known as pooling layer.<br>
- * Expects input of shape {@code [minibatch, nIn, sequenceLength]}. This layer accepts RNN InputTypes instead of CNN InputTypes.<br>
+ * 1D (temporal) subsampling layer - also known as pooling layer.<br> Expects input of shape {@code [minibatch, nIn,
+ * sequenceLength]}. This layer accepts RNN InputTypes instead of CNN InputTypes.<br>
  *
  * Supports the following pooling types: MAX, AVG, SUM, PNORM
  *
@@ -60,8 +60,8 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                                                       boolean initializeParams) {
+            Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer ret =
                 new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(conf);
         ret.setListeners(trainingListeners);
@@ -79,14 +79,16 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             throw new IllegalStateException("Invalid input for Subsampling1D layer (layer name=\"" + getLayerName()
                     + "\"): Expected RNN input, got " + inputType);
         }
-        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent)inputType;
+        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
         long inputTsLength = r.getTimeSeriesLength();
         int outLength;
-        if(inputTsLength < 0){
+        if (inputTsLength < 0) {
             //Probably: user did InputType.recurrent(x) without specifying sequence length
             outLength = -1;
         } else {
-            outLength = Convolution1DUtils.getOutputSize((int)inputTsLength, kernelSize[0], stride[0], padding[0], convolutionMode, dilation[0]);
+            outLength = Convolution1DUtils
+                    .getOutputSize((int) inputTsLength, kernelSize[0], stride[0], padding[0], convolutionMode,
+                            dilation[0]);
         }
         return InputType.recurrent(r.getSize(), outLength);
     }
@@ -110,18 +112,23 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     public Subsampling1DLayer clone() {
         Subsampling1DLayer clone = (Subsampling1DLayer) super.clone();
 
-        if (clone.kernelSize != null)
+        if (clone.kernelSize != null) {
             clone.kernelSize = clone.kernelSize.clone();
-        if (clone.stride != null)
+        }
+        if (clone.stride != null) {
             clone.stride = clone.stride.clone();
-        if (clone.padding != null)
+        }
+        if (clone.padding != null) {
             clone.padding = clone.padding.clone();
-        if (clone.dilation != null)
+        }
+        if (clone.dilation != null) {
             clone.dilation = clone.dilation.clone();
+        }
         return clone;
     }
 
     public static class Builder extends SubsamplingLayer.BaseSubsamplingBuilder<Builder> {
+
         private static final org.deeplearning4j.nn.conf.layers.PoolingType DEFAULT_POOLING =
                 org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
         private static final int DEFAULT_KERNEL = 2;
@@ -165,7 +172,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         }
 
         public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int kernelSize, int stride,
-                       int padding) {
+                int padding) {
             super(poolingType, new int[]{kernelSize, 1}, new int[]{stride, 1}, new int[]{padding, 0});
         }
 
@@ -175,9 +182,10 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
         @SuppressWarnings("unchecked")
         public Subsampling1DLayer build() {
-            if (poolingType == org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0)
+            if (poolingType == org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0) {
                 throw new IllegalStateException(
                         "Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
+            }
             ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
@@ -214,18 +222,33 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             return this;
         }
 
+        /**
+         * Kernel size
+         *
+         * @param kernelSize kernel size
+         */
         @Override
         public void setKernelSize(int[] kernelSize) {
             Preconditions.checkArgument(kernelSize.length == 1, "Must have 1 kernelSize value - got %s", kernelSize);
             super.setKernelSize(kernelSize);
         }
 
+        /**
+         * Stride
+         *
+         * @param stride stride value
+         */
         @Override
         public void setStride(int[] stride) {
             Preconditions.checkArgument(stride.length == 1, "Must have 1 stride value - got %s", stride);
             super.setStride(stride);
         }
 
+        /**
+         * Padding
+         *
+         * @param padding padding value
+         */
         @Override
         public void setPadding(int[] padding) {
             Preconditions.checkArgument(kernelSize.length == 1, "Must have 1 padding value - got %s", padding);

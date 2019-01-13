@@ -32,10 +32,9 @@ import java.util.*;
 /**
  * 2D depth-wise convolution layer configuration.
  * <p>
- * Performs a channels-wise convolution, which
- * operates on each of the input maps separately. A channel multiplier is used to
- * specify the number of outputs per input map. This convolution
- * is carried out with the specified kernel sizes, stride and padding values.
+ * Performs a channels-wise convolution, which operates on each of the input maps separately. A channel multiplier is
+ * used to specify the number of outputs per input map. This convolution is carried out with the specified kernel sizes,
+ * stride and padding values.
  *
  * @author Max Pumperla
  */
@@ -65,7 +64,7 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet(
                 "DepthwiseConvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
 
@@ -92,7 +91,6 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
                     + getLayerName() + "\"): Expected CNN input, got " + inputType);
         }
 
-
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation,
                 convolutionMode, nOut, layerIndex, getLayerName(), DepthwiseConvolution2DLayer.class);
     }
@@ -100,6 +98,10 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
 
     public static class Builder extends BaseConvBuilder<Builder> {
 
+        /**
+         * Set channels multiplier for depth-wise convolution
+         *
+         */
         @Getter
         @Setter
         public int depthMultiplier = 1;
@@ -123,8 +125,8 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
         /**
          * Set channels multiplier for depth-wise convolution
          *
-         * @param depthMultiplier integer value, for each input map we get depthMultiplier
-         *                        outputs in channels-wise step.
+         * @param depthMultiplier integer value, for each input map we get depthMultiplier outputs in channels-wise
+         * step.
          * @return Builder
          */
         public Builder depthMultiplier(int depthMultiplier) {

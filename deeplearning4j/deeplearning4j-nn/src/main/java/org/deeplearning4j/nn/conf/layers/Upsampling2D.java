@@ -32,12 +32,9 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Upsampling 2D layer<br>
- * Repeats each value (or rather, set of depth values) in the height and width dimensions by size[0] and size[1]
- * times respectively.<br>
- * If input has shape {@code [minibatch, channels, height, width]} then output has shape
- * {@code [minibatch, channels, height*size[0], width*size[1]]}<br>
- * Example:
+ * Upsampling 2D layer<br> Repeats each value (or rather, set of depth values) in the height and width dimensions by
+ * size[0] and size[1] times respectively.<br> If input has shape {@code [minibatch, channels, height, width]} then
+ * output has shape {@code [minibatch, channels, height*size[0], width*size[1]]}<br> Example:
  * <pre>
  * Input (slice for one example and channel)
  * [ A, B ]
@@ -59,7 +56,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class Upsampling2D extends BaseUpsamplingLayer {
 
-    @JsonDeserialize(using= LegacyIntArrayDeserializer.class)
+    @JsonDeserialize(using = LegacyIntArrayDeserializer.class)
     protected int[] size;
 
     protected Upsampling2D(UpsamplingBuilder builder) {
@@ -75,8 +72,8 @@ public class Upsampling2D extends BaseUpsamplingLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                                                       boolean initializeParams) {
+            Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D ret =
                 new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D(conf);
         ret.setListeners(trainingListeners);

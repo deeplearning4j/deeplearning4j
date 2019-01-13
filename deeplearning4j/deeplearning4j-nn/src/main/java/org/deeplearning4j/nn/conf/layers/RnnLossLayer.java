@@ -37,13 +37,12 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Recurrent Neural Network Loss Layer.<br>
- * Handles calculation of gradients etc for various objective (loss) functions.<br>
- * Note: Unlike {@link RnnOutputLayer} this RnnLossLayer does not have any parameters - i.e., there is no time
- * distributed dense component here. Consequently, the output activations size is equal to the input size.<br>
+ * Recurrent Neural Network Loss Layer.<br> Handles calculation of gradients etc for various objective (loss)
+ * functions.<br> Note: Unlike {@link RnnOutputLayer} this RnnLossLayer does not have any parameters - i.e., there is no
+ * time distributed dense component here. Consequently, the output activations size is equal to the input size.<br>
  * Input and output activations are same as other RNN layers: 3 dimensions with shape
- * [miniBatchSize,nIn,timeSeriesLength] and [miniBatchSize,nOut,timeSeriesLength] respectively.<br>
- * Note that RnnLossLayer also has the option to configure an activation function
+ * [miniBatchSize,nIn,timeSeriesLength] and [miniBatchSize,nOut,timeSeriesLength] respectively.<br> Note that
+ * RnnLossLayer also has the option to configure an activation function
  *
  * @author Alex Black
  * @see RnnOutputLayer
@@ -63,9 +62,9 @@ public class RnnLossLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.recurrent.RnnLossLayer ret =
-                        new org.deeplearning4j.nn.layers.recurrent.RnnLossLayer(conf);
+                new org.deeplearning4j.nn.layers.recurrent.RnnLossLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -84,7 +83,7 @@ public class RnnLossLayer extends FeedForwardLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input type for RnnLossLayer (layer index = " + layerIndex
-                            + ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
+                    + ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
         }
         return inputType;
     }
@@ -97,7 +96,8 @@ public class RnnLossLayer extends FeedForwardLayer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         //During inference and training: dup the input array. But, this counts as *activations* not working memory
-        return new LayerMemoryReport.Builder(layerName, LossLayer.class, inputType, inputType).standardMemory(0, 0) //No params
+        return new LayerMemoryReport.Builder(layerName, LossLayer.class, inputType, inputType)
+                .standardMemory(0, 0) //No params
                 .workingMemory(0, 0, 0, 0)
                 .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
                 .build();

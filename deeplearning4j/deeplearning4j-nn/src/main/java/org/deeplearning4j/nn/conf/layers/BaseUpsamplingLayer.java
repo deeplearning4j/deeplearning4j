@@ -51,7 +51,7 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Upsampling layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+                    + "\"): input is null");
         }
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
@@ -59,10 +59,16 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
 
     @NoArgsConstructor
     protected static abstract class UpsamplingBuilder<T extends UpsamplingBuilder<T>>
-                    extends Layer.Builder<T> {
+            extends Layer.Builder<T> {
+
+        /**
+         * An int array to specify upsampling dimensions, the length of which has to equal to the number of spatial
+         * dimensions (e.g. 2 for Upsampling2D etc.)
+         *
+         */
         @Getter
         @Setter
-        protected int[] size = new int[] {1};
+        protected int[] size = new int[]{1};
 
         /**
          * A single size integer is used for upsampling in all spatial dimensions
@@ -70,12 +76,12 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
          * @param size int for upsampling
          */
         protected UpsamplingBuilder(int size) {
-            this.size = new int[] {size};
+            this.size = new int[]{size};
         }
 
         /**
-         * An int array to specify upsampling dimensions, the length of which has to equal to the number of
-         * spatial dimensions (e.g. 2 for Upsampling2D etc.)
+         * An int array to specify upsampling dimensions, the length of which has to equal to the number of spatial
+         * dimensions (e.g. 2 for Upsampling2D etc.)
          *
          * @param size int for upsampling
          */

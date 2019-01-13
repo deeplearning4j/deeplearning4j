@@ -37,10 +37,10 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * LossLayer is a flexible output layer that performs a loss function on an input without MLP logic.<br>
- * LossLayer is similar to {@link OutputLayer} in that both perform loss calculations for network outputs vs. labels,
- * but LossLayer does not have any parameters. Consequently, setting nIn/nOut isn't supported - the output size
- * is the same size as the input activations.
+ * LossLayer is a flexible output layer that performs a loss function on an input without MLP logic.<br> LossLayer is
+ * similar to {@link OutputLayer} in that both perform loss calculations for network outputs vs. labels, but LossLayer
+ * does not have any parameters. Consequently, setting nIn/nOut isn't supported - the output size is the same size as
+ * the input activations.
  *
  * @author Justin Long (crockpotveggies)
  */
@@ -49,6 +49,7 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class LossLayer extends FeedForwardLayer {
+
     protected ILossFunction lossFn;
 
     protected LossLayer(Builder builder) {
@@ -58,7 +59,7 @@ public class LossLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.LossLayer ret = new org.deeplearning4j.nn.layers.LossLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
@@ -77,10 +78,11 @@ public class LossLayer extends FeedForwardLayer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         //During inference and training: dup the input array. But, this counts as *activations* not working memory
-        return new LayerMemoryReport.Builder(layerName, LossLayer.class, inputType, inputType).standardMemory(0, 0) //No params
-                        .workingMemory(0, 0, 0, 0)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                        .build();
+        return new LayerMemoryReport.Builder(layerName, LossLayer.class, inputType, inputType)
+                .standardMemory(0, 0) //No params
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
     @Override

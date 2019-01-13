@@ -43,7 +43,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
         this.hasBias = builder.hasBias;
     }
 
-    public boolean hasBias(){
+    public boolean hasBias() {
         return hasBias;
     }
 
@@ -74,22 +74,33 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
         trainSizeVariable += outputType.arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(layerName, OutputLayer.class, inputType, outputType)
-                        .standardMemory(numParams, updaterStateSize)
-                        .workingMemory(0, 0, trainSizeFixed, trainSizeVariable) //No additional memory (beyond activations) for inference
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                        .build();
+                .standardMemory(numParams, updaterStateSize)
+                .workingMemory(0, 0, trainSizeFixed,
+                        trainSizeVariable) //No additional memory (beyond activations) for inference
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
 
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+
+        /**
+         * Loss function for the output layer
+         */
         @Getter
         @Setter
         protected ILossFunction lossFn = new LossMCXENT();
+
+        /**
+         * If true (default): include bias parameters in the model. False: no bias.
+         *
+         */
         @Getter
         @Setter
         private boolean hasBias = true;
 
-        public Builder() {}
+        public Builder() {
+        }
 
         /**
          * @param lossFunction Loss function for the output layer
@@ -117,9 +128,9 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
          *
          * @param hasBias If true: include bias parameters in this model
          */
-        public T hasBias(boolean hasBias){
+        public T hasBias(boolean hasBias) {
             this.hasBias = hasBias;
-            return (T)this;
+            return (T) this;
         }
 
         /**

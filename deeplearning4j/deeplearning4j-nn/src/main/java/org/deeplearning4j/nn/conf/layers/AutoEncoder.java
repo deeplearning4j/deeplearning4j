@@ -31,15 +31,14 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Autoencoder layer.
- * Adds noise to input and learn a reconstruction function.
- *
+ * Autoencoder layer. Adds noise to input and learn a reconstruction function.
  */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class AutoEncoder extends BasePretrainNetwork {
+
     protected double corruptionLevel;
     protected double sparsity;
 
@@ -53,9 +52,9 @@ public class AutoEncoder extends BasePretrainNetwork {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder ret =
-                        new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf);
+                new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -95,24 +94,36 @@ public class AutoEncoder extends BasePretrainNetwork {
         trainSizePerEx += actElementsPerEx;
 
         return new LayerMemoryReport.Builder(layerName, AutoEncoder.class, inputType, outputType)
-                        .standardMemory(numParams, updaterStateSize).workingMemory(0, 0, 0, trainSizePerEx)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                        .build();
+                .standardMemory(numParams, updaterStateSize).workingMemory(0, 0, 0, trainSizePerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
     @AllArgsConstructor
     public static class Builder extends BasePretrainNetwork.Builder<Builder> {
+
+        /**
+         * Level of corruption - 0.0 (none) to 1.0 (all values corrupted)
+         *
+         */
         @Getter
         @Setter
         private double corruptionLevel = 3e-1f;
+
+        /**
+         * Autoencoder sparity parameter
+         *
+         */
         @Getter
         @Setter
         private double sparsity = 0f;
 
-        public Builder() {}
+        public Builder() {
+        }
 
         /**
          * Builder - sets the level of corruption - 0.0 (none) to 1.0 (all values corrupted)
+         *
          * @param corruptionLevel Corruption level (0 to 1)
          */
         public Builder(double corruptionLevel) {
@@ -121,6 +132,7 @@ public class AutoEncoder extends BasePretrainNetwork {
 
         /**
          * Level of corruption - 0.0 (none) to 1.0 (all values corrupted)
+         *
          * @param corruptionLevel Corruption level (0 to 1)
          */
         public Builder corruptionLevel(double corruptionLevel) {
@@ -130,6 +142,7 @@ public class AutoEncoder extends BasePretrainNetwork {
 
         /**
          * Autoencoder sparity parameter
+         *
          * @param sparsity Sparsity
          */
         public Builder sparsity(double sparsity) {

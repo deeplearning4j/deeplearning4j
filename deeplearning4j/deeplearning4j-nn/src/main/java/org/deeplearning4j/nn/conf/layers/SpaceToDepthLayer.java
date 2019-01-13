@@ -33,11 +33,10 @@ import java.util.Map;
 /**
  * Space to channels utility layer configuration for convolutional input types.
  * <p>
- * This operation takes 4D array in, in either NCHW or NHWC format, and moves data from spatial dimensions (HW)
- * to channels (C) for given blockSize.<br>
- * The idea is that blocks of the input of size [blockSize,blockSize] are moved from the spatial dimension
- * to the depth dimension.<br>
- * Thus, for NCHW input format, input shape {@code [mb, inChannels, H, W]}, output has shape {@code [mb, inChannels * blockSize * blockSize, H/blockSize, W/blockSize]}
+ * This operation takes 4D array in, in either NCHW or NHWC format, and moves data from spatial dimensions (HW) to
+ * channels (C) for given blockSize.<br> The idea is that blocks of the input of size [blockSize,blockSize] are moved
+ * from the spatial dimension to the depth dimension.<br> Thus, for NCHW input format, input shape {@code [mb,
+ * inChannels, H, W]}, output has shape {@code [mb, inChannels * blockSize * blockSize, H/blockSize, W/blockSize]}
  * <p></p>
  * Example:
  * <pre>
@@ -46,7 +45,6 @@ import java.util.Map;
  * input shape =  [128, 16, 16, 3]
  * output shape = [128, 16/4, 16/4, 3*4*4]
  * </pre>
- *
  *
  * @author Max Pumperla
  */
@@ -78,9 +76,9 @@ public class SpaceToDepthLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> trainingListeners,
-                                                       int layerIndex, INDArray layerParamsView,
-                                                       boolean initializeParams) {
+            Collection<TrainingListener> trainingListeners,
+            int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.SpaceToDepth ret =
                 new org.deeplearning4j.nn.layers.convolution.SpaceToDepth(conf);
         ret.setListeners(trainingListeners);
@@ -154,10 +152,15 @@ public class SpaceToDepthLayer extends NoParamLayer {
 
 
     @NoArgsConstructor
-    public static class Builder<T extends Builder<T>> extends Layer.Builder<T>{
+    public static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
+
         @Getter
         @Setter
         protected int blockSize;
+
+        /**
+         * Data format for input activations. Note DL4J uses NCHW in most cases
+         */
         @Getter
         @Setter
         protected DataFormat dataFormat = DataFormat.NCHW;
@@ -170,7 +173,7 @@ public class SpaceToDepthLayer extends NoParamLayer {
         }
 
         /**
-         * @param blockSize  Block size
+         * @param blockSize Block size
          * @param dataFormat Data format for input activations. Note DL4J uses NCHW in most cases
          */
         public Builder(int blockSize, DataFormat dataFormat) {

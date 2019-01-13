@@ -163,12 +163,15 @@ public class SameDiffConv extends SameDiffLayer {
         @Getter
         @Setter
         private int nIn;
+
         @Getter
         @Setter
         private int nOut;
+
         @Getter
         @Setter
         private Activation activation = Activation.TANH;
+
         @Getter
         private int[] kernel = new int[]{2, 2};
 

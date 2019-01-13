@@ -126,9 +126,11 @@ public class SameDiffDense extends SameDiffLayer {
         @Getter
         @Setter
         private int nIn;
+
         @Getter
         @Setter
         private int nOut;
+
         @Getter
         @Setter
         private Activation activation;

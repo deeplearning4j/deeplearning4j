@@ -72,14 +72,17 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
     }
 
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+
         @Getter
         @Setter
         protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
+
         @Getter
         @Setter
         protected double visibleBiasInit = 0.0;
 
-        public Builder() {}
+        public Builder() {
+        }
 
         public T lossFunction(LossFunctions.LossFunction lossFunction) {
             this.lossFunction = lossFunction;

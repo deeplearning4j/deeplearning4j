@@ -34,8 +34,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Zero padding 3D layer for convolutional neural networks.
- * Allows padding to be done separately for "left" and "right"
+ * Zero padding 3D layer for convolutional neural networks. Allows padding to be done separately for "left" and "right"
  * in all three spatial dimensions.
  *
  * @author Max Pumperla
@@ -54,9 +53,9 @@ public class ZeroPadding3DLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> iterationListeners,
-                                                       int layerIndex, INDArray layerParamsView,
-                                                       boolean initializeParams) {
+            Collection<TrainingListener> iterationListeners,
+            int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.ZeroPadding3DLayer ret =
                 new org.deeplearning4j.nn.layers.convolution.ZeroPadding3DLayer(conf);
         ret.setListeners(iterationListeners);
@@ -131,10 +130,16 @@ public class ZeroPadding3DLayer extends NoParamLayer {
 
     public static class Builder extends Layer.Builder<Builder> {
 
+        /**
+         * [padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW]
+         */
         @Getter
-        private int[] padding = new int[]{0, 0, 0, 0, 0, 0}; // [padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW]
+        private int[] padding = new int[]{0, 0, 0, 0, 0,
+                0};
 
-
+        /**
+         * [padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW]
+         */
         public void setPadding(int[] padding) {
             if (padding.length == 3) {
                 this.padding = new int[]{padding[0], padding[0], padding[1], padding[1], padding[2], padding[2]};
@@ -177,8 +182,8 @@ public class ZeroPadding3DLayer extends NoParamLayer {
          * @param padRightW Width padding right
          */
         public Builder(int padLeftD, int padRightD,
-                       int padLeftH, int padRightH,
-                       int padLeftW, int padRightW) {
+                int padLeftH, int padRightH,
+                int padLeftW, int padRightW) {
             this(new int[]{padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW});
         }
 
@@ -198,9 +203,10 @@ public class ZeroPadding3DLayer extends NoParamLayer {
         @SuppressWarnings("unchecked")
         public ZeroPadding3DLayer build() {
             for (int p : padding) {
-                if (p < 0)
+                if (p < 0) {
                     throw new IllegalStateException("Invalid zero padding layer config: padding [left, right]"
                             + " must be > 0 for all elements. Got: " + Arrays.toString(padding));
+                }
             }
             return new ZeroPadding3DLayer(this);
         }

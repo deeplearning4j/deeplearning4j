@@ -67,7 +67,7 @@ public class CustomLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> iterationListeners,
-                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         //The instantiate method is how we go from the configuration class (i.e., this class) to the implementation class
         // (i.e., a CustomLayerImpl instance)
         //For the most part, it's the same for each type of layer
@@ -112,11 +112,11 @@ public class CustomLayer extends FeedForwardLayer {
         InputType outputType = getOutputType(-1, inputType);
 
         val numParams = initializer().numParams(this);
-        int updaterStateSize = (int)getIUpdater().stateSize(numParams);
+        int updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         int trainSizeFixed = 0;
         int trainSizeVariable = 0;
-        if(getIDropout() != null){
+        if (getIDropout() != null) {
             //Assume we dup the input for dropout
             trainSizeVariable += inputType.arrayElementsPerExample();
         }
@@ -127,10 +127,12 @@ public class CustomLayer extends FeedForwardLayer {
         trainSizeVariable += outputType.arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(layerName, CustomLayer.class, inputType, outputType)
-            .standardMemory(numParams, updaterStateSize)
-            .workingMemory(0, 0, trainSizeFixed, trainSizeVariable)     //No additional memory (beyond activations) for inference
-            .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching in DenseLayer
-            .build();
+                .standardMemory(numParams, updaterStateSize)
+                .workingMemory(0, 0, trainSizeFixed,
+                        trainSizeVariable)     //No additional memory (beyond activations) for inference
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS,
+                        MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching in DenseLayer
+                .build();
     }
 
 
@@ -158,7 +160,7 @@ public class CustomLayer extends FeedForwardLayer {
          *
          * @param secondActivationFunction Second activation function for the layer
          */
-        public Builder secondActivationFunction(Activation secondActivationFunction){
+        public Builder secondActivationFunction(Activation secondActivationFunction) {
             this.secondActivationFunction = secondActivationFunction.getActivationFunction();
             return this;
         }

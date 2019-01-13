@@ -31,10 +31,9 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Upsampling 3D layer<br>
- * Repeats each value (all channel values for each x/y/z location) by size[0], size[1] and size[2]<br>
- * If input has shape {@code [minibatch, channels, depth, height, width]} then output has shape
- * {@code [minibatch, channels, size[0] * depth, size[1] * height, size[2] * width]}
+ * Upsampling 3D layer<br> Repeats each value (all channel values for each x/y/z location) by size[0], size[1] and
+ * size[2]<br> If input has shape {@code [minibatch, channels, depth, height, width]} then output has shape {@code
+ * [minibatch, channels, size[0] * depth, size[1] * height, size[2] * width]}
  *
  * @author Max Pumperla
  */
@@ -58,9 +57,9 @@ public class Upsampling3D extends BaseUpsamplingLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> iterationListeners,
-                                                       int layerIndex, INDArray layerParamsView,
-                                                       boolean initializeParams) {
+            Collection<TrainingListener> iterationListeners,
+            int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling3D ret =
                 new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling3D(conf);
         ret.setListeners(iterationListeners);
@@ -87,7 +86,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
         int inChannels = (int) i.getChannels();
 
         return InputType.convolutional3D(
-                size[0] * inDepth,size[1] * inHeight, size[2] * inWidth,  inChannels);
+                size[0] * inDepth, size[1] * inHeight, size[2] * inWidth, inChannels);
     }
 
     @Override
@@ -128,7 +127,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
     public static class Builder extends UpsamplingBuilder<Builder> {
 
         public Builder(int size) {
-            super(new int[] {size, size, size});
+            super(new int[]{size, size, size});
         }
 
         /**
@@ -138,7 +137,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
          */
         public Builder size(int size) {
 
-            this.size = new int[] {size, size, size};
+            this.size = new int[]{size, size, size};
             return this;
         }
 

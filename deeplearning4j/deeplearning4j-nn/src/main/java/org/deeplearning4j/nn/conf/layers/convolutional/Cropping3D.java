@@ -38,9 +38,8 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Cropping layer for convolutional (3d) neural networks.
- * Allows cropping to be done separately for upper and lower bounds of
- * depth, height and width dimensions.
+ * Cropping layer for convolutional (3d) neural networks. Allows cropping to be done separately for upper and lower
+ * bounds of depth, height and width dimensions.
  *
  * @author Max Pumperla
  */
@@ -52,20 +51,20 @@ public class Cropping3D extends NoParamLayer {
     private int[] cropping;
 
     /**
-     * @param cropDepth  Amount of cropping to apply to both depth boundaries of the input activations
+     * @param cropDepth Amount of cropping to apply to both depth boundaries of the input activations
      * @param cropHeight Amount of cropping to apply to both height boundaries of the input activations
-     * @param cropWidth  Amount of cropping to apply to both width boundaries of the input activations
+     * @param cropWidth Amount of cropping to apply to both width boundaries of the input activations
      */
     public Cropping3D(int cropDepth, int cropHeight, int cropWidth) {
         this(cropDepth, cropDepth, cropHeight, cropHeight, cropWidth, cropWidth);
     }
 
     /**
-     * @param cropLeftD  Amount of cropping to apply to the left of the depth dimension
+     * @param cropLeftD Amount of cropping to apply to the left of the depth dimension
      * @param cropRightD Amount of cropping to apply to the right of the depth dimension
-     * @param cropLeftH  Amount of cropping to apply to the left of the height dimension
+     * @param cropLeftH Amount of cropping to apply to the left of the height dimension
      * @param cropRightH Amount of cropping to apply to the right of the height dimension
-     * @param cropLeftW  Amount of cropping to apply to the left of the width dimension
+     * @param cropLeftW Amount of cropping to apply to the left of the width dimension
      * @param cropRightW Amount of cropping to apply to the right of the width dimension
      */
     public Cropping3D(int cropLeftD, int cropRightD, int cropLeftH, int cropRightH, int cropLeftW, int cropRightW) {
@@ -73,8 +72,9 @@ public class Cropping3D extends NoParamLayer {
     }
 
     /**
-     * @param cropping Cropping as either a length 3 array, with values {@code [cropDepth, cropHeight, cropWidth]},
-     *                 or as a length 4 array, with values {@code [cropLeftDepth, cropRightDepth, cropLeftHeight, cropRightHeight, cropLeftWidth, cropRightWidth]}
+     * @param cropping Cropping as either a length 3 array, with values {@code [cropDepth, cropHeight, cropWidth]}, or
+     * as a length 4 array, with values {@code [cropLeftDepth, cropRightDepth, cropLeftHeight, cropRightHeight,
+     * cropLeftWidth, cropRightWidth]}
      */
     public Cropping3D(int[] cropping) {
         this(new Builder(cropping));
@@ -87,9 +87,9 @@ public class Cropping3D extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> iterationListeners,
-                                                       int layerIndex, INDArray layerParamsView,
-                                                       boolean initializeParams) {
+            Collection<TrainingListener> iterationListeners,
+            int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
         Cropping3DLayer ret = new Cropping3DLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
@@ -108,9 +108,9 @@ public class Cropping3D extends NoParamLayer {
         }
         InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
         return InputType.convolutional3D(
-                c.getDepth()  - cropping[0] - cropping[1],
-                c.getHeight()  - cropping[2] - cropping[3],
-                c.getWidth()  - cropping[4] - cropping[5],
+                c.getDepth() - cropping[0] - cropping[1],
+                c.getHeight() - cropping[2] - cropping[3],
+                c.getWidth() - cropping[4] - cropping[5],
                 c.getChannels());
     }
 
@@ -129,14 +129,22 @@ public class Cropping3D extends NoParamLayer {
 
     public static class Builder extends Layer.Builder<Builder> {
 
+        /**
+         * Cropping amount, a length 6 array, i.e. crop left depth, crop right depth, crop left height, crop right height, crop left width, crop right width
+         */
         @Getter
         private int[] cropping = new int[]{0, 0, 0, 0, 0, 0};
 
+        /**
+         * @param cropping Cropping amount, must be length 1, 3, or 6 array, i.e. either all values, crop depth, crop height, crop width
+         * or crop left depth, crop right depth, crop left height, crop right height, crop left width, crop right width
+         */
         public void setCropping(int[] cropping) {
-            Preconditions.checkArgument(cropping.length == 1 || cropping.length == 3 || cropping.length == 6, "Must have 1, 3, or 6 cropping values - got %s", cropping);
-            if(cropping.length == 1)
-                this.cropping = new int[] {cropping[0], cropping[0], cropping[0], cropping[0], cropping[0], cropping[0]};
-            else if (cropping.length == 3) {
+            Preconditions.checkArgument(cropping.length == 1 || cropping.length == 3 || cropping.length == 6,
+                    "Must have 1, 3, or 6 cropping values - got %s", cropping);
+            if (cropping.length == 1) {
+                this.cropping = new int[]{cropping[0], cropping[0], cropping[0], cropping[0], cropping[0], cropping[0]};
+            } else if (cropping.length == 3) {
                 this.cropping = new int[]{cropping[0], cropping[0], cropping[1], cropping[1], cropping[2], cropping[2]};
             } else {
                 this.cropping = cropping;
@@ -148,10 +156,8 @@ public class Cropping3D extends NoParamLayer {
         }
 
         /**
-         * @param cropping Cropping amount, must be length 3 or 6 array, i.e. either
-         *                 crop depth, crop height, crop width or
-         *                 crop left depth, crop right depth, crop left height, crop right height, crop left width,
-         *                 crop right width
+         * @param cropping Cropping amount, must be length 3 or 6 array, i.e. either crop depth, crop height, crop width
+         * or crop left depth, crop right depth, crop left height, crop right height, crop left width, crop right width
          */
         public Builder(@NonNull int[] cropping) {
             Preconditions.checkArgument(cropping.length == 6 || cropping.length == 3,
@@ -165,20 +171,20 @@ public class Cropping3D extends NoParamLayer {
         }
 
         /**
-         * @param cropDepth  Amount of cropping to apply to both depth boundaries of the input activations
+         * @param cropDepth Amount of cropping to apply to both depth boundaries of the input activations
          * @param cropHeight Amount of cropping to apply to both height boundaries of the input activations
-         * @param cropWidth  Amount of cropping to apply to both width boundaries of the input activations
+         * @param cropWidth Amount of cropping to apply to both width boundaries of the input activations
          */
         public Builder(int cropDepth, int cropHeight, int cropWidth) {
             this(cropDepth, cropDepth, cropHeight, cropHeight, cropWidth, cropWidth);
         }
 
         /**
-         * @param cropLeftD  Amount of cropping to apply to the left of the depth dimension
+         * @param cropLeftD Amount of cropping to apply to the left of the depth dimension
          * @param cropRightD Amount of cropping to apply to the right of the depth dimension
-         * @param cropLeftH  Amount of cropping to apply to the left of the height dimension
+         * @param cropLeftH Amount of cropping to apply to the left of the height dimension
          * @param cropRightH Amount of cropping to apply to the right of the height dimension
-         * @param cropLeftW  Amount of cropping to apply to the left of the width dimension
+         * @param cropLeftW Amount of cropping to apply to the left of the width dimension
          * @param cropRightW Amount of cropping to apply to the right of the width dimension
          */
         public Builder(int cropLeftD, int cropRightD, int cropLeftH, int cropRightH, int cropLeftW, int cropRightW) {

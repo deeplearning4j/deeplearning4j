@@ -34,9 +34,9 @@ import java.util.Map;
 /**
  * Space to batch utility layer configuration for convolutional input types.
  * <p>
- * Does a 2-dimensional space to batch operation, i.e. ransforms data from a tensor from 2 spatial dimensions
- * into batch dimension according to the "blocks" specified (a vector of length 2). Afterwards the spatial
- * dimensions are optionally padded, as specified in "padding", a tensor of dim (2, 2), denoting the padding range.
+ * Does a 2-dimensional space to batch operation, i.e. ransforms data from a tensor from 2 spatial dimensions into batch
+ * dimension according to the "blocks" specified (a vector of length 2). Afterwards the spatial dimensions are
+ * optionally padded, as specified in "padding", a tensor of dim (2, 2), denoting the padding range.
  * <p>
  * Example:
  * <pre>
@@ -79,9 +79,9 @@ public class SpaceToBatchLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> trainingListeners,
-                                                       int layerIndex, INDArray layerParamsView,
-                                                       boolean initializeParams) {
+            Collection<TrainingListener> trainingListeners,
+            int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.SpaceToBatch ret =
                 new org.deeplearning4j.nn.layers.convolution.SpaceToBatch(conf);
         ret.setListeners(trainingListeners);
@@ -113,7 +113,7 @@ public class SpaceToBatchLayer extends NoParamLayer {
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
         return InputType.convolutional(
                 (i.getHeight() + padding[0][0] + padding[0][1]) / blocks[0],
-                (i.getWidth()+ padding[1][0] + padding[1][1]) / blocks[1],
+                (i.getWidth() + padding[1][0] + padding[1][1]) / blocks[1],
                 i.getChannels()
         );
     }
@@ -157,27 +157,43 @@ public class SpaceToBatchLayer extends NoParamLayer {
 
 
     @NoArgsConstructor
-    public static class Builder<T extends Builder<T>> extends Layer.Builder<T>{
+    public static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
+
+        /**
+         * Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
+         * dimensions
+         */
         @Getter
         protected int[] blocks;
 
+        /**
+         * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
+         * dimensions
+         */
         public void setBlocks(int[] blocks) {
             Preconditions.checkArgument(blocks.length == 2, "Must have 2 block values - got %s", blocks);
             this.blocks = blocks;
         }
 
+        /**
+         * A 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
+         */
         @Getter
         protected int[][] padding;
 
+        /**
+         * @param padding Padding - should be a 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
+         */
         public void setPadding(int[][] padding) {
-            Preconditions.checkArgument(padding.length == 2 && padding[0].length == 2 && padding[1].length == 2, "Padding must be a 2d array of shape [[padTop, padBottom], [padLeft, padRight]] - got %s", padding);
+            Preconditions.checkArgument(padding.length == 2 && padding[0].length == 2 && padding[1].length == 2,
+                    "Padding must be a 2d array of shape [[padTop, padBottom], [padLeft, padRight]] - got %s", padding);
             this.padding = padding;
         }
 
 
-
         /**
-         * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width dimensions
+         * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
+         * dimensions
          */
         public Builder(int[] blocks) {
             this.blocks = blocks;
@@ -185,7 +201,8 @@ public class SpaceToBatchLayer extends NoParamLayer {
         }
 
         /**
-         * @param blocks  Block size for SpaceToBatch layer. Should be a length 2 array for the height and width dimensions
+         * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
+         * dimensions
          * @param padding Padding - should be a 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
          */
         public Builder(int[] blocks, int[][] padding) {
@@ -194,7 +211,8 @@ public class SpaceToBatchLayer extends NoParamLayer {
         }
 
         /**
-         * @param blocks  Block size for SpaceToBatch layer. Should be a length 2 array for the height and width dimensions
+         * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
+         * dimensions
          */
         public T blocks(int[] blocks) {
             this.blocks = blocks;

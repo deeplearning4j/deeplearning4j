@@ -33,8 +33,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Zero padding 1D layer for convolutional neural networks.
- * Allows padding to be done separately for top and bottom.
+ * Zero padding 1D layer for convolutional neural networks. Allows padding to be done separately for top and bottom.
  *
  * @author Max Pumperla
  */
@@ -50,22 +49,22 @@ public class ZeroPadding1DLayer extends NoParamLayer {
         this.padding = builder.padding;
     }
 
-    public ZeroPadding1DLayer(int padding){
+    public ZeroPadding1DLayer(int padding) {
         this(new Builder(padding));
     }
 
-    public ZeroPadding1DLayer(int padLeft, int padRight){
+    public ZeroPadding1DLayer(int padLeft, int padRight) {
         this(new Builder(padLeft, padRight));
     }
 
-    public ZeroPadding1DLayer(int[] padding){
+    public ZeroPadding1DLayer(int[] padding) {
         this(new Builder(padding));
     }
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                                                       boolean initializeParams) {
+            Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.ZeroPadding1DLayer ret =
                 new org.deeplearning4j.nn.layers.convolution.ZeroPadding1DLayer(conf);
         ret.setListeners(trainingListeners);
@@ -136,33 +135,39 @@ public class ZeroPadding1DLayer extends NoParamLayer {
 
     public static class Builder extends Layer.Builder<Builder> {
 
+        /**
+         * Padding value for left and right. Must be length 2 array
+         */
         @Getter
-        private int[] padding = new int[] {0, 0}; //Padding: left, right
+        private int[] padding = new int[]{0, 0}; //Padding: left, right
 
-
+        /**
+         * @param padding Padding value for left and right. Must be length 2 array
+         */
         public void setPadding(int[] padding) {
-            if(padding.length == 2)
+            if (padding.length == 2) {
                 this.padding = padding;
-            else if(padding.length == 1)
-                this.padding = new int[] {padding[0], padding[0]};
-            else
+            } else if (padding.length == 1) {
+                this.padding = new int[]{padding[0], padding[0]};
+            } else {
                 Preconditions.checkArgument(false, "Must have 1 or 2 padding values - got %s", padding);
+            }
         }
 
 
         /**
-         * @param padding  Padding for both the left and right
+         * @param padding Padding for both the left and right
          */
         public Builder(int padding) {
             this(padding, padding);
         }
 
         /**
-         * @param padLeft  Padding value for left
+         * @param padLeft Padding value for left
          * @param padRight Padding value for right
          */
         public Builder(int padLeft, int padRight) {
-            this(new int[] {padLeft, padRight});
+            this(new int[]{padLeft, padRight});
         }
 
         /**

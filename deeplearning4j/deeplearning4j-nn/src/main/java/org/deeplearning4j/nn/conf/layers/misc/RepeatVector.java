@@ -33,8 +33,8 @@ import java.util.Map;
 /**
  * RepeatVector layer configuration.
  *
- * RepeatVector takes a mini-batch of vectors of shape (mb, length) and a repeat factor n and outputs
- * a 3D tensor of shape (mb, n, length) in which x is repeated n times.
+ * RepeatVector takes a mini-batch of vectors of shape (mb, length) and a repeat factor n and outputs a 3D tensor of
+ * shape (mb, n, length) in which x is repeated n times.
  *
  * @author Max Pumperla
  */
@@ -53,7 +53,7 @@ public class RepeatVector extends FeedForwardLayer {
 
     @Override
     public RepeatVector clone() {
-        return  (RepeatVector) super.clone();
+        return (RepeatVector) super.clone();
     }
 
     @Override
@@ -63,9 +63,9 @@ public class RepeatVector extends FeedForwardLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> trainingListeners,
-                                                       int layerIndex, INDArray layerParamsView,
-                                                       boolean initializeParams) {
+            Collection<TrainingListener> trainingListeners,
+            int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
         org.deeplearning4j.nn.layers.RepeatVector ret =
                 new org.deeplearning4j.nn.layers.RepeatVector(conf);
         ret.setListeners(trainingListeners);
@@ -121,11 +121,18 @@ public class RepeatVector extends FeedForwardLayer {
     public static class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
 
         private int n = 1; // no repetition by default
-
+        /**
+         * Set repetition factor for RepeatVector layer
+         */
         public int getRepetitionFactor() {
             return n;
         }
 
+        /**
+         * Set repetition factor for RepeatVector layer
+         *
+         * @param n upsampling size in height and width dimensions
+         */
         public void setRepetitionFactor(int n) {
             this.n = n;
         }

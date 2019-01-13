@@ -42,10 +42,10 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 /**
- * Bidirectional is a "wrapper" layer: it wraps any uni-directional RNN layer to make it bidirectional.<br>
- * Note that multiple different modes are supported - these specify how the activations should be combined from
- * the forward and backward RNN networks. See {@link Mode} javadoc for more details.<br>
- * Parameters are not shared here - there are 2 separate copies of the wrapped RNN layer, each with separate parameters.
+ * Bidirectional is a "wrapper" layer: it wraps any uni-directional RNN layer to make it bidirectional.<br> Note that
+ * multiple different modes are supported - these specify how the activations should be combined from the forward and
+ * backward RNN networks. See {@link Mode} javadoc for more details.<br> Parameters are not shared here - there are 2
+ * separate copies of the wrapped RNN layer, each with separate parameters.
  * <br>
  * Usage: {@code .layer(new Bidirectional(new LSTM.Builder()....build())}
  *
@@ -59,13 +59,11 @@ public class Bidirectional extends Layer {
 
     /**
      * This Mode enumeration defines how the activations for the forward and backward networks should be combined.<br>
-     * ADD: out = forward + backward (elementwise addition)<br>
-     * MUL: out = forward * backward (elementwise multiplication)<br>
-     * AVERAGE: out = 0.5 * (forward + backward)<br>
-     * CONCAT: Concatenate the activations.<br>
-     * Where 'forward' is the activations for the forward RNN, and 'backward' is the activations for the backward RNN.
-     * In all cases except CONCAT, the output activations size is the same size as the standard RNN that is being wrapped
-     * by this layer. In the CONCAT case, the output activations size (dimension 1) is 2x larger than the standard RNN's
+     * ADD: out = forward + backward (elementwise addition)<br> MUL: out = forward * backward (elementwise
+     * multiplication)<br> AVERAGE: out = 0.5 * (forward + backward)<br> CONCAT: Concatenate the activations.<br> Where
+     * 'forward' is the activations for the forward RNN, and 'backward' is the activations for the backward RNN. In all
+     * cases except CONCAT, the output activations size is the same size as the standard RNN that is being wrapped by
+     * this layer. In the CONCAT case, the output activations size (dimension 1) is 2x larger than the standard RNN's
      * activations array.
      */
     public enum Mode {
@@ -93,11 +91,12 @@ public class Bidirectional extends Layer {
     /**
      * Create a Bidirectional wrapper for the specified layer
      *
-     * @param mode  Mode to use to combine activations. See {@link Mode} for details
+     * @param mode Mode to use to combine activations. See {@link Mode} for details
      * @param layer layer to wrap
      */
     public Bidirectional(@NonNull Mode mode, @NonNull Layer layer) {
-        if (!(layer instanceof BaseRecurrentLayer || layer instanceof LastTimeStep || layer instanceof BaseWrapperLayer)) {
+        if (!(layer instanceof BaseRecurrentLayer || layer instanceof LastTimeStep
+                || layer instanceof BaseWrapperLayer)) {
             throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: " +
                     "config must extend BaseRecurrentLayer or LastTimeStep " +
                     "Got class: " + layer.getClass());
@@ -117,7 +116,7 @@ public class Bidirectional extends Layer {
 
     public long getNIn() {
         if (this.fwd instanceof LastTimeStep) {
-            return  ((FeedForwardLayer)((LastTimeStep) this.fwd).getUnderlying()).getNIn();
+            return ((FeedForwardLayer) ((LastTimeStep) this.fwd).getUnderlying()).getNIn();
         } else {
             return ((FeedForwardLayer) this.fwd).getNIn();
         }
@@ -125,8 +124,8 @@ public class Bidirectional extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> trainingListeners, int layerIndex,
-                                                       INDArray layerParamsView, boolean initializeParams) {
+            Collection<TrainingListener> trainingListeners, int layerIndex,
+            INDArray layerParamsView, boolean initializeParams) {
         NeuralNetConfiguration c1 = conf.clone();
         NeuralNetConfiguration c2 = conf.clone();
         c1.setLayer(fwd);
@@ -206,8 +205,8 @@ public class Bidirectional extends Layer {
     }
 
     /**
-     * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this
-     * is not necessarily the case
+     * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this is
+     * not necessarily the case
      *
      * @param paramName Parameter name
      * @return IUpdater for the parameter
@@ -248,12 +247,12 @@ public class Bidirectional extends Layer {
         @Setter
         private Mode mode;
 
+        @Getter
+        private Layer layer;
+
         public void setLayer(Layer layer) {
             rnnLayer(layer);
         }
-
-        @Getter
-        private Layer layer;
 
         public Builder mode(Mode mode) {
             this.mode = mode;

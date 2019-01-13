@@ -34,12 +34,10 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Output layer used for training via backpropagation based on labels and a specified loss function.
- * Can be configured for both classification and regression.
- * Note that OutputLayer has parameters - it contains a fully-connected layer (effectively contains a DenseLayer)
- * internally. This allows the output size to be different to the layer input size.
+ * Output layer used for training via backpropagation based on labels and a specified loss function. Can be configured
+ * for both classification and regression. Note that OutputLayer has parameters - it contains a fully-connected layer
+ * (effectively contains a DenseLayer) internally. This allows the output size to be different to the layer input size.
  * OutputLayer is equivalent to ({@link DenseLayer} + {@link LossLayer})
- *
  */
 @Data
 @NoArgsConstructor
@@ -54,7 +52,7 @@ public class OutputLayer extends BaseOutputLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("OutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.OutputLayer ret = new org.deeplearning4j.nn.layers.OutputLayer(conf);
@@ -74,7 +72,7 @@ public class OutputLayer extends BaseOutputLayer {
 
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
-        public Builder(){
+        public Builder() {
             //Set default activation function to softmax (to match default loss function MCXENT)
             this.activationFn = new ActivationSoftmax();
         }

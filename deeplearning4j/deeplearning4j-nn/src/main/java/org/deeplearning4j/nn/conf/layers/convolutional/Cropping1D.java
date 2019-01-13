@@ -34,8 +34,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Cropping layer for convolutional (1d) neural networks.
- * Allows cropping to be done separately for top/bottom
+ * Cropping layer for convolutional (1d) neural networks. Allows cropping to be done separately for top/bottom
  *
  * @author Max Pumperla
  */
@@ -54,7 +53,7 @@ public class Cropping1D extends NoParamLayer {
     }
 
     /**
-     * @param cropTop    Amount of cropping to apply to the top of the input activations
+     * @param cropTop Amount of cropping to apply to the top of the input activations
      * @param cropBottom Amount of cropping to apply to the bottom of the input activations
      */
     public Cropping1D(int cropTop, int cropBottom) {
@@ -74,8 +73,9 @@ public class Cropping1D extends NoParamLayer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                                                       int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+            Collection<TrainingListener> trainingListeners,
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         Cropping1DLayer ret = new Cropping1DLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
@@ -112,17 +112,24 @@ public class Cropping1D extends NoParamLayer {
 
 
     public static class Builder extends Layer.Builder<Builder> {
-
+        /**
+         * Cropping amount for top/bottom (in that order). Must be length 1 or 2 array.
+         */
         @Getter
         private int[] cropping = new int[]{0, 0};
 
+        /**
+         * @param cropping Cropping amount for top/bottom (in that order). Must be length 1 or 2 array.
+         */
         public void setCropping(int[] cropping) {
-            if(cropping.length == 2)
+            if (cropping.length == 2) {
                 this.cropping = cropping;
-            else if(cropping.length == 1)
-                this.cropping = new int[] {cropping[0], cropping[0]};
-            else
-                org.nd4j.base.Preconditions.checkArgument(false, "Must have 1 or 2 cropping values - got %s", this.cropping);
+            } else if (cropping.length == 1) {
+                this.cropping = new int[]{cropping[0], cropping[0]};
+            } else {
+                org.nd4j.base.Preconditions
+                        .checkArgument(false, "Must have 1 or 2 cropping values - got %s", this.cropping);
+            }
         }
 
         public Builder() {
@@ -139,7 +146,7 @@ public class Cropping1D extends NoParamLayer {
             if (cropping.length == 2) {
                 this.cropping = cropping;
             } else {
-                this.cropping = new int[] {cropping[0], cropping[0]};
+                this.cropping = new int[]{cropping[0], cropping[0]};
             }
         }
 
@@ -151,7 +158,7 @@ public class Cropping1D extends NoParamLayer {
         }
 
         /**
-         * @param cropTop    Amount of cropping to apply to the top of the input activations
+         * @param cropTop Amount of cropping to apply to the top of the input activations
          * @param cropBottom Amount of cropping to apply to the bottom of the input activations
          */
         public Builder(int cropTop, int cropBottom) {

@@ -45,8 +45,8 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for RNN layer (layer index = " + layerIndex
-                            + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
-                            + inputType);
+                    + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
+                    + inputType);
         }
 
         InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
@@ -58,7 +58,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for RNN layer (layer name = \"" + getLayerName()
-                            + "\"): expect RNN input type with size > 0. Got: " + inputType);
+                    + "\"): expect RNN input type with size > 0. Got: " + inputType);
         }
 
         if (nIn <= 0 || override) {
@@ -74,20 +74,41 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
 
     @NoArgsConstructor
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+
+        /**
+         * Set constraints to be applied to the RNN recurrent weight parameters of this layer. Default: no
+         * constraints.<br> Constraints can be used to enforce certain conditions (non-negativity of parameters,
+         * max-norm regularization, etc). These constraints are applied at each iteration, after the parameters have
+         * been updated.
+         */
         @Getter
         @Setter
         protected List<LayerConstraint> recurrentConstraints;
+
+        /**
+         * Set constraints to be applied to the RNN input weight parameters of this layer. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         */
         @Getter
         @Setter
         protected List<LayerConstraint> inputWeightConstraints;
+
+        /**
+         * Set the weight initialization for the recurrent weights. Not that if this is not set explicitly, the same
+         * weight initialization as the layer input weights is also used for the recurrent weights.
+         *
+         */
         @Getter
         @Setter
         protected IWeightInit weightInitFnRecurrent;
 
         /**
-         * Set constraints to be applied to the RNN recurrent weight parameters of this layer. Default: no constraints.<br>
-         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
-         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         * Set constraints to be applied to the RNN recurrent weight parameters of this layer. Default: no
+         * constraints.<br> Constraints can be used to enforce certain conditions (non-negativity of parameters,
+         * max-norm regularization, etc). These constraints are applied at each iteration, after the parameters have
+         * been updated.
          *
          * @param constraints Constraints to apply to the recurrent weight parameters of this layer
          */
@@ -114,7 +135,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          *
          * @param weightInit Weight initialization for the recurrent weights only.
          */
-        public T weightInitRecurrent(IWeightInit weightInit){
+        public T weightInitRecurrent(IWeightInit weightInit) {
             this.weightInitFnRecurrent = weightInit;
             return (T) this;
         }
@@ -125,9 +146,10 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          *
          * @param weightInit Weight initialization for the recurrent weights only.
          */
-        public T weightInitRecurrent(WeightInit weightInit){
-            if(weightInit == WeightInit.DISTRIBUTION) {
-                throw new UnsupportedOperationException("Not supported!, Use weightInit(Distribution distribution) instead!");
+        public T weightInitRecurrent(WeightInit weightInit) {
+            if (weightInit == WeightInit.DISTRIBUTION) {
+                throw new UnsupportedOperationException(
+                        "Not supported!, Use weightInit(Distribution distribution) instead!");
             }
 
             this.weightInitFnRecurrent = weightInit.getWeightInitFunction();
@@ -135,13 +157,13 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
         }
 
         /**
-         * Set the weight initialization for the recurrent weights, based on the specified distribution. Not that if this
-         * is not set explicitly, the same weight initialization as the layer input weights is also used for the recurrent
-         * weights.
+         * Set the weight initialization for the recurrent weights, based on the specified distribution. Not that if
+         * this is not set explicitly, the same weight initialization as the layer input weights is also used for the
+         * recurrent weights.
          *
          * @param dist Distribution to use for initializing the recurrent weights
          */
-        public T weightInitRecurrent(Distribution dist){
+        public T weightInitRecurrent(Distribution dist) {
             this.weightInitFnRecurrent = new WeightInitDistribution(dist);
             return (T) this;
         }

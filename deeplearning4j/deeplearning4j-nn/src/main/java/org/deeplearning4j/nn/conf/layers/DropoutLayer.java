@@ -34,19 +34,17 @@ import java.util.Map;
 
 /**
  * Dropout layer. This layer simply applies dropout at training time, and passes activations through unmodified at test
- * time. Internally, this uses an {@link IDropout} instance. See the IDropout instances for details:<br>
- * {@link Dropout}<br>
- * {@link org.nd4j.linalg.api.ops.random.impl.AlphaDropOut}<br>
- * {@link org.deeplearning4j.nn.conf.dropout.GaussianDropout}<br>
- * {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise}<br>
+ * time. Internally, this uses an {@link IDropout} instance. See the IDropout instances for details:<br> {@link
+ * Dropout}<br> {@link org.nd4j.linalg.api.ops.random.impl.AlphaDropOut}<br> {@link
+ * org.deeplearning4j.nn.conf.dropout.GaussianDropout}<br> {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise}<br>
  * {@link org.deeplearning4j.nn.conf.dropout.SpatialDropout}
- *
  */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class DropoutLayer extends FeedForwardLayer {
+
     private DropoutLayer(Builder builder) {
         super(builder);
     }
@@ -58,8 +56,8 @@ public class DropoutLayer extends FeedForwardLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+            Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
         org.deeplearning4j.nn.layers.DropoutLayer ret = new org.deeplearning4j.nn.layers.DropoutLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
@@ -77,8 +75,9 @@ public class DropoutLayer extends FeedForwardLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if (inputType == null)
+        if (inputType == null) {
             throw new IllegalStateException("Invalid input type: null for layer name \"" + getLayerName() + "\"");
+        }
         return inputType;
     }
 
@@ -117,10 +116,11 @@ public class DropoutLayer extends FeedForwardLayer {
         //But: this will be counted in the activations
         //(technically inference memory is over-estimated as a result)
 
-        return new LayerMemoryReport.Builder(layerName, DropoutLayer.class, inputType, inputType).standardMemory(0, 0) //No params
-                        .workingMemory(0, 0, 0, 0) //No working mem, other than activations etc
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                        .build();
+        return new LayerMemoryReport.Builder(layerName, DropoutLayer.class, inputType, inputType)
+                .standardMemory(0, 0) //No params
+                .workingMemory(0, 0, 0, 0) //No working mem, other than activations etc
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
 
@@ -128,19 +128,19 @@ public class DropoutLayer extends FeedForwardLayer {
     public static class Builder extends FeedForwardLayer.Builder<DropoutLayer.Builder> {
 
         /**
-         * Create a dropout layer with standard {@link Dropout}, with the specified probability of retaining the
-         * input activation. See {@link Dropout} for the full details
+         * Create a dropout layer with standard {@link Dropout}, with the specified probability of retaining the input
+         * activation. See {@link Dropout} for the full details
          *
          * @param dropout Activation retain probability.
          */
-        public Builder(double dropout){
+        public Builder(double dropout) {
             this.dropOut(new Dropout(dropout));
         }
 
         /**
          * @param dropout Specified {@link IDropout} instance for the dropout layer
          */
-        public Builder(IDropout dropout){
+        public Builder(IDropout dropout) {
             this.dropOut(dropout);
         }
 

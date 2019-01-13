@@ -36,8 +36,8 @@ import java.util.Map;
 /**
  * 2D deconvolution layer configuration<br>
  *
- * Deconvolutions are also known as transpose convolutions or fractionally strided convolutions.
- * In essence, deconvolutions swap forward and backward pass with regular 2D convolutions.
+ * Deconvolutions are also known as transpose convolutions or fractionally strided convolutions. In essence,
+ * deconvolutions swap forward and backward pass with regular 2D convolutions.
  *
  * See the paper by Matt Zeiler for details: <a href="http://www.matthewzeiler.com/wp-content/uploads/2017/07/cvpr2010.pdf">http://www.matthewzeiler.com/wp-content/uploads/2017/07/cvpr2010.pdf</a>
  *
@@ -53,10 +53,8 @@ import java.util.Map;
 public class Deconvolution2D extends ConvolutionLayer {
 
     /**
-     * Deconvolution2D layer
-     * nIn in the input layer is the number of channels
-     * nOut is the number of filters to be used in the net or in other words the channels
-     * The builder specifies the filter/kernel size, the stride and padding
+     * Deconvolution2D layer nIn in the input layer is the number of channels nOut is the number of filters to be used
+     * in the net or in other words the channels The builder specifies the filter/kernel size, the stride and padding
      * The pooling layer takes the kernel size
      */
     protected Deconvolution2D(BaseConvBuilder<?> builder) {
@@ -64,25 +62,28 @@ public class Deconvolution2D extends ConvolutionLayer {
         initializeConstraints(builder);
     }
 
-    public boolean hasBias(){
+    public boolean hasBias() {
         return hasBias;
     }
 
     @Override
     public Deconvolution2D clone() {
         Deconvolution2D clone = (Deconvolution2D) super.clone();
-        if (clone.kernelSize != null)
+        if (clone.kernelSize != null) {
             clone.kernelSize = clone.kernelSize.clone();
-        if (clone.stride != null)
+        }
+        if (clone.stride != null) {
             clone.stride = clone.stride.clone();
-        if (clone.padding != null)
+        }
+        if (clone.padding != null) {
             clone.padding = clone.padding.clone();
+        }
         return clone;
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("Deconvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.Deconvolution2DLayer ret =
@@ -131,21 +132,18 @@ public class Deconvolution2D extends ConvolutionLayer {
         }
 
         /**
-         * Set the convolution mode for the Convolution layer.
-         * See {@link ConvolutionMode} for more details
+         * Set the convolution mode for the Convolution layer. See {@link ConvolutionMode} for more details
          *
-         * @param convolutionMode    Convolution mode for layer
+         * @param convolutionMode Convolution mode for layer
          */
         public Builder convolutionMode(ConvolutionMode convolutionMode) {
             return super.convolutionMode(convolutionMode);
         }
 
         /**
-         * Size of the convolution
-         * rows/columns
-         * @param kernelSize the height and width of the
-         *                   kernel
-         * @return
+         * Size of the convolution rows/columns
+         *
+         * @param kernelSize the height and width of the kernel
          */
         public Builder kernelSize(int... kernelSize) {
             this.kernelSize = kernelSize;

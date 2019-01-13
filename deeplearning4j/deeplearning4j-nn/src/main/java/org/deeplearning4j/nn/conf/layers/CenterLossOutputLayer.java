@@ -35,13 +35,12 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Center loss is similar to triplet loss except that it enforces
- * intraclass consistency and doesn't require feed forward of multiple
- * examples. Center loss typically converges faster for training
- * ImageNet-based convolutional networks.
+ * Center loss is similar to triplet loss except that it enforces intraclass consistency and doesn't require feed
+ * forward of multiple examples. Center loss typically converges faster for training ImageNet-based convolutional
+ * networks.
  *
- * "If example x is in class Y, ensure that embedding(x) is close to
- * {@code average(embedding(y))} for all examples y in Y"
+ * "If example x is in class Y, ensure that embedding(x) is close to {@code average(embedding(y))} for all examples y in
+ * Y"
  *
  * @author Justin Long (@crockpotveggies)
  * @author Alex Black (@AlexDBlack)
@@ -51,6 +50,7 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class CenterLossOutputLayer extends BaseOutputLayer {
+
     protected double alpha;
     protected double lambda;
     protected boolean gradientCheck;
@@ -65,7 +65,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("CenterLossOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         Layer ret = new org.deeplearning4j.nn.layers.training.CenterLossOutputLayer(conf);
@@ -145,8 +145,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         val numParams = nParamsW + nParamsB + nParamsCenter;
 
         int updaterStateSize = (int) (getUpdaterByParam(CenterLossParamInitializer.WEIGHT_KEY).stateSize(nParamsW)
-                        + getUpdaterByParam(CenterLossParamInitializer.BIAS_KEY).stateSize(nParamsB)
-                        + getUpdaterByParam(CenterLossParamInitializer.CENTER_KEY).stateSize(nParamsCenter));
+                + getUpdaterByParam(CenterLossParamInitializer.BIAS_KEY).stateSize(nParamsB)
+                + getUpdaterByParam(CenterLossParamInitializer.CENTER_KEY).stateSize(nParamsCenter));
 
         int trainSizeFixed = 0;
         int trainSizeVariable = 0;
@@ -167,20 +167,24 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         trainSizeVariable += outputType.arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(layerName, CenterLossOutputLayer.class, inputType, outputType)
-                        .standardMemory(numParams, updaterStateSize)
-                        .workingMemory(0, 0, trainSizeFixed, trainSizeVariable) //No additional memory (beyond activations) for inference
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                        .build();
+                .standardMemory(numParams, updaterStateSize)
+                .workingMemory(0, 0, trainSizeFixed,
+                        trainSizeVariable) //No additional memory (beyond activations) for inference
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
     @NoArgsConstructor
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
+
         @Getter
         @Setter
         protected double alpha = 0.05;
+
         @Getter
         @Setter
         protected double lambda = 2e-4;
+
         @Getter
         @Setter
         protected boolean gradientCheck = false;

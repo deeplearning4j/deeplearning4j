@@ -38,6 +38,7 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class DenseLayer extends FeedForwardLayer {
+
     private boolean hasBias = true;
 
     private DenseLayer(Builder builder) {
@@ -49,11 +50,11 @@ public class DenseLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("DenseLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer ret =
-                        new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf);
+                new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -94,19 +95,25 @@ public class DenseLayer extends FeedForwardLayer {
         trainSizeVariable += outputType.arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(layerName, DenseLayer.class, inputType, outputType)
-                        .standardMemory(numParams, updaterStateSize)
-                        .workingMemory(0, 0, trainSizeFixed, trainSizeVariable) //No additional memory (beyond activations) for inference
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching in DenseLayer
-                        .build();
+                .standardMemory(numParams, updaterStateSize)
+                .workingMemory(0, 0, trainSizeFixed,
+                        trainSizeVariable) //No additional memory (beyond activations) for inference
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS,
+                        MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching in DenseLayer
+                .build();
     }
 
-    public boolean hasBias(){
+    public boolean hasBias() {
         return hasBias;
     }
 
     @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
+        /**
+         * If true (default): include bias parameters in the model. False: no bias.
+         *
+         */
         @Getter
         @Setter
         private boolean hasBias = true;
@@ -116,7 +123,7 @@ public class DenseLayer extends FeedForwardLayer {
          *
          * @param hasBias If true: include bias parameters in this model
          */
-        public Builder hasBias(boolean hasBias){
+        public Builder hasBias(boolean hasBias) {
             this.hasBias = hasBias;
             return this;
         }

@@ -74,11 +74,13 @@ public class Subsampling3DLayer extends NoParamLayer {
     protected Subsampling3DLayer(Builder builder) {
         super(builder);
         this.poolingType = builder.poolingType;
-        if (builder.kernelSize.length != 3)
+        if (builder.kernelSize.length != 3) {
             throw new IllegalArgumentException("Kernel size must be length 3");
+        }
         this.kernelSize = builder.kernelSize;
-        if (builder.stride.length != 3)
+        if (builder.stride.length != 3) {
             throw new IllegalArgumentException("Invalid stride, must be length 3");
+        }
         this.stride = builder.stride;
         this.padding = builder.padding;
         this.dilation = builder.dilation;
@@ -91,22 +93,26 @@ public class Subsampling3DLayer extends NoParamLayer {
     public Subsampling3DLayer clone() {
         Subsampling3DLayer clone = (Subsampling3DLayer) super.clone();
 
-        if (clone.kernelSize != null)
+        if (clone.kernelSize != null) {
             clone.kernelSize = clone.kernelSize.clone();
-        if (clone.stride != null)
+        }
+        if (clone.stride != null) {
             clone.stride = clone.stride.clone();
-        if (clone.padding != null)
+        }
+        if (clone.padding != null) {
             clone.padding = clone.padding.clone();
-        if (clone.dilation != null)
+        }
+        if (clone.dilation != null) {
             clone.dilation = clone.dilation.clone();
+        }
         return clone;
     }
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> iterationListeners,
-                                                       int layerIndex, INDArray layerParamsView,
-                                                       boolean initializeParams) {
+            Collection<TrainingListener> iterationListeners,
+            int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling3DLayer ret =
                 new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling3DLayer(conf);
         ret.setListeners(iterationListeners);
@@ -173,9 +179,9 @@ public class Subsampling3DLayer extends NoParamLayer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
-        InputType.InputTypeConvolutional3D outputType = (InputType.InputTypeConvolutional3D) getOutputType(-1, inputType);
+        InputType.InputTypeConvolutional3D outputType = (InputType.InputTypeConvolutional3D) getOutputType(-1,
+                inputType);
         val actElementsPerEx = outputType.arrayElementsPerExample();
-
 
         //During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
         val im2colSizePerEx =
@@ -199,6 +205,11 @@ public class Subsampling3DLayer extends NoParamLayer {
     @NoArgsConstructor
     public static class Builder extends BaseSubsamplingBuilder<Builder> {
 
+        /**
+         * The data format for input and output activations.<br> NCDHW: activations (in/out) should have shape
+         * [minibatch, channels, depth, height, width]<br> NDHWC: activations (in/out) should have shape [minibatch,
+         * depth, height, width, channels]<br>
+         */
         @Getter
         @Setter
         protected Convolution3D.DataFormat dataFormat = Convolution3D.DataFormat.NCDHW;
@@ -220,7 +231,7 @@ public class Subsampling3DLayer extends NoParamLayer {
         }
 
         public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize, int[] stride,
-                       int[] padding) {
+                int[] padding) {
             super(poolingType, kernelSize, stride, padding);
         }
 
@@ -250,8 +261,9 @@ public class Subsampling3DLayer extends NoParamLayer {
          * @param kernelSize kernel size in height and width dimensions
          */
         public Builder kernelSize(int... kernelSize) {
-            if (kernelSize.length != 3)
+            if (kernelSize.length != 3) {
                 throw new IllegalArgumentException("Invalid input: must be length 3");
+            }
             this.kernelSize = kernelSize;
             return this;
         }
@@ -262,8 +274,9 @@ public class Subsampling3DLayer extends NoParamLayer {
          * @param stride stride in height and width dimensions
          */
         public Builder stride(int... stride) {
-            if (stride.length != 3)
+            if (stride.length != 3) {
                 throw new IllegalArgumentException("Invalid input: must be length 3");
+            }
             this.stride = stride;
             return this;
         }
@@ -274,20 +287,21 @@ public class Subsampling3DLayer extends NoParamLayer {
          * @param padding padding in the height and width dimensions
          */
         public Builder padding(int... padding) {
-            if (padding.length != 3)
+            if (padding.length != 3) {
                 throw new IllegalArgumentException("Invalid input: must be length 3");
+            }
             this.padding = padding;
             return this;
         }
 
         /**
-         * The data format for input and output activations.<br>
-         * NCDHW: activations (in/out) should have shape [minibatch, channels, depth, height, width]<br>
-         * NDHWC: activations (in/out) should have shape [minibatch, depth, height, width, channels]<br>
+         * The data format for input and output activations.<br> NCDHW: activations (in/out) should have shape
+         * [minibatch, channels, depth, height, width]<br> NDHWC: activations (in/out) should have shape [minibatch,
+         * depth, height, width, channels]<br>
          *
          * @param dataFormat Data format to use for activations
          */
-        public Builder dataFormat(Convolution3D.DataFormat dataFormat){
+        public Builder dataFormat(Convolution3D.DataFormat dataFormat) {
             this.dataFormat = dataFormat;
             return this;
         }
@@ -300,68 +314,107 @@ public class Subsampling3DLayer extends NoParamLayer {
             return new Subsampling3DLayer(this);
         }
 
+        /**
+         * Kernel size
+         *
+         * @param kernelSize kernel size in height and width dimensions
+         */
         @Override
         public void setKernelSize(int[] kernelSize) {
-            Preconditions.checkArgument(kernelSize.length == 1 || kernelSize.length == 3, "Must have 1 or 3 kernelSize values - got %s", kernelSize);
+            Preconditions.checkArgument(kernelSize.length == 1 || kernelSize.length == 3,
+                    "Must have 1 or 3 kernelSize values - got %s", kernelSize);
 
-            if(kernelSize.length == 1)
+            if (kernelSize.length == 1) {
                 super.setKernelSize(new int[]{kernelSize[0], kernelSize[0], kernelSize[0]});
-            else
+            } else {
                 super.setKernelSize(kernelSize);
+            }
         }
 
+        /**
+         * Stride
+         *
+         * @param stride stride in height and width dimensions
+         */
         @Override
         public void setStride(int[] stride) {
-            Preconditions.checkArgument(stride.length == 1 || stride.length == 3, "Must have 1 or 3 stride values - got %s", stride);
+            Preconditions
+                    .checkArgument(stride.length == 1 || stride.length == 3, "Must have 1 or 3 stride values - got %s",
+                            stride);
 
-            if(stride.length == 1)
+            if (stride.length == 1) {
                 super.setStride(new int[]{stride[0], stride[0], stride[0]});
-            else
+            } else {
                 super.setStride(stride);
+            }
         }
 
+        /**
+         * Padding
+         *
+         * @param padding padding in the height and width dimensions
+         */
         @Override
         public void setPadding(int[] padding) {
-            Preconditions.checkArgument(kernelSize.length == 1 || stride.length == 3, "Must have 1 or 3 padding values - got %s", padding);
+            Preconditions.checkArgument(kernelSize.length == 1 || stride.length == 3,
+                    "Must have 1 or 3 padding values - got %s", padding);
 
-            if(padding.length == 1)
+            if (padding.length == 1) {
                 super.setPadding(new int[]{padding[0], padding[0], padding[0]});
-            else
+            } else {
                 super.setPadding(padding);
+            }
         }
     }
 
     @NoArgsConstructor
     protected static abstract class BaseSubsamplingBuilder<T extends BaseSubsamplingBuilder<T>>
             extends Layer.Builder<T> {
+
         @Getter
         @Setter
         protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType =
                 org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
+
         @Getter
         @Setter
         protected int[] kernelSize = new int[]{1, 1, 1};
+
         @Getter
         @Setter
         protected int[] stride = new int[]{2, 2, 2};
+
         @Getter
         @Setter
         protected int[] padding = new int[]{0, 0, 0};
 
         public void setDilation(int[] dilation) {
-            Preconditions.checkArgument(dilation.length == 1 || dilation.length == 3, "Must have 1 or 3 dilation values - got %s", dilation);
-            
-            if(dilation.length == 1)
+            Preconditions.checkArgument(dilation.length == 1 || dilation.length == 3,
+                    "Must have 1 or 3 dilation values - got %s", dilation);
+
+            if (dilation.length == 1) {
                 dilation(dilation[0], dilation[0], dilation[0]);
-            else
+            } else {
                 dilation(dilation[0], dilation[1], dilation[2]);
+            }
         }
 
         @Getter
         protected int[] dilation = new int[]{1, 1, 1};
+
+        /**
+         * Set the convolution mode for the Convolution layer. See {@link ConvolutionMode} for more details
+         *
+         */
         @Getter
         @Setter
         protected ConvolutionMode convolutionMode = ConvolutionMode.Same;
+
+        /**
+         * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
+         * (non-CuDNN) implementation for ConvolutionLayer will be used
+         */
         @Getter
         @Setter
         protected boolean cudnnAllowFallback = true;
@@ -390,7 +443,7 @@ public class Subsampling3DLayer extends NoParamLayer {
         }
 
         protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize,
-                                         int[] stride, int[] padding) {
+                int[] stride, int[] padding) {
             this.poolingType = poolingType;
             this.kernelSize = kernelSize;
             this.stride = stride;
@@ -421,8 +474,7 @@ public class Subsampling3DLayer extends NoParamLayer {
         }
 
         /**
-         * Set the convolution mode for the Convolution layer.
-         * See {@link ConvolutionMode} for more details
+         * Set the convolution mode for the Convolution layer. See {@link ConvolutionMode} for more details
          *
          * @param convolutionMode Convolution mode for layer
          */
@@ -436,15 +488,15 @@ public class Subsampling3DLayer extends NoParamLayer {
             return (T) this;
         }
 
-        public T dilation(int dDepth, int dHeight, int dWidth){
+        public T dilation(int dDepth, int dHeight, int dWidth) {
             this.dilation = new int[]{dDepth, dHeight, dWidth};
             return (T) this;
         }
 
         /**
          * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
-         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in (non-CuDNN)
-         * implementation for ConvolutionLayer will be used
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
+         * (non-CuDNN) implementation for ConvolutionLayer will be used
          *
          * @param allowFallback Whether fallback to non-CuDNN implementation should be used
          */

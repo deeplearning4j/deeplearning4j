@@ -32,8 +32,8 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Zero padding layer for convolutional neural networks (2D CNNs).
- * Allows padding to be done separately for top/bottom/left/right
+ * Zero padding layer for convolutional neural networks (2D CNNs). Allows padding to be done separately for
+ * top/bottom/left/right
  *
  * @author Alex Black
  */
@@ -44,19 +44,20 @@ public class ZeroPaddingLayer extends NoParamLayer {
 
     private int[] padding;
 
-    public ZeroPaddingLayer(int padTopBottom, int padLeftRight){
+    public ZeroPaddingLayer(int padTopBottom, int padLeftRight) {
         this(new Builder(padTopBottom, padLeftRight));
     }
 
-    public ZeroPaddingLayer(int padTop, int padBottom, int padLeft, int padRight){
+    public ZeroPaddingLayer(int padTop, int padBottom, int padLeft, int padRight) {
         this(new Builder(padTop, padBottom, padLeft, padRight));
     }
 
     private ZeroPaddingLayer(Builder builder) {
         super(builder);
-        if(builder.padding == null || builder.padding.length != 4){
-            throw new IllegalArgumentException("Invalid padding values: must have exactly 4 values [top, bottom, left, right]." +
-                    " Got: " + (builder.padding == null ? null : Arrays.toString(builder.padding)));
+        if (builder.padding == null || builder.padding.length != 4) {
+            throw new IllegalArgumentException(
+                    "Invalid padding values: must have exactly 4 values [top, bottom, left, right]." +
+                            " Got: " + (builder.padding == null ? null : Arrays.toString(builder.padding)));
         }
 
         this.padding = builder.padding;
@@ -64,10 +65,10 @@ public class ZeroPaddingLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+            Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer(conf);
+                new org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
@@ -97,59 +98,64 @@ public class ZeroPaddingLayer extends NoParamLayer {
         InputType outputType = getOutputType(-1, inputType);
 
         return new LayerMemoryReport.Builder(layerName, ZeroPaddingLayer.class, inputType, outputType)
-                        .standardMemory(0, 0) //No params
-                        //Inference and training is same - just output activations, no working memory in addition to that
-                        .workingMemory(0, 0, MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                        .build();
+                .standardMemory(0, 0) //No params
+                //Inference and training is same - just output activations, no working memory in addition to that
+                .workingMemory(0, 0, MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
     public static class Builder extends Layer.Builder<Builder> {
 
-
+        /**
+         * Padding value for top, bottom, left, and right. Must be length 4 array
+         */
         @Getter
-        private int[] padding = new int[] {0, 0, 0, 0}; //Padding: top, bottom, left, right
+        private int[] padding = new int[]{0, 0, 0, 0}; //Padding: top, bottom, left, right
 
-
+        /**
+         * @param padding Padding value for top, bottom, left, and right. Must be length 4 array
+         */
         public void setPadding(int[] padding) {
-            if(padding.length == 2)
+            if (padding.length == 2) {
                 this.padding = new int[]{padding[0], padding[0], padding[1], padding[1]};
-            else if(padding.length == 1)
-                this.padding = new int[] {padding[0], padding[0], padding[0], padding[0]};
-            else if(padding.length == 4)
+            } else if (padding.length == 1) {
+                this.padding = new int[]{padding[0], padding[0], padding[0], padding[0]};
+            } else if (padding.length == 4) {
                 this.padding = padding;
-            else
+            } else {
                 Preconditions.checkArgument(false, "Must have 1, 2, or 4 padding values - got %s", padding);
+            }
         }
 
         /**
-         *
          * @param padHeight Padding for both the top and bottom
-         * @param padWidth  Padding for both the left and right
+         * @param padWidth Padding for both the left and right
          */
         public Builder(int padHeight, int padWidth) {
             this(padHeight, padHeight, padWidth, padWidth);
         }
 
         /**
-         * @param padTop    Top padding value
+         * @param padTop Top padding value
          * @param padBottom Bottom padding value
-         * @param padLeft   Left padding value
-         * @param padRight  Right padding value
+         * @param padLeft Left padding value
+         * @param padRight Right padding value
          */
         public Builder(int padTop, int padBottom, int padLeft, int padRight) {
-            this(new int[] {padTop, padBottom, padLeft, padRight});
+            this(new int[]{padTop, padBottom, padLeft, padRight});
         }
 
         /**
          * @param padding Must be a length 2 array with values [padTopBottom, padLeftRight] or a length 4 array with
-         *                values [padTop, padBottom, padLeft, padRight]
+         * values [padTop, padBottom, padLeft, padRight]
          */
         public Builder(int[] padding) {
-            if(padding.length == 2){
+            if (padding.length == 2) {
                 padding = new int[]{padding[0], padding[0], padding[1], padding[1]};
-            } else if(padding.length != 4){
-                throw new IllegalArgumentException("Padding must have exactly 2 or 4 values - got " + Arrays.toString(padding));
+            } else if (padding.length != 4) {
+                throw new IllegalArgumentException(
+                        "Padding must have exactly 2 or 4 values - got " + Arrays.toString(padding));
             }
             this.padding = padding;
         }
@@ -160,9 +166,9 @@ public class ZeroPaddingLayer extends NoParamLayer {
             for (int p : padding) {
                 if (p < 0) {
                     throw new IllegalStateException(
-                                    "Invalid zero padding layer config: padding [top, bottom, left, right]"
-                                                    + " must be > 0 for all elements. Got: "
-                                                    + Arrays.toString(padding));
+                            "Invalid zero padding layer config: padding [top, bottom, left, right]"
+                                    + " must be > 0 for all elements. Got: "
+                                    + Arrays.toString(padding));
                 }
             }
 

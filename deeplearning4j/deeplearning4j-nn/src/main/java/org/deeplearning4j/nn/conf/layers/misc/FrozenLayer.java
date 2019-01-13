@@ -39,11 +39,9 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * FrozenLayer is used for the purposes of transfer learning.<br>
- * A frozen layer wraps another DL4J Layer within it.
- * During backprop, the FrozenLayer is skipped, and any parameters are not be updated.
- * Usually users will typically not create FrozenLayer instances directly - they are usually used in the process of performing
- * transfer learning
+ * FrozenLayer is used for the purposes of transfer learning.<br> A frozen layer wraps another DL4J Layer within it.
+ * During backprop, the FrozenLayer is skipped, and any parameters are not be updated. Usually users will typically not
+ * create FrozenLayer instances directly - they are usually used in the process of performing transfer learning
  *
  * @author Alex Black
  */
@@ -78,12 +76,12 @@ public class FrozenLayer extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+            Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
 
         //Need to be able to instantiate a layer, from a config - for JSON -> net type situations
         org.deeplearning4j.nn.api.Layer underlying = layer.instantiate(getInnerConf(conf), trainingListeners,
-                        layerIndex, layerParamsView, initializeParams);
+                layerIndex, layerParamsView, initializeParams);
 
         NeuralNetConfiguration nncUnderlying = underlying.conf();
         if (nncUnderlying.variables() != null) {
@@ -161,12 +159,13 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public void setConstraints(List<LayerConstraint> constraints){
+    public void setConstraints(List<LayerConstraint> constraints) {
         this.constraints = constraints;
         this.layer.setConstraints(constraints);
     }
 
     public static class Builder extends Layer.Builder<Builder> {
+
         @Getter
         @Setter
         private Layer layer;

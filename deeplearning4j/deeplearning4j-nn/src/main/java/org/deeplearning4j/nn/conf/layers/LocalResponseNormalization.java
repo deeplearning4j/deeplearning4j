@@ -32,14 +32,14 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Local response normalization layer<br>
- * See section 3.3 of <a href="http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf">http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf</a>
+ * Local response normalization layer<br> See section 3.3 of <a href="http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf">http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf</a>
  */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class LocalResponseNormalization extends Layer {
+
     // Defaults as per http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf
     //Set defaults here as well as in builder, in case users use no-arg constructor instead of builder
     protected double n = 5; // # adjacent kernal maps
@@ -65,10 +65,10 @@ public class LocalResponseNormalization extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+            Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+            boolean initializeParams) {
         org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization ret =
-                        new org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization(conf);
+                new org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -88,8 +88,8 @@ public class LocalResponseNormalization extends Layer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException(
-                            "Invalid input type for LRN layer (layer index = " + layerIndex + ", layer name = \""
-                                            + getLayerName() + "\"): Expected input of type CNN, got " + inputType);
+                    "Invalid input type for LRN layer (layer index = " + layerIndex + ", layer name = \""
+                            + getLayerName() + "\"): Expected input of type CNN, got " + inputType);
         }
         return inputType;
     }
@@ -103,7 +103,7 @@ public class LocalResponseNormalization extends Layer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException(
-                            "Invalid input type for LRN layer (layer name = \"" + getLayerName() + "\"): null");
+                    "Invalid input type for LRN layer (layer name = \"" + getLayerName() + "\"): null");
         }
 
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
@@ -144,31 +144,60 @@ public class LocalResponseNormalization extends Layer {
         //Backward pass: 2x input size as working memory, in addition to epsilons
 
         return new LayerMemoryReport.Builder(layerName, DenseLayer.class, inputType, inputType).standardMemory(0, 0)
-                        .workingMemory(0, 2 * actElementsPerEx, 0, 3 * actElementsPerEx)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching in DenseLayer
-                        .build();
+                .workingMemory(0, 2 * actElementsPerEx, 0, 3 * actElementsPerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS,
+                        MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching in DenseLayer
+                .build();
     }
 
     @AllArgsConstructor
     public static class Builder extends Layer.Builder<Builder> {
+
         // defaults based on AlexNet model
+
+        /**
+         * LRN scaling constant k. Default: 2
+         *
+         */
         @Getter
         @Setter
         private double k = 2;
+
+        /**
+         * Number of adjacent kernel maps to use when doing LRN. default: 5
+         *
+         */
         @Getter
         @Setter
         private double n = 5;
+
+        /**
+         * LRN scaling constant alpha. Default: 1e-4
+         *
+         */
         @Getter
         @Setter
         private double alpha = 1e-4;
+
+        /**
+         * Scaling constant beta. Default: 0.75
+         *
+         */
         @Getter
         @Setter
         private double beta = 0.75;
+
+        /**
+         * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
+         * (non-CuDNN) implementation for BatchNormalization will be used
+         *
+         */
         @Getter
         @Setter
         protected boolean cudnnAllowFallback = true;
 
-        public Builder(double k, double n, double alpha, double beta){
+        public Builder(double k, double n, double alpha, double beta) {
             this(k, n, alpha, beta, true);
         }
 
@@ -178,7 +207,8 @@ public class LocalResponseNormalization extends Layer {
             this.beta = beta;
         }
 
-        public Builder() {}
+        public Builder() {
+        }
 
         /**
          * LRN scaling constant k. Default: 2
@@ -193,7 +223,7 @@ public class LocalResponseNormalization extends Layer {
         /**
          * Number of adjacent kernel maps to use when doing LRN. default: 5
          *
-         * @param n    Number of adjacent kernel maps
+         * @param n Number of adjacent kernel maps
          */
         public Builder n(double n) {
             this.n = n;
@@ -203,7 +233,7 @@ public class LocalResponseNormalization extends Layer {
         /**
          * LRN scaling constant alpha. Default: 1e-4
          *
-         * @param alpha    Scaling constant
+         * @param alpha Scaling constant
          */
         public Builder alpha(double alpha) {
             this.alpha = alpha;
@@ -213,7 +243,7 @@ public class LocalResponseNormalization extends Layer {
         /**
          * Scaling constant beta. Default: 0.75
          *
-         * @param beta    Scaling constant
+         * @param beta Scaling constant
          */
         public Builder beta(double beta) {
             this.beta = beta;
@@ -222,8 +252,8 @@ public class LocalResponseNormalization extends Layer {
 
         /**
          * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
-         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in (non-CuDNN)
-         * implementation for BatchNormalization will be used
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
+         * (non-CuDNN) implementation for BatchNormalization will be used
          *
          * @param allowFallback Whether fallback to non-CuDNN implementation should be used
          */

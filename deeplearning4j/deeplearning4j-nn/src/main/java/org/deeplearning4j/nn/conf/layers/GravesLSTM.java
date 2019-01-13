@@ -63,10 +63,10 @@ public class GravesLSTM extends AbstractLSTM {
     }
 
     @Override
-    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
+    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder) {
         super.initializeConstraints(builder);
-        if(((Builder)builder).recurrentConstraints != null){
-            if(constraints == null){
+        if (((Builder) builder).recurrentConstraints != null) {
+            if (constraints == null) {
                 constraints = new ArrayList<>();
             }
             for (LayerConstraint c : ((Builder) builder).recurrentConstraints) {
@@ -79,10 +79,10 @@ public class GravesLSTM extends AbstractLSTM {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("GravesLSTM", getLayerName(), layerIndex, getNIn(), getNOut());
         org.deeplearning4j.nn.layers.recurrent.GravesLSTM ret =
-                        new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(conf);
+                new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
