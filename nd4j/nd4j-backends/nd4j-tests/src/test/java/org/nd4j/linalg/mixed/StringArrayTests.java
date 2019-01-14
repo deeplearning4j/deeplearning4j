@@ -28,7 +28,7 @@ import static org.junit.Assert.*;
 public class StringArrayTests {
 
     @Test
-    public void testBasicStrings_1() throws Exception {
+    public void testBasicStrings_1() {
         val array = Nd4j.scalar("alpha");
 
         assertNotNull(array);
@@ -43,7 +43,7 @@ public class StringArrayTests {
     }
 
     @Test
-    public void testBasicStrings_2() throws Exception {
+    public void testBasicStrings_2() {
         val array = Nd4j.create("alpha","beta", "gamma");
 
         assertNotNull(array);
@@ -62,7 +62,7 @@ public class StringArrayTests {
     }
 
     @Test
-    public void testBasicStrings_3() throws Exception {
+    public void testBasicStrings_3() {
         val arrayX = Nd4j.create("alpha", "beta", "gamma");
         val arrayY = Nd4j.create("alpha", "beta", "gamma");
         val arrayZ = Nd4j.create("Alpha", "bEta", "gamma");

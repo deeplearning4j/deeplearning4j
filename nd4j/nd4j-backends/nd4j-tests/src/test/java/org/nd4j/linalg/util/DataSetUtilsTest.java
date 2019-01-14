@@ -44,7 +44,7 @@ public class DataSetUtilsTest {
 	private SIS sis;
 	//
 	@Test
-	public void testAll() throws Exception {
+	public void testAll() {
 		//
 		sis = new SIS();
 		//

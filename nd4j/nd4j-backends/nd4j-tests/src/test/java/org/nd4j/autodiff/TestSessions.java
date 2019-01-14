@@ -3,14 +3,11 @@ package org.nd4j.autodiff;
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.SameDiffConditional;
-import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 import org.nd4j.autodiff.samediff.internal.AbstractSession;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
@@ -20,9 +17,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestSessions {
 
@@ -199,7 +194,7 @@ public class TestSessions {
             Map<String, INDArray> m = is.output(Arrays.asList(n, n2), Collections.emptyMap());
             assertEquals(2, m.size());
 
-            INDArray exp = Nd4j.scalar((double)numIter);
+            INDArray exp = Nd4j.scalar((float)numIter);
 
             assertEquals(exp, m.get(n));
             assertEquals(exp, m.get(n2));
@@ -220,7 +215,7 @@ public class TestSessions {
             //Check 2: Add should be executed numIter times...
             for( int i=0; i<numIter; i++ ){
                 expVarId = new AbstractSession.VarId("while/add","while/while_context", i);
-                INDArray expAddVal = Nd4j.scalar(i+1);  //Starts at 0, so post exec it's 1 higher than iter number
+                INDArray expAddVal = Nd4j.scalar((float)(i+1));  //Starts at 0, so post exec it's 1 higher than iter number
                 assertTrue(outputs.containsKey(expVarId));
                 assertEquals(expAddVal, outputs.get(expVarId));
             }

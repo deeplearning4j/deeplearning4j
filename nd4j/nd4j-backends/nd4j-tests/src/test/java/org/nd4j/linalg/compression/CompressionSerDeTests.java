@@ -28,9 +28,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.ByteArrayInputStream;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for SerDe on compressed arrays

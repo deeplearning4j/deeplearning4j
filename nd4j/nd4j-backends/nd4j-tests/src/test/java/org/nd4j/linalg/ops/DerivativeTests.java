@@ -26,12 +26,10 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.Step;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Sigmoid;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -173,7 +171,7 @@ public class DerivativeTests extends BaseNd4jTest {
             expDerivOut[i] = hsDeriv;
         }
 
-        INDArray z = Nd4j.getExecutioner().exec(Nd4j.getOpFactory().createTransform("hard_sigmoid", xArr.dup()));
+        INDArray z = Transforms.hardSigmoid(xArr, true);
         INDArray zPrime = Nd4j.getExecutioner().exec(new HardSigmoidDerivative(xArr.dup()));
 
         System.out.println(xArr);
@@ -366,7 +364,7 @@ public class DerivativeTests extends BaseNd4jTest {
             }
         }
 
-        INDArray act = Nd4j.getExecutioner().exec(Nd4j.getOpFactory().createTransform("elu", z.dup()));
+        INDArray act = Transforms.elu(z, true);
         INDArray actDeriv = Nd4j.getExecutioner().exec(new ELUDerivative(z.dup()));
 
         System.out.println(act);

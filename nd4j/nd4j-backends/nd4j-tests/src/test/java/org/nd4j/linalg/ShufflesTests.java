@@ -156,7 +156,7 @@ public class ShufflesTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testSymmetricShuffle2() throws Exception {
+    public void testSymmetricShuffle2() {
         INDArray features = Nd4j.zeros(10, 10, 20);
         INDArray labels = Nd4j.zeros(10, 10, 3);
 
@@ -198,7 +198,7 @@ public class ShufflesTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testSymmetricShuffle3() throws Exception {
+    public void testSymmetricShuffle3() {
         INDArray features = Nd4j.zeros(10, 10, 20);
         INDArray featuresMask = Nd4j.zeros(10, 20);
         INDArray labels = Nd4j.zeros(10, 10, 3);
@@ -263,7 +263,7 @@ public class ShufflesTests extends BaseNd4jTest {
      * @throws Exception
      */
     @Test
-    public void testHalfVectors1() throws Exception {
+    public void testHalfVectors1() {
         int[] array1 = ArrayUtil.buildHalfVector(new Random(12), 20);
         int[] array2 = ArrayUtil.buildHalfVector(new Random(75), 20);
 
@@ -284,7 +284,7 @@ public class ShufflesTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testInterleavedVector1() throws Exception {
+    public void testInterleavedVector1() {
         int[] array1 = ArrayUtil.buildInterleavedVector(new Random(12), 20);
         int[] array2 = ArrayUtil.buildInterleavedVector(new Random(75), 20);
 
@@ -363,7 +363,7 @@ public class ShufflesTests extends BaseNd4jTest {
 
         public float[] measureState(INDArray data) {
             // FIXME: int cast
-            float[] result = new float[(int) data.rows()];
+            float[] result = new float[data.rows()];
 
             for (int x = 0; x < data.rows(); x++) {
                 result[x] = data.getRow(x).getFloat(0);

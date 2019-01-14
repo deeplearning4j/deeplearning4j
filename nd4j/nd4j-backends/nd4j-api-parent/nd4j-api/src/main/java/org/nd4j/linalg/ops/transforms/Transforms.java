@@ -512,6 +512,16 @@ public class Transforms {
     }
 
     /**
+     * out = in * (1-in)
+     * @param in   Input array
+     * @param copy If true: copy. False: apply in-place
+     * @return
+     */
+    public static INDArray timesOneMinus(INDArray in, boolean copy){
+        return Nd4j.getExecutioner().exec(new TimesOneMinus(in, (copy ? in.ulike() : in)));
+    }
+
+    /**
      * Abs function
      *
      * @param ndArray
@@ -546,6 +556,10 @@ public class Transforms {
      */
     public static INDArray hardTanh(INDArray ndArray, boolean dup) {
         return exec(dup ? new HardTanh(ndArray, ndArray.ulike()) : new HardTanh(ndArray));
+    }
+
+    public static INDArray hardSigmoid(INDArray arr, boolean dup){
+        return Nd4j.getExecutioner().exec(new HardSigmoid(arr, (dup ? arr.ulike() : arr)));
     }
 
 

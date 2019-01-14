@@ -17,14 +17,12 @@
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
@@ -32,14 +30,12 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.reduce.*;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.reduce.floating.AMean;
-import org.nd4j.linalg.api.ops.impl.reduce.same.ASum;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
+import org.nd4j.linalg.api.ops.impl.reduce.Moments;
+import org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments;
+import org.nd4j.linalg.api.ops.impl.reduce.floating.AMean;
+import org.nd4j.linalg.api.ops.impl.reduce.same.ASum;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -49,13 +45,11 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -110,7 +104,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 ia = Nd4j.rand(DataType.DOUBLE,2, 2);
             }
 
-            SDVariable input = sd.var("in", DataType.DOUBLE, new int[]{2, 2});
+            SDVariable input = sd.var("in", DataType.DOUBLE, 2, 2);
             sd.associateArrayWithVariable(ia, input);
 
             SDVariable nonZero = sd.countNonZero(input);
@@ -141,16 +135,16 @@ public class ReductionOpValidation extends BaseOpValidation {
                 //Not gradient checkable for 0 and 1 values
                 ia = Nd4j.create(new int[]{2, 2}, new float[]{0, 1, 0, 1});
             } else {
-                ia = Nd4j.rand(2, 2);
+                ia = Nd4j.rand(DataType.FLOAT, 2, 2);
             }
 
-            SDVariable input = sd.var("in", new int[]{2, 2});
+            SDVariable input = sd.var("in", 2, 2);
             sd.associateArrayWithVariable(ia, input);
 
             SDVariable zeroFraction = sd.zeroFraction(input);
 
             String error = OpValidation.validate(new TestCase(sd)
-                    .expectedOutput(zeroFraction.getVarName(), Nd4j.trueScalar(i == 0 ? 0.5 : 0.0))
+                    .expectedOutput(zeroFraction.getVarName(), Nd4j.scalar(i == 0 ? 0.5f : 0.0f))
                     .gradientCheck(i != 0)
             );
             if (error != null)
@@ -174,7 +168,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 10;
-            SDVariable input = sd.var("in", new int[]{-1, nOut});
+            SDVariable input = sd.var("in", -1, nOut);
             INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100);
             long length = nOut * minibatch;
 
@@ -628,8 +622,8 @@ public class ReductionOpValidation extends BaseOpValidation {
                 sd.setLogExecution(false);
 
 
-                SDVariable in = sd.var("in", new int[]{-1, d1, d2});
-                SDVariable in2 = sd.var("in2", new int[]{-1, d1, d2});
+                SDVariable in = sd.var("in", -1, d1, d2);
+                SDVariable in2 = sd.var("in2", -1, d1, d2);
 
                 INDArray inArr = Nd4j.randn(new int[]{d0, d1, d2}).muli(100);
                 INDArray in2Arr = Nd4j.randn(inArr.shape()).muli(100);
@@ -783,14 +777,14 @@ public class ReductionOpValidation extends BaseOpValidation {
     @Test
     public void testAllAny() {
 
-        INDArray allZeros = Nd4j.create(3, 4);
-        INDArray allOnes = Nd4j.ones(3, 4);
-        INDArray mixed = Nd4j.zeros(3, 4);
+        INDArray allZeros = Nd4j.zeros(DataType.FLOAT, 3, 4);
+        INDArray allOnes = Nd4j.ones(DataType.FLOAT, 3, 4);
+        INDArray mixed = Nd4j.zeros(DataType.FLOAT, 3, 4);
         mixed.getRow(1).assign(1.0);
 
         INDArray[] in = new INDArray[]{allZeros, allOnes, mixed};
-        double[] expAll = new double[]{0, 1, 0};
-        double[] expAny = new double[]{0, 1, 1};
+        boolean[] expAll = new boolean[]{false, true, false};
+        boolean[] expAny = new boolean[]{false, true, true};
 
         for (int i = 0; i < 3; i++) {
             SameDiff sd = SameDiff.create();
@@ -801,8 +795,8 @@ public class ReductionOpValidation extends BaseOpValidation {
 
             String err = OpValidation.validate(new TestCase(sd)
                     .gradientCheck(false)
-                    .expected(all, Nd4j.create(new double[]{expAll[i]}))
-                    .expected(any, Nd4j.create(new double[]{expAny[i]})));
+                    .expected(all, Nd4j.create(new boolean[]{expAll[i]}))
+                    .expected(any, Nd4j.create(new boolean[]{expAny[i]})));
 
             assertNull(err);
         }
@@ -1059,7 +1053,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             INDArray result = sd.execAndEndResult();
             assertEquals(1, result.length());
 
-            Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> p = sd.execBackwards();
+            sd.execBackwards(Collections.emptyMap());
         }
     }
 }

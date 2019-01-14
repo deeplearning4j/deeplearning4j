@@ -145,7 +145,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testStdX() throws Exception {
+    public void testStdX() {
         INDArray array = Nd4j.create(new double[] {11.10, 22.20, 33.30, 44.40, 55.50, 66.60, 77.70, 88.80, 99.90,
                         111.00, 122.10, 133.20, 144.30, 155.40, 166.50, 177.60, 188.70, 199.80, 210.90, 222.00, 233.10,
                         244.20, 255.30, 266.40, 277.50, 288.60, 299.70, 310.80, 321.90, 333.00, 344.10, 355.20, 366.30,

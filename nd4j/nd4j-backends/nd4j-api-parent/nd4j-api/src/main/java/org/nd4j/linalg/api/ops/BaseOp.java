@@ -107,24 +107,14 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         this(x, null, x, x == null ? 0 : x.lengthLong());
     }
 
-    @Override
-    public boolean isExecSpecial() {
-        return false;
-    }
-
     public static Type getOpType(Op op) {
         Type type = null;
 
         if (op instanceof CustomOp) {
             return Type.CUSTOM;
-        } else if (op instanceof ShapeOp) {
-            return Type.SHAPE;
         } else if (op instanceof TransformOp) {
             if (op.y() == null) {
-                if (!op.isExecSpecial())
-                    type = Type.TRANSFORM_FLOAT;
-                else
-                    type = Type.TRANSFORM_STRICT;
+                type = Type.TRANSFORM_FLOAT;
             } else {
                 type = Op.Type.PAIRWISE;
             }
@@ -218,11 +208,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
         }
         return null;
-    }
-
-    @Override
-    public boolean isPassThrough() {
-        return passThrough;
     }
 
     @Override
@@ -338,28 +323,11 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     }
 
 
-
-    @Override
-    public long n() {
-        if(n == 0) {
-            if(arg() != null)
-                this.n = Shape.lengthOf(arg().getShape());
-
-        }
-        return n;
-    }
-
-
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         this.x = x;
         this.y = y;
         this.z = z;
-        this.n = n;
-    }
-
-    @Override
-    public void setN(long n) {
         this.n = n;
     }
 
@@ -399,17 +367,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         return customOpBuilder.build();
 
     }
-
-    @Override
-    public void exec() {
-        //no-op
-    }
-
-    @Override
-    public void exec(int... dimensions) {
-        //no-op
-    }
-
 
 
     @Override

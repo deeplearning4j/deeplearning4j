@@ -25,8 +25,8 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -56,77 +56,77 @@ public class BooleanIndexingTest extends BaseNd4jTest {
      */
 
     @Test
-    public void testAnd1() throws Exception {
+    public void testAnd1() {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
         assertTrue(BooleanIndexing.and(array, Conditions.greaterThan(0.5f)));
     }
 
     @Test
-    public void testAnd2() throws Exception {
+    public void testAnd2() {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
         assertTrue(BooleanIndexing.and(array, Conditions.lessThan(6.0f)));
     }
 
     @Test
-    public void testAnd3() throws Exception {
+    public void testAnd3() {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
         assertFalse(BooleanIndexing.and(array, Conditions.lessThan(5.0f)));
     }
 
     @Test
-    public void testAnd4() throws Exception {
+    public void testAnd4() {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
         assertFalse(BooleanIndexing.and(array, Conditions.greaterThan(4.0f)));
     }
 
     @Test
-    public void testAnd5() throws Exception {
+    public void testAnd5() {
         INDArray array = Nd4j.create(new float[] {1e-5f, 1e-5f, 1e-5f, 1e-5f, 1e-5f});
 
         assertTrue(BooleanIndexing.and(array, Conditions.greaterThanOrEqual(1e-5f)));
     }
 
     @Test
-    public void testAnd6() throws Exception {
+    public void testAnd6() {
         INDArray array = Nd4j.create(new float[] {1e-5f, 1e-5f, 1e-5f, 1e-5f, 1e-5f});
 
         assertFalse(BooleanIndexing.and(array, Conditions.lessThan(1e-5f)));
     }
 
     @Test
-    public void testAnd7() throws Exception {
+    public void testAnd7() {
         INDArray array = Nd4j.create(new float[] {1e-5f, 1e-5f, 1e-5f, 1e-5f, 1e-5f});
 
         assertTrue(BooleanIndexing.and(array, Conditions.equals(1e-5f)));
     }
 
     @Test
-    public void testOr1() throws Exception {
+    public void testOr1() {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
         assertTrue(BooleanIndexing.or(array, Conditions.greaterThan(3.0f)));
     }
 
     @Test
-    public void testOr2() throws Exception {
+    public void testOr2() {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
         assertTrue(BooleanIndexing.or(array, Conditions.lessThan(3.0f)));
     }
 
     @Test
-    public void testOr3() throws Exception {
+    public void testOr3() {
         INDArray array = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
 
         assertFalse(BooleanIndexing.or(array, Conditions.greaterThan(6.0f)));
     }
 
     @Test
-    public void testApplyWhere1() throws Exception {
+    public void testApplyWhere1() {
         INDArray array = Nd4j.create(new float[] {-1f, -1f, -1f, -1f, -1f});
 
         BooleanIndexing.applyWhere(array, Conditions.lessThan(Nd4j.EPS_THRESHOLD), new Value(Nd4j.EPS_THRESHOLD));
@@ -137,7 +137,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testApplyWhere2() throws Exception {
+    public void testApplyWhere2() {
         INDArray array = Nd4j.create(new float[] {0f, 0f, 0f, 0f, 0f});
 
         BooleanIndexing.applyWhere(array, Conditions.lessThan(1.0f), new Value(1.0f));
@@ -146,7 +146,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testApplyWhere3() throws Exception {
+    public void testApplyWhere3() {
         INDArray array = Nd4j.create(new float[] {1e-18f, 1e-18f, 1e-18f, 1e-18f, 1e-18f});
 
         BooleanIndexing.applyWhere(array, Conditions.lessThan(1e-12f), new Value(1e-12f));
@@ -157,7 +157,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testApplyWhere4() throws Exception {
+    public void testApplyWhere4() {
         INDArray array = Nd4j.create(new float[] {1e-18f, Float.NaN, 1e-18f, 1e-18f, 1e-18f});
 
         BooleanIndexing.applyWhere(array, Conditions.lessThan(1e-12f), new Value(1e-12f));
@@ -180,14 +180,14 @@ public class BooleanIndexingTest extends BaseNd4jTest {
      */
 
     @Test
-    public void test2dAnd1() throws Exception {
+    public void test2dAnd1() {
         INDArray array = Nd4j.zeros(10, 10);
 
         assertTrue(BooleanIndexing.and(array, Conditions.equals(0f)));
     }
 
     @Test
-    public void test2dAnd2() throws Exception {
+    public void test2dAnd2() {
         INDArray array = Nd4j.zeros(10, 10);
 
         array.slice(4).putScalar(2, 1e-5f);
@@ -201,7 +201,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void test2dAnd3() throws Exception {
+    public void test2dAnd3() {
         INDArray array = Nd4j.zeros(10, 10);
 
         array.slice(4).putScalar(2, 1e-5f);
@@ -210,7 +210,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void test2dAnd4() throws Exception {
+    public void test2dAnd4() {
         INDArray array = Nd4j.zeros(10, 10);
 
         array.slice(4).putScalar(2, 1e-5f);
@@ -219,7 +219,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void test2dApplyWhere1() throws Exception {
+    public void test2dApplyWhere1() {
         INDArray array = Nd4j.ones(4, 4);
 
         array.slice(3).putScalar(2, 1e-5f);
@@ -244,7 +244,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
      * @throws Exception
      */
     @Test
-    public void testSliceAssign1() throws Exception {
+    public void testSliceAssign1() {
         INDArray array = Nd4j.zeros(4, 4);
 
         INDArray patch = Nd4j.create(new float[] {1e-5f, 1e-5f, 1e-5f}).reshape(1, -1);
@@ -265,7 +265,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testConditionalAssign1() throws Exception {
+    public void testConditionalAssign1() {
         INDArray array1 = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6, 7});
         INDArray array2 = Nd4j.create(new double[] {7, 6, 5, 4, 3, 2, 1});
         INDArray comp = Nd4j.create(new double[] {1, 2, 3, 4, 3, 2, 1});
@@ -276,7 +276,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testCaSTransform1() throws Exception {
+    public void testCaSTransform1() {
         INDArray array = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray comp = Nd4j.create(new double[] {1, 2, 3, 4, 5});
 
@@ -286,7 +286,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testCaSTransform2() throws Exception {
+    public void testCaSTransform2() {
         INDArray array = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray comp = Nd4j.create(new double[] {3, 2, 3, 4, 5});
 
@@ -296,7 +296,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testCaSPairwiseTransform1() throws Exception {
+    public void testCaSPairwiseTransform1() {
         INDArray array = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray comp = Nd4j.create(new double[] {1, 2, 3, 4, 5});
 
@@ -306,7 +306,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testCaRPairwiseTransform1() throws Exception {
+    public void testCaRPairwiseTransform1() {
         INDArray array = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray comp = Nd4j.create(new double[] {1, 2, 3, 4, 5});
 
@@ -316,7 +316,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testCaSPairwiseTransform2() throws Exception {
+    public void testCaSPairwiseTransform2() {
         INDArray x = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray y = Nd4j.create(new double[] {2, 4, 3, 0, 5});
         INDArray comp = Nd4j.create(new double[] {2, 4, 3, 4, 5});
@@ -327,7 +327,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testCaRPairwiseTransform2() throws Exception {
+    public void testCaRPairwiseTransform2() {
         INDArray x = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray y = Nd4j.create(new double[] {2, 4, 3, 4, 5});
         INDArray comp = Nd4j.create(new double[] {2, 4, 0, 4, 5});
@@ -338,7 +338,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testCaSPairwiseTransform3() throws Exception {
+    public void testCaSPairwiseTransform3() {
         INDArray x = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray y = Nd4j.create(new double[] {2, 4, 3, 4, 5});
         INDArray comp = Nd4j.create(new double[] {2, 4, 3, 4, 5});
@@ -349,7 +349,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testCaRPairwiseTransform3() throws Exception {
+    public void testCaRPairwiseTransform3() {
         INDArray x = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray y = Nd4j.create(new double[] {2, 4, 3, 4, 5});
         INDArray comp = Nd4j.create(new double[] {2, 2, 3, 4, 5});
@@ -361,7 +361,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
 
 
     @Test
-    public void testMatchConditionAllDimensions1() throws Exception {
+    public void testMatchConditionAllDimensions1() {
         INDArray array = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
 
         int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.lessThan(5)))
@@ -371,7 +371,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testMatchConditionAllDimensions2() throws Exception {
+    public void testMatchConditionAllDimensions2() {
         INDArray array = Nd4j.create(new double[] {0, 1, 2, 3, Double.NaN, 5, 6, 7, 8, 9});
 
         int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.isNan()))
@@ -381,7 +381,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testMatchConditionAllDimensions3() throws Exception {
+    public void testMatchConditionAllDimensions3() {
         INDArray array = Nd4j.create(new double[] {0, 1, 2, 3, Double.NEGATIVE_INFINITY, 5, 6, 7, 8, 9});
 
         int val = (int) Nd4j.getExecutioner()
@@ -427,7 +427,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testMatchConditionAlongDimension1() throws Exception {
+    public void testMatchConditionAlongDimension1() {
         INDArray array = Nd4j.ones(3, 10);
         array.getRow(2).assign(0.0);
 
@@ -439,7 +439,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testMatchConditionAlongDimension2() throws Exception {
+    public void testMatchConditionAlongDimension2() {
         INDArray array = Nd4j.ones(3, 10);
         array.getRow(2).assign(0.0).putScalar(0, 1.0);
 
@@ -453,7 +453,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testMatchConditionAlongDimension3() throws Exception {
+    public void testMatchConditionAlongDimension3() {
         INDArray array = Nd4j.ones(3, 10);
         array.getRow(2).assign(0.0).putScalar(0, 1.0);
 
@@ -521,7 +521,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testEpsEquals1() throws Exception {
+    public void testEpsEquals1() {
         INDArray array = Nd4j.create(new double[] {-1, -1, -1e-8, 1e-8, 1, 1});
         MatchCondition condition = new MatchCondition(array, Conditions.epsEquals(0.0));
         int numZeroes = Nd4j.getExecutioner().exec(condition).getInt(0);
@@ -595,7 +595,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testEpsStuff_1() throws Exception {
+    public void testEpsStuff_1() {
         val dtype = Nd4j.dataType();
         val array = Nd4j.create(new float[]{0.001f, 5e-6f, 5e-6f, 5e-6f, 5e-6f});
         val exp = Nd4j.create(new float[]{0.001f, 1.0f, 1.0f, 1.0f, 1.0f});

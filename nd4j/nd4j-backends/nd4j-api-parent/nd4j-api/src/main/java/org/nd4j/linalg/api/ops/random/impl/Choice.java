@@ -49,11 +49,6 @@ public class Choice extends BaseRandomOp {
     }
 
     @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
     public int opNum() {
         return 5;
     }
@@ -73,7 +68,6 @@ public class Choice extends BaseRandomOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

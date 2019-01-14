@@ -59,7 +59,10 @@ public class BaseDatasetIterator implements DataSetIterator {
             throw new NoSuchElementException("No next element - hasNext() == false");
         int next = Math.min(batch, numExamples - fetcher.cursor());
         fetcher.fetch(next);
-        return fetcher.next();
+        DataSet ds = fetcher.next();
+        if (preProcessor != null)
+            preProcessor.preProcess(ds);
+        return ds;
     }
 
     @Override

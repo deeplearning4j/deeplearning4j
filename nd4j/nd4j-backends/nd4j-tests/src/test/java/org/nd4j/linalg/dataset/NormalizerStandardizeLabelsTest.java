@@ -20,7 +20,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
@@ -54,17 +53,17 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
         INDArray featureY = featureX.mul(y);
         INDArray featureZ = featureX.mul(z);
         INDArray featureSet = Nd4j.concat(1, featureX, featureY, featureZ);
-        INDArray labelSet = featureSet.dup().getColumns(new int[] {0});
+        INDArray labelSet = featureSet.dup().getColumns(0);
         DataSet sampleDataSet = new DataSet(featureSet, labelSet);
 
         double meanNaturalNums = (nSamples + 1) / 2.0;
         INDArray theoreticalMean =
                         Nd4j.create(new double[] {meanNaturalNums * x, meanNaturalNums * y, meanNaturalNums * z}).reshape(1, -1).castTo(Nd4j.defaultFloatingPointType());
-        INDArray theoreticallabelMean = theoreticalMean.dup().getColumns(new int[] {0});
+        INDArray theoreticallabelMean = theoreticalMean.dup().getColumns(0);
         double stdNaturalNums = Math.sqrt((nSamples * nSamples - 1) / 12.0);
         INDArray theoreticalStd =
                         Nd4j.create(new double[] {stdNaturalNums * x, stdNaturalNums * y, stdNaturalNums * z}).reshape(1, -1).castTo(Nd4j.defaultFloatingPointType());
-        INDArray theoreticallabelStd = theoreticalStd.dup().getColumns(new int[] {0});
+        INDArray theoreticallabelStd = theoreticalStd.dup().getColumns(0);
 
         NormalizerStandardize myNormalizer = new NormalizerStandardize();
         myNormalizer.fitLabel(true);

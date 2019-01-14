@@ -16,14 +16,15 @@ import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
-import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -346,7 +347,7 @@ public class RngValidationTests {
             case "binomial":
                 return new BinomialDistribution(tc.arr(), tc.prop("n"), (double)tc.prop("p"));
             case "truncated_normal":
-                return new TruncatedNormalDistribution(tc.arr(), (double)tc.prop("mean"), (double)tc.prop("std") );
+                return new TruncatedNormalDistribution(tc.arr(), (double)tc.prop("mean"), tc.prop("std"));
             case "dropout":
                 INDArray z = tc.arr();
                 z.assign(1.0);

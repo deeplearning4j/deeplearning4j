@@ -51,7 +51,7 @@ public class LogSoftMax extends DynamicCustomOp {
     }
 
     public LogSoftMax(INDArray x) {
-        this(x, null);
+        this(x, x);
     }
 
 

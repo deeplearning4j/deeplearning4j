@@ -106,11 +106,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray exec(Op op) {
-        if (op.isPassThrough()) {
-            op.exec();
-            return op.z();
-        }
-
         throw new IllegalStateException("Java computation no longer supported");
     }
 
@@ -241,17 +236,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return execAndReturn(op).outputArguments();
     }
 
-    /**
-     * Execute and return the result from a vector op
-     *
-     * @param op
-     */
-    @Override
-    public ShapeOp execAndReturn(ShapeOp op) {
-        exec(op);
-        return op;
-    }
-
     @Override
     public INDArray exec(ReduceOp op) {
         throw new UnsupportedOperationException("Java computation no longer supported");
@@ -308,19 +292,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public INDArray exec(ScalarOp op) {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @param op
-     */
-    @Override
-    public INDArray exec(ShapeOp op) {
-        if(!op.isExecSpecial()) {
-            throw new IllegalArgumentException("Only special execution supported right now.");
-        }
-
-        op.exec();
-        return op.z();
     }
 
     @Override
@@ -832,7 +803,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
-        boolean execSpecial = op.isExecSpecial();
         Object[] extraArgs = op.extraArgs();
 
         sb.append("\n");
@@ -846,7 +816,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if(y == z && y != null)
             sb.append("(y == z)");
         sb.append("\n");
-        sb.append("isExecSpecial: ").append(execSpecial).append("; extraArgs: ").append(Preconditions.formatArray(extraArgs));
+        sb.append("; extraArgs: ").append(Preconditions.formatArray(extraArgs));
         return sb.toString();
     }
 

@@ -39,6 +39,7 @@ import java.util.Properties;
  */
 public interface OpExecutioner {
 
+    @Deprecated
     enum ExecutionMode {
         JAVA, NATIVE
     }
@@ -148,22 +149,16 @@ public interface OpExecutioner {
      * @param op*/
     BroadcastOp execAndReturn(BroadcastOp op);
 
-    /** Execute and return the result from a vector op
-     * @param op*/
-    ShapeOp execAndReturn(ShapeOp op);
-
     /**
-     * Execute an reduceOp along one or more dimensions
+     * Execute a reduceOp, possibly along one or more dimensions
      * @param reduceOp the reduceOp
-     * @param dimension the dimension
      * @return the reduceOp op
      */
     INDArray exec(ReduceOp reduceOp);
 
     /**
-     * Execute an broadcast along one or more dimensions
+     * Execute a broadcast op, possibly along one or more dimensions
      * @param broadcast the accumulation
-     * @param dimension the dimension
      * @return the broadcast op
      */
     INDArray exec(BroadcastOp broadcast);
@@ -176,9 +171,8 @@ public interface OpExecutioner {
     INDArray exec(ScalarOp broadcast);
 
     /**
-     * Execute an accumulation along one or more dimensions
+     * Execute an variance accumulation op, possibly along one or more dimensions
      * @param accumulation the accumulation
-     * @param dimension the dimension
      * @return the accmulation op
      */
     INDArray exec(Variance accumulation);
@@ -186,7 +180,6 @@ public interface OpExecutioner {
 
     /** Execute an index accumulation along one or more dimensions
      * @param indexAccum the index accumulation operation
-     * @param dimension the dimension/s to execute along
      * @return result
      */
     INDArray exec(IndexAccumulation indexAccum);
@@ -232,12 +225,6 @@ public interface OpExecutioner {
      * @param op
      */
     void exec(Aggregate op);
-
-    /**
-     *
-     * @param op
-     */
-    INDArray exec(ShapeOp op);
 
     /**
      * This method executes previously built batch

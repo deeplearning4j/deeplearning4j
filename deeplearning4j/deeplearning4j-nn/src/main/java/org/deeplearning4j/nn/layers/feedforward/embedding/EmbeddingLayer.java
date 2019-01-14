@@ -125,7 +125,6 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray rows = preOutput(training, workspaceMgr);
 
-        //INDArray ret =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), rows));
         INDArray ret = layerConf().getActivationFn().getActivation(rows, training);
         if (maskArray != null) {
             ret.muliColumnVector(maskArray);
