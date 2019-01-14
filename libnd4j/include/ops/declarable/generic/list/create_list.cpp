@@ -35,6 +35,7 @@ namespace nd4j {
                 height = INT_ARG(0);
             } else if (block.width() == 1) {
                 height = INPUT_VARIABLE(0)->e<int>(0);
+                expandable = true;
             } else {
                 height = 0;
                 expandable = true;
