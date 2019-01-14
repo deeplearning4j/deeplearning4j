@@ -421,7 +421,7 @@ namespace nd4j {
                 return arrayList;
 
 
-            for (int e = 0; e < 65536; e++) {
+            for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
                 std::pair<int,int> pair(1, e);
                 if (variableSpace.hasVariable(pair)) {
                     auto var = variableSpace.getVariable(pair);

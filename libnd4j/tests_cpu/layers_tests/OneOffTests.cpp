@@ -248,3 +248,72 @@ TEST_F(OneOffTests, test_assert_4) {
 
     delete graph;
 }
+
+TEST_F(OneOffTests, test_cond_true_1) {
+    auto e = NDArrayFactory::create<float>('c', {5}, {1.f, 2.f, 3.f, 4.f, 5.f});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/cond_true.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(6));
+
+    auto z = graph->getVariableSpace()->getVariable(6)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    z->printIndexedBuffer("z buffer");
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
+}
+/*
+TEST_F(OneOffTests, test_cond_false_1) {
+    auto e = NDArrayFactory::create<float>('c', {5}, {1.f, 1.f, 1.f, 1.f, 1.f});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/cond_false.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(6));
+
+    auto z = graph->getVariableSpace()->getVariable(6)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    z->printIndexedBuffer("z buffer");
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
+}
+*/
+
+TEST_F(OneOffTests, test_identity_n_2) {
+    auto e = NDArrayFactory::create<float>('c', {2, 3}, {0.77878559f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/identity_n_2.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1));
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1, 1));
+
+    auto z = graph->getVariableSpace()->getVariable(1)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
+}
