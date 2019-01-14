@@ -20,13 +20,14 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -55,6 +56,20 @@ public class ScatterMax extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "ScatterMax";
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
+
+        if (nodeDef.containsAttr("use_locking")) {
+            if (nodeDef.getAttrOrThrow("use_locking").getB() == true) {
+                bArguments.add(true);
+            } else {
+                bArguments.add(false);
+            }
+        } else
+            bArguments.add(false);
     }
 
     @Override
