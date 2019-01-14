@@ -52,8 +52,6 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
-import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
@@ -179,7 +177,6 @@ public class Nd4j {
     protected static Class<? extends ConvolutionInstance> convolutionInstanceClazz;
     protected static Class<? extends DataBufferFactory> dataBufferFactoryClazz;
     protected static Class<? extends OpExecutioner> opExecutionerClazz;
-    protected static Class<? extends OpFactory> opFactoryClazz;
     protected static Class<? extends org.nd4j.linalg.api.rng.Random> randomClazz;
     protected static Class<? extends DistributionFactory> distributionFactoryClazz;
     protected static Class<? extends Instrumentation> instrumentationClazz;
@@ -197,7 +194,6 @@ public class Nd4j {
     protected static ConvolutionInstance CONVOLUTION_INSTANCE;
     protected static OpExecutioner OP_EXECUTIONER_INSTANCE;
     protected static DistributionFactory DISTRIBUTION_FACTORY;
-    protected static OpFactory OP_FACTORY_INSTANCE;
     protected static Instrumentation instrumentation;
     protected static ShapeInfoProvider shapeInfoProvider;
     protected static SparseInfoProvider sparseInfoProvider;
@@ -661,15 +657,6 @@ public class Nd4j {
      */
     public static OpExecutioner getExecutioner() {
         return OP_EXECUTIONER_INSTANCE;
-    }
-
-    /**
-     * Get the operation factory
-     *
-     * @return the operation factory
-     */
-    public static OpFactory getOpFactory() {
-        return OP_FACTORY_INSTANCE;
     }
 
     /**
@@ -6038,9 +6025,6 @@ public class Nd4j {
             instrumentationClazz = (Class<? extends Instrumentation>) Class
                     .forName(pp.toString(INSTRUMENTATION_CLASS, InMemoryInstrumentation.class.getName()));
 
-            opFactoryClazz = (Class<? extends OpFactory>) Class
-                    .forName(pp.toString(OP_FACTORY, DefaultOpFactory.class.getName()));
-
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class
                     .forName(pp.toString(BLAS_OPS));
             sparseBlasWrapperClazz = (Class<? extends BlasWrapper>) Class
@@ -6067,7 +6051,6 @@ public class Nd4j {
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
             SPARSE_BLAS_WRAPPER_INSTANCE = sparseBlasWrapperClazz.newInstance();
             DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
-            OP_FACTORY_INSTANCE = opFactoryClazz.newInstance();
 
             ENFORCE_NUMERICAL_STABILITY = pp.toBoolean(NUMERICAL_STABILITY);
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();

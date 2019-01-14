@@ -58,7 +58,6 @@ public class LossCosineProximity extends DifferentialFunction implements ILossFu
         /*
          mean of -(y.dot(yhat)/||y||*||yhat||)
          */
-        //INDArray postOutput = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray postOutput = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray yhatmag = postOutput.norm2(1);

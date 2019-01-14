@@ -130,8 +130,14 @@ public class FlatBuffersMapper {
                 return name2.getHash();
             //return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
 
-        } else
-            return (long) Nd4j.getOpFactory().getOpNumByName(name);
+        } else {
+            try {
+                DifferentialFunction op =  DifferentialFunctionClassHolder.getInstance().getInstance(name);
+                return  op.opNum();
+            } catch (Exception e) {
+                throw new RuntimeException("Could not find op number for operation: [" + name + "]",e);
+            }
+        }
     }
 
 

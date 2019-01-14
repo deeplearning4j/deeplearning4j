@@ -608,7 +608,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testOneMinus() {
         INDArray in = Nd4j.linspace(1, 3, 3, DataType.DOUBLE);
-        INDArray out = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", in)).z();
+        INDArray out = Transforms.timesOneMinus(in, true);
 
         //Expect: 0, -2, -6 -> from 1*(1-1), 2*(1-2), 3*(1-3). Getting: [0,0,0]
         INDArray exp = Nd4j.create(new double[] {0, -2.0, -6.0});

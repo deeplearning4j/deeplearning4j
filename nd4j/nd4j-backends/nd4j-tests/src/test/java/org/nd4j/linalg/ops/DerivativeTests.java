@@ -173,7 +173,7 @@ public class DerivativeTests extends BaseNd4jTest {
             expDerivOut[i] = hsDeriv;
         }
 
-        INDArray z = Nd4j.getExecutioner().exec(Nd4j.getOpFactory().createTransform("hard_sigmoid", xArr.dup()));
+        INDArray z = Transforms.hardSigmoid(xArr, true);
         INDArray zPrime = Nd4j.getExecutioner().exec(new HardSigmoidDerivative(xArr.dup()));
 
         System.out.println(xArr);
@@ -366,7 +366,7 @@ public class DerivativeTests extends BaseNd4jTest {
             }
         }
 
-        INDArray act = Nd4j.getExecutioner().exec(Nd4j.getOpFactory().createTransform("elu", z.dup()));
+        INDArray act = Transforms.elu(z, true);
         INDArray actDeriv = Nd4j.getExecutioner().exec(new ELUDerivative(z.dup()));
 
         System.out.println(act);

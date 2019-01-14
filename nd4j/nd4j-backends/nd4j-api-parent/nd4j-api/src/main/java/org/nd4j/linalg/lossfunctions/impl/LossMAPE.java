@@ -34,6 +34,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
 import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
@@ -81,10 +82,9 @@ public class LossMAPE extends DifferentialFunction implements ILossFunction {
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
         INDArray scoreArr;
-        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
         scoreArr = output.rsubi(labels).divi(labels);
-        Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("abs", scoreArr));
+        Transforms.abs(scoreArr, false);
         scoreArr.muli(100.0 / labels.size(1));
 
         //Weighted loss function

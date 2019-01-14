@@ -42,6 +42,8 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
+import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
+import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -607,7 +609,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
     @Test
     public void testDefaultArgs() {
-        val op = Nd4j.getOpFactory().getOpByName("relu");
+        val op = new RectifiedLinear();
 
         val extras = op.extraArgs();
         assertTrue(extras.length == 1);
