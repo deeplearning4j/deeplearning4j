@@ -45,7 +45,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;

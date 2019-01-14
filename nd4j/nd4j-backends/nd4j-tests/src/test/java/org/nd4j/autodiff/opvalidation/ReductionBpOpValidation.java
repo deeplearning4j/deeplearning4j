@@ -33,7 +33,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 
 @Slf4j
 public class ReductionBpOpValidation extends BaseOpValidation {

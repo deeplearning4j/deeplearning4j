@@ -18,8 +18,6 @@ package org.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.LongPointer;
 import org.junit.After;
 import org.junit.Before;

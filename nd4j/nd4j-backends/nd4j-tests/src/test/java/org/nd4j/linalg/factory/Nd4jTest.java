@@ -17,11 +17,8 @@
 package org.nd4j.linalg.factory;
 
 import lombok.val;
-import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.CharPointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.CharIndexer;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,13 +31,10 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

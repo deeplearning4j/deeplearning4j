@@ -31,7 +31,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * This tests pack covers simple gradient checks for AggregateSkipGram, CBOW and HierarchicSoftmax

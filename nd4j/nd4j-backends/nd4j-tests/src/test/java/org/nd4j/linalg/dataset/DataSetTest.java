@@ -39,9 +39,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.nd4j.linalg.indexing.NDArrayIndex.all;
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
-import static org.nd4j.linalg.indexing.NDArrayIndex.point;
+import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
