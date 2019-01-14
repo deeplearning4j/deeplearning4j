@@ -343,7 +343,7 @@ public class TFGraphTestAllHelper {
             val executioner = new NativeGraphExecutioner();
             val results = executioner.executeGraph(graph, configuration);
 
-            //graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/identity_n_2.fb"));
+            //graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/non2d_1.fb"));
         } else if (executeWith.equals(ExecuteWith.JUST_PRINT)) {
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));

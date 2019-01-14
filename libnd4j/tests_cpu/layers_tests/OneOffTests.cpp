@@ -317,3 +317,23 @@ TEST_F(OneOffTests, test_identity_n_2) {
 
     delete graph;
 }
+
+TEST_F(OneOffTests, test_non2d_1) {
+    auto e = NDArrayFactory::create<float>('c', {1, 1}, {5.42746449f});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/non2d_1.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+
+    auto z = graph->getVariableSpace()->getVariable(3)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    ASSERT_EQ(e, *z);
+
+
+    delete graph;
+}
