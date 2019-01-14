@@ -36,6 +36,9 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         //Handle casting of the input array automatically.
         //The idea here is to avoid unexpected errors if the user (for example) tries to perform inference with a double
         // array for a float placeholder
+        if(placeholders == null || placeholders.isEmpty()){
+            return placeholders;
+        }
 
         Map<String,INDArray> out = new HashMap<>();
         for(Map.Entry<String,INDArray> e : placeholders.entrySet()){

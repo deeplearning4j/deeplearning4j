@@ -42,7 +42,7 @@ public class LossFunctionTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testClippingXENT() throws Exception {
+    public void testClippingXENT() {
 
         ILossFunction l1 = new LossBinaryXENT(0);
         ILossFunction l2 = new LossBinaryXENT();

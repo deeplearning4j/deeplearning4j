@@ -83,7 +83,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testGetSet() throws Exception {
+    public void testGetSet() {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         float[] d2 = d.asFloat();
@@ -114,7 +114,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testDup() throws Exception {
+    public void testDup() {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
@@ -134,7 +134,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testPut() throws Exception {
+    public void testPut() {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         d.put(0, 0.0);
@@ -145,7 +145,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testGetRange() throws Exception {
+    public void testGetRange() {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(0, 3);
         float[] data = new float[] {1, 2, 3};
@@ -161,7 +161,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testGetOffsetRange() throws Exception {
+    public void testGetOffsetRange() {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(1, 3);
         float[] data = new float[] {2, 3, 4};

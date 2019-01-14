@@ -71,7 +71,7 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
     @Before
-    public void before() throws Exception {
+    public void before() {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
 
@@ -80,13 +80,13 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
     @After
-    public void after() throws Exception {
+    public void after() {
         Nd4j.setDataType(initialType);
     }
 
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -553,7 +553,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 5;
-            SDVariable in = sd.var("in", new int[]{-1, nOut});
+            SDVariable in = sd.var("in", -1, nOut);
 
             INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
@@ -860,8 +860,8 @@ public class TransformOpValidation extends BaseOpValidation {
                     }
                     t = sd.diag(in);
                     ia = Nd4j.create(new float[]{4, 2});
-                    in = sd.var("in", new int[]{1, 2});
-                    INDArray expOut53 = Nd4j.create(DataType.DOUBLE, new long[]{2, 2});
+                    in = sd.var("in", 1, 2);
+                    INDArray expOut53 = Nd4j.create(DataType.DOUBLE, 2, 2);
                     DynamicCustomOp op = DynamicCustomOp.builder("diag").addInputs(ia).addOutputs(expOut53).build();
                     Nd4j.getExecutioner().exec(op);
                     tc.expectedOutput(t.getVarName(), expOut53);
@@ -1045,8 +1045,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 5;
-            SDVariable in1 = sd.var("in1", DataType.DOUBLE, new int[]{-1, nOut});
-            SDVariable in2 = sd.var("in2", DataType.DOUBLE, new int[]{-1, nOut});
+            SDVariable in1 = sd.var("in1", DataType.DOUBLE, -1, nOut);
+            SDVariable in2 = sd.var("in2", DataType.DOUBLE, -1, nOut);
 
             INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
             INDArray ib = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
@@ -1491,7 +1491,7 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray in = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2,3);
         INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}}).castTo(DataType.INT);
 
-        INDArray out = Nd4j.create(DataType.DOUBLE, new long[]{4,7});
+        INDArray out = Nd4j.create(DataType.DOUBLE, 4,7);
 
         DynamicCustomOp op = DynamicCustomOp.builder("mirror_pad")
                 .addInputs(in, pad)

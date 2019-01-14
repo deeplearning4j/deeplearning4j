@@ -42,17 +42,17 @@ public class IndexShapeTests2d extends BaseNd4jTest {
 
     @Test
     public void test2dCases() {
-        assertArrayEquals(new long[] {1, 2}, Indices.shape(shape, new INDArrayIndex[] {NDArrayIndex.point(1)}));
+        assertArrayEquals(new long[] {1, 2}, Indices.shape(shape, NDArrayIndex.point(1)));
         assertArrayEquals(new long[] {3, 1},
-                        Indices.shape(shape, new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.point(1)}));
+                        Indices.shape(shape, NDArrayIndex.all(), NDArrayIndex.point(1)));
     }
 
     @Test
     public void testNewAxis2d() {
         assertArrayEquals(new long[] {1, 3, 2}, Indices.shape(shape,
-                        new INDArrayIndex[] {NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.all()}));
+                NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.all()));
         assertArrayEquals(new long[] {3, 1, 2}, Indices.shape(shape,
-                        new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.newAxis(), NDArrayIndex.all()}));
+                NDArrayIndex.all(), NDArrayIndex.newAxis(), NDArrayIndex.all()));
 
     }
 

@@ -111,7 +111,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @After
-    public void shutUp() throws Exception {
+    public void shutUp() {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         Nd4j.setDataType(this.initialType);
@@ -123,7 +123,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
      * @throws Exception
      */
     @Test
-    public void testUnboundedLoop2() throws Exception {
+    public void testUnboundedLoop2() {
         WorkspaceConfiguration configuration =
                         WorkspaceConfiguration.builder().initialSize(0).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                                         .policyAllocation(AllocationPolicy.OVERALLOCATE).overallocationLimit(4.0)
@@ -158,7 +158,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testUnboundedLoop1() throws Exception {
+    public void testUnboundedLoop1() {
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
                         .initialSize(100 * 100 * Nd4j.sizeOfDataType()).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                         .policyAllocation(AllocationPolicy.STRICT).build();
@@ -227,7 +227,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
 
     @Test
-    public void testNestedWorkspacesOverlap2() throws Exception {
+    public void testNestedWorkspacesOverlap2() {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
 
         assertFalse(Nd4j.getWorkspaceManager().checkIfWorkspaceExists("WS1"));
@@ -276,7 +276,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNestedWorkspacesOverlap1() throws Exception {
+    public void testNestedWorkspacesOverlap1() {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
         try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1")
@@ -394,7 +394,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
 
     @Test
-    public void testCircularBufferReset1() throws Exception {
+    public void testCircularBufferReset1() {
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
                         .getWorkspaceForCurrentThread(circularConfiguration, "WSR_1");
 
@@ -426,7 +426,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testVariableInput1() throws Exception {
+    public void testVariableInput1() {
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
                         .getWorkspaceForCurrentThread(adsiConfiguration, "ADSI");
 
@@ -514,7 +514,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testReallocate3() throws Exception {
+    public void testReallocate3() {
         MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
                         .getWorkspaceForCurrentThread(reallocateUnspecifiedConfiguration, "WS_1");
 
@@ -544,7 +544,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testReallocate2() throws Exception {
+    public void testReallocate2() {
         MemoryWorkspace workspace =
                         Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(reallocateDelayedConfiguration, "WS_1");
 
@@ -562,7 +562,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testCircularLearning1() throws Exception {
+    public void testCircularLearning1() {
         INDArray array1;
         INDArray array2;
         for (int i = 0; i < 2; i++) {
@@ -584,7 +584,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testReallocate1() throws Exception {
+    public void testReallocate1() {
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(reallocateConfiguration, "WS_1")) {
             INDArray array = Nd4j.create(100);
         }
@@ -616,7 +616,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNestedWorkspaces11() throws Exception {
+    public void testNestedWorkspaces11() {
         for (int x = 1; x < 10; x++) {
             try (MemoryWorkspace ws1 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
                 INDArray array1 = Nd4j.create(100 * x);
@@ -640,7 +640,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
 
     @Test
-    public void testNestedWorkspaces10() throws Exception {
+    public void testNestedWorkspaces10() {
         for (int x = 1; x < 10; x++) {
             try (MemoryWorkspace ws1 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
                 INDArray array1 = Nd4j.create(100 * x);
@@ -659,7 +659,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
 
     @Test
-    public void testNestedWorkspaces9() throws Exception {
+    public void testNestedWorkspaces9() {
         for (int x = 1; x < 10; x++) {
             try (MemoryWorkspace ws =
                             Nd4j.getWorkspaceManager().getAndActivateWorkspace(delayedConfiguration, "WS_1")) {
@@ -676,7 +676,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
 
     @Test
-    public void testNestedWorkspaces8() throws Exception {
+    public void testNestedWorkspaces8() {
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopConfiguration, "WS_1")) {
             INDArray array = Nd4j.create(100);
         }
@@ -699,7 +699,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNestedWorkspaces7() throws Exception {
+    public void testNestedWorkspaces7() {
         try (Nd4jWorkspace wsExternal = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
                         .getAndActivateWorkspace(basicConfiguration, "External")) {
             INDArray array1 = Nd4j.create(10);
@@ -739,7 +739,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNestedWorkspaces6() throws Exception {
+    public void testNestedWorkspaces6() {
 
         try (Nd4jWorkspace wsExternal = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
                         .getAndActivateWorkspace(firstConfiguration, "External")) {
@@ -777,7 +777,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNestedWorkspaces5() throws Exception {
+    public void testNestedWorkspaces5() {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
         try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1")
                         .notifyScopeEntered()) {
@@ -802,7 +802,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNestedWorkspaces4() throws Exception {
+    public void testNestedWorkspaces4() {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
 
         try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1")
@@ -846,7 +846,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNestedWorkspaces3() throws Exception {
+    public void testNestedWorkspaces3() {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
 
 
@@ -892,7 +892,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNestedWorkspaces2() throws Exception {
+    public void testNestedWorkspaces2() {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
 
         try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1")
@@ -916,7 +916,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2").initializeWorkspace();
 
             assertEquals(100 * Nd4j.sizeOfDataType(),
-                            ((Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2"))
+                            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2")
                                             .getCurrentSize());
         }
 
@@ -924,7 +924,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNestedWorkspaces1() throws Exception {
+    public void testNestedWorkspaces1() {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
 
 
@@ -952,7 +952,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testNewWorkspace1() throws Exception {
+    public void testNewWorkspace1() {
         MemoryWorkspace workspace1 = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread();
 
         assertNotEquals(null, workspace1);
@@ -977,7 +977,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         INDArray array = Nd4j.createUninitialized(150000000);
 
         MemoryWorkspace workspace =
-                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(configuration, "HOST");
+                Nd4j.getWorkspaceManager().createNewWorkspace(configuration, "HOST");
         workspace.notifyScopeEntered();
 
 

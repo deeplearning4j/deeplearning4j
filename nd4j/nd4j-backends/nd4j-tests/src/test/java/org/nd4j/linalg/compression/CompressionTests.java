@@ -124,7 +124,7 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testJVMCompression3() throws Exception {
+    public void testJVMCompression3() {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         INDArray exp = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
@@ -142,7 +142,7 @@ public class CompressionTests extends BaseNd4jTest {
 
 
     @Test
-    public void testThresholdCompressionZ() throws Exception {
+    public void testThresholdCompressionZ() {
         INDArray initial = Nd4j.create(1, 16384);
         for (int i = 0; i < 96; i++)
             initial.putScalar(i * 20, 1.0f);
@@ -177,7 +177,7 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Ignore
     @Test
-    public void testThresholdCompression0() throws Exception {
+    public void testThresholdCompression0() {
         INDArray initial = Nd4j.rand(new int[] {1, 150000000}, 119L);
 
         log.info("DTYPE: {}", Nd4j.dataType());
@@ -208,7 +208,7 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     @Ignore
-    public void testThresholdCompression1() throws Exception {
+    public void testThresholdCompression1() {
         INDArray initial = Nd4j.create(new float[] {0.0f, 0.0f, 1e-3f, -1e-3f, 0.0f, 0.0f});
         INDArray exp_0 = Nd4j.create(DataType.FLOAT, 6);
         INDArray exp_1 = initial.dup();
@@ -227,7 +227,7 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testThresholdCompression2() throws Exception {
+    public void testThresholdCompression2() {
         INDArray initial = Nd4j.create(new double[] {1.0, 2.0, 0.0, 0.0, -1.0, -1.0});
         INDArray exp_0 = Nd4j.create(new double[] {1.0 - 1e-3, 2.0 - 1e-3, 0.0, 0.0, -1.0 + 1e-3, -1.0 + 1e-3});
         INDArray exp_1 = Nd4j.create(new double[] {1e-3, 1e-3, 0.0, 0.0, -1e-3, -1e-3});
@@ -249,7 +249,7 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testThresholdCompression3() throws Exception {
+    public void testThresholdCompression3() {
         INDArray initial = Nd4j.create(new double[] {-1.0, -2.0, 0.0, 0.0, 1.0, 1.0});
         INDArray exp_0 = Nd4j.create(new double[] {-1.0 + 1e-3, -2.0 + 1e-3, 0.0, 0.0, 1.0 - 1e-3, 1.0 - 1e-3});
         INDArray exp_1 = Nd4j.create(new double[] {-1e-3, -1e-3, 0.0, 0.0, 1e-3, 1e-3});
@@ -278,7 +278,7 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testThresholdCompression4() throws Exception {
+    public void testThresholdCompression4() {
         INDArray initial = Nd4j.create(new double[] {1e-4, -1e-4, 0.0, 0.0, 1e-4, -1e-4});
         INDArray exp_0 = initial.dup();
 
@@ -296,7 +296,7 @@ public class CompressionTests extends BaseNd4jTest {
 
 
     @Test
-    public void testThresholdCompression5() throws Exception {
+    public void testThresholdCompression5() {
         INDArray initial = Nd4j.ones(1000);
         INDArray exp_0 = initial.dup();
 
@@ -313,7 +313,7 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testThresholdCompression6() throws Exception {
+    public void testThresholdCompression6() {
         INDArray initial = Nd4j.create(new double[] {1.0, 2.0, 0.0, 0.0, -1.0, -1.0});
         INDArray exp_0 = Nd4j.create(new double[] {1.0 - 1e-3, 2.0 - 1e-3, 0.0, 0.0, -1.0 + 1e-3, -1.0 + 1e-3});
         INDArray exp_1 = Nd4j.create(new double[] {1e-3, 1e-3, 0.0, 0.0, -1e-3, -1e-3});
@@ -364,7 +364,7 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBitmapEncoding1() throws Exception {
+    public void testBitmapEncoding1() {
         INDArray initial = Nd4j.create(new float[] {0.0f, 0.0f, 1e-3f, -1e-3f, 0.0f, 0.0f});
         INDArray exp_0 = Nd4j.create(DataType.FLOAT, 6);
         INDArray exp_1 = initial.dup();
@@ -386,7 +386,7 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBitmapEncoding1_1() throws Exception {
+    public void testBitmapEncoding1_1() {
         INDArray initial = Nd4j.create(15);
         INDArray exp_0 = Nd4j.create(6);
         INDArray exp_1 = initial.dup();
@@ -410,7 +410,7 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBitmapEncoding2() throws Exception {
+    public void testBitmapEncoding2() {
         INDArray initial = Nd4j.create(40000000);
         INDArray target = Nd4j.create(initial.length());
 
@@ -430,7 +430,7 @@ public class CompressionTests extends BaseNd4jTest {
 
 
     @Test
-    public void testBitmapEncoding3() throws Exception {
+    public void testBitmapEncoding3() {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         INDArray initial = Nd4j.create(new float[] {0.0f, -6e-4f, 1e-3f, -1e-3f, 0.0f, 0.0f});
         INDArray exp_0 = Nd4j.create(new float[] {0.0f, -1e-4f, 0.0f, 0.0f, 0.0f, 0.0f});
@@ -457,7 +457,7 @@ public class CompressionTests extends BaseNd4jTest {
 
 
     @Test
-    public void testBitmapEncoding4() throws Exception {
+    public void testBitmapEncoding4() {
         Nd4j.getRandom().setSeed(119);
         INDArray initial = Nd4j.rand(1, 10000, 0, 1, Nd4j.getRandom());
         INDArray exp_1 = initial.dup();
@@ -470,7 +470,7 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBitmapEncoding5() throws Exception {
+    public void testBitmapEncoding5() {
         Nd4j.getRandom().setSeed(119);
         INDArray initial = Nd4j.rand(1, 10000, -1, -0.5, Nd4j.getRandom());
         INDArray exp_0 = initial.dup().addi(1e-1);
@@ -485,7 +485,7 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBitmapEncoding6() throws Exception {
+    public void testBitmapEncoding6() {
         Nd4j.getRandom().setSeed(119);
         INDArray initial = Nd4j.rand(1, 100000, -1, 1, Nd4j.getRandom());
         INDArray exp_1 = initial.dup();

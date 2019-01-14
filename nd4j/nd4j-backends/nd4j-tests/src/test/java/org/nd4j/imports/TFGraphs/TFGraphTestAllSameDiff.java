@@ -166,7 +166,7 @@ public class TFGraphTestAllSameDiff {
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
     @BeforeClass
-    public static void beforeClass() throws Exception {
+    public static void beforeClass() {
         Nd4j.setDataType(DataType.FLOAT);
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
@@ -177,7 +177,7 @@ public class TFGraphTestAllSameDiff {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(true);
     }
@@ -197,7 +197,7 @@ public class TFGraphTestAllSameDiff {
         }
     }
 
-    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws IOException {
+    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;

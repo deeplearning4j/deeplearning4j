@@ -48,7 +48,7 @@ public class GraphExecutionerTest {
     protected static ExecutorConfiguration configImplicit = ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build();
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         //
     }
 
@@ -94,7 +94,7 @@ public class GraphExecutionerTest {
      * @throws Exception
      */
     @Test
-    public void testEquality1() throws Exception {
+    public void testEquality1() {
         GraphExecutioner executionerA = new BasicGraphExecutioner();
         GraphExecutioner executionerB = new NativeGraphExecutioner();
 
@@ -123,7 +123,7 @@ public class GraphExecutionerTest {
      * @throws Exception
      */
     @Test
-    public void testEquality2() throws Exception {
+    public void testEquality2() {
         GraphExecutioner executionerA = new BasicGraphExecutioner();
         GraphExecutioner executionerB = new NativeGraphExecutioner();
 
@@ -149,7 +149,7 @@ public class GraphExecutionerTest {
 
     @Test
     @Ignore
-    public void testSums1() throws Exception {
+    public void testSums1() {
         SameDiff sameDiff = SameDiff.create();
         INDArray ones = Nd4j.ones(4);
         SDVariable sdVariable = sameDiff.var("ones",ones);

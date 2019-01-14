@@ -52,7 +52,7 @@ import static org.junit.Assert.*;
 public class MixedDataTypesTests {
 
     @Test
-    public void testBasicCreation_1() throws Exception {
+    public void testBasicCreation_1() {
         val array = Nd4j.create(DataType.LONG, 3, 3);
 
         assertNotNull(array);
@@ -62,7 +62,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicCreation_2() throws Exception {
+    public void testBasicCreation_2() {
         val array = Nd4j.create(DataType.SHORT, 3, 3);
 
         assertNotNull(array);
@@ -72,7 +72,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicCreation_3() throws Exception {
+    public void testBasicCreation_3() {
         val array = Nd4j.create(DataType.HALF, 3, 3);
 
         assertNotNull(array);
@@ -82,7 +82,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicCreation_4() throws Exception {
+    public void testBasicCreation_4() {
         val scalar = Nd4j.scalar(DataType.DOUBLE, 1.0);
         assertNotNull(scalar);
         assertEquals(0, scalar.rank());
@@ -92,7 +92,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicCreation_5() throws Exception {
+    public void testBasicCreation_5() {
         val scalar = Nd4j.trueScalar(new Integer(1));
         assertNotNull(scalar);
         assertEquals(0, scalar.rank());
@@ -102,7 +102,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicCreation_6() throws Exception {
+    public void testBasicCreation_6() {
         val scalar = Nd4j.trueScalar(1);
         assertNotNull(scalar);
         assertEquals(0, scalar.rank());
@@ -112,7 +112,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicCreation_7() throws Exception {
+    public void testBasicCreation_7() {
         val scalar = Nd4j.trueScalar(1L);
         assertNotNull(scalar);
         assertEquals(0, scalar.rank());
@@ -122,7 +122,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicOps_1() throws Exception {
+    public void testBasicOps_1() {
         val exp = new int[]{1,1,1,1,1,1,1,1,1};
         val array = Nd4j.create(DataType.INT, 3, 3);
         assertEquals(DataType.INT, array.dataType());
@@ -133,7 +133,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicOps_2() throws Exception {
+    public void testBasicOps_2() {
         val exp = new int[]{1,1,1,1,1,1,1,1,1};
         val arrayX = Nd4j.create(DataType.INT, 3, 3);
         val arrayY = Nd4j.create(new int[]{1,1,1,1,1,1,1,1,1}, new long[]{3, 3}, DataType.INT);
@@ -145,7 +145,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicOps_3() throws Exception {
+    public void testBasicOps_3() {
         if (!NativeOpsHolder.getInstance().getDeviceNativeOps().isExperimentalEnabled())
             return;
 
@@ -163,7 +163,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicOps_4() throws Exception {
+    public void testBasicOps_4() {
         val arrayX = Nd4j.create(new int[]{7,8,7,9,1,1,1,1,1}, new long[]{3, 3}, DataType.LONG);
 
         val result = arrayX.maxNumber();
@@ -173,7 +173,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicOps_5() throws Exception {
+    public void testBasicOps_5() {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
 
         val result = arrayX.meanNumber().floatValue();
@@ -182,7 +182,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicOps_6() throws Exception {
+    public void testBasicOps_6() {
         val arrayX = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.INT);
 
         val z = Nd4j.getExecutioner().exec(new CountNonZero(arrayX));
@@ -194,7 +194,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicOps_7() throws Exception {
+    public void testBasicOps_7() {
         val arrayX = Nd4j.create(new float[]{1, 0, Float.NaN, 4}, new  long[]{4}, DataType.FLOAT);
 
         val z = Nd4j.getExecutioner().exec(new IsInf(arrayX));
@@ -210,7 +210,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicOps_8() throws Exception {
+    public void testBasicOps_8() {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.INT);
         val exp = new long[]{1, 0, 0, 1};
@@ -223,7 +223,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testBasicOps_9() throws Exception {
+    public void testBasicOps_9() {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val exp = new long[]{1, 0, 0, 1};
@@ -236,7 +236,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testNewAssign_1() throws Exception {
+    public void testNewAssign_1() {
         val arrayX = Nd4j.create(DataType.FLOAT, 5);
         val arrayY = Nd4j.create(new double[]{1, 2, 3, 4, 5});
         val exp = Nd4j.create(new float[]{1.f, 2.f, 3.f, 4.f, 5.f});
@@ -247,7 +247,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testNewAssign_2() throws Exception {
+    public void testNewAssign_2() {
         val arrayX = Nd4j.create(DataType.INT, 5);
         val arrayY = Nd4j.create(new double[]{1, 2, 3, 4, 5});
         val exp = Nd4j.create(new int[]{1, 2, 3, 4, 5}, new long[]{5}, DataType.INT);
@@ -309,7 +309,7 @@ public class MixedDataTypesTests {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testTypesValidation_2() throws Exception {
+    public void testTypesValidation_2() {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.LONG);
         val exp = new long[]{1, 0, 0, 1};
@@ -321,13 +321,13 @@ public class MixedDataTypesTests {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testTypesValidation_3() throws Exception {
+    public void testTypesValidation_3() {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
 
         val result = Nd4j.getExecutioner().exec(new OldSoftMax(arrayX));
     }
 
-    public void testTypesValidation_4() throws Exception {
+    public void testTypesValidation_4() {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
         val arrayY = Nd4j.create(new int[]{1, 0, 0, 4}, new  long[]{4}, DataType.DOUBLE);
         val arrayE = Nd4j.create(new int[]{2, 2, 3, 8}, new  long[]{4}, DataType.INT);
@@ -338,7 +338,7 @@ public class MixedDataTypesTests {
 
 
     @Test
-    public void testFlatSerde_1() throws Exception {
+    public void testFlatSerde_1() {
         val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
 
         val builder = new FlatBufferBuilder(512);
@@ -354,7 +354,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testFlatSerde_2() throws Exception {
+    public void testFlatSerde_2() {
         val arrayX = Nd4j.create(new long[]{1, 2, 3, 4}, new  long[]{4}, DataType.LONG);
 
         val builder = new FlatBufferBuilder(512);
@@ -370,7 +370,7 @@ public class MixedDataTypesTests {
     }
 
     @Test
-    public void testFlatSerde_3() throws Exception {
+    public void testFlatSerde_3() {
         val arrayX = Nd4j.create(new boolean[]{true, false, true, true}, new  long[]{4}, DataType.BOOL);
 
         val builder = new FlatBufferBuilder(512);

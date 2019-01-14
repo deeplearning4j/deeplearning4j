@@ -346,7 +346,7 @@ public class RngValidationTests {
             case "binomial":
                 return new BinomialDistribution(tc.arr(), tc.prop("n"), (double)tc.prop("p"));
             case "truncated_normal":
-                return new TruncatedNormalDistribution(tc.arr(), (double)tc.prop("mean"), (double)tc.prop("std") );
+                return new TruncatedNormalDistribution(tc.arr(), (double)tc.prop("mean"), tc.prop("std"));
             case "dropout":
                 INDArray z = tc.arr();
                 z.assign(1.0);

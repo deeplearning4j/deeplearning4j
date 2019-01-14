@@ -359,8 +359,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testComparisonOps() {
         INDArray linspace = Nd4j.linspace(1, 6, 6, DataType.DOUBLE);
         INDArray ones = Nd4j.ones(DataType.BOOL, 1,6);
-        INDArray zeros = Nd4j.create(DataType.BOOL, new long[]{1,6});
-        INDArray res = Nd4j.create(DataType.BOOL, new long[]{1,6});
+        INDArray zeros = Nd4j.create(DataType.BOOL, 1,6);
+        INDArray res = Nd4j.create(DataType.BOOL, 1,6);
         assertEquals(ones, Nd4j.getExecutioner().exec(new ScalarGreaterThan(linspace, res, 0)));
         assertEquals(zeros, Nd4j.getExecutioner().exec(new ScalarGreaterThan(linspace, res,7)));
         assertEquals(zeros, Nd4j.getExecutioner().exec(new ScalarLessThan(linspace, res,0)));
@@ -875,7 +875,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testHistogram1() throws Exception {
+    public void testHistogram1() {
         INDArray x = Nd4j.linspace(1, 1000, 100000, DataType.DOUBLE);
         INDArray z = Nd4j.zeros(DataType.DOUBLE,new long[]{20});
 
@@ -897,7 +897,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testHistogram2() throws Exception {
+    public void testHistogram2() {
         INDArray x = Nd4j.create(new float[] {0f, 0f, 0f, 5f, 5f, 5f, 10f, 10f, 10f});
 
 
@@ -923,7 +923,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         DataType initialType = Nd4j.dataType();
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(12345);
-        INDArray firstOneExample = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape('c', new int[] {1, 2, 2, 2});
+        INDArray firstOneExample = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape('c', 1, 2, 2, 2);
         INDArray secondOneExample = firstOneExample.add(1);
 
         double[] d1 = firstOneExample.data().asDouble();
@@ -995,7 +995,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testPile1() throws Exception {
+    public void testPile1() {
         List<INDArray> arrays = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             arrays.add(Nd4j.create(10, 10).assign(i));
@@ -1010,7 +1010,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testPile2() throws Exception {
+    public void testPile2() {
         List<INDArray> arrays = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             arrays.add(Nd4j.create(10, 10, 10).assign(i));
@@ -1025,8 +1025,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testMean1() throws Exception {
-        INDArray array = Nd4j.create(32, 100, 100).assign((float) -119f);
+    public void testMean1() {
+        INDArray array = Nd4j.create(32, 100, 100).assign(-119f);
         for (int i = 0; i < 32; i++) {
             val tad = array.tensorAlongDimension(i, 1, 2);
             tad.assign((float) 100 + i);
@@ -1041,7 +1041,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testMean2() throws Exception {
+    public void testMean2() {
         INDArray array = Nd4j.create(32, 100, 100);
         for (int i = 0; i < 32; i++) {
             array.tensorAlongDimension(i, 1, 2).assign((float) 100 + i);
@@ -1055,14 +1055,14 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testNorm2_1() throws Exception {
+    public void testNorm2_1() {
         INDArray array = Nd4j.rand(1769472, 9);
 
         INDArray max = array.max(1);
     }
 
     @Test
-    public void testNorm2_2() throws Exception {
+    public void testNorm2_2() {
         INDArray array = Nd4j.rand(127, 164, 1, 100, Nd4j.getRandom());
 
         double norm2 = array.norm2Number().doubleValue();
@@ -1076,7 +1076,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
      */
     @Test
     @Ignore
-    public void testTadEws() throws Exception {
+    public void testTadEws() {
         INDArray array = Nd4j.create(32, 5, 10);
         assertEquals(1, array.tensorAlongDimension(0, 1, 2).elementWiseStride());
     }

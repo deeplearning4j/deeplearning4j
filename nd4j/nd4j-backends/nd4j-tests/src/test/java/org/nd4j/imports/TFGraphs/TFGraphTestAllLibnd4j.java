@@ -120,7 +120,7 @@ public class TFGraphTestAllLibnd4j {
     };
 
     @BeforeClass
-    public static void beforeClass() throws Exception {
+    public static void beforeClass() {
         Nd4j.setDataType(DataType.FLOAT);
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
@@ -131,7 +131,7 @@ public class TFGraphTestAllLibnd4j {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -150,7 +150,7 @@ public class TFGraphTestAllLibnd4j {
         }
     }
 
-    public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws IOException {
+    public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;

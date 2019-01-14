@@ -107,7 +107,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 ia = Nd4j.rand(DataType.DOUBLE,2, 2);
             }
 
-            SDVariable input = sd.var("in", DataType.DOUBLE, new int[]{2, 2});
+            SDVariable input = sd.var("in", DataType.DOUBLE, 2, 2);
             sd.associateArrayWithVariable(ia, input);
 
             SDVariable nonZero = sd.countNonZero(input);
@@ -141,7 +141,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 ia = Nd4j.rand(DataType.FLOAT, 2, 2);
             }
 
-            SDVariable input = sd.var("in", new int[]{2, 2});
+            SDVariable input = sd.var("in", 2, 2);
             sd.associateArrayWithVariable(ia, input);
 
             SDVariable zeroFraction = sd.zeroFraction(input);
@@ -171,7 +171,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 10;
-            SDVariable input = sd.var("in", new int[]{-1, nOut});
+            SDVariable input = sd.var("in", -1, nOut);
             INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100);
             long length = nOut * minibatch;
 
@@ -625,8 +625,8 @@ public class ReductionOpValidation extends BaseOpValidation {
                 sd.setLogExecution(false);
 
 
-                SDVariable in = sd.var("in", new int[]{-1, d1, d2});
-                SDVariable in2 = sd.var("in2", new int[]{-1, d1, d2});
+                SDVariable in = sd.var("in", -1, d1, d2);
+                SDVariable in2 = sd.var("in2", -1, d1, d2);
 
                 INDArray inArr = Nd4j.randn(new int[]{d0, d1, d2}).muli(100);
                 INDArray in2Arr = Nd4j.randn(inArr.shape()).muli(100);

@@ -47,7 +47,7 @@ public class HalfTests extends BaseNd4jTest {
     }
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         if (!Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
 
@@ -56,7 +56,7 @@ public class HalfTests extends BaseNd4jTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         if (!Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
 

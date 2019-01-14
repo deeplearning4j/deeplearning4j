@@ -41,7 +41,7 @@ public class LeadingAndTrailingOnes extends BaseNd4jTest {
     }
 
     @Test
-    public void testSliceConstructor() throws Exception {
+    public void testSliceConstructor() {
         List<INDArray> testList = new ArrayList<>();
         for (int i = 0; i < 5; i++)
             testList.add(Nd4j.scalar(DataType.DOUBLE, i + 1));

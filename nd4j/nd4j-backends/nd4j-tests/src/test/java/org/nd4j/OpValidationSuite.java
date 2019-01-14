@@ -89,7 +89,7 @@ public class OpValidationSuite {
     private static DataType initialType;
 
     @BeforeClass
-    public static void beforeClass() throws Exception {
+    public static void beforeClass() {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
 
@@ -98,7 +98,7 @@ public class OpValidationSuite {
     }
 
     @AfterClass
-    public static void afterClass() throws Exception {
+    public static void afterClass() {
         Nd4j.setDataType(initialType);
 
         // Log coverage information

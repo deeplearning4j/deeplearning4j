@@ -105,7 +105,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testDimensionalEuclidean() {
         INDArray distanceInputRow = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1, -1);
         INDArray distanceComp = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(1, -1).add(1);
-        INDArray result = Nd4j.createUninitialized(DataType.DOUBLE, new long[]{4});
+        INDArray result = Nd4j.createUninitialized(DataType.DOUBLE, 4);
         Nd4j.getExecutioner().exec(
                 new EuclideanDistance(distanceInputRow, distanceComp, result, 0));
         INDArray euclideanAssertion = Nd4j.ones(4).castTo(DataType.DOUBLE);
@@ -635,7 +635,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testSum6d2() throws Exception {
+    public void testSum6d2() {
         INDArray arr6 = Nd4j.linspace(1, 256, 256, DataType.DOUBLE).reshape(1, 1, 4, 4, 4, 4);
         INDArray arr6s = arr6.sum(2, 3);
 
@@ -763,7 +763,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
 
 
     @Test
-    public void testPile1() throws Exception {
+    public void testPile1() {
         List<INDArray> arrays = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             arrays.add(Nd4j.create(10, 10).assign(i));
@@ -778,7 +778,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testPile2() throws Exception {
+    public void testPile2() {
         List<INDArray> arrays = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             arrays.add(Nd4j.create(10, 10, 10).assign(i));
@@ -793,7 +793,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testPile3() throws Exception {
+    public void testPile3() {
         List<INDArray> arrays = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             arrays.add(Nd4j.create( 10, 10).assign(i));
@@ -808,7 +808,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testPile4() throws Exception {
+    public void testPile4() {
         val arrayW = Nd4j.create(1, 5);
         val arrayX = Nd4j.create(1, 5);
         val arrayY = Nd4j.create(1, 5);

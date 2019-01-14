@@ -100,7 +100,7 @@ public class SpecialTests extends BaseNd4jTest {
 
 
     @Test(expected = ND4JIllegalStateException.class)
-    public void testScalarShuffle1() throws Exception {
+    public void testScalarShuffle1() {
         List<DataSet> listData = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             INDArray features = Nd4j.ones(25, 25);
@@ -114,7 +114,7 @@ public class SpecialTests extends BaseNd4jTest {
 
 
     @Test
-    public void testScalarShuffle2() throws Exception {
+    public void testScalarShuffle2() {
         List<DataSet> listData = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             INDArray features = Nd4j.ones(14, 25);
@@ -127,7 +127,7 @@ public class SpecialTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testVstack2() throws Exception {
+    public void testVstack2() {
         INDArray matrix = Nd4j.create(10000, 100);
 
         List<INDArray> views = new ArrayList<>();
@@ -139,12 +139,12 @@ public class SpecialTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testVstack1() throws Exception {
+    public void testVstack1() {
         INDArray matrix = Nd4j.create(10000, 100);
 
         List<INDArray> views = new ArrayList<>();
         for (int i = 0; i < matrix.rows() / 2; i++) {
-            views.add(matrix.getRow(RandomUtils.nextInt(0, (int) matrix.rows())));
+            views.add(matrix.getRow(RandomUtils.nextInt(0, matrix.rows())));
             //views.add(Nd4j.create(1, 10));
         }
 
@@ -180,7 +180,7 @@ public class SpecialTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testConcatMulti2() throws Exception {
+    public void testConcatMulti2() {
         Nd4j.create(1);
         val executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
         executor.submit(new Runnable() {
@@ -367,19 +367,19 @@ public class SpecialTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testCastHalf_1() throws Exception {
+    public void testCastHalf_1() {
         val array = Nd4j.create(DataType.HALF, 2, 5).assign(1);
         assertEquals(10.f, array.sumNumber().floatValue(), 1e-3);
     }
 
     @Test
-    public void testCastHalf_2() throws Exception {
+    public void testCastHalf_2() {
         val array = Nd4j.create(DataType.HALF, 2, 5).assign(1);
         assertEquals(10.f, array.sumNumber().floatValue(), 1e-3);
     }
 
     @Test
-    public void testCastHalf_3() throws Exception {
+    public void testCastHalf_3() {
         val arrayY = Nd4j.create(DataType.FLOAT, 2, 5).assign(2);
         val arrayX = Nd4j.create(DataType.HALF, 2, 5).assign(arrayY);
         assertEquals(20.f, arrayX.sumNumber().floatValue(), 1e-3);

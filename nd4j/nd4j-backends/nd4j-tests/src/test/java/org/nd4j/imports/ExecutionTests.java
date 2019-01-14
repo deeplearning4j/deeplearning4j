@@ -28,13 +28,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -52,7 +55,7 @@ public class ExecutionTests extends BaseNd4jTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -64,23 +67,10 @@ public class ExecutionTests extends BaseNd4jTest {
 
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream());
 
-        val array0 = Nd4j.create(3, 3).assign(2.0);
-        val map0 = new LinkedHashMap<String, INDArray>();
-        map0.put("alpha", array0);
+        Map<String,INDArray> result_0 = tg.exec(Collections.emptyMap(), tg.outputs());
+        val exp_0 = Nd4j.create(DataType.FLOAT, 3).assign(3.0);
 
-        val result_0 = tg.exec(map0, tg.outputs());
-        val exp_0 = Nd4j.create(1, 3).assign(6.0);
-
-        assertEquals(exp_0, result_0);
-
-        val array1 = Nd4j.create(3, 3).assign(3.0);
-        val map1 = new LinkedHashMap<String, INDArray>();
-        map1.put("alpha", array1);
-
-        val result_1 = tg.exec(map1, tg.outputs());
-        val exp_1 = Nd4j.create(1, 3).assign(9.0);
-
-        assertEquals(exp_1, result_1);
+        assertEquals(exp_0, result_0.get("Sum"));
     }
 
     @Override

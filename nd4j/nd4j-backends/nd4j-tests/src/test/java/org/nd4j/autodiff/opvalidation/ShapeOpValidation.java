@@ -1057,7 +1057,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray ia = Nd4j.create(new float[] {3, 4, 0, 2, 1}).castTo(DataType.INT);
         INDArray expOut = Nd4j.create(new float[] {2, 4, 3, 0, 1}).castTo(DataType.INT);
 
-        SDVariable input = sd.var("in", DataType.INT, new int[] {1, 5});
+        SDVariable input = sd.var("in", DataType.INT, 1, 5);
         sd.associateArrayWithVariable(ia, input);
         SDVariable out = sd.invertPermutation(input);
 
@@ -1735,7 +1735,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     }
 
     @Test
-    public void testSizeAt_1() throws Exception {
+    public void testSizeAt_1() {
         val array = Nd4j.create(10, 20, 30);
         val exp = Nd4j.scalar(DataType.LONG, 20);
 

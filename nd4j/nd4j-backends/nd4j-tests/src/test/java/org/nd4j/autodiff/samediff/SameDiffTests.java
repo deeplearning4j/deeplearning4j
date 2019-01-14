@@ -75,7 +75,7 @@ public class SameDiffTests {
 
 
     @Before
-    public void before() throws Exception {
+    public void before() {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
 
@@ -84,7 +84,7 @@ public class SameDiffTests {
     }
 
     @After
-    public void after() throws Exception {
+    public void after() {
         Nd4j.setDataType(initialType);
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
@@ -2219,7 +2219,7 @@ public class SameDiffTests {
         SameDiff sd = SameDiff.create();
 
         INDArray ia = Nd4j.create(new float[]{4, 2});
-        SDVariable in = sd.var("in", new int[]{1, 2});
+        SDVariable in = sd.var("in", 1, 2);
         sd.associateArrayWithVariable(ia, in);
 
 
@@ -2326,7 +2326,7 @@ public class SameDiffTests {
     @Test
     public void testFill(){
         SameDiff sd = SameDiff.create();
-        INDArray arr = Nd4j.createFromArray(new int[]{2,2});
+        INDArray arr = Nd4j.createFromArray(2,2);
         INDArray expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42.0);
         SDVariable x = sd.var(arr);
         SDVariable result = sd.fill(x, DataType.DOUBLE, 42);
@@ -2536,7 +2536,7 @@ public class SameDiffTests {
     }
 
     @Test
-    public void testUpdatingGradientSimple() throws Exception {
+    public void testUpdatingGradientSimple() {
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", Nd4j.linspace(1,12,12, DataType.FLOAT).reshape(3,4));
         SDVariable out = in.mul(2.0);

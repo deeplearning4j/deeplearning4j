@@ -38,7 +38,7 @@ public abstract class BaseOpValidation extends BaseNd4jTest {
     }
 
     @Before
-    public void beforeClass() throws Exception {
+    public void beforeClass() {
         Nd4j.create(1);
 
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);

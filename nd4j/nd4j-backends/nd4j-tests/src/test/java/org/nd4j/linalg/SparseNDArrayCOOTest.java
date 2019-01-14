@@ -238,7 +238,7 @@ public class SparseNDArrayCOOTest {
         int[][] indices = new int[][] {{0, 0, 2}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 2}, {2, 0, 1}, {2, 1, 2},
                         {3, 0, 1}, {3, 1, 0}};
         INDArray array = Nd4j.createSparseCOO(values, indices, shape);
-        BaseSparseNDArrayCOO newArray = (BaseSparseNDArrayCOO) array.get(new SpecifiedIndex(new int[] {0, 3}),
+        BaseSparseNDArrayCOO newArray = (BaseSparseNDArrayCOO) array.get(new SpecifiedIndex(0, 3),
                         NDArrayIndex.all(), NDArrayIndex.all());
         assertEquals(4, newArray.nnz());
         assertArrayEquals(new double[] {1, 2, 8, 9}, newArray.getIncludedValues().asDouble(), 1e-1);
@@ -254,7 +254,7 @@ public class SparseNDArrayCOOTest {
         INDArray array = Nd4j.createSparseCOO(values, indices, shape);
 
         BaseSparseNDArrayCOO newArray = (BaseSparseNDArrayCOO) array.get(NDArrayIndex.interval(1, 4),
-                        new SpecifiedIndex(new int[] {0}), new SpecifiedIndex(new int[] {0, 2}));
+                        new SpecifiedIndex(0), new SpecifiedIndex(0, 2));
         assertEquals(2, newArray.nnz());
         assertArrayEquals(new double[] {3, 8}, newArray.getIncludedValues().asDouble(), 1e-1);
         assertArrayEquals(new int[] {0, 0, 2, 1}, newArray.getIncludedIndices().asInt());
@@ -264,8 +264,8 @@ public class SparseNDArrayCOOTest {
     public void specifiedIndexWithDenseArray() {
         INDArray arr = Nd4j.rand(new int[] {4, 2, 3});
         System.out.println(arr.toString());
-        INDArray v = arr.get(NDArrayIndex.interval(1, 3), new SpecifiedIndex(new int[] {0}),
-                        new SpecifiedIndex(new int[] {0, 2}));
+        INDArray v = arr.get(NDArrayIndex.interval(1, 3), new SpecifiedIndex(0),
+                        new SpecifiedIndex(0, 2));
 
         System.out.println("v ");
         System.out.println(v.toString());
@@ -567,9 +567,9 @@ public class SparseNDArrayCOOTest {
                         {3, 0, 2}, {3, 1, 0}};
         BaseSparseNDArrayCOO array = (BaseSparseNDArrayCOO) Nd4j.createSparseCOO(values, indices, shape);
 
-        assertEquals(0, array.reverseIndexes(new int[] {0, 0, 2}));
-        assertEquals(7, array.reverseIndexes(new int[] {3, 0, 2}));
-        assertEquals(8, array.reverseIndexes(new int[] {3, 1, 0}));
+        assertEquals(0, array.reverseIndexes(0, 0, 2));
+        assertEquals(7, array.reverseIndexes(3, 0, 2));
+        assertEquals(8, array.reverseIndexes(3, 1, 0));
     }
 
     @Test

@@ -51,14 +51,14 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
     }
 
     @After
-    public void shutUp() throws Exception {
+    public void shutUp() {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         Nd4j.setDataType(this.initialType);
     }
 
     @Test
-    public void testVariableTimeSeries1() throws Exception {
+    public void testVariableTimeSeries1() {
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(3.0)
                         .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.EXTERNAL)
                         .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.ENDOFBUFFER_REACHED).build();
@@ -164,7 +164,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
 
     @Test
-    public void testVariableTimeSeries2() throws Exception {
+    public void testVariableTimeSeries2() {
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(3.0)
                         .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
                         .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.ENDOFBUFFER_REACHED).build();
@@ -209,7 +209,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testViewDetach_1() throws Exception {
+    public void testViewDetach_1() {
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(10000000).overallocationLimit(3.0)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
                 .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();

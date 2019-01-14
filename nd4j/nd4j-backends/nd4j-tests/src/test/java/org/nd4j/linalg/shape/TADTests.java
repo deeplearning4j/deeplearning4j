@@ -63,7 +63,7 @@ public class TADTests extends BaseNd4jTest {
      * @throws Exception
      */
     @Test
-    public void testEquality1() throws Exception {
+    public void testEquality1() {
 
         char[] order = new char[] {'c', 'f'};
         int[] dim_e = new int[] {0, 2};
@@ -124,9 +124,9 @@ public class TADTests extends BaseNd4jTest {
         INDArray javaCTad = arrayC.javaTensorAlongDimension(0, 2, 3);
         INDArray javaFTad = arrayF.javaTensorAlongDimension(0, 2, 3);
         Pair<DataBuffer, DataBuffer> tadBuffersF =
-                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayF, new int[] {2, 3});
+                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayF, 2, 3);
         Pair<DataBuffer, DataBuffer> tadBuffersC =
-                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayC, new int[] {2, 3});
+                        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayC, 2, 3);
 
         log.info("Got TADShapeF: {}", Arrays.toString(tadBuffersF.getFirst().asInt()) + " with java "
                         + javaFTad.shapeInfoDataBuffer());

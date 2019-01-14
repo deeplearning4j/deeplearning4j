@@ -84,7 +84,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testGetSet() throws Exception {
+    public void testGetSet() {
         double[] d1 = new double[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         double[] d2 = d.asDouble();
@@ -144,7 +144,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testDup() throws Exception {
+    public void testDup() {
         double[] d1 = new double[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
@@ -154,7 +154,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testPut() throws Exception {
+    public void testPut() {
         double[] d1 = new double[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         d.put(0, 0.0);
@@ -165,7 +165,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testGetRange() throws Exception {
+    public void testGetRange() {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).data();
         double[] get = buffer.getDoublesAt(0, 3);
         double[] data = new double[] {1, 2, 3};
@@ -180,7 +180,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testGetOffsetRange() throws Exception {
+    public void testGetOffsetRange() {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).data();
         double[] get = buffer.getDoublesAt(1, 3);
         double[] data = new double[] {2, 3, 4};

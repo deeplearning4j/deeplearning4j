@@ -84,11 +84,11 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     }
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -99,7 +99,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testSingleExample_1() throws Exception{
+    public void testSingleExample_1() {
         val g =TFGraphMapper.getInstance().importGraph(new File("C:\\Users\\raver\\Downloads\\mnist.pb"));
 
         val array = Nd4j.ones(1, 28, 28);
@@ -112,7 +112,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
 
     @Test
-    public void testAssertImport_1() throws Exception {
+    public void testAssertImport_1() {
         val graph = TFGraphMapper.getInstance().importGraph(new File("C:\\Users\\raver\\Downloads\\test.pb"));
     }
 

@@ -63,7 +63,7 @@ public class SortCooTests extends BaseNd4jTest {
     }
 
     @Test
-    public void sortSparseCooIndicesSort1() throws Exception {
+    public void sortSparseCooIndicesSort1() {
         // FIXME: we don't want this test running on cuda for now
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
             return;
@@ -89,7 +89,7 @@ public class SortCooTests extends BaseNd4jTest {
         log.info("Old indices: {}", Arrays.toString(idx.asInt()));
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
-                        (DoublePointer) val.addressPointer(), 4, 3);
+                val.addressPointer(), 4, 3);
 
 
         log.info("New indices: {}", Arrays.toString(idx.asInt()));
@@ -99,7 +99,7 @@ public class SortCooTests extends BaseNd4jTest {
     }
 
     @Test
-    public void sortSparseCooIndicesSort2() throws Exception {
+    public void sortSparseCooIndicesSort2() {
         // FIXME: we don't want this test running on cuda for now
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
             return;
@@ -121,7 +121,7 @@ public class SortCooTests extends BaseNd4jTest {
         DataBuffer val = Nd4j.createBuffer(values);
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
-                        (DoublePointer) val.addressPointer(), 3, 3);
+                val.addressPointer(), 3, 3);
 
         assertArrayEquals(expIndices, idx.asInt());
         assertArrayEquals(expValues, val.asDouble(), 1e-5);
@@ -140,7 +140,7 @@ public class SortCooTests extends BaseNd4jTest {
     }
 
     @Test
-    public void sortSparseCooIndicesSort3() throws Exception {
+    public void sortSparseCooIndicesSort3() {
         // FIXME: we don't want this test running on cuda for now
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
             return;
@@ -158,7 +158,7 @@ public class SortCooTests extends BaseNd4jTest {
         INDArray indMatrix = Nd4j.create(indiceBuffer).reshape(new long[]{nnz, shape.length});
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) indiceBuffer.addressPointer(),
-                (DoublePointer) valueBuffer.addressPointer(), nnz, 3);
+                valueBuffer.addressPointer(), nnz, 3);
 
         for (long i = 1; i < nnz; ++i){
             for(long j = 0; j < shape.length; ++j){
@@ -177,7 +177,7 @@ public class SortCooTests extends BaseNd4jTest {
     }
 
     @Test
-    public void sortSparseCooIndicesSort4() throws Exception {
+    public void sortSparseCooIndicesSort4() {
         // FIXME: we don't want this test running on cuda for now
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
             return;
@@ -275,7 +275,7 @@ public class SortCooTests extends BaseNd4jTest {
         DataBuffer val = Nd4j.createBuffer(values);
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
-                (DoublePointer) val.addressPointer(), 40, 3);
+                val.addressPointer(), 40, 3);
 
         // just check the indices. sortSparseCooIndicesSort1 and sortSparseCooIndicesSort2 checks that
         // indices and values are both swapped. This test just makes sure index sort works for larger arrays.

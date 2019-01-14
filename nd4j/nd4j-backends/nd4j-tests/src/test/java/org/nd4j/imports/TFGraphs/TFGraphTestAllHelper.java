@@ -112,7 +112,7 @@ public class TFGraphTestAllHelper {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -482,7 +482,7 @@ public class TFGraphTestAllHelper {
                                     for (val s:stringList) {
                                         val split = s.split("\\ ");
 
-                                        val okey = split[0].replaceAll("____", "/");;
+                                        val okey = split[0].replaceAll("____", "/");
                                         // adopt / in names
                                         val key = modelDir + "/" + okey;
 

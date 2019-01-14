@@ -43,7 +43,7 @@ public class ArrayOptionsTests extends BaseNd4jTest {
 
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         shapeInfo = new long[]{2, 2, 2, 2, 1, 0, 1, 99};
     }
 

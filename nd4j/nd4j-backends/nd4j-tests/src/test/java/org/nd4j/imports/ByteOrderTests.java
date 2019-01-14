@@ -46,14 +46,14 @@ public class ByteOrderTests  extends BaseNd4jTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
     @Test
     public void testByteArrayOrder1() {
-        val ndarray = Nd4j.create(2).assign(1);
+        val ndarray = Nd4j.create(DataType.FLOAT, 2).assign(1);
 
         assertEquals(DataType.FLOAT, ndarray.data().dataType());
 

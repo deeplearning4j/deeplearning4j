@@ -107,7 +107,7 @@ public class DataSetTest extends BaseNd4jTest {
 
 
     @Test
-    public void testSplitTestAndTrain() throws Exception {
+    public void testSplitTestAndTrain() {
         INDArray labels = FeatureUtil.toOutcomeMatrix(new int[] {0, 0, 0, 0, 0, 0, 0, 0}, 1);
         DataSet data = new DataSet(Nd4j.rand(8, 1), labels);
 
@@ -127,7 +127,7 @@ public class DataSetTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testSplitTestAndTrainRng() throws Exception {
+    public void testSplitTestAndTrainRng() {
 
         Random rngHere;
 
@@ -871,8 +871,8 @@ public class DataSetTest extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         List<DataSet> list = new ArrayList<>(numExamples);
         for (int i = 0; i < numExamples; i++) {
-            INDArray in = Nd4j.rand(DataType.DOUBLE, new long[] {1, inSize, minTSLength + i});
-            INDArray out = Nd4j.rand(DataType.DOUBLE, new long[] {1, labelSize, minTSLength + i});
+            INDArray in = Nd4j.rand(DataType.DOUBLE, 1, inSize, minTSLength + i);
+            INDArray out = Nd4j.rand(DataType.DOUBLE, 1, labelSize, minTSLength + i);
             list.add(new DataSet(in, out));
         }
 

@@ -344,9 +344,9 @@ public class MiscOpValidation extends BaseOpValidation {
 
             SameDiff sd = SameDiff.create();
 
-            SDVariable in = sd.var("in", DataType.DOUBLE, new int[]{20, 10});
+            SDVariable in = sd.var("in", DataType.DOUBLE, 20, 10);
             SDVariable indices = sd.var("indices", DataType.INT, new long[]{5});
-            SDVariable updates = sd.var("updates", DataType.DOUBLE, new int[]{5, 10});
+            SDVariable updates = sd.var("updates", DataType.DOUBLE, 5, 10);
 
 
             in.setArray(Nd4j.rand(DataType.DOUBLE, 20, 10));
