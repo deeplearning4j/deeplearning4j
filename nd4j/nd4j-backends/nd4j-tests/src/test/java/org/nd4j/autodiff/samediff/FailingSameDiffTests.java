@@ -117,53 +117,6 @@ public class FailingSameDiffTests {
     }
 
     @Test(timeout = 10000L)
-    public void testTensorArray4(){
-        OpValidationSuite.ignoreFailing();
-        SameDiff sd = SameDiff.create();
-        TensorArray ta = sd.tensorArray(DataType.FLOAT);
-
-        // while loop
-        val predicate = new DefaultSameDiffConditional();
-        val cond = new SameDiffFunctionDefinition(){
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable ret = sameDiff.neq(variableInputs[0], variableInputs[1]);
-                return new SDVariable[]{ret};
-            }
-        };
-        val loop_body = new SameDiffFunctionDefinition(){
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                ta.write(variableInputs[0], variableInputs[2]);
-                SDVariable ret1 = variableInputs[0].addi(1);
-                SDVariable ret2 = variableInputs[1];
-                SDVariable ret3 = variableInputs[2].addi(1);
-                return new SDVariable[]{ret1, ret2, ret3};
-            }
-        };
-
-        SDVariable loop_counter = sd.var(Nd4j.create(new double[]{0}));
-
-
-        INDArray arr = Nd4j.create(new double[]{1, 2, 3, 4, 5});
-        SDVariable initial_state = sd.var(arr);
-
-        sd.whileStatement(predicate, cond, loop_body, new SDVariable[]{loop_counter, loop_counter.add(10), initial_state});
-
-
-        // build expected output
-        List<INDArray> arr_list = new ArrayList<>();
-        for(int i=0; i<10; i++){
-            arr_list.add(arr.add(i));
-        }
-        INDArray expOut = Nd4j.pile(arr_list);
-
-
-        SDVariable result = ta.stack();
-        assertEquals(expOut, result.eval());
-    }
-
-    @Test(timeout = 10000L)
     public void testWhileLoop2() {
         OpValidationSuite.ignoreFailing();
         SameDiff sameDiff = SameDiff.create();
