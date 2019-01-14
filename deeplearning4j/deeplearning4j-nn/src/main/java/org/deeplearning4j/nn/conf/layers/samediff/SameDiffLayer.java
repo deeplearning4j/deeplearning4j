@@ -91,10 +91,10 @@ public abstract class SameDiffLayer extends AbstractSameDiffLayer {
     }
 
     @SuppressWarnings("unchecked")
+    @Getter
+    @Setter
     public static abstract class Builder<T extends Builder<T>> extends AbstractSameDiffLayer.Builder<T> {
 
-        @Getter
-        @Setter
         protected WeightInit weightInit = WeightInit.XAVIER;
 
         /**

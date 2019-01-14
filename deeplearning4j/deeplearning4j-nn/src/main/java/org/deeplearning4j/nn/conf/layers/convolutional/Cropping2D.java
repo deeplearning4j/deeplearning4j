@@ -110,12 +110,13 @@ public class Cropping2D extends NoParamLayer {
     }
 
 
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Builder> {
 
         /**
          * Cropping amount for top/bottom/left/right (in that order). A length 4 array.
          */
-        @Getter
         private int[] cropping = new int[] {0, 0, 0, 0};
 
         /**

@@ -207,13 +207,13 @@ public class GlobalPoolingLayer extends NoParamLayer {
                         .build();
     }
 
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Builder> {
 
         /**
          * Pooling type for global pooling
          */
-        @Getter
-        @Setter
         private PoolingType poolingType = PoolingType.MAX;
 
         /**
@@ -222,16 +222,12 @@ public class GlobalPoolingLayer extends NoParamLayer {
          * width) Default for CNN3D data: pooling dimensions 2,3,4 (depth, height and width)
          *
          */
-        @Getter
-        @Setter
         private int[] poolingDimensions;
 
         /**
          * P-norm constant. Only used if using {@link PoolingType#PNORM} for the pooling type
          *
          */
-        @Getter
-        @Setter
         private int pnorm = 2;
 
         /**
@@ -248,8 +244,6 @@ public class GlobalPoolingLayer extends NoParamLayer {
          * height, width] -> 2d output [miniBatchSize, channels, 1, 1, 1]<br>
          *
          */
-        @Getter
-        @Setter
         private boolean collapseDimensions = true;
 
         public Builder() {
@@ -311,6 +305,10 @@ public class GlobalPoolingLayer extends NoParamLayer {
             }
             this.pnorm = pnorm;
             return this;
+        }
+
+        public void setPnorm(int pnorm){
+            pnorm(pnorm);
         }
 
         @SuppressWarnings("unchecked")

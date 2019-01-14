@@ -160,51 +160,15 @@ public class SameDiffConv extends SameDiffLayer {
 
     public static class Builder extends SameDiffLayer.Builder<Builder> {
 
-        @Getter
-        @Setter
         private int nIn;
-
-        @Getter
-        @Setter
         private int nOut;
-
-        @Getter
-        @Setter
         private Activation activation = Activation.TANH;
-
-        @Getter
         private int[] kernel = new int[]{2, 2};
 
-        public void setKernel(int[] kernel) {
-            Preconditions.checkArgument(kernel.length == 2, "Must have 2 kernel values - got %s", kernel);
-            this.kernel = kernel;
-        }
-        @Getter
         private int[] stride = new int[]{1, 1};
-
-        public void setStride(int[] stride) {
-            Preconditions.checkArgument(stride.length == 2, "Must have 2 stride values - got %s", stride);
-            this.stride = stride;
-        }
-        @Getter
         private int[] padding = new int[]{0, 0};
-
-        public void setPadding(int[] padding) {
-            Preconditions.checkArgument(padding.length == 2, "Must have 2 padding values - got %s", padding);
-            this.padding = padding;
-        }
-        @Getter
         private int[] dilation = new int[]{1, 1};
-
-        public void setDilation(int[] dilation) {
-            Preconditions.checkArgument(dilation.length == 2, "Must have 2 dilation values - got %s", dilation);
-            this.dilation = dilation;
-        }
-        @Getter
-        @Setter
         private ConvolutionMode cm = ConvolutionMode.Same;
-        @Getter
-        @Setter
         private boolean hasBias = true;
 
         public Builder nIn(int nIn) {

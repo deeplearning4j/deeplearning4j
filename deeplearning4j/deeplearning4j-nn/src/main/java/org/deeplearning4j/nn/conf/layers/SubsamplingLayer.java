@@ -211,6 +211,8 @@ public class SubsamplingLayer extends NoParamLayer {
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends BaseSubsamplingBuilder<Builder> {
 
         /**
@@ -226,8 +228,6 @@ public class SubsamplingLayer extends NoParamLayer {
          *
          * Dilation for kernel
          */
-        @Getter
-        @Setter
         private int[] dilation = new int[] {1, 1};
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
@@ -344,60 +344,31 @@ public class SubsamplingLayer extends NoParamLayer {
 
         @Override
         public void setKernelSize(int[] kernelSize) {
-            Preconditions.checkArgument(kernelSize.length == 1 || kernelSize.length == 2,
-                            "Must have 1 or 2 kernelSize values - got %s", kernelSize);
-
-            if (kernelSize.length == 1) {
-                super.setKernelSize(new int[] {kernelSize[0], kernelSize[0]});
-            } else {
-                super.setKernelSize(kernelSize);
-            }
+            kernelSize(kernelSize);
         }
 
         @Override
         public void setStride(int[] stride) {
-            Preconditions.checkArgument(stride.length == 1 || stride.length == 2,
-                            "Must have 1 or 2 stride values - got %s", stride);
-
-            if (stride.length == 1) {
-                super.setStride(new int[] {stride[0], stride[0]});
-            } else {
-                super.setStride(stride);
-            }
+            stride(stride);
         }
 
         @Override
         public void setPadding(int[] padding) {
-            Preconditions.checkArgument(kernelSize.length == 1 || stride.length == 2,
-                            "Must have 1 or 2 padding values - got %s", padding);
-
-            if (padding.length == 1) {
-                super.setPadding(new int[] {padding[0], padding[0]});
-            } else {
-                super.setPadding(padding);
-            }
+            padding(padding);
         }
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     protected static abstract class BaseSubsamplingBuilder<T extends BaseSubsamplingBuilder<T>>
                     extends Layer.Builder<T> {
 
-        @Getter
-        @Setter
         protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType =
                         org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
 
-        @Getter
-        @Setter
         protected int[] kernelSize = new int[] {1, 1}; // Same as filter size from the last conv layer
-
-        @Getter
-        @Setter
         protected int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
-
-        @Getter
-        @Setter
         protected int[] padding = new int[] {0, 0};
 
         /**
@@ -405,16 +376,8 @@ public class SubsamplingLayer extends NoParamLayer {
          *
          * Convolution mode for layer
          */
-        @Getter
-        @Setter
         protected ConvolutionMode convolutionMode = null;
-
-        @Getter
-        @Setter
         protected int pnorm;
-
-        @Getter
-        @Setter
         protected double eps = 1e-8;
 
         /**
@@ -424,8 +387,6 @@ public class SubsamplingLayer extends NoParamLayer {
          *
          * Whether fallback to non-CuDNN implementation should be used
          */
-        @Getter
-        @Setter
         protected boolean cudnnAllowFallback = true;
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {
@@ -505,12 +466,20 @@ public class SubsamplingLayer extends NoParamLayer {
             return (T) this;
         }
 
+        public void setPnorm(int pnorm){
+            pnorm(pnorm);
+        }
+
         public T eps(double eps) {
             if (eps <= 0) {
                 throw new IllegalArgumentException("Invalid input: epsilon for p-norm must be greater than 0");
             }
             this.eps = eps;
             return (T) this;
+        }
+
+        public void setEps(double eps){
+            eps(eps);
         }
 
         /**

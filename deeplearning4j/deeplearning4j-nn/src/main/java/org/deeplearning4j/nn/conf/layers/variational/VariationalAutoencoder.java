@@ -167,47 +167,25 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
                         .build();
     }
 
+    @Getter
+    @Setter
     public static class Builder extends BasePretrainNetwork.Builder<Builder> {
+
         /**
          * Size of the encoder layers, in units. Each encoder layer is functionally equivalent to a {@link
          * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers (set via
          * {@link #decoderLayerSizes(int...)} is similar to the encoder layers.
          *
          */
-        @Getter
         private int[] encoderLayerSizes = new int[] {100};
 
         /**
-         * Size of the encoder layers, in units. Each encoder layer is functionally equivalent to a {@link
-         * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers (set via
-         * {@link #decoderLayerSizes(int...)} is similar to the encoder layers.
-         *
-         * @param encoderLayerSizes Size of each encoder layer in the variational autoencoder
-         */
-        public void setEncoderLayerSizes(int[] encoderLayerSizes) {
-            encoderLayerSizes(encoderLayerSizes);
-        }
-
-        /**
          * Size of the decoder layers, in units. Each decoder layer is functionally equivalent to a {@link
          * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers is similar
          * to the encoder layers (set via {@link #encoderLayerSizes(int...)}.
          *
          */
-        @Getter
         private int[] decoderLayerSizes = new int[] {100};
-
-        /**
-         * Size of the decoder layers, in units. Each decoder layer is functionally equivalent to a {@link
-         * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers is similar
-         * to the encoder layers (set via {@link #encoderLayerSizes(int...)}.
-         *
-         * @param decoderLayerSizes Size of each deccoder layer in the variational autoencoder
-         */
-        public void setDecoderLayerSizes(int[] decoderLayerSizes) {
-            decoderLayerSizes(decoderLayerSizes);
-        }
-
         /**
          * The reconstruction distribution for the data given the hidden state - i.e., P(data|Z).<br> This should be
          * selected carefully based on the type of data being modelled. For example:<br> - {@link
@@ -215,8 +193,6 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * BernoulliReconstructionDistribution} + sigmoid for binary-valued (0 or 1) data<br>
          *
          */
-        @Getter
-        @Setter
         private ReconstructionDistribution outputDistribution = new GaussianReconstructionDistribution(Activation.TANH);
 
         /**
@@ -224,8 +200,6 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * functions (relu, etc) are not suitable due to being bounded in range [0,infinity).
          *
          */
-        @Getter
-        @Setter
         private IActivation pzxActivationFn = new ActivationIdentity();
 
         /**
@@ -235,9 +209,9 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * datapoint can be set to 1 as long as the minibatch size M was large enough, e.g. M = 100."
          *
          */
-        @Getter
-        @Setter
         private int numSamples = 1;
+
+
 
         /**
          * Size of the encoder layers, in units. Each encoder layer is functionally equivalent to a {@link
@@ -254,6 +228,19 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
             return this;
         }
 
+
+        /**
+         * Size of the encoder layers, in units. Each encoder layer is functionally equivalent to a {@link
+         * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers (set via
+         * {@link #decoderLayerSizes(int...)} is similar to the encoder layers.
+         *
+         * @param encoderLayerSizes Size of each encoder layer in the variational autoencoder
+         */
+        public void setEncoderLayerSizes(int[] encoderLayerSizes) {
+            encoderLayerSizes(encoderLayerSizes);
+        }
+
+
         /**
          * Size of the decoder layers, in units. Each decoder layer is functionally equivalent to a {@link
          * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers is similar
@@ -268,6 +255,18 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
             this.decoderLayerSizes = decoderLayerSizes;
             return this;
         }
+
+        /**
+         * Size of the decoder layers, in units. Each decoder layer is functionally equivalent to a {@link
+         * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers is similar
+         * to the encoder layers (set via {@link #encoderLayerSizes(int...)}.
+         *
+         * @param decoderLayerSizes Size of each deccoder layer in the variational autoencoder
+         */
+        public void setDecoderLayerSizes(int[] decoderLayerSizes) {
+            decoderLayerSizes(decoderLayerSizes);
+        }
+
 
         /**
          * The reconstruction distribution for the data given the hidden state - i.e., P(data|Z).<br> This should be

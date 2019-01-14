@@ -70,6 +70,8 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
 
         /**
@@ -78,8 +80,6 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          * max-norm regularization, etc). These constraints are applied at each iteration, after the parameters have
          * been updated.
          */
-        @Getter
-        @Setter
         protected List<LayerConstraint> recurrentConstraints;
 
         /**
@@ -88,8 +88,6 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          * etc). These constraints are applied at each iteration, after the parameters have been updated.
          *
          */
-        @Getter
-        @Setter
         protected List<LayerConstraint> inputWeightConstraints;
 
         /**
@@ -97,8 +95,6 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          * weight initialization as the layer input weights is also used for the recurrent weights.
          *
          */
-        @Getter
-        @Setter
         protected IWeightInit weightInitFnRecurrent;
 
         /**

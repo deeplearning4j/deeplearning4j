@@ -196,6 +196,8 @@ public class Subsampling3DLayer extends NoParamLayer {
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends BaseSubsamplingBuilder<Builder> {
 
         /**
@@ -203,8 +205,6 @@ public class Subsampling3DLayer extends NoParamLayer {
          * [minibatch, channels, depth, height, width]<br> NDHWC: activations (in/out) should have shape [minibatch,
          * depth, height, width, channels]<br>
          */
-        @Getter
-        @Setter
         protected Convolution3D.DataFormat dataFormat = Convolution3D.DataFormat.NCDHW;
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
@@ -359,47 +359,24 @@ public class Subsampling3DLayer extends NoParamLayer {
         }
     }
 
+    @Getter
+    @Setter
     @NoArgsConstructor
     protected static abstract class BaseSubsamplingBuilder<T extends BaseSubsamplingBuilder<T>>
                     extends Layer.Builder<T> {
 
-        @Getter
-        @Setter
         protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType =
                         org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
 
-        @Getter
-        @Setter
         protected int[] kernelSize = new int[] {1, 1, 1};
-
-        @Getter
-        @Setter
         protected int[] stride = new int[] {2, 2, 2};
-
-        @Getter
-        @Setter
         protected int[] padding = new int[] {0, 0, 0};
-
-        public void setDilation(int[] dilation) {
-            Preconditions.checkArgument(dilation.length == 1 || dilation.length == 3,
-                            "Must have 1 or 3 dilation values - got %s", dilation);
-
-            if (dilation.length == 1) {
-                dilation(dilation[0], dilation[0], dilation[0]);
-            } else {
-                dilation(dilation[0], dilation[1], dilation[2]);
-            }
-        }
-
-        @Getter
         protected int[] dilation = new int[] {1, 1, 1};
 
         /**
          * Set the convolution mode for the Convolution layer. See {@link ConvolutionMode} for more details
          *
          */
-        @Getter
-        @Setter
         protected ConvolutionMode convolutionMode = ConvolutionMode.Same;
 
         /**
@@ -407,9 +384,18 @@ public class Subsampling3DLayer extends NoParamLayer {
          * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
          * (non-CuDNN) implementation for ConvolutionLayer will be used
          */
-        @Getter
-        @Setter
         protected boolean cudnnAllowFallback = true;
+
+        public void setDilation(int[] dilation) {
+            Preconditions.checkArgument(dilation.length == 1 || dilation.length == 3,
+                    "Must have 1 or 3 dilation values - got %s", dilation);
+
+            if (dilation.length == 1) {
+                dilation(dilation[0], dilation[0], dilation[0]);
+            } else {
+                dilation(dilation[0], dilation[1], dilation[2]);
+            }
+        }
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             this.poolingType = poolingType.toPoolingType();

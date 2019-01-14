@@ -109,11 +109,11 @@ public class MaskZeroLayer extends BaseWrapperLayer {
 
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Builder> {
 
-        @Getter
         private Layer underlying;
-        @Getter
         private double maskValue;
 
         public Builder setUnderlying(Layer underlying) {

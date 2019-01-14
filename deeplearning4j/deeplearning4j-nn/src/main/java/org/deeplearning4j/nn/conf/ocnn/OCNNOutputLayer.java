@@ -140,6 +140,8 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         return l2;
     }
 
+    @Getter
+    @Setter
     @NoArgsConstructor
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
@@ -148,16 +150,12 @@ public class OCNNOutputLayer extends BaseOutputLayer {
          * this neural net is always set to 1 though.
          *
          */
-        @Getter
-        @Setter
         protected int hiddenLayerSize;
 
         /**
          * For nu definition see the paper
          *
          */
-        @Getter
-        @Setter
         protected double nu = 0.04;
 
         /**
@@ -165,32 +163,24 @@ public class OCNNOutputLayer extends BaseOutputLayer {
          * be the same as the number of examples in the dataset
          *
          */
-        @Getter
-        @Setter
         protected int windowSize = 10000;
 
         /**
          * The activation function to use with ocnn
          *
          */
-        @Getter
-        @Setter
         protected IActivation activation = new ActivationIdentity();
 
         /**
          * The initial r value to use for ocnn for definition, see the paper, note this is only active when {@link
          * #configureR} is specified as true
          */
-        @Getter
-        @Setter
         protected double initialRValue = 0.1;
 
         /**
          * Whether to use the specified {@link #initialRValue} or use the weight initialization with the neural network
          * for the r value
          */
-        @Getter
-        @Setter
         protected boolean configureR = true;
 
         /**

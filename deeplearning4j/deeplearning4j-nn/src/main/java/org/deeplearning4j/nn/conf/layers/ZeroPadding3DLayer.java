@@ -121,12 +121,13 @@ public class ZeroPadding3DLayer extends NoParamLayer {
                         .build();
     }
 
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Builder> {
 
         /**
          * [padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW]
          */
-        @Getter
         private int[] padding = new int[] {0, 0, 0, 0, 0, 0};
 
         /**

@@ -213,34 +213,63 @@ public class LocallyConnected2D extends SameDiffLayer {
         }
     }
 
+    @Getter
+    @Setter
     public static class Builder extends SameDiffLayer.Builder<Builder> {
 
         /**
          * Number of inputs to the layer (input size)
          */
-        @Getter
-        @Setter
         private int nIn;
 
         /**
          * Number of outputs (output size)
          */
-        @Getter
-        @Setter
         private int nOut;
 
         /**
          * Activation function for the layer
          */
-        @Getter
-        @Setter
         private Activation activation = Activation.TANH;
 
         /**
          * Kernel size for the layer. Must be 2 values (height/width)
          */
-        @Getter
         private int[] kernel = new int[] {2, 2};
+
+        /**
+         * Stride for the layer. Must be 2 values (height/width)
+         */
+        private int[] stride = new int[] {1, 1};
+
+        /**
+         * Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
+         */
+        private int[] padding = new int[] {0, 0};
+
+        /**
+         * Dilation for the layer. Must be 2 values (height/width)
+         */
+        private int[] dilation = new int[] {1, 1};
+
+        /**
+         * Set input filter size (h,w) for this locally connected 2D layer
+         *
+         */
+        @Setter(AccessLevel.NONE)
+        private int[] inputSize;
+
+        /**
+         * Convolution mode for the layer. See {@link ConvolutionMode} for details
+         */
+        private ConvolutionMode cm = ConvolutionMode.Same;
+
+        /**
+         * If true (default is false) the layer will have a bias
+         */
+        private boolean hasBias = true;
+
+
 
         /**
          * @param kernel Kernel size for the layer. Must be 2 values (height/width)
@@ -251,24 +280,12 @@ public class LocallyConnected2D extends SameDiffLayer {
         }
 
         /**
-         * Stride for the layer. Must be 2 values (height/width)
-         */
-        @Getter
-        private int[] stride = new int[] {1, 1};
-
-        /**
          * @param stride Stride for the layer. Must be 2 values (height/width)
          */
         public void setStride(int[] stride) {
             Preconditions.checkArgument(stride.length == 2, "Must have 2 stride values - got %s", stride);
             this.stride = stride;
         }
-
-        /**
-         * Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
-         */
-        @Getter
-        private int[] padding = new int[] {0, 0};
 
         /**
          * @param padding Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
@@ -279,39 +296,12 @@ public class LocallyConnected2D extends SameDiffLayer {
         }
 
         /**
-         * Dilation for the layer. Must be 2 values (height/width)
-         */
-        @Getter
-        private int[] dilation = new int[] {1, 1};
-
-        /**
          * @param dilation Dilation for the layer. Must be 2 values (height/width)
          */
         public void setDilation(int[] dilation) {
             Preconditions.checkArgument(dilation.length == 2, "Must have 2 dilation values - got %s", dilation);
             this.dilation = dilation;
         }
-
-        /**
-         * Set input filter size (h,w) for this locally connected 2D layer
-         *
-         */
-        @Getter
-        private int[] inputSize;
-
-        /**
-         * Convolution mode for the layer. See {@link ConvolutionMode} for details
-         */
-        @Getter
-        @Setter
-        private ConvolutionMode cm = ConvolutionMode.Same;
-
-        /**
-         * If true (default is false) the layer will have a bias
-         */
-        @Getter
-        @Setter
-        private boolean hasBias = true;
 
         /**
          * @param nIn Number of inputs to the layer (input size)

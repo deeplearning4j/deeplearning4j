@@ -97,22 +97,20 @@ public class AutoEncoder extends BasePretrainNetwork {
     }
 
     @AllArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends BasePretrainNetwork.Builder<Builder> {
 
         /**
          * Level of corruption - 0.0 (none) to 1.0 (all values corrupted)
          *
          */
-        @Getter
-        @Setter
         private double corruptionLevel = 3e-1f;
 
         /**
          * Autoencoder sparity parameter
          *
          */
-        @Getter
-        @Setter
         private double sparsity = 0f;
 
         public Builder() {}

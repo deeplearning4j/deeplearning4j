@@ -171,18 +171,12 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
-        @Getter
-        @Setter
         protected double alpha = 0.05;
-
-        @Getter
-        @Setter
         protected double lambda = 2e-4;
-
-        @Getter
-        @Setter
         protected boolean gradientCheck = false;
 
         public Builder(LossFunction lossFunction) {

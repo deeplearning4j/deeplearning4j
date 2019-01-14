@@ -117,13 +117,13 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
     }
 
 
+    @Getter
+    @Setter
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
         /**
          * Format of the input/output data. See {@link Convolution3D.DataFormat} for details
          */
-        @Getter
-        @Setter
         protected Convolution3D.DataFormat dataFormat;
 
         /**

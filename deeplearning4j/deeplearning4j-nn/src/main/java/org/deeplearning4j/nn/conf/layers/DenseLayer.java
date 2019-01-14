@@ -103,14 +103,14 @@ public class DenseLayer extends FeedForwardLayer {
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
         /**
          * If true (default): include bias parameters in the model. False: no bias.
          *
          */
-        @Getter
-        @Setter
         private boolean hasBias = true;
 
         /**

@@ -68,14 +68,12 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
         return PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(paramName);
     }
 
+    @Getter
+    @Setter
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
 
-        @Getter
-        @Setter
         protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
 
-        @Getter
-        @Setter
         protected double visibleBiasInit = 0.0;
 
         public Builder() {}

@@ -161,10 +161,10 @@ public class FrozenLayer extends Layer {
         this.layer.setConstraints(constraints);
     }
 
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Builder> {
 
-        @Getter
-        @Setter
         private Layer layer;
 
         public Builder layer(Layer layer) {

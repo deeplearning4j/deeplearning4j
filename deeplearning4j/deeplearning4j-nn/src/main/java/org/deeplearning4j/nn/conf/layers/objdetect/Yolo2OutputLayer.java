@@ -169,6 +169,8 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
                         .build();
     }
 
+    @Getter
+    @Setter
     public static class Builder extends org.deeplearning4j.nn.conf.layers.Layer.Builder<Builder> {
 
         /**
@@ -176,8 +178,6 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
          * paper): 5
          *
          */
-        @Getter
-        @Setter
         private double lambdaCoord = 5;
 
         /**
@@ -185,16 +185,12 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
          * paper): 0.5
          *
          */
-        @Getter
-        @Setter
         private double lambdaNoObj = 0.5;
 
         /**
          * Loss function for position/scale component of the loss function
          *
          */
-        @Getter
-        @Setter
         private ILossFunction lossPositionScale = new LossL2();
 
         /**
@@ -202,8 +198,6 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
          * paper), however Loss MCXENT could also be used (which is more common for classification).
          *
          */
-        @Getter
-        @Setter
         private ILossFunction lossClassPredictions = new LossL2();
 
         /**
@@ -213,8 +207,6 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
          * image.
          *
          */
-        @Getter
-        @Setter
         private INDArray boundingBoxes;
 
         /**

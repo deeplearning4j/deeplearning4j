@@ -114,6 +114,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     }
 
     @SuppressWarnings("unchecked")
+    @Getter
+    @Setter
     public abstract static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
 
         /**
@@ -121,8 +123,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * instances
          *
          */
-        @Getter
-        @Setter
         protected IActivation activationFn = null;
 
         /**
@@ -130,46 +130,34 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @see IWeightInit
          */
-        @Getter
-        @Setter
         protected IWeightInit weightInitFn = null;
 
         /**
          * Bias initialization value, for layers with biases. Defaults to 0
          *
          */
-        @Getter
-        @Setter
         protected double biasInit = Double.NaN;
 
         /**
          * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
          * coefficient for the bias.
          */
-        @Getter
-        @Setter
         protected double l1 = Double.NaN;
 
         /**
          * L2 regularization coefficient (weights only). Use {@link #l2Bias(double)} to configure the l2 regularization
          * coefficient for the bias.
          */
-        @Getter
-        @Setter
         protected double l2 = Double.NaN;
 
         /**
          * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
          */
-        @Getter
-        @Setter
         protected double l1Bias = Double.NaN;
 
         /**
          * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
          */
-        @Getter
-        @Setter
         protected double l2Bias = Double.NaN;
 
         /**
@@ -177,8 +165,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * org.nd4j.linalg.learning.config.Nesterovs}
          *
          */
-        @Getter
-        @Setter
         protected IUpdater iupdater = null;
 
         /**
@@ -186,8 +172,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * #updater(IUpdater)}
          *
          */
-        @Getter
-        @Setter
         protected IUpdater biasUpdater = null;
 
         /**
@@ -195,8 +179,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @see GradientNormalization
          */
-        @Getter
-        @Setter
         protected GradientNormalization gradientNormalization = null;
 
         /**
@@ -205,8 +187,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * otherwise.<br> L2 threshold for first two types of clipping, or absolute value threshold for last type of
          * clipping.
          */
-        @Getter
-        @Setter
         protected double gradientNormalizationThreshold = Double.NaN;
 
         /**
@@ -214,8 +194,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * org.deeplearning4j.nn.conf.weightnoise.WeightNoise}) for this layer
          *
          */
-        @Getter
-        @Setter
         protected IWeightNoise weightNoise;
 
         /**

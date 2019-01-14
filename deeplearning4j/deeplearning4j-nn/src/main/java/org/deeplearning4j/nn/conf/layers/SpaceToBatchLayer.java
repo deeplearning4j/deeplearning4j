@@ -150,14 +150,20 @@ public class SpaceToBatchLayer extends NoParamLayer {
 
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
 
         /**
          * Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
          * dimensions
          */
-        @Getter
         protected int[] blocks;
+
+        /**
+         * A 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
+         */
+        protected int[][] padding;
 
         /**
          * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
@@ -167,12 +173,6 @@ public class SpaceToBatchLayer extends NoParamLayer {
             Preconditions.checkArgument(blocks.length == 2, "Must have 2 block values - got %s", blocks);
             this.blocks = blocks;
         }
-
-        /**
-         * A 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
-         */
-        @Getter
-        protected int[][] padding;
 
         /**
          * @param padding Padding - should be a 2d array, with format [[padTop, padBottom], [padLeft, padRight]]

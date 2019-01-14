@@ -144,6 +144,8 @@ public class Convolution3D extends ConvolutionLayer {
     }
 
     @AllArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
 
         /**
@@ -151,8 +153,6 @@ public class Convolution3D extends ConvolutionLayer {
          * [minibatch, channels, depth, height, width]<br> NDHWC: activations (in/out) should have shape [minibatch,
          * depth, height, width, channels]<br>
          */
-        @Getter
-        @Setter
         private DataFormat dataFormat = DataFormat.NCDHW;
 
         public Builder() {

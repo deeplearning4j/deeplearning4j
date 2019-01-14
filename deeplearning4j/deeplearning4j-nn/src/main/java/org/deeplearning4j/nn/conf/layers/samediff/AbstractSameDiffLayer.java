@@ -204,36 +204,30 @@ public abstract class AbstractSameDiffLayer extends Layer {
         applyGlobalConfigToLayer(b);
     }
 
+    @Getter
+    @Setter
     public static abstract class Builder<T extends Builder<T>> extends Layer.Builder<T> {
 
         /**
          * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
          * coefficient for the bias.
          */
-        @Getter
-        @Setter
         protected double l1 = Double.NaN;
 
         /**
          * L2 regularization coefficient (weights only). Use {@link #l2Bias(double)} to configure the l2 regularization
          * coefficient for the bias.
          */
-        @Getter
-        @Setter
         protected double l2 = Double.NaN;
 
         /**
          * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
          */
-        @Getter
-        @Setter
         protected double l1Bias = Double.NaN;
 
         /**
          * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
          */
-        @Getter
-        @Setter
         protected double l2Bias = Double.NaN;
 
         /**
@@ -241,8 +235,6 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * org.nd4j.linalg.learning.config.Nesterovs}
          *
          */
-        @Getter
-        @Setter
         protected IUpdater updater = null;
 
         /**
@@ -250,8 +242,6 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * #updater(IUpdater)}
          *
          */
-        @Getter
-        @Setter
         protected IUpdater biasUpdater = null;
 
         /**

@@ -123,16 +123,9 @@ public class SameDiffDense extends SameDiffLayer {
 
     public static class Builder extends SameDiffLayer.Builder<Builder> {
 
-        @Getter
-        @Setter
         private int nIn;
-
-        @Getter
-        @Setter
         private int nOut;
 
-        @Getter
-        @Setter
         private Activation activation;
 
         public Builder nIn(int nIn){

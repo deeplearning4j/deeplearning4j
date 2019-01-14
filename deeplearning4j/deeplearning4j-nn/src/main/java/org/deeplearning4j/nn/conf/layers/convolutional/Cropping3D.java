@@ -121,12 +121,13 @@ public class Cropping3D extends NoParamLayer {
     }
 
 
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Builder> {
 
         /**
          * Cropping amount, a length 6 array, i.e. crop left depth, crop right depth, crop left height, crop right height, crop left width, crop right width
          */
-        @Getter
         private int[] cropping = new int[] {0, 0, 0, 0, 0, 0};
 
         /**

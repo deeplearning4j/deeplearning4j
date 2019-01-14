@@ -55,6 +55,8 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
 
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     protected static abstract class UpsamplingBuilder<T extends UpsamplingBuilder<T>> extends Layer.Builder<T> {
 
         /**
@@ -62,8 +64,6 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
          * dimensions (e.g. 2 for Upsampling2D etc.)
          *
          */
-        @Getter
-        @Setter
         protected int[] size = new int[] {1};
 
         /**

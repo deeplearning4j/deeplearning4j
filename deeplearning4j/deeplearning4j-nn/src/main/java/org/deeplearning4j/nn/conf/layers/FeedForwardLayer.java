@@ -129,6 +129,8 @@ public abstract class FeedForwardLayer extends BaseLayer {
         return false; //No pretrain params in standard FF layers
     }
 
+    @Getter
+    @Setter
     public abstract static class Builder<T extends Builder<T>> extends BaseLayer.Builder<T> {
 
         /**
@@ -136,8 +138,6 @@ public abstract class FeedForwardLayer extends BaseLayer {
          * this is the input channels, otherwise is the previous layer size.
          *
          */
-        @Getter
-        @Setter
         protected int nIn = 0;
 
         /**
@@ -145,8 +145,6 @@ public abstract class FeedForwardLayer extends BaseLayer {
          * this is the input channels, otherwise is the previous layer size.
          *
          */
-        @Getter
-        @Setter
         protected int nOut = 0;
 
         /**

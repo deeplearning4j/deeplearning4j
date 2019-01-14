@@ -132,6 +132,8 @@ public class PReLULayer extends BaseLayer {
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends FeedForwardLayer.Builder<PReLULayer.Builder> {
 
         /**
@@ -139,8 +141,6 @@ public class PReLULayer extends BaseLayer {
          * explicitly excludes the mini-batch dimension.
          *
          */
-        @Getter
-        @Setter
         private long[] inputShape = null;
 
         /**
@@ -150,8 +150,6 @@ public class PReLULayer extends BaseLayer {
          * to shape [channels, 1, 1] and broadcast alpha across height and width dimensions of each channel.
          *
          */
-        @Getter
-        @Setter
         private long[] sharedAxes = null;
 
         /**

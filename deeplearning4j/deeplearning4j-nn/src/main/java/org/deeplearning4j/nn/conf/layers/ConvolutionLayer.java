@@ -332,26 +332,22 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
     }
 
+    @Getter
+    @Setter
     public static abstract class BaseConvBuilder<T extends BaseConvBuilder<T>> extends FeedForwardLayer.Builder<T> {
 
-        @Getter
-        @Setter
         protected int convolutionDim = 2; // 2D convolution by default
 
         /**
          * If true (default): include bias parameters in the model. False: no bias.
          *
          */
-        @Getter
-        @Setter
         protected boolean hasBias = true;
 
         /**
          * Set the convolution mode for the Convolution layer. See {@link ConvolutionMode} for more details
          *
          */
-        @Getter
-        @Setter
         protected ConvolutionMode convolutionMode;
 
         /**
@@ -365,39 +361,17 @@ public class ConvolutionLayer extends FeedForwardLayer {
          * http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions</a><br>
          *
          */
-        @Getter
-        @Setter
         protected int[] dilation = new int[] {1, 1};
-
-        @Getter
-        @Setter
         public int[] kernelSize = new int[] {5, 5};
-
-        @Getter
-        @Setter
         protected int[] stride = new int[] {1, 1};
-
-        @Getter
-        @Setter
         protected int[] padding = new int[] {0, 0};
 
         /**
          * Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
          */
-        @Getter
-        @Setter
         protected AlgoMode cudnnAlgoMode = null;
-
-        @Getter
-        @Setter
         protected FwdAlgo cudnnFwdAlgo;
-
-        @Getter
-        @Setter
         protected BwdFilterAlgo cudnnBwdFilterAlgo;
-
-        @Getter
-        @Setter
         protected BwdDataAlgo cudnnBwdDataAlgo;
 
         /**
@@ -406,8 +380,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
          * (non-CuDNN) implementation for ConvolutionLayer will be used
          *
          */
-        @Getter
-        @Setter
         protected boolean cudnnAllowFallback = true;
 
 

@@ -129,12 +129,13 @@ public class ZeroPadding1DLayer extends NoParamLayer {
                         .build();
     }
 
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Builder> {
 
         /**
          * Padding value for left and right. Must be length 2 array
          */
-        @Getter
         private int[] padding = new int[] {0, 0}; //Padding: left, right
 
         /**

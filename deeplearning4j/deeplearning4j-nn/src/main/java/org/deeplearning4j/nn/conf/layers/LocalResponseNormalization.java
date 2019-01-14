@@ -147,6 +147,8 @@ public class LocalResponseNormalization extends Layer {
     }
 
     @AllArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Builder> {
 
         // defaults based on AlexNet model
@@ -155,32 +157,24 @@ public class LocalResponseNormalization extends Layer {
          * LRN scaling constant k. Default: 2
          *
          */
-        @Getter
-        @Setter
         private double k = 2;
 
         /**
          * Number of adjacent kernel maps to use when doing LRN. default: 5
          *
          */
-        @Getter
-        @Setter
         private double n = 5;
 
         /**
          * LRN scaling constant alpha. Default: 1e-4
          *
          */
-        @Getter
-        @Setter
         private double alpha = 1e-4;
 
         /**
          * Scaling constant beta. Default: 0.75
          *
          */
-        @Getter
-        @Setter
         private double beta = 0.75;
 
         /**
@@ -189,8 +183,6 @@ public class LocalResponseNormalization extends Layer {
          * (non-CuDNN) implementation for BatchNormalization will be used
          *
          */
-        @Getter
-        @Setter
         protected boolean cudnnAllowFallback = true;
 
         public Builder(double k, double n, double alpha, double beta) {

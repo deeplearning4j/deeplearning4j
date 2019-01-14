@@ -147,17 +147,15 @@ public class SpaceToDepthLayer extends NoParamLayer {
 
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
 
-        @Getter
-        @Setter
         protected int blockSize;
 
         /**
          * Data format for input activations. Note DL4J uses NCHW in most cases
          */
-        @Getter
-        @Setter
         protected DataFormat dataFormat = DataFormat.NCHW;
 
         /**

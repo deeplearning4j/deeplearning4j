@@ -181,14 +181,14 @@ public class SeparableConvolution2D extends ConvolutionLayer {
     }
 
 
+    @Getter
+    @Setter
     public static class Builder extends BaseConvBuilder<Builder> {
 
         /**
          * Set channels multiplier of channels-wise step in separable convolution
          *
          */
-        @Getter
-        @Setter
         public int depthMultiplier = 1;
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
@@ -225,8 +225,6 @@ public class SeparableConvolution2D extends ConvolutionLayer {
          * max-norm regularization, etc). These constraints are applied at each iteration, after the parameters have
          * been updated.
          */
-        @Getter
-        @Setter
         protected List<LayerConstraint> pointWiseConstraints;
 
         /**

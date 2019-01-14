@@ -97,14 +97,14 @@ public class EmbeddingLayer extends FeedForwardLayer {
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
         /**
          * If true: include bias parameters in the layer. False (default): no bias.
          *
          */
-        @Getter
-        @Setter
         private boolean hasBias = false;
 
         /**

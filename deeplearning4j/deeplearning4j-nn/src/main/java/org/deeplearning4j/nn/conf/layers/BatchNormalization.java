@@ -222,6 +222,8 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     @AllArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
         /**
@@ -231,8 +233,6 @@ public class BatchNormalization extends FeedForwardLayer {
          * (1-decay) * batchVariance<br>
          *
          */
-        @Getter
-        @Setter
         protected double decay = 0.9;
 
         /**
@@ -240,8 +240,6 @@ public class BatchNormalization extends FeedForwardLayer {
          * href="http://arxiv.org/pdf/1502.03167v3.pdf">http://arxiv.org/pdf/1502.03167v3.pdf</a>) to reduce/avoid
          * underflow issues.<br> Default: 1e-5
          */
-        @Getter
-        @Setter
         protected double eps = 1e-5;
 
         /**
@@ -250,8 +248,6 @@ public class BatchNormalization extends FeedForwardLayer {
          * should be set to false. Affects how global mean/variance estimates are calculated.
          *
          */
-        @Getter
-        @Setter
         protected boolean isMinibatch = true; // TODO auto set this if layer conf is batch
 
         /**
@@ -260,8 +256,6 @@ public class BatchNormalization extends FeedForwardLayer {
          * network training.
          *
          */
-        @Getter
-        @Setter
         protected boolean lockGammaBeta = false;
 
         /**
@@ -269,8 +263,6 @@ public class BatchNormalization extends FeedForwardLayer {
          * 1.0
          *
          */
-        @Getter
-        @Setter
         protected double gamma = 1.0;
 
         /**
@@ -278,8 +270,6 @@ public class BatchNormalization extends FeedForwardLayer {
          * 0.0
          *
          */
-        @Getter
-        @Setter
         protected double beta = 0.0;
 
         /**
@@ -289,8 +279,6 @@ public class BatchNormalization extends FeedForwardLayer {
          * been updated.
          *
          */
-        @Getter
-        @Setter
         protected List<LayerConstraint> betaConstraints;
 
         /**
@@ -300,8 +288,6 @@ public class BatchNormalization extends FeedForwardLayer {
          * been updated.
          *
          */
-        @Getter
-        @Setter
         protected List<LayerConstraint> gammaConstraints;
 
         /**
@@ -310,8 +296,6 @@ public class BatchNormalization extends FeedForwardLayer {
          * (non-CuDNN) implementation for BatchNormalization will be used
          *
          */
-        @Getter
-        @Setter
         protected boolean cudnnAllowFallback = true;
 
         /**
@@ -322,8 +306,6 @@ public class BatchNormalization extends FeedForwardLayer {
          * numerical issues. For example, a standard deviation of 1e-3 (something that could be encountered in practice)
          * gives a variance of 1e-6, which can be problematic for 16-bit floating point
          */
-        @Getter
-        @Setter
         protected boolean useLogStd = true;
 
         public Builder(double decay, boolean isMinibatch) {

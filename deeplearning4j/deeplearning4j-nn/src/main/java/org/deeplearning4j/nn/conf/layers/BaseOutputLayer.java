@@ -78,21 +78,19 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
     }
 
 
+    @Getter
+    @Setter
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
 
         /**
          * Loss function for the output layer
          */
-        @Getter
-        @Setter
         protected ILossFunction lossFn = new LossMCXENT();
 
         /**
          * If true (default): include bias parameters in the model. False: no bias.
          *
          */
-        @Getter
-        @Setter
         private boolean hasBias = true;
 
         public Builder() {}

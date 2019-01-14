@@ -104,30 +104,26 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
         /**
          * If true: include bias parameters in the layer. False (default): no bias.
          *
          */
-        @Getter
-        @Setter
         private boolean hasBias = false;
 
         /**
          * Set input sequence length for this embedding layer.
          *
          */
-        @Getter
-        @Setter
         private int inputLength = 1;
 
         /**
          * Set input sequence inference mode for embedding layer.
          *
          */
-        @Getter
-        @Setter
         private boolean inferInputLength = true;
 
         /**

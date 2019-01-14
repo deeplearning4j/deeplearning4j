@@ -102,22 +102,23 @@ public class ZeroPaddingLayer extends NoParamLayer {
                         .build();
     }
 
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Builder> {
 
         /**
          * Padding value for top, bottom, left, and right. Must be length 4 array
          */
-        @Getter
         private int[] padding = new int[] {0, 0, 0, 0}; //Padding: top, bottom, left, right
 
         /**
          * @param padding Padding value for top, bottom, left, and right. Must be length 4 array
          */
         public void setPadding(int[] padding) {
-            if (padding.length == 2) {
-                this.padding = new int[] {padding[0], padding[0], padding[1], padding[1]};
-            } else if (padding.length == 1) {
+            if (padding.length == 1) {
                 this.padding = new int[] {padding[0], padding[0], padding[0], padding[0]};
+            } else if (padding.length == 2) {
+                this.padding = new int[] {padding[0], padding[0], padding[1], padding[1]};
             } else if (padding.length == 4) {
                 this.padding = padding;
             } else {
