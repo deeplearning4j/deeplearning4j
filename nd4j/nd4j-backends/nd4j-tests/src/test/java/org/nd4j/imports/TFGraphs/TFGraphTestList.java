@@ -49,10 +49,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-//            "bincount/rank0",
-//            "embedding_lookup/rank2_multiple_div_nomaxnorm"
-//            "where/cond_only_rank1"
-            "boolean_mask/rank1_mask1"
+            "assert_rank/rank0_int32"
     };
 
     @After

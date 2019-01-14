@@ -469,15 +469,15 @@ public abstract class AbstractSession<T, O> {
                                     //Constant
                                     if(variable.getControlDeps() == null || var.getControlDeps().isEmpty()){
                                         //Standard case - do a lookup of placeholder/constant
-                                        cdVarId = newVarId(s, OUTER_FRAME, 0);
+                                        cdVarId = newVarId(cd, OUTER_FRAME, 0);
                                     } else {
                                         //Edge case: control dependency x -> constant -> thisOutput exists
                                         //We should look up based on x's frame/iteration
-                                        cdVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
+                                        cdVarId = newVarId(cd, executedVar.getFrame(), executedVar.getIteration());
                                     }
                                 } else {
                                     //Normal (non-constant)
-                                    cdVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
+                                    cdVarId = newVarId(cd, executedVar.getFrame(), executedVar.getIteration());
                                 }
                                 allInputsAvailable &= nodeOutputs.containsKey(cdVarId);
                                 if(!allInputsAvailable)
