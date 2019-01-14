@@ -28,11 +28,14 @@ namespace nd4j {
         LIST_OP_IMPL(create_list, 1, 2, 0, -2) {
             int height = 0;
             bool expandable = false;
-            if (block.getIArguments()->size() == 1) {
+            if (block.numI() == 2) {
                 height = INT_ARG(0);
                 expandable = (bool) INT_ARG(1);
-            } else if (block.getIArguments()->size() == 2) {
+            } else if (block.numI() == 1) {
                 height = INT_ARG(0);
+            } else if (block.width() == 1) {
+                height = INPUT_VARIABLE(0)->e<int>(0);
+                expandable = true;
             } else {
                 height = 0;
                 expandable = true;

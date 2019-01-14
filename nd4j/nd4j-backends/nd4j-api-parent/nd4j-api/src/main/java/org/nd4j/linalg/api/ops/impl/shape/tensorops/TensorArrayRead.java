@@ -43,7 +43,7 @@ public class TensorArrayRead extends BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarrayread";
+        return "tensorarrayreadv3";
     }
 
     @Override

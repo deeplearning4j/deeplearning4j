@@ -30,6 +30,9 @@ namespace nd4j {
 
             auto result = NDArrayFactory::create_<int>(list->height(), block.workspace());
 
+            //nd4j_printf("List size: [%i]\n", list->height());
+            result->printIndexedBuffer("actual height");
+
             //OVERWRITE_RESULT(result);
             setupResult(result, block);
             return Status::OK();

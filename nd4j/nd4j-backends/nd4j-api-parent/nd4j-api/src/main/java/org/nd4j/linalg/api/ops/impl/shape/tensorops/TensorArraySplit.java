@@ -47,7 +47,7 @@ public class TensorArraySplit extends BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarraysplit";
+        return "tensorarraysplitv3";
     }
 
 

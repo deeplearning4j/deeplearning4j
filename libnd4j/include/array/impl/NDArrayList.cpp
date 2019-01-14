@@ -148,9 +148,9 @@ namespace nd4j {
     }
 
     int NDArrayList::height() {
-        if (_height != 0)
-            return _height;
-        else
+        //if (_height != 0)
+        //    return _height;
+        //else
             return (int) _chunks.size();
     }
 
