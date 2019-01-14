@@ -33,6 +33,8 @@ namespace nd4j {
                 expandable = (bool) INT_ARG(1);
             } else if (block.numI() == 1) {
                 height = INT_ARG(0);
+            } else if (block.width() == 1) {
+                height = INPUT_VARIABLE(0)->e<int>(0);
             } else {
                 height = 0;
                 expandable = true;

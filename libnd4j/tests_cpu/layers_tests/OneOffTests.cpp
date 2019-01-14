@@ -145,3 +145,23 @@ TEST_F(OneOffTests, test_conv2d_nhwc_failed_1) {
 
     delete graph;
 }
+
+TEST_F(OneOffTests, test_tensor_array_1) {
+    auto e = NDArrayFactory::create<float>('c', {2, 3}, {0.77878559f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/tensor_array_close_sz1_float32_nodynamic_noname_noshape.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(5));
+
+    auto z = graph->getVariableSpace()->getVariable(5)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
+}
