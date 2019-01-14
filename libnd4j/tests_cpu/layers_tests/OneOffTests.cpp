@@ -227,3 +227,24 @@ TEST_F(OneOffTests, test_tensor_array_4) {
 
     delete graph;
 }
+
+TEST_F(OneOffTests, test_assert_4) {
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {2, 2}, {1, 1, 1, 1});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/assert_type_rank2_int64.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1));
+
+    auto z = graph->getVariableSpace()->getVariable(1)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
+}
