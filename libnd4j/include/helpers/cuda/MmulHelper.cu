@@ -58,8 +58,8 @@ void MmulHelper::basicGemm(const NDArray* A, const NDArray* B, NDArray* C, doubl
     		status = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alphaF, (float*)A->getSpecialBuffer(), M, (float*)B->getSpecialBuffer(), K, &betaF, (float*)C->getSpecialBuffer(), M);
     	}
     	else if(xType == DataType::HALF) {
-    		__half alphaH(alpha), betaH(beta);
-    		status = cublasHgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alphaH, (__half*)A->getSpecialBuffer(), M, (__half*)B->getSpecialBuffer(), K, &betaH, (__half*)C->getSpecialBuffer(), M);
+    		float16 alphaH(alpha), betaH(beta);
+    		status = cublasHgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alphaH.data, (__half*)A->getSpecialBuffer(), M, (__half*)B->getSpecialBuffer(), K, &betaH.data, (__half*)C->getSpecialBuffer(), M);
     	}
     	else {
     		throw std::runtime_error("MmulHelper::basicGemm cublas(X)gemm cuda: not implemented yet for given data type !");

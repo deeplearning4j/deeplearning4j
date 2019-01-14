@@ -482,8 +482,8 @@ std::vector<int> ShapeUtils::getDimsWithSameShape(const NDArray& max, const NDAr
     int  maxRank      = maxShapeInfo[0];
     int  minRank      = minShapeInfo[0];
 
-    for(int i = 1; i <= minRank; ++i)
-        if(minShapeInfo[i] == maxShapeInfo[maxRank - minRank + i])
+    for (int i = 1; i <= minRank; ++i)
+        if (minShapeInfo[i] == maxShapeInfo[maxRank - minRank + i])
             result.emplace_back(maxRank - minRank + i - 1);
 
     return result;

@@ -1267,7 +1267,7 @@ NDArray NDArray::transp() const {
                 BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
             }
         }
-              
+        result.tickWriteHost();
         return result;
     }
 

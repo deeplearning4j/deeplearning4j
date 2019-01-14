@@ -1873,8 +1873,8 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcast_1) {
 }
 
 TEST_F(NDArrayCudaBasicsTests, TestFloat16_1) {
-    auto x = NDArrayFactory::create<float16>({1,2,3,4,5,7,8,9});
-    auto y = NDArrayFactory::create<float16>({1,2,3,4,5,7,8,9});
+    auto x = NDArrayFactory::create<float>({1,2,3,4,5,7,8,9});
+    auto y = NDArrayFactory::create<float>({1,2,3,4,5,7,8,9});
     ASSERT_TRUE(x.equalsTo(&y));
 }
 
@@ -1893,6 +1893,35 @@ TEST_F(NDArrayCudaBasicsTests, TestFloat16_3) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_05)
+{
+    auto x = NDArrayFactory::create<float>('c', {8, 8, 8});
+    auto y = NDArrayFactory::create<float>('c', {1, 8, 8});
+    auto expected = NDArrayFactory::create<float>('c', {8, 8, 8});
+    NDArray res2  = NDArrayFactory::create<float>(expected.ordering(), expected.getShapeAsVector());
+    x = 1.;
+    y = 2.;
+    expected = 3.;
+    res2 = 0.f;
+    //x.printBuffer("X=");
+    //y.printBuffer("Y=");
+    //expected.printBuffer("EXPECTED");
+    //auto result = x + y;
+    //result.printBuffer("1 + 2 =");
+    //res2.assign(x + y);
+
+    //x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &res2);
+    //res2.printBuffer("Z=");
+    x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &res2);// *= y;
+//    x += y;
+    //x.printBuffer("OutputX");
+    //res2.syncToHost();
+    res2.printBuffer("OUtput");
+    ASSERT_TRUE(expected.isSameShape(&res2));
+    ASSERT_TRUE(expected.equalsTo(&res2));
+}
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_5)
 {
     auto x = NDArrayFactory::create<float>('c', {8, 8, 8});
@@ -1902,17 +1931,50 @@ TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_5)
     x = 1.;
     y = 2.;
     expected = 3.;
-    x.printBuffer("X=");
-    y.printBuffer("Y=");
-    expected.printBuffer("EXPECTED");
+    //x.printBuffer("X=");
+    //y.printBuffer("Y=");
+    //expected.printBuffer("EXPECTED");
     auto result = x + y;
-    result.printBuffer("1 + 2 =");
-    res2.assign(x + y);
+    //result.printBuffer("1 + 2 =");
+    //res2.assign(x + y);
 
     //x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &res2);
-    res2.printBuffer("Z=");
-    x += y;
-    x.printIndexedBuffer("OUtputX");
+    //res2.printBuffer("Z=");
+    //x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &res2);// *= y;
+//    x += y;
+    //x.printBuffer("OutputX");
+    //res2.syncToHost();
+    //res2.printBuffer("OUputZ");
+    //x.printIndexedBuffer("OUtputX");
+    ASSERT_TRUE(expected.isSameShape(&result));
+    ASSERT_TRUE(expected.equalsTo(&result));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_51)
+{
+    auto x = NDArrayFactory::create<float>('c', {8, 8, 8});
+    auto y = NDArrayFactory::create<float>('c', {8, 8});
+    auto expected = NDArrayFactory::create<float>('c', {8, 8, 8});
+    NDArray res2(expected);
+    x = 1.;
+    y = 2.;
+    expected = 3.;
+    //x.printBuffer("X=");
+    //y.printBuffer("Y=");
+    //expected.printBuffer("EXPECTED");
+    auto result = x + y;
+    //result.printBuffer("1 + 2 =");
+    //res2.assign(x + y);
+
+    //x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &res2);
+    //res2.printBuffer("Z=");
+    //x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &res2);// *= y;
+//    x += y;
+    //x.printBuffer("OutputX");
+    //res2.syncToHost();
+    //res2.printBuffer("OUputZ");
+    //x.printIndexedBuffer("OUtputX");
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
 }
