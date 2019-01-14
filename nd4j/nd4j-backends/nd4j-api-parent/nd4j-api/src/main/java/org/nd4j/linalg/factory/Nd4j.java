@@ -5411,12 +5411,17 @@ public class Nd4j {
     }
 
     /**
-     * Concatenates two matrices vertically. Matrices must have identical
-     * numbers of columns.
+     * Concatenates two matrices vertically. Matrices must have identical numbers of columns.<br>
+     * Note that for vstack on rank 1 arrays, this is equivalent to {@link Nd4j#pile(INDArray...)}. Example: vstack([3],[3]) -> [2,3]
      *
-     * @param arrs
+     * @param arrs Arrays to vstack
      */
     public static INDArray vstack(INDArray... arrs) {
+        Preconditions.checkState(arrs != null && arrs.length > 0, "No input specified to vstack (null or length 0)");
+        if(arrs[0].rank() == 1){
+            //Edge case: vstack rank 1 arrays - gives rank 2... vstack([3],[3]) -> [2,3]
+            return pile(arrs);
+        }
         INDArray ret = INSTANCE.vstack(arrs);
         logCreationIfNecessary(ret);
         return ret;
@@ -5424,16 +5429,14 @@ public class Nd4j {
 
 
     /**
-     * Concatenates two matrices vertically. Matrices must have identical
-     * numbers of columns.
+     * Concatenates two matrices vertically. Matrices must have identical numbers of columns.<br>
+     * Note that for vstack on rank 1 arrays, this is equivalent to {@link Nd4j#pile(INDArray...)}. Example: vstack([3],[3]) -> [2,3]
      *
-     * @param arrs
+     * @param arrs Arrays to vstack
      */
     public static INDArray vstack(Collection<INDArray> arrs) {
         INDArray[] arrays = arrs.toArray(new INDArray[0]);
-        INDArray ret = INSTANCE.vstack(arrays);
-        logCreationIfNecessary(ret);
-        return ret;
+        return vstack(arrays);
     }
 
     /**

@@ -7192,6 +7192,21 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testVStackRank1(){
+        List<INDArray> list = new ArrayList<>();
+        list.add(Nd4j.linspace(1,3,3, DataType.DOUBLE));
+        list.add(Nd4j.linspace(4,6,3, DataType.DOUBLE));
+        list.add(Nd4j.linspace(7,9,3, DataType.DOUBLE));
+
+        INDArray out = Nd4j.vstack(list);
+        INDArray exp = Nd4j.createFromArray(new double[][]{
+                {1,2,3},
+                {4,5,6},
+                {7,8,9}});
+        assertEquals(exp, out);
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
