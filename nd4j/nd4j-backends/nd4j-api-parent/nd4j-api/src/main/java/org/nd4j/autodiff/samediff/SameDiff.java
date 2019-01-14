@@ -9718,7 +9718,6 @@ public class SameDiff {
     public TensorArray tensorArray(DataType dataType) {
         TensorArray ta = new TensorArray(this, dataType);
         SDVariable[] outVars = ta.outputVariables();
-        addOutgoingFor(outVars, ta);
         return ta;
     }
 
@@ -9750,11 +9749,8 @@ public class SameDiff {
                 ret[i] = sub.var(variables[i]);
             }
 
-//            sub.inputs = ret;
-//            sub.outputs = functionDefinition.define(sub, null, ret);
-
+            functionDefinition.define(sub, null, ret);
             sameDiffFunctionInstances.put(function, sub);
-            throw new UnsupportedOperationException("Not yet reimplemented");
         }
         this.child = null;
         return sameDiffFunctionInstances.get(function);

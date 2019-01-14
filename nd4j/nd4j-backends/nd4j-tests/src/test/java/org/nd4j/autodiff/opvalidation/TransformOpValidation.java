@@ -1358,7 +1358,7 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(8, d0, 0);
 
         SDVariable v2 = sd.sum(sd.var(Nd4j.create(new double[]{4, 4}))).div(2.0);
-        sd.exec(Collections.emptyMap());
+        sd.exec(Collections.emptyMap(), sd.outputs());
         double d1 = v2.getArr().getDouble(0);
         assertEquals(4, d1, 0);
     }
