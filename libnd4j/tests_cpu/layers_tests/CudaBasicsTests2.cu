@@ -240,6 +240,26 @@ TEST_F(CudaBasicsTests2, mmulMxM_11) {
 	ASSERT_TRUE(c.equalsTo(&exp));
 }
 
+
+// //////////////////////////////////////////////////////////////////////////
+// TEST_F(CudaBasicsTests2, mmulMxM_12) {
+
+// 	const Nd4jLong M = 3;
+// 	const Nd4jLong K = 4;
+// 	const Nd4jLong N = 5;
+
+// 	NDArray a('f', {M,K}, {1.,2,3,4,5,6,7,8,9,10,11,12}, nd4j::DataType::INT8);
+// 	NDArray b('f', {K,N}, {-2,-3,0,1,5,-6,7,-8,9,-10,11,-12,13,-14,15,-16,17,-18,19,-20}, nd4j::DataType::INT8);
+// 	NDArray c('f', {M,N}, nd4j::DataType::FLOAT32);
+
+// 	NDArray exp('f', {M,N}, {-4., -50., -74., -98., -122.,-8., -52., -76., -100., -124.,-12., -54., -78., -102., -126.}, nd4j::DataType::FLOAT32);
+
+// 	nd4j::MmulHelper::mmulMxM<double,double,double>(&a, &b, &c, 1., 0.);	
+// 	// c.printIndexedBuffer();
+
+// 	ASSERT_TRUE(c.equalsTo(&exp));
+// }
+
 // //////////////////////////////////////////////////////////////////////////
 // TEST_F(CudaBasicsTests2, mmulMxM_12) {
 

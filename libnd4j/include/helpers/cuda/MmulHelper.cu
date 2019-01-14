@@ -41,7 +41,7 @@ void MmulHelper::basicGemm(const NDArray* A, const NDArray* B, NDArray* C, doubl
     cublasStatus_t status;
     cublasHandle_t handle;
 
-    status = cublasCreate(&handle); // initialize CUBLAS context
+    status = cublasCreate_v2(&handle); // initialize CUBLAS context
     if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::basicGemm cuda failed !", status);
 
     status = cublasSetStream_v2(handle, *A->getContext()->getCudaStream());
@@ -62,12 +62,12 @@ void MmulHelper::basicGemm(const NDArray* A, const NDArray* B, NDArray* C, doubl
     		status = cublasHgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alphaH, (__half*)A->getSpecialBuffer(), M, (__half*)B->getSpecialBuffer(), K, &betaH, (__half*)C->getSpecialBuffer(), M);
     	}
     	else {
-    		throw std::runtime_error("MmulHelper::basicGemm cublas(X)gemm cuda: not implemented for given data type !");
+    		throw std::runtime_error("MmulHelper::basicGemm cublas(X)gemm cuda: not implemented yet for given data type !");
     	}
     }
     else if(xType == yType) {
 
-    	if(xType == DataType::INT8 && zType == DataType::INT32) {
+    	if(xType == DataType::INT8 && zType == DataType::INT32) {            
     		int alphaI(alpha), betaI(beta);
     		status = cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alphaI, A->getSpecialBuffer(), CUDA_R_8I, M, B->getSpecialBuffer(), CUDA_R_8I, K, &betaI, C->getSpecialBuffer(), CUDA_R_32I, M, CUDA_R_32I, CUBLAS_GEMM_DEFAULT);
     	}
@@ -80,16 +80,16 @@ void MmulHelper::basicGemm(const NDArray* A, const NDArray* B, NDArray* C, doubl
     		status = cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alphaF, A->getSpecialBuffer(), CUDA_R_16F, M, B->getSpecialBuffer(), CUDA_R_16F, K, &betaF, C->getSpecialBuffer(), CUDA_R_32F, M, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
     	}
     	else {
-    		throw std::runtime_error("MmulHelper::basicGemm cublasGemmEx cuda: not implemented for given data types !");
+    		throw std::runtime_error("MmulHelper::basicGemm cublasGemmEx cuda: not implemented yet for given data types !");
     	}
     }
     else
-    	throw std::runtime_error("MmulHelper::basicGemm cuda: not implemented for given data types !");
+    	throw std::runtime_error("MmulHelper::basicGemm cuda: not implemented yet for given data types !");
    
-   	if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+   	if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::basicGemm cuda failed !", status);
 
    	auto cudaResult = cudaStreamSynchronize(*A->getContext()->getCudaStream());
-   	if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
+   	if (cudaResult != 0) throw cuda_exception::build("MmulHelper::basicGemm cuda failed !", cudaResult);
    
     cublasDestroy(handle);
 }
