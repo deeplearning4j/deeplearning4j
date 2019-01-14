@@ -114,11 +114,6 @@ public class LogNormalDistribution extends BaseRandomOp {
     }
 
     @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
     public void setZ(INDArray z){
         //We want all 3 args set to z for this op
         this.x = z;

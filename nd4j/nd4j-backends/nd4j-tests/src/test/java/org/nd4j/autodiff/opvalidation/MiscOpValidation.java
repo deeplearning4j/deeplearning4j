@@ -18,10 +18,8 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.OpValidationSuite;
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
@@ -33,24 +31,24 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.ZerosLike;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeNotNull;
 
 @Slf4j
@@ -344,9 +342,9 @@ public class MiscOpValidation extends BaseOpValidation {
 
             SameDiff sd = SameDiff.create();
 
-            SDVariable in = sd.var("in", DataType.DOUBLE, new int[]{20, 10});
+            SDVariable in = sd.var("in", DataType.DOUBLE, 20, 10);
             SDVariable indices = sd.var("indices", DataType.INT, new long[]{5});
-            SDVariable updates = sd.var("updates", DataType.DOUBLE, new int[]{5, 10});
+            SDVariable updates = sd.var("updates", DataType.DOUBLE, 5, 10);
 
 
             in.setArray(Nd4j.rand(DataType.DOUBLE, 20, 10));
@@ -563,7 +561,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable varMul = varMulPre.mul("d", sdVariable1);
         SDVariable sum = sameDiff.sum("ret", varMul, Integer.MAX_VALUE);
 
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> mapListPair = sameDiff.execBackwards();
+        sameDiff.execBackwards(Collections.emptyMap());
 
         SDVariable finalResult = sameDiff.grad(sum.getVarName());
 
@@ -714,7 +712,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable B2 = sd.var("B2", B);
 
         SDVariable[] batchMul = sd.batchMmul(new SDVariable[] {A1, A2}, new SDVariable[] {B1, B2});
-        sd.exec();
+        sd.exec(Collections.emptyMap(), sd.outputs());
 
         INDArray resultingMatrix = batchMul[0].getArr();
         System.out.print(resultingMatrix);
@@ -1223,7 +1221,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable sum = shape.castTo(DataType.DOUBLE).sum();
 
         sd.execAndEndResult();
-        sd.execBackwards();
+        sd.execBackwards(Collections.emptyMap());
     }
 
 
@@ -1236,7 +1234,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable sum = sd.sum(merged);
 
         sd.execAndEndResult();
-        sd.execBackwards();
+        sd.execBackwards(Collections.emptyMap());
 
         INDArray out = merged.getArr();
         assertEquals(1, out.rank());
@@ -1423,23 +1421,5 @@ public class MiscOpValidation extends BaseOpValidation {
         }
 
         assertEquals(failed.toString(), 0, failed.size());
-    }
-
-    @Test
-    public void testInplaceSubi() {
-        OpValidationSuite.ignoreFailing();
-        SameDiff sameDiffOuter = SameDiff.create();
-        Map<String, INDArray> params = new HashMap<>();
-        params.put("x", Nd4j.ones(4));
-        sameDiffOuter.defineFunction("inplacesubi", new SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable inplace = sameDiff.var("x", inputs.get("x"));
-                return new SDVariable[]{inplace.subi(1.0)};
-            }
-        }, params);
-
-        sameDiffOuter.getFunction("inplacesubi").eval(params);
-        assertEquals(Nd4j.zeros(4), params.get("x"));
     }
 }

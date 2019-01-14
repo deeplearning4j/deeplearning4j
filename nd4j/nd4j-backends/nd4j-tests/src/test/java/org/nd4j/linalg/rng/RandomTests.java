@@ -66,18 +66,18 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         initialType = Nd4j.dataType();
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         Nd4j.setDataType(initialType);
     }
 
     @Test
-    public void testCrossBackendEquality1() throws Exception {
+    public void testCrossBackendEquality1() {
 
         int[] shape = {1, 12};
         double mean = 0;
@@ -94,7 +94,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testDistribution1() throws Exception {
+    public void testDistribution1() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -118,7 +118,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testDistribution2() throws Exception {
+    public void testDistribution2() {
         val random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         val random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -146,7 +146,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testDistribution3() throws Exception {
+    public void testDistribution3() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         INDArray z1 = Nd4j.create(128);
@@ -163,7 +163,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testDistribution4() throws Exception {
+    public void testDistribution4() {
         for (int i = 0; i < 100; i++) {
             Nd4j.getRandom().setSeed(119);
 
@@ -179,7 +179,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testDistribution5() throws Exception {
+    public void testDistribution5() {
         for (int i = 0; i < 100; i++) {
             Nd4j.getRandom().setSeed(120);
 
@@ -195,7 +195,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testDistribution6() throws Exception {
+    public void testDistribution6() {
         for (int i = 0; i < 100; i++) {
             Nd4j.getRandom().setSeed(120);
 
@@ -211,7 +211,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testLinspace1() throws Exception {
+    public void testLinspace1() {
         INDArray z1 = Nd4j.linspace(1, 100, 200, DataType.DOUBLE);
 
         Linspace linspace = new Linspace(1, 100, 200, DataType.DOUBLE);
@@ -225,7 +225,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testDropoutInverted1() throws Exception {
+    public void testDropoutInverted1() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -250,7 +250,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testDropout1() throws Exception {
+    public void testDropout1() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -270,7 +270,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testAlphaDropout1() throws Exception {
+    public void testAlphaDropout1() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -291,7 +291,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testGaussianDistribution1() throws Exception {
+    public void testGaussianDistribution1() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -315,7 +315,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testGaussianDistribution2() throws Exception {
+    public void testGaussianDistribution2() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random3 = Nd4j.getRandomFactory().getNewRandomInstance(119);
@@ -354,7 +354,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testGaussianDistribution3() throws Exception {
+    public void testGaussianDistribution3() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -385,7 +385,7 @@ public class RandomTests extends BaseNd4jTest {
      * @throws Exception
      */
     @Test
-    public void testAndersonDarling() throws Exception {
+    public void testAndersonDarling() {
 
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         INDArray z1 = Nd4j.create(1000);
@@ -424,7 +424,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testStepOver1() throws Exception {
+    public void testStepOver1() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
 
@@ -482,7 +482,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testLegacyDistribution1() throws Exception {
+    public void testLegacyDistribution1() {
         NormalDistribution distribution = new NormalDistribution(new DefaultRandom(), 0.0, 1.0);
         INDArray z1 = distribution.sample(new int[] {1, 30000000});
 
@@ -492,7 +492,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testSetSeed1() throws Exception {
+    public void testSetSeed1() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -533,7 +533,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testJavaSide1() throws Exception {
+    public void testJavaSide1() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -553,7 +553,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testJavaSide2() throws Exception {
+    public void testJavaSide2() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -573,7 +573,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testJavaSide3() throws Exception {
+    public void testJavaSide3() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -598,7 +598,7 @@ public class RandomTests extends BaseNd4jTest {
      */
 
     @Test
-    public void testJavaSide4() throws Exception {
+    public void testJavaSide4() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -633,7 +633,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testBernoulliDistribution1() throws Exception {
+    public void testBernoulliDistribution1() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -656,7 +656,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testBernoulliDistribution2() throws Exception {
+    public void testBernoulliDistribution2() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -680,7 +680,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testBernoulliDistribution3() throws Exception {
+    public void testBernoulliDistribution3() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -706,7 +706,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testBinomialDistribution1() throws Exception {
+    public void testBinomialDistribution1() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -729,7 +729,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBinomialDistribution2() throws Exception {
+    public void testBinomialDistribution2() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
@@ -833,7 +833,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testStepOver3() throws Exception {
+    public void testStepOver3() {
         Random random = Nd4j.getRandomFactory().getNewRandomInstance(119);
         if (random instanceof NativeRandom) {
             NativeRandom rng = (NativeRandom) random;
@@ -860,7 +860,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testStepOver4() throws Exception {
+    public void testStepOver4() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119, 100000);
         Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119, 100000);
 
@@ -874,7 +874,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testSignatures1() throws Exception {
+    public void testSignatures1() {
 
         for (int x = 0; x < 100; x++) {
             INDArray z1 = Nd4j.randn(128, 1, 5325235);
@@ -886,7 +886,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testChoice1() throws Exception {
+    public void testChoice1() {
         INDArray source = Nd4j.create(new double[] {1, 2, 3, 4, 5});
         INDArray probs = Nd4j.create(new double[] {0.0, 0.0, 1.0, 0.0, 0.0});
         INDArray exp = Nd4j.create(5).assign(3.0);
@@ -897,7 +897,7 @@ public class RandomTests extends BaseNd4jTest {
 
 
     @Test
-    public void testChoice2() throws Exception {
+    public void testChoice2() {
         INDArray source = Nd4j.create(new double[] {1, 2, 3, 4, 5});
         INDArray probs = Nd4j.create(new double[] {0.0, 0.0, 0.0, 0.0, 0.0});
         INDArray exp = Nd4j.create(5).assign(5.0);
@@ -1273,7 +1273,7 @@ public class RandomTests extends BaseNd4jTest {
 
     @Test
     @Ignore
-    public void testTruncatedNormal1() throws Exception {
+    public void testTruncatedNormal1() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         INDArray z01 = Nd4j.create(10000000).assign(-119119d);
@@ -1299,7 +1299,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testLogNormal1() throws Exception {
+    public void testLogNormal1() {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
         INDArray z01 = Nd4j.create(1000000);
@@ -1328,7 +1328,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testLinspace2() throws Exception {
+    public void testLinspace2() {
         INDArray res = Nd4j.linspace(1, 5, 5, DataType.DOUBLE);
         INDArray exp = Nd4j.create(new double[] {1, 2, 3, 4, 5});
 
@@ -1366,7 +1366,7 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testJavaInt_1() throws Exception {
+    public void testJavaInt_1() {
         for (int e = 0; e < 100000; e++) {
             val i = Nd4j.getRandom().nextInt(10, 20);
 

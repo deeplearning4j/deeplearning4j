@@ -119,10 +119,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         invokeWatchdog(op);
 
-        if (op instanceof GradientOp) {
-            commit();
-            op.exec();
-        } else if (op instanceof ReduceOp) {
+        if (op instanceof ReduceOp) {
             exec((ReduceOp) op, new int[] {Integer.MAX_VALUE});
         } else if (op instanceof IndexAccumulation) {
             exec((IndexAccumulation) op, new int[] {Integer.MAX_VALUE});
@@ -730,12 +727,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     // FIXME: remove CudaContext return opType. We just don't need it
     @Override
     protected CudaContext invoke(TransformOp op) {
-        if (op.isExecSpecial()) {
-            flushQueue();
-            super.invoke(op);
-        } else {
-            processAsGridOp(op, null);
-        }
+        processAsGridOp(op, null);
         return null;
     }
 

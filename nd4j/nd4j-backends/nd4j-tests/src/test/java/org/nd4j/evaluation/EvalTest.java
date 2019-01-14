@@ -336,8 +336,8 @@ public class EvalTest extends BaseNd4jTest {
         Evaluation eval = new Evaluation(1);
 
         for (int xe = 0; xe < 3; xe++) {
-            INDArray zero = Nd4j.create(1);
-            INDArray one = Nd4j.ones(1);
+            INDArray zero = Nd4j.create(1,1);
+            INDArray one = Nd4j.ones(1,1);
 
             //One incorrect, three correct
             eval.eval(one, zero);

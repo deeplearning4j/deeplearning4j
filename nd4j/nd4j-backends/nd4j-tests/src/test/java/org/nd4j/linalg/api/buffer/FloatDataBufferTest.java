@@ -17,7 +17,6 @@
 package org.nd4j.linalg.api.buffer;
 
 import lombok.val;
-import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
@@ -32,15 +31,14 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.SerializationUtils;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -83,7 +81,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testGetSet() throws Exception {
+    public void testGetSet() {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         float[] d2 = d.asFloat();
@@ -114,7 +112,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testDup() throws Exception {
+    public void testDup() {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
@@ -134,7 +132,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testPut() throws Exception {
+    public void testPut() {
         float[] d1 = new float[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         d.put(0, 0.0);
@@ -145,7 +143,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testGetRange() throws Exception {
+    public void testGetRange() {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(0, 3);
         float[] data = new float[] {1, 2, 3};
@@ -161,7 +159,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testGetOffsetRange() throws Exception {
+    public void testGetOffsetRange() {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(1, 3);
         float[] data = new float[] {2, 3, 4};

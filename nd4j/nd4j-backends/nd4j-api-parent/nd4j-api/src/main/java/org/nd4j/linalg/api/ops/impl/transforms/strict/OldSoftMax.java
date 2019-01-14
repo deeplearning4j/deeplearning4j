@@ -84,11 +84,6 @@ public class OldSoftMax extends BaseTransformStrictOp {
     }
 
     @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
     public String opName() {
         return "old_softmax";
     }
@@ -104,55 +99,11 @@ public class OldSoftMax extends BaseTransformStrictOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-
-    @Override
-    public void exec() {
-        exec(1);
-    }
-
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         passThrough = true;
     }
-
-
-    @Override
-    public void exec(int... dimensions) {
-        if (dimensions[0] != 1)
-            throw new IllegalArgumentException("Only supports row wise calculations");
-        if (x.isMatrix()) {
-            INDArray maxAlongDimension = x.max(dimensions);
-            if (!maxAlongDimension.isVector() && !maxAlongDimension.isScalar())
-                throw new IllegalStateException("Max along dimension for input must either be a row vector or scalar");
-
-            INDArray xMinusMax = x.subColumnVector(maxAlongDimension);
-
-            INDArray exp;
-            if (z != null) {
-                exp = Nd4j.getExecutioner().exec(new Exp(xMinusMax, z));
-            } else {
-                exp = Nd4j.getExecutioner().exec(new Exp(xMinusMax));
-            }
-
-            INDArray sum = exp.sum(dimensions);
-            exp.diviColumnVector(sum);
-
-            if (z == null)
-                z = exp;
-        } else if (x.isVector()) {
-            double max = x.maxNumber().doubleValue();
-            INDArray exp;
-            if (z != null) {
-                exp = Nd4j.getExecutioner().exec(new Exp(x.sub(max), z));
-            } else {
-                exp = Nd4j.getExecutioner().exec(new Exp(x.sub(max)));
-            }
-            exp.divi(exp.sumNumber().doubleValue());
-            this.z = exp;
-        }
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

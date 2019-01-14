@@ -21,15 +21,12 @@ import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -49,7 +46,7 @@ public class Nd4jTestsF extends BaseNd4jTest {
     }
 
     @Test
-    public void testConcat3D_Vstack_F() throws Exception {
+    public void testConcat3D_Vstack_F() {
         //Nd4j.getExecutioner().enableVerboseMode(true);
         //Nd4j.getExecutioner().enableDebugMode(true);
 

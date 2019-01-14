@@ -31,7 +31,8 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * This tests pack covers simple gradient checks for AggregateSkipGram, CBOW and HierarchicSoftmax
@@ -53,7 +54,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testHSGradient1() throws Exception {
+    public void testHSGradient1() {
         INDArray syn0 = Nd4j.ones(10, 10).assign(0.01f);
         INDArray syn1 = Nd4j.ones(10, 10).assign(0.02f);
         INDArray expTable = Nd4j.create(10000).assign(0.5f);
@@ -90,7 +91,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testSGGradient1() throws Exception {
+    public void testSGGradient1() {
         INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
         INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
         INDArray syn1Neg = Nd4j.ones(10, 10).assign(0.03f);
@@ -119,7 +120,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testSGGradient2() throws Exception {
+    public void testSGGradient2() {
         INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
         INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
         INDArray syn1Neg = Nd4j.ones(10, 10).assign(0.03f);
@@ -165,7 +166,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
      * @throws Exception
      */
     @Test
-    public void testSGGradientNoOp() throws Exception {
+    public void testSGGradientNoOp() {
         INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
         INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
         INDArray syn1Neg = Nd4j.ones(10, 10).assign(0.03f);
@@ -188,7 +189,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testSGGradientNegative1() throws Exception {
+    public void testSGGradientNegative1() {
         INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
         INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
         INDArray syn1Neg = Nd4j.ones(10, 10).assign(0.03f);
@@ -217,7 +218,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
 
     @Test
-    public void testCBOWGradient1() throws Exception {
+    public void testCBOWGradient1() {
         INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
         INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
         INDArray expTable = Nd4j.create(10000).assign(0.5f);
@@ -272,7 +273,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testCBOWGradientNoOp1() throws Exception {
+    public void testCBOWGradientNoOp1() {
         INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
         INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
         INDArray syn1Neg = Nd4j.ones(10, 10).assign(0.03f);
@@ -296,7 +297,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testCBOWGradientNegative1() throws Exception {
+    public void testCBOWGradientNegative1() {
         INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
         INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
         INDArray syn1Neg = Nd4j.create(10, 10).assign(0.03f);
@@ -357,7 +358,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
 
     @Test
-    public void testCBOWInference1() throws Exception {
+    public void testCBOWInference1() {
         INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
         INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
         INDArray syn1Neg = Nd4j.create(10, 10).assign(0.03f);
@@ -410,7 +411,7 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testSGInference1() throws Exception {
+    public void testSGInference1() {
         INDArray syn0 = Nd4j.create(10, 10).assign(0.01f);
         INDArray syn1 = Nd4j.create(10, 10).assign(0.02f);
         INDArray syn1Neg = Nd4j.create(10, 10).assign(0.03f);

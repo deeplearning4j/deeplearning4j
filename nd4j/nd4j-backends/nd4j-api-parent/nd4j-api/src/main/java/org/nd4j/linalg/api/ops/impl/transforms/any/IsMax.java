@@ -98,11 +98,6 @@ public class IsMax extends BaseTransformAnyOp {
     }
 
     @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
     public DataBuffer extraArgsDataBuff(DataType dtype) {
         if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
             return this.extraArgs == null ? null : Nd4j.createBuffer(DataType.LONG, 1, false);

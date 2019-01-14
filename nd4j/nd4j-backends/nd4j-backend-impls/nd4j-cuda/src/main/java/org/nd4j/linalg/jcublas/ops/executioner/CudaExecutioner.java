@@ -645,9 +645,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             return null;
         }
 
-        if (op instanceof GradientOp) {
-            op.exec();
-        } else if (op instanceof TransformOp) {
+        if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             invoke(t);
         } else if (op instanceof ReduceOp) {

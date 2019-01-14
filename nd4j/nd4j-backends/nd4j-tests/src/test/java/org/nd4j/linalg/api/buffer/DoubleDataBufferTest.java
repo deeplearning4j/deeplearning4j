@@ -32,15 +32,13 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.SerializationUtils;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 
 import java.io.*;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -84,7 +82,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testGetSet() throws Exception {
+    public void testGetSet() {
         double[] d1 = new double[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         double[] d2 = d.asDouble();
@@ -144,7 +142,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testDup() throws Exception {
+    public void testDup() {
         double[] d1 = new double[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
@@ -154,7 +152,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testPut() throws Exception {
+    public void testPut() {
         double[] d1 = new double[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         d.put(0, 0.0);
@@ -165,7 +163,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testGetRange() throws Exception {
+    public void testGetRange() {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).data();
         double[] get = buffer.getDoublesAt(0, 3);
         double[] data = new double[] {1, 2, 3};
@@ -180,7 +178,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testGetOffsetRange() throws Exception {
+    public void testGetOffsetRange() {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).data();
         double[] get = buffer.getDoublesAt(1, 3);
         double[] data = new double[] {2, 3, 4};

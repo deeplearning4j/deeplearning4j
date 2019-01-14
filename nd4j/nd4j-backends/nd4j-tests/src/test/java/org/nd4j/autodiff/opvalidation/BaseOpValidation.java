@@ -16,10 +16,8 @@
 
 package org.nd4j.autodiff.opvalidation;
 
-import org.junit.After;
 import org.junit.Before;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -38,7 +36,7 @@ public abstract class BaseOpValidation extends BaseNd4jTest {
     }
 
     @Before
-    public void beforeClass() throws Exception {
+    public void beforeClass() {
         Nd4j.create(1);
 
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
