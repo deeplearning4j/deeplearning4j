@@ -55,7 +55,7 @@ public class TensorArrayConcat extends BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarrayconcat";
+        return "tensorarrayconcatv3";
     }
 
     @Override

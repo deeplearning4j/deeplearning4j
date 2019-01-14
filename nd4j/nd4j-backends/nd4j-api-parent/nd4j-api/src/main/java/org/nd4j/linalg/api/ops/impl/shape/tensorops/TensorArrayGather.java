@@ -55,7 +55,7 @@ public class TensorArrayGather extends BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarraygather";
+        return "tensorarraygatherv3";
     }
 
     @Override
