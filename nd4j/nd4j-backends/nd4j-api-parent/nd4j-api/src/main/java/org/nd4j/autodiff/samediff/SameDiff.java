@@ -1948,6 +1948,16 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+
+    /**
+     * Create an SDVariable with a fixed/constant value, with a generated name
+     * @param constant Value for the constant SDVariable
+     * @return
+     */
+    public SDVariable constant(@NonNull INDArray constant){
+        return constant(getNewVarName(), constant);
+    }
+
     /**
      * Create an SDVariable with a fixed/constant value
      * @param name  Name of the constant SDVariable

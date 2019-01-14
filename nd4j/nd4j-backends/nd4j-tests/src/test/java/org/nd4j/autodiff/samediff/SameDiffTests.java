@@ -2285,9 +2285,10 @@ public class SameDiffTests {
         SDVariable var1 = sd.var(arr1);
         INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
         SDVariable var2 = sd.var(arr2);
-        tensorArray.write(0, var1);
-        tensorArray.write(1, var2);
-        SDVariable result = tensorArray.stack();
+        SDVariable write0 = tensorArray.write(var2, 0, var1);
+        SDVariable write1 = tensorArray.write(write0,1, var2);
+        SDVariable result = tensorArray.stack(write1);
+        sd.exec(null, result.getVarName());
         assertEquals(Nd4j.pile(arr1, arr2), result.eval());
     }
 
@@ -2299,12 +2300,10 @@ public class SameDiffTests {
         SDVariable var1 = sd.var(arr1);
         INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
         SDVariable var2 = sd.var(arr2);
-        tensorArray.write(0, var1);
-        tensorArray.write(1, var2);
+        SDVariable write1 = tensorArray.write(var2,0, var1);
+        SDVariable write2 = tensorArray.write(write1, 1, var2);
         SDVariable result1 = tensorArray.read(0);
-        assertEquals(arr1, result1.eval());
         SDVariable result2 = tensorArray.read(1);
-        assertEquals(arr2, result2.eval());
 
     }
     @Test
@@ -2315,9 +2314,11 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
         INDArray arr3 = Nd4j.pile(arr1, arr2);
         SDVariable var = sd.var(arr3);
-        tensorArray.unstack(var);
+        SDVariable unstack = tensorArray.unstack(var, var);
         SDVariable result1 = tensorArray.read(0);
         SDVariable result2 = tensorArray.read(1);
+        result1.addControlDependency(unstack);
+        result2.addControlDependency(unstack);
         assertEquals(arr1, result1.eval());
         assertEquals(arr2, result2.eval());
     }

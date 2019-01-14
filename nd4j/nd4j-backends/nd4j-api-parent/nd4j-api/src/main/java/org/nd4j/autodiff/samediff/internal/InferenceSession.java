@@ -173,7 +173,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 List<INDArray> list = getTensorArrays().get(v);
                 Preconditions.checkState(list != null, "Could not find TensorList for %s", v);
-                Preconditions.checkState(list.size() > i, "Cannot get index %s from TensorList of size %s (array not present?) - VarId=%s", i, v);
+                Preconditions.checkState(list.size() > i, "Cannot get index %s from TensorList of size %s (array not present?) - VarId=%s", i, list.size(), v);
 
                 INDArray out = list.get(i);
                 return new INDArray[]{out};
@@ -241,9 +241,16 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 Preconditions.checkState(idxArr.dataType().isIntType(), "Indices variable for TensorArrayGather should be an integer type, got %s for array %s", idxArr.dataType(), indicesName);
 
                 int[] idxArrInt = idxArr.toIntVector();
+
+                //Edge case: -1 means "all"
                 ArrayList<INDArray> newList = new ArrayList<>();
-                for (int id : idxArrInt) {
-                    newList.add(l.get(id));
+                if(idxArrInt.length == 1 && idxArrInt[0] == -1){
+                    newList.addAll(l);
+                } else {
+                    for (int id : idxArrInt) {
+                        Preconditions.checkState(id >=0,"Index for TensorArrayGather must be >= 0, got %s", id);
+                        newList.add(l.get(id));
+                    }
                 }
                 INDArray out = Nd4j.pile(newList);
                 return new INDArray[]{out};
@@ -254,6 +261,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 //Input 2: The values to scatter
 
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+                TensorArray ta = (TensorArray) sameDiff.getVariableOutputFunction(inTensorArray.getVarName());
                 VarId tArr = lookup(inTensorArray.getVarName(), opInputs);
                 List<INDArray> l = tensorArrays.get(tArr);
                 Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
@@ -271,6 +279,11 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 while (l.size() <= idxs.length) { //Can't use set(int, E) if index >= size
                     l.add(null);
+                }
+
+                //Edge case: idxs being [-1] means "all sub arrays" (i.e., "unstack" case)
+                if(idxs.length == 1 && idxs[0] == -1){
+                    idxs = ArrayUtil.range(0, (int)valuesArr.size(0));
                 }
 
                 INDArrayIndex[] idx = ArrayUtil.nTimes(valuesArr.rank(), NDArrayIndex.all(), INDArrayIndex.class);

@@ -29,7 +29,6 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.LongUtils;
 
 import java.util.Arrays;
 

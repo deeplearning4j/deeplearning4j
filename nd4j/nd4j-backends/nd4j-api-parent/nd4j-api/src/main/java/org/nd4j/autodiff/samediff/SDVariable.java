@@ -20,6 +20,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -38,6 +39,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -1676,6 +1678,30 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+    }
+
+    /**
+     * Add a control dependency for this variable on the specified variable.<br>
+     * Control depnedencies can be used to enforce the execution order.
+     * For example, if a control dependency X->Y exists, then Y will only be executed after X is executed - even
+     * if Y wouldn't normally depend on the result/values of X.
+     *
+     * @param controlDependency Control dependency to add for this variable
+     */
+    public void addControlDependency(SDVariable controlDependency){
+        String cdN = controlDependency.getVarName();
+        String n = this.getVarName();
+        Variable v = sameDiff.getVariables().get(n);
+        if(v.getControlDeps() == null)
+            v.setControlDeps(new ArrayList<String>());
+        if(!v.getControlDeps().contains(cdN))
+            v.getControlDeps().add(cdN);
+
+        Variable v2 = sameDiff.getVariables().get(cdN);
+        if(v2.getControlDepsForVar() == null)
+            v2.setControlDepsForVar(new ArrayList<String>());
+        if(!v2.getControlDepsForVar().contains(n))
+            v2.getControlDepsForVar().add(n);
     }
 
     /**
