@@ -28,6 +28,7 @@
 #include <graph/VariableProxy.h>
 #include <graph/exceptions/graph_exception.h>
 #include <graph/exceptions/unresolved_input_exception.h>
+#include <graph/exceptions/unresolved_output_exception.h>
 
 namespace nd4j {
     namespace graph {
@@ -229,8 +230,19 @@ namespace nd4j {
 
             nd4j_debug("Graph output size: %i\n", _output.size());
             for (int e = 0; e < (int) _output.size(); e++) {
-                nd4j_debug("Output node: %i\n", _output.at(e));
-                res->push_back(_variableSpace->getVariable(_output.at(e)));
+                auto nodeId = _output.at(e);
+                nd4j_debug("Output node: %i\n", nodeId);
+
+                for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
+                    if (_variableSpace->hasVariable(nodeId, e)) {
+                        res->push_back(_variableSpace->getVariable(nodeId, e));
+                    } else {
+                        if (e == 0) {
+                            throw unresolved_output_exception::build("Can't find output variable", nodeId, e);
+                        } else
+                            break;
+                    }
+                }
             }
 
             return res;

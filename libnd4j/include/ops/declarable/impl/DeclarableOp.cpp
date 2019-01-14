@@ -317,7 +317,7 @@ namespace nd4j {
 
             // checking optionally available outputs
             auto varSpace = block.getVariableSpace();
-            for (int index = 0; index < 65536; index++) {
+            for (int index = 0; index < DataTypeUtils::max<int>(); index++) {
                 if (varSpace->hasVariable(block.nodeId(), index)) {
                     auto var = block.variable(block.nodeId(), index);
 
@@ -725,7 +725,7 @@ namespace nd4j {
                 return arrayList;
 
 
-            for (int e = 0; e < 65536; e++) {
+            for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
                 std::pair<int,int> pair(1, e);
                 if (variableSpace.hasVariable(pair)) {
                     auto var = variableSpace.getVariable(pair);
