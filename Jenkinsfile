@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-// @Library('skymind@bugfix/ppc64-docker') _
+@Library('skymind@bugfix/test-parallel') _
 
 /*
     To redefine some job/run parameters,
