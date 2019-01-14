@@ -1666,6 +1666,7 @@ public class SameDiff {
 
             //Allocate updater state
             long numTrainableParams = 0;
+            DataType dt = null;             //TODO support mixed precision variables - https://github.com/deeplearning4j/deeplearning4j/issues/6992
             for(String s : trainingConfig.getTrainableParams()) {
                 SDVariable v = variables.get(s).getVariable();
                 Preconditions.checkState(v != null, "No variable found for trainable parameter name \"%s\"", s);
@@ -1673,12 +1674,14 @@ public class SameDiff {
                 INDArray arr = v.getArr();
                 Preconditions.checkState(arr != null, "No array found for trainable parameter \"%s\"", s);
                 numTrainableParams += arr.length();
+                if(dt == null)
+                    dt = arr.dataType();
             }
 
             long updaterStateSize = trainingConfig.getUpdater().stateSize(numTrainableParams);
 
             if(updaterStateSize > 0) {
-                updaterState = Nd4j.createUninitialized(new long[]{1, updaterStateSize});
+                updaterState = Nd4j.createUninitialized(dt, 1, updaterStateSize);
             }
 
             long viewSoFar = 0;
@@ -2108,7 +2111,6 @@ public class SameDiff {
      * @return
      */
     public SDVariable placeHolder(String name, org.nd4j.linalg.api.buffer.DataType dataType, long...shape) {
-        //TODO always add cast op after placeholder - this allows user to use any array type whilst giving is consistent shape inference
         SDVariable ret = new SDVariable(name, VariableType.PLACEHOLDER, this, shape, dataType, null);
         variables.put(name, Variable.builder().name(name).variable(ret).build());
         return ret;

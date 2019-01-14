@@ -125,6 +125,7 @@ public abstract class AbstractSession<T, O> {
             Preconditions.checkState(sameDiff.variableMap().containsKey(s), "Requested output variable %s does not exist in SameDiff instance", s);
         }
 
+        placeholderValues = preprocessPlaceholders(placeholderValues);
 
         //Clear state from past
         availableForExec.clear();
@@ -578,6 +579,16 @@ public abstract class AbstractSession<T, O> {
                 }
             }
         }
+    }
+
+    /**
+     * Preprocess the placeholder values, if required.
+     * Mainly reserved for casting in the case of InferenceSession
+     * @param placeholders Placeholders to preprocess.
+     * @return Preprocessed placeholders
+     */
+    protected Map<String,T> preprocessPlaceholders(Map<String,T> placeholders){
+        return placeholders;
     }
 
     /**

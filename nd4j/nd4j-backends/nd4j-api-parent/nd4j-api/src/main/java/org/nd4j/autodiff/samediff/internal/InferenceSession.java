@@ -32,6 +32,24 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     }
 
     @Override
+    protected Map<String,INDArray> preprocessPlaceholders(Map<String,INDArray> placeholders){
+        //Handle casting of the input array automatically.
+        //The idea here is to avoid unexpected errors if the user (for example) tries to perform inference with a double
+        // array for a float placeholder
+
+        Map<String,INDArray> out = new HashMap<>();
+        for(Map.Entry<String,INDArray> e : placeholders.entrySet()){
+            DataType dt = sameDiff.getVariable(e.getKey()).dataType();
+            INDArray arr = e.getValue();
+            if(arr.dataType() != dt){
+                arr = arr.castTo(dt);
+            }
+            out.put(e.getKey(), arr);
+        }
+        return out;
+    }
+
+    @Override
     public INDArray[] getOutputs(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<String> constAndPhInputs) {
 
         int totalInputs = (opInputs == null ? 0 : opInputs.size()) + (constAndPhInputs == null ? 0 : constAndPhInputs.size());
