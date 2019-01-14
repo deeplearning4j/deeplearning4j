@@ -666,30 +666,6 @@ TEST_F(DeclarableOpsTests12, pad_tests26) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests12, scatterND_update_6) {
-
-    NDArray input('c', {10,7}, nd4j::DataType::FLOAT32);
-    input = 1.f;
-    NDArray indices('c', {4,1}, {1,1,2,4}, nd4j::DataType::INT32);
-    NDArray updates('c', {4,7}, {0.860169, 0.446734, 0.216270, 0.432742, 0.208896, 0.351743, 0.874961,0.204469, 0.379186, 0.997929, 0.718817, 0.186777, 0.782991, 0.552161,
-                                 0.407467, 0.921281, 0.571951, 0.446862, 0.308610, 0.310261, 0.092932,0.950737, 0.456133, 0.951498, 0.883415, 0.543663, 0.500607, 0.390313}, nd4j::DataType::FLOAT32);
-    NDArray expected('c', {10,7}, {1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 0.20446908f, 0.37918627f, 0.99792874f, 0.71881700f, 0.18677747f, 
-                                    0.78299069f, 0.55216062f, 0.40746713f, 0.92128086f, 0.57195139f, 0.44686234f, 0.30861020f, 0.31026053f, 0.09293187f, 
-                                    1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 0.95073712f, 0.45613325f, 0.95149803f, 0.88341522f, 0.54366302f, 0.50060666f, 0.39031255f, 
-                                    1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 
-                                    1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f}, nd4j::DataType::FLOAT32);
-
-    NDArray z('c', {10,7}, nd4j::DataType::FLOAT32);    
-
-    nd4j::ops::scatter_nd_update op;    
-    Nd4jStatus status = op.execute({&input, &indices, &updates}, {&z}, {}, {}, {});
-
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(expected.isSameShapeStrict(&z));
-    ASSERT_TRUE(expected.equalsTo(z));
-}
-
-////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, relu_1) {
 
     NDArray input('c', {1,5,5,6}, { 0.557449, 0.768277, 1.094015, -0.557449, -0.768277, -1.094015,0.563735, 0.900299, 0.789979, -0.563735, -0.900299, -0.789979,
@@ -748,24 +724,6 @@ TEST_F(DeclarableOpsTests12, scatterND_5) {
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
-}
-
-////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests12, scatterND_update_7) {
-
-    NDArray input('c', {8}, {0,0,0,0,0,0,0,0}, nd4j::DataType::FLOAT32);    
-    NDArray indices('c', {4, 1}, {1, 1, 1, 1}, nd4j::DataType::INT32);
-    NDArray updates('c', {4}, {1,2,3,4}, nd4j::DataType::FLOAT32);
-    NDArray expected('c', {8}, {0.f, 4.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}, nd4j::DataType::FLOAT32);
-
-    NDArray z('c', {8}, nd4j::DataType::FLOAT32);    
-
-    nd4j::ops::scatter_nd_update op;    
-    Nd4jStatus status = op.execute({&input, &indices, &updates}, {&z}, {}, {}, {true});    
-
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(expected.isSameShapeStrict(&z));
-    ASSERT_TRUE(expected.equalsTo(z));
 }
 
 ////////////////////////////////////////////////////////////////////

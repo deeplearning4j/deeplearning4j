@@ -119,12 +119,19 @@ class ScatterHelper {
             if(outRank == 1) {
 
 // #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-#pragma omp parallel for if(!lock) schedule(guided)
-                for(Nd4jLong i = 0; i < indLen; ++i) {                    
+#pragma omp parallel for schedule(guided)
+                for(Nd4jLong i = 0; i < indLen; ++i) {
                     Nd4jLong idx = indices.e<Nd4jLong>(i);
                     NDArray out = output({idx, idx+1});
                     
-                    out.applyPairwiseTransform(op, updates.e(i), nullptr);
+                    if(lock) {
+                        #pragma omp critical
+                        {
+                            out.applyPairwiseTransform(op, updates.e(i), nullptr);
+                        }
+                    }
+                    else
+                        out.applyPairwiseTransform(op, updates.e(i), nullptr);
                 }
             }
             else {      // outRank > 1
@@ -137,13 +144,20 @@ class ScatterHelper {
                 std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
 
 // #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) // causes known openMP asan bug !
-#pragma omp parallel for if(!lock) schedule(guided)
+#pragma omp parallel for schedule(guided)
                 for(Nd4jLong i = 0; i < indLen; ++i) {                                       
 
                     NDArray outSubArr = output(indices.e<Nd4jLong>(i), std::vector<int>({0}));
                     NDArray updSubArr = updates(i, dimsToExcludeUpd);
-                    
-                    outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);   
+
+                    if(lock) {
+                        #pragma omp critical
+                        {
+                            outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);
+                        }
+                    }
+                    else
+                        outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);   
                 }
             }
         }
@@ -160,13 +174,20 @@ static FORCEINLINE void scatterND(pairwise::Ops op, const NDArray& indices, cons
     if(outRank == 1) {
 
 // #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-#pragma omp parallel for if(!lock) schedule(guided)        
+#pragma omp parallel for schedule(guided)        
         for(Nd4jLong i = 0; i < indLen; ++i) {
 
             Nd4jLong idx = indices.e<Nd4jLong>(i);
             NDArray out = output({idx, idx+1});
             
-            out.applyPairwiseTransform(op, updates.e(i), nullptr);
+            if(lock) {
+                #pragma omp critical
+                {
+                   out.applyPairwiseTransform(op, updates.e(i), nullptr);
+                }
+            }
+            else
+                out.applyPairwiseTransform(op, updates.e(i), nullptr);
         }
     } 
     else {
@@ -177,7 +198,7 @@ static FORCEINLINE void scatterND(pairwise::Ops op, const NDArray& indices, cons
         std::vector<Nd4jLong> idxRangeOut(2*outRank, 0);
  
 // #pragma omp parallel for if(indLen/indLastDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(idxRangeOut)
-#pragma omp parallel for if(!lock) schedule(guided) firstprivate(idxRangeOut)
+#pragma omp parallel for schedule(guided) firstprivate(idxRangeOut)
         for(Nd4jLong i = 0; i < indLen/indLastDim; ++i) {
             
             NDArray indSubArr = indices(i, dimsToExcludeInd);
@@ -190,7 +211,14 @@ static FORCEINLINE void scatterND(pairwise::Ops op, const NDArray& indices, cons
             NDArray outSubArr = output(idxRangeOut);
             NDArray updSubArr = updates(i, dimsToExcludeUpd);
 
-            outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);
+            if(lock) {
+                #pragma omp critical
+                {
+                    outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);
+                }
+            }
+            else
+                outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);
         }        
     }
 }
