@@ -186,7 +186,7 @@ public class LocallyConnected1D extends SameDiffLayer {
                 inputArray[i] = sameDiff.reshape(slice, 1, miniBatch, featureDim);
         }
         SDVariable concatOutput = sameDiff.concat(0, inputArray); // (outH, miniBatch, featureDim)
-        sameDiff.exec();
+        sameDiff.exec(Collections.<String, INDArray>emptyMap(), "out");
 
         System.out.println(Arrays.toString(concatOutput.getShape()));
 

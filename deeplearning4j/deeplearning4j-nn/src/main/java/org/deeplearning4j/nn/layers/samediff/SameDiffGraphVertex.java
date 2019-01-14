@@ -109,8 +109,8 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                     sameDiff.associateArrayWithVariable(paramTable.get(s), s);
                 }
             }
-            sameDiff.exec();
-            INDArray result = sameDiff.getArrForVarName(outputKey);
+            Map<String,INDArray> out = sameDiff.exec(null, outputKey);
+            INDArray result = out.get(outputKey);
             return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
         }
     }
@@ -134,7 +134,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
 
-            sameDiff.execBackwards();
+            sameDiff.execBackwards(Collections.<String, INDArray>emptyMap());
             for(String s : paramTable.keySet() ){
                 INDArray sdGrad = sameDiff.grad(s).getArr();
                 INDArray dl4jGrad = gradTable.get(s);
