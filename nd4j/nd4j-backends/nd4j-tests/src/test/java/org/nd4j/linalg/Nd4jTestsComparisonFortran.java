@@ -18,27 +18,27 @@ package org.nd4j.linalg;
 
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.CheckUtil;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests comparing Nd4j ops to other libraries
@@ -79,11 +79,11 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     @Test
     public void testCrash() {
         INDArray array3d = Nd4j.ones(1, 10, 10);
-        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array3d, new int[] {0});
-        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array3d, new int[] {1});
+        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array3d, 0);
+        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array3d, 1);
 
         INDArray array4d = Nd4j.ones(1, 10, 10, 10);
-        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array4d, new int[] {0});
+        Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array4d, 0);
     }
 
     @Test
@@ -180,7 +180,7 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
                     INDArray m = p1.getFirst();
                     INDArray v = p2.getFirst();
 
-                    RealMatrix rm = new BlockRealMatrix((int) m.rows(), (int) m.columns());
+                    RealMatrix rm = new BlockRealMatrix(m.rows(), m.columns());
                     for (int r = 0; r < m.rows(); r++) {
                         for (int c = 0; c < m.columns(); c++) {
                             double d = m.getDouble(r, c);

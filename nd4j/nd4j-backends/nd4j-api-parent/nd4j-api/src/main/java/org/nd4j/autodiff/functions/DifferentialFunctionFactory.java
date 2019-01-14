@@ -1083,11 +1083,6 @@ public class DifferentialFunctionFactory {
         return new LogSigmoid(sameDiff(), iX, null).outputVariable();
     }
 
-
-    public SDVariable logSigmoidDerivative(SDVariable iX, SDVariable wrt) {
-        return new LogSigmoidDerivative(sameDiff(), iX, wrt).outputVariable();
-    }
-
     public SDVariable powDerivative(SDVariable iX, double pow) {
         return new PowDerivative(sameDiff(), iX, false, pow).outputVariable();
     }
@@ -1265,10 +1260,6 @@ public class DifferentialFunctionFactory {
 
     public SDVariable sequenceMask(SDVariable lengths) {
         return new SequenceMask(sameDiff(), lengths).outputVariable();
-    }
-
-    public SDVariable rollAxis(SDVariable iX, int axis) {
-        return new RollAxis(sameDiff(), iX, axis).outputVariable();
     }
 
     public SDVariable concat(int dimension, SDVariable... inputs) {

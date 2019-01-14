@@ -106,7 +106,6 @@ public class LegacyOpMapper {
             case META:
             case CUSTOM:
             case GRADIENT:
-            case SHAPE:
             case CONDITIONAL:
             case LOOP:
             case LOOP_COND:
@@ -267,14 +266,6 @@ public class LegacyOpMapper {
                 return RectifiedTanhDerivative.class;
             case 13:
                 return SwishDerivative.class;
-//            case 14:
-//                return ACoshDerivative.class;
-//            case 15:
-//                return ASinhDerivative.class
-//            case 16:
-//                return SinhDerivative.class;
-            case 17:
-                return LogSigmoidDerivative.class;
             case 19:
                 return Stabilize.class;
             case 21:

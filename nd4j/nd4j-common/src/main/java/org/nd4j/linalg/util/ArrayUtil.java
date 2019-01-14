@@ -840,7 +840,7 @@ public class ArrayUtil {
 
 
     /**
-     * Returns a subset of an array from 0 to "to"
+     * Returns a subset of an array from 0 to "to" (exclusive)
      *
      * @param data the data to getFromOrigin a subset of
      * @param to   the end point of the data
@@ -852,8 +852,7 @@ public class ArrayUtil {
 
 
     /**
-     * Returns a subset of an array from 0 to "to"
-     * using the specified stride
+     * Returns a subset of an array from 0 to "to" (exclusive) using the specified stride
      *
      * @param data   the data to getFromOrigin a subset of
      * @param to     the end point of the data
@@ -926,10 +925,9 @@ public class ArrayUtil {
 
 
     /**
-     * Generate an int array ranging from
-     * from to to.
-     * if from is > to this method will
-     * count backwards
+     * Generate an int array ranging from "from" to "to".
+     * The total number of elements is (from-to)/increment - i.e., range(0,2,1) returns [0,1]
+     * If from is > to this method will count backwards
      *
      * @param from      the from
      * @param to        the end point of the data
@@ -988,10 +986,9 @@ public class ArrayUtil {
     }
 
     /**
-     * Generate an int array ranging from
-     * from to to.
-     * if from is > to this method will
-     * count backwards
+     * Generate an int array ranging from "from" to "to".
+     * The total number of elements is (from-to) - i.e., range(0,2) returns [0,1]
+     * If from is > to this method will count backwards
      *
      * @param from the from
      * @param to   the end point of the data

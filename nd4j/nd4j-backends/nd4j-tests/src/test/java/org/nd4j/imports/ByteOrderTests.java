@@ -25,7 +25,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,7 +33,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 @Slf4j
@@ -46,14 +44,14 @@ public class ByteOrderTests  extends BaseNd4jTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
     @Test
     public void testByteArrayOrder1() {
-        val ndarray = Nd4j.create(2).assign(1);
+        val ndarray = Nd4j.create(DataType.FLOAT, 2).assign(1);
 
         assertEquals(DataType.FLOAT, ndarray.data().dataType());
 

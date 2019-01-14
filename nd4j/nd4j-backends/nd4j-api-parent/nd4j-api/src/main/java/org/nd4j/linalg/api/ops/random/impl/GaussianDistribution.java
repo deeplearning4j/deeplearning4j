@@ -105,11 +105,6 @@ public class GaussianDistribution extends BaseRandomOp {
     }
 
     @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }

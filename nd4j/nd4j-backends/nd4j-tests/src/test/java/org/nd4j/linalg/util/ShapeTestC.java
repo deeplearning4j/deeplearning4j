@@ -30,7 +30,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -68,7 +67,7 @@ public class ShapeTestC extends BaseNd4jTest {
     public void testTile() {
         INDArray arr = Nd4j.scalar(DataType.DOUBLE, 1.0).reshape(1, 1);
         //INDArray[] inputs, INDArray[] outputs, int[] axis
-        INDArray result = Nd4j.createUninitialized(DataType.DOUBLE,  new long[]{2,2});
+        INDArray result = Nd4j.createUninitialized(DataType.DOUBLE, 2,2);
         Tile tile = new Tile(new INDArray[]{arr},new INDArray[]{result},new int[] {2,2});
         Nd4j.getExecutioner().execAndReturn(tile);
         INDArray tiled = Nd4j.tile(arr,2,2).castTo(DataType.DOUBLE);
@@ -86,7 +85,7 @@ public class ShapeTestC extends BaseNd4jTest {
 
 
     @Test
-    public void testKeepDimsShape_1_T() throws Exception {
+    public void testKeepDimsShape_1_T() {
         val shape = new int[]{5, 5};
         val axis = new int[]{1, 0, 1};
 
@@ -96,7 +95,7 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test
-    public void testKeepDimsShape_1_F() throws Exception {
+    public void testKeepDimsShape_1_F() {
         val shape = new int[]{5, 5};
         val axis = new int[]{0, 0, 1};
 
@@ -106,7 +105,7 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test
-    public void testKeepDimsShape_2_T() throws Exception {
+    public void testKeepDimsShape_2_T() {
         val shape = new int[]{5, 5, 5};
         val axis = new int[]{1, 0, 1};
 
@@ -116,7 +115,7 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test
-    public void testKeepDimsShape_2_F() throws Exception {
+    public void testKeepDimsShape_2_F() {
         val shape = new int[]{5, 5, 5};
         val axis = new int[]{0, 0, 1};
 
@@ -127,7 +126,7 @@ public class ShapeTestC extends BaseNd4jTest {
 
 
     @Test
-    public void testKeepDimsShape_3_T() throws Exception {
+    public void testKeepDimsShape_3_T() {
         val shape = new int[]{1, 1};
         val axis = new int[]{1, 0, 1};
 
@@ -137,7 +136,7 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test
-    public void testKeepDimsShape_3_F() throws Exception {
+    public void testKeepDimsShape_3_F() {
         val shape = new int[]{1, 1};
         val axis = new int[]{0, 0};
 
@@ -150,7 +149,7 @@ public class ShapeTestC extends BaseNd4jTest {
 
 
     @Test
-    public void testKeepDimsShape_4_F() throws Exception {
+    public void testKeepDimsShape_4_F() {
         val shape = new int[]{4, 4};
         val axis = new int[]{0, 0};
 
@@ -163,7 +162,7 @@ public class ShapeTestC extends BaseNd4jTest {
 
 
     @Test
-    public void testAxisNormalization_1() throws Exception {
+    public void testAxisNormalization_1() {
         val axis = new int[] {1, -2};
         val rank = 2;
         val exp = new int[] {0, 1};
@@ -173,7 +172,7 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test
-    public void testAxisNormalization_2() throws Exception {
+    public void testAxisNormalization_2() {
         val axis = new int[] {1, -2, 0};
         val rank = 2;
         val exp = new int[] {0, 1};
@@ -183,7 +182,7 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test(expected = ND4JIllegalStateException.class)
-    public void testAxisNormalization_3() throws Exception {
+    public void testAxisNormalization_3() {
         val axis = new int[] {1, -2, 2};
         val rank = 2;
         val exp = new int[] {0, 1};
@@ -193,7 +192,7 @@ public class ShapeTestC extends BaseNd4jTest {
     }
 
     @Test
-    public void testAxisNormalization_4() throws Exception {
+    public void testAxisNormalization_4() {
         val axis = new int[] {1, 2, 0};
         val rank = 3;
         val exp = new int[] {0, 1, 2};

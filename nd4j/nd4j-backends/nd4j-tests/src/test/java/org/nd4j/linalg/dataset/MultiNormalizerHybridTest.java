@@ -27,7 +27,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * In-depth testing of correctness of standardization and min-max scaling is covered by other tests, since the code for

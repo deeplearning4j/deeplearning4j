@@ -33,7 +33,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 
 @Slf4j
 public class ReductionBpOpValidation extends BaseOpValidation {
@@ -45,7 +44,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
     }
 
     @Before
-    public void before() throws Exception {
+    public void before() {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
 
@@ -54,13 +53,13 @@ public class ReductionBpOpValidation extends BaseOpValidation {
     }
 
     @After
-    public void after() throws Exception {
+    public void after() {
         Nd4j.setDataType(initialType);
     }
 
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }

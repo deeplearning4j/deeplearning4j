@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 
 public class MmulBug {
     @Test
-    public void simpleTest() throws Exception {
+    public void simpleTest() {
         INDArray m1 = Nd4j.create(new double[][] {{1.0}, {2.0}, {3.0}, {4.0}});
 
         m1 = m1.reshape(2, 2);

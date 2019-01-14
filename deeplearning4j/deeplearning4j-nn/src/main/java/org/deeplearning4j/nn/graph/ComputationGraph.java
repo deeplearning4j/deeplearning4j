@@ -3897,15 +3897,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
 
     /**
-     * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class.
-     * Defaults to exact mode for {@link ROC} class, instead of thresholded
-     *
-     * @param iterator          Data to evaluate on
-     * @return ROC evaluation on the given dataset
+     * @deprecated To be removed - use {@link #evaluateROC(DataSetIterator, int)} to enforce selection of appropriate ROC/threshold configuration
      */
+    @Deprecated
     public <T extends ROC> T evaluateROC(DataSetIterator iterator) {
         return evaluateROC(iterator, 0);
     }
+
     /**
      * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class
      *
@@ -3922,12 +3920,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class.
-     * Defaults to exact mode for {@link ROC} class, instead of thresholded
-     *
-     * @param iterator          Data to evaluate on
-     * @return ROC evaluation on the given dataset
+     * @deprecated To be removed - use {@link #evaluateROC(DataSetIterator, int)} to enforce selection of appropriate ROC/threshold configuration
      */
+    @Deprecated
     public <T extends ROC> T evaluateROC(MultiDataSetIterator iterator) {
         return evaluateROC(iterator, 0);
     }
@@ -3948,12 +3943,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Evaluate the network on the specified data, using the {@link ROCMultiClass} class.
-     * Defaults to exact mode for {@link ROCMultiClass} class, instead of thresholded
-     *
-     * @param iterator          Data to evaluate on
-     * @return Multi-class ROC evaluation on the given dataset
+     * @deprecated To be removed - use {@link #evaluateROCMultiClass(DataSetIterator, int)} to enforce selection of appropriate ROC/threshold configuration
      */
+    @Deprecated
     public <T extends ROCMultiClass> T evaluateROCMultiClass(DataSetIterator iterator) {
         return evaluateROCMultiClass(iterator, 0);
     }
