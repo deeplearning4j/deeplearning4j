@@ -1625,6 +1625,26 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     /**
+     * Get the shape of the array as a dynamic SDVariable
+     * @return Shape SDVariable
+     */
+    public SDVariable shape(){
+        return sameDiff.shape(this);
+    }
+
+    /**
+     * Reshape the current variable to the specified (dynamic) shape. The output variable will have the same values as the
+     * input, but with the specified shape.<br>
+     * Note that prod(shape) must match length(input) == prod(input.shape)
+     *
+     * @param newShape New shape for variable
+     * @return Output variable
+     */
+    public SDVariable reshape(SDVariable newShape){
+        return sameDiff.reshape(this, newShape);
+    }
+
+    /**
      * Associate the specified array with this variable
      * @param array Array to associate with this variable
      * @return This variable
