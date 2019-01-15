@@ -25,6 +25,13 @@
 #include "Environment.h"
 #include <helpers/StringUtils.h>
 
+#ifdef __CUDABLAS__
+
+#include <cuda.h>
+#include <cuda_runtime.h>
+
+#endif
+
 namespace nd4j {
 
     nd4j::Environment::Environment() {
@@ -49,6 +56,26 @@ namespace nd4j {
                 // still do nothing
             }
         }
+#endif
+
+#ifdef __CUDABLAS__
+        int devCnt = 0;
+	    cudaGetDeviceCount(&devCnt);
+	    auto devProperties = new cudaDeviceProp[devCnt];
+	    for (int i = 0; i < devCnt; i++) {
+		    cudaSetDevice(i);
+		    cudaGetDeviceProperties(&devProperties[i], i);
+
+		    cudaDeviceSetLimit(cudaLimitStackSize, 4096);
+		    Pair p(devProperties[i].major, devProperties[i].minor);
+		    _capabilities.emplace_back(p);
+
+		    printf("CUDA device %i: [%s]; cc: [%i.%i]; Total memory: [%lld];\n", i, devProperties[i].name, devProperties[i].major, devProperties[i].minor, (Nd4jLong) devProperties[i].totalGlobalMem);
+	    }
+	    fflush(stdout);
+
+	    cudaSetDevice(0);
+	    delete[] devProperties;
 #endif
     }
 

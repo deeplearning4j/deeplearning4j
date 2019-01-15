@@ -40,6 +40,11 @@ public:
 
 };
 
+TEST_F(CudaBasicsTests2, test_devices_1) {
+	auto caps = Environment::getInstance()->capabilities();
+	ASSERT_FALSE(caps.empty());
+}
+
 //////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests2, mmulMxM_1) {
 
