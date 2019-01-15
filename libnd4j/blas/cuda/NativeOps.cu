@@ -528,6 +528,24 @@ public:
 	 }
 };
 
+NativeOps::NativeOps() {
+	int devCnt = 0;
+	cudaGetDeviceCount(&devCnt);
+	auto devProperties = new cudaDeviceProp[devCnt];
+	auto caps = Environment::getInstance()->capabilities();
+	for (int i = 0; i < devCnt; i++) {
+		cudaSetDevice(i);
+		cudaGetDeviceProperties(&devProperties[i], i);
+
+		cudaDeviceSetLimit(cudaLimitStackSize, 4096);
+		Pair p(devProperties[i].major, devProperties[i].minor);
+		caps.emplace_back(p);
+	}
+
+	cudaSetDevice(0);
+	delete[] devProperties;
+}
+
 void NativeOps::execPairwiseTransform( Nd4jPointer *extraPointers,
         								int opNum,
         								void *hX, Nd4jLong *hXShapeInfo,

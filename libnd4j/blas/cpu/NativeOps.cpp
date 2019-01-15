@@ -72,6 +72,10 @@ bool experimentalSupport = false;
 
 using namespace nd4j;
 
+NativeOps::NativeOps() {
+    //
+}
+
 void NativeOps::setElementThreshold(int num) {
     if (num > 0)
         nd4j::Environment::getInstance()->setElementwiseThreshold(num);
