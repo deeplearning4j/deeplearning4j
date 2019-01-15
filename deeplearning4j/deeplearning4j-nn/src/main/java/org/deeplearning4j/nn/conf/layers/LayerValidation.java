@@ -35,7 +35,7 @@ import java.util.List;
 @Slf4j
 public class LayerValidation {
 
-    private LayerValidation(){ }
+    private LayerValidation() {}
 
     /**
      * Asserts that the layer nIn and nOut values are set for the layer
@@ -51,7 +51,7 @@ public class LayerValidation {
             if (layerName == null)
                 layerName = "(name not set)";
             throw new DL4JInvalidConfigException(layerType + " (index=" + layerIndex + ", name=" + layerName + ") nIn="
-                    + nIn + ", nOut=" + nOut + "; nIn and nOut must be > 0");
+                            + nIn + ", nOut=" + nOut + "; nIn and nOut must be > 0");
         }
     }
 
@@ -68,26 +68,23 @@ public class LayerValidation {
             if (layerName == null)
                 layerName = "(name not set)";
             throw new DL4JInvalidConfigException(layerType + " (index=" + layerIndex + ", name=" + layerName + ") nOut="
-                    + nOut + "; nOut must be > 0");
+                            + nOut + "; nOut must be > 0");
         }
     }
 
 
 
-
-    public static void generalValidation(String layerName, Layer layer, IDropout iDropOut,
-                                         Double l2, Double l2Bias, Double l1, Double l1Bias,
-                                         List<LayerConstraint> allParamConstraints,
-                                         List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
-        generalValidation(layerName, layer, iDropOut,
-                        l2 == null ? Double.NaN : l2, l2Bias == null ? Double.NaN : l2Bias,
-                        l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, allParamConstraints, weightConstraints, biasConstraints);
+    public static void generalValidation(String layerName, Layer layer, IDropout iDropOut, Double l2, Double l2Bias,
+                    Double l1, Double l1Bias, List<LayerConstraint> allParamConstraints,
+                    List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
+        generalValidation(layerName, layer, iDropOut, l2 == null ? Double.NaN : l2,
+                        l2Bias == null ? Double.NaN : l2Bias, l1 == null ? Double.NaN : l1,
+                        l1Bias == null ? Double.NaN : l1Bias, allParamConstraints, weightConstraints, biasConstraints);
     }
 
-    public static void generalValidation(String layerName, Layer layer, IDropout iDropout,
-                                         double l2, double l2Bias, double l1, double l1Bias,
-                                         List<LayerConstraint> allParamConstraints,
-                                         List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
+    public static void generalValidation(String layerName, Layer layer, IDropout iDropout, double l2, double l2Bias,
+                    double l1, double l1Bias, List<LayerConstraint> allParamConstraints,
+                    List<LayerConstraint> weightConstraints, List<LayerConstraint> biasConstraints) {
 
         if (layer != null) {
             if (layer instanceof BaseLayer) {
@@ -96,15 +93,15 @@ public class LayerValidation {
             } else if (layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
                 configureBaseLayer(layerName, bLayer, iDropout, l2, l2Bias, l1, l1Bias);
-            } else if (layer instanceof Bidirectional){
-                Bidirectional l = (Bidirectional)layer;
+            } else if (layer instanceof Bidirectional) {
+                Bidirectional l = (Bidirectional) layer;
                 generalValidation(layerName, l.getFwd(), iDropout, l2, l2Bias, l1, l1Bias, allParamConstraints,
-                        weightConstraints, biasConstraints);
+                                weightConstraints, biasConstraints);
                 generalValidation(layerName, l.getBwd(), iDropout, l2, l2Bias, l1, l1Bias, allParamConstraints,
-                        weightConstraints, biasConstraints);
+                                weightConstraints, biasConstraints);
             }
 
-            if(layer.getConstraints() == null || layer.constraints.isEmpty()) {
+            if (layer.getConstraints() == null || layer.constraints.isEmpty()) {
                 List<LayerConstraint> allConstraints = new ArrayList<>();
                 if (allParamConstraints != null && !layer.initializer().paramKeys(layer).isEmpty()) {
                     for (LayerConstraint c : allConstraints) {
@@ -130,7 +127,7 @@ public class LayerValidation {
                     }
                 }
 
-                if(!allConstraints.isEmpty()){
+                if (!allConstraints.isEmpty()) {
                     layer.setConstraints(allConstraints);
                 } else {
                     layer.setConstraints(null);
@@ -139,8 +136,8 @@ public class LayerValidation {
         }
     }
 
-    private static void configureBaseLayer(String layerName, BaseLayer bLayer, IDropout iDropout, Double l2, Double l2Bias,
-                                           Double l1, Double l1Bias) {
+    private static void configureBaseLayer(String layerName, BaseLayer bLayer, IDropout iDropout, Double l2,
+                    Double l2Bias, Double l1, Double l1Bias) {
 
         if (!Double.isNaN(l1) && Double.isNaN(bLayer.getL1())) {
             bLayer.setL1(l1);
@@ -168,7 +165,7 @@ public class LayerValidation {
             bLayer.setL1Bias(0.0);
         }
 
-        if(bLayer.getIDropout() == null){
+        if (bLayer.getIDropout() == null) {
             bLayer.setIDropout(iDropout);
         }
     }

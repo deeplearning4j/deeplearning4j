@@ -53,7 +53,7 @@ namespace ops {
         // initial zeroing of output
         *output = 0;
 
-        ScatterHelper::scatterND(pairwise::CopyPws, *indices, *updates, *output);
+        ScatterHelper::scatterND(pairwise::Add, *indices, *updates, *output, false);
 
         return Status::OK();
     }
@@ -66,7 +66,7 @@ namespace ops {
             ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
     }
 
-////////////////////////////////////////////////////////////////////////7
+////////////////////////////////////////////////////////////////////////
         DECLARE_SHAPE_FN(scatter_nd) {
 
             auto shape = INPUT_VARIABLE(2);

@@ -16,10 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
@@ -35,6 +32,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public abstract class FeedForwardLayer extends BaseLayer {
+
     protected long nIn;
     protected long nOut;
 
@@ -96,9 +94,10 @@ public abstract class FeedForwardLayer extends BaseLayer {
                 return new CnnToFeedForwardPreProcessor(c.getHeight(), c.getWidth(), c.getChannels());
             case CNN3D:
                 //CNN3D -> FF
-                InputType.InputTypeConvolutional3D c3d = (InputType.InputTypeConvolutional3D)inputType;
+                InputType.InputTypeConvolutional3D c3d = (InputType.InputTypeConvolutional3D) inputType;
                 //TODO don't hardcode NCDHW
-                return new Cnn3DToFeedForwardPreProcessor(c3d.getDepth(), c3d.getHeight(), c3d.getWidth(), c3d.getChannels(), true);
+                return new Cnn3DToFeedForwardPreProcessor(c3d.getDepth(), c3d.getHeight(), c3d.getWidth(),
+                                c3d.getChannels(), true);
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
         }
@@ -133,13 +132,27 @@ public abstract class FeedForwardLayer extends BaseLayer {
         return false; //No pretrain params in standard FF layers
     }
 
+    @Getter
+    @Setter
     public abstract static class Builder<T extends Builder<T>> extends BaseLayer.Builder<T> {
+
+        /**
+         * Number of inputs for the layer (usually the size of the last layer). <br> Note that for Convolutional layers,
+         * this is the input channels, otherwise is the previous layer size.
+         *
+         */
         protected int nIn = 0;
+
+        /**
+         * Number of inputs for the layer (usually the size of the last layer). <br> Note that for Convolutional layers,
+         * this is the input channels, otherwise is the previous layer size.
+         *
+         */
         protected int nOut = 0;
 
         /**
-         * Number of inputs for the layer (usually the size of the last layer). <br>
-         * Note that for Convolutional layers, this is the input channels, otherwise is the previous layer size.
+         * Number of inputs for the layer (usually the size of the last layer). <br> Note that for Convolutional layers,
+         * this is the input channels, otherwise is the previous layer size.
          *
          * @param nIn Number of inputs for the layer
          */
@@ -149,8 +162,8 @@ public abstract class FeedForwardLayer extends BaseLayer {
         }
 
         /**
-         * Number of inputs for the layer (usually the size of the last layer). <br>
-         * Note that for Convolutional layers, this is the input channels, otherwise is the previous layer size.
+         * Number of inputs for the layer (usually the size of the last layer). <br> Note that for Convolutional layers,
+         * this is the input channels, otherwise is the previous layer size.
          *
          * @param nIn Number of inputs for the layer
          */
@@ -161,8 +174,8 @@ public abstract class FeedForwardLayer extends BaseLayer {
         }
 
         /**
-         * Number of outputs - used to set the layer size (number of units/nodes for the current layer).
-         * Note that this is equivalent to {@link #units(int)}
+         * Number of outputs - used to set the layer size (number of units/nodes for the current layer). Note that this
+         * is equivalent to {@link #units(int)}
          *
          * @param nOut Number of outputs / layer size
          */
@@ -172,8 +185,8 @@ public abstract class FeedForwardLayer extends BaseLayer {
         }
 
         /**
-         * Number of outputs - used to set the layer size (number of units/nodes for the current layer).
-         * Note that this is equivalent to {@link #units(int)}
+         * Number of outputs - used to set the layer size (number of units/nodes for the current layer). Note that this
+         * is equivalent to {@link #units(int)}
          *
          * @param nOut Number of outputs / layer size
          */
@@ -183,13 +196,12 @@ public abstract class FeedForwardLayer extends BaseLayer {
         }
 
         /**
-         * Set the number of units / layer size for this layer.<br>
-         * This is equivalent to {@link #nOut(int)}
+         * Set the number of units / layer size for this layer.<br> This is equivalent to {@link #nOut(int)}
          *
          * @param units Size of the layer (number of units) / nOut
          * @see #nOut(int)
          */
-        public T units(int units){
+        public T units(int units) {
             return nOut(units);
         }
     }

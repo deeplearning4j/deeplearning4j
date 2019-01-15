@@ -16,10 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -76,15 +73,38 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+
+        /**
+         * Set constraints to be applied to the RNN recurrent weight parameters of this layer. Default: no
+         * constraints.<br> Constraints can be used to enforce certain conditions (non-negativity of parameters,
+         * max-norm regularization, etc). These constraints are applied at each iteration, after the parameters have
+         * been updated.
+         */
         protected List<LayerConstraint> recurrentConstraints;
+
+        /**
+         * Set constraints to be applied to the RNN input weight parameters of this layer. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         */
         protected List<LayerConstraint> inputWeightConstraints;
+
+        /**
+         * Set the weight initialization for the recurrent weights. Not that if this is not set explicitly, the same
+         * weight initialization as the layer input weights is also used for the recurrent weights.
+         *
+         */
         protected IWeightInit weightInitFnRecurrent;
 
         /**
-         * Set constraints to be applied to the RNN recurrent weight parameters of this layer. Default: no constraints.<br>
-         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
-         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         * Set constraints to be applied to the RNN recurrent weight parameters of this layer. Default: no
+         * constraints.<br> Constraints can be used to enforce certain conditions (non-negativity of parameters,
+         * max-norm regularization, etc). These constraints are applied at each iteration, after the parameters have
+         * been updated.
          *
          * @param constraints Constraints to apply to the recurrent weight parameters of this layer
          */
@@ -111,7 +131,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          *
          * @param weightInit Weight initialization for the recurrent weights only.
          */
-        public T weightInitRecurrent(IWeightInit weightInit){
+        public T weightInitRecurrent(IWeightInit weightInit) {
             this.weightInitFnRecurrent = weightInit;
             return (T) this;
         }
@@ -122,9 +142,10 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
          *
          * @param weightInit Weight initialization for the recurrent weights only.
          */
-        public T weightInitRecurrent(WeightInit weightInit){
-            if(weightInit == WeightInit.DISTRIBUTION) {
-                throw new UnsupportedOperationException("Not supported!, Use weightInit(Distribution distribution) instead!");
+        public T weightInitRecurrent(WeightInit weightInit) {
+            if (weightInit == WeightInit.DISTRIBUTION) {
+                throw new UnsupportedOperationException(
+                                "Not supported!, Use weightInit(Distribution distribution) instead!");
             }
 
             this.weightInitFnRecurrent = weightInit.getWeightInitFunction();
@@ -132,13 +153,13 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
         }
 
         /**
-         * Set the weight initialization for the recurrent weights, based on the specified distribution. Not that if this
-         * is not set explicitly, the same weight initialization as the layer input weights is also used for the recurrent
-         * weights.
+         * Set the weight initialization for the recurrent weights, based on the specified distribution. Not that if
+         * this is not set explicitly, the same weight initialization as the layer input weights is also used for the
+         * recurrent weights.
          *
          * @param dist Distribution to use for initializing the recurrent weights
          */
-        public T weightInitRecurrent(Distribution dist){
+        public T weightInitRecurrent(Distribution dist) {
             this.weightInitFnRecurrent = new WeightInitDistribution(dist);
             return (T) this;
         }

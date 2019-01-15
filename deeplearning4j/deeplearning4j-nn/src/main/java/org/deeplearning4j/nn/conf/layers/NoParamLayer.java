@@ -25,7 +25,7 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 @NoArgsConstructor
 public abstract class NoParamLayer extends Layer {
 
-    protected NoParamLayer(Builder builder){
+    protected NoParamLayer(Builder builder) {
         super(builder);
     }
 

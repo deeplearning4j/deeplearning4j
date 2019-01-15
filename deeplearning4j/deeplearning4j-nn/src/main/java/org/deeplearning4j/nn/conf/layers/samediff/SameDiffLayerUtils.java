@@ -31,13 +31,13 @@ public class SameDiffLayerUtils {
 
     private static Map<Class<?>, Activation> activationMap;
 
-    private SameDiffLayerUtils(){ }
+    private SameDiffLayerUtils() {}
 
-    public static Activation fromIActivation(IActivation a){
+    public static Activation fromIActivation(IActivation a) {
 
-        if(activationMap == null){
-            Map<Class<?>,Activation> m = new HashMap<>();
-            for(Activation act : Activation.values()){
+        if (activationMap == null) {
+            Map<Class<?>, Activation> m = new HashMap<>();
+            for (Activation act : Activation.values()) {
                 m.put(act.getActivationFunction().getClass(), act);
             }
             activationMap = m;

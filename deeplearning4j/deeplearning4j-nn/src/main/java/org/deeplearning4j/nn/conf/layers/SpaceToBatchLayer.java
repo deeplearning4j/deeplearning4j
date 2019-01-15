@@ -16,10 +16,8 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import com.google.common.base.Preconditions;
+import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -36,9 +34,9 @@ import java.util.Map;
 /**
  * Space to batch utility layer configuration for convolutional input types.
  * <p>
- * Does a 2-dimensional space to batch operation, i.e. ransforms data from a tensor from 2 spatial dimensions
- * into batch dimension according to the "blocks" specified (a vector of length 2). Afterwards the spatial
- * dimensions are optionally padded, as specified in "padding", a tensor of dim (2, 2), denoting the padding range.
+ * Does a 2-dimensional space to batch operation, i.e. ransforms data from a tensor from 2 spatial dimensions into batch
+ * dimension according to the "blocks" specified (a vector of length 2). Afterwards the spatial dimensions are
+ * optionally padded, as specified in "padding", a tensor of dim (2, 2), denoting the padding range.
  * <p>
  * Example:
  * <pre>
@@ -81,11 +79,10 @@ public class SpaceToBatchLayer extends NoParamLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<TrainingListener> trainingListeners,
-                                                       int layerIndex, INDArray layerParamsView,
-                                                       boolean initializeParams) {
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.SpaceToBatch ret =
-                new org.deeplearning4j.nn.layers.convolution.SpaceToBatch(conf);
+                        new org.deeplearning4j.nn.layers.convolution.SpaceToBatch(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -101,23 +98,20 @@ public class SpaceToBatchLayer extends NoParamLayer {
         InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
 
         return new LayerMemoryReport.Builder(layerName, SpaceToBatchLayer.class, inputType, outputType)
-                .standardMemory(0, 0) //No params
-                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                .build();
+                        .standardMemory(0, 0) //No params
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
-                    + "\"): Expected CNN input, got " + inputType);
+                            + "\"): Expected CNN input, got " + inputType);
         }
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
-        return InputType.convolutional(
-                (i.getHeight() + padding[0][0] + padding[0][1]) / blocks[0],
-                (i.getWidth()+ padding[1][0] + padding[1][1]) / blocks[1],
-                i.getChannels()
-        );
+        return InputType.convolutional((i.getHeight() + padding[0][0] + padding[0][1]) / blocks[0],
+                        (i.getWidth() + padding[1][0] + padding[1][1]) / blocks[1], i.getChannels());
     }
 
     @Override
@@ -135,7 +129,7 @@ public class SpaceToBatchLayer extends NoParamLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for space to batch layer (layer name=\"" + getLayerName()
-                    + "\"): input is null");
+                            + "\"): input is null");
         }
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
@@ -159,20 +153,53 @@ public class SpaceToBatchLayer extends NoParamLayer {
 
 
     @NoArgsConstructor
-    public static class Builder<T extends Builder<T>> extends Layer.Builder<T>{
+    @Getter
+    @Setter
+    public static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
+
+        /**
+         * Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
+         * dimensions
+         */
         protected int[] blocks;
+
+        /**
+         * A 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
+         */
         protected int[][] padding;
 
         /**
-         * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width dimensions
+         * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
+         * dimensions
          */
-        public Builder(int[] blocks) {
+        public void setBlocks(int[] blocks) {
+            Preconditions.checkArgument(blocks.length == 2, "Must have 2 block values - got %s", blocks);
             this.blocks = blocks;
-            this.padding = new int[][]{{0, 0}, {0, 0}};
         }
 
         /**
-         * @param blocks  Block size for SpaceToBatch layer. Should be a length 2 array for the height and width dimensions
+         * @param padding Padding - should be a 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
+         */
+        public void setPadding(int[][] padding) {
+            Preconditions.checkArgument(padding.length == 2 && padding[0].length == 2 && padding[1].length == 2,
+                            "Padding must be a 2d array of shape [[padTop, padBottom], [padLeft, padRight]] - got %s",
+                            padding);
+            this.padding = padding;
+        }
+
+
+        /**
+         * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
+         * dimensions
+         */
+        public Builder(int[] blocks) {
+            this.blocks = blocks;
+            this.padding = new int[][] {{0, 0}, {0, 0}};
+        }
+
+        /**
+         * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
+         * dimensions
          * @param padding Padding - should be a 2d array, with format [[padTop, padBottom], [padLeft, padRight]]
          */
         public Builder(int[] blocks, int[][] padding) {
@@ -181,7 +208,8 @@ public class SpaceToBatchLayer extends NoParamLayer {
         }
 
         /**
-         * @param blocks  Block size for SpaceToBatch layer. Should be a length 2 array for the height and width dimensions
+         * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
+         * dimensions
          */
         public T blocks(int[] blocks) {
             this.blocks = blocks;

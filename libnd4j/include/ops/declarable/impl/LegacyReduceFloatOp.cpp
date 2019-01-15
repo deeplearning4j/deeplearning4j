@@ -44,11 +44,12 @@ namespace nd4j {
             nd4j_debug("Executing LegacyReduceFloatOp: [%i]\n", opNum);
 
             bool allAxes = false;
+            auto axis = *block.getAxis();
 
             if (block.width() == 1) {
                 auto z = OUTPUT_VARIABLE(0);
 
-                if (block.getIArguments()->size() == x->rankOf())
+                if (axis.size() == x->rankOf())
                     allAxes = true;
 
                 // _axis.(block.getIArguments()->size() == 0) ||

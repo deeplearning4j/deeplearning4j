@@ -31,4 +31,5 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class Pooling2D extends SubsamplingLayer {}
+public class Pooling2D extends SubsamplingLayer {
+}

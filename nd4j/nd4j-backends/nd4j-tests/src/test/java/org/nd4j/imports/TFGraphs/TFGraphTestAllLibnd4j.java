@@ -74,40 +74,15 @@ public class TFGraphTestAllLibnd4j {
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
     private static final String[] SKIP_FOR_LIBND4J_EXEC = new String[]{
-            //These are issues that need to be looked into more and fixed
-            "reductions/max.*",
-            "reductions/mean.*",
-            "reductions/min.*",
-            "reductions/prod.*",
-            "reductions/sum.*",
-            "reductions/moments.*",
-            "multiple_outs_a",
-            "multiple_outs_b",
-
-            //Crashing
-            "cnn3d_layers/.*",
-
             //Exceptions - need to look into:
             "alpha_dropout/.*",
             "layers_dropout/.*",
-            "losses/.*",
-
-            //Failing only on libnd4j/native graph execution
-            "logsumexp/.*",
-            "reduce_all/.*",
-            "reduce_any/.*",
-            "split/.*",
-
-            "reductions/count_nonzero.*",
-            "sufficient_statistics.*",
-
-            "histogram_fixed.*",
-            "unsorted_segment.*",
+            //"losses/.*",
 
             //These can't pass until this is fixed: https://github.com/deeplearning4j/deeplearning4j/issues/6465#issuecomment-424209155
             //i.e., reduction ops with newFormat/keepDims args
-            "l2_normalize/.*",
-            "norm_tests/.*",
+            //"l2_normalize/.*",
+            //"norm_tests/.*",
             "g_06",
 
             //JVM crashes
