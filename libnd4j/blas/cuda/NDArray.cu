@@ -3147,8 +3147,51 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         return result;
     }
 
-    //////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // change an array by repeating it the number of times given by reps.
+    // device kernel implementation
+
+    template <typename T>
+    static __global__ void tileKernel(void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape) {
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//        Original code to transform in cuda-based
+        const auto resultLength = shape::length(outputShape);
+        if(shape::order(outputShape) == 'c') {           //  ews == 1 always here
+            auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+            int totalThreads = gridDim.x * blockDim.x;
+            for (int i = tid; i < resultLength; i += totalThreads) {
+                auto xOffset = shape::subArrayIndex(outputShape, inputShape, i);
+                *(reinterpret_cast<T*>(outputBuffer) + i) = *(reinterpret_cast<T const*>(inputBuffer) + xOffset);
+            }
+//            for(Nd4jLong i=0;  i<resultLen; ++i) {
+//                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
+//                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
+//
+//            }
+        }
+        else {
+//
+////#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+//            for(int i=0;  i<resultLen; ++i) {
+//
+//                auto xOffset = result.getOffset(i);
+//                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
+//                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
+        }
+
+    }
+
+    BUILD_SINGLE_TEMPLATE(template __global__ void tileKernel, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape), LIBND4J_TYPES);
+
+    template <typename T>
+    static  void tileKernelH(void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape) {
+        dim3 launchDims(256, 512, 8192);
+        tileKernel<T><<<launchDims.x, launchDims.y, launchDims.z>>>(inputBuffer, inputShape, outputBuffer, outputShape);
+    }
+    BUILD_SINGLE_TEMPLATE(template void tileKernelH, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape), LIBND4J_TYPES);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
         int dim = reps.size();
         int product = 1;
@@ -3182,25 +3225,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         // looping through _buffer goes automatically by means of getSubArrayIndex applying
         const auto resultLen = result.lengthOf();
         auto xType = this->dataType();
-        if(result.ordering() == 'c') {           //  ews == 1 always here
-//#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(Nd4jLong i=0;  i<resultLen; ++i) {
-                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
-                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
-
-            }
-        }
-        else {
-
-//#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(int i=0;  i<resultLen; ++i) {
-
-                auto xOffset = result.getOffset(i);
-                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
-                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
-            }
-        }
-        result.tickWriteHost();
+        BUILD_SINGLE_SELECTOR(xType, tileKernelH, (this->_bufferD, this->_shapeInfoD, result._bufferD, result._shapeInfoD), LIBND4J_TYPES);
+        result.tickWriteDevice();
         return result;
     }
 //                *(reinterpret_cast<double*>(newBuff) + i) = *(reinterpret_cast<double*>(_buffer) + yOffset);

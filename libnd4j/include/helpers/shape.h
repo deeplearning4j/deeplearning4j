@@ -4185,7 +4185,7 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
 
 
     // return absolute index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array
-    INLINEDEF _CUDA_H Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx) {
+    INLINEDEF _CUDA_HD Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx) {
         const auto rankMax = shape::rank(maxShapeInfo);
         const auto rankMin = shape::rank(minShapeInfo);
 
