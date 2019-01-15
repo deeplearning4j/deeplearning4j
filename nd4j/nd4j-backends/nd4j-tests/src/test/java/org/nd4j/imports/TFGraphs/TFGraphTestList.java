@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,7 +50,11 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "log_determinant/rank2"
+//            "sepconv1d_layers/channels_last_b1_k2_s1_d1_SAME_dm1"
+//            "embedding_lookup/rank2_multiple_div_nomaxnorm"
+//            "cnn2d_nn/nchw_35_35_32_b1_k3_s1_SAME"
+//            "cnn2d_nn/nhwc_35_35_32_b1_k3_s1_SAME"
+            "nth_element/rank2_n0"
     };
 
     @After
@@ -89,6 +94,7 @@ public class TFGraphTestList {
 
     @Test
     public void testOutputOnly() throws IOException {
+        Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.newFolder();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
         Map<String, INDArray> predictions = TFGraphTestAllHelper.outputVars(modelName, MODEL_DIR, dir);
@@ -100,8 +106,9 @@ public class TFGraphTestList {
                 TFGraphTestAllHelper.LOADER, maxRE, minAbs);
     }
 
-    @Test
+    @Test @Ignore
     public void testAlsoIntermediate() throws IOException {
+        Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.newFolder();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
         TFGraphTestAllHelper.checkIntermediate(inputs, modelName, MODEL_DIR, MODEL_FILENAME, executeWith, dir);

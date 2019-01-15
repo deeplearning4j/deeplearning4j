@@ -81,10 +81,10 @@ public class TFGraphTestAllSameDiff {
             //Failing 2019/01/15 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "slogdet/.*",
 
-            //Failing 2019/01/08 - NPE
+            //Failing 2019/01/15 - Issue 11 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "bincount/.*",
 
-            //Still failing 2019/01/08 - "DEPTHWISECONV2D OP: wrong shape of weights array, expected is [-1, -1, 2, 2], but got [1, 2, 2, 2] instead !"
+            //Still failing 2019/01/15 - https://github.com/deeplearning4j/deeplearning4j/issues/7008
             "sepconv1d_layers/.*",
 
             //scatter_nd: a few cases failing as of 2019/01/08
@@ -92,10 +92,10 @@ public class TFGraphTestAllSameDiff {
             "scatter_nd/rank3shape_2indices",
 
 
-            //Failures as of 2019/01/08: vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)
+            //Failures as of 2019/01/15: due to bad gather op - Issue 12 https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "embedding_lookup/.*multiple.*",
 
-            //Failing as of 2019/01/08
+            //Failing as of 2019/01/15 - Issue 13 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "nth_element/rank1_n0",
             "nth_element/rank2_n0",
 
@@ -105,7 +105,7 @@ public class TFGraphTestAllSameDiff {
             //Failing 2019/01/08 - Shape... input is float in TF, but this dousn't match TF docs! Maybe it's index of non-zero elements like numpy?
             "where/cond_only.*",
 
-            //Failing 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 3
+            //Failing 2019/01/08 - Issue 3 https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "boolean_mask/.*",
 
             //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
