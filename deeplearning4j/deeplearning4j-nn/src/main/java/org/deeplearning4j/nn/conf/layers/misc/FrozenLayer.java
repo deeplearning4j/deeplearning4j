@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.conf.layers.misc;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -38,11 +39,9 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * FrozenLayer is used for the purposes of transfer learning.<br>
- * A frozen layer wraps another DL4J Layer within it.
- * During backprop, the FrozenLayer is skipped, and any parameters are not be updated.
- * Usually users will typically not create FrozenLayer instances directly - they are usually used in the process of performing
- * transfer learning
+ * FrozenLayer is used for the purposes of transfer learning.<br> A frozen layer wraps another DL4J Layer within it.
+ * During backprop, the FrozenLayer is skipped, and any parameters are not be updated. Usually users will typically not
+ * create FrozenLayer instances directly - they are usually used in the process of performing transfer learning
  *
  * @author Alex Black
  */
@@ -160,12 +159,15 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public void setConstraints(List<LayerConstraint> constraints){
+    public void setConstraints(List<LayerConstraint> constraints) {
         this.constraints = constraints;
         this.layer.setConstraints(constraints);
     }
 
+    @Getter
+    @Setter
     public static class Builder extends Layer.Builder<Builder> {
+
         private Layer layer;
 
         public Builder layer(Layer layer) {

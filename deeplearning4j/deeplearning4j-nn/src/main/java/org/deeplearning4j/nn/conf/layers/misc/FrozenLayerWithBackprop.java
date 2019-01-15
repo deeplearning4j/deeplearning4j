@@ -120,7 +120,7 @@ public class FrozenLayerWithBackprop extends BaseWrapperLayer {
     }
 
     @Override
-    public void setConstraints(List<LayerConstraint> constraints){
+    public void setConstraints(List<LayerConstraint> constraints) {
         this.constraints = constraints;
         this.underlying.setConstraints(constraints);
     }

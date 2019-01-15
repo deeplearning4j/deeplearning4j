@@ -38,6 +38,7 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class DenseLayer extends FeedForwardLayer {
+
     private boolean hasBias = true;
 
     private DenseLayer(Builder builder) {
@@ -100,13 +101,19 @@ public class DenseLayer extends FeedForwardLayer {
                         .build();
     }
 
-    public boolean hasBias(){
+    public boolean hasBias() {
         return hasBias;
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
+        /**
+         * If true (default): include bias parameters in the model. False: no bias.
+         *
+         */
         private boolean hasBias = true;
 
         /**
@@ -114,7 +121,7 @@ public class DenseLayer extends FeedForwardLayer {
          *
          * @param hasBias If true: include bias parameters in this model
          */
-        public Builder hasBias(boolean hasBias){
+        public Builder hasBias(boolean hasBias) {
             this.hasBias = hasBias;
             return this;
         }
