@@ -42,9 +42,9 @@ public abstract class BaseWrapperLayer extends Layer {
         super(builder);
     }
 
-    protected BaseWrapperLayer(){ }
+    protected BaseWrapperLayer() {}
 
-    public BaseWrapperLayer(Layer underlying){
+    public BaseWrapperLayer(Layer underlying) {
         this.underlying = underlying;
     }
 
@@ -99,9 +99,9 @@ public abstract class BaseWrapperLayer extends Layer {
     }
 
     @Override
-    public void setLayerName(String layerName){
+    public void setLayerName(String layerName) {
         super.setLayerName(layerName);
-        if(underlying != null){
+        if (underlying != null) {
             //May be null at some points during JSON deserialization
             underlying.setLayerName(layerName);
         }

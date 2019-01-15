@@ -125,6 +125,7 @@ public abstract class AbstractSession<T, O> {
             Preconditions.checkState(sameDiff.variableMap().containsKey(s), "Requested output variable %s does not exist in SameDiff instance", s);
         }
 
+        placeholderValues = preprocessPlaceholders(placeholderValues);
 
         //Clear state from past
         availableForExec.clear();
@@ -413,38 +414,11 @@ public abstract class AbstractSession<T, O> {
                 String[] inputsThisOp = sameDiff.getFunctionById(opName).argNames();
                 boolean allInputsAvailable = true;
                 if (inputsThisOp != null) {
-                    for (String in : inputsThisOp) {
-                        //The input (for normal ops - not Enter/Exit/NextIteration) have the same frame and iteration number as the just executed var
-                        //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame (unless variable control dep exists)
-                        //Exception 2 to this: placeholders. As above
-                        //TODO Add SameDiff.isConstant(String) method... or SDVariable.isConstant() (or both)
-                        SDVariable sdv = sameDiff.getVariable(in);
-                        Variable variable = sameDiff.getVariables().get(in);
-                        VarId vid;
-                        if (sdv.isConstant() || sdv.isPlaceHolder()) {
-                            //Constant
-                            if(variable.getControlDeps() == null || variable.getControlDeps().isEmpty()){
-                                //Standard case - do a lookup of placeholder/constant
-                                vid = newVarId(in, OUTER_FRAME, 0);
-                            } else {
-                                //Edge case: control dependency x -> constant exists
-                                //We should look up based on x's frame/iteration
-                                vid = newVarId(in, executedVar.getFrame(), executedVar.getIteration());
-                            }
-                        } else {
-                            //Normal (non-constant)
-                            vid = newVarId(in, executedVar.getFrame(), executedVar.getIteration());
-                        }
-
-                        if (!nodeOutputs.containsKey(vid)) {
-                            allInputsAvailable = false;
-                            break;
-                        }
-                    }
+                    allInputsAvailable = allInputsAvailable(inputsThisOp, executedVar);
                 }
 
-                //TODO Op control dependencies
-                String[] opControlDeps = null;
+                //Check Op control dependencies
+                List<String> opControlDeps = sameDiff.getOps().get(opName).getControlDeps();
                 if (opControlDeps != null && allInputsAvailable) {
                     for (String cd : opControlDeps) {
                         VarId vcd = newVarId(cd, executedVar.getFrame(), executedVar.getIteration());
@@ -482,11 +456,38 @@ public abstract class AbstractSession<T, O> {
 
                         //Mark that we need the specified input to calculate this output
                         addToExecInputs(isConstOrPhInput, executedVar, outVarId);
+
+                        //Check variable control dependencies, for each of the op outputs
+                        if(allInputsAvailable && variable.getControlDeps() != null && !variable.getControlDeps().isEmpty()){
+                            //If one of the op outputs has a control dependency input, make sure this is available
+                            // before executing the op
+                            //For example, if z=add(x,y) and control dependency A->z exists, then don't execute op until A is available
+                            for(String cd : variable.getControlDeps()){
+                                Variable cdVar = sameDiff.getVariables().get(cd);
+                                VarId cdVarId = null;
+                                if (cdVar.getVariable().isConstant() || cdVar.getVariable().isPlaceHolder()) {
+                                    //Constant
+                                    if(variable.getControlDeps() == null || var.getControlDeps().isEmpty()){
+                                        //Standard case - do a lookup of placeholder/constant
+                                        cdVarId = newVarId(cd, OUTER_FRAME, 0);
+                                    } else {
+                                        //Edge case: control dependency x -> constant -> thisOutput exists
+                                        //We should look up based on x's frame/iteration
+                                        cdVarId = newVarId(cd, executedVar.getFrame(), executedVar.getIteration());
+                                    }
+                                } else {
+                                    //Normal (non-constant)
+                                    cdVarId = newVarId(cd, executedVar.getFrame(), executedVar.getIteration());
+                                }
+                                allInputsAvailable &= nodeOutputs.containsKey(cdVarId);
+                                if(!allInputsAvailable)
+                                    break;
+                            }
+                        }
                     }
 
                     if (allInputsAvailable) {
                         //Op can be executed -> variables as output are available for exec
-                        //TODO what about variable control deps?
 
                         for (String s : opOutputs) {
                             if (!subgraph.contains(s))
@@ -520,39 +521,43 @@ public abstract class AbstractSession<T, O> {
                 } else {
                     //Another edge case: OpX has output varY (with no inputs), and control dependency executedVar -> varY exists
                     //We should check if OpX is now available for execution...
+                    //Similarly, if we have OpX with inputs, but we're only waiting on a varible control dependency Z -> X
+                    // then we might not get triggered as available for exec above either
                     String opName = sameDiff.getVariables().get(s).getOutputOfOp();
                     if(opName != null){
                         SameDiffOp op = sameDiff.getOps().get(opName);
-                        if(op.getInputsToOp() == null || op.getInputsToOp().isEmpty()){
-                            //No inputs, so we just need to make sure that all control dependencies are available
-                            boolean allControlDepsAvailable = true;
-                            if(op.getControlDeps() != null){
-                                for(String cd : op.getControlDeps()){
-                                    VarId vid = newVarId(cd, executedVar.getFrame(), executedVar.getIteration());     //Note: is array type, therefore has same frame/iter as parent
-                                    allControlDepsAvailable &= nodeOutputs.containsKey(vid);
-                                    if(!allControlDepsAvailable)
-                                        break;
-                                }
+                        boolean allInputsAvailable = true;
+                        if(op.getInputsToOp() != null && !op.getInputsToOp().isEmpty()){
+                            List<String> inputList = op.getInputsToOp();
+                            allInputsAvailable = allInputsAvailable(inputList.toArray(new String[inputList.size()]), executedVar);
+                        }
+
+                        if(allInputsAvailable && op.getControlDeps() != null){
+                            for(String cd : op.getControlDeps()){
+                                VarId vid = newVarId(cd, executedVar.getFrame(), executedVar.getIteration());     //Note: is array type, therefore has same frame/iter as parent
+                                allInputsAvailable &= nodeOutputs.containsKey(vid);
+                                if(!allInputsAvailable)
+                                    break;
                             }
-                            if(allControlDepsAvailable){
-                                for(String opOutput : op.getOutputsOfOp()){
-                                    Variable v2 = sameDiff.getVariables().get(opOutput);
-                                    if(v2.getControlDeps() != null){
-                                        for(String s2 : v2.getControlDeps()){
-                                            VarId vid = newVarId(s2, executedVar.getFrame(), executedVar.getIteration());     //Note: is array type, therefore has same frame/iter as parent
-                                            allControlDepsAvailable &= nodeOutputs.containsKey(vid);
-                                            if(!allControlDepsAvailable)
-                                                break;
-                                        }
+                        }
+                        if(allInputsAvailable){
+                            for(String opOutput : op.getOutputsOfOp()){
+                                Variable v2 = sameDiff.getVariables().get(opOutput);
+                                if(v2.getControlDeps() != null){
+                                    for(String s2 : v2.getControlDeps()){
+                                        VarId vid = newVarId(s2, executedVar.getFrame(), executedVar.getIteration());     //Note: is array type, therefore has same frame/iter as parent
+                                        allInputsAvailable &= nodeOutputs.containsKey(vid);
+                                        if(!allInputsAvailable)
+                                            break;
                                     }
                                 }
                             }
+                        }
 
-                            if(allControlDepsAvailable){
-                                VarId outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
-                                availableForExec.add(outVarId);
-                                log.trace("Marked variable as available for execution: {} - is output of op {} with no inputs (but has control dependencies)", outVarId, op.getName());
-                            }
+                        if(allInputsAvailable){
+                            VarId outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
+                            availableForExec.add(outVarId);
+                            log.trace("Marked variable as available for execution: {} - is output of op {} with no inputs (but has control dependencies)", outVarId, op.getName());
                         }
                     }
                 }
@@ -578,6 +583,47 @@ public abstract class AbstractSession<T, O> {
                 }
             }
         }
+    }
+
+    protected boolean allInputsAvailable(String[] inputsThisOp, VarId executedVar){
+        for (String in : inputsThisOp) {
+            //The input (for normal ops - not Enter/Exit/NextIteration) have the same frame and iteration number as the just executed var
+            //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame (unless variable control dep exists)
+            //Exception 2 to this: placeholders. As above
+            //TODO Add SameDiff.isConstant(String) method... or SDVariable.isConstant() (or both)
+            SDVariable sdv = sameDiff.getVariable(in);
+            Variable variable = sameDiff.getVariables().get(in);
+            VarId vid;
+            if (sdv.isConstant() || sdv.isPlaceHolder()) {
+                //Constant
+                if(variable.getControlDeps() == null || variable.getControlDeps().isEmpty()){
+                    //Standard case - do a lookup of placeholder/constant
+                    vid = newVarId(in, OUTER_FRAME, 0);
+                } else {
+                    //Edge case: control dependency x -> constant exists
+                    //We should look up based on x's frame/iteration
+                    vid = newVarId(in, executedVar.getFrame(), executedVar.getIteration());
+                }
+            } else {
+                //Normal (non-constant)
+                vid = newVarId(in, executedVar.getFrame(), executedVar.getIteration());
+            }
+
+            if (!nodeOutputs.containsKey(vid)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Preprocess the placeholder values, if required.
+     * Mainly reserved for casting in the case of InferenceSession
+     * @param placeholders Placeholders to preprocess.
+     * @return Preprocessed placeholders
+     */
+    protected Map<String,T> preprocessPlaceholders(Map<String,T> placeholders){
+        return placeholders;
     }
 
     /**

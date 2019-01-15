@@ -101,17 +101,10 @@ public class CopyOp extends BaseTransformSameOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-
-    @Override
-    public void exec() {
-        z.assign(x);
-    }
-
     @Override
     public boolean isPassThrough() {
         return false;
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

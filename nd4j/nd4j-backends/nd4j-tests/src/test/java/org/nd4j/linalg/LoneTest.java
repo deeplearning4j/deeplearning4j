@@ -207,7 +207,7 @@ public class LoneTest extends BaseNd4jTest {
 
 
     @Test
-    public void testConcat3D_Vstack_C() throws Exception {
+    public void testConcat3D_Vstack_C() {
         val shape = new long[]{1, 1000, 150};
 
         List<INDArray> cArrays = new ArrayList<>();
@@ -235,7 +235,7 @@ public class LoneTest extends BaseNd4jTest {
 
 
     @Test
-    public void testGetRow1() throws Exception {
+    public void testGetRow1() {
         INDArray array = Nd4j.create(10000, 10000);
 
         //Thread.sleep(10000);

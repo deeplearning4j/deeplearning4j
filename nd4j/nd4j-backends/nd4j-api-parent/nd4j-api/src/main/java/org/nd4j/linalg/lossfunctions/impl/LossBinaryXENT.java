@@ -138,7 +138,6 @@ public class LossBinaryXENT extends DifferentialFunction implements ILossFunctio
             scoreArr = logsoftmax.muli(labels);
 
         } else {
-            //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
             INDArray output = activationFn.getActivation(preOutput.dup(), true);
             if (clipEps > 0.0) {
                 CustomOp op = DynamicCustomOp.builder("clipbyvalue")

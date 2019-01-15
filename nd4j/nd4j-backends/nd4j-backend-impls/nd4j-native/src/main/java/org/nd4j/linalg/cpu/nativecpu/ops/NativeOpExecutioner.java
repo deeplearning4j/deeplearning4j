@@ -121,11 +121,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (op instanceof ScalarOp) {
             ScalarOp s = (ScalarOp) op;
             exec(s);
-        }
-        else if(op instanceof GradientOp) {
-            op.exec();
-        }
-        else if (op instanceof TransformOp) {
+        } else if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             exec(t);
         } else if (op instanceof ReduceOp) {
@@ -137,10 +133,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } else if (op instanceof BroadcastOp) {
             BroadcastOp broadcastOp = (BroadcastOp) op;
             exec(broadcastOp);
-        }
-        else if(op instanceof ShapeOp) {
-            ShapeOp shapeOp = (ShapeOp) op;
-            exec(shapeOp);
         } else if (op instanceof RandomOp) {
             RandomOp rngOp = (RandomOp) op;
             exec(rngOp, Nd4j.getRandom());
@@ -949,11 +941,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private void execTBR(ReduceOp op) {
         if (executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
-        }
-        else if(op.isExecSpecial()) {
-            op.exec();
-        }
-        else {
+        } else {
             long st = profilingHookIn(op);
 
             //validateDataType(Nd4j.dataType(), op);

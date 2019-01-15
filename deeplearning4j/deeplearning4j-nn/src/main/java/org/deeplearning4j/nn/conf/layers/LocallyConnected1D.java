@@ -1,4 +1,4 @@
-/*
+/*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -16,9 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.val;
+import lombok.*;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -55,9 +53,8 @@ public class LocallyConnected1D extends SameDiffLayer {
 
     private static final List<String> WEIGHT_KEYS = Collections.singletonList(ConvolutionParamInitializer.WEIGHT_KEY);
     private static final List<String> BIAS_KEYS = Collections.singletonList(ConvolutionParamInitializer.BIAS_KEY);
-    private static final List<String> PARAM_KEYS = Arrays.asList(
-            ConvolutionParamInitializer.BIAS_KEY,
-            ConvolutionParamInitializer.WEIGHT_KEY);
+    private static final List<String> PARAM_KEYS =
+                    Arrays.asList(ConvolutionParamInitializer.BIAS_KEY, ConvolutionParamInitializer.WEIGHT_KEY);
 
     private long nIn;
     private long nOut;
@@ -87,7 +84,7 @@ public class LocallyConnected1D extends SameDiffLayer {
         this.featureDim = kernel * (int) nIn;
     }
 
-    private LocallyConnected1D(){
+    private LocallyConnected1D() {
         //No arg constructor for Jackson/JSON serialization
     }
 
@@ -100,28 +97,29 @@ public class LocallyConnected1D extends SameDiffLayer {
         INDArray dummyInputForShapeInference = Nd4j.ones(inputShape);
 
         if (cm == ConvolutionMode.Same) {
-            this.outputSize = Convolution1DUtils.getOutputSize(
-                    dummyInputForShapeInference, kernel, stride, 0, cm, dilation);
-            this.padding = Convolution1DUtils.getSameModeTopLeftPadding(outputSize, inputSize, kernel, stride, dilation);
+            this.outputSize = Convolution1DUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, 0, cm,
+                            dilation);
+            this.padding = Convolution1DUtils.getSameModeTopLeftPadding(outputSize, inputSize, kernel, stride,
+                            dilation);
         } else {
-            this.outputSize = Convolution1DUtils.getOutputSize(
-                    dummyInputForShapeInference, kernel, stride, padding, cm, dilation);
+            this.outputSize = Convolution1DUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, padding, cm,
+                            dilation);
         }
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalArgumentException("Provided input type for locally connected 1D layers has to be " +
-                    "of CNN1D/RNN type, got: " + inputType);
+            throw new IllegalArgumentException("Provided input type for locally connected 1D layers has to be "
+                            + "of CNN1D/RNN type, got: " + inputType);
         }
         // dynamically compute input size from input type
         InputType.InputTypeRecurrent rnnType = (InputType.InputTypeRecurrent) inputType;
         this.inputSize = (int) rnnType.getTimeSeriesLength();
         computeOutputSize();
 
-        return InputTypeUtil.getOutputTypeCnn1DLayers(inputType, kernel, stride, padding, 1,
-                cm, nOut, layerIndex, getLayerName(), LocallyConnected1D.class);
+        return InputTypeUtil.getOutputTypeCnn1DLayers(inputType, kernel, stride, padding, 1, cm, nOut, layerIndex,
+                        getLayerName(), LocallyConnected1D.class);
     }
 
     @Override
@@ -140,25 +138,25 @@ public class LocallyConnected1D extends SameDiffLayer {
     @Override
     public void defineParameters(SDLayerParams params) {
         params.clear();
-        val weightsShape = new long[]{outputSize, featureDim, nOut};
+        val weightsShape = new long[] {outputSize, featureDim, nOut};
         params.addWeightParam(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
-        if(hasBias) {
-            val biasShape = new long[]{1, nOut};
+        if (hasBias) {
+            val biasShape = new long[] {1, nOut};
             params.addBiasParam(ConvolutionParamInitializer.BIAS_KEY, biasShape);
         }
     }
 
     @Override
     public void initializeParameters(Map<String, INDArray> params) {
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             for (Map.Entry<String, INDArray> e : params.entrySet()) {
                 if (ConvolutionParamInitializer.BIAS_KEY.equals(e.getKey())) {
                     e.getValue().assign(0);
                 } else {
                     double fanIn = nIn * kernel;
                     double fanOut = nOut * kernel / ((double) stride);
-                    WeightInitUtil.initWeights(
-                            fanIn, fanOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
+                    WeightInitUtil.initWeights(fanIn, fanOut, e.getValue().shape(), weightInit, null, 'c',
+                                    e.getValue());
                 }
             }
         }
@@ -178,24 +176,23 @@ public class LocallyConnected1D extends SameDiffLayer {
 
         SDVariable[] inputArray = new SDVariable[outH];
         for (int i = 0; i < outH; i++) {
-                SDVariable slice = layerInput.get(
-                        SDIndex.all(), // miniBatch
-                        SDIndex.all(), // nIn
-                        SDIndex.interval(i * sH, i * sH + kH) // kernel
-                );
-                inputArray[i] = sameDiff.reshape(slice, 1, miniBatch, featureDim);
+            SDVariable slice = layerInput.get(SDIndex.all(), // miniBatch
+                            SDIndex.all(), // nIn
+                            SDIndex.interval(i * sH, i * sH + kH) // kernel
+            );
+            inputArray[i] = sameDiff.reshape(slice, 1, miniBatch, featureDim);
         }
         SDVariable concatOutput = sameDiff.concat(0, inputArray); // (outH, miniBatch, featureDim)
-        sameDiff.exec();
+        sameDiff.exec(Collections.<String, INDArray>emptyMap(), "out");
 
         System.out.println(Arrays.toString(concatOutput.getShape()));
 
         SDVariable mmulResult = sameDiff.mmul(concatOutput, w); // (outH, miniBatch, nOut)
         System.out.println(Arrays.toString(mmulResult.getShape()));
 
-        SDVariable result = sameDiff.permute(mmulResult,1, 2, 0); // (miniBatch, nOut, outH)
+        SDVariable result = sameDiff.permute(mmulResult, 1, 2, 0); // (miniBatch, nOut, outH)
 
-        if(hasBias){
+        if (hasBias) {
             SDVariable b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
             SDVariable biasAddedResult = sameDiff.biasAdd(result, b);
             return activation.asSameDiff("out", sameDiff, biasAddedResult);
@@ -217,15 +214,74 @@ public class LocallyConnected1D extends SameDiffLayer {
 
     public static class Builder extends SameDiffLayer.Builder<Builder> {
 
+        /**
+         * Number of inputs to the layer (input size)
+         */
+        @Getter
+        @Setter
         private int nIn;
+
+        /**
+         * Number of outputs (output size)
+         */
+        @Getter
+        @Setter
         private int nOut;
+
+        /**
+         * Activation function for the layer
+         */
+        @Getter
+        @Setter
         private Activation activation = Activation.TANH;
+
+        /**
+         * Kernel size for the layer
+         */
+        @Getter
+        @Setter
         private int kernel = 2;
+
+        /**
+         * Stride for the layer
+         */
+        @Getter
+        @Setter
         private int stride = 1;
+
+        /**
+         * Padding for the layer. Not used if {@link ConvolutionMode#Same} is set
+         */
+        @Getter
+        @Setter
         private int padding = 0;
+
+        /**
+         * Dilation for the layer
+         */
+        @Getter
+        @Setter
         private int dilation = 1;
+
+        /**
+         * Input filter size for this locally connected 1D layer
+         *
+         */
+        @Getter
         private int inputSize;
+
+        /**
+         * Convolution mode for the layer. See {@link ConvolutionMode} for details
+         */
+        @Getter
+        @Setter
         private ConvolutionMode cm = ConvolutionMode.Same;
+
+        /**
+         * If true (default is false) the layer will have a bias
+         */
+        @Getter
+        @Setter
         private boolean hasBias = true;
 
         /**
@@ -295,7 +351,7 @@ public class LocallyConnected1D extends SameDiffLayer {
         /**
          * @param hasBias If true (default is false) the layer will have a bias
          */
-        public Builder hasBias(boolean hasBias){
+        public Builder hasBias(boolean hasBias) {
             this.hasBias = hasBias;
             return this;
         }
@@ -306,7 +362,8 @@ public class LocallyConnected1D extends SameDiffLayer {
          * @param inputSize height of the input filters
          * @return Builder
          */
-        public Builder setInputSize(int inputSize){ ;
+        public Builder setInputSize(int inputSize) {
+            ;
             this.inputSize = inputSize;
             return this;
         }

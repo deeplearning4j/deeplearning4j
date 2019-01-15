@@ -30,4 +30,5 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class Convolution2D extends ConvolutionLayer { }
+public class Convolution2D extends ConvolutionLayer {
+}

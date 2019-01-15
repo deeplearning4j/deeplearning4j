@@ -25,14 +25,12 @@ import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
@@ -42,18 +40,16 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
-import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -71,7 +67,7 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
     @Before
-    public void before() throws Exception {
+    public void before() {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
 
@@ -80,13 +76,13 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
     @After
-    public void after() throws Exception {
+    public void after() {
         Nd4j.setDataType(initialType);
     }
 
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -553,7 +549,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 5;
-            SDVariable in = sd.var("in", new int[]{-1, nOut});
+            SDVariable in = sd.var("in", -1, nOut);
 
             INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
@@ -860,8 +856,8 @@ public class TransformOpValidation extends BaseOpValidation {
                     }
                     t = sd.diag(in);
                     ia = Nd4j.create(new float[]{4, 2});
-                    in = sd.var("in", new int[]{1, 2});
-                    INDArray expOut53 = Nd4j.create(DataType.DOUBLE, new long[]{2, 2});
+                    in = sd.var("in", 1, 2);
+                    INDArray expOut53 = Nd4j.create(DataType.DOUBLE, 2, 2);
                     DynamicCustomOp op = DynamicCustomOp.builder("diag").addInputs(ia).addOutputs(expOut53).build();
                     Nd4j.getExecutioner().exec(op);
                     tc.expectedOutput(t.getVarName(), expOut53);
@@ -1045,8 +1041,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
             int nOut = 4;
             int minibatch = 5;
-            SDVariable in1 = sd.var("in1", DataType.DOUBLE, new int[]{-1, nOut});
-            SDVariable in2 = sd.var("in2", DataType.DOUBLE, new int[]{-1, nOut});
+            SDVariable in1 = sd.var("in1", DataType.DOUBLE, -1, nOut);
+            SDVariable in2 = sd.var("in2", DataType.DOUBLE, -1, nOut);
 
             INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
             INDArray ib = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
@@ -1319,10 +1315,7 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable log = sameDiff.log(input);
         SDVariable sum = sameDiff.sum(log, Integer.MAX_VALUE);
         INDArray result = null;
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards = sameDiff.execBackwards();
-        System.out.println(execBackwards);
-        //INDArray assertion = Nd4j.create(new double[]{1, 0.5, 0.33, 0.25});
-        // assertTrue(assertion.equalsWithEps(result, 1e-2));
+        sameDiff.execBackwards(Collections.emptyMap());
     }
 
 
@@ -1335,7 +1328,7 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable input = sameDiff.var("x", inputs.get("x"));
         SDVariable sigmoid = sameDiff.sigmoid(input);
         SDVariable sum = sameDiff.sum(sigmoid, Integer.MAX_VALUE);
-        sameDiff.execBackwards();
+        sameDiff.execBackwards(Collections.emptyMap());
         INDArray arr = input.gradient().getArr();
         assertTrue(Nd4j.create(new double[][]{
                 {0.1966, 0.1050},
@@ -1361,7 +1354,7 @@ public class TransformOpValidation extends BaseOpValidation {
         assertEquals(8, d0, 0);
 
         SDVariable v2 = sd.sum(sd.var(Nd4j.create(new double[]{4, 4}))).div(2.0);
-        sd.exec();
+        sd.exec(Collections.emptyMap(), sd.outputs());
         double d1 = v2.getArr().getDouble(0);
         assertEquals(4, d1, 0);
     }
@@ -1494,7 +1487,7 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray in = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2,3);
         INDArray pad = Nd4j.create(new double[][]{{1,1},{2,2}}).castTo(DataType.INT);
 
-        INDArray out = Nd4j.create(DataType.DOUBLE, new long[]{4,7});
+        INDArray out = Nd4j.create(DataType.DOUBLE, 4,7);
 
         DynamicCustomOp op = DynamicCustomOp.builder("mirror_pad")
                 .addInputs(in, pad)

@@ -22,21 +22,23 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
-public class TestMultiThreadedLoading {
+public class MiscTests {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test(timeout = 60000L)
-    public void test() throws Exception {
+    public void testMultiThreadedLoading() throws Exception {
 
         String path = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5";
         File root = testDir.newFolder();
@@ -81,4 +83,16 @@ public class TestMultiThreadedLoading {
         assertEquals("Number of errors", 0, errors.get());
     }
 
+    @Test(timeout = 60000L)
+    public void testLoadFromStream() throws Exception {
+
+        String path = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5";
+        File root = testDir.newFolder();
+        final File f = new ClassPathResource(path).getTempFileFromArchive(root);
+
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))) {
+            MultiLayerNetwork model = KerasModelImport.importKerasSequentialModelAndWeights(is);
+            assertNotNull(model);
+        }
+    }
 }

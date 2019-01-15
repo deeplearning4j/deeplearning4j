@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.*;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -28,6 +29,27 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
     public InferenceSession(@NonNull SameDiff sameDiff) {
         super(sameDiff);
+    }
+
+    @Override
+    protected Map<String,INDArray> preprocessPlaceholders(Map<String,INDArray> placeholders){
+        //Handle casting of the input array automatically.
+        //The idea here is to avoid unexpected errors if the user (for example) tries to perform inference with a double
+        // array for a float placeholder
+        if(placeholders == null || placeholders.isEmpty()){
+            return placeholders;
+        }
+
+        Map<String,INDArray> out = new HashMap<>();
+        for(Map.Entry<String,INDArray> e : placeholders.entrySet()){
+            DataType dt = sameDiff.getVariable(e.getKey()).dataType();
+            INDArray arr = e.getValue();
+            if(arr.dataType() != dt){
+                arr = arr.castTo(dt);
+            }
+            out.put(e.getKey(), arr);
+        }
+        return out;
     }
 
     @Override
@@ -126,9 +148,9 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             Preconditions.checkNotNull(arr, "Input to LoopCond op must not be null");
             Preconditions.checkState(arr.isScalar() && arr.dataType() == DataType.BOOL, "LoopCond input must be a scalar boolean, got %ndShape");
             return new INDArray[]{arr};
-        } else if(op instanceof BaseTensorOp){
+        } else if(op instanceof BaseTensorOp) {
             //TensorOps - special cases...
-            if(op instanceof TensorArray){
+            if (op instanceof TensorArray) {
                 //Create a TensorArray
                 VarId vid = newVarId(op.outputVariable().getVarName(), outputFrameIter);
                 Preconditions.checkState(!tensorArrays.containsKey(vid), "TensorArray already exists for %s when executing TensorArrayV3", vid);
@@ -136,7 +158,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 // Note that TensorArray has 2 outputs - a 'dummy' SDVariable that represents it, and a second output (return a scalar 0.0)
                 return new INDArray[]{Nd4j.scalar(true), Nd4j.scalar(0.0f)};
-            } else if(op instanceof TensorArrayRead){
+            } else if (op instanceof TensorArrayRead) {
                 //Do lookup and return
                 //Input 0 is the TensorArray (or dummy variable that represents it)
                 //Input 1 is the index
@@ -151,11 +173,11 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 List<INDArray> list = getTensorArrays().get(v);
                 Preconditions.checkState(list != null, "Could not find TensorList for %s", v);
-                Preconditions.checkState(list.size() > i, "Cannot get index %s from TensorList of size %s (array not present?) - VarId=%s", i, v);
+                Preconditions.checkState(list.size() > i, "Cannot get index %s from TensorList of size %s (array not present?) - VarId=%s", i, list.size(), v);
 
                 INDArray out = list.get(i);
                 return new INDArray[]{out};
-            } else if(op instanceof TensorArrayWrite) {
+            } else if (op instanceof TensorArrayWrite) {
                 //TensorArrayWrite - also has a scalar 0.0 that it returns...
 
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
@@ -188,7 +210,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 //Return dummy array
                 return new INDArray[]{Nd4j.scalar(0.0f)};
-            } else if(op instanceof TensorArraySize) {
+            } else if (op instanceof TensorArraySize) {
                 //Index 0 is the TensorArray (or dummy variable that represents it)
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
                 //Work out the varid (frame/iteration) of the tensor array:
@@ -196,14 +218,14 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 List<INDArray> l = tensorArrays.get(tArr);
                 Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
                 return new INDArray[]{Nd4j.scalar(DataType.INT, l.size())};
-            } else if(op instanceof TensorArrayConcat) {
+            } else if (op instanceof TensorArrayConcat) {
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
                 VarId tArr = lookup(inTensorArray.getVarName(), opInputs);
                 List<INDArray> l = tensorArrays.get(tArr);
                 //TODO - empty checks. But is size 0 OK?
                 INDArray concat = Nd4j.concat(0, l.toArray(new INDArray[l.size()]));
                 return new INDArray[]{concat};
-            } else if(op instanceof TensorArrayGather) {
+            } else if (op instanceof TensorArrayGather) {
                 //Input 0: the TensorArray
                 //Input 1: the indices (1d integer vector)
 
@@ -219,19 +241,27 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 Preconditions.checkState(idxArr.dataType().isIntType(), "Indices variable for TensorArrayGather should be an integer type, got %s for array %s", idxArr.dataType(), indicesName);
 
                 int[] idxArrInt = idxArr.toIntVector();
+
+                //Edge case: -1 means "all"
                 ArrayList<INDArray> newList = new ArrayList<>();
-                for (int id : idxArrInt) {
-                    newList.add(l.get(id));
+                if(idxArrInt.length == 1 && idxArrInt[0] == -1){
+                    newList.addAll(l);
+                } else {
+                    for (int id : idxArrInt) {
+                        Preconditions.checkState(id >=0,"Index for TensorArrayGather must be >= 0, got %s", id);
+                        newList.add(l.get(id));
+                    }
                 }
                 INDArray out = Nd4j.pile(newList);
                 return new INDArray[]{out};
-            } else if(op instanceof TensorArrayScatter) {
+            } else if (op instanceof TensorArrayScatter) {
                 //Scatter values from a rank (N+1)d tensor into specific indices of the TensorArray
                 //Input 0: the TensorArray
                 //Input 1: the indices (1d integer vector)
                 //Input 2: The values to scatter
 
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+                TensorArray ta = (TensorArray) sameDiff.getVariableOutputFunction(inTensorArray.getVarName());
                 VarId tArr = lookup(inTensorArray.getVarName(), opInputs);
                 List<INDArray> l = tensorArrays.get(tArr);
                 Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
@@ -251,6 +281,11 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     l.add(null);
                 }
 
+                //Edge case: idxs being [-1] means "all sub arrays" (i.e., "unstack" case)
+                if(idxs.length == 1 && idxs[0] == -1){
+                    idxs = ArrayUtil.range(0, (int)valuesArr.size(0));
+                }
+
                 INDArrayIndex[] idx = ArrayUtil.nTimes(valuesArr.rank(), NDArrayIndex.all(), INDArrayIndex.class);
                 for (int i = 0; i < idxs.length; i++) {
                     idx[0] = NDArrayIndex.point(i);
@@ -261,7 +296,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 //Return dummy array
                 return new INDArray[]{Nd4j.scalar(0.0f)};
-            } else if(op instanceof TensorArraySplit){
+            } else if (op instanceof TensorArraySplit) {
                 //Split values from a rank (N+1)d tensor into sequential indices of the TensorArray
                 //For example, orig=[8,2] sizearray with split (4,4) means TensorArray[0] = orig[0:4,:] and TensorArray[1] = orig[4:8,:]
                 //Input 0: the TensorArray
@@ -290,7 +325,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 INDArrayIndex[] idx = ArrayUtil.nTimes(splitArr.rank(), NDArrayIndex.all(), INDArrayIndex.class);
                 int soFar = 0;
-                for( int i=0; i<sizes.length; i++ ){
+                for (int i = 0; i < sizes.length; i++) {
                     idx[0] = NDArrayIndex.interval(soFar, soFar + sizes[i]);
                     INDArray sub = splitArr.get(idx).dup();
                     l.set(i, sub);
@@ -301,7 +336,8 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             } else {
                 throw new IllegalStateException("Execution support not yet implemented for: " + op.getClass().getName());
             }
-
+        } else if(op instanceof GradientBackwardsMarker){
+            return new INDArray[]{Nd4j.scalar(1.0f)};
         } else if(op instanceof CustomOp){
             CustomOp c = (CustomOp)op;
             Nd4j.getExecutioner().exec(c);

@@ -37,9 +37,9 @@ import java.util.*;
  * Bidirectional LSTM recurrent net, based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
  *
- * @deprecated use {@link org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional} instead. With the
- * Bidirectional layer wrapper you can make any recurrent layer bidirectional, in particular GravesLSTM.
- * Note that this layer adds the output of both directions, which translates into "ADD" mode in Bidirectional.
+ * @deprecated use {@link org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional} instead. With the Bidirectional
+ * layer wrapper you can make any recurrent layer bidirectional, in particular GravesLSTM. Note that this layer adds the
+ * output of both directions, which translates into "ADD" mode in Bidirectional.
  *
  * Usage: {@code .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder()....build()))}
  */
@@ -62,10 +62,10 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
     }
 
     @Override
-    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder){
+    protected void initializeConstraints(org.deeplearning4j.nn.conf.layers.Layer.Builder<?> builder) {
         super.initializeConstraints(builder);
-        if(((Builder)builder).recurrentConstraints != null){
-            if(constraints == null){
+        if (((Builder) builder).recurrentConstraints != null) {
+            if (constraints == null) {
                 constraints = new ArrayList<>();
             }
             for (LayerConstraint c : ((Builder) builder).recurrentConstraints) {
@@ -137,13 +137,26 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
 
     @AllArgsConstructor
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
 
+        /**
+         * Set forget gate bias initalizations. Values in range 1-5 can potentially help with learning or longer-term
+         * dependencies.
+         */
         private double forgetGateBiasInit = 1.0;
+
+        /**
+         * Activation function for the LSTM gates. Note: This should be bounded to range 0-1: sigmoid or hard sigmoid,
+         * for example
+         *
+         */
         private IActivation gateActivationFn = new ActivationSigmoid();
 
-        /** Set forget gate bias initalizations. Values in range 1-5 can potentially
-         * help with learning or longer-term dependencies.
+        /**
+         * Set forget gate bias initalizations. Values in range 1-5 can potentially help with learning or longer-term
+         * dependencies.
          */
         public Builder forgetGateBiasInit(double biasInit) {
             this.forgetGateBiasInit = biasInit;
@@ -151,8 +164,8 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
         }
 
         /**
-         * Activation function for the LSTM gates.
-         * Note: This should be bounded to range 0-1: sigmoid or hard sigmoid, for example
+         * Activation function for the LSTM gates. Note: This should be bounded to range 0-1: sigmoid or hard sigmoid,
+         * for example
          *
          * @param gateActivationFn Activation function for the LSTM gates
          */
@@ -161,8 +174,8 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
         }
 
         /**
-         * Activation function for the LSTM gates.
-         * Note: This should be bounded to range 0-1: sigmoid or hard sigmoid, for example
+         * Activation function for the LSTM gates. Note: This should be bounded to range 0-1: sigmoid or hard sigmoid,
+         * for example
          *
          * @param gateActivationFn Activation function for the LSTM gates
          */
@@ -171,8 +184,8 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
         }
 
         /**
-         * Activation function for the LSTM gates.
-         * Note: This should be bounded to range 0-1: sigmoid or hard sigmoid, for example
+         * Activation function for the LSTM gates. Note: This should be bounded to range 0-1: sigmoid or hard sigmoid,
+         * for example
          *
          * @param gateActivationFn Activation function for the LSTM gates
          */

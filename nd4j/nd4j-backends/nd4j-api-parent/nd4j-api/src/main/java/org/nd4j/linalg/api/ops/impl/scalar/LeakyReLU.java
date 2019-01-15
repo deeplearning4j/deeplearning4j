@@ -79,15 +79,15 @@ public class LeakyReLU extends BaseScalarOp {
 
 
     public LeakyReLU(INDArray x, INDArray z) {
-        this(x, z, 0.0);
+        this(x, z, 0.01);
     }
 
     public LeakyReLU(INDArray x, INDArray z, long n) {
-        this(x, z, n, 0.0);
+        this(x, z, n, 0.01);
     }
 
     public LeakyReLU(INDArray x) {
-        super(x, 0.0);
+        super(x, 0.01);
     }
 
     @Override

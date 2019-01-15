@@ -180,7 +180,7 @@ public class IndexingTests extends BaseNd4jTest {
         INDArray firstAndSecondRows = Nd4j.create(new double[][] {{1.00, 5.00, 9.00, 13.00, 17.00, 21.00},
                 {1.00, 5.00, 9.00, 13.00, 17.00, 21.00}, {2.00, 6.00, 10.00, 14.00, 18.00, 22.00}});
 
-        INDArray rows = arr.getRows(new int[] {0, 0, 1});
+        INDArray rows = arr.getRows(0, 0, 1);
         assertEquals(firstAndSecondRows, rows);
     }
 

@@ -40,10 +40,14 @@ namespace nd4j {
             auto outputs = _descriptor->getOutputTypesForOutput(0);
             nd4j::DataType dtype = block.dataType(0);
             if (block.dataType(0) != nd4j::DataType::BOOL && !(outputs.size() == 1 && outputs[0] == nd4j::DataType::BOOL)) {
-                if (shape::length(y) > shape::length(x)) {
-                    dtype = DataTypeUtils::pickPairwiseResultType(y, x);
+                if (Environment::getInstance()->isExperimentalBuild()) {
+                    if (shape::length(y) > shape::length(x)) {
+                        dtype = DataTypeUtils::pickPairwiseResultType(y, x);
+                    } else {
+                        dtype = DataTypeUtils::pickPairwiseResultType(x, y);
+                    }
                 } else {
-                    dtype = DataTypeUtils::pickPairwiseResultType(x, y);
+                    dtype = ArrayOptions::dataType(x);
                 }
             } else
                 dtype = nd4j::DataType::BOOL;

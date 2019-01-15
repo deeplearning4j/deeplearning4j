@@ -145,3 +145,195 @@ TEST_F(OneOffTests, test_conv2d_nhwc_failed_1) {
 
     delete graph;
 }
+
+TEST_F(OneOffTests, test_tensor_array_1) {
+    auto e = NDArrayFactory::create<float>('c', {2, 3}, {0.77878559f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/tensor_array_close_sz1_float32_nodynamic_noname_noshape.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(5));
+
+    auto z = graph->getVariableSpace()->getVariable(5)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
+}
+
+TEST_F(OneOffTests, test_tensor_array_2) {
+    auto e = NDArrayFactory::create<float>('c', {2, 3}, {0.77878559f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/tensor_array_split_sz1_float32_nodynamic_noname_noshape.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(6));
+
+    auto z = graph->getVariableSpace()->getVariable(6)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
+}
+
+TEST_F(OneOffTests, test_tensor_array_3) {
+    auto e = NDArrayFactory::create<int>('c', {3, 2, 3}, {7, 2, 9, 4, 3, 3, 8, 7, 0, 0, 6, 8, 7, 9, 0, 1, 1, 4});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/tensor_array_stack_sz3-1_int32_dynamic_name_shape.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(15));
+
+    auto z = graph->getVariableSpace()->getVariable(15)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
+}
+
+TEST_F(OneOffTests, test_tensor_array_4) {
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {2, 3}, {4, 3, 1, 1, 1, 0});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/tensor_array_unstack_sz1_int64_nodynamic_noname_shape2-3.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(11));
+
+    auto z = graph->getVariableSpace()->getVariable(11)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
+}
+
+TEST_F(OneOffTests, test_assert_4) {
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {2, 2}, {1, 1, 1, 1});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/assert_type_rank2_int64.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1));
+
+    auto z = graph->getVariableSpace()->getVariable(1)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
+}
+
+TEST_F(OneOffTests, test_cond_true_1) {
+    auto e = NDArrayFactory::create<float>('c', {5}, {1.f, 2.f, 3.f, 4.f, 5.f});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/cond_true.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(6));
+
+    auto z = graph->getVariableSpace()->getVariable(6)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    z->printIndexedBuffer("z buffer");
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
+}
+/*
+TEST_F(OneOffTests, test_cond_false_1) {
+    auto e = NDArrayFactory::create<float>('c', {5}, {1.f, 1.f, 1.f, 1.f, 1.f});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/cond_false.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(6));
+
+    auto z = graph->getVariableSpace()->getVariable(6)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    z->printIndexedBuffer("z buffer");
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
+}
+*/
+
+TEST_F(OneOffTests, test_identity_n_2) {
+    auto e = NDArrayFactory::create<float>('c', {2, 3}, {0.77878559f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/identity_n_2.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1));
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1, 1));
+
+    auto z = graph->getVariableSpace()->getVariable(1)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    ASSERT_EQ(e, *z);
+
+    delete graph;
+}
+
+TEST_F(OneOffTests, test_non2d_1) {
+    auto e = NDArrayFactory::create<float>('c', {1, 1}, {5.42746449f});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/non2d_1.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+
+    auto z = graph->getVariableSpace()->getVariable(3)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    ASSERT_EQ(e, *z);
+
+
+    delete graph;
+}

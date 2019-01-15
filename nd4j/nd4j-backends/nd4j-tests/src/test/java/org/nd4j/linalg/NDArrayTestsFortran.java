@@ -19,16 +19,14 @@ package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -36,8 +34,7 @@ import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -79,7 +76,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
 
     @Test
-    public void testScalarOps() throws Exception {
+    public void testScalarOps() {
         INDArray n = Nd4j.create(Nd4j.ones(27).data(), new long[] {3, 3, 3});
         assertEquals(27d, n.length(), 1e-1);
         n.addi(Nd4j.scalar(1d));
@@ -391,7 +388,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
 
     @Test
-    public void testWrap() throws Exception {
+    public void testWrap() {
         int[] shape = {2, 4};
         INDArray d = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(shape[0], shape[1]);
         INDArray n = d;
@@ -416,7 +413,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     }
 
     @Test
-    public void testGetRowFortran() throws Exception {
+    public void testGetRowFortran() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 4, 4, DataType.FLOAT).data(), new long[] {2, 2});
         INDArray column = Nd4j.create(new float[] {1, 3});
         INDArray column2 = Nd4j.create(new float[] {2, 4});
@@ -446,7 +443,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     public void testGetColumns() {
         INDArray matrix = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3).castTo(DataType.DOUBLE);
         log.info("Original: {}", matrix);
-        INDArray matrixGet = matrix.getColumns(new int[] {1, 2});
+        INDArray matrixGet = matrix.getColumns(1, 2);
         INDArray matrixAssertion = Nd4j.create(new double[][] {{3, 5}, {4, 6}});
         log.info("order A: {}", Arrays.toString(matrixAssertion.shapeInfoDataBuffer().asInt()));
         log.info("order B: {}", Arrays.toString(matrixGet.shapeInfoDataBuffer().asInt()));
@@ -681,7 +678,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     @Test
     public void testPutSlice() {
         INDArray n = Nd4j.linspace(1, 27, 27, DataType.DOUBLE).reshape(3, 3, 3);
-        INDArray newSlice = Nd4j.create(DataType.DOUBLE, new long[]{3, 3});
+        INDArray newSlice = Nd4j.create(DataType.DOUBLE, 3, 3);
         n.putSlice(0, newSlice);
         assertEquals(getFailureMessage(), newSlice, n.slice(0));
 
@@ -707,7 +704,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     @Test
     public void testEps() {
         val ones = Nd4j.ones(5);
-        val res = Nd4j.createUninitialized(DataType.BOOL, new long[]{5});
+        val res = Nd4j.createUninitialized(DataType.BOOL, 5);
         assertTrue(Nd4j.getExecutioner().exec(new Eps(ones, ones, res, ones.length())).all());
     }
 
@@ -842,7 +839,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         twos.assign(rand);
         assertEquals(rand, twos);
 
-        INDArray tensor = Nd4j.rand(DataType.DOUBLE, new long[]{3, 3, 3});
+        INDArray tensor = Nd4j.rand(DataType.DOUBLE, 3, 3, 3);
         INDArray ones = Nd4j.ones(3, 3, 3).castTo(DataType.DOUBLE);
         assertTrue(Arrays.equals(tensor.shape(), ones.shape()));
         ones.assign(tensor);

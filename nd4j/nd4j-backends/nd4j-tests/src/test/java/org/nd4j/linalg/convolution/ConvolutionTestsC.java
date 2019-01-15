@@ -40,7 +40,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.nd4j.linalg.checkutil.NDArrayCreationUtil.getAll4dTestArraysWithShape;
 
 /**
  * Created by agibsonccc on 9/6/14.

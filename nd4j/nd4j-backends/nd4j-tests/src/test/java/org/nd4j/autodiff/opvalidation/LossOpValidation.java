@@ -74,8 +74,8 @@ public class LossOpValidation extends BaseOpValidation {
 
                     int nOut = 4;
                     int minibatch = 10;
-                    SDVariable predictions = sd.var("in", DataType.DOUBLE, new int[]{-1, nOut});
-                    SDVariable labels = sd.var("labels", DataType.DOUBLE, new int[]{-1, nOut});
+                    SDVariable predictions = sd.var("in", DataType.DOUBLE, -1, nOut);
+                    SDVariable labels = sd.var("labels", DataType.DOUBLE, -1, nOut);
                     SDVariable w;
                     INDArray wArrBroadcast;
                     switch (weights){

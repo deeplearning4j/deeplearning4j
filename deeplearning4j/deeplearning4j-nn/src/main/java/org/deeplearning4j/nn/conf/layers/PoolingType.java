@@ -23,6 +23,6 @@ package org.deeplearning4j.nn.conf.layers;
  * <b>SUM</b>: Sum pooling - output is the sum of the input values<br>
  * <b>PNORM</b>: P-norm pooling<br>
  */
-public enum  PoolingType {
+public enum PoolingType {
     MAX, AVG, SUM, PNORM
 }

@@ -35,7 +35,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
 
     protected ILossFunction lossFn;
     protected boolean hasBias = true;
-    protected boolean legacyBatchScaledL2 = true;   //Default to legacy for pre 1.0.0-beta3 networks on deserialization
+    protected boolean legacyBatchScaledL2 = true; //Default to legacy for pre 1.0.0-beta3 networks on deserialization
 
     protected BaseOutputLayer(Builder builder) {
         super(builder);
@@ -43,7 +43,7 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
         this.hasBias = builder.hasBias;
     }
 
-    public boolean hasBias(){
+    public boolean hasBias() {
         return hasBias;
     }
 
@@ -81,8 +81,19 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
     }
 
 
+    @Getter
+    @Setter
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+
+        /**
+         * Loss function for the output layer
+         */
         protected ILossFunction lossFn = new LossMCXENT();
+
+        /**
+         * If true (default): include bias parameters in the model. False: no bias.
+         *
+         */
         private boolean hasBias = true;
 
         public Builder() {}
@@ -113,9 +124,9 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
          *
          * @param hasBias If true: include bias parameters in this model
          */
-        public T hasBias(boolean hasBias){
+        public T hasBias(boolean hasBias) {
             this.hasBias = hasBias;
-            return (T)this;
+            return (T) this;
         }
 
         /**

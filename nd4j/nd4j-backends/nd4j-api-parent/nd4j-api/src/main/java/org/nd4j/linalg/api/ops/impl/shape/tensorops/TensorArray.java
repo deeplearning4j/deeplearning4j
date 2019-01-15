@@ -96,7 +96,7 @@ public class TensorArray extends  BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarray";
+        return "tensorarrayv3";
     }
 
 
@@ -107,7 +107,7 @@ public class TensorArray extends  BaseTensorOp {
 
 
     private SDVariable getVar(){
-        return getSameDiff().var(DataType.FLOAT);
+        return outputVariable();
     }
 
     @Override
@@ -120,7 +120,7 @@ public class TensorArray extends  BaseTensorOp {
     }
 
     private SDVariable intToVar(int... index){
-        return this.sameDiff.var(Nd4j.create(ArrayUtil.toDouble(index)));
+        return this.sameDiff.constant(Nd4j.createFromArray(index));
     }
 
 
@@ -131,56 +131,50 @@ public class TensorArray extends  BaseTensorOp {
     public SDVariable read(SDVariable index){
         return new TensorArrayRead(getSameDiff(), new SDVariable[]{getVar(), index}).outputVariable();
     }
-    public SDVariable gather(int... indices){
-        return new TensorArrayGather(getSameDiff(), new SDVariable[]{getVar(), intToVar(indices)}).outputVariable();
+    public SDVariable gather(SDVariable flow, int... indices){
+        return new TensorArrayGather(getSameDiff(), new SDVariable[]{getVar(), sameDiff.constant(Nd4j.createFromArray(indices)), flow}).outputVariable();
     }
-    public SDVariable gather(SDVariable indices){
-        return new TensorArrayGather(getSameDiff(), new SDVariable[]{getVar(), indices}).outputVariable();
+    public SDVariable gather(SDVariable flow, SDVariable indices){
+        return new TensorArrayGather(getSameDiff(), new SDVariable[]{getVar(), indices, flow}).outputVariable();
     }
-    public SDVariable stack(){
-        return new TensorArrayGather(getSameDiff(), new SDVariable[]{getVar(), intToVar(-1)}).outputVariable();
+    public SDVariable stack(SDVariable flow){
+        return new TensorArrayGather(getSameDiff(), new SDVariable[]{getVar(), intToVar(-1), flow}).outputVariable();
     }
 
-    public SDVariable concat(){
+    public SDVariable concat(SDVariable flow){
         return new TensorArrayConcat(getSameDiff(), new SDVariable[]{getVar()}).outputVariable();
     }
 
     //----------- write ops-----------------\\
-    public void write(int index, SDVariable value){
-        //return new TensorArrayV3(this,
-        new TensorArrayWrite(getSameDiff(),
-                new SDVariable[]{getVar(),
-                        intToVar(index), value}).outputVariables();//);
-
+    public SDVariable write(SDVariable flow, int index, SDVariable value){
+        return write(flow, intToVar(index), value);
     }
-    public void write(SDVariable index, SDVariable value){
-        System.out.println("TA write  - " + this.sameDiff);
-        //return new TensorArrayV3(this,
-        new TensorArrayWrite(getSameDiff(),
-                new SDVariable[]{getVar(),
-                        index, value}).outputVariables();//);
 
+    public SDVariable write(SDVariable flow, SDVariable index, SDVariable value){
+        return new TensorArrayWrite(getSameDiff(),
+                new SDVariable[]{getVar(),
+                        index, value, flow}).outputVariable();
     }
-    public void scatter(SDVariable value, int... indices){
-        //return new TensorArrayV3(this,
-        new TensorArrayScatter(getSameDiff(),
+
+    public SDVariable scatter(SDVariable flow, SDVariable value, int... indices){
+        return new TensorArrayScatter(getSameDiff(),
                 new SDVariable[]{getVar(),
                         intToVar(indices),
-                        value}).outputVariables();//);
+                        value, flow}).outputVariable();
     }
-    public void scatter(SDVariable value, SDVariable indices){
-        //return new TensorArrayV3(this,
-        new TensorArrayScatter(getSameDiff(),
+
+    public SDVariable scatter(SDVariable flow, SDVariable value, SDVariable indices){
+        return new TensorArrayScatter(getSameDiff(),
                 new SDVariable[]{getVar(),
                         indices,
-                        value}).outputVariables();//);
+                        value, flow}).outputVariable();
     }
-    public void unstack(SDVariable value){
-        //return new TensorArrayV3(this,
-        new TensorArrayScatter(getSameDiff(),
+
+    public SDVariable unstack(SDVariable flow, SDVariable value){
+        return new TensorArrayScatter(getSameDiff(),
                 new SDVariable[]{getVar(),
                         intToVar(-1),
-                        value}).outputVariables();//);
+                        value, flow}).outputVariable();
     }
 
     @Override
