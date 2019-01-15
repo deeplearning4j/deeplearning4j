@@ -37,6 +37,7 @@ import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -170,10 +171,6 @@ public class Convolution3DLayer extends Convolution2DLayer {
 
         public Builder(int[] kernelSize, int[] stride, int[] padding, int[] dilation) {
             super(kernelSize, stride, padding, dilation, 3);
-            Preconditions.checkState(kernelSize.length == 3, "Kernel size argument has to have length 3.");
-            Preconditions.checkState(stride.length == 3, "Stride size argument has to have length 3.");
-            Preconditions.checkState(padding.length == 3, "Padding size argument has to have length 3.");
-            Preconditions.checkState(dilation.length == 3, "Padding size argument has to have length 3.");
         }
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
@@ -195,8 +192,7 @@ public class Convolution3DLayer extends Convolution2DLayer {
          * @return 3D convolution layer builder
          */
         public Builder kernelSize(int... kernelSize) {
-            Preconditions.checkState(kernelSize.length == 3, "Kernel size argument has to have length 3.");
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
             return this;
         }
 
@@ -207,8 +203,7 @@ public class Convolution3DLayer extends Convolution2DLayer {
          * @return 3D convolution layer builder
          */
         public Builder stride(int... stride) {
-            Preconditions.checkState(stride.length == 3, "Stride size argument has to have length 3.");
-            this.stride = stride;
+            this.setStride(stride);
             return this;
         }
 
@@ -219,9 +214,8 @@ public class Convolution3DLayer extends Convolution2DLayer {
          * @return 3D convolution layer builder
          */
         public Builder padding(int... padding) {
-            Preconditions.checkState(padding.length == 3, "Padding size argument has to have length 3.");
 
-            this.padding = padding;
+            this.setPadding(padding);
             return this;
         }
 
@@ -232,13 +226,12 @@ public class Convolution3DLayer extends Convolution2DLayer {
          * @return 3D convolution layer builder
          */
         public Builder dilation(int... dilation) {
-            Preconditions.checkState(dilation.length == 3, "Dilation size argument has to have length 3.");
-            this.dilation = dilation;
+            this.setDilation(dilation);
             return this;
         }
 
         public Builder convolutionMode(ConvolutionMode mode) {
-            this.convolutionMode = mode;
+            this.setConvolutionMode(mode);
             return this;
         }
 
@@ -250,50 +243,9 @@ public class Convolution3DLayer extends Convolution2DLayer {
          * @param dataFormat Data format to use for activations
          */
         public Builder dataFormat(DataFormat dataFormat) {
-            this.dataFormat = dataFormat;
+            this.setDataFormat(dataFormat);
             return this;
         }
-
-        /**
-         * Set kernel size for 3D convolutions in (depth, height, width) order
-         *
-         * @param kernelSize kernel size
-         */
-        @Override
-        public void setKernelSize(int[] kernelSize) {
-            kernelSize(kernelSize);
-        }
-
-        /**
-         * Set stride size for 3D convolutions in (depth, height, width) order
-         *
-         * @param stride kernel size
-         */
-        @Override
-        public void setStride(int[] stride) {
-            stride(stride);
-        }
-
-        /**
-         * Set padding size for 3D convolutions in (depth, height, width) order
-         *
-         * @param padding kernel size
-         */
-        @Override
-        public void setPadding(int[] padding) {
-            padding(padding);
-        }
-
-        /**
-         * Set dilation size for 3D convolutions in (depth, height, width) order
-         *
-         * @param dilation kernel size
-         */
-        @Override
-        public void setDilation(int[] dilation) {
-            dilation(dilation);
-        }
-
 
 
         @Override
@@ -303,6 +255,26 @@ public class Convolution3DLayer extends Convolution2DLayer {
             Convolution3DUtils.validateCnn3DKernelStridePadding(kernelSize, stride, padding);
 
             return new Convolution3DLayer(this);
+        }
+
+
+        @Override
+        public void setKernelSize(int[] kernelSize) {
+            this.kernelSize = ValidationUtils.validate3(kernelSize, "kernelSize");
+        }
+
+        @Override
+        public void setStride(int[] stride) {
+            this.stride = ValidationUtils.validate3(stride, "stride");
+        }
+
+        @Override
+        public void setPadding(int[] padding) {
+            this.padding = ValidationUtils.validate3(padding, "padding");
+        }
+
+        public void setDilation(int[] dilation) {
+            this.dilation = ValidationUtils.validate3(dilation, "dilation");
         }
     }
 

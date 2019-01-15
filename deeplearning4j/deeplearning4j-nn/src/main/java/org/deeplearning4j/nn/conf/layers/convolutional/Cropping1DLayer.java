@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.NoParamLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -123,20 +124,6 @@ public class Cropping1DLayer extends NoParamLayer {
          */
         private int[] cropping = new int[] {0, 0};
 
-        /**
-         * @param cropping Cropping amount for top/bottom (in that order). Must be length 1 or 2 array.
-         */
-        public void setCropping(int[] cropping) {
-            if (cropping.length == 2) {
-                this.cropping = cropping;
-            } else if (cropping.length == 1) {
-                this.cropping = new int[] {cropping[0], cropping[0]};
-            } else {
-                org.nd4j.base.Preconditions.checkArgument(false, "Must have 1 or 2 cropping values - got %s",
-                                this.cropping);
-            }
-        }
-
         public Builder() {
 
         }
@@ -145,15 +132,7 @@ public class Cropping1DLayer extends NoParamLayer {
          * @param cropping Cropping amount for top/bottom (in that order). Must be length 1 or 2 array.
          */
         public Builder(@NonNull int[] cropping) {
-            Preconditions.checkArgument(cropping.length == 2 || cropping.length == 1,
-                            "Two cropping values, i.e. top and bottom, or one value for bot top and bottom"
-                                            + "must be provided. Got " + cropping.length + " values: "
-                                            + Arrays.toString(cropping));
-            if (cropping.length == 2) {
-                this.cropping = cropping;
-            } else {
-                this.cropping = new int[] {cropping[0], cropping[0]};
-            }
+            this.setCropping(cropping);
         }
 
         /**
@@ -168,14 +147,26 @@ public class Cropping1DLayer extends NoParamLayer {
          * @param cropBottom Amount of cropping to apply to the bottom of the input activations
          */
         public Builder(int cropTop, int cropBottom) {
-            this.cropping = new int[] {cropTop, cropBottom};
-            Preconditions.checkArgument(cropTop >= 0 && cropBottom >= 0,
-                            "Invalid arguments: crop dimensions must be > 0. Got [t,b] = "
-                                            + Arrays.toString(this.cropping));
+            this.setCropping(new int[] {cropTop, cropBottom});
         }
 
         public Cropping1DLayer build() {
             return new Cropping1DLayer(this);
+        }
+
+        public void setCropping(int[] cropping) {
+            int[] crop = ValidationUtils.validate2(cropping, "cropping");
+
+            if(crop == null){
+                this.cropping = null;
+                return;
+            }
+
+            Preconditions.checkArgument(crop[0] >= 0 && crop[1] >= 0,
+                    "Invalid arguments: crop dimensions must be >= 0. Got [t,b] = "
+                            + Arrays.toString(this.cropping));
+
+            this.cropping = crop;
         }
     }
 }

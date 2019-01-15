@@ -41,6 +41,7 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -319,17 +320,17 @@ public class Convolution2DLayer extends FeedForwardLayer {
          * @param kernelSize the height and width of the kernel
          */
         public Builder kernelSize(int... kernelSize) {
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
             return this;
         }
 
         public Builder stride(int... stride) {
-            this.stride = stride;
+            this.setStride(stride);
             return this;
         }
 
         public Builder padding(int... padding) {
-            this.padding = padding;
+            this.setPadding(padding);
             return this;
         }
 
@@ -341,6 +342,28 @@ public class Convolution2DLayer extends FeedForwardLayer {
 
             return new Convolution2DLayer(this);
         }
+
+
+        @Override
+        public void setKernelSize(int[] kernelSize) {
+            this.kernelSize = ValidationUtils.validate2(kernelSize, "kernelSize");
+        }
+
+        @Override
+        public void setStride(int[] stride) {
+            this.stride = ValidationUtils.validate2(stride, "stride");
+        }
+
+        @Override
+        public void setPadding(int[] padding) {
+            this.padding = ValidationUtils.validate2(padding, "padding");
+        }
+
+        public void setDilation(int[] dilation) {
+            this.dilation = ValidationUtils.validate2(dilation, "dilation");
+        }
+
+
     }
 
     @Getter
@@ -395,53 +418,53 @@ public class Convolution2DLayer extends FeedForwardLayer {
 
 
         protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding, int[] dilation, int dim) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
-            this.dilation = dilation;
-            this.convolutionDim = dim;
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setPadding(padding);
+            this.setDilation(dilation);
+            this.setConvolutionDim(dim);
         }
 
         protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding, int[] dilation) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
-            this.dilation = dilation;
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setPadding(padding);
+            this.setDilation(dilation);
         }
 
         protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding, int dim) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
-            this.convolutionDim = dim;
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setPadding(padding);
+            this.setConvolutionDim(dim);
         }
 
         protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setPadding(padding);
         }
 
         protected BaseConvBuilder(int[] kernelSize, int[] stride, int dim) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.convolutionDim = dim;
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setConvolutionDim(dim);
         }
 
 
         protected BaseConvBuilder(int[] kernelSize, int[] stride) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
         }
 
         protected BaseConvBuilder(int dim, int... kernelSize) {
-            this.kernelSize = kernelSize;
-            this.convolutionDim = dim;
+            this.setKernelSize(kernelSize);
+            this.setConvolutionDim(dim);
         }
 
 
         protected BaseConvBuilder(int... kernelSize) {
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
         }
 
         protected BaseConvBuilder() {}
@@ -452,7 +475,7 @@ public class Convolution2DLayer extends FeedForwardLayer {
          * @param hasBias If true: include bias parameters in this model
          */
         public T hasBias(boolean hasBias) {
-            this.hasBias = hasBias;
+            this.setHasBias(hasBias);
             return (T) this;
         }
 
@@ -462,7 +485,7 @@ public class Convolution2DLayer extends FeedForwardLayer {
          * @param convolutionMode Convolution mode for layer
          */
         public T convolutionMode(ConvolutionMode convolutionMode) {
-            this.convolutionMode = convolutionMode;
+            this.setConvolutionMode(convolutionMode);
             return (T) this;
         }
 
@@ -479,22 +502,22 @@ public class Convolution2DLayer extends FeedForwardLayer {
          * @param dilation Dilation for kernel
          */
         public T dilation(int... dilation) {
-            this.dilation = dilation;
+            this.setDilation(dilation);
             return (T) this;
         }
 
         public T kernelSize(int... kernelSize) {
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
             return (T) this;
         }
 
         public T stride(int... stride) {
-            this.stride = stride;
+            this.setStride(stride);
             return (T) this;
         }
 
         public T padding(int... padding) {
-            this.padding = padding;
+            this.setPadding(padding);
             return (T) this;
         }
 
@@ -502,22 +525,22 @@ public class Convolution2DLayer extends FeedForwardLayer {
          * Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
          */
         public T cudnnAlgoMode(AlgoMode cudnnAlgoMode) {
-            this.cudnnAlgoMode = cudnnAlgoMode;
+            this.setCudnnAlgoMode(cudnnAlgoMode);
             return (T) this;
         }
 
         public T cudnnFwdMode(FwdAlgo cudnnFwdAlgo) {
-            this.cudnnFwdAlgo = cudnnFwdAlgo;
+            this.setCudnnFwdAlgo(cudnnFwdAlgo);
             return (T) this;
         }
 
         public T cudnnBwdFilterMode(BwdFilterAlgo cudnnBwdFilterAlgo) {
-            this.cudnnBwdFilterAlgo = cudnnBwdFilterAlgo;
+            this.setCudnnBwdFilterAlgo(cudnnBwdFilterAlgo);
             return (T) this;
         }
 
         public T cudnnBwdDataMode(BwdDataAlgo cudnnBwdDataAlgo) {
-            this.cudnnBwdDataAlgo = cudnnBwdDataAlgo;
+            this.setCudnnBwdDataAlgo(cudnnBwdDataAlgo);
             return (T) this;
         }
 
@@ -529,7 +552,7 @@ public class Convolution2DLayer extends FeedForwardLayer {
          * @param allowFallback Whether fallback to non-CuDNN implementation should be used
          */
         public T cudnnAllowFallback(boolean allowFallback) {
-            this.cudnnAllowFallback = allowFallback;
+            this.setCudnnAllowFallback(allowFallback);
             return (T) this;
         }
     }

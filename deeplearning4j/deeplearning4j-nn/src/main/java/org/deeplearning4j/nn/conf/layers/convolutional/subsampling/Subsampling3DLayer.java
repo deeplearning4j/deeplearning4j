@@ -41,6 +41,7 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -266,10 +267,7 @@ public class Subsampling3DLayer extends NoParamLayer {
          * @param kernelSize kernel size in height and width dimensions
          */
         public Builder kernelSize(int... kernelSize) {
-            if (kernelSize.length != 3) {
-                throw new IllegalArgumentException("Invalid input: must be length 3");
-            }
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
             return this;
         }
 
@@ -279,10 +277,7 @@ public class Subsampling3DLayer extends NoParamLayer {
          * @param stride stride in height and width dimensions
          */
         public Builder stride(int... stride) {
-            if (stride.length != 3) {
-                throw new IllegalArgumentException("Invalid input: must be length 3");
-            }
-            this.stride = stride;
+            this.setStride(stride);
             return this;
         }
 
@@ -292,10 +287,7 @@ public class Subsampling3DLayer extends NoParamLayer {
          * @param padding padding in the height and width dimensions
          */
         public Builder padding(int... padding) {
-            if (padding.length != 3) {
-                throw new IllegalArgumentException("Invalid input: must be length 3");
-            }
-            this.padding = padding;
+            this.setPadding(padding);
             return this;
         }
 
@@ -307,7 +299,7 @@ public class Subsampling3DLayer extends NoParamLayer {
          * @param dataFormat Data format to use for activations
          */
         public Builder dataFormat(Convolution3DLayer.DataFormat dataFormat) {
-            this.dataFormat = dataFormat;
+            this.setDataFormat(dataFormat);
             return this;
         }
 
@@ -319,55 +311,24 @@ public class Subsampling3DLayer extends NoParamLayer {
             return new Subsampling3DLayer(this);
         }
 
-        /**
-         * Kernel size
-         *
-         * @param kernelSize kernel size in height and width dimensions
-         */
+
         @Override
         public void setKernelSize(int[] kernelSize) {
-            Preconditions.checkArgument(kernelSize.length == 1 || kernelSize.length == 3,
-                            "Must have 1 or 3 kernelSize values - got %s", kernelSize);
-
-            if (kernelSize.length == 1) {
-                super.setKernelSize(new int[] {kernelSize[0], kernelSize[0], kernelSize[0]});
-            } else {
-                super.setKernelSize(kernelSize);
-            }
+            this.kernelSize = ValidationUtils.validate3(kernelSize, "kernelSize");
         }
 
-        /**
-         * Stride
-         *
-         * @param stride stride in height and width dimensions
-         */
         @Override
         public void setStride(int[] stride) {
-            Preconditions.checkArgument(stride.length == 1 || stride.length == 3,
-                            "Must have 1 or 3 stride values - got %s", stride);
-
-            if (stride.length == 1) {
-                super.setStride(new int[] {stride[0], stride[0], stride[0]});
-            } else {
-                super.setStride(stride);
-            }
+            this.stride = ValidationUtils.validate3(stride, "stride");
         }
 
-        /**
-         * Padding
-         *
-         * @param padding padding in the height and width dimensions
-         */
         @Override
         public void setPadding(int[] padding) {
-            Preconditions.checkArgument(kernelSize.length == 1 || stride.length == 3,
-                            "Must have 1 or 3 padding values - got %s", padding);
+            this.padding = ValidationUtils.validate3(padding, "padding");
+        }
 
-            if (padding.length == 1) {
-                super.setPadding(new int[] {padding[0], padding[0], padding[0]});
-            } else {
-                super.setPadding(padding);
-            }
+        public void setDilation(int[] dilation) {
+            this.dilation = ValidationUtils.validate3(dilation, "dilation");
         }
     }
 
@@ -398,69 +359,58 @@ public class Subsampling3DLayer extends NoParamLayer {
          */
         protected boolean cudnnAllowFallback = true;
 
-        public void setDilation(int[] dilation) {
-            Preconditions.checkArgument(dilation.length == 1 || dilation.length == 3,
-                    "Must have 1 or 3 dilation values - got %s", dilation);
-
-            if (dilation.length == 1) {
-                dilation(dilation[0], dilation[0], dilation[0]);
-            } else {
-                dilation(dilation[0], dilation[1], dilation[2]);
-            }
-        }
-
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {
-            this.poolingType = poolingType.toPoolingType();
-            this.kernelSize = kernelSize;
-            this.stride = stride;
+            this.setPoolingType(poolingType.toPoolingType());
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
         }
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize) {
-            this.poolingType = poolingType.toPoolingType();
-            this.kernelSize = kernelSize;
+            this.setPoolingType(poolingType.toPoolingType());
+            this.setKernelSize(kernelSize);
         }
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride, int[] padding) {
-            this.poolingType = poolingType.toPoolingType();
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
+            this.setPoolingType(poolingType.toPoolingType());
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setPadding(padding);
         }
 
         protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize) {
-            this.poolingType = poolingType;
-            this.kernelSize = kernelSize;
+            this.setPoolingType(poolingType);
+            this.setKernelSize(kernelSize);
         }
 
         protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize,
                         int[] stride, int[] padding) {
-            this.poolingType = poolingType;
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
+            this.setPoolingType(poolingType);
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setPadding(padding);
         }
 
         protected BaseSubsamplingBuilder(int[] kernelSize, int[] stride, int[] padding) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setPadding(padding);
         }
 
         protected BaseSubsamplingBuilder(int[] kernelSize, int[] stride) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
         }
 
         protected BaseSubsamplingBuilder(int... kernelSize) {
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
         }
 
         protected BaseSubsamplingBuilder(PoolingType poolingType) {
-            this.poolingType = poolingType.toPoolingType();
+            this.setPoolingType(poolingType.toPoolingType());
         }
 
         protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType) {
-            this.poolingType = poolingType;
+            this.setPoolingType(poolingType);
         }
 
         /**
@@ -469,17 +419,17 @@ public class Subsampling3DLayer extends NoParamLayer {
          * @param convolutionMode Convolution mode for layer
          */
         public T convolutionMode(ConvolutionMode convolutionMode) {
-            this.convolutionMode = convolutionMode;
+            this.setConvolutionMode(convolutionMode);
             return (T) this;
         }
 
         public T poolingType(PoolingType poolingType) {
-            this.poolingType = poolingType.toPoolingType();
+            this.setPoolingType(poolingType.toPoolingType());
             return (T) this;
         }
 
         public T dilation(int dDepth, int dHeight, int dWidth) {
-            this.dilation = new int[] {dDepth, dHeight, dWidth};
+            this.setDilation(new int[] {dDepth, dHeight, dWidth});
             return (T) this;
         }
 
@@ -491,7 +441,7 @@ public class Subsampling3DLayer extends NoParamLayer {
          * @param allowFallback Whether fallback to non-CuDNN implementation should be used
          */
         public T cudnnAllowFallback(boolean allowFallback) {
-            this.cudnnAllowFallback = allowFallback;
+            this.setCudnnAllowFallback(allowFallback);
             return (T) this;
         }
     }

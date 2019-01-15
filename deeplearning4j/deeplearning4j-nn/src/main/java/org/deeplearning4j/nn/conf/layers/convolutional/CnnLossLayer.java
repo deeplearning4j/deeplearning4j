@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cnn3DLossLayer.Builder;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
@@ -122,7 +123,7 @@ public class CnnLossLayer extends FeedForwardLayer {
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
         public Builder() {
-            this.activationFn = Activation.IDENTITY.getActivationFunction();
+            this.setActivationFn(Activation.IDENTITY.getActivationFunction());
         }
 
         public Builder(LossFunction lossFunction) {
@@ -136,13 +137,15 @@ public class CnnLossLayer extends FeedForwardLayer {
         @Override
         @SuppressWarnings("unchecked")
         public Builder nIn(int nIn) {
-            throw new UnsupportedOperationException("Ths layer has no parameters, thus nIn will always equal nOut.");
+            this.setNIn(nIn);
+            return this;
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public Builder nOut(int nOut) {
-            throw new UnsupportedOperationException("Ths layer has no parameters, thus nIn will always equal nOut.");
+            this.setNOut(nOut);
+            return this;
         }
 
         @Override
@@ -150,5 +153,18 @@ public class CnnLossLayer extends FeedForwardLayer {
         public CnnLossLayer build() {
             return new CnnLossLayer(this);
         }
+
+        @Override
+        public void setNIn(int nIn) {
+            throw new UnsupportedOperationException(
+                    "CnnLossLayer has no parameters, thus nIn will always equal nOut.");
+        }
+
+        @Override
+        public void setNOut(int nOut) {
+            throw new UnsupportedOperationException(
+                    "CnnLossLayer has no parameters, thus nIn will always equal nOut.");
+        }
+
     }
 }

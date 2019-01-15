@@ -33,11 +33,13 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.NoParamLayer;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -63,24 +65,6 @@ public class Subsampling2DLayer extends NoParamLayer {
     protected int pnorm;
     protected double eps;
     protected boolean cudnnAllowFallback = true;
-
-    public enum PoolingType {
-        MAX, AVG, SUM, PNORM;
-
-        public org.deeplearning4j.nn.conf.layers.PoolingType toPoolingType() {
-            switch (this) {
-                case MAX:
-                    return org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
-                case AVG:
-                    return org.deeplearning4j.nn.conf.layers.PoolingType.AVG;
-                case SUM:
-                    return org.deeplearning4j.nn.conf.layers.PoolingType.SUM;
-                case PNORM:
-                    return org.deeplearning4j.nn.conf.layers.PoolingType.PNORM;
-            }
-            throw new UnsupportedOperationException("Unknown/not supported pooling type: " + this);
-        }
-    }
 
     protected Subsampling2DLayer(BaseSubsamplingBuilder builder) {
         super(builder);
@@ -252,15 +236,6 @@ public class Subsampling2DLayer extends NoParamLayer {
             super(poolingType, kernelSize, stride, padding);
         }
 
-        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize) {
-            super(poolingType, kernelSize);
-        }
-
-        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize, int[] stride,
-                        int[] padding) {
-            super(poolingType, kernelSize, stride, padding);
-        }
-
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
             super(kernelSize, stride, padding);
         }
@@ -277,20 +252,13 @@ public class Subsampling2DLayer extends NoParamLayer {
             super(poolingType);
         }
 
-        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType) {
-            super(poolingType);
-        }
-
         /**
          * Kernel size
          *
          * @param kernelSize kernel size in height and width dimensions
          */
         public Builder kernelSize(int... kernelSize) {
-            if (kernelSize.length != 2) {
-                throw new IllegalArgumentException("Invalid input: must be length 2");
-            }
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
             return this;
         }
 
@@ -300,10 +268,7 @@ public class Subsampling2DLayer extends NoParamLayer {
          * @param stride stride in height and width dimensions
          */
         public Builder stride(int... stride) {
-            if (stride.length != 2) {
-                throw new IllegalArgumentException("Invalid input: must be length 2");
-            }
-            this.stride = stride;
+            this.setStride(stride);
             return this;
         }
 
@@ -313,10 +278,7 @@ public class Subsampling2DLayer extends NoParamLayer {
          * @param padding padding in the height and width dimensions
          */
         public Builder padding(int... padding) {
-            if (padding.length != 2) {
-                throw new IllegalArgumentException("Invalid input: must be length 2");
-            }
-            this.padding = padding;
+            this.setPadding(padding);
             return this;
         }
 
@@ -334,7 +296,7 @@ public class Subsampling2DLayer extends NoParamLayer {
          * @param dilation Dilation for kernel
          */
         public Builder dilation(int... dilation) {
-            this.dilation = dilation;
+            this.setDilation(dilation);
             return this;
         }
 
@@ -352,19 +314,24 @@ public class Subsampling2DLayer extends NoParamLayer {
             return new Subsampling2DLayer(this);
         }
 
+
         @Override
         public void setKernelSize(int[] kernelSize) {
-            kernelSize(kernelSize);
+            this.kernelSize = ValidationUtils.validate2(kernelSize, "kernelSize");
         }
 
         @Override
         public void setStride(int[] stride) {
-            stride(stride);
+            this.stride = ValidationUtils.validate2(stride, "stride");
         }
 
         @Override
         public void setPadding(int[] padding) {
-            padding(padding);
+            this.padding = ValidationUtils.validate2(padding, "padding");
+        }
+
+        public void setDilation(int[] dilation) {
+            this.dilation = ValidationUtils.validate2(dilation, "dilation");
         }
     }
 
@@ -400,57 +367,40 @@ public class Subsampling2DLayer extends NoParamLayer {
         protected boolean cudnnAllowFallback = true;
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {
-            this.poolingType = poolingType.toPoolingType();
-            this.kernelSize = kernelSize;
-            this.stride = stride;
+            this.setPoolingType(poolingType);
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
         }
-
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize) {
-            this.poolingType = poolingType.toPoolingType();
-            this.kernelSize = kernelSize;
+            this.setPoolingType(poolingType);
+            this.setKernelSize(kernelSize);
         }
 
-        protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride, int[] padding) {
-            this.poolingType = poolingType.toPoolingType();
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
-        }
-
-        protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize) {
-            this.poolingType = poolingType;
-            this.kernelSize = kernelSize;
-        }
-
-        protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize,
+        protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize,
                         int[] stride, int[] padding) {
-            this.poolingType = poolingType;
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
+            this.setPoolingType(poolingType);
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setPadding(padding);
         }
 
         protected BaseSubsamplingBuilder(int[] kernelSize, int[] stride, int[] padding) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
-            this.padding = padding;
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setPadding(padding);
         }
 
         protected BaseSubsamplingBuilder(int[] kernelSize, int[] stride) {
-            this.kernelSize = kernelSize;
-            this.stride = stride;
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
         }
 
         protected BaseSubsamplingBuilder(int... kernelSize) {
-            this.kernelSize = kernelSize;
+            this.setKernelSize(kernelSize);
         }
 
         protected BaseSubsamplingBuilder(PoolingType poolingType) {
-            this.poolingType = poolingType.toPoolingType();
-        }
-
-        protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType) {
-            this.poolingType = poolingType;
+            this.setPoolingType(poolingType);
         }
 
         /**
@@ -459,37 +409,23 @@ public class Subsampling2DLayer extends NoParamLayer {
          * @param convolutionMode Convolution mode for layer
          */
         public T convolutionMode(ConvolutionMode convolutionMode) {
-            this.convolutionMode = convolutionMode;
+            this.setConvolutionMode(convolutionMode);
             return (T) this;
         }
 
         public T poolingType(PoolingType poolingType) {
-            this.poolingType = poolingType.toPoolingType();
+            this.setPoolingType(poolingType);
             return (T) this;
         }
 
         public T pnorm(int pnorm) {
-            if (pnorm <= 0) {
-                throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0");
-            }
-            this.pnorm = pnorm;
+            this.setPnorm(pnorm);
             return (T) this;
-        }
-
-        public void setPnorm(int pnorm){
-            pnorm(pnorm);
         }
 
         public T eps(double eps) {
-            if (eps <= 0) {
-                throw new IllegalArgumentException("Invalid input: epsilon for p-norm must be greater than 0");
-            }
-            this.eps = eps;
+            this.setEps(eps);
             return (T) this;
-        }
-
-        public void setEps(double eps){
-            eps(eps);
         }
 
         /**
@@ -502,6 +438,21 @@ public class Subsampling2DLayer extends NoParamLayer {
         public T cudnnAllowFallback(boolean allowFallback) {
             this.cudnnAllowFallback = allowFallback;
             return (T) this;
+        }
+
+
+        public void setEps(double eps){
+            if (eps <= 0) {
+                throw new IllegalArgumentException("Invalid input: epsilon for p-norm must be greater than 0");
+            }
+            this.eps = eps;
+        }
+
+        public void setPnorm(int pnorm){
+            if (pnorm <= 0) {
+                throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0");
+            }
+            this.pnorm = pnorm;
         }
     }
 

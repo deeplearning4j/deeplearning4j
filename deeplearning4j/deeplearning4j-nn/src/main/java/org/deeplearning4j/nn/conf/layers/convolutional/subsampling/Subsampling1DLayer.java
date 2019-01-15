@@ -27,9 +27,11 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -128,21 +130,17 @@ public class Subsampling1DLayer extends Subsampling2DLayer {
 
     public static class Builder extends Subsampling2DLayer.BaseSubsamplingBuilder<Builder> {
 
-        private static final org.deeplearning4j.nn.conf.layers.PoolingType DEFAULT_POOLING =
+        public static final org.deeplearning4j.nn.conf.layers.PoolingType DEFAULT_POOLING =
                         org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
-        private static final int DEFAULT_KERNEL = 2;
-        private static final int DEFAULT_STRIDE = 1;
-        private static final int DEFAULT_PADDING = 0;
+        public static final int DEFAULT_KERNEL = 2;
+        public static final int DEFAULT_STRIDE = 1;
+        public static final int DEFAULT_PADDING = 0;
 
         public Builder(PoolingType poolingType, int kernelSize, int stride) {
             this(poolingType, kernelSize, stride, DEFAULT_PADDING);
         }
 
         public Builder(PoolingType poolingType, int kernelSize) {
-            this(poolingType, kernelSize, DEFAULT_STRIDE, DEFAULT_PADDING);
-        }
-
-        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int kernelSize) {
             this(poolingType, kernelSize, DEFAULT_STRIDE, DEFAULT_PADDING);
         }
 
@@ -162,17 +160,8 @@ public class Subsampling1DLayer extends Subsampling2DLayer {
             this(poolingType, DEFAULT_KERNEL, DEFAULT_STRIDE, DEFAULT_PADDING);
         }
 
-        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType) {
-            this(poolingType, DEFAULT_KERNEL, DEFAULT_STRIDE, DEFAULT_PADDING);
-        }
-
         public Builder() {
             this(DEFAULT_POOLING, DEFAULT_KERNEL, DEFAULT_STRIDE, DEFAULT_PADDING);
-        }
-
-        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int kernelSize, int stride,
-                        int padding) {
-            super(poolingType, new int[] {kernelSize, 1}, new int[] {stride, 1}, new int[] {padding, 0});
         }
 
         public Builder(PoolingType poolingType, int kernelSize, int stride, int padding) {
@@ -197,7 +186,7 @@ public class Subsampling1DLayer extends Subsampling2DLayer {
          * @param kernelSize kernel size
          */
         public Subsampling1DLayer.Builder kernelSize(int kernelSize) {
-            this.kernelSize[0] = kernelSize;
+            this.setKernelSize(new int[]{kernelSize});
             return this;
         }
 
@@ -207,7 +196,7 @@ public class Subsampling1DLayer extends Subsampling2DLayer {
          * @param stride stride value
          */
         public Subsampling1DLayer.Builder stride(int stride) {
-            this.stride[0] = stride;
+            this.setStride(new int[]{stride});
             return this;
         }
 
@@ -217,41 +206,71 @@ public class Subsampling1DLayer extends Subsampling2DLayer {
          * @param padding padding value
          */
         public Subsampling1DLayer.Builder padding(int padding) {
-            this.padding[0] = padding;
+            this.setPadding(new int[]{padding});
             return this;
         }
 
-        /**
-         * Kernel size
-         *
-         * @param kernelSize kernel size
-         */
         @Override
         public void setKernelSize(int[] kernelSize) {
-            Preconditions.checkArgument(kernelSize.length == 1, "Must have 1 kernelSize value - got %s", kernelSize);
-            super.setKernelSize(kernelSize);
+
+            if(kernelSize == null){
+                this.kernelSize = null;
+                return;
+            }
+
+            // just in case we get a call from super
+            if(kernelSize.length == 2 && (kernelSize[0] == kernelSize[1] || kernelSize[1] == 1)){
+                this.kernelSize = kernelSize;
+                return;
+            }
+
+            if(this.kernelSize == null) {
+                this.kernelSize = new int[] {1, 1};
+            }
+
+            this.kernelSize[0] = ValidationUtils.validate1(kernelSize, "kernelSize")[0];
         }
 
-        /**
-         * Stride
-         *
-         * @param stride stride value
-         */
         @Override
-        public void setStride(int[] stride) {
-            Preconditions.checkArgument(stride.length == 1, "Must have 1 stride value - got %s", stride);
-            super.setStride(stride);
+        public void setStride(int[] stride){
+
+            if(stride == null){
+                this.stride = null;
+                return;
+            }
+
+            // just in case we get a call from super
+            if(stride.length == 2 && (stride[0] == stride[1] || stride[1] == 1)){
+                this.stride = stride;
+                return;
+            }
+
+            if(this.stride == null) {
+                this.stride = new int[] {1, 1};
+            }
+
+            this.stride[0] = ValidationUtils.validate1(stride, "stride")[0];
         }
 
-        /**
-         * Padding
-         *
-         * @param padding padding value
-         */
         @Override
         public void setPadding(int[] padding) {
-            Preconditions.checkArgument(kernelSize.length == 1, "Must have 1 padding value - got %s", padding);
-            super.setPadding(padding);
+
+            if(padding == null){
+                this.padding = null;
+                return;
+            }
+
+            // just in case we get a call from super
+            if(padding.length == 2 && (padding[0] == padding[1] || padding[1] == 0)){
+                this.padding = padding;
+                return;
+            }
+
+            if(this.padding == null) {
+                this.padding = new int[] {0, 0};
+            }
+
+            this.padding[0] = ValidationUtils.validate1(padding, "padding")[0];
         }
     }
 }

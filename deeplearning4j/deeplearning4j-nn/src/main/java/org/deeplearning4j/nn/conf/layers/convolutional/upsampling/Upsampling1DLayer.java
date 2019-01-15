@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -137,7 +138,7 @@ public class Upsampling1DLayer extends BaseUpsamplingLayer {
          */
         public Builder size(int size) {
 
-            this.size = new int[] {size, size};
+            this.setSize(new int[] {size});
             return this;
         }
 
@@ -147,8 +148,7 @@ public class Upsampling1DLayer extends BaseUpsamplingLayer {
          * @param size upsampling size in single spatial dimension of this 1D layer
          */
         public Builder size(int[] size) {
-            Preconditions.checkArgument(size.length == 1, "Input array must be length 1");
-            this.size = new int[] {size[0], size[0]}; // Since this is 2D under the hood, we need to hide this.
+            this.setSize(size);
             return this;
         }
 
@@ -160,7 +160,24 @@ public class Upsampling1DLayer extends BaseUpsamplingLayer {
 
         @Override
         public void setSize(int[] size) {
-            size(size);
+
+            if(size == null){
+                this.size = null;
+                return;
+            }
+
+            // just in case we get a call from super
+            if(size.length == 2 && size[0] == size[1]){
+                this.size = size;
+                return;
+            }
+
+            if(this.size == null) {
+                this.size = new int[] {1, 1};
+            }
+
+            int[] s = ValidationUtils.validate1(size, "size");
+            this.size = new int[] {s[0], s[0]}; // Since this is 2D under the hood, we need to hide this.
         }
     }
 

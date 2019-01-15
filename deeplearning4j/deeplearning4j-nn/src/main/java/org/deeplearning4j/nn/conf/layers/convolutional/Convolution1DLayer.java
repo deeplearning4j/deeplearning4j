@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.layers.LayerValidation;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -146,9 +147,9 @@ public class Convolution1DLayer extends Convolution2DLayer {
          * @param padding Padding
          */
         public Builder(int kernelSize, int stride, int padding) {
-            this.kernelSize = new int[] {kernelSize, 1};
-            this.stride = new int[] {stride, 1};
-            this.padding = new int[] {padding, 0};
+            this.setKernelSize(new int[]{kernelSize});
+            this.setStride(new int[]{stride});
+            this.setPadding(new int[]{padding});
         }
 
         /**
@@ -157,7 +158,7 @@ public class Convolution1DLayer extends Convolution2DLayer {
          * @param kernelSize the length of the kernel
          */
         public Builder kernelSize(int kernelSize) {
-            this.kernelSize = new int[] {kernelSize, 1};
+            this.setKernelSize(new int[]{kernelSize});
             return this;
         }
 
@@ -167,7 +168,7 @@ public class Convolution1DLayer extends Convolution2DLayer {
          * @param stride Stride
          */
         public Builder stride(int stride) {
-            this.stride[0] = stride;
+            this.setStride(new int[]{stride});
             return this;
         }
 
@@ -177,7 +178,7 @@ public class Convolution1DLayer extends Convolution2DLayer {
          * @param padding Padding value
          */
         public Builder padding(int padding) {
-            this.padding[0] = padding;
+            this.setPadding(new int[]{padding});
             return this;
         }
 
@@ -188,6 +189,69 @@ public class Convolution1DLayer extends Convolution2DLayer {
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new Convolution1DLayer(this);
+        }
+
+        @Override
+        public void setKernelSize(int[] kernelSize) {
+
+            if(kernelSize == null){
+                this.kernelSize = null;
+                return;
+            }
+
+            // just in case we get a call from super
+            if(kernelSize.length == 2 && (kernelSize[0] == kernelSize[1] || kernelSize[1] == 1)){
+                this.kernelSize = kernelSize;
+                return;
+            }
+
+            if(this.kernelSize == null) {
+                this.kernelSize = new int[] {1, 1};
+            }
+
+            this.kernelSize[0] = ValidationUtils.validate1(kernelSize, "kernelSize")[0];
+        }
+
+        @Override
+        public void setStride(int[] stride){
+
+            if(stride == null){
+                this.stride = null;
+                return;
+            }
+
+            // just in case we get a call from super
+            if(stride.length == 2 && (stride[0] == stride[1] || stride[1] == 1)){
+                this.stride = stride;
+                return;
+            }
+
+            if(this.stride == null) {
+                this.stride = new int[] {1, 1};
+            }
+
+            this.stride[0] = ValidationUtils.validate1(stride, "stride")[0];
+        }
+
+        @Override
+        public void setPadding(int[] padding) {
+
+            if(padding == null){
+                this.padding = null;
+                return;
+            }
+
+            // just in case we get a call from super
+            if(padding.length == 2 && (padding[0] == padding[1] || padding[1] == 0)){
+                this.padding = padding;
+                return;
+            }
+
+            if(this.padding == null) {
+                this.padding = new int[] {0, 0};
+            }
+
+            this.padding[0] = ValidationUtils.validate1(padding, "padding")[0];
         }
     }
 }

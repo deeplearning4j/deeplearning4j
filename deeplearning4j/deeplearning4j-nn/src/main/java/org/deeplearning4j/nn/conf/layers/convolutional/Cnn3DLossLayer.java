@@ -79,9 +79,9 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+            int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer(conf);
+                new org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -99,10 +99,10 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || (inputType.getType() != InputType.Type.CNN3D
-                        && inputType.getType() != InputType.Type.CNNFlat)) {
+                && inputType.getType() != InputType.Type.CNNFlat)) {
             throw new IllegalStateException("Invalid input type for CnnLossLayer (layer index = " + layerIndex
-                            + ", layer name=\"" + getLayerName() + "\"): Expected CNN3D or CNNFlat input, got "
-                            + inputType);
+                    + ", layer name=\"" + getLayerName() + "\"): Expected CNN3D or CNNFlat input, got "
+                    + inputType);
         }
         return inputType;
     }
@@ -116,9 +116,9 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         //During inference and training: dup the input array. But, this counts as *activations* not working memory
         return new LayerMemoryReport.Builder(layerName, getClass(), inputType, inputType).standardMemory(0, 0) //No params
-                        .workingMemory(0, 0, 0, 0)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                        .build();
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
     @Override
@@ -140,28 +140,40 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
          * @param format Format of the input/output data. See {@link Convolution3DLayer.DataFormat} for details
          */
         public Builder(@NonNull Convolution3DLayer.DataFormat format) {
-            this.dataFormat = format;
-            this.activationFn = Activation.IDENTITY.getActivationFunction();
+            this.setDataFormat(format);
+            this.setActivationFn(Activation.IDENTITY.getActivationFunction());
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public Builder nIn(int nIn) {
-            throw new UnsupportedOperationException(
-                            "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
+            this.setNIn(nIn);
+            return this;
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public Builder nOut(int nOut) {
-            throw new UnsupportedOperationException(
-                            "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
+            this.setNOut(nOut);
+            return this;
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public Cnn3DLossLayer build() {
             return new Cnn3DLossLayer(this);
+        }
+
+        @Override
+        public void setNIn(int nIn) {
+            throw new UnsupportedOperationException(
+                    "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
+        }
+
+        @Override
+        public void setNOut(int nOut) {
+            throw new UnsupportedOperationException(
+                    "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
         }
     }
 }

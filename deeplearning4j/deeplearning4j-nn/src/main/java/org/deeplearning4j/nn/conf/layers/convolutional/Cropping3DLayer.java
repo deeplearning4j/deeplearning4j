@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.NoParamLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -132,24 +133,6 @@ public class Cropping3DLayer extends NoParamLayer {
          */
         private int[] cropping = new int[] {0, 0, 0, 0, 0, 0};
 
-        /**
-         * @param cropping Cropping amount, must be length 1, 3, or 6 array, i.e. either all values, crop depth, crop height, crop width
-         * or crop left depth, crop right depth, crop left height, crop right height, crop left width, crop right width
-         */
-        public void setCropping(int[] cropping) {
-            Preconditions.checkArgument(cropping.length == 1 || cropping.length == 3 || cropping.length == 6,
-                            "Must have 1, 3, or 6 cropping values - got %s", cropping);
-            if (cropping.length == 1) {
-                this.cropping = new int[] {cropping[0], cropping[0], cropping[0], cropping[0], cropping[0],
-                                cropping[0]};
-            } else if (cropping.length == 3) {
-                this.cropping = new int[] {cropping[0], cropping[0], cropping[1], cropping[1], cropping[2],
-                                cropping[2]};
-            } else {
-                this.cropping = cropping;
-            }
-        }
-
         public Builder() {
 
         }
@@ -159,15 +142,7 @@ public class Cropping3DLayer extends NoParamLayer {
          * or crop left depth, crop right depth, crop left height, crop right height, crop left width, crop right width
          */
         public Builder(@NonNull int[] cropping) {
-            Preconditions.checkArgument(cropping.length == 6 || cropping.length == 3,
-                            "Either 3 or 6 cropping values, got " + cropping.length + " values: "
-                                            + Arrays.toString(cropping));
-            if (cropping.length == 3) {
-                this.cropping = new int[] {cropping[0], cropping[0], cropping[1], cropping[1], cropping[2],
-                                cropping[2]};
-            } else {
-                this.cropping = cropping;
-            }
+            this.setCropping(cropping);
         }
 
         /**
@@ -188,15 +163,28 @@ public class Cropping3DLayer extends NoParamLayer {
          * @param cropRightW Amount of cropping to apply to the right of the width dimension
          */
         public Builder(int cropLeftD, int cropRightD, int cropLeftH, int cropRightH, int cropLeftW, int cropRightW) {
-            this.cropping = new int[] {cropLeftD, cropRightD, cropLeftH, cropRightH, cropLeftW, cropRightW};
-            Preconditions.checkArgument(
-                            cropLeftD >= 0 && cropLeftH >= 0 && cropLeftW >= 0 && cropRightD >= 0 && cropRightH >= 0
-                                            && cropRightW >= 0,
-                            "Invalid arguments: crop dimensions must be > 0. Got " + Arrays.toString(this.cropping));
+            this.setCropping(new int[] {cropLeftD, cropRightD, cropLeftH, cropRightH, cropLeftW, cropRightW});
         }
 
         public Cropping3DLayer build() {
             return new Cropping3DLayer(this);
+        }
+
+        public void setCropping(int[] cropping) {
+            int[] crop = ValidationUtils.validate6(cropping, "cropping");
+
+            if(crop == null){
+                this.cropping = null;
+                return;
+            }
+
+            Preconditions.checkArgument(crop[0] >= 0 && crop[1] >= 0
+                            && crop[2] >= 0 && crop[3] >= 0
+                            && crop[4] >= 0 && crop[5] >= 0,
+                    "Invalid arguments: crop dimensions must be >= 0. Got [ld, rd, lh, rh, lw, rw] = "
+                            + Arrays.toString(this.cropping));
+
+            this.cropping = crop;
         }
     }
 }
