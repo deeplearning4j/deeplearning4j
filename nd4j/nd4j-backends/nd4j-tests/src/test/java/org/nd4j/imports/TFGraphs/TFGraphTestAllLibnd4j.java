@@ -77,12 +77,12 @@ public class TFGraphTestAllLibnd4j {
             //Exceptions - need to look into:
             "alpha_dropout/.*",
             "layers_dropout/.*",
-            "losses/.*",
+            //"losses/.*",
 
             //These can't pass until this is fixed: https://github.com/deeplearning4j/deeplearning4j/issues/6465#issuecomment-424209155
             //i.e., reduction ops with newFormat/keepDims args
-            "l2_normalize/.*",
-            "norm_tests/.*",
+            //"l2_normalize/.*",
+            //"norm_tests/.*",
             "g_06",
 
             //JVM crashes
