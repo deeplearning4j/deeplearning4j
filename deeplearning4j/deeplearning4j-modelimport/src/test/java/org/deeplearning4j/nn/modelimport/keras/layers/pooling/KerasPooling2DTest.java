@@ -18,7 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.pooling;
 
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -72,7 +72,7 @@ public class KerasPooling2DTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        SubsamplingLayer layer = new KerasPooling2D(layerConfig).getSubsampling2DLayer();
+        Subsampling2DLayer layer = new KerasPooling2D(layerConfig).getSubsampling2DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertArrayEquals(KERNEL_SIZE, layer.getKernelSize());
         assertArrayEquals(STRIDE, layer.getStride());

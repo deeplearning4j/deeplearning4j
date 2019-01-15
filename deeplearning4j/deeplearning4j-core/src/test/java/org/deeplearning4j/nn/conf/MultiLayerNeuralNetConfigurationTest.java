@@ -23,6 +23,11 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.upsampling.Upsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -94,13 +99,13 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .l1(1e-1).l2(2e-4).weightNoise(new DropConnect(0.5)).miniBatch(true)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
-                        .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
+                        .layer(0, new Convolution2DLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
+                        .layer(1, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX, new int[] {2, 2})
                                         .build())
-                        .layer(2, new ConvolutionLayer.Builder(3, 3).nOut(10).dropOut(0.5).weightInit(WeightInit.XAVIER)
+                        .layer(2, new Convolution2DLayer.Builder(3, 3).nOut(10).dropOut(0.5).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
-                        .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
+                        .layer(3, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX, new int[] {2, 2})
                                         .build())
                         .layer(4, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
@@ -127,12 +132,12 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                 .l1(1e-1).l2(2e-4).dropOut(0.5).miniBatch(true)
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
-                .layer(new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
+                .layer(new Convolution2DLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
                         .activation(Activation.RELU).build())
-                .layer(new Upsampling2D.Builder().size(2).build())
-                .layer(2, new ConvolutionLayer.Builder(3, 3).nOut(10).dropOut(0.5).weightInit(WeightInit.XAVIER)
+                .layer(new Upsampling2DLayer.Builder().size(2).build())
+                .layer(2, new Convolution2DLayer.Builder(3, 3).nOut(10).dropOut(0.5).weightInit(WeightInit.XAVIER)
                         .activation(Activation.RELU).build())
-                .layer(new Upsampling2D.Builder().size(2).build())
+                .layer(new Upsampling2DLayer.Builder().size(2).build())
                 .layer(4, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())
                 .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
@@ -150,7 +155,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
     public void testGlobalPoolingJson() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                         .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                        .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(5).build())
+                        .layer(0, new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(5).build())
                         .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.PNORM).pnorm(3).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(3).build())
@@ -353,7 +358,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
         //setup the network
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new Adam(1e-2))
                         .biasUpdater(new Adam(0.5)).list()
-                        .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).weightInit(WeightInit.XAVIER)
+                        .layer(0, new Convolution2DLayer.Builder(5, 5).nOut(5).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
                         .layer(1, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())
                         .layer(2, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())

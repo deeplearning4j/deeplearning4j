@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers.samediff;
 
+import java.util.Map;
 import lombok.Data;
 import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -31,8 +32,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.util.ArrayUtil;
-
-import java.util.Map;
 
 /**
  * A SameDiff-based GraphVertex. May have multiple inputs, but only one output. Supports trainable parameters.<br>

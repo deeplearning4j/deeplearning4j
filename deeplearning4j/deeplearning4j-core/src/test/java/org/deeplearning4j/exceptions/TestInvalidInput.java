@@ -22,6 +22,13 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -98,7 +105,7 @@ public class TestInvalidInput extends BaseDL4JTest {
     @Test
     public void testLabelsNOutMismatchRnnOutputLayer() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new GravesLSTM.Builder().nIn(5).nOut(5).build())
+                        .layer(0, new GravesLSTMLayer.Builder().nIn(5).nOut(5).build())
                         .layer(1, new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -125,7 +132,7 @@ public class TestInvalidInput extends BaseDL4JTest {
         int d = 3;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new ConvolutionLayer.Builder().nIn(d).nOut(5).build())
+                        .layer(0, new Convolution2DLayer.Builder().nIn(d).nOut(5).build())
                         .layer(1, new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(h, w, d)).build();
 
@@ -152,7 +159,7 @@ public class TestInvalidInput extends BaseDL4JTest {
         int d = 3;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new ConvolutionLayer.Builder().nIn(d).nOut(5).build())
+                        .layer(0, new Convolution2DLayer.Builder().nIn(d).nOut(5).build())
                         .layer(1, new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(h, w, d)).build();
 
@@ -178,7 +185,7 @@ public class TestInvalidInput extends BaseDL4JTest {
         int d = 3;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new SubsamplingLayer.Builder().kernelSize(2, 2).build())
+                        .layer(0, new Subsampling2DLayer.Builder().kernelSize(2, 2).build())
                         .layer(1, new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(h, w, d)).build();
 
@@ -201,7 +208,7 @@ public class TestInvalidInput extends BaseDL4JTest {
     public void testInputNinMismatchLSTM() {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new GravesLSTM.Builder().nIn(5).nOut(5).build())
+                        .layer(0, new GravesLSTMLayer.Builder().nIn(5).nOut(5).build())
                         .layer(1, new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -222,7 +229,7 @@ public class TestInvalidInput extends BaseDL4JTest {
     public void testInputNinMismatchBidirectionalLSTM() {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new GravesBidirectionalLSTM.Builder().nIn(5).nOut(5).build())
+                        .layer(0, new GravesBidirectionalLSTMLayer.Builder().nIn(5).nOut(5).build())
                         .layer(1, new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -268,7 +275,7 @@ public class TestInvalidInput extends BaseDL4JTest {
         //(i.e., not calling reset between time steps)
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new GravesLSTM.Builder().nIn(5).nOut(5).build())
+                        .layer(0, new GravesLSTMLayer.Builder().nIn(5).nOut(5).build())
                         .layer(1, new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

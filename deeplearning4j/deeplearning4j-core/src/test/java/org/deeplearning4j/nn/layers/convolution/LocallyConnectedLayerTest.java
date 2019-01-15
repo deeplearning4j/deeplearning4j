@@ -23,22 +23,17 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -60,7 +55,7 @@ public class LocallyConnectedLayerTest extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4)
                         .updater(new Nesterovs(0.9)).dropOut(0.5)
                         .list()
-                        .layer(new LocallyConnected2D.Builder().kernelSize(8, 8).nIn(3)
+                        .layer(new LocallyConnected2DLayer.Builder().kernelSize(8, 8).nIn(3)
                                                         .stride(4, 4).nOut(16).dropOut(0.5)
                                                         .convolutionMode(ConvolutionMode.Strict)
                                                         .setInputSize(28, 28)
@@ -87,7 +82,7 @@ public class LocallyConnectedLayerTest extends BaseDL4JTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4)
                 .updater(new Nesterovs(0.9)).dropOut(0.5)
                 .list()
-                .layer(new LocallyConnected1D.Builder().kernelSize(8).nIn(3)
+                .layer(new LocallyConnected1DLayer.Builder().kernelSize(8).nIn(3)
                         .stride(1).nOut(16).dropOut(0.5)
                         .convolutionMode(ConvolutionMode.Strict)
                         .setInputSize(28)

@@ -24,7 +24,7 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 
 /**
  * Layer hyperparameter configuration space for subsampling layers
@@ -34,10 +34,10 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
-public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
+public class SubsamplingLayerSpace extends LayerSpace<Subsampling2DLayer> {
 
     protected ParameterSpace<ConvolutionMode> convolutionMode;
-    protected ParameterSpace<SubsamplingLayer.PoolingType> poolingType;
+    protected ParameterSpace<Subsampling2DLayer.PoolingType> poolingType;
     protected ParameterSpace<int[]> dilation;
     protected ParameterSpace<int[]> kernelSize;
     protected ParameterSpace<int[]> stride;
@@ -60,13 +60,13 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
     }
 
     @Override
-    public SubsamplingLayer getValue(double[] values) {
-        SubsamplingLayer.Builder b = new SubsamplingLayer.Builder();
+    public Subsampling2DLayer getValue(double[] values) {
+        Subsampling2DLayer.Builder b = new Subsampling2DLayer.Builder();
         setLayerOptionsBuilder(b, values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(SubsamplingLayer.Builder builder, double[] values) {
+    protected void setLayerOptionsBuilder(Subsampling2DLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
         if (convolutionMode != null)
             builder.convolutionMode(convolutionMode.getValue(values));
@@ -118,7 +118,7 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
     public static class Builder extends FeedForwardLayerSpace.Builder<Builder> {
 
         protected ParameterSpace<ConvolutionMode> convolutionMode;
-        protected ParameterSpace<SubsamplingLayer.PoolingType> poolingType;
+        protected ParameterSpace<Subsampling2DLayer.PoolingType> poolingType;
         protected ParameterSpace<int[]> dilation;
         protected ParameterSpace<int[]> kernelSize;
         protected ParameterSpace<int[]> stride;
@@ -135,11 +135,11 @@ public class SubsamplingLayerSpace extends LayerSpace<SubsamplingLayer> {
             return this;
         }
 
-        public Builder poolingType(SubsamplingLayer.PoolingType poolingType) {
+        public Builder poolingType(Subsampling2DLayer.PoolingType poolingType) {
             return poolingType(new FixedValue<>(poolingType));
         }
 
-        public Builder poolingType(ParameterSpace<SubsamplingLayer.PoolingType> poolingType) {
+        public Builder poolingType(ParameterSpace<Subsampling2DLayer.PoolingType> poolingType) {
             this.poolingType = poolingType;
             return this;
         }

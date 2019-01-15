@@ -21,7 +21,7 @@ import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.SeparableConvolution2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.SeparableConvolution2DLayer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -52,7 +52,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public long numParams(Layer l) {
-        SeparableConvolution2D layerConf = (SeparableConvolution2D) l;
+        SeparableConvolution2DLayer layerConf = (SeparableConvolution2DLayer) l;
 
         val depthWiseParams = numDepthWiseParams(layerConf);
         val pointWiseParams = numPointWiseParams(layerConf);
@@ -61,7 +61,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         return depthWiseParams + pointWiseParams + biasParams;
     }
 
-    private long numBiasParams(SeparableConvolution2D layerConf) {
+    private long numBiasParams(SeparableConvolution2DLayer layerConf) {
         val nOut = layerConf.getNOut();
         return (layerConf.hasBias() ? nOut : 0);
     }
@@ -73,7 +73,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
      * @param layerConf layer configuration of the separable conv2d layer
      * @return number of parameters of the channels-wise convolution operation
      */
-    private long numDepthWiseParams(SeparableConvolution2D layerConf) {
+    private long numDepthWiseParams(SeparableConvolution2DLayer layerConf) {
         int[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
         val depthMultiplier = layerConf.getDepthMultiplier();
@@ -88,7 +88,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
      * @param layerConf layer configuration of the separable conv2d layer
      * @return number of parameters of the point-wise convolution operation
      */
-    private long numPointWiseParams(SeparableConvolution2D layerConf) {
+    private long numPointWiseParams(SeparableConvolution2DLayer layerConf) {
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
         val depthMultiplier = layerConf.getDepthMultiplier();
@@ -98,8 +98,8 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public List<String> paramKeys(Layer layer) {
-        SeparableConvolution2D layerConf =
-                (SeparableConvolution2D) layer;
+        SeparableConvolution2DLayer layerConf =
+                (SeparableConvolution2DLayer) layer;
         if(layerConf.hasBias()){
             return Arrays.asList(DEPTH_WISE_WEIGHT_KEY, POINT_WISE_WEIGHT_KEY, BIAS_KEY);
         } else {
@@ -114,8 +114,8 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public List<String> biasKeys(Layer layer) {
-        SeparableConvolution2D layerConf =
-                (SeparableConvolution2D) layer;
+        SeparableConvolution2DLayer layerConf =
+                (SeparableConvolution2DLayer) layer;
         if(layerConf.hasBias()){
             return Collections.singletonList(BIAS_KEY);
         } else {
@@ -136,11 +136,11 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        SeparableConvolution2D layer = (SeparableConvolution2D) conf.getLayer();
+        SeparableConvolution2DLayer layer = (SeparableConvolution2DLayer) conf.getLayer();
         if (layer.getKernelSize().length != 2) throw new IllegalArgumentException("Filter size must be == 2");
 
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
-        SeparableConvolution2D layerConf = (SeparableConvolution2D) conf.getLayer();
+        SeparableConvolution2DLayer layerConf = (SeparableConvolution2DLayer) conf.getLayer();
 
         val depthWiseParams = numDepthWiseParams(layerConf);
         val biasParams = numBiasParams(layerConf);
@@ -167,8 +167,8 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
 
-        SeparableConvolution2D layerConf =
-                        (SeparableConvolution2D) conf.getLayer();
+        SeparableConvolution2DLayer layerConf =
+                        (SeparableConvolution2DLayer) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
@@ -197,8 +197,8 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
     }
 
     protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasView, boolean initializeParams) {
-        SeparableConvolution2D layerConf =
-                        (SeparableConvolution2D) conf.getLayer();
+        SeparableConvolution2DLayer layerConf =
+                        (SeparableConvolution2DLayer) conf.getLayer();
         if (initializeParams)
             biasView.assign(layerConf.getBiasInit());
         return biasView;
@@ -210,8 +210,8 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
          Create a 4d weight matrix of: (channels multiplier, num input channels, kernel height, kernel width)
          Inputs to the convolution layer are: (batch size, num input feature maps, image height, image width)
          */
-        SeparableConvolution2D layerConf =
-                        (SeparableConvolution2D) conf.getLayer();
+        SeparableConvolution2DLayer layerConf =
+                        (SeparableConvolution2DLayer) conf.getLayer();
         int depthMultiplier = layerConf.getDepthMultiplier();
 
         if (initializeParams) {
@@ -240,8 +240,8 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
          Create a 4d weight matrix of: (num output channels, channels multiplier * num input channels,
          kernel height, kernel width)
          */
-        SeparableConvolution2D layerConf =
-                (SeparableConvolution2D) conf.getLayer();
+        SeparableConvolution2DLayer layerConf =
+                (SeparableConvolution2DLayer) conf.getLayer();
         int depthMultiplier = layerConf.getDepthMultiplier();
 
         if (initializeParams) {

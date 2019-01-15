@@ -16,13 +16,11 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
-import org.deeplearning4j.nn.conf.layers.Upsampling2D;
-import org.deeplearning4j.nn.conf.layers.ZeroPadding1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.upsampling.Upsampling2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasUpsampling2D;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasZeroPadding1D;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -64,7 +62,7 @@ public class KerasUpsampling2DTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        Upsampling2D layer = new KerasUpsampling2D(layerConfig).getUpsampling2DLayer();
+        Upsampling2DLayer layer = new KerasUpsampling2D(layerConfig).getUpsampling2DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(size[0], layer.getSize()[0]);
         assertEquals(size[1], layer.getSize()[1]);

@@ -25,6 +25,10 @@ import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.LocalResponseNormalizationLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.zoo.ModelMetaData;
 import org.deeplearning4j.zoo.PretrainedType;
@@ -62,7 +66,7 @@ public class AlexNet extends ZooModel {
     @Builder.Default private IUpdater updater = new Nesterovs(1e-2, 0.9);
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    @Builder.Default private Convolution2DLayer.AlgoMode cudnnAlgoMode = Convolution2DLayer.AlgoMode.PREFER_FASTEST;
 
     private AlexNet() {}
 
@@ -98,53 +102,55 @@ public class AlexNet extends ZooModel {
                         .l2(5 * 1e-4)
                         .miniBatch(false)
                         .list()
-                .layer(0, new ConvolutionLayer.Builder(new int[]{11,11}, new int[]{4, 4})
+                .layer(0, new Convolution2DLayer.Builder(new int[]{11,11}, new int[]{4, 4})
                         .name("cnn1")
-                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
+                        .cudnnAlgoMode(Convolution2DLayer.AlgoMode.PREFER_FASTEST)
                         .convolutionMode(ConvolutionMode.Truncate)
                         .nIn(inputShape[0])
                         .nOut(96)
                         .build())
-                .layer(1, new LocalResponseNormalization.Builder().build())
-                .layer(2, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                .layer(1, new LocalResponseNormalizationLayer.Builder().build())
+                .layer(2, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX)
                         .kernelSize(3,3)
                         .stride(2,2)
                         .padding(1,1)
                         .name("maxpool1")
                         .build())
-                .layer(3, new ConvolutionLayer.Builder(new int[]{5,5}, new int[]{1,1}, new int[]{2,2})
+                .layer(3, new Convolution2DLayer.Builder(new int[]{5,5}, new int[]{1,1}, new int[]{2,2})
                         .name("cnn2")
-                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
+                        .cudnnAlgoMode(Convolution2DLayer.AlgoMode.PREFER_FASTEST)
                         .convolutionMode(ConvolutionMode.Truncate)
                         .nOut(256)
                         .biasInit(nonZeroBias)
                         .build())
-                .layer(4, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3, 3}, new int[]{2, 2})
+                .layer(4, new Subsampling2DLayer.Builder(
+                        Subsampling2DLayer.PoolingType.MAX, new int[]{3, 3}, new int[]{2, 2})
                         .convolutionMode(ConvolutionMode.Truncate)
                         .name("maxpool2")
                         .build())
-                .layer(5, new LocalResponseNormalization.Builder().build())
-                .layer(6, new ConvolutionLayer.Builder()
+                .layer(5, new LocalResponseNormalizationLayer.Builder().build())
+                .layer(6, new Convolution2DLayer.Builder()
                         .kernelSize(3,3)
                         .stride(1,1)
                         .convolutionMode(ConvolutionMode.Same)
                         .name("cnn3")
-                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
+                        .cudnnAlgoMode(Convolution2DLayer.AlgoMode.PREFER_FASTEST)
                         .nOut(384)
                         .build())
-                .layer(7, new ConvolutionLayer.Builder(new int[]{3,3}, new int[]{1,1})
+                .layer(7, new Convolution2DLayer.Builder(new int[]{3,3}, new int[]{1,1})
                         .name("cnn4")
-                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
+                        .cudnnAlgoMode(Convolution2DLayer.AlgoMode.PREFER_FASTEST)
                         .nOut(384)
                         .biasInit(nonZeroBias)
                         .build())
-                .layer(8, new ConvolutionLayer.Builder(new int[]{3,3}, new int[]{1,1})
+                .layer(8, new Convolution2DLayer.Builder(new int[]{3,3}, new int[]{1,1})
                         .name("cnn5")
-                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
+                        .cudnnAlgoMode(Convolution2DLayer.AlgoMode.PREFER_FASTEST)
                         .nOut(256)
                         .biasInit(nonZeroBias)
                         .build())
-                .layer(9, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3,3}, new int[]{2,2})
+                .layer(9, new Subsampling2DLayer.Builder(
+                        Subsampling2DLayer.PoolingType.MAX, new int[]{3,3}, new int[]{2,2})
                         .name("maxpool3")
                         .convolutionMode(ConvolutionMode.Truncate)
                         .build())

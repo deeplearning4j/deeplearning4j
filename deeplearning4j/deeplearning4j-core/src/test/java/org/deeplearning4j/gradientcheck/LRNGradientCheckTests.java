@@ -22,8 +22,8 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.LocalResponseNormalization;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.LocalResponseNormalizationLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
@@ -71,9 +71,9 @@ public class LRNGradientCheckTests extends BaseDL4JTest {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
                         .seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
-                        .layer(0, new ConvolutionLayer.Builder().nOut(6).kernelSize(2, 2).stride(1, 1)
+                        .layer(0, new Convolution2DLayer.Builder().nOut(6).kernelSize(2, 2).stride(1, 1)
                                         .activation(Activation.TANH).build())
-                        .layer(1, new LocalResponseNormalization.Builder().build())
+                        .layer(1, new LocalResponseNormalizationLayer.Builder().build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(nOut).build())
                         .setInputType(InputType.convolutional(hw, hw, depth));

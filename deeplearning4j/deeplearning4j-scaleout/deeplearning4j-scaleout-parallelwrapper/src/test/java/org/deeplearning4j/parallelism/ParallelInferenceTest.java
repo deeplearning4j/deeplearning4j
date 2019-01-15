@@ -26,6 +26,12 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.CnnLossLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -398,7 +404,7 @@ public class ParallelInferenceTest {
                 .activation(Activation.TANH)
                 .seed(12345)
                 .list()
-                .layer(new LSTM.Builder().nIn(nIn).nOut(5).build())
+                .layer(new LSTMLayer.Builder().nIn(nIn).nOut(5).build())
                 .layer(new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build())
                 .build();
 
@@ -441,7 +447,7 @@ public class ParallelInferenceTest {
                 .activation(Activation.TANH)
                 .seed(12345)
                 .list()
-                .layer(new LSTM.Builder().nIn(nIn).nOut(5).build())
+                .layer(new LSTMLayer.Builder().nIn(nIn).nOut(5).build())
                 .layer(new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build())
                 .build();
 
@@ -506,7 +512,7 @@ public class ParallelInferenceTest {
                 .activation(Activation.TANH)
                 .seed(12345)
                 .list()
-                .layer(new ConvolutionLayer.Builder().nIn(nIn).nOut(5).build())
+                .layer(new Convolution2DLayer.Builder().nIn(nIn).nOut(5).build())
                 .layer(new CnnLossLayer.Builder().activation(Activation.SOFTMAX).build())
                 .build();
 
@@ -555,7 +561,7 @@ public class ParallelInferenceTest {
                 .seed(12345)
                 .convolutionMode(ConvolutionMode.Same)
                 .list()
-                .layer(new ConvolutionLayer.Builder().nIn(nIn).nOut(5).build())
+                .layer(new Convolution2DLayer.Builder().nIn(nIn).nOut(5).build())
                 .layer(new CnnLossLayer.Builder().activation(Activation.SOFTMAX).build())
                 .build();
 
@@ -668,7 +674,7 @@ public class ParallelInferenceTest {
                 .activation(Activation.TANH)
                 .seed(12345)
                 .list()
-                .layer(new LSTM.Builder().nIn(nIn).nOut(5).build())
+                .layer(new LSTMLayer.Builder().nIn(nIn).nOut(5).build())
                 .layer(new GlobalPoolingLayer(PoolingType.AVG))
                 .layer(new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build())
                 .build();

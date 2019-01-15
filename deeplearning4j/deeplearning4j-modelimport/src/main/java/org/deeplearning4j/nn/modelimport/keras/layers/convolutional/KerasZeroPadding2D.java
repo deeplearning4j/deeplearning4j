@@ -20,7 +20,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.ZeroPadding2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -64,7 +64,7 @@ public class KerasZeroPadding2D extends KerasLayer {
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         String paddingField = conf.getLAYER_FIELD_ZERO_PADDING();
-        ZeroPaddingLayer.Builder builder = new ZeroPaddingLayer.Builder(
+        ZeroPadding2DLayer.Builder builder = new ZeroPadding2DLayer.Builder(
                 getPaddingFromConfig(layerConfig, conf, paddingField, 2))
                 .name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
@@ -76,8 +76,8 @@ public class KerasZeroPadding2D extends KerasLayer {
      *
      * @return  ZeroPadding2DLayer
      */
-    public ZeroPaddingLayer getZeroPadding2DLayer() {
-        return (ZeroPaddingLayer) this.layer;
+    public ZeroPadding2DLayer getZeroPadding2DLayer() {
+        return (ZeroPadding2DLayer) this.layer;
     }
 
     /**

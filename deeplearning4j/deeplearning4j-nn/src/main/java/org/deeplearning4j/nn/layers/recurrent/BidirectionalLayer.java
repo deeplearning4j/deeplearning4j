@@ -16,6 +16,16 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
+import static org.nd4j.linalg.indexing.NDArrayIndex.point;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.val;
@@ -25,7 +35,6 @@ import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.LayerHelper;
@@ -40,17 +49,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.*;
-
-import static org.nd4j.linalg.indexing.NDArrayIndex.*;
-
 /**
- * Bidirectional is a "wrapper" layer: it wraps any uni-directional RNN layer to make it bidirectional.<br>
+ * BidirectionalLayer is a "wrapper" layer: it wraps any uni-directional RNN layer to make it bidirectional.<br>
  * Note that multiple different modes are supported - these specify how the activations should be combined from
- * the forward and backward RNN networks. See {@link Bidirectional.Mode} javadoc for more details.<br>
+ * the forward and backward RNN networks. See {@link org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer.Mode} javadoc for more details.<br>
  * Parameters are not shared here - there are 2 separate copies of the wrapped RNN layer, each with separate parameters.
  * <br>
- * Usage: {@code .layer(new Bidirectional(new LSTM.Builder()....build())}
+ * Usage: {@code .layer(new BidirectionalLayer(new LSTMLayer.Builder()....build())}
  *
  * @author Alex Black
  */
@@ -60,7 +65,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     private Layer fwd;
     private Layer bwd;
 
-    private Bidirectional layerConf;
+    private org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer layerConf;
     private INDArray paramsView;
     private INDArray gradientView;
     private transient Map<String, INDArray> gradientViews;
@@ -74,7 +79,7 @@ public class BidirectionalLayer implements RecurrentLayer {
         this.conf = conf;
         this.fwd = fwd;
         this.bwd = bwd;
-        this.layerConf = (Bidirectional) conf.getLayer();
+        this.layerConf = (org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer) conf.getLayer();
         this.paramsView = paramsView;
     }
 

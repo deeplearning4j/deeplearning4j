@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import java.util.Collection;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -32,9 +34,6 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * LossLayer is a flexible output layer that performs a loss function on an input without MLP logic.<br> LossLayer is

@@ -40,7 +40,18 @@ import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.convolutional.CnnLossLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.ZeroPadding2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.LocalResponseNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
@@ -391,7 +402,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         //First: check FF -> RNN
         ComputationGraphConfiguration conf1 = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .setInputTypes(InputType.feedForward(5))
-                .addLayer("rnn", new GravesLSTM.Builder().nOut(5).build(), "in")
+                .addLayer("rnn", new GravesLSTMLayer.Builder().nOut(5).build(), "in")
                 .addLayer("out", new RnnOutputLayer.Builder().nOut(5).activation(Activation.SOFTMAX).build(), "rnn").setOutputs("out").build();
 
         assertEquals(5, ((FeedForwardLayer) ((LayerVertex) conf1.getVertices().get("rnn")).getLayerConf().getLayer())
@@ -424,10 +435,10 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         //CNN -> Dense
         ComputationGraphConfiguration conf3 = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .setInputTypes(InputType.convolutional(28, 28, 1))
-                .addLayer("cnn", new ConvolutionLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(2, 2)
+                .addLayer("cnn", new Convolution2DLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(2, 2)
                         .nOut(3).build(), "in") //(28-2+0)/2+1 = 14
                 .addLayer("pool",
-                        new SubsamplingLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(2, 2)
+                        new Subsampling2DLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(2, 2)
                                 .build(),
                         "cnn") //(14-2+0)/2+1=7
                 .addLayer("dense", new DenseLayer.Builder().nOut(10).build(), "pool")
@@ -454,10 +465,10 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraphConfiguration conf4 =
                 new NeuralNetConfiguration.Builder().graphBuilder().addInputs("inCNN", "inRNN")
                         .setInputTypes(InputType.convolutional(28, 28, 1), InputType.recurrent(5))
-                        .addLayer("cnn", new ConvolutionLayer.Builder().kernelSize(2, 2).padding(0, 0)
+                        .addLayer("cnn", new Convolution2DLayer.Builder().kernelSize(2, 2).padding(0, 0)
                                 .stride(2, 2).nOut(3).build(), "inCNN") //(28-2+0)/2+1 = 14
                         .addLayer("pool",
-                                new SubsamplingLayer.Builder().kernelSize(2, 2).padding(0, 0)
+                                new Subsampling2DLayer.Builder().kernelSize(2, 2).padding(0, 0)
                                         .stride(2, 2).build(),
                                 "cnn") //(14-2+0)/2+1=7
                         .addLayer("dense", new DenseLayer.Builder().nOut(10).build(), "pool")
@@ -495,15 +506,15 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                         .graphBuilder().addInputs("input")
                         .setInputTypes(InputType.convolutional(28, 28, 1))
                         .addLayer("cnn_1",
-                                new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(3)
+                                new Convolution2DLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(3)
                                         .build(),
                                 "input")
                         .addLayer("cnn_2",
-                                new ConvolutionLayer.Builder(4, 4).stride(2, 2).padding(1, 1)
+                                new Convolution2DLayer.Builder(4, 4).stride(2, 2).padding(1, 1)
                                         .nIn(1).nOut(3).build(),
                                 "input")
                         .addLayer("max_1",
-                                new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX)
                                         .kernelSize(2, 2).build(),
                                 "cnn_1", "cnn_2")
                         .addLayer("output", new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build(), "max_1") //.nIn(7 * 7 * 6)
@@ -874,7 +885,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .setInputTypes(InputType.convolutional(10, 8, 3))
                 .addLayer("layer",
-                        new ConvolutionLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(1, 1)
+                        new Convolution2DLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(1, 1)
                                 .build(),
                         "in")
                 .addLayer("out", new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build(), "layer").setOutputs("out")
@@ -891,7 +902,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .setInputTypes(InputType.convolutionalFlat(10, 8, 3))
                 .addLayer("layer",
-                        new ConvolutionLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(1, 1)
+                        new Convolution2DLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(1, 1)
                                 .build(),
                         "in")
                 .addLayer("out", new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build(), "layer").setOutputs("out")
@@ -912,10 +923,10 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         //Finally, check configuration with a subsampling layer
         conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .setInputTypes(InputType.convolutionalFlat(10, 8, 3))
-                .addLayer("l0", new SubsamplingLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                .addLayer("l0", new Subsampling2DLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                         .build(), "in")
                 .addLayer("layer",
-                        new ConvolutionLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(1, 1)
+                        new Convolution2DLayer.Builder().kernelSize(2, 2).padding(0, 0).stride(1, 1)
                                 .build(),
                         "l0")
                 .addLayer("out", new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build(), "layer").setOutputs("out")
@@ -923,7 +934,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
         //Check subsampling layer:
         lv = (LayerVertex) conf.getVertices().get("l0");
-        SubsamplingLayer sl = ((SubsamplingLayer) (lv).getLayerConf().getLayer());
+        Subsampling2DLayer sl = ((Subsampling2DLayer) (lv).getLayerConf().getLayer());
         assertNotNull(lv.getPreProcessor());
         preProcessor = lv.getPreProcessor();
         assertTrue(preProcessor instanceof FeedForwardToCnnPreProcessor);
@@ -1128,12 +1139,12 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraphConfiguration c =
                 new NeuralNetConfiguration.Builder().l1(0.5).l2(0.6).graphBuilder()
                         .addInputs("in")
-                        .addLayer("sub1", new SubsamplingLayer.Builder(2, 2).build(), "in")
+                        .addLayer("sub1", new Subsampling2DLayer.Builder(2, 2).build(), "in")
                         .addLayer("sub2", new Subsampling1DLayer.Builder(2).build(), "sub1")
                         .addLayer("act", new ActivationLayer.Builder().activation(Activation.TANH)
                                 .build(), "sub2")
-                        .addLayer("pad", new ZeroPaddingLayer.Builder(2, 3).build(), "act")
-                        .addLayer("lrn", new LocalResponseNormalization.Builder().build(), "pad")
+                        .addLayer("pad", new ZeroPadding2DLayer.Builder(2, 3).build(), "act")
+                        .addLayer("lrn", new LocalResponseNormalizationLayer.Builder().build(), "pad")
                         .addLayer("pool", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(),
                                 "act")
                         .addLayer("drop", new DropoutLayer.Builder(0.5).build(), "pool")
@@ -1215,7 +1226,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("input")
-                .addLayer("L1", new ConvolutionLayer.Builder(new int[]{1, 1}, new int[]{1, 1}, new int[]{0, 0}).nIn(depth).nOut(depth)
+                .addLayer("L1", new Convolution2DLayer.Builder(new int[]{1, 1}, new int[]{1, 1}, new int[]{0, 0}).nIn(depth).nOut(depth)
                         .build(), "input")
                 .addVertex("L2", new ReshapeVertex(minibatch, 1, 36, 48), "L1")
                 .setOutputs("L2")
@@ -1279,18 +1290,18 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 new NeuralNetConfiguration.Builder().seed(12345).l2(0.001) //l2 regularization on all layers
                         .updater(new AdaGrad(0.4)).graphBuilder()
                         .addInputs("in")
-                        .addLayer("layer0", new ConvolutionLayer.Builder(10, 10).nIn(3) //3 channels: RGB
+                        .addLayer("layer0", new Convolution2DLayer.Builder(10, 10).nIn(3) //3 channels: RGB
                                 .nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(
                                         WeightInit.RELU).build(),"in") //Output: (130-10+0)/4+1 = 31 -> 31*31*30
-                        .addLayer("layer1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                        .addLayer("layer1", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX)
                                 .kernelSize(3, 3).stride(2, 2).build(),"layer0") //(31-3+0)/2+1 = 15
-                        .addLayer("layer2", new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
+                        .addLayer("layer2", new Convolution2DLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
                                 .activation(Activation.RELU).weightInit(WeightInit.RELU)
                                 .updater(Updater.ADAGRAD).build(), "layer1") //Output: (15-3+0)/2+1 = 7 -> 7*7*10 = 490
                         .addLayer("layer3", new DenseLayer.Builder().activation(Activation.RELU).nIn(490).nOut(50)
                                 .weightInit(WeightInit.RELU).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                 .gradientNormalizationThreshold(10).build(), "layer2")
-                        .addLayer("layer4", new GravesLSTM.Builder().activation(Activation.SOFTSIGN).nIn(50)
+                        .addLayer("layer4", new GravesLSTMLayer.Builder().activation(Activation.SOFTSIGN).nIn(50)
                                 .nOut(50).weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD)
                                 .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                 .gradientNormalizationThreshold(10)
@@ -1322,8 +1333,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .convolutionMode(ConvolutionMode.Same)
                 .graphBuilder()
                 .addInputs("in")
-                .addLayer("0", new ConvolutionLayer.Builder().kernelSize(2,2).stride(1,1).nIn(1).nOut(1).build(), "in")
-                .addLayer("1", new SubsamplingLayer.Builder().kernelSize(2,2).stride(1,1).build(), "0")
+                .addLayer("0", new Convolution2DLayer.Builder().kernelSize(2,2).stride(1,1).nIn(1).nOut(1).build(), "in")
+                .addLayer("1", new Subsampling2DLayer.Builder().kernelSize(2,2).stride(1,1).build(), "0")
                 .addLayer("2", new DenseLayer.Builder().nOut(10).build(), "1")
                 .addLayer("3", new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build(), "2")
                 .setOutputs("3")
@@ -1389,8 +1400,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
                 .graphBuilder()
                 .addInputs("in")
-                .layer("0", new ConvolutionLayer.Builder().kernelSize(2,2).nOut(6).build(), "in")
-                .layer("1", new SubsamplingLayer.Builder().kernelSize(2,2).build(), "0")
+                .layer("0", new Convolution2DLayer.Builder().kernelSize(2,2).nOut(6).build(), "in")
+                .layer("1", new Subsampling2DLayer.Builder().kernelSize(2,2).build(), "0")
                 .layer("2", new DenseLayer.Builder().nOut(30).build(), "1")
                 .layer("3", new OutputLayer.Builder().nOut(13).activation(Activation.SOFTMAX).build(), "2")
                 .setOutputs("3")
@@ -1427,7 +1438,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
-                .layer("0", new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2).build(), "in")
+                .layer("0", new Subsampling2DLayer.Builder().kernelSize(2,2).stride(2,2).build(), "in")
                 .layer("1", new LossLayer.Builder().activation(Activation.SIGMOID).lossFunction(LossFunctions.LossFunction.MSE).build(), "0")
                 .setOutputs("1")
                 .setInputTypes(InputType.convolutionalFlat(28,28,1))
@@ -1758,7 +1769,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .addInputs("in1", "in2")
                 .addVertex("merge", new MergeVertex(), "in1", "in2")
                 .addLayer("lstm",
-                        new Bidirectional(Bidirectional.Mode.CONCAT, new LSTM.Builder()
+                        new BidirectionalLayer(BidirectionalLayer.Mode.CONCAT, new LSTMLayer.Builder()
                                 .nIn(10).nOut(5)
                                 .activation(Activation.TANH)
                                 .dropOut(new GaussianNoise(0.05))
@@ -1891,7 +1902,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .setInputTypes(inputType)
                 .addInputs("input")
                 .setOutputs("output")
-                .addLayer("0", new ConvolutionLayer.Builder().nOut(5).convolutionMode(ConvolutionMode.Same).build(),"input" )
+                .addLayer("0", new Convolution2DLayer.Builder().nOut(5).convolutionMode(ConvolutionMode.Same).build(),"input" )
                 .addVertex("dummyAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "0")
                 .addLayer("output", new CnnLossLayer(), "dummyAdd")
                 .build());

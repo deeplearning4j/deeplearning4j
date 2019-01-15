@@ -20,21 +20,18 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
-import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
-import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
 
 /**
- * Layer space for LSTM layers
+ * Layer space for LSTMLayer layers
  *
  * @author Alex Black
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
-public class LSTMLayerSpace extends AbstractLSTMLayerSpace<LSTM> {
+public class LSTMLayerSpace extends AbstractLSTMLayerSpace<LSTMLayer> {
 
     private LSTMLayerSpace(Builder builder) {
         super(builder);
@@ -44,13 +41,13 @@ public class LSTMLayerSpace extends AbstractLSTMLayerSpace<LSTM> {
 
 
     @Override
-    public LSTM getValue(double[] values) {
-        LSTM.Builder b = new LSTM.Builder();
+    public LSTMLayer getValue(double[] values) {
+        LSTMLayer.Builder b = new LSTMLayer.Builder();
         setLayerOptionsBuilder(b, values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(LSTM.Builder builder, double[] values) {
+    protected void setLayerOptionsBuilder(LSTMLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
     }
 

@@ -22,10 +22,10 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -156,9 +156,9 @@ public class TestFrozenLayers extends BaseDL4JTest {
                 .convolutionMode(ConvolutionMode.Same)
                 .updater(new Sgd(0.3))
                 .list()
-                .layer(new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).build())
-                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(1,1).build())
-                .layer(new ConvolutionLayer.Builder().nIn(3).nOut(3).kernelSize(2,2).stride(1,1).build())
+                .layer(new Convolution2DLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).build())
+                .layer(new Subsampling2DLayer.Builder().kernelSize(2,2).stride(1,1).build())
+                .layer(new Convolution2DLayer.Builder().nIn(3).nOut(3).kernelSize(2,2).stride(1,1).build())
                 .layer(new DenseLayer.Builder().nOut(64).build())
                 .layer(new DenseLayer.Builder().nIn(64).nOut(64).build())
                 .layer(new OutputLayer.Builder().nIn(64).nOut(10).lossFunction(LossFunctions.LossFunction.MSE).build())
@@ -180,9 +180,9 @@ public class TestFrozenLayers extends BaseDL4JTest {
                 .updater(new Sgd(0.3))
                 .graphBuilder()
                 .addInputs("in")
-                .layer("0", new ConvolutionLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).build(), "in")
-                .layer("1", new SubsamplingLayer.Builder().kernelSize(2,2).stride(1,1).build(), "0")
-                .layer("2", new ConvolutionLayer.Builder().nIn(3).nOut(3).kernelSize(2,2).stride(1,1).build(), "1")
+                .layer("0", new Convolution2DLayer.Builder().nOut(3).kernelSize(2,2).stride(1,1).build(), "in")
+                .layer("1", new Subsampling2DLayer.Builder().kernelSize(2,2).stride(1,1).build(), "0")
+                .layer("2", new Convolution2DLayer.Builder().nIn(3).nOut(3).kernelSize(2,2).stride(1,1).build(), "1")
                 .layer("3", new DenseLayer.Builder().nOut(64).build(), "2")
                 .layer("4", new DenseLayer.Builder().nIn(64).nOut(64).build(), "3")
                 .layer("5", new OutputLayer.Builder().nIn(64).nOut(10).lossFunction(LossFunctions.LossFunction.MSE).build(), "4")

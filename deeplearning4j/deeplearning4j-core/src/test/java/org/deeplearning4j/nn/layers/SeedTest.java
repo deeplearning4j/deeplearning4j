@@ -20,7 +20,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.AutoEncoder;
+import org.deeplearning4j.nn.conf.layers.feedforeward.autoencoder.AutoEncoder;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;

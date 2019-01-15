@@ -19,7 +19,7 @@ package org.deeplearning4j.nn.params;
 
 import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.Convolution3D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -52,8 +52,8 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
 
     @Override
     public long numParams(Layer l) {
-        Convolution3D layerConf =
-                (Convolution3D) l;
+        Convolution3DLayer layerConf =
+                (Convolution3DLayer) l;
 
         int[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
@@ -64,12 +64,12 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
 
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        Convolution3D layer = (Convolution3D) conf.getLayer();
+        Convolution3DLayer layer = (Convolution3DLayer) conf.getLayer();
         if (layer.getKernelSize().length != 3) throw new IllegalArgumentException("Filter size must be == 3");
 
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
-        Convolution3D layerConf = (Convolution3D) conf.getLayer();
+        Convolution3DLayer layerConf = (Convolution3DLayer) conf.getLayer();
         val nOut = layerConf.getNOut();
 
         if (layer.hasBias()) {
@@ -91,7 +91,7 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
 
-        Convolution3D layerConf = (Convolution3D) conf.getLayer();
+        Convolution3DLayer layerConf = (Convolution3DLayer) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
@@ -121,7 +121,7 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
          Inputs to the convolution layer are:
          (batch size, num input feature maps, image depth, image height, image width)
          */
-        Convolution3D layerConf = (Convolution3D) conf.getLayer();
+        Convolution3DLayer layerConf = (Convolution3DLayer) conf.getLayer();
 
         if (initializeParams) {
             int[] kernel = layerConf.getKernelSize();

@@ -25,9 +25,9 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
-import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
-import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStepLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnnLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.MaskZeroLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -48,7 +48,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUt
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
 
 /**
- * Imports a Keras SimpleRNN layer as a DL4J SimpleRnn layer.
+ * Imports a Keras SimpleRNN layer as a DL4J SimpleRnnLayer layer.
  *
  * @author Max Pumperla
  */
@@ -149,7 +149,7 @@ public class KerasSimpleRnn extends KerasLayer {
         LayerConstraint recurrentConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_RECURRENT_CONSTRAINT(), conf, kerasMajorVersion);
 
-        SimpleRnn.Builder builder = new SimpleRnn.Builder()
+        SimpleRnnLayer.Builder builder = new SimpleRnnLayer.Builder()
                 .name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout)
@@ -168,7 +168,7 @@ public class KerasSimpleRnn extends KerasLayer {
 
         this.layer = builder.build();
         if (!returnSequences) {
-            this.layer = new LastTimeStep(this.layer);
+            this.layer = new LastTimeStepLayer(this.layer);
         }
         if (maskingConfig.getFirst()) {
             this.layer = new MaskZeroLayer(this.layer, maskingConfig.getSecond());
@@ -176,9 +176,9 @@ public class KerasSimpleRnn extends KerasLayer {
     }
 
     /**
-     * Get DL4J SimpleRnn layer.
+     * Get DL4J SimpleRnnLayer layer.
      *
-     * @return SimpleRnn Layer
+     * @return SimpleRnnLayer Layer
      */
     public Layer getSimpleRnnLayer() {
         return this.layer;
@@ -195,7 +195,7 @@ public class KerasSimpleRnn extends KerasLayer {
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras SimpleRnn layer accepts only one input (received " + inputType.length + ")");
+                    "Keras SimpleRnnLayer layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preProcessor = getInputPreprocessor(inputType);
         if (preProcessor != null)
             return preProcessor.getOutputType(inputType[0]);
@@ -225,13 +225,13 @@ public class KerasSimpleRnn extends KerasLayer {
     public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras SimpleRnn layer accepts only one input (received " + inputType.length + ")");
+                    "Keras SimpleRnnLayer layer accepts only one input (received " + inputType.length + ")");
 
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
     }
 
     /**
-     * Get whether SimpleRnn layer should be unrolled (for truncated BPTT).
+     * Get whether SimpleRnnLayer layer should be unrolled (for truncated BPTT).
      *
      * @return whether RNN should be unrolled (boolean)
      */

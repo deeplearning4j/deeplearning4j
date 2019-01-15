@@ -17,7 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.Upsampling2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.upsampling.Upsampling2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -26,7 +26,7 @@ import java.util.Map;
 
 
 /**
- * Keras Upsampling2D layer support
+ * Keras Upsampling2DLayer layer support
  *
  * @author Max Pumperla
  */
@@ -61,7 +61,7 @@ public class KerasUpsampling2D extends KerasLayer {
             throw new UnsupportedKerasConfigurationException("First and second size arguments have to be the same" +
                     "got: " + size[0] + " and " + size[1]);
 
-        Upsampling2D.Builder builder = new Upsampling2D.Builder()
+        Upsampling2DLayer.Builder builder = new Upsampling2DLayer.Builder()
                 .name(this.layerName)
                 .dropOut(this.dropout)
                 .size(size[0]);
@@ -71,12 +71,12 @@ public class KerasUpsampling2D extends KerasLayer {
     }
 
     /**
-     * Get DL4J Upsampling2D layer.
+     * Get DL4J Upsampling2DLayer layer.
      *
-     * @return Upsampling2D layer
+     * @return Upsampling2DLayer layer
      */
-    public Upsampling2D getUpsampling2DLayer() {
-        return (Upsampling2D) this.layer;
+    public Upsampling2DLayer getUpsampling2DLayer() {
+        return (Upsampling2DLayer) this.layer;
     }
 
     /**

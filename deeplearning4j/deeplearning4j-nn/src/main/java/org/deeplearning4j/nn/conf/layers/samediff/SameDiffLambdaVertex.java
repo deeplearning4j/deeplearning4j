@@ -16,14 +16,14 @@
 
 package org.deeplearning4j.nn.conf.layers.samediff;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.*;
 
 
 /**

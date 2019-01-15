@@ -23,7 +23,7 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
@@ -97,7 +97,7 @@ public class KerasConvolution2D extends KerasConvolution {
         LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_W_CONSTRAINT(), conf, kerasMajorVersion);
 
-        ConvolutionLayer.Builder builder = new ConvolutionLayer.Builder().name(this.layerName)
+        Convolution2DLayer.Builder builder = new Convolution2DLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit.getWeightInitFunction(distribution))
@@ -121,12 +121,12 @@ public class KerasConvolution2D extends KerasConvolution {
     }
 
     /**
-     * Get DL4J ConvolutionLayer.
+     * Get DL4J Convolution2DLayer.
      *
-     * @return ConvolutionLayer
+     * @return Convolution2DLayer
      */
-    public ConvolutionLayer getConvolution2DLayer() {
-        return (ConvolutionLayer) this.layer;
+    public Convolution2DLayer getConvolution2DLayer() {
+        return (Convolution2DLayer) this.layer;
     }
 
     /**

@@ -29,7 +29,11 @@ import org.deeplearning4j.nn.conf.graph.StackVertex;
 import org.deeplearning4j.nn.conf.graph.UnstackVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStepLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -275,12 +279,12 @@ public class TestMasking extends BaseDL4JTest {
                 .graphBuilder()
                 .addInputs("inputs")
                 .addLayer("cnn1",
-                        new ConvolutionLayer.Builder(new int[] { kernelSize1, kernelSize1 },
+                        new Convolution2DLayer.Builder(new int[] { kernelSize1, kernelSize1 },
                                 new int[] { cnnStride1, cnnStride1 },
                                 new int[] { padding, padding })
                                 .nIn(channels)
                                 .nOut(2).build(), "inputs")
-                .addLayer("lstm1", new LSTM.Builder().nIn(7 * 7 * 2).nOut(2).build(), "cnn1")
+                .addLayer("lstm1", new LSTMLayer.Builder().nIn(7 * 7 * 2).nOut(2).build(), "cnn1")
                 .addLayer("output", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
                         .activation(Activation.RELU).nIn(2).nOut(2).build(), "lstm1")
                 .setOutputs("output")
@@ -312,7 +316,7 @@ public class TestMasking extends BaseDL4JTest {
                 )
                 .addInputs("m1", "m2")
                 .addVertex("stack", new StackVertex(), "m1", "m2")
-                .addLayer("lastUnStacked", new LastTimeStep(new LSTM.Builder().nIn(3).nOut(1).activation(Activation.TANH).build()), "stack")
+                .addLayer("lastUnStacked", new LastTimeStepLayer(new LSTMLayer.Builder().nIn(3).nOut(1).activation(Activation.TANH).build()), "stack")
                 .addVertex("unstacked1", new UnstackVertex(0, 2), "lastUnStacked")
                 .addVertex("unstacked2", new UnstackVertex(1, 2), "lastUnStacked")
                 .addVertex("restacked", new StackVertex(), "unstacked1", "unstacked2")

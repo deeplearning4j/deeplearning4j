@@ -20,7 +20,7 @@ package org.deeplearning4j.nn.params;
 import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.DepthwiseConvolution2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.DepthwiseConvolution2DLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -51,7 +51,7 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public long numParams(Layer l) {
-        DepthwiseConvolution2D layerConf = (DepthwiseConvolution2D) l;
+        DepthwiseConvolution2DLayer layerConf = (DepthwiseConvolution2DLayer) l;
 
         val depthWiseParams = numDepthWiseParams(layerConf);
         val biasParams = numBiasParams(layerConf);
@@ -59,7 +59,7 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
         return depthWiseParams + biasParams;
     }
 
-    private long numBiasParams(DepthwiseConvolution2D layerConf) {
+    private long numBiasParams(DepthwiseConvolution2DLayer layerConf) {
         val nOut = layerConf.getNOut();
         return (layerConf.hasBias() ? nOut : 0);
     }
@@ -71,7 +71,7 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
      * @param layerConf layer configuration of the separable conv2d layer
      * @return number of parameters of the channels-wise convolution operation
      */
-    private long numDepthWiseParams(DepthwiseConvolution2D layerConf) {
+    private long numDepthWiseParams(DepthwiseConvolution2DLayer layerConf) {
         int[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
         val depthMultiplier = layerConf.getDepthMultiplier();
@@ -81,8 +81,8 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public List<String> paramKeys(Layer layer) {
-        DepthwiseConvolution2D layerConf =
-                (DepthwiseConvolution2D) layer;
+        DepthwiseConvolution2DLayer layerConf =
+                (DepthwiseConvolution2DLayer) layer;
         if(layerConf.hasBias()){
             return Arrays.asList(WEIGHT_KEY, BIAS_KEY);
         } else {
@@ -97,8 +97,8 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public List<String> biasKeys(Layer layer) {
-        DepthwiseConvolution2D layerConf =
-                (DepthwiseConvolution2D) layer;
+        DepthwiseConvolution2DLayer layerConf =
+                (DepthwiseConvolution2DLayer) layer;
         if(layerConf.hasBias()){
             return Collections.singletonList(BIAS_KEY);
         } else {
@@ -119,11 +119,11 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        DepthwiseConvolution2D layer = (DepthwiseConvolution2D) conf.getLayer();
+        DepthwiseConvolution2DLayer layer = (DepthwiseConvolution2DLayer) conf.getLayer();
         if (layer.getKernelSize().length != 2) throw new IllegalArgumentException("Filter size must be == 2");
 
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
-        DepthwiseConvolution2D layerConf = (DepthwiseConvolution2D) conf.getLayer();
+        DepthwiseConvolution2DLayer layerConf = (DepthwiseConvolution2DLayer) conf.getLayer();
 
         val depthWiseParams = numDepthWiseParams(layerConf);
         val biasParams = numBiasParams(layerConf);
@@ -146,7 +146,7 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
 
-        DepthwiseConvolution2D layerConf = (DepthwiseConvolution2D) conf.getLayer();
+        DepthwiseConvolution2DLayer layerConf = (DepthwiseConvolution2DLayer) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
@@ -171,7 +171,7 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
     }
 
     protected INDArray createBias(NeuralNetConfiguration conf, INDArray biasView, boolean initializeParams) {
-        DepthwiseConvolution2D layerConf = (DepthwiseConvolution2D) conf.getLayer();
+        DepthwiseConvolution2DLayer layerConf = (DepthwiseConvolution2DLayer) conf.getLayer();
         if (initializeParams)
             biasView.assign(layerConf.getBiasInit());
         return biasView;
@@ -183,8 +183,8 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
          Create a 4d weight matrix of: (channels multiplier, num input channels, kernel height, kernel width)
          Inputs to the convolution layer are: (batch size, num input feature maps, image height, image width)
          */
-        DepthwiseConvolution2D layerConf =
-                        (DepthwiseConvolution2D) conf.getLayer();
+        DepthwiseConvolution2DLayer layerConf =
+                        (DepthwiseConvolution2DLayer) conf.getLayer();
         int depthMultiplier = layerConf.getDepthMultiplier();
 
         if (initializeParams) {

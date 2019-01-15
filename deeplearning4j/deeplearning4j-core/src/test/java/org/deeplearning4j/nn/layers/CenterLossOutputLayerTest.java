@@ -23,10 +23,10 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.training.CenterLossOutputLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -81,20 +81,20 @@ public class CenterLossOutputLayerTest extends BaseDL4JTest {
                         .updater(new Nesterovs(0.01, 0.9))
                         .graphBuilder().addInputs("input")
                         .setInputTypes(InputType.convolutionalFlat(28, 28, 1))
-                        .addLayer("0", new ConvolutionLayer.Builder(5, 5)
+                        .addLayer("0", new Convolution2DLayer.Builder(5, 5)
                                         //nIn and nOut specify channels. nIn here is the nChannels and nOut is the number of filters to be applied
                                         .nIn(nChannels).stride(1, 1).nOut(20).activation(Activation.IDENTITY).build(),
                                         "input")
-                        .addLayer("1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
+                        .addLayer("1", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(2, 2)
                                         .stride(2, 2).build(), "0")
-                        .addLayer("2", new ConvolutionLayer.Builder(5, 5)
+                        .addLayer("2", new Convolution2DLayer.Builder(5, 5)
                                         //Note that nIn need not be specified in later layers
                                         .stride(1, 1).nOut(50).activation(Activation.IDENTITY).build(), "1")
-                        .addLayer("3", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
+                        .addLayer("3", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(2, 2)
                                         .stride(2, 2).build(), "2")
                         .addLayer("4", new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build(), "3")
                         .addLayer("output",
-                                        new org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer.Builder(
+                                        new CenterLossOutputLayer.Builder(
                                                         LossFunction.MCXENT).nOut(outputNum)
                                                                         .activation(Activation.SOFTMAX).build(),
                                         "4")

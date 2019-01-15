@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -80,7 +81,7 @@ public class TestPreProcessedData extends BaseSparkTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(4).nOut(3)
+                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(3)
                                         .activation(Activation.TANH).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3).activation(Activation.SOFTMAX)
@@ -127,7 +128,7 @@ public class TestPreProcessedData extends BaseSparkTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .graphBuilder().addInputs("in")
-                        .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(4).nOut(3)
+                        .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(3)
                                         .activation(Activation.TANH).build(), "in")
                         .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3).activation(Activation.SOFTMAX)
@@ -177,7 +178,7 @@ public class TestPreProcessedData extends BaseSparkTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .graphBuilder().addInputs("in")
-                        .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(4).nOut(3)
+                        .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(3)
                                         .activation(Activation.TANH).build(), "in")
                         .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3).activation(Activation.SOFTMAX)

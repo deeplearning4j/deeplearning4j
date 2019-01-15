@@ -17,7 +17,7 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.nn.conf.layers.SpaceToDepthLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.SpaceToDepthLayer;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.GradientNormalization;

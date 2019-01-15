@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.wrappers;
 
-import org.deeplearning4j.nn.conf.layers.LSTM;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -91,7 +91,7 @@ public class KerasBidirectionalTest {
         lstmConfig.put(conf.getLAYER_FIELD_UNROLL(), true);
 
         Map<String, Object> innerRnnConfig = new HashMap<>();
-        innerRnnConfig.put("class_name", "LSTM");
+        innerRnnConfig.put("class_name", "LSTMLayer");
         innerRnnConfig.put("config", lstmConfig);
 
         Map<String, Object> innerConfig = new HashMap<>();
@@ -103,11 +103,11 @@ public class KerasBidirectionalTest {
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
         KerasBidirectional kerasBidirectional = new KerasBidirectional(layerConfig);
-        Bidirectional layer = kerasBidirectional.getBidirectionalLayer();
+        BidirectionalLayer layer = kerasBidirectional.getBidirectionalLayer();
 
-        assertEquals(Bidirectional.Mode.ADD, layer.getMode());
+        assertEquals(BidirectionalLayer.Mode.ADD, layer.getMode());
         assertEquals(Activation.HARDSIGMOID.toString().toLowerCase(),
-                ((LSTM) kerasBidirectional.getUnderlyingRecurrentLayer()).getGateActivationFn().toString());
+                ((LSTMLayer) kerasBidirectional.getUnderlyingRecurrentLayer()).getGateActivationFn().toString());
 
     }
 }

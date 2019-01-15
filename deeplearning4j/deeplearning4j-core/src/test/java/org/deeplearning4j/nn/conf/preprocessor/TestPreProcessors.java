@@ -22,11 +22,11 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
-import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -54,7 +54,7 @@ public class TestPreProcessors extends BaseDL4JTest {
 
             RnnToFeedForwardPreProcessor proc = new RnnToFeedForwardPreProcessor();
             NeuralNetConfiguration nnc = new NeuralNetConfiguration.Builder()
-                            .layer(new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(layerSize)
+                            .layer(new org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer.Builder().nIn(layerSize)
                                             .nOut(layerSize).build())
                             .build();
 
@@ -139,7 +139,7 @@ public class TestPreProcessors extends BaseDL4JTest {
             FeedForwardToRnnPreProcessor proc = new FeedForwardToRnnPreProcessor();
 
             NeuralNetConfiguration nnc = new NeuralNetConfiguration.Builder()
-                            .layer(new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(layerSize)
+                            .layer(new org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer.Builder().nIn(layerSize)
                                             .nOut(layerSize).build())
                             .build();
 
@@ -224,15 +224,15 @@ public class TestPreProcessors extends BaseDL4JTest {
 
                             NeuralNetConfiguration nnc =
                                             new NeuralNetConfiguration.Builder()
-                                                            .layer(new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                                            .layer(new Convolution2DLayer.Builder(
                                                                             inputWidth, inputHeight).nIn(cnnNChannelsIn)
                                                                                             .nOut(nChannels).build())
                                                             .build();
 
                             val numParams = nnc.getLayer().initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);
-                            ConvolutionLayer layer =
-                                            (ConvolutionLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true);
+                            org.deeplearning4j.nn.layers.convolution.Convolution2DLayer layer =
+                                            (org.deeplearning4j.nn.layers.convolution.Convolution2DLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true);
                             layer.setInputMiniBatchSize(miniBatchSize);
 
                             INDArray activationsCnn = Nd4j.rand(new int[] {miniBatchSize * timeSeriesLength, nChannels,
@@ -306,15 +306,15 @@ public class TestPreProcessors extends BaseDL4JTest {
 
                             NeuralNetConfiguration nnc =
                                             new NeuralNetConfiguration.Builder()
-                                                            .layer(new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                                            .layer(new Convolution2DLayer.Builder(
                                                                             inputWidth, inputHeight).nIn(cnnNChannelsIn)
                                                                                             .nOut(nChannels).build())
                                                             .build();
 
                             val numParams = nnc.getLayer().initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);
-                            ConvolutionLayer layer =
-                                            (ConvolutionLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true);
+                            org.deeplearning4j.nn.layers.convolution.Convolution2DLayer layer =
+                                            (org.deeplearning4j.nn.layers.convolution.Convolution2DLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true);
                             layer.setInputMiniBatchSize(miniBatchSize);
 
                             val shape_rnn = new long[] {miniBatchSize, nChannels * inputHeight * inputWidth,
@@ -394,10 +394,10 @@ public class TestPreProcessors extends BaseDL4JTest {
         //FF->RNN and RNN->FF
         MultiLayerConfiguration conf1 =
                         new NeuralNetConfiguration.Builder().list()
-                                        .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(5)
+                                        .layer(0, new org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer.Builder().nIn(5)
                                                         .nOut(6).build())
-                                        .layer(1, new GravesLSTM.Builder().nIn(6).nOut(7).build())
-                                        .layer(2, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(7)
+                                        .layer(1, new GravesLSTMLayer.Builder().nIn(6).nOut(7).build())
+                                        .layer(2, new org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer.Builder().nIn(7)
                                                         .nOut(8).build())
                                         .layer(3, new RnnOutputLayer.Builder().nIn(8).nOut(9).activation(Activation.SOFTMAX).build()).build();
         //Expect preprocessors: layer1: FF->RNN; 2: RNN->FF; 3: FF->RNN
@@ -409,9 +409,9 @@ public class TestPreProcessors extends BaseDL4JTest {
 
         //FF-> CNN, CNN-> FF, FF->RNN
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder().nOut(10)
+                        .layer(0, new Convolution2DLayer.Builder().nOut(10)
                                         .kernelSize(5, 5).stride(1, 1).build())
-                        .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nOut(6).build())
+                        .layer(1, new org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer.Builder().nOut(6).build())
                         .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
         //Expect preprocessors: 0: FF->CNN; 1: CNN->FF; 2: FF->RNN
@@ -422,9 +422,9 @@ public class TestPreProcessors extends BaseDL4JTest {
 
         //CNN-> FF, FF->RNN - InputType.convolutional instead of convolutionalFlat
         MultiLayerConfiguration conf2a = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder().nOut(10)
+                        .layer(0, new Convolution2DLayer.Builder().nOut(10)
                                         .kernelSize(5, 5).stride(1, 1).build())
-                        .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nOut(6).build())
+                        .layer(1, new org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer.Builder().nOut(6).build())
                         .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(28, 28, 1)).build();
         //Expect preprocessors: 1: CNN->FF; 2: FF->RNN
@@ -435,9 +435,9 @@ public class TestPreProcessors extends BaseDL4JTest {
 
         //FF->CNN and CNN->RNN:
         MultiLayerConfiguration conf3 = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder().nOut(10)
+                        .layer(0, new Convolution2DLayer.Builder().nOut(10)
                                         .kernelSize(5, 5).stride(1, 1).build())
-                        .layer(1, new GravesLSTM.Builder().nOut(6).build())
+                        .layer(1, new GravesLSTMLayer.Builder().nOut(6).build())
                         .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
         //Expect preprocessors: 0: FF->CNN, 1: CNN->RNN;
@@ -451,14 +451,14 @@ public class TestPreProcessors extends BaseDL4JTest {
         MultiLayerConfiguration conf =
                 new NeuralNetConfiguration.Builder()
                         .list().layer(0,
-                        new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                        new Convolution2DLayer.Builder(
                                 4, 4) // 28*28*1 => 15*15*10
                                 .nIn(1).nOut(10).padding(2, 2)
                                 .stride(2, 2)
                                 .weightInit(WeightInit.RELU)
                                 .activation(Activation.RELU)
                                 .build())
-                        .layer(1, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
+                        .layer(1, new org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer.Builder()
                                 .activation(Activation.RELU).nOut(200).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(200)
                                 .nOut(5).weightInit(WeightInit.RELU)

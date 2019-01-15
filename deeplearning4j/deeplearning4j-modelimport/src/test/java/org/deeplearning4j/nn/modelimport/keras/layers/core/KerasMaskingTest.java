@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
-import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.MaskZeroLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;

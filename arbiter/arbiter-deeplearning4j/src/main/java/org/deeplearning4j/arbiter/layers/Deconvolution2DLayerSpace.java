@@ -21,25 +21,25 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.deeplearning4j.nn.conf.layers.Deconvolution2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Deconvolution2DLayer;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
-public class Deconvolution2DLayerSpace extends BaseConvolutionLayerSpace<Deconvolution2D> {
+public class Deconvolution2DLayerSpace extends BaseConvolutionLayerSpace<Deconvolution2DLayer> {
 
     protected Deconvolution2DLayerSpace(Builder builder) {
         super(builder);
     }
 
     @Override
-    public Deconvolution2D getValue(double[] parameterValues) {
-        Deconvolution2D.Builder b = new Deconvolution2D.Builder();
+    public Deconvolution2DLayer getValue(double[] parameterValues) {
+        Deconvolution2DLayer.Builder b = new Deconvolution2DLayer.Builder();
         setLayerOptionsBuilder(b, parameterValues);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(Deconvolution2D.Builder builder, double[] values) {
+    protected void setLayerOptionsBuilder(Deconvolution2DLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
     }
 

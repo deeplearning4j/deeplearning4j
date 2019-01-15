@@ -26,10 +26,10 @@ import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -571,7 +571,7 @@ public class TestGraphNodes {
                 .graphBuilder()
                 .addInputs("rr")
                 .setInputTypes(InputType.recurrent(30))
-                .addLayer("1", new GravesLSTM.Builder().activation(Activation.TANH).nIn(numInputs).nOut(lstmLayerSize).dropOut(0.9).build(), "rr")
+                .addLayer("1", new GravesLSTMLayer.Builder().activation(Activation.TANH).nIn(numInputs).nOut(lstmLayerSize).dropOut(0.9).build(), "rr")
                 .addLayer("2", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .activation(Activation.SOFTMAX).nOut(numLabelClasses).build(), "1")
 

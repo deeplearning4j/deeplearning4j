@@ -19,7 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.local;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.LocallyConnected2D;
+import org.deeplearning4j.nn.conf.layers.LocallyConnected2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -109,7 +109,7 @@ public class KerasLocallyConnected2DTest {
         // once get output type is triggered, inputshape, output shape and input depth are updated
         kerasLocal.getOutputType(InputType.convolutional(4,4,3));
 
-        LocallyConnected2D layer = kerasLocal.getLocallyConnected2DLayer();
+        LocallyConnected2DLayer layer = kerasLocal.getLocallyConnected2DLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivation().toString().toLowerCase());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());

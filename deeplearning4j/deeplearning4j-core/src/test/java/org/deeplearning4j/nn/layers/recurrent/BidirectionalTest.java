@@ -29,11 +29,11 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
-import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnnLayer;
 import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -71,8 +71,8 @@ public class BidirectionalTest extends BaseDL4JTest {
         for(WorkspaceMode wsm : WorkspaceMode.values()) {
             log.info("*** Starting workspace mode: " + wsm);
 
-            //Bidirectional(GravesLSTM) and GravesBidirectionalLSTM should be equivalent, given equivalent params
-            //Note that GravesBidirectionalLSTM implements ADD mode only
+            //BidirectionalLayer(GravesLSTMLayer) and GravesBidirectionalLSTMLayer should be equivalent, given equivalent params
+            //Note that GravesBidirectionalLSTMLayer implements ADD mode only
 
             MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
                     .activation(Activation.TANH)
@@ -81,8 +81,10 @@ public class BidirectionalTest extends BaseDL4JTest {
                     .inferenceWorkspaceMode(wsm)
                     .updater(new Adam())
                     .list()
-                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()))
-                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()))
+                    .layer(new BidirectionalLayer(
+                            BidirectionalLayer.Mode.ADD, new GravesLSTMLayer.Builder().nIn(10).nOut(10).build()))
+                    .layer(new BidirectionalLayer(
+                            BidirectionalLayer.Mode.ADD, new GravesLSTMLayer.Builder().nIn(10).nOut(10).build()))
                     .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                             .nIn(10).nOut(10).build())
                     .build();
@@ -94,8 +96,8 @@ public class BidirectionalTest extends BaseDL4JTest {
                     .inferenceWorkspaceMode(wsm)
                     .updater(new Adam())
                     .list()
-                    .layer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build())
-                    .layer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build())
+                    .layer(new GravesBidirectionalLSTMLayer.Builder().nIn(10).nOut(10).build())
+                    .layer(new GravesBidirectionalLSTMLayer.Builder().nIn(10).nOut(10).build())
                     .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                             .nIn(10).nOut(10).build())
                     .build();
@@ -166,8 +168,8 @@ public class BidirectionalTest extends BaseDL4JTest {
         for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.NONE, WorkspaceMode.ENABLED}) {
             log.info("*** Starting workspace mode: " + wsm);
 
-            //Bidirectional(GravesLSTM) and GravesBidirectionalLSTM should be equivalent, given equivalent params
-            //Note that GravesBidirectionalLSTM implements ADD mode only
+            //BidirectionalLayer(GravesLSTMLayer) and GravesBidirectionalLSTMLayer should be equivalent, given equivalent params
+            //Note that GravesBidirectionalLSTMLayer implements ADD mode only
 
             ComputationGraphConfiguration conf1 = new NeuralNetConfiguration.Builder()
                     .activation(Activation.TANH)
@@ -177,8 +179,10 @@ public class BidirectionalTest extends BaseDL4JTest {
                     .inferenceWorkspaceMode(wsm)
                     .graphBuilder()
                     .addInputs("in")
-                    .layer("0", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()), "in")
-                    .layer("1", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()), "0")
+                    .layer("0", new BidirectionalLayer(
+                            BidirectionalLayer.Mode.ADD, new GravesLSTMLayer.Builder().nIn(10).nOut(10).build()), "in")
+                    .layer("1", new BidirectionalLayer(
+                            BidirectionalLayer.Mode.ADD, new GravesLSTMLayer.Builder().nIn(10).nOut(10).build()), "0")
                     .layer("2", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                             .nIn(10).nOut(10).build(), "1")
                     .setOutputs("2")
@@ -192,8 +196,8 @@ public class BidirectionalTest extends BaseDL4JTest {
                     .inferenceWorkspaceMode(wsm)
                     .graphBuilder()
                     .addInputs("in")
-                    .layer("0", new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build(), "in")
-                    .layer("1", new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build(), "0")
+                    .layer("0", new GravesBidirectionalLSTMLayer.Builder().nIn(10).nOut(10).build(), "in")
+                    .layer("1", new GravesBidirectionalLSTMLayer.Builder().nIn(10).nOut(10).build(), "0")
                     .layer("2", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                             .nIn(10).nOut(10).build(), "1")
                     .setOutputs("2")
@@ -275,8 +279,10 @@ public class BidirectionalTest extends BaseDL4JTest {
                     .inferenceWorkspaceMode(wsm)
                     .updater(new Adam())
                     .list()
-                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()))
-                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()))
+                    .layer(new BidirectionalLayer(
+                            BidirectionalLayer.Mode.ADD, new GravesLSTMLayer.Builder().nIn(10).nOut(10).build()))
+                    .layer(new BidirectionalLayer(
+                            BidirectionalLayer.Mode.ADD, new GravesLSTMLayer.Builder().nIn(10).nOut(10).build()))
                     .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                             .nIn(10).nOut(10).build())
                     .build();
@@ -337,8 +343,10 @@ public class BidirectionalTest extends BaseDL4JTest {
                     .updater(new Adam())
                     .graphBuilder()
                     .addInputs("in")
-                    .layer("0", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()), "in")
-                    .layer("1", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()), "0")
+                    .layer("0", new BidirectionalLayer(
+                            BidirectionalLayer.Mode.ADD, new GravesLSTMLayer.Builder().nIn(10).nOut(10).build()), "in")
+                    .layer("1", new BidirectionalLayer(
+                            BidirectionalLayer.Mode.ADD, new GravesLSTMLayer.Builder().nIn(10).nOut(10).build()), "0")
                     .layer("2", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                             .nIn(10).nOut(10).build(), "1")
                     .setOutputs("2")
@@ -390,13 +398,13 @@ public class BidirectionalTest extends BaseDL4JTest {
             log.info("*** Starting workspace mode: " + wsm);
             Nd4j.getRandom().setSeed(12345);
 
-            Bidirectional.Mode[] modes = new Bidirectional.Mode[]{Bidirectional.Mode.CONCAT, Bidirectional.Mode.ADD,
-                    Bidirectional.Mode.AVERAGE, Bidirectional.Mode.MUL};
+            BidirectionalLayer.Mode[] modes = new BidirectionalLayer.Mode[]{BidirectionalLayer.Mode.CONCAT, BidirectionalLayer.Mode.ADD,
+                    BidirectionalLayer.Mode.AVERAGE, BidirectionalLayer.Mode.MUL};
 
 
             INDArray in = Nd4j.rand(new int[]{3, 10, 6});
 
-            for (Bidirectional.Mode m : modes) {
+            for (BidirectionalLayer.Mode m : modes) {
                 MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
                         .activation(Activation.TANH)
                         .weightInit(WeightInit.XAVIER)
@@ -404,7 +412,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                         .inferenceWorkspaceMode(wsm)
                         .updater(new Adam())
                         .list()
-                        .layer(new Bidirectional(m, new SimpleRnn.Builder().nIn(10).nOut(10).build()))
+                        .layer(new BidirectionalLayer(m, new SimpleRnnLayer.Builder().nIn(10).nOut(10).build()))
                         .build();
 
                 MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
@@ -415,7 +423,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                         .weightInit(WeightInit.XAVIER)
                         .updater(new Adam())
                         .list()
-                        .layer(new SimpleRnn.Builder().nIn(10).nOut(10).build())
+                        .layer(new SimpleRnnLayer.Builder().nIn(10).nOut(10).build())
                         .build();
 
                 MultiLayerNetwork net2 = new MultiLayerNetwork(conf2.clone());
@@ -459,12 +467,12 @@ public class BidirectionalTest extends BaseDL4JTest {
 
 
                 //Check gradients:
-                if (m == Bidirectional.Mode.ADD || m == Bidirectional.Mode.CONCAT) {
+                if (m == BidirectionalLayer.Mode.ADD || m == BidirectionalLayer.Mode.CONCAT) {
 
                     INDArray eps = Nd4j.rand(new int[]{3, 10, 6});
 
                     INDArray eps1;
-                    if (m == Bidirectional.Mode.CONCAT) {
+                    if (m == BidirectionalLayer.Mode.CONCAT) {
                         eps1 = Nd4j.concat(1, eps, eps);
                     } else {
                         eps1 = eps;
@@ -513,13 +521,13 @@ public class BidirectionalTest extends BaseDL4JTest {
             log.info("*** Starting workspace mode: " + wsm);
             Nd4j.getRandom().setSeed(12345);
 
-            Bidirectional.Mode[] modes = new Bidirectional.Mode[]{Bidirectional.Mode.CONCAT, Bidirectional.Mode.ADD,
-                    Bidirectional.Mode.AVERAGE, Bidirectional.Mode.MUL};
+            BidirectionalLayer.Mode[] modes = new BidirectionalLayer.Mode[]{BidirectionalLayer.Mode.CONCAT, BidirectionalLayer.Mode.ADD,
+                    BidirectionalLayer.Mode.AVERAGE, BidirectionalLayer.Mode.MUL};
 
 
             INDArray in = Nd4j.rand(new int[]{3, 10, 6});
 
-            for (Bidirectional.Mode m : modes) {
+            for (BidirectionalLayer.Mode m : modes) {
                 ComputationGraphConfiguration conf1 = new NeuralNetConfiguration.Builder()
                         .activation(Activation.TANH)
                         .weightInit(WeightInit.XAVIER)
@@ -528,7 +536,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                         .updater(new Adam())
                         .graphBuilder()
                         .addInputs("in")
-                        .layer("0", new Bidirectional(m, new SimpleRnn.Builder().nIn(10).nOut(10).build()), "in")
+                        .layer("0", new BidirectionalLayer(m, new SimpleRnnLayer.Builder().nIn(10).nOut(10).build()), "in")
                         .setOutputs("0")
                         .build();
 
@@ -541,7 +549,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                         .updater(new Adam())
                         .graphBuilder()
                         .addInputs("in")
-                        .layer("0", new SimpleRnn.Builder().nIn(10).nOut(10).build(), "in")
+                        .layer("0", new SimpleRnnLayer.Builder().nIn(10).nOut(10).build(), "in")
                         .setOutputs("0")
                         .build();
 
@@ -587,12 +595,12 @@ public class BidirectionalTest extends BaseDL4JTest {
 
 
                 //Check gradients:
-                if (m == Bidirectional.Mode.ADD || m == Bidirectional.Mode.CONCAT) {
+                if (m == BidirectionalLayer.Mode.ADD || m == BidirectionalLayer.Mode.CONCAT) {
 
                     INDArray eps = Nd4j.rand(new int[]{3, 10, 6});
 
                     INDArray eps1;
-                    if (m == Bidirectional.Mode.CONCAT) {
+                    if (m == BidirectionalLayer.Mode.CONCAT) {
                         eps1 = Nd4j.concat(1, eps, eps);
                     } else {
                         eps1 = eps;
@@ -647,7 +655,8 @@ public class BidirectionalTest extends BaseDL4JTest {
                                 .pzxActivationFunction(Activation.IDENTITY)
                                 .reconstructionDistribution(new BernoulliReconstructionDistribution(Activation.SIGMOID.getActivationFunction())).build(),
                         "IN")
-                .addLayer("RNN", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nOut(128).build()), "AUTOENCODER")
+                .addLayer("RNN", new BidirectionalLayer(
+                        BidirectionalLayer.Mode.ADD, new GravesLSTMLayer.Builder().nOut(128).build()), "AUTOENCODER")
                 .addLayer("OUT", new RnnOutputLayer.Builder()
                         .nOut(out)
                         .activation(Activation.SOFTMAX)

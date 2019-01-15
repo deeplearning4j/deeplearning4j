@@ -17,7 +17,7 @@
 package org.deeplearning4j.nn.conf;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;

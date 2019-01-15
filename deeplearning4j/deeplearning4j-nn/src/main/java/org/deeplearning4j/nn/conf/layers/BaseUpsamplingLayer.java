@@ -16,11 +16,14 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
-import org.deeplearning4j.nn.api.ParamInitializer;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.params.EmptyParamInitializer;
 
 /**
  * Upsampling base layer
@@ -64,7 +67,7 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
 
         /**
          * An int array to specify upsampling dimensions, the length of which has to equal to the number of spatial
-         * dimensions (e.g. 2 for Upsampling2D etc.)
+         * dimensions (e.g. 2 for Upsampling2DLayer etc.)
          *
          */
         protected int[] size = new int[] {1};
@@ -80,7 +83,7 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
 
         /**
          * An int array to specify upsampling dimensions, the length of which has to equal to the number of spatial
-         * dimensions (e.g. 2 for Upsampling2D etc.)
+         * dimensions (e.g. 2 for Upsampling2DLayer etc.)
          *
          * @param size int for upsampling
          */

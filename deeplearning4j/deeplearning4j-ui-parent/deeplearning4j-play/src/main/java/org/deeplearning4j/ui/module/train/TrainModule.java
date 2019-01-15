@@ -31,6 +31,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.i18n.I18NProvider;
@@ -960,17 +962,17 @@ public class TrainModule implements UIModule {
                         }
                     }
 
-                    if (layer instanceof ConvolutionLayer || layer instanceof SubsamplingLayer) {
+                    if (layer instanceof Convolution2DLayer || layer instanceof Subsampling2DLayer) {
                         int[] kernel;
                         int[] stride;
                         int[] padding;
-                        if (layer instanceof ConvolutionLayer) {
-                            ConvolutionLayer cl = (ConvolutionLayer) layer;
+                        if (layer instanceof Convolution2DLayer) {
+                            Convolution2DLayer cl = (Convolution2DLayer) layer;
                             kernel = cl.getKernelSize();
                             stride = cl.getStride();
                             padding = cl.getPadding();
                         } else {
-                            SubsamplingLayer ssl = (SubsamplingLayer) layer;
+                            Subsampling2DLayer ssl = (Subsampling2DLayer) layer;
                             kernel = ssl.getKernelSize();
                             stride = ssl.getStride();
                             padding = ssl.getPadding();

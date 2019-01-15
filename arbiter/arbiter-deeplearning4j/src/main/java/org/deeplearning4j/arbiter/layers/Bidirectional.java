@@ -22,10 +22,11 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.Layer;
 
 import java.util.List;
+import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer;
 
 /**
- * Bidirectional layer wrapper. Can be used wrap an existing layer space, in the same way that
- * {@link org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional} wraps a DL4J layer
+ * BidirectionalLayer layer wrapper. Can be used wrap an existing layer space, in the same way that
+ * {@link BidirectionalLayer} wraps a DL4J layer
  *
  * @author Alex Black
  */
@@ -42,7 +43,7 @@ public class Bidirectional extends LayerSpace<Layer> {
     @Override
     public Layer getValue(double[] parameterValues) {
         Layer underlying = layerSpace.getValue(parameterValues);
-        return new org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional(underlying);
+        return new BidirectionalLayer(underlying);
     }
 
     @Override

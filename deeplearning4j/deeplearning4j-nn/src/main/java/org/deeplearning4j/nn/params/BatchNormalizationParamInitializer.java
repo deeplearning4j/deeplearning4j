@@ -19,7 +19,7 @@ package org.deeplearning4j.nn.params;
 import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -51,7 +51,7 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
 
     @Override
     public long numParams(Layer l) {
-        BatchNormalization layer = (BatchNormalization) l;
+        BatchNormalizationLayer layer = (BatchNormalizationLayer) l;
         //Parameters in batch norm:
         //gamma, beta, global mean estimate, global variance estimate
         // latter 2 are treated as parameters, which greatly simplifies spark training and model serialization
@@ -67,7 +67,7 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
 
     @Override
     public List<String> paramKeys(Layer layer) {
-        if(((BatchNormalization)layer).isUseLogStd()){
+        if(((BatchNormalizationLayer)layer).isUseLogStd()){
             return Arrays.asList(GAMMA, BETA, GLOBAL_MEAN, GLOBAL_LOG_STD);
         } else {
             return Arrays.asList(GAMMA, BETA, GLOBAL_MEAN, GLOBAL_VAR);
@@ -98,7 +98,7 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramView, boolean initializeParams) {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         // TODO setup for RNN
-        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+        BatchNormalizationLayer layer = (BatchNormalizationLayer) conf.getLayer();
         val nOut = layer.getNOut();
 
         long meanOffset = 0;
@@ -145,7 +145,7 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
-        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+        BatchNormalizationLayer layer = (BatchNormalizationLayer) conf.getLayer();
         val nOut = layer.getNOut();
 
         Map<String, INDArray> out = new LinkedHashMap<>();
@@ -172,14 +172,14 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     }
 
     private INDArray createBeta(NeuralNetConfiguration conf, INDArray betaView, boolean initializeParams) {
-        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+        BatchNormalizationLayer layer = (BatchNormalizationLayer) conf.getLayer();
         if (initializeParams)
             betaView.assign(layer.getBeta());
         return betaView;
     }
 
     private INDArray createGamma(NeuralNetConfiguration conf, INDArray gammaView, boolean initializeParams) {
-        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+        BatchNormalizationLayer layer = (BatchNormalizationLayer) conf.getLayer();
         if (initializeParams)
             gammaView.assign(layer.getGamma());
         return gammaView;

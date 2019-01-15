@@ -21,6 +21,12 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.autoencoder.AutoEncoder;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -76,9 +82,9 @@ public class TestSetGetParameters extends BaseDL4JTest {
         //Set up a MLN, then do set(get) on parameters. Results should be identical compared to before doing this.
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new GravesLSTM.Builder().nIn(9).nOut(10)
+                        .layer(0, new GravesLSTMLayer.Builder().nIn(9).nOut(10)
                                         .dist(new NormalDistribution(0, 1)).build())
-                        .layer(1, new GravesLSTM.Builder().nIn(10).nOut(11)
+                        .layer(1, new GravesLSTMLayer.Builder().nIn(10).nOut(11)
                                         .dist(new NormalDistribution(0, 1)).build())
                         .layer(2, new RnnOutputLayer.Builder(LossFunction.MSE)
                                         .dist(new NormalDistribution(0, 1)).nIn(11).nOut(12).build())
@@ -115,11 +121,11 @@ public class TestSetGetParameters extends BaseDL4JTest {
 
         //Create configuration. Doesn't matter if this doesn't actually work for forward/backward pass here
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list()
-                        .layer(0, new ConvolutionLayer.Builder().nIn(10).nOut(10).kernelSize(2, 2).stride(2, 2)
+                        .layer(0, new Convolution2DLayer.Builder().nIn(10).nOut(10).kernelSize(2, 2).stride(2, 2)
                                         .padding(2, 2).build())
                         .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                        .layer(2, new GravesLSTM.Builder().nIn(10).nOut(10).build())
-                        .layer(3, new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build())
+                        .layer(2, new GravesLSTMLayer.Builder().nIn(10).nOut(10).build())
+                        .layer(3, new GravesBidirectionalLSTMLayer.Builder().nIn(10).nOut(10).build())
                         .layer(4, new OutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(10).build())
                         .build();
 

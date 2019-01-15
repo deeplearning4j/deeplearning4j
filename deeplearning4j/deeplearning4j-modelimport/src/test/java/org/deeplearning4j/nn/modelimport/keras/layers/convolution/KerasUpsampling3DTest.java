@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
-import org.deeplearning4j.nn.conf.layers.Upsampling3D;
+import org.deeplearning4j.nn.conf.layers.convolutional.upsampling.Upsampling3DLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -63,7 +63,7 @@ public class KerasUpsampling3DTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        Upsampling3D layer = new KerasUpsampling3D(layerConfig).getUpsampling3DLayer();
+        Upsampling3DLayer layer = new KerasUpsampling3D(layerConfig).getUpsampling3DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(size[0], layer.getSize()[0]);
         assertEquals(size[1], layer.getSize()[1]);

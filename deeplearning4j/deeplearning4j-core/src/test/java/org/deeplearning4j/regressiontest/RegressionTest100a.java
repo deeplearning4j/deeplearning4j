@@ -22,7 +22,11 @@ import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -131,14 +135,14 @@ public class RegressionTest100a extends BaseDL4JTest {
         File f = new ClassPathResource("regression_testing/100a/GravesLSTMCharModelingExample_100a.bin").getTempFileFromArchive();
         MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
 
-        GravesLSTM l0 = (GravesLSTM) net.getLayer(0).conf().getLayer();
+        GravesLSTMLayer l0 = (GravesLSTMLayer) net.getLayer(0).conf().getLayer();
         assertEquals(new ActivationTanH(), l0.getActivationFn());
         assertEquals(200, l0.getNOut());
         assertEquals(new WeightInitXavier(), l0.getWeightInitFn());
         assertEquals(0.001, l0.getL2(), 1e-6);
         assertEquals(new RmsProp(0.1), l0.getIUpdater());
 
-        GravesLSTM l1 = (GravesLSTM) net.getLayer(1).conf().getLayer();
+        GravesLSTMLayer l1 = (GravesLSTMLayer) net.getLayer(1).conf().getLayer();
         assertEquals(new ActivationTanH(), l1.getActivationFn());
         assertEquals(200, l1.getNOut());
         assertEquals(new WeightInitXavier(), l1.getWeightInitFn());
@@ -219,7 +223,7 @@ public class RegressionTest100a extends BaseDL4JTest {
         int nBoxes = 5;
         int nClasses = 10;
 
-        ConvolutionLayer cl = (ConvolutionLayer)((LayerVertex)net.getConfiguration().getVertices().get("convolution2d_9")).getLayerConf().getLayer();
+        Convolution2DLayer cl = (Convolution2DLayer)((LayerVertex)net.getConfiguration().getVertices().get("convolution2d_9")).getLayerConf().getLayer();
         assertEquals(nBoxes * (5 + nClasses), cl.getNOut());
         assertEquals(new ActivationIdentity(), cl.getActivationFn());
         assertEquals(ConvolutionMode.Same, cl.getConvolutionMode());
@@ -243,8 +247,8 @@ public class RegressionTest100a extends BaseDL4JTest {
         //Which means: the record output doesn't have this. To account for this, we'll manually set eps to 0.0 here
         //https://github.com/deeplearning4j/deeplearning4j/issues/5836#issuecomment-405526228
         for(Layer l : net.getLayers()){
-            if(l.conf().getLayer() instanceof BatchNormalization){
-                BatchNormalization bn = (BatchNormalization) l.conf().getLayer();
+            if(l.conf().getLayer() instanceof BatchNormalizationLayer){
+                BatchNormalizationLayer bn = (BatchNormalizationLayer) l.conf().getLayer();
                 bn.setEps(0.0);
             }
         }

@@ -23,7 +23,7 @@ import lombok.val;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.DepthwiseConvolution2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.DepthwiseConvolution2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -147,7 +147,7 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
                 layerConfig, conf.getLAYER_FIELD_DEPTH_WISE_CONSTRAINT(), conf, kerasMajorVersion);
 
 
-        DepthwiseConvolution2D.Builder builder = new DepthwiseConvolution2D.Builder().name(this.layerName)
+        DepthwiseConvolution2DLayer.Builder builder = new DepthwiseConvolution2DLayer.Builder().name(this.layerName)
                 .dropOut(this.dropout)
                 .nIn(nIn)
                 .nOut(nIn * depthMultiplier)
@@ -187,7 +187,7 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
             dW = weights.get(conf.getLAYER_PARAM_NAME_DEPTH_WISE_KERNEL());
         else
             throw new InvalidKerasConfigurationException(
-                    "Keras DepthwiseConvolution2D layer does not contain parameter "
+                    "Keras DepthwiseConvolution2DLayer layer does not contain parameter "
                             + conf.getLAYER_PARAM_NAME_DEPTH_WISE_KERNEL());
 
         this.weights.put(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, dW);
@@ -199,7 +199,7 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
                 bias = weights.get("b");
             else
                 throw new InvalidKerasConfigurationException(
-                        "Keras DepthwiseConvolution2D layer does not contain bias parameter");
+                        "Keras DepthwiseConvolution2DLayer layer does not contain bias parameter");
             this.weights.put(SeparableConvolutionParamInitializer.BIAS_KEY, bias);
 
         }
@@ -207,12 +207,12 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
     }
 
     /**
-     * Get DL4J DepthwiseConvolution2D.
+     * Get DL4J DepthwiseConvolution2DLayer.
      *
-     * @return DepthwiseConvolution2D
+     * @return DepthwiseConvolution2DLayer
      */
-    public DepthwiseConvolution2D getDepthwiseConvolution2DLayer() {
-        return (DepthwiseConvolution2D) this.layer;
+    public DepthwiseConvolution2DLayer getDepthwiseConvolution2DLayer() {
+        return (DepthwiseConvolution2DLayer) this.layer;
     }
 
     /**

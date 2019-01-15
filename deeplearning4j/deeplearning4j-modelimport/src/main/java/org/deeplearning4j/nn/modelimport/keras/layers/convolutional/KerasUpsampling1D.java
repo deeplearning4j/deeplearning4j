@@ -17,7 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.Upsampling1D;
+import org.deeplearning4j.nn.conf.layers.convolutional.upsampling.Upsampling1DLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -26,7 +26,7 @@ import java.util.Map;
 
 
 /**
- * Keras Upsampling1D layer support
+ * Keras Upsampling1DLayer layer support
  *
  * @author Max Pumperla
  */
@@ -58,7 +58,7 @@ public class KerasUpsampling1D extends KerasLayer {
 
         int[] size = KerasConvolutionUtils.getUpsamplingSizeFromConfig(layerConfig, 1, conf);
 
-        Upsampling1D.Builder builder = new Upsampling1D.Builder()
+        Upsampling1DLayer.Builder builder = new Upsampling1DLayer.Builder()
                 .name(this.layerName)
                 .dropOut(this.dropout)
                 .size(size[0]);
@@ -68,12 +68,12 @@ public class KerasUpsampling1D extends KerasLayer {
     }
 
     /**
-     * Get DL4J Upsampling1D layer.
+     * Get DL4J Upsampling1DLayer layer.
      *
-     * @return Upsampling1D layer
+     * @return Upsampling1DLayer layer
      */
-    public Upsampling1D getUpsampling1DLayer() {
-        return (Upsampling1D) this.layer;
+    public Upsampling1DLayer getUpsampling1DLayer() {
+        return (Upsampling1DLayer) this.layer;
     }
 
     /**

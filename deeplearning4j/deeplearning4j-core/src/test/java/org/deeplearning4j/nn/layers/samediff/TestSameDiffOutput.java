@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffMSELossLayer;

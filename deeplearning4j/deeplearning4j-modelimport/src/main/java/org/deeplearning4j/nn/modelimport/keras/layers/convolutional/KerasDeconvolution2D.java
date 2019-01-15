@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.Deconvolution2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Deconvolution2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
@@ -96,7 +96,7 @@ public class KerasDeconvolution2D extends KerasConvolution {
         LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_W_CONSTRAINT(), conf, kerasMajorVersion);
 
-        Deconvolution2D.Builder builder = new Deconvolution2D.Builder().name(this.layerName)
+        Deconvolution2DLayer.Builder builder = new Deconvolution2DLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit.getWeightInitFunction(distribution))
@@ -120,12 +120,12 @@ public class KerasDeconvolution2D extends KerasConvolution {
     }
 
     /**
-     * Get DL4J ConvolutionLayer.
+     * Get DL4J Convolution2DLayer.
      *
-     * @return ConvolutionLayer
+     * @return Convolution2DLayer
      */
-    public Deconvolution2D getDeconvolution2DLayer() {
-        return (Deconvolution2D) this.layer;
+    public Deconvolution2DLayer getDeconvolution2DLayer() {
+        return (Deconvolution2DLayer) this.layer;
     }
 
     /**

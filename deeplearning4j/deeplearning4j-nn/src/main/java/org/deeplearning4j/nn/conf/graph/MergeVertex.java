@@ -20,7 +20,7 @@ package org.deeplearning4j.nn.conf.graph;
 import lombok.val;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
-import org.deeplearning4j.nn.conf.layers.Convolution3D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -171,7 +171,7 @@ public class MergeVertex extends GraphVertex {
                 depthSum += oc;
             }
 
-            return InputType.convolutional3D(Convolution3D.DataFormat.NDHWC, fd, fh, fw, depthSum);
+            return InputType.convolutional3D(Convolution3DLayer.DataFormat.NDHWC, fd, fh, fw, depthSum);
         } else {
             //CNN inputs... also check that the channels, width and heights match:
             InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;

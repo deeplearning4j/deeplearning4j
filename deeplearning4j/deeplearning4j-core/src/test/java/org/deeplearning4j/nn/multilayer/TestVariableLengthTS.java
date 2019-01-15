@@ -22,6 +22,11 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -69,7 +74,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .updater(new Sgd(0.1)).seed(12345).list()
-                            .layer(0, new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
+                            .layer(0, new GravesLSTMLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                             .layer(1, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2)
                                             .nOut(1).activation(Activation.TANH).build())
                             .build();
@@ -159,7 +164,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                             .updater(new Sgd(0.1)).seed(12345).list()
                             .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                             .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
-                            .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
+                            .layer(2, new GravesLSTMLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                             .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR).nIn(2)
                                             .nOut(1).activation(Activation.TANH).build())
                             .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
@@ -299,7 +304,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
 
                         MultiLayerConfiguration conf =
                                         new NeuralNetConfiguration.Builder().seed(12345L).list()
-                                                        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
+                                                        .layer(0, new GravesLSTMLayer.Builder().nIn(nIn).nOut(5)
 
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp()).build())
@@ -362,7 +367,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
 
                         MultiLayerConfiguration conf =
                                         new NeuralNetConfiguration.Builder().seed(12345L).list()
-                                                        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
+                                                        .layer(0, new GravesLSTMLayer.Builder().nIn(nIn).nOut(5)
 
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp()).build())
@@ -378,7 +383,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
 
                         MultiLayerConfiguration conf2 =
                                         new NeuralNetConfiguration.Builder().seed(12345L).list()
-                                                        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
+                                                        .layer(0, new GravesLSTMLayer.Builder().nIn(nIn).nOut(5)
 
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp()).build())
@@ -434,8 +439,8 @@ public class TestVariableLengthTS extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
                         .activation(Activation.TANH).list()
-                        .layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize).build())
-                        .layer(1, new GravesBidirectionalLSTM.Builder().nIn(layerSize).nOut(layerSize).build())
+                        .layer(0, new GravesBidirectionalLSTMLayer.Builder().nIn(nIn).nOut(layerSize).build())
+                        .layer(1, new GravesBidirectionalLSTMLayer.Builder().nIn(layerSize).nOut(layerSize).build())
                         .layer(2, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                                         .nIn(layerSize).nOut(nOut).build())
                         .build();
@@ -511,12 +516,12 @@ public class TestVariableLengthTS extends BaseDL4JTest {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
                                 .activation(Activation.TANH).list().layer(0, bidirectional
-                                                ? new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize).build()
-                                                : new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).build())
+                                                ? new GravesBidirectionalLSTMLayer.Builder().nIn(nIn).nOut(layerSize).build()
+                                                : new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize).build())
                                 .layer(1, bidirectional
-                                                ? new GravesBidirectionalLSTM.Builder().nIn(layerSize).nOut(layerSize)
+                                                ? new GravesBidirectionalLSTMLayer.Builder().nIn(layerSize).nOut(layerSize)
                                                                 .build()
-                                                : new GravesLSTM.Builder().nIn(layerSize).nOut(layerSize).build())
+                                                : new GravesLSTMLayer.Builder().nIn(layerSize).nOut(layerSize).build())
                                 .layer(2, new GlobalPoolingLayer.Builder().poolingType(pt).build())
                                 .layer(3, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                                                 .nIn(layerSize).nOut(nOut).build())

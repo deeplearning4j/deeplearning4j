@@ -43,7 +43,7 @@ public class KerasRnnUtils {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_UNROLL()))
             throw new InvalidKerasConfigurationException(
-                    "Keras LSTM layer config missing " + conf.getLAYER_FIELD_UNROLL() + " field");
+                    "Keras LSTMLayer layer config missing " + conf.getLAYER_FIELD_UNROLL() + " field");
         return (boolean) innerConfig.get(conf.getLAYER_FIELD_UNROLL());
     }
 

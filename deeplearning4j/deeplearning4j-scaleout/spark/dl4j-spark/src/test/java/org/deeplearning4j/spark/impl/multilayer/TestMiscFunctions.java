@@ -22,6 +22,9 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.LossFunctionWrapper;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -108,7 +111,7 @@ public class TestMiscFunctions extends BaseSparkTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
                 .list()
-                .layer( new LSTM.Builder().nIn(4).nOut(3).build())
+                .layer( new LSTMLayer.Builder().nIn(4).nOut(3).build())
                 .layer(new GlobalPoolingLayer(PoolingType.AVG))
                 .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3)
                         .activation(Activation.SOFTMAX).build())

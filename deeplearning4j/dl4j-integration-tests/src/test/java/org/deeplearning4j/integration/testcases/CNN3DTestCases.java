@@ -16,33 +16,27 @@
 
 package org.deeplearning4j.integration.testcases;
 
-import org.apache.commons.math3.stat.inference.TestUtils;
-import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.eval.IEvaluation;
-import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.integration.TestCase;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling3DLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -78,8 +72,8 @@ public class CNN3DTestCases {
                         .updater(new Nesterovs(0.01, 0.9))
                         .convolutionMode(ConvolutionMode.Same)
                         .list()
-                        .layer(new Convolution3D.Builder(3,3,3)
-                                .dataFormat(Convolution3D.DataFormat.NCDHW)
+                        .layer(new Convolution3DLayer.Builder(3,3,3)
+                                .dataFormat(Convolution3DLayer.DataFormat.NCDHW)
                                 .nIn(nChannels)
                                 .stride(2, 2, 2)
                                 .nOut(8)

@@ -34,7 +34,10 @@ import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -97,7 +100,7 @@ public class RNNTestCases {
                 CharacterIterator iter = CharacterIterator.getShakespeareIterator(miniBatchSize,exampleLength);
                 int nOut = iter.totalOutcomes();
 
-                int lstmLayerSize = 200;					//Number of units in each GravesLSTM layer
+                int lstmLayerSize = 200;					//Number of units in each GravesLSTMLayer layer
                 int tbpttLength = 50;                       //Length for truncated backpropagation through time. i.e., do parameter updates ever 50 characters
 
                 return new NeuralNetConfiguration.Builder()
@@ -106,9 +109,9 @@ public class RNNTestCases {
                         .weightInit(WeightInit.XAVIER)
                         .updater(new RmsProp(0.1))
                         .list()
-                        .layer(0, new LSTM.Builder().nIn(iter.inputColumns()).nOut(lstmLayerSize)
+                        .layer(0, new LSTMLayer.Builder().nIn(iter.inputColumns()).nOut(lstmLayerSize)
                                 .activation(Activation.TANH).build())
-                        .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
+                        .layer(1, new LSTMLayer.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
                                 .activation(Activation.TANH).build())
                         .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)        //MCXENT + softmax for classification
                                 .nIn(lstmLayerSize).nOut(nOut).build())
@@ -182,7 +185,7 @@ public class RNNTestCases {
                     .updater(new Adam(5e-2))
                     .l1(1e-3).l2(1e-3)
                     .list()
-                    .layer(0, new LSTM.Builder().activation(Activation.TANH).nOut(10).build())
+                    .layer(0, new LSTMLayer.Builder().activation(Activation.TANH).nOut(10).build())
                     .layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build())
                     .layer(new OutputLayer.Builder().nOut(6)
                             .lossFunction(LossFunctions.LossFunction.MCXENT)
@@ -287,7 +290,7 @@ public class RNNTestCases {
     }
 
     /**
-     * Similar to test case 1 - but using GravesLSTM + bidirectional wrapper + min/max scaler normalizer
+     * Similar to test case 1 - but using GravesLSTMLayer + bidirectional wrapper + min/max scaler normalizer
      */
     protected static class RnnCsvSequenceClassificationTestCase2 extends RnnCsvSequenceClassificationTestCase1 {
         protected RnnCsvSequenceClassificationTestCase2() {
@@ -302,7 +305,7 @@ public class RNNTestCases {
                     .updater(new Adam(5e-2))
                     .l1(1e-3).l2(1e-3)
                     .list()
-                    .layer(0, new Bidirectional(new LSTM.Builder().activation(Activation.TANH).nOut(10).build()))
+                    .layer(0, new BidirectionalLayer(new LSTMLayer.Builder().activation(Activation.TANH).nOut(10).build()))
                     .layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build())
                     .layer(new OutputLayer.Builder().nOut(6)
                             .lossFunction(LossFunctions.LossFunction.MCXENT)

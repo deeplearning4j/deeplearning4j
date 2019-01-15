@@ -20,7 +20,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping3D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping3DLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -64,19 +64,19 @@ public class KerasCropping3D extends KerasLayer {
         super(layerConfig, enforceTrainingConfig);
         String croppingField = conf.getLAYER_FIELD_CROPPING();
         int[] cropping = getPaddingFromConfig(layerConfig, conf, croppingField, 3);
-        Cropping3D.Builder builder = new Cropping3D.Builder(cropping)
+        Cropping3DLayer.Builder builder = new Cropping3DLayer.Builder(cropping)
                 .name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
         this.vertex = null;
     }
 
     /**
-     * Get DL4J Cropping3D layer.
+     * Get DL4J Cropping3DLayer layer.
      *
-     * @return Cropping3D layer
+     * @return Cropping3DLayer layer
      */
-    public Cropping3D getCropping3DLayer() {
-        return (Cropping3D) this.layer;
+    public Cropping3DLayer getCropping3DLayer() {
+        return (Cropping3DLayer) this.layer;
     }
 
     /**

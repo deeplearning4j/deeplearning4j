@@ -53,6 +53,12 @@ import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
 import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
@@ -263,7 +269,7 @@ public class TestMultiLayerSpace {
                     assertEquals(Activation.SOFTMAX.getActivationFunction(), ((BaseLayer) layerConf.getLayer()).getActivationFn());
                 } else if (j == 0) {
                     //Conv layer
-                    ConvolutionLayer cl = (ConvolutionLayer) layerConf.getLayer();
+                    Convolution2DLayer cl = (Convolution2DLayer) layerConf.getLayer();
                     assertEquals(3, cl.getNIn());
                     assertEquals(3, cl.getNOut());
                     assertEquals(ConvolutionMode.Same, cl.getConvolutionMode());
@@ -292,7 +298,7 @@ public class TestMultiLayerSpace {
     public void testGlobalPoolingBasic() {
 
         MultiLayerConfiguration expected = new NeuralNetConfiguration.Builder().updater(new Sgd(0.005)).seed(12345).list()
-                        .layer(0, new GravesLSTM.Builder().nIn(10).nOut(10).build())
+                        .layer(0, new GravesLSTMLayer.Builder().nIn(10).nOut(10).build())
                         .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.SUM).pnorm(7).build())
                         .layer(2, new OutputLayer.Builder().lossFunction(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(5).build())
                         .build();
@@ -401,12 +407,12 @@ public class TestMultiLayerSpace {
                         .weightInit(WeightInit.XAVIER).updater(new Nesterovs())
                         .addLayer(new ConvolutionLayerSpace.Builder().kernelSize(5, 5).nIn(1).stride(1, 1)
                                         .nOut(layerSizeHyperparam).activation(Activation.IDENTITY).build())
-                        .addLayer(new SubsamplingLayerSpace.Builder().poolingType(SubsamplingLayer.PoolingType.MAX)
+                        .addLayer(new SubsamplingLayerSpace.Builder().poolingType(Subsampling2DLayer.PoolingType.MAX)
                                         .kernelSize(2, 2).stride(2, 2).build())
                         .addLayer(new ConvolutionLayerSpace.Builder().kernelSize(5, 5)
                                         //Note that nIn need not be specified in later layers
                                         .stride(1, 1).nOut(50).activation(Activation.IDENTITY).build())
-                        .addLayer(new SubsamplingLayerSpace.Builder().poolingType(SubsamplingLayer.PoolingType.MAX)
+                        .addLayer(new SubsamplingLayerSpace.Builder().poolingType(Subsampling2DLayer.PoolingType.MAX)
                                         .kernelSize(2, 2).stride(2, 2).build())
                         .addLayer(new DenseLayerSpace.Builder().activation(Activation.RELU).nOut(500).build())
                         .addLayer(new OutputLayerSpace.Builder()
@@ -517,13 +523,13 @@ public class TestMultiLayerSpace {
         Field b = BidirectionalLayer.class.getDeclaredField("bwd");
         f.setAccessible(true);
         b.setAccessible(true);
-        org.deeplearning4j.nn.layers.recurrent.LSTM lstmFwd = (org.deeplearning4j.nn.layers.recurrent.LSTM) f.get(bl);
-        org.deeplearning4j.nn.layers.recurrent.LSTM lstmBwd = (org.deeplearning4j.nn.layers.recurrent.LSTM) b.get(bl);
+        org.deeplearning4j.nn.layers.recurrent.LSTMLayer lstmFwd = (org.deeplearning4j.nn.layers.recurrent.LSTMLayer) f.get(bl);
+        org.deeplearning4j.nn.layers.recurrent.LSTMLayer lstmBwd = (org.deeplearning4j.nn.layers.recurrent.LSTMLayer) b.get(bl);
 
-        assertEquals(10, ((LSTM)lstmFwd.conf().getLayer()).getNIn());
-        assertEquals(10, ((LSTM)lstmFwd.conf().getLayer()).getNOut());
-        assertEquals(10, ((LSTM)lstmBwd.conf().getLayer()).getNIn());
-        assertEquals(10, ((LSTM)lstmBwd.conf().getLayer()).getNOut());
+        assertEquals(10, ((LSTMLayer)lstmFwd.conf().getLayer()).getNIn());
+        assertEquals(10, ((LSTMLayer)lstmFwd.conf().getLayer()).getNOut());
+        assertEquals(10, ((LSTMLayer)lstmBwd.conf().getLayer()).getNIn());
+        assertEquals(10, ((LSTMLayer)lstmBwd.conf().getLayer()).getNOut());
     }
 
 

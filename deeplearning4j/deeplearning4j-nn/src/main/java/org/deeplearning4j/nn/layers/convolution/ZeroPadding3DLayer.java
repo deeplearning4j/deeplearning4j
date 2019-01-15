@@ -36,13 +36,13 @@ import org.nd4j.linalg.primitives.Pair;
  *
  * @author Max Pumperla
  */
-public class ZeroPadding3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.ZeroPadding3DLayer> {
+public class ZeroPadding3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.convolutional.ZeroPadding3DLayer> {
 
     private int[] padding; // [padLeft1, padRight1, padLeft2, padRight2, padLeft3, padRight3]
 
     public ZeroPadding3DLayer(NeuralNetConfiguration conf) {
         super(conf);
-        this.padding = ((org.deeplearning4j.nn.conf.layers.ZeroPadding3DLayer) conf.getLayer()).getPadding();
+        this.padding = ((org.deeplearning4j.nn.conf.layers.convolutional.ZeroPadding3DLayer) conf.getLayer()).getPadding();
     }
 
     @Override

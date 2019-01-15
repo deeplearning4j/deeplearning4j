@@ -25,7 +25,13 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.ZeroPadding1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -86,7 +92,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                             .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
                                     .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
                                     .build())
-                            .layer(new LocallyConnected1D.Builder().activation(afn).kernelSize(kernel)
+                            .layer(new LocallyConnected1DLayer.Builder().activation(afn).kernelSize(kernel)
                                     .stride(stride).padding(padding).nIn(convNOut1).nOut(convNOut2).hasBias(false)
                                     .build())
                             .layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -142,12 +148,12 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
         int croppedLength = length - 2 * cropping;
 
         Activation[] activations = {Activation.SIGMOID};
-        SubsamplingLayer.PoolingType[] poolingTypes =
-                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
-                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
+        Subsampling2DLayer.PoolingType[] poolingTypes =
+                new Subsampling2DLayer.PoolingType[]{Subsampling2DLayer.PoolingType.MAX,
+                        Subsampling2DLayer.PoolingType.AVG, Subsampling2DLayer.PoolingType.PNORM};
 
         for (Activation afn : activations) {
-            for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
+            for (Subsampling2DLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     for (int kernel : kernels) {
                         INDArray input = Nd4j.rand(new int[]{minibatchSize, convNIn, length});
@@ -164,7 +170,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                                 .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
                                         .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
                                         .build())
-                                .layer(new Cropping1D.Builder(cropping).build())
+                                .layer(new Cropping1DLayer.Builder(cropping).build())
                                 .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
                                         .stride(stride).padding(padding).nIn(convNOut1).nOut(convNOut2)
                                         .build())
@@ -222,12 +228,12 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
         int paddedLength = length + 2 * zeroPadding;
 
         Activation[] activations = {Activation.SIGMOID};
-        SubsamplingLayer.PoolingType[] poolingTypes =
-                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
-                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
+        Subsampling2DLayer.PoolingType[] poolingTypes =
+                new Subsampling2DLayer.PoolingType[]{Subsampling2DLayer.PoolingType.MAX,
+                        Subsampling2DLayer.PoolingType.AVG, Subsampling2DLayer.PoolingType.PNORM};
 
         for (Activation afn : activations) {
-            for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
+            for (Subsampling2DLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     for (int kernel : kernels) {
                         INDArray input = Nd4j.rand(new int[]{minibatchSize, convNIn, length});
@@ -300,12 +306,12 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
         int pnorm = 2;
 
         Activation[] activations = {Activation.SIGMOID, Activation.TANH};
-        SubsamplingLayer.PoolingType[] poolingTypes =
-                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
-                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
+        Subsampling2DLayer.PoolingType[] poolingTypes =
+                new Subsampling2DLayer.PoolingType[]{Subsampling2DLayer.PoolingType.MAX,
+                        Subsampling2DLayer.PoolingType.AVG, Subsampling2DLayer.PoolingType.PNORM};
 
         for (Activation afn : activations) {
-            for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
+            for (Subsampling2DLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     for (int kernel : kernels) {
                         INDArray input = Nd4j.rand(new int[]{minibatchSize, convNIn, length});
@@ -368,10 +374,10 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
 
         int pnorm = 2;
 
-        SubsamplingLayer.PoolingType[] poolingTypes =
-                new SubsamplingLayer.PoolingType[] {SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG};
+        Subsampling2DLayer.PoolingType[] poolingTypes =
+                new Subsampling2DLayer.PoolingType[] {Subsampling2DLayer.PoolingType.MAX, Subsampling2DLayer.PoolingType.AVG};
 
-        for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
+        for (Subsampling2DLayer.PoolingType poolingType : poolingTypes) {
             for(ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Same, ConvolutionMode.Truncate}){
                 for( int stride : new int[]{1, 2}){
                     String s = cm + ", stride=" + stride + ", pooling=" + poolingType;

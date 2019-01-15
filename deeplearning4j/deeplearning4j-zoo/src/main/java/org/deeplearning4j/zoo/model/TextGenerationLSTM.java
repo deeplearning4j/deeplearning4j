@@ -18,13 +18,12 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.ModelMetaData;
@@ -37,8 +36,8 @@ import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
- * LSTM designed for text generation. Can be trained on a corpus of text. For this model, numClasses is
- * used to input {@code totalUniqueCharacters} for the LSTM input layer.
+ * LSTMLayer designed for text generation. Can be trained on a corpus of text. For this model, numClasses is
+ * used to input {@code totalUniqueCharacters} for the LSTMLayer input layer.
  *
  * Architecture follows this implementation: <a href="https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py">
  *     https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py</a>
@@ -59,7 +58,7 @@ public class TextGenerationLSTM extends ZooModel {
     @Builder.Default private IUpdater updater = new RmsProp(0.01);
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    @Builder.Default private Convolution2DLayer.AlgoMode cudnnAlgoMode = Convolution2DLayer.AlgoMode.PREFER_FASTEST;
 
     private TextGenerationLSTM() {}
 
@@ -89,9 +88,9 @@ public class TextGenerationLSTM extends ZooModel {
                         .inferenceWorkspaceMode(workspaceMode)
                         .cudnnAlgoMode(cudnnAlgoMode)
                         .list()
-                        .layer(0, new GravesLSTM.Builder().nIn(inputShape[1]).nOut(256).activation(Activation.TANH)
+                        .layer(0, new GravesLSTMLayer.Builder().nIn(inputShape[1]).nOut(256).activation(Activation.TANH)
                                         .build())
-                        .layer(1, new GravesLSTM.Builder().nOut(256).activation(Activation.TANH).build())
+                        .layer(1, new GravesLSTMLayer.Builder().nOut(256).activation(Activation.TANH).build())
                         .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX) //MCXENT + softmax for classification
                                         .nOut(totalUniqueCharacters).build())

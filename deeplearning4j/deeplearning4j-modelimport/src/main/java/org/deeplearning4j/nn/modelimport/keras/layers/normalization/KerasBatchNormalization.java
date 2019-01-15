@@ -21,7 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -31,13 +31,12 @@ import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * Imports a BatchNormalization layer from Keras.
+ * Imports a BatchNormalizationLayer layer from Keras.
  *
  * @author dave@skymind.io, Max Pumperla
  */
@@ -127,7 +126,7 @@ public class KerasBatchNormalization extends KerasLayer {
         LayerConstraint gammaConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_BATCHNORMALIZATION_GAMMA_CONSTRAINT(), conf, kerasMajorVersion);
 
-        BatchNormalization.Builder builder = new BatchNormalization.Builder()
+        BatchNormalizationLayer.Builder builder = new BatchNormalizationLayer.Builder()
                 .name(this.layerName)
                 .dropOut(this.dropout)
                 .minibatch(true)
@@ -147,8 +146,8 @@ public class KerasBatchNormalization extends KerasLayer {
      *
      * @return BatchNormalizationLayer
      */
-    public BatchNormalization getBatchNormalizationLayer() {
-        return (BatchNormalization) this.layer;
+    public BatchNormalizationLayer getBatchNormalizationLayer() {
+        return (BatchNormalizationLayer) this.layer;
     }
 
     /**
@@ -227,7 +226,7 @@ public class KerasBatchNormalization extends KerasLayer {
     }
 
     /**
-     * Get BatchNormalization epsilon parameter from Keras layer configuration.
+     * Get BatchNormalizationLayer epsilon parameter from Keras layer configuration.
      *
      * @param layerConfig dictionary containing Keras layer configuration
      * @return epsilon
@@ -242,7 +241,7 @@ public class KerasBatchNormalization extends KerasLayer {
     }
 
     /**
-     * Get BatchNormalization momentum parameter from Keras layer configuration.
+     * Get BatchNormalizationLayer momentum parameter from Keras layer configuration.
      *
      * @param layerConfig dictionary containing Keras layer configuration
      * @return momentum
@@ -257,7 +256,7 @@ public class KerasBatchNormalization extends KerasLayer {
     }
 
     /**
-     * Get BatchNormalization gamma regularizer from Keras layer configuration. Currently unsupported.
+     * Get BatchNormalizationLayer gamma regularizer from Keras layer configuration. Currently unsupported.
      *
      * @param layerConfig dictionary containing Keras layer configuration
      * @return Batchnormalization gamma regularizer
@@ -269,9 +268,9 @@ public class KerasBatchNormalization extends KerasLayer {
         if (innerConfig.get(LAYER_FIELD_GAMMA_REGULARIZER) != null) {
             if (enforceTrainingConfig)
                 throw new UnsupportedKerasConfigurationException(
-                        "Regularization for BatchNormalization gamma parameter not supported");
+                        "Regularization for BatchNormalizationLayer gamma parameter not supported");
             else
-                log.warn("Regularization for BatchNormalization gamma parameter not supported...ignoring.");
+                log.warn("Regularization for BatchNormalizationLayer gamma parameter not supported...ignoring.");
         }
     }
 
@@ -296,7 +295,7 @@ public class KerasBatchNormalization extends KerasLayer {
     }
 
     /**
-     * Get BatchNormalization beta regularizer from Keras layer configuration. Currently unsupported.
+     * Get BatchNormalizationLayer beta regularizer from Keras layer configuration. Currently unsupported.
      *
      * @param layerConfig dictionary containing Keras layer configuration
      * @return Batchnormalization beta regularizer
@@ -308,14 +307,14 @@ public class KerasBatchNormalization extends KerasLayer {
         if (innerConfig.get(LAYER_FIELD_BETA_REGULARIZER) != null) {
             if (enforceTrainingConfig)
                 throw new UnsupportedKerasConfigurationException(
-                        "Regularization for BatchNormalization beta parameter not supported");
+                        "Regularization for BatchNormalizationLayer beta parameter not supported");
             else
-                log.warn("Regularization for BatchNormalization beta parameter not supported...ignoring.");
+                log.warn("Regularization for BatchNormalizationLayer beta parameter not supported...ignoring.");
         }
     }
 
     /**
-     * Get BatchNormalization "mode" from Keras layer configuration. Most modes currently unsupported.
+     * Get BatchNormalizationLayer "mode" from Keras layer configuration. Most modes currently unsupported.
      *
      * @param layerConfig dictionary containing Keras layer configuration
      * @return batchnormalization mode
@@ -332,18 +331,18 @@ public class KerasBatchNormalization extends KerasLayer {
             batchNormMode = (int) innerConfig.get(LAYER_FIELD_MODE);
         switch (batchNormMode) {
             case LAYER_BATCHNORM_MODE_1:
-                throw new UnsupportedKerasConfigurationException("Keras BatchNormalization mode "
+                throw new UnsupportedKerasConfigurationException("Keras BatchNormalizationLayer mode "
                         + LAYER_BATCHNORM_MODE_1 + " (sample-wise) not supported");
             case LAYER_BATCHNORM_MODE_2:
                 throw new UnsupportedKerasConfigurationException(
-                        "Keras BatchNormalization (per-batch statistics during testing) "
+                        "Keras BatchNormalizationLayer (per-batch statistics during testing) "
                                 + LAYER_BATCHNORM_MODE_2 + " not supported");
         }
         return batchNormMode;
     }
 
     /**
-     * Get BatchNormalization axis from Keras layer configuration. Currently unused.
+     * Get BatchNormalizationLayer axis from Keras layer configuration. Currently unused.
      *
      * @param layerConfig dictionary containing Keras layer configuration
      * @return batchnorm axis

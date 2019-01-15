@@ -40,7 +40,7 @@ public class UnitNormConstraint extends BaseConstraint {
     /**
      * Apply to weights but not biases by default
      *
-     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
+     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTMLayer, etc: this should
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
@@ -50,7 +50,7 @@ public class UnitNormConstraint extends BaseConstraint {
 
 
     /**
-     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
+     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTMLayer, etc: this should
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */

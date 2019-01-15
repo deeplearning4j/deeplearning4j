@@ -25,7 +25,11 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -141,17 +145,17 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
                             it = InputType.feedForward(5);
                             break;
                         case 3:
-                            l1 = new LSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build();
-                            l2 = new LSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build();
+                            l1 = new LSTMLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build();
+                            l2 = new LSTMLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build();
                             l3 = new RnnOutputLayer.Builder().nIn(5).nOut(5).lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
                                     .activation(Activation.IDENTITY).build();
                             it = InputType.recurrent(5);
                             break;
                         case 4:
-                            l1 = new ConvolutionLayer.Builder().nOut(5).convolutionMode(ConvolutionMode.Truncate)
+                            l1 = new Convolution2DLayer.Builder().nOut(5).convolutionMode(ConvolutionMode.Truncate)
                                     .stride(1,1).kernelSize(2,2).padding(0,0)
                                     .build();
-                            l2 = new ConvolutionLayer.Builder().nOut(5).convolutionMode(ConvolutionMode.Truncate)
+                            l2 = new Convolution2DLayer.Builder().nOut(5).convolutionMode(ConvolutionMode.Truncate)
                                     .stride(1,1).kernelSize(2,2).padding(0,0)
                                     .build();
                             l3 = new OutputLayer.Builder().nOut(5).lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)

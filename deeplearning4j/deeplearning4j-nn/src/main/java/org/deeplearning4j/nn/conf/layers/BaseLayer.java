@@ -16,7 +16,12 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import java.io.Serializable;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -27,8 +32,6 @@ import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.learning.config.IUpdater;
-
-import java.io.Serializable;
 
 /**
  * A neural network layer.

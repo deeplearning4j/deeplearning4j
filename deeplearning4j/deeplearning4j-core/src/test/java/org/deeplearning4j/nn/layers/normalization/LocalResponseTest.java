@@ -24,9 +24,9 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.LocalResponseNormalization;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.LocalResponseNormalizationLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -109,10 +109,10 @@ public class LocalResponseTest extends BaseDL4JTest {
     public void doBefore() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
-                        .layer(new LocalResponseNormalization.Builder().k(2).n(5).alpha(1e-4).beta(0.75).build())
+                        .layer(new LocalResponseNormalizationLayer.Builder().k(2).n(5).alpha(1e-4).beta(0.75).build())
                         .build();
 
-        layer = new LocalResponseNormalization().instantiate(conf, null, 0, null, false);
+        layer = new LocalResponseNormalizationLayer().instantiate(conf, null, 0, null, false);
         activationsActual = layer.activate(x, false, LayerWorkspaceMgr.noWorkspaces());
     }
 
@@ -140,7 +140,7 @@ public class LocalResponseTest extends BaseDL4JTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).l1(0.2)
                         .l2(0.1).seed(123)
-                        .layer(new LocalResponseNormalization.Builder().k(2).n(5).alpha(1e-4).beta(0.75).build())
+                        .layer(new LocalResponseNormalizationLayer.Builder().k(2).n(5).alpha(1e-4).beta(0.75).build())
                         .build();
     }
 
@@ -148,9 +148,9 @@ public class LocalResponseTest extends BaseDL4JTest {
     public void testMultiCNNLayer() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(123).list()
-                        .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
+                        .layer(0, new Convolution2DLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
-                        .layer(1, new LocalResponseNormalization.Builder().build()).layer(2,
+                        .layer(1, new LocalResponseNormalizationLayer.Builder().build()).layer(2,
                                         new DenseLayer.Builder()
                                                         .nOut(2).build())
                         .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -199,10 +199,10 @@ public class LocalResponseTest extends BaseDL4JTest {
             }
         }
 
-        LocalResponseNormalization lrn = new LocalResponseNormalization.Builder().build();
+        LocalResponseNormalizationLayer lrn = new LocalResponseNormalizationLayer.Builder().build();
         NeuralNetConfiguration nnc = new NeuralNetConfiguration.Builder().layer(lrn).build();
-        org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization layer =
-                        (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization) lrn.instantiate(nnc,
+        org.deeplearning4j.nn.layers.normalization.LocalResponseNormalizationLayer layer =
+                        (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalizationLayer) lrn.instantiate(nnc,
                                         null, 0, null, false);
 
         INDArray outAct = layer.activate(in, true, LayerWorkspaceMgr.noWorkspaces());

@@ -23,9 +23,10 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -35,12 +36,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -63,15 +62,15 @@ public class TestCompGraphCNN extends BaseDL4JTest {
                                         .graphBuilder().addInputs("input")
                                         .setInputTypes(InputType.convolutional(32, 32, 3))
                                         .addLayer("cnn1",
-                                                        new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(3).nOut(3)
+                                                        new Convolution2DLayer.Builder(4, 4).stride(2, 2).nIn(3).nOut(3)
                                                                         .build(),
                                                         "input")
                                         .addLayer("cnn2",
-                                                        new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(3).nOut(3)
+                                                        new Convolution2DLayer.Builder(4, 4).stride(2, 2).nIn(3).nOut(3)
                                                                         .build(),
                                                         "input")
                                         .addLayer("max1",
-                                                        new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                                        new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX)
                                                                         .stride(1, 1).kernelSize(2, 2).build(),
                                                         "cnn1", "cnn2")
                                         .addLayer("dnn1", new DenseLayer.Builder().nOut(7).build(), "max1")
@@ -159,13 +158,13 @@ public class TestCompGraphCNN extends BaseDL4JTest {
                                         .seed(123).graphBuilder().addInputs("input")
                                         .setInputTypes(InputType.convolutional(nChannels, imageWidth,
                                                         imageHeight))
-                                        .addLayer("conv1", new ConvolutionLayer.Builder()
+                                        .addLayer("conv1", new Convolution2DLayer.Builder()
                                                         .kernelSize(kernelHeight, kernelWidth).stride(1, 1)
                                                         .nIn(nChannels).nOut(2).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.RELU).build(), "input")
                                         .addLayer("pool1",
-                                                        new SubsamplingLayer.Builder()
-                                                                        .poolingType(SubsamplingLayer.PoolingType.MAX)
+                                                        new Subsampling2DLayer.Builder()
+                                                                        .poolingType(Subsampling2DLayer.PoolingType.MAX)
                                                                         .kernelSize(imageHeight - kernelHeight + 1, 1)
                                                                         .stride(1, 1).build(),
                                                         "conv1")

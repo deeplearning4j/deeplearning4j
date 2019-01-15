@@ -33,10 +33,13 @@ import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
-import org.deeplearning4j.eval.meta.Prediction;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingSequenceLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -52,17 +55,13 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.util.FeatureUtil;
 
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 /**
@@ -275,7 +274,7 @@ public class EvalTest extends BaseDL4JTest {
                     .trainingWorkspaceMode(ws)
                     .inferenceWorkspaceMode(ws)
                     .list()
-                    .layer(new LSTM.Builder().nIn(nIn).nOut(layerSize).build())
+                    .layer(new LSTMLayer.Builder().nIn(nIn).nOut(layerSize).build())
                     .layer(new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
                             .activation(Activation.SOFTMAX)
                             .build())
@@ -286,7 +285,7 @@ public class EvalTest extends BaseDL4JTest {
                     .trainingWorkspaceMode(ws)
                     .inferenceWorkspaceMode(ws)
                     .list()
-                    .layer(new LSTM.Builder().nIn(nIn).nOut(layerSize).build())
+                    .layer(new LSTMLayer.Builder().nIn(nIn).nOut(layerSize).build())
                     .layer(new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
                             .activation(Activation.SOFTMAX).build())
                     .tBPTTLength(10)
@@ -352,7 +351,7 @@ public class EvalTest extends BaseDL4JTest {
                     .inferenceWorkspaceMode(ws)
                     .graphBuilder()
                     .addInputs("in")
-                    .addLayer("0", new LSTM.Builder().nIn(nIn).nOut(layerSize).build(), "in")
+                    .addLayer("0", new LSTMLayer.Builder().nIn(nIn).nOut(layerSize).build(), "in")
                     .addLayer("1", new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
                             .activation(Activation.SOFTMAX)
                             .build(), "0")
@@ -365,7 +364,7 @@ public class EvalTest extends BaseDL4JTest {
                     .inferenceWorkspaceMode(ws)
                     .graphBuilder()
                     .addInputs("in")
-                    .addLayer("0", new LSTM.Builder().nIn(nIn).nOut(layerSize).build(), "in")
+                    .addLayer("0", new LSTMLayer.Builder().nIn(nIn).nOut(layerSize).build(), "in")
                     .addLayer("1", new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
                             .activation(Activation.SOFTMAX)
                             .build(), "0")
@@ -432,7 +431,7 @@ public class EvalTest extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
                 .list()
-                .layer(0, new LSTM.Builder().activation(Activation.TANH).nIn(3).nOut(3).build())
+                .layer(0, new LSTMLayer.Builder().activation(Activation.TANH).nIn(3).nOut(3).build())
                 .layer(1, new RnnOutputLayer.Builder().activation(Activation.SIGMOID).lossFunction(LossFunctions.LossFunction.XENT)
                         .nIn(3).nOut(1).build())
                 .backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(10).tBPTTBackwardLength(10)
@@ -517,8 +516,8 @@ public class EvalTest extends BaseDL4JTest {
                 .graphBuilder()
                 .addInputs("in")
                 .layer("0", new EmbeddingSequenceLayer.Builder().nIn(10).nOut(10).build(), "in")
-                .layer("1", new LSTM.Builder().nIn(10).nOut(10).build(), "0")
-                .layer("2", new LSTM.Builder().nIn(10).nOut(10).build(), "0")
+                .layer("1", new LSTMLayer.Builder().nIn(10).nOut(10).build(), "0")
+                .layer("2", new LSTMLayer.Builder().nIn(10).nOut(10).build(), "0")
                 .layer("out1", new RnnOutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "1")
                 .layer("out2", new RnnOutputLayer.Builder().nIn(10).nOut(20).activation(Activation.SOFTMAX).build(), "2")
                 .setOutputs("out1", "out2")

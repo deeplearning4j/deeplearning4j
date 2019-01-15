@@ -26,8 +26,12 @@ import org.deeplearning4j.integration.testcases.misc.CharacterIterator;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.ZeroPadding1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -77,8 +81,9 @@ public class CNN1DTestCases {
                         .graphBuilder()
                         .addInputs("in")
                         .layer("0", new Convolution1DLayer.Builder().nOut(32).activation(Activation.TANH).kernelSize(3).stride(1).build(), "in")
-                        .layer("1", new Subsampling1DLayer.Builder().kernelSize(2).stride(1).poolingType(SubsamplingLayer.PoolingType.MAX).build(), "0")
-                        .layer("2", new Cropping1D(1), "1")
+                        .layer("1", new Subsampling1DLayer.Builder().kernelSize(2).stride(1).poolingType(
+                                Subsampling2DLayer.PoolingType.MAX).build(), "0")
+                        .layer("2", new Cropping1DLayer(1), "1")
                         .layer("3", new ZeroPadding1DLayer(1), "2")
                         .layer("out", new RnnOutputLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nOut(nOut).build(), "3")
                         .setInputTypes(InputType.recurrent(nOut))

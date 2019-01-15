@@ -16,12 +16,10 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping3D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping3DLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasCropping2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasCropping3D;
 import org.junit.Test;
 
@@ -66,7 +64,7 @@ public class KerasCropping3DTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        Cropping3D layer = new KerasCropping3D(layerConfig).getCropping3DLayer();
+        Cropping3DLayer layer = new KerasCropping3D(layerConfig).getCropping3DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(CROPPING[0], layer.getCropping()[0]);
         assertEquals(CROPPING[0], layer.getCropping()[1]);
@@ -87,7 +85,7 @@ public class KerasCropping3DTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        Cropping3D layer = new KerasCropping3D(layerConfig).getCropping3DLayer();
+        Cropping3DLayer layer = new KerasCropping3D(layerConfig).getCropping3DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(CROPPING[0], layer.getCropping()[0]);
         assertEquals(CROPPING[0], layer.getCropping()[1]);

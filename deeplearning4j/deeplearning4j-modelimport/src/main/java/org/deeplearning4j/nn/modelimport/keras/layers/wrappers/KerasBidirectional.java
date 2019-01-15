@@ -19,11 +19,11 @@ package org.deeplearning4j.nn.modelimport.keras.layers.wrappers;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
-import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
-import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
-import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStepLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnnLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -37,7 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Builds a DL4J Bidirectional layer from a Keras Bidirectional layer wrapper
+ * Builds a DL4J BidirectionalLayer layer from a Keras BidirectionalLayer layer wrapper
  *
  * @author Max Pumperla
  */
@@ -96,33 +96,33 @@ public class KerasBidirectional extends KerasLayer {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey("merge_mode")) {
             throw new InvalidKerasConfigurationException("Field 'merge_mode' not found in configuration of " +
-                    "Bidirectional layer.");
+                    "BidirectionalLayer layer.");
         }
         if (!innerConfig.containsKey("layer")) {
             throw new InvalidKerasConfigurationException("Field 'layer' not found in configuration of" +
-                    "Bidirectional layer, i.e. no layer to be wrapped found.");
+                    "BidirectionalLayer layer, i.e. no layer to be wrapped found.");
         }
         @SuppressWarnings("unchecked")
         Map<String, Object> innerRnnConfig = (Map<String, Object>) innerConfig.get("layer");
         if (!innerRnnConfig.containsKey("class_name")) {
-            throw new InvalidKerasConfigurationException("No 'class_name' specified within Bidirectional layer" +
+            throw new InvalidKerasConfigurationException("No 'class_name' specified within BidirectionalLayer layer" +
                     "configuration.");
         }
 
-        Bidirectional.Mode mode;
+        BidirectionalLayer.Mode mode;
         String mergeModeString = (String) innerConfig.get("merge_mode");
         switch (mergeModeString) {
             case "sum":
-                mode = Bidirectional.Mode.ADD;
+                mode = BidirectionalLayer.Mode.ADD;
                 break;
             case "concat":
-                mode = Bidirectional.Mode.CONCAT;
+                mode = BidirectionalLayer.Mode.CONCAT;
                 break;
             case "mul":
-                mode = Bidirectional.Mode.MUL;
+                mode = BidirectionalLayer.Mode.MUL;
                 break;
             case "ave":
-                mode = Bidirectional.Mode.AVERAGE;
+                mode = BidirectionalLayer.Mode.AVERAGE;
                 break;
             default:
                 // Note that this is only for "None" mode, which we currently can't do.
@@ -133,27 +133,27 @@ public class KerasBidirectional extends KerasLayer {
 
         String rnnClass = (String) innerRnnConfig.get("class_name");
         switch (rnnClass) {
-            case "LSTM":
+            case "LSTMLayer":
                 kerasRnnlayer = new KerasLSTM(innerRnnConfig, enforceTrainingConfig, previousLayers);
                 try {
-                    LSTM rnnLayer = (LSTM) ((KerasLSTM) kerasRnnlayer).getLSTMLayer();
-                    layer = new Bidirectional(mode, rnnLayer);
+                    LSTMLayer rnnLayer = (LSTMLayer) ((KerasLSTM) kerasRnnlayer).getLSTMLayer();
+                    layer = new BidirectionalLayer(mode, rnnLayer);
                     layer.setLayerName(layerName);
                 } catch (Exception e) {
-                    LastTimeStep rnnLayer = (LastTimeStep) ((KerasLSTM) kerasRnnlayer).getLSTMLayer();
-                    this.layer = new Bidirectional(mode, rnnLayer);
+                    LastTimeStepLayer rnnLayer = (LastTimeStepLayer) ((KerasLSTM) kerasRnnlayer).getLSTMLayer();
+                    this.layer = new BidirectionalLayer(mode, rnnLayer);
                     layer.setLayerName(layerName);
                 }
                 break;
             case "SimpleRNN":
                 kerasRnnlayer = new KerasSimpleRnn(innerRnnConfig, enforceTrainingConfig, previousLayers);
-                SimpleRnn rnnLayer = (SimpleRnn) ((KerasSimpleRnn) kerasRnnlayer).getSimpleRnnLayer();
-                this.layer = new Bidirectional(mode, rnnLayer);
+                SimpleRnnLayer rnnLayer = (SimpleRnnLayer) ((KerasSimpleRnn) kerasRnnlayer).getSimpleRnnLayer();
+                this.layer = new BidirectionalLayer(mode, rnnLayer);
                 layer.setLayerName(layerName);
                 break;
             default:
                 throw new UnsupportedKerasConfigurationException("Currently only two types of recurrent Keras layers are" +
-                        "supported, 'LSTM' and 'SimpleRNN'. You tried to load a layer of class:" + rnnClass);
+                        "supported, 'LSTMLayer' and 'SimpleRNN'. You tried to load a layer of class:" + rnnClass);
         }
 
     }
@@ -168,12 +168,12 @@ public class KerasBidirectional extends KerasLayer {
     }
 
     /**
-     * Get DL4J Bidirectional layer.
+     * Get DL4J BidirectionalLayer layer.
      *
-     * @return Bidirectional Layer
+     * @return BidirectionalLayer Layer
      */
-    public Bidirectional getBidirectionalLayer() {
-        return (Bidirectional) this.layer;
+    public BidirectionalLayer getBidirectionalLayer() {
+        return (BidirectionalLayer) this.layer;
     }
 
     /**
@@ -187,7 +187,7 @@ public class KerasBidirectional extends KerasLayer {
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras Bidirectional layer accepts only one input (received " + inputType.length + ")");
+                    "Keras BidirectionalLayer layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preProcessor = getInputPreprocessor(inputType);
         if (preProcessor != null)
             return preProcessor.getOutputType(inputType[0]);
@@ -217,12 +217,12 @@ public class KerasBidirectional extends KerasLayer {
     public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras Bidirectional layer accepts only one input (received " + inputType.length + ")");
+                    "Keras BidirectionalLayer layer accepts only one input (received " + inputType.length + ")");
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
     }
 
     /**
-     * Set weights for Bidirectional layer.
+     * Set weights for BidirectionalLayer layer.
      *
      * @param weights Map of weights
      */

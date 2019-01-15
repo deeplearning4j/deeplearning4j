@@ -16,20 +16,21 @@
 
 package org.deeplearning4j.nn.layers.objdetect;
 
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Broadcast;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
+import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
-import static org.nd4j.linalg.indexing.NDArrayIndex.*;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Broadcast;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  * Functionality to interpret the network output of Yolo2OutputLayer.

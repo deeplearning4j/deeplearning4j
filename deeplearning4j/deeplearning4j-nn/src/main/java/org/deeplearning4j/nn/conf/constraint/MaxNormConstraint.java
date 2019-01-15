@@ -45,7 +45,7 @@ public class MaxNormConstraint extends BaseConstraint {
     /**
      * @param maxNorm        Maximum L2 value
      * @param paramNames     Which parameter names to apply constraint to
-     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
+     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTMLayer, etc: this should
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
@@ -58,7 +58,7 @@ public class MaxNormConstraint extends BaseConstraint {
      * Apply to weights but not biases by default
      *
      * @param maxNorm        Maximum L2 value
-     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
+     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTMLayer, etc: this should
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */

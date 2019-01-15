@@ -20,20 +20,17 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
-import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
-import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStepLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnnLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -63,8 +60,8 @@ public class RnnGradientChecks extends BaseDL4JTest {
         int nOut = 5;
         int tsLength = 4;
 
-        Bidirectional.Mode[] modes = new Bidirectional.Mode[]{Bidirectional.Mode.CONCAT, Bidirectional.Mode.ADD,
-                Bidirectional.Mode.AVERAGE, Bidirectional.Mode.MUL};
+        BidirectionalLayer.Mode[] modes = new BidirectionalLayer.Mode[]{BidirectionalLayer.Mode.CONCAT, BidirectionalLayer.Mode.ADD,
+                BidirectionalLayer.Mode.AVERAGE, BidirectionalLayer.Mode.MUL};
 
         Random r = new Random(12345);
         for (int mb : new int[]{1, 3}) {
@@ -94,9 +91,9 @@ public class RnnGradientChecks extends BaseDL4JTest {
                         }
                     }
 
-                    for (Bidirectional.Mode m : modes) {
+                    for (BidirectionalLayer.Mode m : modes) {
                         String name = "mb=" + mb + ", maskType=" + maskType + ", mode=" + m + ", rnnType="
-                                + (simple ? "SimpleRnn" : "LSTM");
+                                + (simple ? "SimpleRnnLayer" : "LSTMLayer");
 
                         System.out.println("Starting test: " + name);
 
@@ -104,11 +101,11 @@ public class RnnGradientChecks extends BaseDL4JTest {
                                 .updater(new NoOp())
                                 .weightInit(WeightInit.XAVIER)
                                 .list()
-                                .layer(new LSTM.Builder().nIn(nIn).nOut(3).build())
-                                .layer(new Bidirectional(m,
+                                .layer(new LSTMLayer.Builder().nIn(nIn).nOut(3).build())
+                                .layer(new BidirectionalLayer(m,
                                         (simple ?
-                                                new SimpleRnn.Builder().nIn(3).nOut(3).build() :
-                                                new LSTM.Builder().nIn(3).nOut(3).build())))
+                                                new SimpleRnnLayer.Builder().nIn(3).nOut(3).build() :
+                                                new LSTMLayer.Builder().nIn(3).nOut(3).build())))
                                 .layer(new RnnOutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).build())
                                 .build();
 
@@ -179,8 +176,8 @@ public class RnnGradientChecks extends BaseDL4JTest {
                                         .l1(l1s[l])
                                         .l2(l2s[l])
                                         .list()
-                                        .layer(new SimpleRnn.Builder().nIn(nIn).nOut(layerSize).build())
-                                        .layer(new SimpleRnn.Builder().nIn(layerSize).nOut(layerSize).build())
+                                        .layer(new SimpleRnnLayer.Builder().nIn(nIn).nOut(layerSize).build())
+                                        .layer(new SimpleRnnLayer.Builder().nIn(layerSize).nOut(layerSize).build())
                                         .layer(new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
                                                 .activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT)
                                                 .build())
@@ -209,8 +206,8 @@ public class RnnGradientChecks extends BaseDL4JTest {
         int tsLength = 4;
         int layerSize = 8;
 
-        Bidirectional.Mode[] modes = new Bidirectional.Mode[]{Bidirectional.Mode.CONCAT, Bidirectional.Mode.ADD,
-                Bidirectional.Mode.AVERAGE, Bidirectional.Mode.MUL};
+        BidirectionalLayer.Mode[] modes = new BidirectionalLayer.Mode[]{BidirectionalLayer.Mode.CONCAT, BidirectionalLayer.Mode.ADD,
+                BidirectionalLayer.Mode.AVERAGE, BidirectionalLayer.Mode.MUL};
 
         Random r = new Random(12345);
         for (int mb : new int[]{1, 3}) {
@@ -239,7 +236,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
                     }
 
                     String name = "testLastTimeStepLayer() - mb=" + mb + ", tsLength = " + tsLength + ", maskType=" + maskType
-                            + ", rnnType=" + (simple ? "SimpleRnn" : "LSTM");
+                            + ", rnnType=" + (simple ? "SimpleRnnLayer" : "LSTMLayer");
                     if(PRINT_RESULTS){
                         System.out.println("Starting test: " + name);
                     }
@@ -249,10 +246,10 @@ public class RnnGradientChecks extends BaseDL4JTest {
                             .updater(new NoOp())
                             .weightInit(WeightInit.XAVIER)
                             .list()
-                            .layer(simple ? new SimpleRnn.Builder().nOut(layerSize).build() :
-                                    new LSTM.Builder().nOut(layerSize).build())
-                            .layer(new LastTimeStep(simple ? new SimpleRnn.Builder().nOut(layerSize).build() :
-                                    new LSTM.Builder().nOut(layerSize).build()))
+                            .layer(simple ? new SimpleRnnLayer.Builder().nOut(layerSize).build() :
+                                    new LSTMLayer.Builder().nOut(layerSize).build())
+                            .layer(new LastTimeStepLayer(simple ? new SimpleRnnLayer.Builder().nOut(layerSize).build() :
+                                    new LSTMLayer.Builder().nOut(layerSize).build()))
                             .layer(new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX)
                                     .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                             .setInputType(InputType.recurrent(nIn))

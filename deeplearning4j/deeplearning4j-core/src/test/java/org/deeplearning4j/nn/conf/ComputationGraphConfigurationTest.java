@@ -32,7 +32,12 @@ import org.deeplearning4j.nn.conf.graph.SubsetVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.misc.TestGraphVertex;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -77,19 +82,19 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .graphBuilder().addInputs("input")
                         .addLayer("cnn1",
-                                new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
+                                new Convolution2DLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
                                         .build(),
                                 "input")
                         .addLayer("cnn2",
-                                new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
+                                new Convolution2DLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
                                         .build(),
                                 "input")
                         .addLayer("max1",
-                                new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX)
                                         .kernelSize(2, 2).build(),
                                 "cnn1", "cnn2")
                         .addLayer("dnn1", new DenseLayer.Builder().nOut(7).build(), "max1")
-                        .addLayer("max2", new SubsamplingLayer.Builder().build(), "max1")
+                        .addLayer("max2", new Subsampling2DLayer.Builder().build(), "max1")
                         .addLayer("output", new OutputLayer.Builder().nIn(7).nOut(10).activation(Activation.SOFTMAX).build(), "dnn1",
                                 "max2")
                         .setOutputs("output")
@@ -113,11 +118,11 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .graphBuilder().addInputs("input1", "input2")
                         .addLayer("cnn1",
-                                new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
+                                new Convolution2DLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
                                         .build(),
                                 "input1")
                         .addLayer("cnn2",
-                                new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
+                                new Convolution2DLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
                                         .build(),
                                 "input2")
                         .addVertex("merge1", new MergeVertex(), "cnn1", "cnn2")
@@ -257,14 +262,14 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
     public void testAllowDisconnectedLayers() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .addLayer("bidirectional",
-                        new Bidirectional(new LSTM.Builder().activation(Activation.TANH).nOut(10).build()),
+                        new BidirectionalLayer(new LSTMLayer.Builder().activation(Activation.TANH).nOut(10).build()),
                         "in")
                 .addLayer("out", new RnnOutputLayer.Builder().nOut(6)
                         .lossFunction(LossFunctions.LossFunction.MCXENT)
                         .activation(Activation.SOFTMAX)
                         .build(), "bidirectional")
                 .addLayer("disconnected_layer",
-                        new Bidirectional(new LSTM.Builder().activation(Activation.TANH).nOut(10).build()),
+                        new BidirectionalLayer(new LSTMLayer.Builder().activation(Activation.TANH).nOut(10).build()),
                         "in")
                 .setOutputs("out")
                 .setInputTypes(new InputType.InputTypeRecurrent(10, 12))
@@ -279,7 +284,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
     public void testBidirectionalGraphSummary() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .addLayer("bidirectional",
-                        new Bidirectional(new LSTM.Builder().activation(Activation.TANH).nOut(10).build()),
+                        new BidirectionalLayer(new LSTMLayer.Builder().activation(Activation.TANH).nOut(10).build()),
                         "in")
                 .addLayer("out", new RnnOutputLayer.Builder().nOut(6)
                         .lossFunction(LossFunctions.LossFunction.MCXENT)

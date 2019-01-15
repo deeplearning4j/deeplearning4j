@@ -17,17 +17,19 @@
 package org.deeplearning4j.nn.conf.layers.samediff;
 
 import com.google.common.base.Preconditions;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
-
-import java.io.Serializable;
-import java.util.*;
 
 /**
  * SDLayerParams is used to define the parameters for a Deeplearning4j SameDiff layer

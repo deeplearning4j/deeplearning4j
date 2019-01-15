@@ -18,7 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
-import org.deeplearning4j.nn.conf.layers.SeparableConvolution2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.SeparableConvolution2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -121,7 +121,7 @@ public class KerasSeparableConvolution2DTest {
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
 
-        SeparableConvolution2D layer = new KerasSeparableConvolution2D(layerConfig).getSeparableConvolution2DLayer();
+        SeparableConvolution2DLayer layer = new KerasSeparableConvolution2D(layerConfig).getSeparableConvolution2DLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInitFn());

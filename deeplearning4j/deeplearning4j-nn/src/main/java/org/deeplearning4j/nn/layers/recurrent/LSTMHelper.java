@@ -16,19 +16,18 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
+import java.util.Map;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.LayerHelper;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-
-import java.util.Map;
 
 /**
- * Helper for the recurrent LSTM layer (no peephole connections).
+ * Helper for the recurrent LSTMLayer layer (no peephole connections).
  *
  * @author saudet
  */
@@ -42,7 +41,7 @@ public interface LSTMHelper extends LayerHelper {
                                               final FwdPassReturn fwdPass, final boolean forwards, final String inputWeightKey,
                                               final String recurrentWeightKey, final String biasWeightKey,
                                               final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                                              final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
+                                              final boolean hasPeepholeConnections, //True for GravesLSTMLayer, false for LSTMLayer
                                               final LayerWorkspaceMgr workspaceMgr);
 
     FwdPassReturn activate(final Layer layer, final NeuralNetConfiguration conf, final IActivation gateActivationFn, //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
@@ -51,6 +50,6 @@ public interface LSTMHelper extends LayerHelper {
                            final INDArray biases, //Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
                            final boolean training, final INDArray prevOutputActivations, final INDArray prevMemCellState,
                            boolean forBackprop, boolean forwards, final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                           final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
+                           final boolean hasPeepholeConnections, //True for GravesLSTMLayer, false for LSTMLayer
                            final LayerWorkspaceMgr workspaceMgr);
 }

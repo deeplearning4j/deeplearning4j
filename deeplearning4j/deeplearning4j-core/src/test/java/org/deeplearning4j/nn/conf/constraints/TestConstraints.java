@@ -31,8 +31,8 @@ import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -68,7 +68,7 @@ public class TestConstraints extends BaseDL4JTest {
                     .updater(new Sgd(0.0))
                     .dist(new NormalDistribution(0, 5))
                     .list()
-                    .layer(new LSTM.Builder().nIn(12).nOut(10)
+                    .layer(new LSTMLayer.Builder().nIn(12).nOut(10)
                             .constrainRecurrent(lc).build())
                     .layer(new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(8).build())
                     .build();
@@ -403,7 +403,7 @@ public class TestConstraints extends BaseDL4JTest {
                 .graphBuilder()
                 .addInputs("input_lstm", "input_cpc")
                 .addLayer("first_lstm_layer",
-                        new LSTM.Builder()
+                        new LSTMLayer.Builder()
                                 .nIn(nIn)
                                 .nOut(lstmLayerSize)
                                 .activation(Activation.RELU)

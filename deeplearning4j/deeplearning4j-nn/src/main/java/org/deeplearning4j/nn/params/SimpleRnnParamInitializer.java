@@ -20,7 +20,7 @@ import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnnLayer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -53,7 +53,7 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
 
     @Override
     public long numParams(Layer layer) {
-        SimpleRnn c = (SimpleRnn)layer;
+        SimpleRnnLayer c = (SimpleRnnLayer)layer;
         val nIn = c.getNIn();
         val nOut = c.getNOut();
         return nIn * nOut + nOut * nOut + nOut;
@@ -86,7 +86,7 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        SimpleRnn c = (SimpleRnn)conf.getLayer();
+        SimpleRnnLayer c = (SimpleRnnLayer)conf.getLayer();
         val nIn = c.getNIn();
         val nOut = c.getNOut();
 
@@ -121,7 +121,7 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
-        SimpleRnn c = (SimpleRnn)conf.getLayer();
+        SimpleRnnLayer c = (SimpleRnnLayer)conf.getLayer();
         val nIn = c.getNIn();
         val nOut = c.getNOut();
 

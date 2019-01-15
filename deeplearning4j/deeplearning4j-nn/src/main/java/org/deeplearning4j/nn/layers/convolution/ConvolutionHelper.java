@@ -17,16 +17,16 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.BwdDataAlgo;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.BwdFilterAlgo;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.FwdAlgo;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer.AlgoMode;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer.BwdDataAlgo;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer.BwdFilterAlgo;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer.FwdAlgo;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.LayerHelper;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * Helper for the convolution layer.

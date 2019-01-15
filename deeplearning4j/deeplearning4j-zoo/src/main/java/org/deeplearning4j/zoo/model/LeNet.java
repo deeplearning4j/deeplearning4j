@@ -18,16 +18,15 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.ModelMetaData;
@@ -60,7 +59,7 @@ public class LeNet extends ZooModel {
     @Builder.Default private IUpdater updater = new AdaDelta();
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    @Builder.Default private Convolution2DLayer.AlgoMode cudnnAlgoMode = Convolution2DLayer.AlgoMode.PREFER_FASTEST;
 
     private LeNet() {}
 
@@ -98,14 +97,14 @@ public class LeNet extends ZooModel {
                         .convolutionMode(ConvolutionMode.Same)
                         .list()
                         // block 1
-                        .layer(0, new ConvolutionLayer.Builder(new int[] {5, 5}, new int[] {1, 1}).name("cnn1")
+                        .layer(0, new Convolution2DLayer.Builder(new int[] {5, 5}, new int[] {1, 1}).name("cnn1")
                                         .nIn(inputShape[0]).nOut(20).activation(Activation.RELU).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2},
+                        .layer(1, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX, new int[] {2, 2},
                                         new int[] {2, 2}).name("maxpool1").build())
                         // block 2
-                        .layer(2, new ConvolutionLayer.Builder(new int[] {5, 5}, new int[] {1, 1}).name("cnn2").nOut(50)
+                        .layer(2, new Convolution2DLayer.Builder(new int[] {5, 5}, new int[] {1, 1}).name("cnn2").nOut(50)
                                         .activation(Activation.RELU).build())
-                        .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2},
+                        .layer(3, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX, new int[] {2, 2},
                                         new int[] {2, 2}).name("maxpool2").build())
                         // fully connected
                         .layer(4, new DenseLayer.Builder().name("ffn1").activation(Activation.RELU).nOut(500).build())

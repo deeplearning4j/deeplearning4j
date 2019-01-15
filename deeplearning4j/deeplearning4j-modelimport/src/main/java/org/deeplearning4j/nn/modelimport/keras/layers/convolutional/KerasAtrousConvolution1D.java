@@ -19,7 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution1DLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
@@ -111,9 +111,9 @@ public class KerasAtrousConvolution1D extends KerasConvolution {
     }
 
     /**
-     * Get DL4J ConvolutionLayer.
+     * Get DL4J Convolution2DLayer.
      *
-     * @return ConvolutionLayer
+     * @return Convolution2DLayer
      */
     public Convolution1DLayer getAtrousConvolution1D() {
         return (Convolution1DLayer) this.layer;

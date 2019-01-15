@@ -34,7 +34,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 
 /**A preprocessor to allow CNN and RNN layers to be used together.<br>
- * For example, ConvolutionLayer -> GravesLSTM
+ * For example, Convolution2DLayer -> GravesLSTMLayer
  * Functionally equivalent to combining CnnToFeedForwardPreProcessor + FeedForwardToRnnPreProcessor<br>
  * Specifically, this does two things:<br>
  * (a) Reshape 4d activations out of CNN layer, with shape [timeSeriesLength*miniBatchSize, numChannels, inputHeight, inputWidth])

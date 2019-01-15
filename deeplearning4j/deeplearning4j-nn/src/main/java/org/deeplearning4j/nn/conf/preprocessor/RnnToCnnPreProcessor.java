@@ -33,7 +33,7 @@ import java.util.Arrays;
 
 /**
  * A preprocessor to allow RNN and CNN layers to be used together<br>
- * For example, time series (video) input -> ConvolutionLayer, or conceivable GravesLSTM -> ConvolutionLayer<br>
+ * For example, time series (video) input -> Convolution2DLayer, or conceivable GravesLSTMLayer -> Convolution2DLayer<br>
  * Functionally equivalent to combining RnnToFeedForwardPreProcessor + FeedForwardToCnnPreProcessor<br>
  * Specifically, this does two things:<br>
  * (a) Reshape 3d activations out of RNN layer, with shape [miniBatchSize, numChannels*inputHeight*inputWidth, timeSeriesLength])

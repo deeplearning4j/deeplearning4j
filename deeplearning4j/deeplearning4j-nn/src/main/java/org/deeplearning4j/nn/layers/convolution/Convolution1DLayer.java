@@ -16,23 +16,22 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import java.util.Arrays;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-
-import java.util.Arrays;
 
 /**
  * 1D (temporal) convolutional layer. Currently, we just subclass off the
- * ConvolutionLayer and override the preOutput and backpropGradient methods.
+ * Convolution2DLayer and override the preOutput and backpropGradient methods.
  * Specifically, since this layer accepts RNN (not CNN) InputTypes, we
  * need to add a singleton fourth dimension before calling the respective
  * superclass method, then remove it from the result.
@@ -46,7 +45,7 @@ import java.util.Arrays;
  *
  * @author dave@skymind.io
  */
-public class Convolution1DLayer extends ConvolutionLayer {
+public class Convolution1DLayer extends Convolution2DLayer {
     public Convolution1DLayer(NeuralNetConfiguration conf) {
         super(conf);
     }
@@ -77,7 +76,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         INDArray origInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
-        // call 2D ConvolutionLayer's backpropGradient method
+        // call 2D Convolution2DLayer's backpropGradient method
         Pair<Gradient, INDArray> gradientEpsNext = super.backpropGradient(epsilon, workspaceMgr);
         INDArray epsNext = gradientEpsNext.getSecond();
 
@@ -103,7 +102,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         INDArray origInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
-        // call 2D ConvolutionLayer's activate method
+        // call 2D Convolution2DLayer's activate method
         Pair<INDArray,INDArray> preOutput = super.preOutput(training, forBackprop, workspaceMgr);
 
         // remove singleton fourth dimension from output activations

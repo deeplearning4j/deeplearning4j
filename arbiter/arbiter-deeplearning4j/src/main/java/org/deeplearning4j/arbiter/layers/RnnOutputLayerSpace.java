@@ -21,7 +21,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.util.LeafUtils;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 
 /**
  * Layer hyperparametor configuration space for RnnOutputLayer

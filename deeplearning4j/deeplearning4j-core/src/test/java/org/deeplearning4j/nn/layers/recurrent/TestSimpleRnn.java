@@ -20,7 +20,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnnLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -53,7 +53,7 @@ public class TestSimpleRnn extends BaseDL4JTest {
                 .weightInit(WeightInit.XAVIER)
                 .activation(Activation.TANH)
                 .list()
-                .layer(new SimpleRnn.Builder().nIn(nIn).nOut(layerSize).build())
+                .layer(new SimpleRnnLayer.Builder().nIn(nIn).nOut(layerSize).build())
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -99,7 +99,7 @@ public class TestSimpleRnn extends BaseDL4JTest {
                 .weightInit(WeightInit.XAVIER)
                 .activation(Activation.TANH)
                 .list()
-                .layer(new SimpleRnn.Builder().nIn(nIn).nOut(layerSize)
+                .layer(new SimpleRnnLayer.Builder().nIn(nIn).nOut(layerSize)
                         .biasInit(100)
                         .build())
                 .build();

@@ -19,7 +19,7 @@ package org.deeplearning4j.spark.impl.customlayer;
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.impl.customlayer.layer.CustomLayer;

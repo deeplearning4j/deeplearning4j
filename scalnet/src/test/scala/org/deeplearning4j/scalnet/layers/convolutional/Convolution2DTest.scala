@@ -15,7 +15,7 @@
  ******************************************************************************/
 package org.deeplearning4j.scalnet.layers.convolutional
 
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer
 import org.scalatest.FunSpec
 
 /**

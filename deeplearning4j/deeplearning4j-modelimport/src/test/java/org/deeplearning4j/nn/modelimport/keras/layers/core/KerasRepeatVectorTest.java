@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
-import org.deeplearning4j.nn.conf.layers.misc.RepeatVector;
+import org.deeplearning4j.nn.conf.layers.misc.RepeatVectorLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -57,7 +57,7 @@ public class KerasRepeatVectorTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        RepeatVector layer = new KerasRepeatVector(layerConfig).getRepeatVectorLayer();
+        RepeatVectorLayer layer = new KerasRepeatVector(layerConfig).getRepeatVectorLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(layer.getN(), REPEAT);
     }

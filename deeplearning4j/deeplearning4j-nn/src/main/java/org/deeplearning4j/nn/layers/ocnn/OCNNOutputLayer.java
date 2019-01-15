@@ -17,6 +17,10 @@
 package org.deeplearning4j.nn.layers.ocnn;
 
 
+import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.R_KEY;
+import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.V_KEY;
+import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.W_KEY;
+
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
@@ -29,7 +33,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -38,18 +41,14 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
-import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.R_KEY;
-import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.V_KEY;
-import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.W_KEY;
-
 /**
- * Layer implementation for {@link org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer}
- * See {@link org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer}
+ * Layer implementation for {@link org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer}
+ * See {@link org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer}
  * for details.
  *
  * @author Adam Gibson
  */
-public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer> {
+public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer> {
     @Setter
     @Getter
     private  IActivation activation = new ActivationReLU();
@@ -66,13 +65,13 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
     public OCNNOutputLayer(NeuralNetConfiguration conf) {
         super(conf);
         this.lossFunction = new OCNNLossFunction();
-        org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf.getLayer();
+        org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer) conf.getLayer();
         ocnnOutputLayer.setLossFn(this.lossFunction);
     }
 
     public OCNNOutputLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
-        org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf.getLayer();
+        org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer) conf.getLayer();
         ocnnOutputLayer.setLossFn(this.lossFunction);
     }
 
@@ -119,7 +118,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         assertInputSet(true);
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr), workspaceMgr); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         //150
-        long inputShape = (( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) this.getConf().getLayer()).getNIn();
+        long inputShape = ((org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer) this.getConf().getLayer()).getNIn();
         INDArray delta = pair.getSecond();
         //4 x 150
         INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[]{inputShape, delta.length()}, 'f');
@@ -137,7 +136,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.BP_WORKING_MEM);
         INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);
-        org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer conf = ( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf().getLayer();
+        org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer conf = (org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer) conf().getLayer();
 
 
         if(conf.getLastEpochSinceRUpdated() == 0 && epochCount == 0) {
@@ -305,7 +304,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
             double wSum = Transforms.pow(getParam(W_KEY),2).sumNumber().doubleValue() * 0.5;
             double vSum = Transforms.pow(getParam(V_KEY),2).sumNumber().doubleValue() * 0.5;
-            org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf().getLayer();
+            org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer) conf().getLayer();
             INDArray rSubPre = preOutput.rsub(getParam(R_KEY).getDouble(0));
             INDArray rMeanSub  = relu.getActivation(rSubPre,true);
             double rMean = rMeanSub.meanNumber().doubleValue();

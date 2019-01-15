@@ -28,6 +28,11 @@ import org.deeplearning4j.nn.conf.distribution.ConstantDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
@@ -244,19 +249,19 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
                         new NeuralNetConfiguration.Builder().seed(12345).l2(0.001) //l2 regularization on all layers
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .updater(new AdaGrad(0.4)).list()
-                                        .layer(0, new ConvolutionLayer.Builder(10, 10).nIn(3) //3 channels: RGB
+                                        .layer(0, new Convolution2DLayer.Builder(10, 10).nIn(3) //3 channels: RGB
                                                         .nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(
                                                                         WeightInit.RELU).build()) //Output: (130-10+0)/4+1 = 31 -> 31*31*30
-                                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                        .layer(1, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX)
                                                         .kernelSize(3, 3).stride(2, 2).build()) //(31-3+0)/2+1 = 15
-                                        .layer(2, new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
+                                        .layer(2, new Convolution2DLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
                                                         .activation(Activation.RELU).weightInit(WeightInit.RELU)
                                                         .build()) //Output: (15-3+0)/2+1 = 7 -> 7*7*10 = 490
                                         .layer(3, new DenseLayer.Builder().activation(Activation.RELU).nIn(490).nOut(50)
                                                         .weightInit(WeightInit.RELU).updater(new AdaGrad(0.5))
                                                         .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                                         .gradientNormalizationThreshold(10).build())
-                                        .layer(4, new GravesLSTM.Builder().activation(Activation.SOFTSIGN).nIn(50)
+                                        .layer(4, new GravesLSTMLayer.Builder().activation(Activation.SOFTSIGN).nIn(50)
                                                         .nOut(50).weightInit(WeightInit.XAVIER).updater(new AdaGrad(0.6))
                                                         .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                                         .gradientNormalizationThreshold(10).build())
@@ -278,17 +283,17 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
                                         new NeuralNetConfiguration.Builder().seed(12345)
                                                         .updater(new RmsProp(0.1))
                                                         .list()
-                                                        .layer(0, new ConvolutionLayer.Builder(10, 10) //Only keep the first layer the same
+                                                        .layer(0, new Convolution2DLayer.Builder(10, 10) //Only keep the first layer the same
                                                                         .nIn(3) //3 channels: RGB
                                                                         .nOut(30).stride(4, 4)
                                                                         .activation(Activation.RELU)
                                                                         .weightInit(WeightInit.RELU)
                                                                         .updater(new AdaGrad(0.1)).build()) //Output: (130-10+0)/4+1 = 31 -> 31*31*30
-                                                        .layer(1, new SubsamplingLayer.Builder(
-                                                                        SubsamplingLayer.PoolingType.MAX) //change kernel size
+                                                        .layer(1, new Subsampling2DLayer.Builder(
+                                                                        Subsampling2DLayer.PoolingType.MAX) //change kernel size
                                                                                         .kernelSize(5, 5).stride(2, 2)
                                                                                         .build()) //(31-5+0)/2+1 = 14
-                                                        .layer(2, new ConvolutionLayer.Builder(6, 6) //change here
+                                                        .layer(2, new Convolution2DLayer.Builder(6, 6) //change here
                                                                         .nIn(30).nOut(10).stride(2, 2)
                                                                         .activation(Activation.RELU)
                                                                         .weightInit(WeightInit.RELU).build()) //Output: (14-6+0)/2+1 = 5 -> 5*5*10 = 250
@@ -299,7 +304,7 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
                                                                                         GradientNormalization.ClipElementWiseAbsoluteValue)
                                                                         .gradientNormalizationThreshold(10)
                                                                         .updater(new RmsProp(0.01)).build())
-                                                        .layer(4, new GravesLSTM.Builder() //change here
+                                                        .layer(4, new GravesLSTMLayer.Builder() //change here
                                                                         .activation(Activation.SOFTSIGN).nIn(50)
                                                                         .nOut(25).weightInit(WeightInit.XAVIER)
                                                                         .build())
@@ -326,15 +331,15 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
                                                         .updater(new AdaGrad(0.4))
                                                         .weightInit(WeightInit.RELU).build())
                         .removeLayersFromOutput(5)
-                        .addLayer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3, 3)
+                        .addLayer(new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(3, 3)
                                         .stride(2, 2).build())
-                        .addLayer(new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
+                        .addLayer(new Convolution2DLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
                                         .activation(Activation.RELU).weightInit(WeightInit.RELU).build())
                         .addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(490).nOut(50)
                                         .weightInit(WeightInit.RELU).updater(new AdaGrad(0.5))
                                         .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                         .gradientNormalizationThreshold(10).build())
-                        .addLayer(new GravesLSTM.Builder().activation(Activation.SOFTSIGN).nIn(50).nOut(50)
+                        .addLayer(new GravesLSTMLayer.Builder().activation(Activation.SOFTSIGN).nIn(50).nOut(50)
                                         .weightInit(WeightInit.XAVIER).updater(new AdaGrad(0.6))
                                         .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                         .gradientNormalizationThreshold(10).build())
@@ -381,18 +386,18 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
                                                         .weightInit(WeightInit.XAVIER)
                                                         .updater(new Nesterovs(0.01, 0.9))
                                                         .list()
-                                                        .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).stride(1, 1)
+                                                        .layer(0, new Convolution2DLayer.Builder(5, 5).nIn(3).stride(1, 1)
                                                                         .nOut(20).activation(Activation.IDENTITY)
                                                                         .build())
-                                                        .layer(1, new SubsamplingLayer.Builder(
-                                                                        SubsamplingLayer.PoolingType.MAX)
+                                                        .layer(1, new Subsampling2DLayer.Builder(
+                                                                        Subsampling2DLayer.PoolingType.MAX)
                                                                                         .kernelSize(2, 2).stride(2, 2)
                                                                                         .build())
-                                                        .layer(2, new ConvolutionLayer.Builder(5, 5).stride(1, 1)
+                                                        .layer(2, new Convolution2DLayer.Builder(5, 5).stride(1, 1)
                                                                         .nOut(50).activation(Activation.IDENTITY)
                                                                         .build())
-                                                        .layer(3, new SubsamplingLayer.Builder(
-                                                                        SubsamplingLayer.PoolingType.MAX)
+                                                        .layer(3, new Subsampling2DLayer.Builder(
+                                                                        Subsampling2DLayer.PoolingType.MAX)
                                                                                         .kernelSize(2, 2).stride(2, 2)
                                                                                         .build())
                                                         .layer(4, new DenseLayer.Builder().activation(Activation.RELU)
@@ -425,9 +430,9 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
                         .build();
 
         MultiLayerNetwork notFrozen = new MultiLayerNetwork(equivalentConf.list()
-                        .layer(0, new ConvolutionLayer.Builder(5, 5).stride(1, 1).nOut(50)
+                        .layer(0, new Convolution2DLayer.Builder(5, 5).stride(1, 1).nOut(50)
                                         .activation(Activation.IDENTITY).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
+                        .layer(1, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(2, 2)
                                         .stride(2, 2).build())
                         .layer(2, new DenseLayer.Builder().activation(Activation.RELU).nOut(600).build())
                         .layer(3, new DenseLayer.Builder().activation(Activation.RELU).nOut(300).build())
@@ -532,13 +537,13 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
                                 .weightInit(WeightInit.XAVIER)
                                 .updater(new Nesterovs(0.01, 0.9))
                                 .list()
-                                .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).stride(1, 1)
+                                .layer(0, new Convolution2DLayer.Builder(5, 5).nIn(3).stride(1, 1)
                                         .nOut(20).activation(Activation.IDENTITY).build())
-                                .layer(1, new SubsamplingLayer.Builder(PoolingType.MAX)
+                                .layer(1, new Subsampling2DLayer.Builder(PoolingType.MAX)
                                         .kernelSize(2, 2).stride(2, 2).build())
-                                .layer(2, new ConvolutionLayer.Builder(5, 5).stride(1, 1)
+                                .layer(2, new Convolution2DLayer.Builder(5, 5).stride(1, 1)
                                         .nOut(50).activation(Activation.IDENTITY).build())
-                                .layer(3, new SubsamplingLayer.Builder(PoolingType.MAX)
+                                .layer(3, new Subsampling2DLayer.Builder(PoolingType.MAX)
                                         .kernelSize(2, 2).stride(2, 2).build())
                                 .layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
                                 .layer(5, new DenseLayer.Builder().activation(Activation.RELU).nOut(250).build())
@@ -639,8 +644,8 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
                 .weightInit(new ConstantDistribution(666))
                 .list()
                 .setInputType(InputType.inferInputTypes(input)[0])
-                .layer(new Convolution2D.Builder(3, 3).nOut(10).build())
-                .layer(new Convolution2D.Builder(1, 1).nOut(3).build())
+                .layer(new Convolution2DLayer.Builder(3, 3).nOut(10).build())
+                .layer(new Convolution2DLayer.Builder(1, 1).nOut(3).build())
                 .layer(new OutputLayer.Builder().nOut(2).lossFunction(LossFunctions.LossFunction.MSE)
                         .build()).build());
         net.init();
@@ -670,9 +675,9 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(new NeuralNetConfiguration.Builder()
                 .list()
                 .setInputType(InputType.inferInputTypes(input)[0])
-                .layer(new Convolution2D.Builder(1, 1).nOut(10).build())
-                .layer(new SubsamplingLayer.Builder(1,1).build())
-                .layer(new Convolution2D.Builder(1, 1).nOut(7).build())
+                .layer(new Convolution2DLayer.Builder(1, 1).nOut(10).build())
+                .layer(new Subsampling2DLayer.Builder(1,1).build())
+                .layer(new Convolution2DLayer.Builder(1, 1).nOut(7).build())
                 .layer(new OutputLayer.Builder().activation(Activation.SOFTMAX).nOut(2).build())
                 .build());
         net.init();

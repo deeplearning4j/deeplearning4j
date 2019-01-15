@@ -18,7 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -110,7 +110,7 @@ public class KerasConvolution3DTest {
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
 
-        ConvolutionLayer layer = new KerasConvolution3D(layerConfig).getConvolution3DLayer();
+        Convolution2DLayer layer = new KerasConvolution3D(layerConfig).getConvolution3DLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInitFn());

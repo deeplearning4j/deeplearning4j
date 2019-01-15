@@ -22,7 +22,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.Upsampling1D;
+import org.deeplearning4j.nn.conf.layers.convolutional.upsampling.Upsampling1DLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -106,7 +106,7 @@ public class Upsampling1DTest extends BaseDL4JTest {
     private Layer getUpsampling1DLayer() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
-                        .layer(new Upsampling1D.Builder(size).build()).build();
+                        .layer(new Upsampling1DLayer.Builder(size).build()).build();
         return conf.getLayer().instantiate(conf, null, 0,
                 null, true);
     }

@@ -19,10 +19,10 @@ package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 
 /**
  *  Autoencoder.
@@ -32,7 +32,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
  * @author Adam Gibson
  *
  */
-public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.AutoEncoder> {
+public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.feedforeward.autoencoder.AutoEncoder> {
 
     public AutoEncoder(NeuralNetConfiguration conf) {
         super(conf);

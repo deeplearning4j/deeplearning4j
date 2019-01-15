@@ -20,7 +20,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -243,7 +243,7 @@ public class CNNProcessorTest extends BaseDL4JTest {
 
         NeuralNetConfiguration.ListBuilder listBuilder = builder.list(); // Building the DL4J network
 
-        listBuilder = listBuilder.layer(0, new ConvolutionLayer.Builder(kernelArray, strideArray, zeroPaddingArray)
+        listBuilder = listBuilder.layer(0, new Convolution2DLayer.Builder(kernelArray, strideArray, zeroPaddingArray)
                 .name("cnn1")
                 .convolutionMode(ConvolutionMode.Strict)
                 .nIn(2) // 2 input channels
@@ -252,7 +252,7 @@ public class CNNProcessorTest extends BaseDL4JTest {
                 .activation(Activation.RELU)
                 .biasInit(1e-2).build());
 
-        listBuilder = listBuilder.layer(1, new ConvolutionLayer.Builder(kernelArray, strideArray, zeroPaddingArray)
+        listBuilder = listBuilder.layer(1, new Convolution2DLayer.Builder(kernelArray, strideArray, zeroPaddingArray)
                 .name("cnn2")
                 .convolutionMode(ConvolutionMode.Strict)
                 .nOut(processWidth)
@@ -261,14 +261,14 @@ public class CNNProcessorTest extends BaseDL4JTest {
                 .biasInit(1e-2)
                 .build());
 
-        listBuilder = listBuilder.layer(2, new ConvolutionLayer.Builder(kernelArray, strideArray, zeroPaddingArray)
+        listBuilder = listBuilder.layer(2, new Convolution2DLayer.Builder(kernelArray, strideArray, zeroPaddingArray)
                 .name("cnn3")
                 .convolutionMode(ConvolutionMode.Strict)
                 .nOut(processWidth)
                 .weightInit(WeightInit.XAVIER_UNIFORM)
                 .activation(Activation.RELU).build());
 
-        listBuilder = listBuilder.layer(3, new ConvolutionLayer.Builder(kernelArray, strideArray, zeroPaddingArray)
+        listBuilder = listBuilder.layer(3, new Convolution2DLayer.Builder(kernelArray, strideArray, zeroPaddingArray)
                 .name("cnn4")
                 .convolutionMode(ConvolutionMode.Strict)
                 .nOut(processWidth)

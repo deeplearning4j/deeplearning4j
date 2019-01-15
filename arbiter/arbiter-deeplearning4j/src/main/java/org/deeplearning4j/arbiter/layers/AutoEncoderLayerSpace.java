@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
-import org.deeplearning4j.nn.conf.layers.AutoEncoder;
+import org.deeplearning4j.nn.conf.layers.feedforeward.autoencoder.AutoEncoder;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**

@@ -23,7 +23,7 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingSequenceLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -101,7 +101,7 @@ public class KerasEmbedding extends KerasLayer {
         this.zeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
         if (zeroMasking)
             log.warn("Masking in keras and DL4J work differently. We do not completely support mask_zero flag " +
-                    "on Embedding layers. Zero Masking for the Embedding layer only works with unidirectional LSTM for now."
+                    "on Embedding layers. Zero Masking for the Embedding layer only works with unidirectional LSTMLayer for now."
                     + " If you want to have this behaviour for your imported model " +
                     "in DL4J, apply masking as a pre-processing step to your input." +
                     "See https://deeplearning4j.org/usingrnns#masking for more on this.");

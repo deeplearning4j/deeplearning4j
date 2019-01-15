@@ -18,7 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.pooling;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -58,7 +58,7 @@ public class KerasPooling2D extends KerasLayer {
     public KerasPooling2D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        SubsamplingLayer.Builder builder = new SubsamplingLayer.Builder(
+        Subsampling2DLayer.Builder builder = new Subsampling2DLayer.Builder(
                 KerasPoolingUtils.mapPoolingType(this.className, conf)).name(this.layerName)
                 .dropOut(this.dropout)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
@@ -72,12 +72,12 @@ public class KerasPooling2D extends KerasLayer {
     }
 
     /**
-     * Get DL4J SubsamplingLayer.
+     * Get DL4J Subsampling2DLayer.
      *
-     * @return SubsamplingLayer
+     * @return Subsampling2DLayer
      */
-    public SubsamplingLayer getSubsampling2DLayer() {
-        return (SubsamplingLayer) this.layer;
+    public Subsampling2DLayer getSubsampling2DLayer() {
+        return (Subsampling2DLayer) this.layer;
     }
 
     /**

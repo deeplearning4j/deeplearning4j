@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.normalization;
 
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -68,7 +68,7 @@ public class KerasBatchNormalizationTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        BatchNormalization layer = new KerasBatchNormalization(layerConfig).getBatchNormalizationLayer();
+        BatchNormalizationLayer layer = new KerasBatchNormalization(layerConfig).getBatchNormalizationLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(epsilon, layer.getEps(), 0.0);
         assertEquals(momentum, layer.getDecay(), 0.0);

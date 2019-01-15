@@ -22,7 +22,7 @@ import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
@@ -122,12 +122,12 @@ public class ComputationGraphConfigurationDeserializer
         }
 
         //After 1.0.0-beta3, batchnorm reparameterized to support both variance and log10stdev
-        //JSON deserialization uses public BatchNormalization() constructor which defaults to log10stdev now
+        //JSON deserialization uses public BatchNormalizationLayer() constructor which defaults to log10stdev now
         // but, as there is no useLogStdev=false property for legacy batchnorm JSON, the 'real' value (useLogStdev=false)
         // is not set to override the default, unless we do it manually here
         for(GraphVertex gv : conf.getVertices().values()){
-            if(gv instanceof LayerVertex && ((LayerVertex) gv).getLayerConf().getLayer() instanceof BatchNormalization){
-                BatchNormalization bn = (BatchNormalization) ((LayerVertex) gv).getLayerConf().getLayer();
+            if(gv instanceof LayerVertex && ((LayerVertex) gv).getLayerConf().getLayer() instanceof BatchNormalizationLayer){
+                BatchNormalizationLayer bn = (BatchNormalizationLayer) ((LayerVertex) gv).getLayerConf().getLayer();
                 List<String> vars = ((LayerVertex) gv).getLayerConf().getVariables();
                 boolean isVariance = vars.contains(BatchNormalizationParamInitializer.GLOBAL_VAR);
                 bn.setUseLogStd(!isVariance);

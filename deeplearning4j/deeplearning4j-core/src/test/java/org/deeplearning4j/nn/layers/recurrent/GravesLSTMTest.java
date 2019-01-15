@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
@@ -48,7 +49,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
 
     @Test
     public void testLSTMGravesForwardBasic() {
-        //Very basic test of forward prop. of LSTM layer with a time series.
+        //Very basic test of forward prop. of LSTMLayer layer with a time series.
         //Essentially make sure it doesn't throw any exceptions, and provides output in the correct shape.
 
         int nIn = 13;
@@ -56,13 +57,13 @@ public class GravesLSTMTest extends BaseDL4JTest {
 
         NeuralNetConfiguration conf =
                         new NeuralNetConfiguration.Builder()
-                                        .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn)
+                                        .layer(new org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer.Builder().nIn(nIn)
                                                         .nOut(nHiddenUnits).activation(Activation.TANH).build())
                                         .build();
 
         val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        GravesLSTM layer = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
+        GravesLSTMLayer layer = (GravesLSTMLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
 
         //Data: has shape [miniBatchSize,nIn,timeSeriesLength];
         //Output/activations has shape [miniBatchsize,nHiddenUnits,timeSeriesLength];
@@ -101,14 +102,14 @@ public class GravesLSTMTest extends BaseDL4JTest {
         INDArray inputData = Nd4j.ones(miniBatchSize, nIn, timeSeriesLength);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn)
+                        .layer(new org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer.Builder().nIn(nIn)
                                         .nOut(lstmNHiddenUnits)
                                         .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build())
                         .build();
 
         val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
+        GravesLSTMLayer lstm = (GravesLSTMLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.getLayer().initializer().numParams(conf)));
         //Set input, do a forward pass:
         lstm.activate(inputData, false, LayerWorkspaceMgr.noWorkspaces());
@@ -142,7 +143,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
 
     @Test
     public void testGravesLSTMForwardPassHelper() throws Exception {
-        //GravesLSTM.activateHelper() has different behaviour (due to optimizations) when forBackprop==true vs false
+        //GravesLSTMLayer.activateHelper() has different behaviour (due to optimizations) when forBackprop==true vs false
         //But should otherwise provide identical activations
         Nd4j.getRandom().setSeed(12345);
 
@@ -152,25 +153,25 @@ public class GravesLSTMTest extends BaseDL4JTest {
         int timeSeriesLength = 7;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+                        .layer(new org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize)
                                         .dist(new UniformDistribution(0, 1))
                                         .activation(Activation.TANH).build())
                         .build();
 
         val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
+        GravesLSTMLayer lstm = (GravesLSTMLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         INDArray input = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
         lstm.setInput(input, LayerWorkspaceMgr.noWorkspaces());
 
-        Method actHelper = GravesLSTM.class.getDeclaredMethod("activateHelper", boolean.class, INDArray.class,
+        Method actHelper = GravesLSTMLayer.class.getDeclaredMethod("activateHelper", boolean.class, INDArray.class,
                         INDArray.class, boolean.class, LayerWorkspaceMgr.class);
         actHelper.setAccessible(true);
 
         //Call activateHelper with both forBackprop == true, and forBackprop == false and compare
         Class<?> innerClass = Class.forName("org.deeplearning4j.nn.layers.recurrent.FwdPassReturn");
 
-        Object oFalse = actHelper.invoke(lstm, false, null, null, false, LayerWorkspaceMgr.noWorkspacesImmutable()); //GravesLSTM.FwdPassReturn object; want fwdPassOutput INDArray
+        Object oFalse = actHelper.invoke(lstm, false, null, null, false, LayerWorkspaceMgr.noWorkspacesImmutable()); //GravesLSTMLayer.FwdPassReturn object; want fwdPassOutput INDArray
         Object oTrue = actHelper.invoke(lstm, false, null, null, true, LayerWorkspaceMgr.noWorkspacesImmutable()); //want fwdPassOutputAsArrays object
 
         Field fwdPassOutput = innerClass.getDeclaredField("fwdPassOutput");
@@ -196,9 +197,9 @@ public class GravesLSTMTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.1)).seed(12345).list()
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation(Activation.TANH)
+                        .layer(0, new org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer.Builder().activation(Activation.TANH)
                                         .nIn(2).nOut(2).build())
-                        .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder()
+                        .layer(1, new RnnOutputLayer.Builder()
                                         .lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(1)
                                         .activation(Activation.TANH).build())
                         .build();
@@ -253,10 +254,10 @@ public class GravesLSTMTest extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .seed(12345).list()
-                            .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                            .layer(0, new org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer.Builder()
                                             .gateActivationFunction(gateAfn).activation(Activation.TANH).nIn(2).nOut(2)
                                             .build())
-                            .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder()
+                            .layer(1, new RnnOutputLayer.Builder()
                                             .lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(2)
                                             .activation(Activation.TANH).build())
                             .build();
@@ -264,7 +265,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
 
-            assertEquals(gateAfn, ((org.deeplearning4j.nn.conf.layers.GravesLSTM) net.getLayer(0).conf().getLayer())
+            assertEquals(gateAfn, ((org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer) net.getLayer(0).conf().getLayer())
                             .getGateActivationFn().toString());
 
             INDArray in = Nd4j.rand(new int[] {3, 2, 5});

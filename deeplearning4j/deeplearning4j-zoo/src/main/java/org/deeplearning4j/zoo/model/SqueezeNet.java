@@ -18,15 +18,16 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.ModelMetaData;
@@ -63,7 +64,7 @@ public class SqueezeNet extends ZooModel {
     @Builder.Default private IUpdater updater = new AdaDelta();
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    @Builder.Default private Convolution2DLayer.AlgoMode cudnnAlgoMode = Convolution2DLayer.AlgoMode.PREFER_FASTEST;
 
     private SqueezeNet() {}
 
@@ -126,19 +127,19 @@ public class SqueezeNet extends ZooModel {
 
         graph
                 // stem
-                .addLayer("conv1", new ConvolutionLayer.Builder(3,3).stride(2,2).nOut(64)
+                .addLayer("conv1", new Convolution2DLayer.Builder(3,3).stride(2,2).nOut(64)
                         .cudnnAlgoMode(cudnnAlgoMode).build(), "input")
                 .addLayer("conv1_act", new ActivationLayer(Activation.RELU), "conv1")
-                .addLayer("pool1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2).build(), "conv1_act");
+                .addLayer("pool1", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2).build(), "conv1_act");
 
         // fire modules
         fireModule(graph, 2, 16, 64, "pool1");
         fireModule(graph, 3, 16, 64, "fire2");
-        graph.addLayer("pool3", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2).build(), "fire3");
+        graph.addLayer("pool3", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2).build(), "fire3");
 
         fireModule(graph, 4, 32, 128, "pool3");
         fireModule(graph, 5, 32, 128, "fire4");
-        graph.addLayer("pool5", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2).build(), "fire5");
+        graph.addLayer("pool5", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2).build(), "fire5");
 
         fireModule(graph, 6, 48, 192, "pool5");
         fireModule(graph, 7, 48, 192, "fire6");
@@ -148,7 +149,7 @@ public class SqueezeNet extends ZooModel {
         graph
                 // output
                 .addLayer("drop9", new DropoutLayer.Builder(0.5).build(), "fire9")
-                .addLayer("conv10", new ConvolutionLayer.Builder(1,1).nOut(numClasses)
+                .addLayer("conv10", new Convolution2DLayer.Builder(1,1).nOut(numClasses)
                         .cudnnAlgoMode(cudnnAlgoMode).build(), "drop9")
                 .addLayer("conv10_act", new ActivationLayer(Activation.RELU), "conv10")
                 .addLayer("avg_pool", new GlobalPoolingLayer(PoolingType.AVG), "conv10_act")
@@ -167,15 +168,15 @@ public class SqueezeNet extends ZooModel {
         String prefix = "fire"+fireId;
 
         graphBuilder
-                .addLayer(prefix+"_sq1x1", new ConvolutionLayer.Builder(1, 1).nOut(squeeze)
+                .addLayer(prefix+"_sq1x1", new Convolution2DLayer.Builder(1, 1).nOut(squeeze)
                         .cudnnAlgoMode(cudnnAlgoMode).build(), input)
                 .addLayer(prefix+"_relu_sq1x1", new ActivationLayer(Activation.RELU), prefix+"_sq1x1")
 
-                .addLayer(prefix+"_exp1x1", new ConvolutionLayer.Builder(1, 1).nOut(expand)
+                .addLayer(prefix+"_exp1x1", new Convolution2DLayer.Builder(1, 1).nOut(expand)
                         .cudnnAlgoMode(cudnnAlgoMode).build(), prefix+"_relu_sq1x1")
                 .addLayer(prefix+"_relu_exp1x1", new ActivationLayer(Activation.RELU), prefix+"_exp1x1")
 
-                .addLayer(prefix+"_exp3x3", new ConvolutionLayer.Builder(3,3).nOut(expand)
+                .addLayer(prefix+"_exp3x3", new Convolution2DLayer.Builder(3,3).nOut(expand)
                         .convolutionMode(ConvolutionMode.Same)
                         .cudnnAlgoMode(cudnnAlgoMode).build(), prefix+"_relu_sq1x1")
                 .addLayer(prefix+"_relu_exp3x3", new ActivationLayer(Activation.RELU), prefix+"_exp3x3")

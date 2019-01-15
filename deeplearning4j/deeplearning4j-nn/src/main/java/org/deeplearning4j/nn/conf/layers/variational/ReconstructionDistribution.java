@@ -16,12 +16,10 @@
 
 package org.deeplearning4j.nn.conf.layers.variational;
 
+import java.io.Serializable;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyReconstructionDistributionDeserializerHelper;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
-
-import java.io.Serializable;
 
 /**
  * The ReconstructionDistribution is used with variational autoencoders {@link VariationalAutoencoder}

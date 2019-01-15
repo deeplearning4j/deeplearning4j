@@ -24,25 +24,18 @@ import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
-import org.deeplearning4j.nn.conf.layers.CnnLossLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.layers.recurrent.LSTM;
-import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
-import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
-import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,7 +43,6 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -153,7 +145,7 @@ public class KerasModelEndToEndTest {
     }
 
     /**
-     * IMDB Embedding and LSTM test
+     * IMDB Embedding and LSTMLayer test
      */
     @Test
     public void importImdbLstmTfKeras1() throws Exception {
@@ -184,7 +176,7 @@ public class KerasModelEndToEndTest {
     }
 
     /**
-     * IMDB LSTM fasttext
+     * IMDB LSTMLayer fasttext
      */
     // TODO: prediction checks fail due to globalpooling for fasttext, very few grads fail as well
     @Test
@@ -209,7 +201,7 @@ public class KerasModelEndToEndTest {
     }
 
     /**
-     * Simple LSTM (return sequences = false) into Dense layer test
+     * Simple LSTMLayer (return sequences = false) into Dense layer test
      */
     @Test
     public void importSimpleLstmTfKeras1() throws Exception {
@@ -234,7 +226,7 @@ public class KerasModelEndToEndTest {
 
 
     /**
-     * Simple LSTM (return sequences = true) into flatten into Dense layer test
+     * Simple LSTMLayer (return sequences = true) into flatten into Dense layer test
      */
     @Test
     public void importSimpleFlattenLstmTfKeras2() throws Exception {
@@ -357,7 +349,7 @@ public class KerasModelEndToEndTest {
     }
 
     /**
-     * Reshape flat input into 3D to fit into an LSTM model
+     * Reshape flat input into 3D to fit into an LSTMLayer model
      */
     @Test
     public void importFlatIntoLSTM() throws Exception {
@@ -366,7 +358,7 @@ public class KerasModelEndToEndTest {
     
 
     /**
-     * Functional LSTM test
+     * Functional LSTMLayer test
      */
     @Test
     public void importFunctionalLstmTfKeras2() throws Exception {
@@ -576,7 +568,7 @@ public class KerasModelEndToEndTest {
     }
 
     /**
-     * Masking layers (simple Masking into LSTM)
+     * Masking layers (simple Masking into LSTMLayer)
      */
     @Test
     public void testMaskingZeroValue() throws Exception {

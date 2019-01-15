@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import java.util.Collection;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -23,15 +25,13 @@ import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Output layer used for training via backpropagation based on labels and a specified loss function. Can be configured

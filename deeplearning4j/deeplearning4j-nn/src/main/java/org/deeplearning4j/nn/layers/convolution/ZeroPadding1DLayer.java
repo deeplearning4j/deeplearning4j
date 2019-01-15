@@ -22,12 +22,12 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * Zero padding 1D layer for convolutional neural networks.
@@ -35,13 +35,13 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
  *
  * @author Max Pumperla
  */
-public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.ZeroPadding1DLayer> {
+public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.convolutional.ZeroPadding1DLayer> {
 
     private int[] padding; // [padLeft, padRight]
 
     public ZeroPadding1DLayer(NeuralNetConfiguration conf) {
         super(conf);
-        this.padding = ((org.deeplearning4j.nn.conf.layers.ZeroPadding1DLayer) conf.getLayer()).getPadding();
+        this.padding = ((org.deeplearning4j.nn.conf.layers.convolutional.ZeroPadding1DLayer) conf.getLayer()).getPadding();
     }
 
     @Override

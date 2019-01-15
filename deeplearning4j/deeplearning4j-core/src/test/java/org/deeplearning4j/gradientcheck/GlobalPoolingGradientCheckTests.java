@@ -24,6 +24,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -54,7 +57,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
     @Test
     public void testLSTMGlobalPoolingBasicMultiLayer() {
-        //Basic test of global pooling w/ LSTM
+        //Basic test of global pooling w/ LSTMLayer
         Nd4j.getRandom().setSeed(12345L);
 
         int timeSeriesLength = 10;
@@ -72,7 +75,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                                .layer(0, new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                                 .build())
                                 .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
                                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -135,7 +138,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                                .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(layerDepth)
+                                .layer(0, new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(layerDepth)
                                                 .build())
                                 .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
                                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -173,7 +176,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
     @Test
     public void testLSTMWithMasking() {
-        //Basic test of GravesLSTM layer
+        //Basic test of GravesLSTMLayer layer
         Nd4j.getRandom().setSeed(12345L);
 
         int timeSeriesLength = 10;
@@ -190,7 +193,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                             .updater(new NoOp())
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                            .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                            .layer(0, new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                             .build())
                             .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -276,7 +279,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                                     .updater(new NoOp())
                                     .dist(new NormalDistribution(0, 1.0)).convolutionMode(ConvolutionMode.Same)
                                     .seed(12345L).list()
-                                    .layer(0, new ConvolutionLayer.Builder().kernelSize(kernel).stride(stride)
+                                    .layer(0, new Convolution2DLayer.Builder().kernelSize(kernel).stride(stride)
                                                     .nOut(layerDepth).build())
                                     .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
                                     .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)

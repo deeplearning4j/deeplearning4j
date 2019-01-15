@@ -16,27 +16,19 @@
 
 package org.deeplearning4j.nn.conf.layers.misc;
 
+import java.util.Collection;
+import java.util.List;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
-import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
-import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
-import org.deeplearning4j.nn.params.FrozenLayerParamInitializer;
 import org.deeplearning4j.nn.params.FrozenLayerWithBackpropParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-
-import java.util.Collection;
-import java.util.List;
 
 /**
  * Frozen layer freezes parameters of the layer it wraps, but allows the backpropagation to continue.

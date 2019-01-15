@@ -16,6 +16,9 @@
 
 package org.deeplearning4j.nn.conf.layers.objdetect;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -36,10 +39,6 @@ import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 import org.nd4j.shade.serde.jackson.VectorDeSerializer;
 import org.nd4j.shade.serde.jackson.VectorSerializer;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Output (loss) layer for YOLOv2 object detection model, based on the papers: YOLO9000: Better, Faster, Stronger -

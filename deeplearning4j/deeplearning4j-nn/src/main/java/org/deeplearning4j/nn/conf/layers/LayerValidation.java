@@ -16,16 +16,15 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer;
 
 /**
  * Utility methods for validating layer configurations
@@ -93,8 +92,8 @@ public class LayerValidation {
             } else if (layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
                 configureBaseLayer(layerName, bLayer, iDropout, l2, l2Bias, l1, l1Bias);
-            } else if (layer instanceof Bidirectional) {
-                Bidirectional l = (Bidirectional) layer;
+            } else if (layer instanceof BidirectionalLayer) {
+                BidirectionalLayer l = (BidirectionalLayer) layer;
                 generalValidation(layerName, l.getFwd(), iDropout, l2, l2Bias, l1, l1Bias, allParamConstraints,
                                 weightConstraints, biasConstraints);
                 generalValidation(layerName, l.getBwd(), iDropout, l2, l2Bias, l1, l1Bias, allParamConstraints,

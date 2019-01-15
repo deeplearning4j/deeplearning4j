@@ -32,6 +32,13 @@ import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.ReverseTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.training.CenterLossOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
@@ -290,9 +297,9 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 0.1))
                         .updater(new NoOp()).graphBuilder().addInputs("input")
-                        .addLayer("l1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .addLayer("l1", new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
-                        .addLayer("l2", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .addLayer("l2", new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
                         .addVertex("merge", new MergeVertex(), "l1", "l2")
                         .addLayer("outputLayer",
@@ -339,11 +346,11 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                         .updater(new NoOp()).graphBuilder().addInputs("input")
                                         .setOutputs("out")
                                         .addLayer("lstm1",
-                                                        new GravesLSTM.Builder().nIn(3).nOut(4)
+                                                        new GravesLSTMLayer.Builder().nIn(3).nOut(4)
                                                                         .activation(Activation.TANH).build(),
                                                         "input")
                                         .addLayer("lstm2",
-                                                        new GravesLSTM.Builder().nIn(4).nOut(4)
+                                                        new GravesLSTMLayer.Builder().nIn(4).nOut(4)
                                                                         .activation(Activation.TANH).build(),
                                                         "lstm1")
                                         .addLayer("dense1",
@@ -351,7 +358,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                                                         .activation(Activation.SIGMOID).build(),
                                                         "lstm1")
                                         .addLayer("lstm3",
-                                                        new GravesLSTM.Builder().nIn(4).nOut(4)
+                                                        new GravesLSTMLayer.Builder().nIn(4).nOut(4)
                                                                         .activation(Activation.TANH).build(),
                                                         "dense1")
                                         .addVertex("merge", new MergeVertex(), "lstm2", "lstm3")
@@ -397,7 +404,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).graphBuilder().addInputs("input").setOutputs("out")
-                        .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(8).activation(Activation.TANH).build(),
+                        .addLayer("lstm1", new GravesLSTMLayer.Builder().nIn(3).nOut(8).activation(Activation.TANH).build(),
                                         "input")
                         .addVertex("subset", new SubsetVertex(0, 3), "lstm1")
                         .addLayer("out", new RnnOutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
@@ -439,7 +446,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).graphBuilder().addInputs("input").setOutputs("out")
-                        .addLayer("lstm1", new GravesLSTM.Builder().nIn(3).nOut(4).activation(Activation.TANH).build(),
+                        .addLayer("lstm1", new GravesLSTMLayer.Builder().nIn(3).nOut(4).activation(Activation.TANH).build(),
                                         "input")
                         .addVertex("lastTS", new LastTimeStepVertex("input"), "lstm1")
                         .addLayer("out", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
@@ -494,11 +501,11 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                         .updater(new NoOp()).graphBuilder()
                                         .addInputs("input1", "input2").setOutputs("out")
                                         .addLayer("lstm1",
-                                                        new GravesLSTM.Builder().nIn(3).nOut(4)
+                                                        new GravesLSTMLayer.Builder().nIn(3).nOut(4)
                                                                         .activation(Activation.TANH).build(),
                                                         "input1")
                                         .addLayer("lstm2",
-                                                        new GravesLSTM.Builder().nIn(4).nOut(5)
+                                                        new GravesLSTMLayer.Builder().nIn(4).nOut(5)
                                                                         .activation(Activation.SOFTSIGN).build(),
                                                         "input2")
                                         .addVertex("lastTS", new LastTimeStepVertex("input2"), "lstm2")
@@ -548,12 +555,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .updater(new NoOp()).graphBuilder()
                         .addInputs("input").setOutputs("out")
                         .addLayer("lstm_a",
-                                new GravesLSTM.Builder().nIn(3).nOut(4)
+                                new GravesLSTMLayer.Builder().nIn(3).nOut(4)
                                         .activation(Activation.TANH).build(),
                                 "input")
                         .addVertex("input_rev", new ReverseTimeSeriesVertex("input"), "input")
                         .addLayer("lstm_b",
-                                new GravesLSTM.Builder().nIn(3).nOut(4)
+                                new GravesLSTMLayer.Builder().nIn(3).nOut(4)
                                         .activation(Activation.TANH).build(),
                                 "input_rev")
                         .addVertex("lstm_b_rev", new ReverseTimeSeriesVertex("input"), "lstm_b")
@@ -740,16 +747,16 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .dist(new NormalDistribution(0, 1))
                         .updater(new NoOp()).activation(Activation.TANH).graphBuilder().addInputs("input")
-                        .addLayer("l0", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .addLayer("l0", new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
-                        .addLayer("l1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .addLayer("l1", new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(2).nOut(2).activation(Activation.TANH).build(), "l0")
-                        .addLayer("l2", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .addLayer("l2", new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(2).nOut(2).activation(Activation.TANH).build(), "l0")
                         .addVertex("m", new MergeVertex(), "l1", "l2")
-                        .addLayer("l3", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .addLayer("l3", new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(4).nOut(2).activation(Activation.TANH).build(), "m")
-                        .addLayer("l4", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .addLayer("l4", new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(4).nOut(2).activation(Activation.TANH).build(), "m")
                         .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                                 .activation(Activation.IDENTITY).nOut(2)
@@ -928,7 +935,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                                .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(3).build())
+                                .layer(0, new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(3).build())
                                 .layer(1, new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build())
                                 .layer(2, new CenterLossOutputLayer.Builder()
                                                 .lossFunction(LossFunctions.LossFunction.MCXENT).nOut(numLabels)
@@ -1150,10 +1157,10 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .dist(new NormalDistribution(0, 1))
                         .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
                         .addInputs("in1", "in2")
-                        .addLayer("d0", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in1")
-                        .addLayer("d1", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in2")
+                        .addLayer("d0", new GravesLSTMLayer.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in1")
+                        .addLayer("d1", new GravesLSTMLayer.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in2")
                         .addVertex("stack", new StackVertex(), "d0", "d1")
-                        .addLayer("d2", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "stack")
+                        .addLayer("d2", new GravesLSTMLayer.Builder().nIn(layerSizes).nOut(layerSizes).build(), "stack")
                         .addVertex("u1", new UnstackVertex(0, 2), "d2").addVertex("u2", new UnstackVertex(1, 2), "d2")
                         .addLayer("p1", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(), "u1")
                         .addLayer("p2", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(), "u2")
@@ -1316,7 +1323,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .dist(new NormalDistribution(0, 1))
                         .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
                         .addInputs("in1")
-                        .addLayer("d1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(2).build(),
+                        .addLayer("d1", new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(2).build(),
                                         "in1")
                         .addVertex("norm", new L2NormalizeVertex(), "d1")
                         .addLayer("out1",

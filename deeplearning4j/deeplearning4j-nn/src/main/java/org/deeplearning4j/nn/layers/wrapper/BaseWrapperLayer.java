@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.layers.wrapper;
 
+import java.util.Collection;
+import java.util.Map;
 import lombok.Data;
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.Layer;
@@ -30,9 +32,6 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Abstract wrapper layer. The idea: this class passes through all methods to the underlying layer.

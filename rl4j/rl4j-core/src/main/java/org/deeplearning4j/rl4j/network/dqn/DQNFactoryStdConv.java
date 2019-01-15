@@ -23,8 +23,8 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -56,11 +56,11 @@ public class DQNFactoryStdConv implements DQNFactory {
                         .l2(conf.getL2())
                         .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
                         .weightInit(WeightInit.XAVIER).l2(conf.getL2()).list()
-                        .layer(0, new ConvolutionLayer.Builder(8, 8).nIn(shapeInputs[0]).nOut(16).stride(4, 4)
+                        .layer(0, new Convolution2DLayer.Builder(8, 8).nIn(shapeInputs[0]).nOut(16).stride(4, 4)
                                         .activation(Activation.RELU).build());
 
 
-        confB.layer(1, new ConvolutionLayer.Builder(4, 4).nOut(32).stride(2, 2).activation(Activation.RELU).build());
+        confB.layer(1, new Convolution2DLayer.Builder(4, 4).nOut(32).stride(2, 2).activation(Activation.RELU).build());
 
         confB.layer(2, new DenseLayer.Builder().nOut(256).activation(Activation.RELU).build());
 

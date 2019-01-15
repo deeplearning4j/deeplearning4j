@@ -16,13 +16,11 @@
 
 package org.deeplearning4j.nn.conf.layers.samediff;
 
+import java.util.Map;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * SameDiffLambdaLayer is defined to be used as the base class for implementing lambda layers using SameDiff<br>

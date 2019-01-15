@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.params;
 
 import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.training.CenterLossOutputLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -57,8 +58,8 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
-        org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
+        CenterLossOutputLayer layerConf =
+                        (CenterLossOutputLayer) conf.getLayer();
 
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut(); // also equal to numClasses
@@ -84,8 +85,8 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
 
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
-        org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
+        CenterLossOutputLayer layerConf =
+                        (CenterLossOutputLayer) conf.getLayer();
 
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut(); // also equal to numClasses
@@ -111,8 +112,8 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
 
     protected INDArray createCenterLossMatrix(NeuralNetConfiguration conf, INDArray centerLossView,
                     boolean initializeParameters) {
-        org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
+        CenterLossOutputLayer layerConf =
+                        (CenterLossOutputLayer) conf.getLayer();
 
         if (initializeParameters) {
             centerLossView.assign(0.0);

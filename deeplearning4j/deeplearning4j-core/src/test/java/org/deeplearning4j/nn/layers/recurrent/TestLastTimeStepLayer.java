@@ -21,8 +21,7 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
-import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnnLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,7 +37,7 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
     public void testLastTimeStepVertex() {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                .addLayer("lastTS", new LastTimeStep(new SimpleRnn.Builder()
+                .addLayer("lastTS", new org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStepLayer(new SimpleRnnLayer.Builder()
                         .nIn(5).nOut(6).build()), "in")
                 .setOutputs("lastTS")
                 .build();
@@ -50,7 +49,7 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         Layer l = graph.getLayer("lastTS");
         INDArray in = Nd4j.rand(new int[]{3, 5, 6});
-        INDArray outUnderlying = ((LastTimeStepLayer)l).getUnderlying().activate(in, false, LayerWorkspaceMgr.noWorkspaces());
+        INDArray outUnderlying = ((org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer)l).getUnderlying().activate(in, false, LayerWorkspaceMgr.noWorkspaces());
         INDArray expOut = outUnderlying.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(5));
 
 

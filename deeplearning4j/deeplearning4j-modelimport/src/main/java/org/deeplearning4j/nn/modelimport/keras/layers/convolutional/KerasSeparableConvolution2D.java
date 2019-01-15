@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.SeparableConvolution2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.SeparableConvolution2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
@@ -123,7 +123,7 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
         LayerConstraint pointWiseWeightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_POINT_WISE_CONSTRAINT(), conf, kerasMajorVersion);
 
-        SeparableConvolution2D.Builder builder = new SeparableConvolution2D.Builder().name(this.layerName)
+        SeparableConvolution2DLayer.Builder builder = new SeparableConvolution2DLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
                 .weightInit(depthWeightInit.getWeightInitFunction(depthDistribution))
@@ -164,7 +164,7 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
             dW = dW.permute(3, 2, 0, 1);
         } else
             throw new InvalidKerasConfigurationException(
-                    "Keras SeparableConvolution2D layer does not contain parameter "
+                    "Keras SeparableConvolution2DLayer layer does not contain parameter "
                             + conf.getLAYER_PARAM_NAME_DEPTH_WISE_KERNEL());
 
         this.weights.put(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, dW);
@@ -176,7 +176,7 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
         }
         else
             throw new InvalidKerasConfigurationException(
-                    "Keras SeparableConvolution2D layer does not contain parameter "
+                    "Keras SeparableConvolution2DLayer layer does not contain parameter "
                             + conf.getLAYER_PARAM_NAME_POINT_WISE_KERNEL());
 
         this.weights.put(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, pW);
@@ -189,7 +189,7 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
                 bias = weights.get("b");
             else
                 throw new InvalidKerasConfigurationException(
-                        "Keras SeparableConvolution2D layer does not contain bias parameter");
+                        "Keras SeparableConvolution2DLayer layer does not contain bias parameter");
             this.weights.put(SeparableConvolutionParamInitializer.BIAS_KEY, bias);
 
         }
@@ -197,12 +197,12 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
     }
 
     /**
-     * Get DL4J SeparableConvolution2D.
+     * Get DL4J SeparableConvolution2DLayer.
      *
-     * @return SeparableConvolution2D
+     * @return SeparableConvolution2DLayer
      */
-    public SeparableConvolution2D getSeparableConvolution2DLayer() {
-        return (SeparableConvolution2D) this.layer;
+    public SeparableConvolution2DLayer getSeparableConvolution2DLayer() {
+        return (SeparableConvolution2DLayer) this.layer;
     }
 
     /**

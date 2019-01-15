@@ -27,7 +27,16 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Deconvolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.DepthwiseConvolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.SeparableConvolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.SpaceToBatchLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.SpaceToDepthLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.ZeroPadding2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.upsampling.Upsampling2DLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -88,7 +97,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                             .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
                             .weightInit(WeightInit.XAVIER).seed(12345L).list()
-                            .layer(0, new ConvolutionLayer.Builder(1, 1).nOut(6).activation(afn).build())
+                            .layer(0, new Convolution2DLayer.Builder(1, 1).nOut(6).activation(afn).build())
                             .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3).build())
                             .setInputType(InputType.convolutionalFlat(1, 4, 1));
 
@@ -173,7 +182,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                 .optimizationAlgo(
                                         OptimizationAlgorithm.CONJUGATE_GRADIENT)
                                 .seed(12345L).list()
-                                .layer(0, new ConvolutionLayer.Builder(new int[]{1, 1}).nIn(1).nOut(6)
+                                .layer(0, new Convolution2DLayer.Builder(new int[]{1, 1}).nIn(1).nOut(6)
                                         .weightInit(WeightInit.XAVIER).activation(afn)
                                         .updater(new NoOp()).build())
                                 .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3)
@@ -241,12 +250,12 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         int blocks = 2;
 
         String[] activations = {"sigmoid"};
-        SubsamplingLayer.PoolingType[] poolingTypes =
-                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
-                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
+        Subsampling2DLayer.PoolingType[] poolingTypes =
+                new Subsampling2DLayer.PoolingType[]{Subsampling2DLayer.PoolingType.MAX,
+                        Subsampling2DLayer.PoolingType.AVG, Subsampling2DLayer.PoolingType.PNORM};
 
         for (String afn : activations) {
-            for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
+            for (Subsampling2DLayer.PoolingType poolingType : poolingTypes) {
                 INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
                 INDArray labels = Nd4j.zeros(minibatchSize, nOut);
                 for (int i = 0; i < minibatchSize; i++) {
@@ -257,7 +266,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                         new NeuralNetConfiguration.Builder()
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1))
-                                .list().layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth).hasBias(false)
+                                .list().layer(new Convolution2DLayer.Builder(kernel).nIn(inputDepth).hasBias(false)
                                 .nOut(1).build()) //output: (5-2+0)/1+1 = 4
                                 .layer(new SpaceToDepthLayer.Builder(blocks, SpaceToDepthLayer.DataFormat.NCHW)
                                         .build()) // (mb,1,4,4) -> (mb,4,2,2)
@@ -302,12 +311,12 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         int[] blocks = {1, 1};
 
         String[] activations = {"sigmoid", "tanh"};
-        SubsamplingLayer.PoolingType[] poolingTypes =
-                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
-                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
+        Subsampling2DLayer.PoolingType[] poolingTypes =
+                new Subsampling2DLayer.PoolingType[]{Subsampling2DLayer.PoolingType.MAX,
+                        Subsampling2DLayer.PoolingType.AVG, Subsampling2DLayer.PoolingType.PNORM};
 
         for (String afn : activations) {
-            for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
+            for (Subsampling2DLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
                     INDArray labels = Nd4j.zeros(minibatchSize, nOut);
@@ -318,7 +327,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     MultiLayerConfiguration conf =
                             new NeuralNetConfiguration.Builder()
                                     .updater(new NoOp()).weightInit(new NormalDistribution(0, 1))
-                                    .list().layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth)
+                                    .list().layer(new Convolution2DLayer.Builder(kernel).nIn(inputDepth)
                                     .nOut(3).build())//output: (5-2+0)/1+1 = 4
                                     .layer(new SpaceToBatchLayer.Builder(blocks).build()) //trivial space to batch
                                     .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -366,12 +375,12 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         int size = 2;
 
         String[] activations = {"sigmoid", "tanh"};
-        SubsamplingLayer.PoolingType[] poolingTypes =
-                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
-                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
+        Subsampling2DLayer.PoolingType[] poolingTypes =
+                new Subsampling2DLayer.PoolingType[]{Subsampling2DLayer.PoolingType.MAX,
+                        Subsampling2DLayer.PoolingType.AVG, Subsampling2DLayer.PoolingType.PNORM};
 
         for (String afn : activations) {
-            for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
+            for (Subsampling2DLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
                     INDArray labels = Nd4j.zeros(minibatchSize, nOut);
@@ -383,10 +392,10 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             new NeuralNetConfiguration.Builder()
                                     .updater(new NoOp())
                                     .dist(new NormalDistribution(0, 1))
-                                    .list().layer(new ConvolutionLayer.Builder(kernel,
+                                    .list().layer(new Convolution2DLayer.Builder(kernel,
                                     stride, padding).nIn(inputDepth)
                                     .nOut(3).build())//output: (5-2+0)/1+1 = 4
-                                    .layer(new Upsampling2D.Builder().size(size).build()) //output: 4*2 =8 -> 8x8x3
+                                    .layer(new Upsampling2DLayer.Builder().size(size).build()) //output: 4*2 =8 -> 8x8x3
                                     .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(8 * 8 * 3)
                                             .nOut(4).build())
@@ -434,12 +443,12 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         int pnorm = 2;
 
         Activation[] activations = {Activation.SIGMOID, Activation.TANH};
-        SubsamplingLayer.PoolingType[] poolingTypes =
-                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
-                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
+        Subsampling2DLayer.PoolingType[] poolingTypes =
+                new Subsampling2DLayer.PoolingType[]{Subsampling2DLayer.PoolingType.MAX,
+                        Subsampling2DLayer.PoolingType.AVG, Subsampling2DLayer.PoolingType.PNORM};
 
         for (Activation afn : activations) {
-            for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
+            for (Subsampling2DLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
                     INDArray labels = Nd4j.zeros(minibatchSize, nOut);
@@ -452,10 +461,10 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
                                     .dist(new NormalDistribution(0, 1))
                                     .list().layer(0,
-                                    new ConvolutionLayer.Builder(kernel,
+                                    new Convolution2DLayer.Builder(kernel,
                                             stride, padding).nIn(inputDepth)
                                             .nOut(3).build())//output: (5-2+0)/1+1 = 4
-                                    .layer(1, new SubsamplingLayer.Builder(poolingType)
+                                    .layer(1, new Subsampling2DLayer.Builder(poolingType)
                                             .kernelSize(kernel).stride(stride).padding(padding)
                                             .pnorm(pnorm).build()) //output: (4-2+0)/1+1 =3 -> 3x3x3
                                     .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -504,12 +513,12 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         int pNorm = 3;
 
         Activation[] activations = {Activation.SIGMOID, Activation.TANH};
-        SubsamplingLayer.PoolingType[] poolingTypes =
-                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
-                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
+        Subsampling2DLayer.PoolingType[] poolingTypes =
+                new Subsampling2DLayer.PoolingType[]{Subsampling2DLayer.PoolingType.MAX,
+                        Subsampling2DLayer.PoolingType.AVG, Subsampling2DLayer.PoolingType.PNORM};
 
         for (Activation afn : activations) {
-            for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
+            for (Subsampling2DLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
                     INDArray labels = Nd4j.zeros(minibatchSize, nOut);
@@ -521,13 +530,13 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             new NeuralNetConfiguration.Builder().updater(new NoOp())
                                     .dist(new NormalDistribution(0, 1))
                                     .list().layer(0,
-                                    new ConvolutionLayer.Builder(kernel,
+                                    new Convolution2DLayer.Builder(kernel,
                                             stride, padding).nIn(inputDepth)
                                             .nOut(3).build())//output: (5-2+0)/1+1 = 4
-                                    .layer(1, new SubsamplingLayer.Builder(poolingType)
+                                    .layer(1, new Subsampling2DLayer.Builder(poolingType)
                                             .kernelSize(kernel).stride(stride).padding(padding)
                                             .pnorm(pNorm).build()) //output: (4-2+0)/1+1 =3 -> 3x3x3
-                                    .layer(2, new ConvolutionLayer.Builder(kernel, stride, padding)
+                                    .layer(2, new Convolution2DLayer.Builder(kernel, stride, padding)
                                             .nIn(3).nOut(2).build()) //Output: (3-2+0)/1+1 = 2
                                     .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(2 * 2 * 2)
@@ -579,12 +588,12 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new NoOp())
                             .activation(afn)
                             .list()
-                            .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
+                            .layer(0, new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1)
                                     .padding(0, 0).nIn(inputDepth).nOut(2).build())//output: (5-2+0)/1+1 = 4
-                            .layer(1, new LocallyConnected2D.Builder().nIn(2).nOut(7).kernelSize(2, 2)
+                            .layer(1, new LocallyConnected2DLayer.Builder().nIn(2).nOut(7).kernelSize(2, 2)
                                     .setInputSize(4, 4).convolutionMode(ConvolutionMode.Strict).hasBias(false)
                                     .stride(1, 1).padding(0, 0).build()) //(4-2+0)/1+1 = 3
-                            .layer(2, new ConvolutionLayer.Builder().nIn(7).nOut(2).kernelSize(2, 2)
+                            .layer(2, new Convolution2DLayer.Builder().nIn(7).nOut(2).kernelSize(2, 2)
                                     .stride(1, 1).padding(0, 0).build()) //(3-2+0)/1+1 = 2
                             .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                     .activation(Activation.SOFTMAX).nIn(2 * 2 * 2).nOut(nOut)
@@ -592,7 +601,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             .setInputType(InputType.convolutionalFlat(height, width, inputDepth)).build();
 
                     assertEquals(ConvolutionMode.Truncate,
-                            ((ConvolutionLayer) conf.getConf(0).getLayer()).getConvolutionMode());
+                            ((Convolution2DLayer) conf.getConf(0).getLayer()).getConvolutionMode());
 
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                     net.init();
@@ -627,14 +636,14 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         int[] inputDepths = {1, 2, 4};
 
         Activation[] activations = {Activation.SIGMOID, Activation.TANH};
-        SubsamplingLayer.PoolingType[] poolingTypes = new SubsamplingLayer.PoolingType[]{
-                SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG};
+        Subsampling2DLayer.PoolingType[] poolingTypes = new Subsampling2DLayer.PoolingType[]{
+                Subsampling2DLayer.PoolingType.MAX, Subsampling2DLayer.PoolingType.AVG};
 
         Nd4j.getRandom().setSeed(12345);
 
         for (int inputDepth : inputDepths) {
             for (Activation afn : activations) {
-                for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
+                for (Subsampling2DLayer.PoolingType poolingType : poolingTypes) {
                     for (int minibatchSize : minibatchSizes) {
                         INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
                         INDArray labels = Nd4j.zeros(minibatchSize, nOut);
@@ -645,11 +654,11 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new NoOp())
                                 .activation(afn)
                                 .list()
-                                .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
+                                .layer(0, new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1)
                                         .padding(0, 0).nIn(inputDepth).nOut(2).build())//output: (5-2+0)/1+1 = 4
-                                .layer(1, new ConvolutionLayer.Builder().nIn(2).nOut(2).kernelSize(2, 2)
+                                .layer(1, new Convolution2DLayer.Builder().nIn(2).nOut(2).kernelSize(2, 2)
                                         .stride(1, 1).padding(0, 0).build()) //(4-2+0)/1+1 = 3
-                                .layer(2, new ConvolutionLayer.Builder().nIn(2).nOut(2).kernelSize(2, 2)
+                                .layer(2, new Convolution2DLayer.Builder().nIn(2).nOut(2).kernelSize(2, 2)
                                         .stride(1, 1).padding(0, 0).build()) //(3-2+0)/1+1 = 2
                                 .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(2 * 2 * 2).nOut(nOut)
@@ -657,7 +666,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                 .setInputType(InputType.convolutionalFlat(height, width, inputDepth)).build();
 
                         assertEquals(ConvolutionMode.Truncate,
-                                ((ConvolutionLayer) conf.getConf(0).getLayer()).getConvolutionMode());
+                                ((Convolution2DLayer) conf.getConf(0).getLayer()).getConvolutionMode());
 
                         MultiLayerNetwork net = new MultiLayerNetwork(conf);
                         net.init();
@@ -709,12 +718,12 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                                 .updater(new NoOp())
                                 .activation(Activation.TANH).convolutionMode(Same).list()
-                                .layer(0, new ConvolutionLayer.Builder().name("layer 0").kernelSize(k, k)
+                                .layer(0, new Convolution2DLayer.Builder().name("layer 0").kernelSize(k, k)
                                         .stride(1, 1).padding(0, 0).nIn(inputDepth).nOut(2).build())
-                                .layer(1, new SubsamplingLayer.Builder()
-                                        .poolingType(SubsamplingLayer.PoolingType.MAX).kernelSize(k, k)
+                                .layer(1, new Subsampling2DLayer.Builder()
+                                        .poolingType(Subsampling2DLayer.PoolingType.MAX).kernelSize(k, k)
                                         .stride(1, 1).padding(0, 0).build())
-                                .layer(2, new ConvolutionLayer.Builder().nIn(2).nOut(2).kernelSize(k, k)
+                                .layer(2, new Convolution2DLayer.Builder().nIn(2).nOut(2).kernelSize(k, k)
                                         .stride(1, 1).padding(0, 0).build())
                                 .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(nOut).build())
@@ -768,11 +777,11 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                 labels.putScalar(new int[]{i, i % nOut}, 1.0);
                             }
 
-                            Layer convLayer = new ConvolutionLayer.Builder().name("layer 0").kernelSize(k, k)
+                            Layer convLayer = new Convolution2DLayer.Builder().name("layer 0").kernelSize(k, k)
                                     .stride(stride, stride).padding(0, 0).nIn(inputDepth).nOut(2).build();
 
-                            Layer poolLayer = new SubsamplingLayer.Builder()
-                                    .poolingType(SubsamplingLayer.PoolingType.MAX).kernelSize(k, k)
+                            Layer poolLayer = new Subsampling2DLayer.Builder()
+                                    .poolingType(Subsampling2DLayer.PoolingType.MAX).kernelSize(k, k)
                                     .stride(stride, stride).padding(0, 0).build();
 
                             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
@@ -840,10 +849,10 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     MultiLayerConfiguration conf =
                             new NeuralNetConfiguration.Builder().updater(new NoOp())
                                     .dist(new NormalDistribution(0, 1)).list()
-                                    .layer(0, new ConvolutionLayer.Builder(kernel, stride, padding)
+                                    .layer(0, new Convolution2DLayer.Builder(kernel, stride, padding)
                                             .nIn(inputDepth).nOut(3).build())//output: (6-2+0)/1+1 = 5
-                                    .layer(1, new ZeroPaddingLayer.Builder(zeroPad).build()).layer(2,
-                                    new ConvolutionLayer.Builder(kernel, stride,
+                                    .layer(1, new ZeroPadding2DLayer.Builder(zeroPad).build()).layer(2,
+                                    new Convolution2DLayer.Builder(kernel, stride,
                                             padding).nIn(3).nOut(3).build())//output: (6-2+0)/1+1 = 5
                                     .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nOut(4).build())
@@ -854,8 +863,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     net.init();
 
                     //Check zero padding activation shape
-                    org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer zpl =
-                            (org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer) net.getLayer(1);
+                    org.deeplearning4j.nn.layers.convolution.ZeroPadding2DLayer zpl =
+                            (org.deeplearning4j.nn.layers.convolution.ZeroPadding2DLayer) net.getLayer(1);
                     val expShape = new long[]{minibatchSize, inputDepth, height + zeroPad[0] + zeroPad[1],
                             width + zeroPad[2] + zeroPad[3]};
                     INDArray out = zpl.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
@@ -919,7 +928,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     .updater(new NoOp())
                     .activation(act)
                     .list()
-                    .layer(new Deconvolution2D.Builder().name("deconvolution_2D_layer")
+                    .layer(new Deconvolution2DLayer.Builder().name("deconvolution_2D_layer")
                             .kernelSize(k, k)
                             .stride(s, s)
                             .dilation(d, d)
@@ -994,7 +1003,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     .activation(Activation.TANH)
                     .convolutionMode(cm)
                     .list()
-                    .layer(new SeparableConvolution2D.Builder().name("Separable conv 2D layer")
+                    .layer(new SeparableConvolution2DLayer.Builder().name("Separable conv 2D layer")
                             .kernelSize(k, k)
                             .stride(s, s)
                             .dilation(d, d)
@@ -1064,20 +1073,20 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
             NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
                     .updater(new NoOp())
                     .activation(Activation.TANH).convolutionMode(cm).list()
-                    .layer(new ConvolutionLayer.Builder().name("layer 0")
+                    .layer(new Convolution2DLayer.Builder().name("layer 0")
                             .kernelSize(k, k)
                             .stride(s, s)
                             .dilation(d, d)
                             .nIn(inputDepth).nOut(2).build());
             if (subsampling) {
-                b.layer(new SubsamplingLayer.Builder()
-                        .poolingType(SubsamplingLayer.PoolingType.MAX)
+                b.layer(new Subsampling2DLayer.Builder()
+                        .poolingType(Subsampling2DLayer.PoolingType.MAX)
                         .kernelSize(k, k)
                         .stride(s, s)
                         .dilation(d, d)
                         .build());
             } else {
-                b.layer(new ConvolutionLayer.Builder().nIn(2).nOut(2)
+                b.layer(new Convolution2DLayer.Builder().nIn(2).nOut(2)
                         .kernelSize(k, k)
                         .stride(s, s)
                         .dilation(d, d)
@@ -1139,10 +1148,10 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                     .updater(new NoOp())
                                     .convolutionMode(ConvolutionMode.Same)
                                     .weightInit(new NormalDistribution(0, 1)).list()
-                                    .layer(new ConvolutionLayer.Builder(kernel, stride, padding)
+                                    .layer(new Convolution2DLayer.Builder(kernel, stride, padding)
                                             .nIn(inputDepth).nOut(3).build())//output: (6-2+0)/1+1 = 5
-                                    .layer(new Cropping2D(crop))
-                                    .layer(new ConvolutionLayer.Builder(kernel, stride, padding).nIn(3).nOut(3).build())
+                                    .layer(new Cropping2DLayer(crop))
+                                    .layer(new Convolution2DLayer.Builder(kernel, stride, padding).nIn(3).nOut(3).build())
                                     .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nOut(4).build())
                                     .setInputType(InputType.convolutional(height, width, inputDepth))
@@ -1215,8 +1224,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     .activation(Activation.TANH)
                     .convolutionMode(cm)
                     .list()
-                    .layer(new Convolution2D.Builder().kernelSize(1, 1).stride(1, 1).nIn(nIn).nOut(nIn).build())
-                    .layer(new DepthwiseConvolution2D.Builder().name("depth-wise conv 2D layer")
+                    .layer(new Convolution2DLayer.Builder().kernelSize(1, 1).stride(1, 1).nIn(nIn).nOut(nIn).build())
+                    .layer(new DepthwiseConvolution2DLayer.Builder().name("depth-wise conv 2D layer")
                             .cudnnAllowFallback(false)
                             .kernelSize(k, k)
                             .stride(s, s)

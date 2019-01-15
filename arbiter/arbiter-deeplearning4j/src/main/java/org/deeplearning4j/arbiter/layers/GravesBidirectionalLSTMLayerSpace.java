@@ -23,19 +23,19 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
-import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
 
 import java.util.List;
 
 /**
- * Layer space for Bidirectional LSTM layers
+ * Layer space for BidirectionalLayer LSTMLayer layers
  *
  * @author Alex Black
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
-public class GravesBidirectionalLSTMLayerSpace extends FeedForwardLayerSpace<GravesBidirectionalLSTM> {
+public class GravesBidirectionalLSTMLayerSpace extends FeedForwardLayerSpace<GravesBidirectionalLSTMLayer> {
 
     private ParameterSpace<Double> forgetGateBiasInit;
 
@@ -49,13 +49,13 @@ public class GravesBidirectionalLSTMLayerSpace extends FeedForwardLayerSpace<Gra
 
 
     @Override
-    public GravesBidirectionalLSTM getValue(double[] values) {
-        GravesBidirectionalLSTM.Builder b = new GravesBidirectionalLSTM.Builder();
+    public GravesBidirectionalLSTMLayer getValue(double[] values) {
+        GravesBidirectionalLSTMLayer.Builder b = new GravesBidirectionalLSTMLayer.Builder();
         setLayerOptionsBuilder(b, values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(GravesBidirectionalLSTM.Builder builder, double[] values) {
+    protected void setLayerOptionsBuilder(GravesBidirectionalLSTMLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
         if (forgetGateBiasInit != null)
             builder.forgetGateBiasInit(forgetGateBiasInit.getValue(values));

@@ -22,12 +22,12 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.CenterLossParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 
 
 /**
@@ -41,7 +41,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
  *
  * @author Justin Long (@crockpotveggies)
  */
-public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer> {
+public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.training.CenterLossOutputLayer> {
 
     private double fullNetworkL1;
     private double fullNetworkL2;

@@ -22,6 +22,9 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.deeplearning4j.nn.weights.WeightInitRelu;
@@ -143,7 +146,7 @@ public class RegressionTest050 extends BaseDL4JTest {
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(3, conf.getConfs().size());
 
-        ConvolutionLayer l0 = (ConvolutionLayer) conf.getConf(0).getLayer();
+        Convolution2DLayer l0 = (Convolution2DLayer) conf.getConf(0).getLayer();
         assertEquals("tanh", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(3, l0.getNOut());
@@ -155,7 +158,7 @@ public class RegressionTest050 extends BaseDL4JTest {
         assertArrayEquals(new int[] {0, 0}, l0.getPadding());
         assertEquals(l0.getConvolutionMode(), ConvolutionMode.Truncate); //Pre-0.7.0: no ConvolutionMode. Want to default to truncate here if not set
 
-        SubsamplingLayer l1 = (SubsamplingLayer) conf.getConf(1).getLayer();
+        Subsampling2DLayer l1 = (Subsampling2DLayer) conf.getConf(1).getLayer();
         assertArrayEquals(new int[] {2, 2}, l1.getKernelSize());
         assertArrayEquals(new int[] {1, 1}, l1.getStride());
         assertArrayEquals(new int[] {0, 0}, l1.getPadding());

@@ -19,9 +19,9 @@ package org.deeplearning4j.zoo.model.helper;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.model.Darknet19;
 import org.deeplearning4j.zoo.model.TinyYOLO;
@@ -68,7 +68,7 @@ public class DarknetHelper {
     public static ComputationGraphConfiguration.GraphBuilder addLayers(ComputationGraphConfiguration.GraphBuilder graphBuilder, int layerNumber, String input, int filterSize, int nIn, int nOut, int poolSize, int poolStride) {
         graphBuilder
                 .addLayer("convolution2d_" + layerNumber,
-                        new ConvolutionLayer.Builder(filterSize,filterSize)
+                        new Convolution2DLayer.Builder(filterSize,filterSize)
                                 .nIn(nIn)
                                 .nOut(nOut)
                                 .weightInit(WeightInit.XAVIER)
@@ -79,7 +79,7 @@ public class DarknetHelper {
                                 .build(),
                         input)
                 .addLayer("batchnormalization_" + layerNumber,
-                        new BatchNormalization.Builder()
+                        new BatchNormalizationLayer.Builder()
                                 .nIn(nOut).nOut(nOut)
                                 .weightInit(WeightInit.XAVIER)
                                 .activation(Activation.IDENTITY)
@@ -93,7 +93,7 @@ public class DarknetHelper {
         if (poolSize > 0) {
             graphBuilder
                     .addLayer("maxpooling2d_" + layerNumber,
-                            new SubsamplingLayer.Builder()
+                            new Subsampling2DLayer.Builder()
                                     .kernelSize(poolSize, poolSize)
                                     .stride(poolStride, poolStride)
                                     .convolutionMode(ConvolutionMode.Same)

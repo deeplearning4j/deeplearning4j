@@ -24,13 +24,13 @@ class BidirectionalTest extends WordSpec with Matchers {
     "compile to a DL4J Bidirectional wrapper layer with a LSTM" in {
       val bidirectionalLSTM = Bidirectional(LSTM(10, 100))
       val compiledLayer = bidirectionalLSTM.compile
-      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional] shouldBe true
+      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer] shouldBe true
     }
 
     "compile to a DL4J Bidirectional wrapper layer with a GravesLSTM" in {
       val bidirectionalLSTM = Bidirectional(GravesLSTM(10, 100))
       val compiledLayer = bidirectionalLSTM.compile
-      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional] shouldBe true
+      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer] shouldBe true
     }
 
   }

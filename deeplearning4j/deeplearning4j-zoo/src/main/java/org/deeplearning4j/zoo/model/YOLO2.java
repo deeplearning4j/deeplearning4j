@@ -19,7 +19,6 @@ package org.deeplearning4j.zoo.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -27,8 +26,8 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration.GraphBuilder;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.SpaceToDepthLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.SpaceToDepthLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -106,7 +105,7 @@ public class YOLO2 extends ZooModel {
     @Builder.Default private IUpdater updater = new Adam(1e-3);
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    @Builder.Default private Convolution2DLayer.AlgoMode cudnnAlgoMode = Convolution2DLayer.AlgoMode.PREFER_FASTEST;
 
     private YOLO2() {}
 
@@ -192,7 +191,7 @@ public class YOLO2 extends ZooModel {
 
         graphBuilder
                 .addLayer("convolution2d_23",
-                        new ConvolutionLayer.Builder(1,1)
+                        new Convolution2DLayer.Builder(1,1)
                                 .nIn(1024)
                                 .nOut(nBoxes * (5 + numClasses))
                                 .weightInit(WeightInit.XAVIER)

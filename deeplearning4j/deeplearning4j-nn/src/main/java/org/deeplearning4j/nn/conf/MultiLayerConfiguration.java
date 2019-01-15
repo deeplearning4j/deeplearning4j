@@ -22,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
@@ -614,7 +616,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                     }
                 } else if (firstLayer instanceof DenseLayer || firstLayer instanceof EmbeddingLayer
                         || firstLayer instanceof OutputLayer) {
-                    //Can't just use "instanceof FeedForwardLayer" here. ConvolutionLayer is also a FeedForwardLayer
+                    //Can't just use "instanceof FeedForwardLayer" here. Convolution2DLayer is also a FeedForwardLayer
                     FeedForwardLayer ffl = (FeedForwardLayer) firstLayer;
                     val nIn = ffl.getNIn();
                     if (nIn > 0) {

@@ -22,7 +22,7 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.LocallyConnected1D;
+import org.deeplearning4j.nn.conf.layers.LocallyConnected1DLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution;
@@ -100,7 +100,7 @@ public class KerasLocallyConnected1D extends KerasConvolution {
         LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_W_CONSTRAINT(), conf, kerasMajorVersion);
 
-        LocallyConnected1D.Builder builder = new LocallyConnected1D.Builder().name(this.layerName)
+        LocallyConnected1DLayer.Builder builder = new LocallyConnected1DLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
@@ -122,12 +122,12 @@ public class KerasLocallyConnected1D extends KerasConvolution {
     }
 
     /**
-     * Get DL4J LocallyConnected1D layer.
+     * Get DL4J LocallyConnected1DLayer layer.
      *
      * @return Locally connected 1D layer.
      */
-    public LocallyConnected1D getLocallyConnected1DLayer() {
-        return (LocallyConnected1D) this.layer;
+    public LocallyConnected1DLayer getLocallyConnected1DLayer() {
+        return (LocallyConnected1DLayer) this.layer;
     }
 
     /**
@@ -146,9 +146,9 @@ public class KerasLocallyConnected1D extends KerasConvolution {
 
         // Override input/output shape and input channels dynamically. This works since getOutputType will always
         // be called when initializing the model.
-        ((LocallyConnected1D) this.layer).setInputSize((int) rnnType.getTimeSeriesLength());
-        ((LocallyConnected1D) this.layer).setNIn(rnnType.getSize());
-        ((LocallyConnected1D) this.layer).computeOutputSize();
+        ((LocallyConnected1DLayer) this.layer).setInputSize((int) rnnType.getTimeSeriesLength());
+        ((LocallyConnected1DLayer) this.layer).setNIn(rnnType.getSize());
+        ((LocallyConnected1DLayer) this.layer).computeOutputSize();
 
         InputPreProcessor preprocessor = getInputPreprocessor(inputType[0]);
         if (preprocessor != null) {

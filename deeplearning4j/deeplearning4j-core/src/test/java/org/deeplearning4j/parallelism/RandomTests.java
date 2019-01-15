@@ -22,10 +22,10 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -63,16 +63,16 @@ public class RandomTests extends BaseDL4JTest {
                                     .weightInit(WeightInit.XAVIER)
                                     .updater(new Nesterovs(0.01, 0.9))
                                     .trainingWorkspaceMode(WorkspaceMode.ENABLED).list()
-                                    .layer(0, new ConvolutionLayer.Builder(5, 5)
+                                    .layer(0, new Convolution2DLayer.Builder(5, 5)
                                                     //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
                                                     .nIn(1).stride(1, 1).nOut(20).activation(Activation.IDENTITY)
                                                     .build())
-                                    .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                    .layer(1, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX)
                                                     .kernelSize(2, 2).stride(2, 2).build())
-                                    .layer(2, new ConvolutionLayer.Builder(5, 5)
+                                    .layer(2, new Convolution2DLayer.Builder(5, 5)
                                                     //Note that nIn need not be specified in later layers
                                                     .stride(1, 1).nOut(50).activation(Activation.IDENTITY).build())
-                                    .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                    .layer(3, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX)
                                                     .kernelSize(2, 2).stride(2, 2).build())
                                     .layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
                                     .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)

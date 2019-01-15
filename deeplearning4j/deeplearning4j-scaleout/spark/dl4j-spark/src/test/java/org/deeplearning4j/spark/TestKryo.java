@@ -26,6 +26,17 @@ import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.LocalResponseNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.training.CenterLossOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -87,12 +98,12 @@ public class TestKryo extends BaseSparkKryoTest {
                         new RnnOutputLayer.Builder().nIn(10).nOut(10).build(), new LossLayer.Builder().build(),
                         new CenterLossOutputLayer.Builder().nIn(10).nOut(10).build(),
                         new DenseLayer.Builder().nIn(10).nOut(10).build(),
-                        new ConvolutionLayer.Builder().nIn(10).nOut(10).build(), new SubsamplingLayer.Builder().build(),
+                        new Convolution2DLayer.Builder().nIn(10).nOut(10).build(), new Subsampling2DLayer.Builder().build(),
                         new Convolution1DLayer.Builder(2, 2).nIn(10).nOut(10).build(),
                         new ActivationLayer.Builder().activation(Activation.TANH).build(),
-                        new GlobalPoolingLayer.Builder().build(), new GravesLSTM.Builder().nIn(10).nOut(10).build(),
-                        new LSTM.Builder().nIn(10).nOut(10).build(), new DropoutLayer.Builder(0.5).build(),
-                        new BatchNormalization.Builder().build(), new LocalResponseNormalization.Builder().build()};
+                        new GlobalPoolingLayer.Builder().build(), new GravesLSTMLayer.Builder().nIn(10).nOut(10).build(),
+                        new LSTMLayer.Builder().nIn(10).nOut(10).build(), new DropoutLayer.Builder(0.5).build(),
+                        new BatchNormalizationLayer.Builder().build(), new LocalResponseNormalizationLayer.Builder().build()};
 
         for (Layer l : layers) {
             testSerialization(l, si);

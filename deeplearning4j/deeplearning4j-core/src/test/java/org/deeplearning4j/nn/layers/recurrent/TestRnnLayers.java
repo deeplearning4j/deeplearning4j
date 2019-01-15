@@ -21,11 +21,11 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.TestDropout;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
-import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
-import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnnLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -56,8 +56,8 @@ public class TestRnnLayers extends BaseDL4JTest {
                 .updater(new NoOp())
                 .weightInit(WeightInit.XAVIER)
                 .list()
-                .layer(new SimpleRnn.Builder().nIn(nIn).nOut(3).build())
-                .layer(new LSTM.Builder().nIn(3).nOut(5).build())
+                .layer(new SimpleRnnLayer.Builder().nIn(nIn).nOut(3).build())
+                .layer(new LSTMLayer.Builder().nIn(3).nOut(5).build())
                 .layer(new RnnOutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).build())
                 .build();
 
@@ -65,8 +65,8 @@ public class TestRnnLayers extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        org.deeplearning4j.nn.layers.recurrent.SimpleRnn simpleRnn =
-                (org.deeplearning4j.nn.layers.recurrent.SimpleRnn) net.getLayer(0);
+        org.deeplearning4j.nn.layers.recurrent.SimpleRnnLayer simpleRnn =
+                (org.deeplearning4j.nn.layers.recurrent.SimpleRnnLayer) net.getLayer(0);
 
         INDArray rnnInput3d = Nd4j.create(10, 12, 1);
         INDArray simpleOut = simpleRnn.rnnTimeStep(rnnInput3d, LayerWorkspaceMgr.noWorkspaces());
@@ -79,8 +79,8 @@ public class TestRnnLayers extends BaseDL4JTest {
             assertTrue(e.getMessage().equals("3D input expected to RNN layer expected, got 2"));
         }
 
-        org.deeplearning4j.nn.layers.recurrent.LSTM lstm =
-                (org.deeplearning4j.nn.layers.recurrent.LSTM) net.getLayer(1);
+        org.deeplearning4j.nn.layers.recurrent.LSTMLayer lstm =
+                (org.deeplearning4j.nn.layers.recurrent.LSTMLayer) net.getLayer(1);
 
         INDArray lstmInput3d = Nd4j.create(10, 3, 1);
         INDArray lstmOut = lstm.rnnTimeStep(lstmInput3d, LayerWorkspaceMgr.noWorkspaces());
@@ -110,19 +110,19 @@ public class TestRnnLayers extends BaseDL4JTest {
             TestDropout.CustomDropout cd = new TestDropout.CustomDropout();
             switch (s){
                 case "graves":
-                    layer = new GravesLSTM.Builder().activation(Activation.TANH).nIn(10).nOut(10).build();
-                    layerD = new GravesLSTM.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).build();
-                    layerD2 = new GravesLSTM.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).build();
+                    layer = new GravesLSTMLayer.Builder().activation(Activation.TANH).nIn(10).nOut(10).build();
+                    layerD = new GravesLSTMLayer.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).build();
+                    layerD2 = new GravesLSTMLayer.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).build();
                     break;
                 case "lstm":
-                    layer = new org.deeplearning4j.nn.conf.layers.LSTM.Builder().activation(Activation.TANH).nIn(10).nOut(10).build();
-                    layerD = new org.deeplearning4j.nn.conf.layers.LSTM.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).build();
-                    layerD2 = new org.deeplearning4j.nn.conf.layers.LSTM.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).build();
+                    layer = new LSTMLayer.Builder().activation(Activation.TANH).nIn(10).nOut(10).build();
+                    layerD = new LSTMLayer.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).build();
+                    layerD2 = new LSTMLayer.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).build();
                     break;
                 case "simple":
-                    layer = new SimpleRnn.Builder().activation(Activation.TANH).nIn(10).nOut(10).build();
-                    layerD = new SimpleRnn.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).build();
-                    layerD2 = new SimpleRnn.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).build();
+                    layer = new SimpleRnnLayer.Builder().activation(Activation.TANH).nIn(10).nOut(10).build();
+                    layerD = new SimpleRnnLayer.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).build();
+                    layerD2 = new SimpleRnnLayer.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).build();
                     break;
                 default:
                     throw new RuntimeException(s);

@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
-import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.ZeroPadding2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -64,7 +64,7 @@ public class KerasZeroPadding2DTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        ZeroPaddingLayer layer = new KerasZeroPadding2D(layerConfig).getZeroPadding2DLayer();
+        ZeroPadding2DLayer layer = new KerasZeroPadding2D(layerConfig).getZeroPadding2DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(ZERO_PADDING[0], layer.getPadding()[0]);
         assertEquals(ZERO_PADDING[0], layer.getPadding()[1]);
@@ -83,7 +83,7 @@ public class KerasZeroPadding2DTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        ZeroPaddingLayer layer = new KerasZeroPadding2D(layerConfig).getZeroPadding2DLayer();
+        ZeroPadding2DLayer layer = new KerasZeroPadding2D(layerConfig).getZeroPadding2DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(ZERO_PADDING[0], layer.getPadding()[0]);
         assertEquals(ZERO_PADDING[0], layer.getPadding()[1]);

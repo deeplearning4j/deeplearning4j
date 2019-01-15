@@ -23,6 +23,12 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -139,7 +145,7 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
                         .updater(new NoOp())
                         .seed(12345L)
                         .list()
-                        .layer(0, new LSTM.Builder().nIn(nIn).nOut(layerSize)
+                        .layer(0, new LSTMLayer.Builder().nIn(nIn).nOut(layerSize)
 
                                 .dist(new NormalDistribution(0, 1))
                                 .activation(Activation.TANH)
@@ -265,14 +271,14 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
 
                                 .dist(new NormalDistribution(0, 1))
                                 .list()
-                                .layer(new ConvolutionLayer.Builder(kernel,
+                                .layer(new Convolution2DLayer.Builder(kernel,
                                         stride, padding).nIn(inputDepth)
                                         .hasBias(false)
                                         .nOut(3).build())//output: (5-2+0)/1+1 = 4
-                                .layer(new SubsamplingLayer.Builder(PoolingType.MAX)
+                                .layer(new Subsampling2DLayer.Builder(PoolingType.MAX)
                                         .kernelSize(kernel).stride(stride).padding(padding)
                                         .pnorm(pNorm).build()) //output: (4-2+0)/1+1 =3 -> 3x3x3
-                                .layer(new ConvolutionLayer.Builder(kernel, stride, padding)
+                                .layer(new Convolution2DLayer.Builder(kernel, stride, padding)
                                         .hasBias(cnnHasBias)
                                         .nOut(2).build()) //Output: (3-2+0)/1+1 = 2
                                 .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)

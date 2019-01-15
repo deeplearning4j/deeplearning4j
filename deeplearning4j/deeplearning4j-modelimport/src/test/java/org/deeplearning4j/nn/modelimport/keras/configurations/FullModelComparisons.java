@@ -22,14 +22,13 @@ import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.NumberedFileInputSplit;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 
-import org.deeplearning4j.nn.layers.recurrent.LSTM;
+import org.deeplearning4j.nn.layers.recurrent.LSTMLayer;
 import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -79,9 +78,9 @@ public class FullModelComparisons {
         System.out.println(model.summary());
 
         // 1. Layer
-        LSTM firstLstm = (LSTM) model.getLayer(0);
-        org.deeplearning4j.nn.conf.layers.LSTM firstConf =
-                (org.deeplearning4j.nn.conf.layers.LSTM) firstLstm.conf().getLayer();
+        LSTMLayer firstLstm = (LSTMLayer) model.getLayer(0);
+        org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer firstConf =
+                (org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer) firstLstm.conf().getLayer();
         // "unit_forget_bias": true
         assertTrue(firstConf.getForgetGateBiasInit() == 1.0);
 
@@ -117,9 +116,9 @@ public class FullModelComparisons {
         TestCase.assertEquals(b.getDouble(0, 0), -0.2587392, 1e-7); // Keras C
 
         // 2. Layer
-        LSTM secondLstm = (LSTM) ((LastTimeStepLayer) model.getLayer(1)).getUnderlying();
-        org.deeplearning4j.nn.conf.layers.LSTM secondConf =
-                (org.deeplearning4j.nn.conf.layers.LSTM) secondLstm.conf().getLayer();
+        LSTMLayer secondLstm = (LSTMLayer) ((LastTimeStepLayer) model.getLayer(1)).getUnderlying();
+        org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer secondConf =
+                (org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer) secondLstm.conf().getLayer();
         // "unit_forget_bias": true
         assertTrue(secondConf.getForgetGateBiasInit() == 1.0);
 

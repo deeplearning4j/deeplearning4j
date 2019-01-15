@@ -3,7 +3,12 @@ package org.deeplearning4j.nn.weights;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cnn3DLossLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.CnnLossLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnLossLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.Test;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
@@ -60,7 +65,7 @@ public class WeightInitIdentityTest {
                 .setInputTypes(InputType.inferInputType(input))
                 .addInputs(inputName)
                 .setOutputs(output)
-                .layer(conv, new ConvolutionLayer.Builder(3,5)
+                .layer(conv, new Convolution2DLayer.Builder(3,5)
                         .convolutionMode(ConvolutionMode.Same)
                         .nOut(input.size(1))
                         .weightInit(new WeightInitIdentity())
@@ -87,14 +92,14 @@ public class WeightInitIdentityTest {
                 .setInputTypes(InputType.inferInputType(input))
                 .addInputs(inputName)
                 .setOutputs(output)
-                .layer(conv, new Convolution3D.Builder(3,7,5)
+                .layer(conv, new Convolution3DLayer.Builder(3,7,5)
                         .convolutionMode(ConvolutionMode.Same)
-                        .dataFormat(Convolution3D.DataFormat.NCDHW)
+                        .dataFormat(Convolution3DLayer.DataFormat.NCDHW)
                         .nOut(input.size(1))
                         .weightInit(new WeightInitIdentity())
                         .activation(new ActivationIdentity())
                         .build(), inputName)
-                .layer(output, new Cnn3DLossLayer.Builder(Convolution3D.DataFormat.NCDHW).activation(new ActivationIdentity()).build(), conv)
+                .layer(output, new Cnn3DLossLayer.Builder(Convolution3DLayer.DataFormat.NCDHW).activation(new ActivationIdentity()).build(), conv)
                 .build());
         graph.init();
 

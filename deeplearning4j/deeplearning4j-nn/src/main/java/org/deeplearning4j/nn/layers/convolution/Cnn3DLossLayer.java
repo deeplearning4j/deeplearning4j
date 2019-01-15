@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import java.util.Arrays;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
@@ -23,22 +25,18 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.Convolution3D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.nd4j.linalg.util.ArrayUtil;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * 3D Convolutional Neural Network Loss Layer.<br>
@@ -57,7 +55,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class Cnn3DLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cnn3DLossLayer> implements IOutputLayer {
+public class Cnn3DLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.convolutional.Cnn3DLossLayer> implements IOutputLayer {
     @Setter
     @Getter
     protected INDArray labels;
@@ -88,7 +86,7 @@ public class Cnn3DLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         // FIXME: int cast
         int n = (int)input.size(0);
         int d, h, w, c;
-        if(layerConf().getDataFormat() == Convolution3D.DataFormat.NDHWC){
+        if(layerConf().getDataFormat() == Convolution3DLayer.DataFormat.NDHWC){
             d = (int)input.size(1);
             h = (int)input.size(2);
             w = (int)input.size(3);
@@ -188,7 +186,7 @@ public class Cnn3DLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
         int n = (int)input.size(0);
         int d, h, w, c;
-        if(layerConf().getDataFormat() == Convolution3D.DataFormat.NDHWC){
+        if(layerConf().getDataFormat() == Convolution3DLayer.DataFormat.NDHWC){
             d = (int)input.size(1);
             h = (int)input.size(2);
             w = (int)input.size(3);
@@ -272,7 +270,7 @@ public class Cnn3DLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         // FIXME
         int n = (int)input.size(0);
         int d, h, w, c;
-        if(layerConf().getDataFormat() == Convolution3D.DataFormat.NDHWC){
+        if(layerConf().getDataFormat() == Convolution3DLayer.DataFormat.NDHWC){
             d = (int)input.size(1);
             h = (int)input.size(2);
             w = (int)input.size(3);

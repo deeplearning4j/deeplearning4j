@@ -15,7 +15,7 @@
  ******************************************************************************/
 package org.deeplearning4j.scalnet.layers.pooling
 
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer
 import org.scalatest.FunSpec
 
 /**

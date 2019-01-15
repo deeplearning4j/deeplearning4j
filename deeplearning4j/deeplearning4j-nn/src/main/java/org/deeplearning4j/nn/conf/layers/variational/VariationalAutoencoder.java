@@ -16,13 +16,21 @@
 
 package org.deeplearning4j.nn.conf.layers.variational;
 
-import lombok.*;
+import java.util.Collection;
+import java.util.Map;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.conf.layers.LayerValidation;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
@@ -34,9 +42,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.ArrayUtil;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Variational Autoencoder layer
@@ -176,7 +181,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         /**
          * Size of the encoder layers, in units. Each encoder layer is functionally equivalent to a {@link
-         * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers (set via
+         * DenseLayer}. Typically the number and size of the decoder layers (set via
          * {@link #decoderLayerSizes(int...)} is similar to the encoder layers.
          *
          */
@@ -184,7 +189,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         /**
          * Size of the decoder layers, in units. Each decoder layer is functionally equivalent to a {@link
-         * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers is similar
+         * DenseLayer}. Typically the number and size of the decoder layers is similar
          * to the encoder layers (set via {@link #encoderLayerSizes(int...)}.
          *
          */
@@ -218,7 +223,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         /**
          * Size of the encoder layers, in units. Each encoder layer is functionally equivalent to a {@link
-         * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers (set via
+         * DenseLayer}. Typically the number and size of the decoder layers (set via
          * {@link #decoderLayerSizes(int...)} is similar to the encoder layers.
          *
          * @param encoderLayerSizes Size of each encoder layer in the variational autoencoder
@@ -234,7 +239,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         /**
          * Size of the encoder layers, in units. Each encoder layer is functionally equivalent to a {@link
-         * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers (set via
+         * DenseLayer}. Typically the number and size of the decoder layers (set via
          * {@link #decoderLayerSizes(int...)} is similar to the encoder layers.
          *
          * @param encoderLayerSizes Size of each encoder layer in the variational autoencoder
@@ -246,7 +251,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         /**
          * Size of the decoder layers, in units. Each decoder layer is functionally equivalent to a {@link
-         * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers is similar
+         * DenseLayer}. Typically the number and size of the decoder layers is similar
          * to the encoder layers (set via {@link #encoderLayerSizes(int...)}.
          *
          * @param decoderLayerSizes Size of each deccoder layer in the variational autoencoder
@@ -261,7 +266,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         /**
          * Size of the decoder layers, in units. Each decoder layer is functionally equivalent to a {@link
-         * org.deeplearning4j.nn.conf.layers.DenseLayer}. Typically the number and size of the decoder layers is similar
+         * DenseLayer}. Typically the number and size of the decoder layers is similar
          * to the encoder layers (set via {@link #encoderLayerSizes(int...)}.
          *
          * @param decoderLayerSizes Size of each deccoder layer in the variational autoencoder

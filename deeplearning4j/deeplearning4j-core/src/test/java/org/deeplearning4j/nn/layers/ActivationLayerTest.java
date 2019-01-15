@@ -24,9 +24,9 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ActivationLayer;
-import org.deeplearning4j.nn.conf.layers.AutoEncoder;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.autoencoder.AutoEncoder;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -213,7 +213,7 @@ public class ActivationLayerTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
-                        .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
+                        .layer(0, new Convolution2DLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
                                         .activation(Activation.RELU).weightInit(WeightInit.XAVIER).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER)
@@ -230,7 +230,7 @@ public class ActivationLayerTest extends BaseDL4JTest {
                         new NeuralNetConfiguration.Builder()
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .seed(123).list()
-                                        .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
+                                        .layer(0, new Convolution2DLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
                                                         .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
                                                         .build())
                                         .layer(1, new org.deeplearning4j.nn.conf.layers.ActivationLayer.Builder()

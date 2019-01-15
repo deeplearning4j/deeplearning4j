@@ -27,7 +27,14 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Deconvolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.SeparableConvolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.upsampling.Upsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.LocalResponseNormalizationLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -90,13 +97,13 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .l1(1e-1).l2(2e-4).dropOut(0.5).miniBatch(true)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
-                        .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
+                        .layer(0, new Convolution2DLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
+                        .layer(1, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX, new int[] {2, 2})
                                         .build())
-                        .layer(2, new ConvolutionLayer.Builder(3, 3).nOut(10).dropOut(0.5).weightInit(WeightInit.XAVIER)
+                        .layer(2, new Convolution2DLayer.Builder(3, 3).nOut(10).dropOut(0.5).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
-                        .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
+                        .layer(3, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX, new int[] {2, 2})
                                         .build())
                         .layer(4, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
@@ -141,7 +148,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         NeuralNetConfiguration.ListBuilder builder = (NeuralNetConfiguration.ListBuilder) incompleteLFW();
         builder.setInputType(InputType.convolutional(28, 28, 3));
         MultiLayerConfiguration conf = builder.build();
-        ConvolutionLayer layer2 = (ConvolutionLayer) conf.getConf(2).getLayer();
+        Convolution2DLayer layer2 = (Convolution2DLayer) conf.getConf(2).getLayer();
         assertEquals(6, layer2.getNIn());
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -165,7 +172,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = builder.build();
 
-        ConvolutionLayer layer2 = (ConvolutionLayer) conf.getConf(3).getLayer();
+        Convolution2DLayer layer2 = (Convolution2DLayer) conf.getConf(3).getLayer();
         assertEquals(6, layer2.getNIn());
 
     }
@@ -175,14 +182,14 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         MultiLayerConfiguration.Builder builder =
                         new NeuralNetConfiguration.Builder().seed(3)
                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
-                                        .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                        .layer(0, new Convolution2DLayer.Builder(
                                                         new int[] {5, 5}).nOut(6).build())
-                                        .layer(1, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(
+                                        .layer(1, new Subsampling2DLayer.Builder(
                                                         new int[] {2, 2}).build())
-                                        .layer(2, new LocalResponseNormalization.Builder().build())
-                                        .layer(3, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                        .layer(2, new LocalResponseNormalizationLayer.Builder().build())
+                                        .layer(3, new Convolution2DLayer.Builder(
                                                         new int[] {5, 5}).nOut(6).build())
-                                        .layer(4, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(
+                                        .layer(4, new Subsampling2DLayer.Builder(
                                                         new int[] {2, 2}).build())
                                         .layer(5, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                                 LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(2)
@@ -195,13 +202,13 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         MultiLayerConfiguration.Builder builder =
                         new NeuralNetConfiguration.Builder().seed(3)
                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
-                                        .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                        .layer(0, new Convolution2DLayer.Builder(
                                                         new int[] {5, 5}).nOut(6).build())
-                                        .layer(1, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(
+                                        .layer(1, new Subsampling2DLayer.Builder(
                                                         new int[] {2, 2}).build())
-                                        .layer(2, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                        .layer(2, new Convolution2DLayer.Builder(
                                                         new int[] {5, 5}).nOut(6).build())
-                                        .layer(3, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(
+                                        .layer(3, new Subsampling2DLayer.Builder(
                                                         new int[] {2, 2}).build())
                                         .layer(4, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).activation(Activation.SOFTMAX)
@@ -215,15 +222,15 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         MultiLayerConfiguration.Builder builder =
                         new NeuralNetConfiguration.Builder().seed(3)
                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
-                                        .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                        .layer(0, new Convolution2DLayer.Builder(
                                                         new int[] {5, 5}).nIn(1).nOut(20).build())
-                                        .layer(1, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(
+                                        .layer(1, new Subsampling2DLayer.Builder(
                                                         new int[] {2, 2}, new int[] {2, 2}).build())
-                                        .layer(2, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                        .layer(2, new Convolution2DLayer.Builder(
                                                         new int[] {5, 5}).nIn(20).nOut(50).build())
-                                        .layer(3, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(
+                                        .layer(3, new Subsampling2DLayer.Builder(
                                                         new int[] {2, 2}, new int[] {2, 2}).build())
-                                        .layer(4, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nOut(500)
+                                        .layer(4, new DenseLayer.Builder().nOut(500)
                                                         .build())
                                         .layer(5, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
@@ -236,13 +243,13 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         MultiLayerConfiguration builder =
                         new NeuralNetConfiguration.Builder().seed(3)
                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
-                                        .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                        .layer(0, new Convolution2DLayer.Builder(
                                                         new int[] {5, 5}).nIn(1).nOut(6).build())
-                                        .layer(1, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(
+                                        .layer(1, new Subsampling2DLayer.Builder(
                                                         new int[] {5, 5}, new int[] {2, 2}).build())
-                                        .layer(2, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                        .layer(2, new Convolution2DLayer.Builder(
                                                         new int[] {5, 5}).nIn(1).nOut(6).build())
-                                        .layer(3, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(
+                                        .layer(3, new Subsampling2DLayer.Builder(
                                                         new int[] {5, 5}, new int[] {2, 2}).build())
                                         .layer(4, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(150)
@@ -258,9 +265,9 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] {10, 10},
+                        .layer(0, new Convolution2DLayer.Builder(new int[] {10, 10},
                                         new int[] {2, 2}).nIn(nChannels).nOut(6).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
+                        .layer(1, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX, new int[] {2, 2})
                                         .build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
@@ -280,9 +287,9 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
-                        .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] {10, 10},
+                        .layer(0, new Convolution2DLayer.Builder(new int[] {10, 10},
                                         new int[] {2, 2}).nIn(nChannels).nOut(6).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
+                        .layer(1, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX, new int[] {2, 2})
                                         .build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nIn(5 * 5 * 1 * 6) //216
@@ -300,9 +307,9 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
                 //out = stride * (in-1) + filter - 2*pad -> 2 * (28-1) + 2 - 0 = 56 -> 56x56x3
-                .layer(0, new Deconvolution2D.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build())
+                .layer(0, new Deconvolution2DLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build())
                 //(56-2+2*1)/2+1 = 29 -> 29x29x3
-                .layer(1, new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build())
+                .layer(1, new Subsampling2DLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build())
                 .layer(2, new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
 
@@ -322,8 +329,8 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
     public void testSubSamplingWithPadding() {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
-                        .layer(1, new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
+                        .layer(0, new Convolution2DLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                        .layer(1, new Subsampling2DLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
                         .layer(2, new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(28, 28, 1));
 
@@ -343,8 +350,8 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
     public void testUpsampling() {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
-                .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
-                .layer(new Upsampling2D.Builder().size(3).build()) // 14 * 3 = 42!
+                .layer(new Convolution2DLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                .layer(new Upsampling2DLayer.Builder().size(3).build()) // 14 * 3 = 42!
                 .layer(new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
 
@@ -366,7 +373,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         int[] blocks = new int[] {2, 2};
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
-                .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                .layer(new Convolution2DLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
                 .layer(new SpaceToBatchLayer.Builder(blocks).build()) // Divide space dimensions by blocks, i.e. 14/2 = 7
                 .layer(new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
@@ -388,7 +395,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
                 //(28-2+0)/2+1 = 14 -> 14x14x3 out
-                .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build())
+                .layer(new Convolution2DLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build())
                 // Divide space dimensions by blocks, i.e. 14/2 = 7 -> 7x7x12 out (3x2x2 depth)
                 .layer(new SpaceToDepthLayer.Builder(blocks, SpaceToDepthLayer.DataFormat.NCHW).build())
                 .layer(new OutputLayer.Builder().nIn(3 * 2 * 2).nOut(3).activation(Activation.SOFTMAX).build()) // nIn of the next layer gets multiplied by 2*2.
@@ -415,13 +422,13 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new ConvolutionLayer.Builder(new int[] {1, 1}, new int[] {1, 1}).nIn(1).nOut(6)
+                        .layer(0, new Convolution2DLayer.Builder(new int[] {1, 1}, new int[] {1, 1}).nIn(1).nOut(6)
                                         .activation(Activation.IDENTITY).build())
-                        .layer(1, new BatchNormalization.Builder().build())
+                        .layer(1, new BatchNormalizationLayer.Builder().build())
                         .layer(2, new ActivationLayer.Builder().activation(Activation.RELU).build())
                         .layer(3, new DenseLayer.Builder().nIn(28 * 28 * 6).nOut(10).activation(Activation.IDENTITY)
                                         .build())
-                        .layer(4, new BatchNormalization.Builder().nOut(10).build())
+                        .layer(4, new BatchNormalizationLayer.Builder().nOut(10).build())
                         .layer(5, new ActivationLayer.Builder().activation(Activation.RELU).build())
                         .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(10).build())
@@ -445,11 +452,11 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
     public void testSeparableConv2D() {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
-                .layer( new SeparableConvolution2D.Builder(2, 2)
+                .layer( new SeparableConvolution2DLayer.Builder(2, 2)
                         .depthMultiplier(2)
                         .padding(0, 0)
                         .stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
-                .layer( new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
+                .layer( new Subsampling2DLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
                 .layer(2, new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
 
@@ -470,11 +477,11 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
                 //out = stride * (in-1) + filter - 2*pad -> 2 * (28-1) + 2 - 0 = 56 -> 56x56x3
-                .layer( new Deconvolution2D.Builder(2, 2)
+                .layer( new Deconvolution2DLayer.Builder(2, 2)
                         .padding(0, 0)
                         .stride(2, 2).nIn(1).nOut(3).build())
                 //(56-2+2*1)/2+1 = 29 -> 29x29x3
-                .layer( new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build())
+                .layer( new Subsampling2DLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build())
                 .layer(2, new OutputLayer.Builder().nOut(3).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
 

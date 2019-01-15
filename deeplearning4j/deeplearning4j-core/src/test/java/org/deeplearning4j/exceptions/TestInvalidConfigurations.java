@@ -23,6 +23,11 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
@@ -49,7 +54,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
 
     public static MultiLayerNetwork getLSTMPlusRnnOutput(int nIn, int nOut) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(10).build())
+                        .layer(0, new GravesLSTMLayer.Builder().nIn(nIn).nOut(10).build())
                         .layer(1, new RnnOutputLayer.Builder().nIn(10).nOut(nOut).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -60,7 +65,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
 
     public static MultiLayerNetwork getCnnPlusOutputLayer(int depthIn, int inH, int inW, int nOut) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(5).build())
+                        .layer(0, new Convolution2DLayer.Builder().nIn(depthIn).nOut(5).build())
                         .layer(1, new OutputLayer.Builder().nOut(nOut).build())
                         .setInputType(InputType.convolutional(inH, inW, depthIn)).build();
 
@@ -144,7 +149,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
     public void testLSTMNOut0() {
         try {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                            .layer(0, new GravesLSTM.Builder().nIn(10).nOut(0).build())
+                            .layer(0, new GravesLSTMLayer.Builder().nIn(10).nOut(0).build())
                             .layer(1, new RnnOutputLayer.Builder().nIn(10).nOut(10).build()).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -175,7 +180,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
     public void testConvolutionalNOut0() {
         try {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                            .layer(0, new ConvolutionLayer.Builder().nIn(5).nOut(0).build())
+                            .layer(0, new Convolution2DLayer.Builder().nIn(5).nOut(0).build())
                             .layer(1, new OutputLayer.Builder().nOut(10).build())
                             .setInputType(InputType.convolutional(10, 10, 5)).build();
 
@@ -205,7 +210,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         try {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().convolutionMode(ConvolutionMode.Strict)
                             .list()
-                            .layer(0, new ConvolutionLayer.Builder().kernelSize(3, 2).stride(2, 2).padding(0, 0).nOut(5)
+                            .layer(0, new Convolution2DLayer.Builder().kernelSize(3, 2).stride(2, 2).padding(0, 0).nOut(5)
                                             .build())
                             .layer(1, new OutputLayer.Builder().nOut(10).build())
                             .setInputType(InputType.convolutional(hIn, wIn, depthIn)).build();
@@ -231,7 +236,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         int wIn = 10;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new ConvolutionLayer.Builder().kernelSize(7, 7).stride(1, 1).padding(0, 0).nOut(5)
+                        .layer(0, new Convolution2DLayer.Builder().kernelSize(7, 7).stride(1, 1).padding(0, 0).nOut(5)
                                         .build())
                         .layer(1, new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(hIn, wIn, depthIn)).build();
@@ -263,7 +268,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
 
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder().convolutionMode(ConvolutionMode.Strict).list()
-                                        .layer(0, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(2, 2)
+                                        .layer(0, new Convolution2DLayer.Builder().kernelSize(3, 3).stride(2, 2)
                                                         .padding(0, 0).nIn(depthIn).nOut(5).build())
                                         .layer(1, new OutputLayer.Builder().nIn(5 * 4 * 4).nOut(10).activation(Activation.SOFTMAX).build())
                                         .inputPreProcessor(1, new CnnToFeedForwardPreProcessor()).build();
@@ -296,7 +301,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
 
         try {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                            .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 3).stride(2, 2).padding(0, 0).nOut(5)
+                            .layer(0, new Convolution2DLayer.Builder().kernelSize(2, 3).stride(2, 2).padding(0, 0).nOut(5)
                                             .build())
                             .layer(1, new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build())
                             .setInputType(InputType.convolutional(hIn, wIn, depthIn)).build();
@@ -307,7 +312,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         try {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().convolutionMode(ConvolutionMode.Strict)
                             .list()
-                            .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 3).stride(2, 2).padding(0, 0).nOut(5)
+                            .layer(0, new Convolution2DLayer.Builder().kernelSize(2, 3).stride(2, 2).padding(0, 0).nOut(5)
                                             .build())
                             .layer(1, new OutputLayer.Builder().nOut(10).build())
                             .setInputType(InputType.convolutional(hIn, wIn, depthIn)).build();
@@ -336,7 +341,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         try {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().convolutionMode(ConvolutionMode.Strict)
                             .list()
-                            .layer(0, new SubsamplingLayer.Builder().kernelSize(2, 3).stride(2, 2).padding(0, 0)
+                            .layer(0, new Subsampling2DLayer.Builder().kernelSize(2, 3).stride(2, 2).padding(0, 0)
                                             .build())
                             .layer(1, new OutputLayer.Builder().nOut(10).build())
                             .setInputType(InputType.convolutional(hIn, wIn, depthIn)).build();
@@ -354,62 +359,62 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
 
     @Test(expected = IllegalStateException.class)
     public void testCnnInvalidKernel() {
-        new ConvolutionLayer.Builder().kernelSize(3, 0).build();
+        new Convolution2DLayer.Builder().kernelSize(3, 0).build();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCnnInvalidKernel2() {
-        new ConvolutionLayer.Builder().kernelSize(2, 2, 2).build();
+        new Convolution2DLayer.Builder().kernelSize(2, 2, 2).build();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCnnInvalidStride() {
-        new ConvolutionLayer.Builder().kernelSize(3, 3).stride(0, 1).build();
+        new Convolution2DLayer.Builder().kernelSize(3, 3).stride(0, 1).build();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCnnInvalidStride2() {
-        new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1).build();
+        new Convolution2DLayer.Builder().kernelSize(3, 3).stride(1).build();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCnnInvalidPadding() {
-        new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(-1, 0).build();
+        new Convolution2DLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(-1, 0).build();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCnnInvalidPadding2() {
-        new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(0, 0, 0).build();
+        new Convolution2DLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(0, 0, 0).build();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testSubsamplingInvalidKernel() {
-        new SubsamplingLayer.Builder().kernelSize(3, 0).build();
+        new Subsampling2DLayer.Builder().kernelSize(3, 0).build();
     }
 
     @Test(expected = RuntimeException.class)
     public void testSubsamplingInvalidKernel2() {
-        new SubsamplingLayer.Builder().kernelSize(2).build();
+        new Subsampling2DLayer.Builder().kernelSize(2).build();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testSubsamplingInvalidStride() {
-        new SubsamplingLayer.Builder().kernelSize(3, 3).stride(0, 1).build();
+        new Subsampling2DLayer.Builder().kernelSize(3, 3).stride(0, 1).build();
     }
 
     @Test(expected = RuntimeException.class)
     public void testSubsamplingInvalidStride2() {
-        new SubsamplingLayer.Builder().kernelSize(3, 3).stride(1, 1, 1).build();
+        new Subsampling2DLayer.Builder().kernelSize(3, 3).stride(1, 1, 1).build();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testSubsamplingInvalidPadding() {
-        new SubsamplingLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(-1, 0).build();
+        new Subsampling2DLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(-1, 0).build();
     }
 
     @Test(expected = RuntimeException.class)
     public void testSubsamplingInvalidPadding2() {
-        new SubsamplingLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(0).build();
+        new Subsampling2DLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(0).build();
     }
 
 }

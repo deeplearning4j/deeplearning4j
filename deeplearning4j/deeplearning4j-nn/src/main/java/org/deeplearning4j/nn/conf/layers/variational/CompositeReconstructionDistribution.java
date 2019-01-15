@@ -16,6 +16,9 @@
 
 package org.deeplearning4j.nn.conf.layers.variational;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import lombok.Data;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -24,10 +27,6 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * CompositeReconstructionDistribution is a reconstruction distribution built from multiple other ReconstructionDistribution

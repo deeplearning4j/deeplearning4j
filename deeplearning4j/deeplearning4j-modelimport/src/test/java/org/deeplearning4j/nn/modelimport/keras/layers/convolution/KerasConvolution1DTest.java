@@ -18,7 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
-import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution1DLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;

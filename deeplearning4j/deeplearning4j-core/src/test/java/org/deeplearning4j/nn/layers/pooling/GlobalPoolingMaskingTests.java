@@ -21,10 +21,11 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -62,9 +63,9 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                             .updater(new NoOp())
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                            .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                            .layer(0, new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                             .build())
-                            .layer(1, new org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer.Builder()
+                            .layer(1, new GlobalPoolingLayer.Builder()
                                             .poolingType(PoolingType.AVG).build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
@@ -125,9 +126,9 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
         for (PoolingType pt : poolingTypes) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
                             .convolutionMode(ConvolutionMode.Same).seed(12345L).list()
-                            .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(height, 2)
+                            .layer(0, new Convolution2DLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(height, 2)
                                             .stride(height, 1).activation(Activation.TANH).build())
-                            .layer(1, new org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer.Builder().poolingType(pt)
+                            .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt)
                                             .build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(depthOut).nOut(nOut).build())
@@ -188,9 +189,9 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
         for (PoolingType pt : poolingTypes) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
                             .convolutionMode(ConvolutionMode.Same).seed(12345L).list()
-                            .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(2, width)
+                            .layer(0, new Convolution2DLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(2, width)
                                             .stride(1, width).activation(Activation.TANH).build())
-                            .layer(1, new org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer.Builder().poolingType(pt)
+                            .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt)
                                             .build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(depthOut).nOut(nOut).build())
@@ -252,9 +253,9 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
         for (PoolingType pt : poolingTypes) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
                             .convolutionMode(ConvolutionMode.Same).seed(12345L).list()
-                            .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(height, 2)
+                            .layer(0, new Convolution2DLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(height, 2)
                                             .stride(height, 1).activation(Activation.TANH).build())
-                            .layer(1, new org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer.Builder().poolingType(pt)
+                            .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt)
                                             .build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(depthOut).nOut(nOut).build())
@@ -311,9 +312,9 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
         for (PoolingType pt : poolingTypes) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
                             .convolutionMode(ConvolutionMode.Same).seed(12345L).list()
-                            .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(2, width)
+                            .layer(0, new Convolution2DLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(2, width)
                                             .stride(1, width).activation(Activation.TANH).build())
-                            .layer(1, new org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer.Builder().poolingType(pt)
+                            .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt)
                                             .build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(depthOut).nOut(nOut).build())
@@ -370,9 +371,9 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
         for (PoolingType pt : poolingTypes) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
                     .convolutionMode(ConvolutionMode.Same).seed(12345L).list()
-                    .layer(0, new ConvolutionLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(2, 2)
+                    .layer(0, new Convolution2DLayer.Builder().nIn(depthIn).nOut(depthOut).kernelSize(2, 2)
                             .stride(1, 1).activation(Activation.TANH).build())
-                    .layer(1, new org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer.Builder().poolingType(pt)
+                    .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt)
                             .build())
                     .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                             .activation(Activation.SOFTMAX).nIn(depthOut).nOut(nOut).build())

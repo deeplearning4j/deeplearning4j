@@ -25,8 +25,8 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.DropoutLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -36,7 +36,6 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -75,7 +74,7 @@ public class DropoutLayerTest extends BaseDL4JTest {
     public void testDropoutLayerWithoutTraining() throws Exception {
         MultiLayerConfiguration confIntegrated = new NeuralNetConfiguration.Builder().seed(3648)
                         .list().layer(0,
-                                        new ConvolutionLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1).dropOut(0.25)
+                                        new Convolution2DLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1).dropOut(0.25)
                                                         .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
                                                         .build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -98,7 +97,7 @@ public class DropoutLayerTest extends BaseDL4JTest {
                                         .list().layer(0,
                                                         new DropoutLayer.Builder(0.25)
                                                                         .build())
-                                        .layer(1, new ConvolutionLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1)
+                                        .layer(1, new Convolution2DLayer.Builder(1, 1).stride(1, 1).nIn(1).nOut(1)
                                                         .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
                                                         .build())
                                         .layer(2, new DropoutLayer.Builder(0.25).build())
@@ -227,7 +226,7 @@ public class DropoutLayerTest extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration confIntegrated = new NeuralNetConfiguration.Builder().seed(123)
                         .list().layer(0,
-                                        new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
+                                        new Convolution2DLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
                                                         .activation(Activation.TANH).weightInit(WeightInit.XAVIER)
                                                         .build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -245,7 +244,7 @@ public class DropoutLayerTest extends BaseDL4JTest {
         preProcessorMap.put(1, new CnnToFeedForwardPreProcessor(13, 13, 20));
 
         MultiLayerConfiguration confSeparate = new NeuralNetConfiguration.Builder().seed(123).list()
-                        .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
+                        .layer(0, new Convolution2DLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
                                         .activation(Activation.TANH).weightInit(WeightInit.XAVIER).build())
                         .layer(1, new DropoutLayer.Builder(0.5).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)

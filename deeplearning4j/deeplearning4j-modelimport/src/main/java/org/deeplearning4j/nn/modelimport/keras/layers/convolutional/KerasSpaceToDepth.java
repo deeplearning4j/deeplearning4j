@@ -17,7 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.SpaceToDepthLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.SpaceToDepthLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -62,9 +62,9 @@ public class KerasSpaceToDepth extends KerasLayer {
     }
 
     /**
-     * Get DL4J SpaceToDepth layer.
+     * Get DL4J SpaceToDepthLayer layer.
      *
-     * @return SpaceToDepth layer
+     * @return SpaceToDepthLayer layer
      */
     public SpaceToDepthLayer getSpaceToDepthLayer() {
         return (SpaceToDepthLayer) this.layer;

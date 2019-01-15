@@ -18,8 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.DropoutLayer;
-import org.deeplearning4j.nn.conf.layers.misc.RepeatVector;
+import org.deeplearning4j.nn.conf.layers.misc.RepeatVectorLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -29,7 +28,7 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import java.util.Map;
 
 /**
- * Imports a Keras RepeatVector layer
+ * Imports a Keras RepeatVectorLayer layer
  *
  * @author Max Pumperla
  */
@@ -60,7 +59,7 @@ public class KerasRepeatVector extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
-        this.layer = new RepeatVector.Builder().repetitionFactor(getRepeatMultiplier(layerConfig, conf))
+        this.layer = new RepeatVectorLayer.Builder().repetitionFactor(getRepeatMultiplier(layerConfig, conf))
                 .name(this.layerName).build();
     }
 
@@ -75,17 +74,17 @@ public class KerasRepeatVector extends KerasLayer {
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras RepeatVector layer accepts only one input (received " + inputType.length + ")");
+                    "Keras RepeatVectorLayer layer accepts only one input (received " + inputType.length + ")");
         return this.getRepeatVectorLayer().getOutputType(-1, inputType[0]);
     }
 
     /**
-     * Get DL4J RepeatVector.
+     * Get DL4J RepeatVectorLayer.
      *
-     * @return  RepeatVector
+     * @return  RepeatVectorLayer
      */
-    public RepeatVector getRepeatVectorLayer() {
-        return (RepeatVector) this.layer;
+    public RepeatVectorLayer getRepeatVectorLayer() {
+        return (RepeatVectorLayer) this.layer;
     }
 
     static int getRepeatMultiplier(Map<String, Object> layerConfig, KerasLayerConfiguration conf)

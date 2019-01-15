@@ -30,7 +30,12 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
@@ -42,7 +47,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -122,11 +126,11 @@ public class BatchNormalizationTest extends BaseDL4JTest {
     }
 
     protected static Layer getLayer(int nOut, double epsilon, boolean lockGammaBeta, double gamma, double beta) {
-        BatchNormalization.Builder b = new BatchNormalization.Builder().nOut(nOut).eps(epsilon);
+        BatchNormalizationLayer.Builder b = new BatchNormalizationLayer.Builder().nOut(nOut).eps(epsilon);
         if (lockGammaBeta) {
             b.lockGammaBeta(true).gamma(gamma).beta(beta);
         }
-        BatchNormalization bN = b.build();
+        BatchNormalizationLayer bN = b.build();
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(bN).build();
 
         long numParams = conf.getLayer().initializer().numParams(conf);
@@ -366,7 +370,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(28 * 28).nOut(10).weightInit(WeightInit.XAVIER)
                         .activation(Activation.RELU).build())
-                .layer(1, new BatchNormalization.Builder().nOut(10).build()).layer(2,
+                .layer(1, new BatchNormalizationLayer.Builder().nOut(10).build()).layer(2,
                         new ActivationLayer.Builder()
                                 .activation(Activation.RELU).build())
                 .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -396,9 +400,9 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                 .list()
-                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
+                .layer(0, new Convolution2DLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                         .activation(Activation.IDENTITY).build())
-                .layer(1, new BatchNormalization.Builder().build())
+                .layer(1, new BatchNormalizationLayer.Builder().build())
                 .layer(2, new ActivationLayer.Builder().activation(Activation.RELU).build())
                 .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
@@ -421,12 +425,12 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .list()
-                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
+                .layer(0, new Convolution2DLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                         .activation(Activation.IDENTITY).build())
-                .layer(1, new BatchNormalization.Builder().build())
+                .layer(1, new BatchNormalizationLayer.Builder().build())
                 .layer(2, new ActivationLayer.Builder().activation(Activation.LEAKYRELU).build())
                 .layer(3, new DenseLayer.Builder().nOut(10).activation(Activation.LEAKYRELU).build())
-                .layer(4, new BatchNormalization.Builder().build())
+                .layer(4, new BatchNormalizationLayer.Builder().build())
                 .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
                 .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
@@ -460,12 +464,12 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.RMSPROP).seed(12345).list()
-                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
+                .layer(0, new Convolution2DLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                         .activation(Activation.IDENTITY).build())
-                .layer(1, new BatchNormalization.Builder().build())
+                .layer(1, new BatchNormalizationLayer.Builder().build())
                 .layer(2, new ActivationLayer.Builder().activation(Activation.LEAKYRELU).build())
                 .layer(3, new DenseLayer.Builder().nOut(10).activation(Activation.LEAKYRELU).build())
-                .layer(4, new BatchNormalization.Builder().build())
+                .layer(4, new BatchNormalizationLayer.Builder().build())
                 .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
                 .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
@@ -519,7 +523,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                     .updater(Updater.RMSPROP).seed(12345)
                     .list().layer(0,
-                            new BatchNormalization.Builder().nIn(10).nOut(10).eps(1e-5).decay(0.95)
+                            new BatchNormalizationLayer.Builder().nIn(10).nOut(10).eps(1e-5).decay(0.95)
                                     .useLogStd(useLogStd).build())
                     .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
                             .activation(Activation.IDENTITY).nIn(10).nOut(10).build())
@@ -585,7 +589,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                     .updater(Updater.RMSPROP).seed(12345).list()
-                    .layer(0, new BatchNormalization.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).useLogStd(useLogStd).build())
+                    .layer(0, new BatchNormalizationLayer.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).useLogStd(useLogStd).build())
                     .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
                             .activation(Activation.IDENTITY).nOut(10).build())
                     .setInputType(InputType.convolutional(5, 5, 3)).build();
@@ -648,7 +652,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.RMSPROP).seed(12345).list()
-                .layer(0, new BatchNormalization.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).useLogStd(false).build())
+                .layer(0, new BatchNormalizationLayer.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).useLogStd(false).build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
                         .activation(Activation.IDENTITY).nOut(10).build())
                 .setInputType(InputType.convolutional(5, 5, 3)).build();
@@ -659,7 +663,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(Updater.RMSPROP).seed(12345).list()
-                .layer(0, new BatchNormalization.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).useLogStd(true).build())
+                .layer(0, new BatchNormalizationLayer.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).useLogStd(true).build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
                         .activation(Activation.IDENTITY).nOut(10).build())
                 .setInputType(InputType.convolutional(5, 5, 3)).build();
@@ -692,9 +696,9 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                 .updater(new Adam(1e-3))
                 .activation(Activation.TANH)
                 .list()
-                .layer(new ConvolutionLayer.Builder().nOut(5).kernelSize(2, 2).build())
-                .layer(new BatchNormalization())
-                .layer(new ConvolutionLayer.Builder().nOut(5).kernelSize(2, 2).build())
+                .layer(new Convolution2DLayer.Builder().nOut(5).kernelSize(2, 2).build())
+                .layer(new BatchNormalizationLayer())
+                .layer(new Convolution2DLayer.Builder().nOut(5).kernelSize(2, 2).build())
                 .layer(new OutputLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nOut(10).build())
                 .setInputType(InputType.convolutionalFlat(28, 28, 1))
                 .build();
@@ -711,7 +715,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                         .updater(new AdaDelta())
                         .build())
                 .removeOutputLayer()
-                .addLayer(new BatchNormalization.Builder().nOut(3380).build())
+                .addLayer(new BatchNormalizationLayer.Builder().nOut(3380).build())
                 .addLayer(new OutputLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nIn(3380).nOut(10).build())
                 .build();
 
@@ -729,9 +733,9 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                     .weightInit(WeightInit.XAVIER)
                     .convolutionMode(ConvolutionMode.Same)
                     .list()
-                    .layer(rnn ? new LSTM.Builder().nOut(3).build() :
+                    .layer(rnn ? new LSTMLayer.Builder().nOut(3).build() :
                             new Convolution1DLayer.Builder().kernelSize(3).stride(1).nOut(3).build())
-                    .layer(new BatchNormalization())
+                    .layer(new BatchNormalizationLayer())
                     .layer(new RnnOutputLayer.Builder().nOut(3).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build())
                     .setInputType(InputType.recurrent(3))
                     .build();
@@ -755,7 +759,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
-                .layer(new BatchNormalization.Builder().nIn(10).nOut(10).build())
+                .layer(new BatchNormalizationLayer.Builder().nIn(10).nOut(10).build())
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

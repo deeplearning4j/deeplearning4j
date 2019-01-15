@@ -24,8 +24,8 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -82,9 +82,9 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.XAVIER).updater(updater).seed(seed).list()
-                        .layer(0, new ConvolutionLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .layer(0, new Convolution2DLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .activation(Activation.TANH).build())
-                        .layer(1, new ConvolutionLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                        .layer(1, new Convolution2DLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .activation(Activation.TANH).build())
                         .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(10)
                                         .build())
@@ -112,9 +112,9 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.XAVIER).updater(updater).seed(seed).graphBuilder()
                         .addInputs("in")
-                        .addLayer("0", new ConvolutionLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1)
+                        .addLayer("0", new Convolution2DLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1)
                                         .padding(0, 0).activation(Activation.TANH).build(), "in")
-                        .addLayer("1", new ConvolutionLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1)
+                        .addLayer("1", new Convolution2DLayer.Builder().nOut(3).kernelSize(2, 2).stride(1, 1)
                                         .padding(0, 0).activation(Activation.TANH).build(), "0")
                         .addLayer("2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(10)
                                         .build(), "1")

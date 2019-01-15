@@ -29,7 +29,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * Score function for a MultiLayerNetwork or ComputationGraph with a single
- * {@link org.deeplearning4j.nn.conf.layers.AutoEncoder} layer.
+ * {@link org.deeplearning4j.nn.conf.layers.feedforeward.autoencoder.AutoEncoder} layer.
  * Calculates the specified {@link RegressionEvaluation.Metric} on the layer's reconstructions.
  *
  * @author Alex Black

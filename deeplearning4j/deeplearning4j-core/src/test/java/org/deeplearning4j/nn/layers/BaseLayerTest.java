@@ -21,8 +21,8 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Before;
@@ -81,7 +81,7 @@ public class BaseLayerTest extends BaseDL4JTest {
         int nOut = 2;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .layer(new ConvolutionLayer.Builder().nIn(nIn).nOut(nOut).build()).build();
+                        .layer(new Convolution2DLayer.Builder().nIn(nIn).nOut(nOut).build()).build();
 
         val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);

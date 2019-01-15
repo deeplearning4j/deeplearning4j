@@ -25,13 +25,17 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping3D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping3DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.ZeroPadding3DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling3DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.upsampling.Upsampling3DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -88,7 +92,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                             for (ConvolutionMode mode : modes) {
                                 for (int[] kernel : kernels) {
                                     for (int[] stride : strides) {
-                                        for (Convolution3D.DataFormat df : Convolution3D.DataFormat.values()) {
+                                        for (Convolution3DLayer.DataFormat df : Convolution3DLayer.DataFormat.values()) {
 
                                             int outDepth = mode == ConvolutionMode.Same ?
                                                     depth / stride[0] : (depth - kernel[0]) / stride[0] + 1;
@@ -98,7 +102,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                                     width / stride[2] : (width - kernel[2]) / stride[2] + 1;
 
                                             INDArray input;
-                                            if(df == Convolution3D.DataFormat.NDHWC){
+                                            if(df == Convolution3DLayer.DataFormat.NDHWC){
                                                 input = Nd4j.rand(new int[]{miniBatchSize, depth, height, width, convNIn});
                                             } else {
                                                 input = Nd4j.rand(new int[]{miniBatchSize, convNIn, depth, height, width});
@@ -112,11 +116,11 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                                     .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
                                                     .dist(new NormalDistribution(0, 1))
                                                     .list()
-                                                    .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(kernel)
+                                                    .layer(0, new Convolution3DLayer.Builder().activation(afn).kernelSize(kernel)
                                                             .stride(stride).nIn(convNIn).nOut(convNOut1).hasBias(false)
                                                             .convolutionMode(mode).dataFormat(df)
                                                             .build())
-                                                    .layer(1, new Convolution3D.Builder().activation(afn).kernelSize(1, 1, 1)
+                                                    .layer(1, new Convolution3DLayer.Builder().activation(afn).kernelSize(1, 1, 1)
                                                             .nIn(convNOut1).nOut(convNOut2).hasBias(false)
                                                             .convolutionMode(mode).dataFormat(df)
                                                             .build())
@@ -125,7 +129,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                                             .activation(Activation.SOFTMAX).nOut(finalNOut).build())
                                                     .inputPreProcessor(2,
                                                             new Cnn3DToFeedForwardPreProcessor(outDepth, outHeight, outWidth,
-                                                                    convNOut2, df == Convolution3D.DataFormat.NCDHW))
+                                                                    convNOut2, df == Convolution3DLayer.DataFormat.NCDHW))
                                                     .setInputType(InputType.convolutional3D(df, depth, height, width, convNIn)).build();
 
                                             String json = conf.toJson();
@@ -215,13 +219,13 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                             .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
                             .dist(new NormalDistribution(0, 1))
                             .list()
-                            .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(kernel)
+                            .layer(0, new Convolution3DLayer.Builder().activation(afn).kernelSize(kernel)
                                     .nIn(convNIn).nOut(convNOut1).hasBias(false)
-                                    .convolutionMode(mode).dataFormat(Convolution3D.DataFormat.NCDHW)
+                                    .convolutionMode(mode).dataFormat(Convolution3DLayer.DataFormat.NCDHW)
                                     .build())
-                            .layer(1, new Convolution3D.Builder().activation(afn).kernelSize(1, 1, 1)
+                            .layer(1, new Convolution3DLayer.Builder().activation(afn).kernelSize(1, 1, 1)
                                     .nIn(convNOut1).nOut(convNOut2).hasBias(false)
-                                    .convolutionMode(mode).dataFormat(Convolution3D.DataFormat.NCDHW)
+                                    .convolutionMode(mode).dataFormat(Convolution3DLayer.DataFormat.NCDHW)
                                     .build())
                             .layer(2, new ZeroPadding3DLayer.Builder(zeroPadding).build())
                             .layer(3, new DenseLayer.Builder().nOut(denseNOut).build())
@@ -292,14 +296,14 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
             for (int miniBatchSize : minibatchSizes) {
                 for (Subsampling3DLayer.PoolingType pool : poolModes) {
                     for (ConvolutionMode mode : modes) {
-                        for (Convolution3D.DataFormat df : Convolution3D.DataFormat.values()) {
+                        for (Convolution3DLayer.DataFormat df : Convolution3DLayer.DataFormat.values()) {
 
                             int outDepth = depth / kernel[0];
                             int outHeight = height / kernel[1];
                             int outWidth = width / kernel[2];
 
                             INDArray input = Nd4j.rand(
-                                    df == Convolution3D.DataFormat.NCDHW ? new int[]{miniBatchSize, convNIn, depth, height, width}
+                                    df == Convolution3DLayer.DataFormat.NCDHW ? new int[]{miniBatchSize, convNIn, depth, height, width}
                                             : new int[]{miniBatchSize, depth, height, width, convNIn});
                             INDArray labels = Nd4j.zeros(miniBatchSize, finalNOut);
                             for (int i = 0; i < miniBatchSize; i++) {
@@ -311,7 +315,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                     .weightInit(WeightInit.XAVIER)
                                     .dist(new NormalDistribution(0, 1))
                                     .list()
-                                    .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(1, 1, 1)
+                                    .layer(0, new Convolution3DLayer.Builder().activation(afn).kernelSize(1, 1, 1)
                                             .nIn(convNIn).nOut(convNOut).hasBias(false)
                                             .convolutionMode(mode).dataFormat(df)
                                             .build())
@@ -398,11 +402,11 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                             .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
                             .dist(new NormalDistribution(0, 1))
                             .list()
-                            .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(1, 1, 1)
+                            .layer(0, new Convolution3DLayer.Builder().activation(afn).kernelSize(1, 1, 1)
                                     .nIn(convNIn).nOut(convNOut).hasBias(false)
-                                    .convolutionMode(mode).dataFormat(Convolution3D.DataFormat.NCDHW)
+                                    .convolutionMode(mode).dataFormat(Convolution3DLayer.DataFormat.NCDHW)
                                     .build())
-                            .layer(1, new Upsampling3D.Builder(upsamplingSize[0]).build())
+                            .layer(1, new Upsampling3DLayer.Builder(upsamplingSize[0]).build())
                             .layer(2, new DenseLayer.Builder().nOut(denseNOut).build())
                             .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                     .activation(Activation.SOFTMAX).nOut(finalNOut).build())
@@ -492,15 +496,15 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                             .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
                             .dist(new NormalDistribution(0, 1))
                             .list()
-                            .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(kernel)
+                            .layer(0, new Convolution3DLayer.Builder().activation(afn).kernelSize(kernel)
                                     .nIn(convNIn).nOut(convNOut1).hasBias(false)
-                                    .convolutionMode(mode).dataFormat(Convolution3D.DataFormat.NCDHW)
+                                    .convolutionMode(mode).dataFormat(Convolution3DLayer.DataFormat.NCDHW)
                                     .build())
-                            .layer(1, new Convolution3D.Builder().activation(afn).kernelSize(1, 1, 1)
+                            .layer(1, new Convolution3DLayer.Builder().activation(afn).kernelSize(1, 1, 1)
                                     .nIn(convNOut1).nOut(convNOut2).hasBias(false)
-                                    .convolutionMode(mode).dataFormat(Convolution3D.DataFormat.NCDHW)
+                                    .convolutionMode(mode).dataFormat(Convolution3DLayer.DataFormat.NCDHW)
                                     .build())
-                            .layer(2, new Cropping3D.Builder(cropping).build())
+                            .layer(2, new Cropping3DLayer.Builder(cropping).build())
                             .layer(3, new DenseLayer.Builder().nOut(denseNOut).build())
                             .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                     .activation(Activation.SOFTMAX).nOut(finalNOut).build())

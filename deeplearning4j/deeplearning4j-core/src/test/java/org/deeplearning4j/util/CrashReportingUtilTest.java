@@ -24,10 +24,10 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -80,13 +80,13 @@ public class CrashReportingUtilTest extends BaseDL4JTest {
 
                         .dist(new NormalDistribution(0, 1))
                         .list().layer(0,
-                        new ConvolutionLayer.Builder()
+                        new Convolution2DLayer.Builder()
                                 .kernelSize(kernel, kernel)
                                 .stride(stride, stride)
                                 .padding(padding, padding)
                                 .nIn(inputDepth)
                                 .nOut(3).build())
-                        .layer(1, new SubsamplingLayer.Builder(poolingType)
+                        .layer(1, new Subsampling2DLayer.Builder(poolingType)
                                 .kernelSize(kernel, kernel)
                                 .stride(stride, stride)
                                 .padding(padding, padding)

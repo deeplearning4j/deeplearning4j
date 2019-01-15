@@ -27,6 +27,10 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -82,7 +86,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                             .dist(new NormalDistribution(0, 1)).list()
                             .layer(0, new DenseLayer.Builder().nIn(4).nOut(3)
                                     .activation(Activation.IDENTITY).build())
-                            .layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).nOut(3).build())
+                            .layer(1, new BatchNormalizationLayer.Builder().useLogStd(useLogStd).nOut(3).build())
                             .layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build())
                             .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                     .activation(Activation.SOFTMAX).nIn(3).nOut(3).build());
@@ -125,9 +129,9 @@ public class BNGradientCheckTest extends BaseDL4JTest {
             MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                     .updater(new NoOp()).seed(12345L)
                     .dist(new NormalDistribution(0, 2)).list()
-                    .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
+                    .layer(0, new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
                             .activation(Activation.IDENTITY).build())
-                    .layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).build())
+                    .layer(1, new BatchNormalizationLayer.Builder().useLogStd(useLogStd).build())
                     .layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build())
                     .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                             .activation(Activation.SOFTMAX).nOut(nOut).build())
@@ -198,12 +202,12 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                                     .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                                     .updater(new NoOp())
                                     .dist(new UniformDistribution(-2, 2)).seed(12345L).list()
-                                    .layer(0, new ConvolutionLayer.Builder(2, 2).stride(1, 1).nOut(3)
+                                    .layer(0, new Convolution2DLayer.Builder(2, 2).stride(1, 1).nOut(3)
                                             .activation(afn).build())
-                                    .layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).build())
-                                    .layer(2, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                    .layer(1, new BatchNormalizationLayer.Builder().useLogStd(useLogStd).build())
+                                    .layer(2, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX)
                                             .kernelSize(2, 2).stride(1, 1).build())
-                                    .layer(3, new BatchNormalization())
+                                    .layer(3, new BatchNormalizationLayer())
                                     .layer(4, new ActivationLayer.Builder().activation(afn).build())
                                     .layer(5, new OutputLayer.Builder(lf).activation(outputActivation).nOut(nOut)
                                             .build())
@@ -308,9 +312,9 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                                             .dist(new UniformDistribution(-2, 2)).seed(12345L).list()
                                             .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(4)
                                                     .activation(afn).build())
-                                            .layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).build())
+                                            .layer(1, new BatchNormalizationLayer.Builder().useLogStd(useLogStd).build())
                                             .layer(2, new DenseLayer.Builder().nIn(4).nOut(4).build())
-                                            .layer(3, new BatchNormalization.Builder().useLogStd(useLogStd).build())
+                                            .layer(3, new BatchNormalizationLayer.Builder().useLogStd(useLogStd).build())
                                             .layer(4, new OutputLayer.Builder(lf)
                                                     .activation(outputActivation).nOut(nOut)
                                                     .build());
@@ -381,7 +385,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                     .seed(12345L)
                     .dist(new NormalDistribution(0, 1)).list()
                     .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY).build())
-                    .layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).lockGammaBeta(true).gamma(2.0).beta(0.5).nOut(3)
+                    .layer(1, new BatchNormalizationLayer.Builder().useLogStd(useLogStd).lockGammaBeta(true).gamma(2.0).beta(0.5).nOut(3)
                             .build())
                     .layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build())
                     .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
@@ -425,9 +429,9 @@ public class BNGradientCheckTest extends BaseDL4JTest {
             MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
                     .seed(12345L)
                     .dist(new NormalDistribution(0, 2)).list()
-                    .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
+                    .layer(0, new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
                             .activation(Activation.IDENTITY).build())
-                    .layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).lockGammaBeta(true).gamma(2.0).beta(0.5).build())
+                    .layer(1, new BatchNormalizationLayer.Builder().useLogStd(useLogStd).lockGammaBeta(true).gamma(2.0).beta(0.5).build())
                     .layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build())
                     .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                             .activation(Activation.SOFTMAX).nOut(nOut).build())
@@ -469,7 +473,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).updater(new NoOp())
                     .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                     .setInputTypes(InputType.convolutional(height, width, channels))
-                    .addLayer("bn", new BatchNormalization.Builder().useLogStd(useLogStd).build(), "in")
+                    .addLayer("bn", new BatchNormalizationLayer.Builder().useLogStd(useLogStd).build(), "in")
                     .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                             .activation(Activation.SOFTMAX).nOut(numClasses).build(), "bn")
                     .setOutputs("out").build();
@@ -542,12 +546,12 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                                     .updater(new NoOp())
                                     .dist(new UniformDistribution(-2, 2)).seed(12345L).graphBuilder()
                                     .addInputs("in")
-                                    .addLayer("0", new ConvolutionLayer.Builder(2, 2).stride(1, 1).nOut(3)
+                                    .addLayer("0", new Convolution2DLayer.Builder(2, 2).stride(1, 1).nOut(3)
                                             .activation(afn).build(), "in")
-                                    .addLayer("1", new BatchNormalization.Builder().useLogStd(useLogStd).build(), "0")
-                                    .addLayer("2", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                    .addLayer("1", new BatchNormalizationLayer.Builder().useLogStd(useLogStd).build(), "0")
+                                    .addLayer("2", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX)
                                             .kernelSize(2, 2).stride(1, 1).build(), "1")
-                                    .addLayer("3", new BatchNormalization.Builder().useLogStd(useLogStd).build(), "2")
+                                    .addLayer("3", new BatchNormalizationLayer.Builder().useLogStd(useLogStd).build(), "2")
                                     .addLayer("4", new ActivationLayer.Builder().activation(afn).build(), "3")
                                     .addLayer("5", new OutputLayer.Builder(lf).activation(outputActivation)
                                             .nOut(nOut).build(), "4")

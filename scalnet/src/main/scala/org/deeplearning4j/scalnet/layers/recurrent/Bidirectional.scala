@@ -16,7 +16,7 @@
 package org.deeplearning4j.scalnet.layers.recurrent
 
 import org.deeplearning4j.nn.conf.layers
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional.Mode
+import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer.Mode
 import org.deeplearning4j.scalnet.layers.core.{ Layer, WrapperLayer }
 
 class Bidirectional(layer: Layer, mode: Mode, override val name: String = "") extends WrapperLayer {

@@ -22,6 +22,12 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -93,8 +99,8 @@ public class TestNetConversion extends BaseDL4JTest {
                 .weightInit(WeightInit.XAVIER)
                 .updater(new Sgd(0.1))
                 .list()
-                .layer(new ConvolutionLayer.Builder().nIn(3).nOut(5).kernelSize(2, 2).stride(1, 1).build())
-                .layer(new SubsamplingLayer.Builder().kernelSize(2, 2).stride(1, 1).build())
+                .layer(new Convolution2DLayer.Builder().nIn(3).nOut(5).kernelSize(2, 2).stride(1, 1).build())
+                .layer(new Subsampling2DLayer.Builder().kernelSize(2, 2).stride(1, 1).build())
                 .layer(new DenseLayer.Builder().nOut(32).build())
                 .layer(new OutputLayer.Builder().nOut(10).lossFunction(LossFunctions.LossFunction.MSE).build())
                 .setInputType(InputType.convolutional(10, 10, 3))
@@ -123,8 +129,8 @@ public class TestNetConversion extends BaseDL4JTest {
                 .weightInit(WeightInit.XAVIER)
                 .updater(new Sgd(0.1))
                 .list()
-                .layer(new GravesLSTM.Builder().nOut(8).build())
-                .layer(new LSTM.Builder().nOut(8).build())
+                .layer(new GravesLSTMLayer.Builder().nOut(8).build())
+                .layer(new LSTMLayer.Builder().nOut(8).build())
                 .layer(new RnnOutputLayer.Builder().nOut(10).lossFunction(LossFunctions.LossFunction.MSE).build())
                 .setInputType(InputType.recurrent(5))
                 .build();

@@ -15,7 +15,7 @@
  ******************************************************************************/
 package org.deeplearning4j.scalnet.layers.convolutional
 
-import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer
+import org.deeplearning4j.nn.conf.layers.convolutional.ZeroPadding2DLayer
 import org.deeplearning4j.scalnet.layers.core.{ Layer, Node }
 
 /**

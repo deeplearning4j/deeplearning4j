@@ -24,7 +24,7 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
 
 import java.util.Arrays;
 import java.util.List;
@@ -37,7 +37,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
-public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormalization> {
+public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormalizationLayer> {
 
     protected ParameterSpace<Double> decay;
     protected ParameterSpace<Double> eps;
@@ -63,13 +63,13 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
     }
 
     @Override
-    public BatchNormalization getValue(double[] parameterValues) {
-        BatchNormalization.Builder b = new BatchNormalization.Builder();
+    public BatchNormalizationLayer getValue(double[] parameterValues) {
+        BatchNormalizationLayer.Builder b = new BatchNormalizationLayer.Builder();
         setLayerOptionsBuilder(b, parameterValues);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(BatchNormalization.Builder builder, double[] values) {
+    protected void setLayerOptionsBuilder(BatchNormalizationLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
         if (decay != null)
             builder.decay(decay.getValue(values));

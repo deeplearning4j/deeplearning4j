@@ -26,8 +26,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -100,8 +100,8 @@ public class DropoutGradientCheck extends BaseDL4JTest {
                         .list();
 
                 if(cnn){
-                    builder.layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nOut(3).build());
-                    builder.layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nOut(3).build());
+                    builder.layer(new Convolution2DLayer.Builder().kernelSize(3,3).stride(1,1).nOut(3).build());
+                    builder.layer(new Convolution2DLayer.Builder().kernelSize(3,3).stride(1,1).nOut(3).build());
                     builder.setInputType(InputType.convolutional(8,8,3));
                 } else {
                     builder.layer(new DenseLayer.Builder().nOut(12).build());

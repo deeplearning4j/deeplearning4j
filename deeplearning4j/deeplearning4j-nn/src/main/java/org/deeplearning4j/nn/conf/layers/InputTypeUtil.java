@@ -16,17 +16,18 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
-
-import java.util.Arrays;
 
 /**
  * Utilities for calculating input types
@@ -408,8 +409,8 @@ public class InputTypeUtil {
     }
 
     /**
-     * Utility method for determining the appropriate preprocessor for CNN layers, such as {@link ConvolutionLayer} and
-     * {@link SubsamplingLayer}
+     * Utility method for determining the appropriate preprocessor for CNN layers, such as {@link Convolution2DLayer} and
+     * {@link Subsampling2DLayer}
      *
      * @param inputType     Input type to get the preprocessor for
      * @return              Null if no preprocessor is required; otherwise the appropriate preprocessor for the given input type
@@ -433,8 +434,8 @@ public class InputTypeUtil {
     }
 
     /**
-     * Utility method for determining the appropriate preprocessor for CNN layers, such as {@link ConvolutionLayer} and
-     * {@link SubsamplingLayer}
+     * Utility method for determining the appropriate preprocessor for CNN layers, such as {@link Convolution2DLayer} and
+     * {@link Subsampling2DLayer}
      *
      * @param inputType     Input type to get the preprocessor for
      * @return              Null if no preprocessor is required; otherwise the appropriate preprocessor for the given input type

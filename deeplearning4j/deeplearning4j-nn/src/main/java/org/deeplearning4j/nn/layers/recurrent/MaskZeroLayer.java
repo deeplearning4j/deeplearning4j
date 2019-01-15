@@ -17,16 +17,14 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import java.util.Arrays;
-
+import lombok.NonNull;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-
-import lombok.NonNull;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * Masks timesteps with activation equal to the specified masking value, defaulting to 0.0.

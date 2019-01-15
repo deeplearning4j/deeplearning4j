@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.conf.layers.samediff;
 
+import java.util.Collection;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -34,9 +36,6 @@ import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
-
-import java.util.Collection;
-import java.util.Map;
 
 @Slf4j
 @Data

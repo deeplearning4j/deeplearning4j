@@ -22,7 +22,12 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cnn3DLossLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.CnnLossLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnLossLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -107,7 +112,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                         new NeuralNetConfiguration.Builder().seed(12345L)
                                 .updater(new NoOp())
                                 .list()
-                                .layer(new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                                .layer(new LSTMLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                         .dist(new NormalDistribution(0, 1.0))
                                         .updater(new NoOp()).build())
                                 .layer(new RnnLossLayer.Builder(lf)
@@ -213,7 +218,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                                     .updater(new NoOp())
                                     .convolutionMode(ConvolutionMode.Same)
                                     .list()
-                                    .layer(new ConvolutionLayer.Builder().nIn(dIn).nOut(dOut).activation(Activation.TANH)
+                                    .layer(new Convolution2DLayer.Builder().nIn(dIn).nOut(dOut).activation(Activation.TANH)
                                             .dist(new NormalDistribution(0, 1.0))
                                             .updater(new NoOp()).build())
                                     .layer(new CnnLossLayer.Builder(lf)
@@ -256,7 +261,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
         int[] heights = {4, 4, 5};
         int[] widths = {4, 5, 6};
 
-        for(Convolution3D.DataFormat dataFormat : Convolution3D.DataFormat.values()){
+        for(Convolution3DLayer.DataFormat dataFormat : Convolution3DLayer.DataFormat.values()){
             for (int i = 0; i < heights.length; i++) {
                 int h = heights[i];
                 int w = widths[i];
@@ -266,7 +271,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
 
                     Random r = new Random(12345L);
                     INDArray input;
-                    if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                    if(dataFormat == Convolution3DLayer.DataFormat.NCDHW) {
                         input = Nd4j.rand(new int[]{miniBatchSize, chIn, d, h, w});
                     } else {
                         input = Nd4j.rand(new int[]{miniBatchSize, d, h, w, chIn});
@@ -288,7 +293,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                             break;
                         case 2:
                             //Per channel masking (5d mask, shape [minibatch, d, 1, 1, 1] or [minibatch, 1, 1, 1, d])
-                            if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                            if(dataFormat == Convolution3DLayer.DataFormat.NCDHW) {
                                 labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, chOut, 1, 1, 1});
                             } else {
                                 labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, 1, 1, 1, chOut});
@@ -298,7 +303,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                             break;
                         case 3:
                             //Per output masking (5d mask, same shape as output [minibatch, c, h, w])
-                            if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                            if(dataFormat == Convolution3DLayer.DataFormat.NCDHW) {
                                 labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, chOut, d, h, w});
                             } else {
                                 labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, d, h, w, chOut});
@@ -319,13 +324,13 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
 
                         INDArray labels;
                         if (lf instanceof LossMSE) {
-                            if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                            if(dataFormat == Convolution3DLayer.DataFormat.NCDHW) {
                                 labels = Nd4j.rand(new int[]{miniBatchSize, chOut, d, h, w});
                             } else {
                                 labels = Nd4j.rand(new int[]{miniBatchSize, d, h, w, chOut});
                             }
                         } else {
-                            if(dataFormat == Convolution3D.DataFormat.NCDHW) {
+                            if(dataFormat == Convolution3DLayer.DataFormat.NCDHW) {
                                 labels = Nd4j.zeros(miniBatchSize, chOut, d, h, w);
                                 for (int mb = 0; mb < miniBatchSize; mb++) {
                                     for( int d2=0; d2<d; d2++) {
@@ -359,7 +364,7 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                                         .updater(new NoOp())
                                         .convolutionMode(ConvolutionMode.Same)
                                         .list()
-                                        .layer(new Convolution3D.Builder().nIn(chIn).nOut(chOut).activation(Activation.TANH)
+                                        .layer(new Convolution3DLayer.Builder().nIn(chIn).nOut(chOut).activation(Activation.TANH)
                                                 .dist(new NormalDistribution(0, 1.0))
                                                 .dataFormat(dataFormat)
                                                 .updater(new NoOp()).build())

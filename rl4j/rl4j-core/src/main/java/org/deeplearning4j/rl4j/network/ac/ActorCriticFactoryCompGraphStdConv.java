@@ -24,6 +24,10 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
@@ -63,16 +67,16 @@ public class ActorCriticFactoryCompGraphStdConv implements ActorCriticFactoryCom
                                         .weightInit(WeightInit.XAVIER)
                                         .l2(conf.getL2()).graphBuilder()
                                         .addInputs("input").addLayer("0",
-                                                        new ConvolutionLayer.Builder(8, 8).nIn(shapeInputs[0]).nOut(16)
+                                                        new Convolution2DLayer.Builder(8, 8).nIn(shapeInputs[0]).nOut(16)
                                                                         .stride(4, 4).activation(Activation.RELU).build(),
                                                         "input");
 
-        confB.addLayer("1", new ConvolutionLayer.Builder(4, 4).nIn(16).nOut(32).stride(2, 2).activation(Activation.RELU).build(), "0");
+        confB.addLayer("1", new Convolution2DLayer.Builder(4, 4).nIn(16).nOut(32).stride(2, 2).activation(Activation.RELU).build(), "0");
 
         confB.addLayer("2", new DenseLayer.Builder().nIn(w * h * 32).nOut(256).activation(Activation.RELU).build(), "1");
 
         if (conf.isUseLSTM()) {
-            confB.addLayer("3", new LSTM.Builder().nIn(256).nOut(256).activation(Activation.TANH).build(), "2");
+            confB.addLayer("3", new LSTMLayer.Builder().nIn(256).nOut(256).activation(Activation.TANH).build(), "2");
 
             confB.addLayer("value", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY)
                             .nIn(256).nOut(1).build(), "3");

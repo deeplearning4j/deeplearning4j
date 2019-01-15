@@ -27,18 +27,20 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.upsampling.Upsampling1DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
@@ -70,12 +72,12 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4)
                         .updater(new Nesterovs(0.9)).dropOut(0.5)
                         .list().layer(0,
-                                        new ConvolutionLayer.Builder(8, 8) //16 filters kernel size 8 stride 4
+                                        new Convolution2DLayer.Builder(8, 8) //16 filters kernel size 8 stride 4
                                                         .stride(4, 4).nOut(16).dropOut(0.5)
                                                         .activation(Activation.RELU).weightInit(
                                                                         WeightInit.XAVIER)
                                                         .build())
-                        .layer(1, new ConvolutionLayer.Builder(4, 4) //32 filters kernel size 4 stride 2
+                        .layer(1, new Convolution2DLayer.Builder(4, 4) //32 filters kernel size 4 stride 2
                                         .stride(2, 2).nOut(32).dropOut(0.5).activation(Activation.RELU)
                                         .weightInit(WeightInit.XAVIER).build())
                         .layer(2, new DenseLayer.Builder() //fully connected with 256 rectified units
@@ -111,11 +113,11 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                         new NeuralNetConfiguration.Builder()
                                         .seed(123)
                                         .list()
-                                        .layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth).stride(1, 1)
+                                        .layer(0, new Convolution2DLayer.Builder(kernelHeight, kernelWidth).stride(1, 1)
                                                         .nOut(2).activation(Activation.RELU)
                                                         .weightInit(WeightInit.XAVIER).build())
-                                        .layer(1, new SubsamplingLayer.Builder()
-                                                        .poolingType(SubsamplingLayer.PoolingType.MAX)
+                                        .layer(1, new Subsampling2DLayer.Builder()
+                                                        .poolingType(Subsampling2DLayer.PoolingType.MAX)
                                                         .kernelSize(imageHeight - kernelHeight, 1).stride(1, 1).build())
                                         .layer(2, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).build())
@@ -150,7 +152,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                         new NeuralNetConfiguration.Builder()
                                         .seed(123)
                                         .list()
-                                        .layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth) //(img-kernel+2*padding)/stride + 1: must be >= 1. Therefore: with p=0, kernel <= img size
+                                        .layer(0, new Convolution2DLayer.Builder(kernelHeight, kernelWidth) //(img-kernel+2*padding)/stride + 1: must be >= 1. Therefore: with p=0, kernel <= img size
                                                         .stride(1, 1).nOut(2).activation(Activation.RELU)
                                                         .weightInit(WeightInit.XAVIER).build())
                                         .layer(1, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
@@ -185,7 +187,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                         new NeuralNetConfiguration.Builder()
                                         .seed(123)
                                         .list()
-                                        .layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth).stride(1, 0)
+                                        .layer(0, new Convolution2DLayer.Builder(kernelHeight, kernelWidth).stride(1, 0)
                                                         .nOut(2).activation(Activation.RELU)
                                                         .weightInit(WeightInit.XAVIER).build())
                                         .layer(1, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
@@ -206,7 +208,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
 
     @Test
     public void testCNNBiasInit() {
-        ConvolutionLayer cnn = new ConvolutionLayer.Builder().nIn(1).nOut(3).biasInit(1).build();
+        Convolution2DLayer cnn = new Convolution2DLayer.Builder().nIn(1).nOut(3).biasInit(1).build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(cnn).build();
 
@@ -266,7 +268,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
 
     private static Layer getCNNConfig(int nIn, int nOut, int[] kernelSize, int[] stride, int[] padding) {
 
-        ConvolutionLayer layer = new ConvolutionLayer.Builder(kernelSize, stride, padding).nIn(nIn).nOut(nOut)
+        Convolution2DLayer layer = new Convolution2DLayer.Builder(kernelSize, stride, padding).nIn(nIn).nOut(nOut)
                         .activation(Activation.SIGMOID).build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(layer).build();
@@ -646,8 +648,8 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         MultiLayerConfiguration.Builder conf =
                         new NeuralNetConfiguration.Builder().seed(seed)
                                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
-                                        .layer(0, new ConvolutionLayer.Builder(new int[] {10, 10}).nOut(6).build())
-                                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX,
+                                        .layer(0, new Convolution2DLayer.Builder(new int[] {10, 10}).nOut(6).build())
+                                        .layer(1, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX,
                                                         new int[] {2, 2}).stride(1, 1).build())
                                         .layer(2, new OutputLayer.Builder(
                                                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
@@ -671,7 +673,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                 .list()
                 .layer(new Convolution1DLayer.Builder().nOut(3).kernelSize(2).activation(Activation.TANH).build())
                 .layer(new Subsampling1DLayer.Builder().kernelSize(2).stride(2).build())
-                .layer(new Upsampling1D.Builder().size(2).build())
+                .layer(new Upsampling1DLayer.Builder().size(2).build())
                 .layer(new RnnOutputLayer.Builder().nOut(7).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.recurrent(10))
                 .build();

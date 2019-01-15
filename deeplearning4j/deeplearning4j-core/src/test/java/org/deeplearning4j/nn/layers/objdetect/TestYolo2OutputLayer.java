@@ -21,6 +21,7 @@ import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -35,8 +36,7 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -48,11 +48,8 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.Adam;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.schedule.MapSchedule;
-import org.nd4j.linalg.schedule.ScheduleType;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -60,7 +57,6 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URI;
-import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -93,7 +89,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .l2(0.01)
                 .list()
-                .layer(new ConvolutionLayer.Builder().nIn(depth).nOut(depth).kernelSize(1,1).build())
+                .layer(new Convolution2DLayer.Builder().nIn(depth).nOut(depth).kernelSize(1,1).build())
                 .layer(new Yolo2OutputLayer.Builder()
                         .boundingBoxPriors(bbPrior)
                         .build())
@@ -181,7 +177,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
-                .layer(new ConvolutionLayer.Builder().nIn(1).nOut(1).kernelSize(1,1).build())
+                .layer(new Convolution2DLayer.Builder().nIn(1).nOut(1).kernelSize(1,1).build())
                 .layer(new Yolo2OutputLayer.Builder()
                         .boundingBoxPriors(bbPrior)
                         .build())
@@ -339,7 +335,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
-                .layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nIn(3).nOut(3).build())
+                .layer(new Convolution2DLayer.Builder().kernelSize(3,3).stride(1,1).nIn(3).nOut(3).build())
                 .layer(new Yolo2OutputLayer.Builder()
                         .boundingBoxPriors(bbPriors)
                         .build())
@@ -506,9 +502,9 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
                 .weightInit(WeightInit.RELU)
                 .seed(12345)
                 .list()
-                .layer(new ConvolutionLayer.Builder().kernelSize(5,5).stride(2,2).nOut(256).build())
-                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2)/*.poolingType(SubsamplingLayer.PoolingType.AVG)*/.build())
-                .layer(new ConvolutionLayer.Builder().activation(Activation.IDENTITY).kernelSize(5,5).stride(1,1).nOut(depthOut).build())
+                .layer(new Convolution2DLayer.Builder().kernelSize(5,5).stride(2,2).nOut(256).build())
+                .layer(new Subsampling2DLayer.Builder().kernelSize(2,2).stride(2,2)/*.poolingType(Subsampling2DLayer.PoolingType.AVG)*/.build())
+                .layer(new Convolution2DLayer.Builder().activation(Activation.IDENTITY).kernelSize(5,5).stride(1,1).nOut(depthOut).build())
                 .layer(new Yolo2OutputLayer.Builder()
                         .boundingBoxPriors(bbPriors)
                         .build())

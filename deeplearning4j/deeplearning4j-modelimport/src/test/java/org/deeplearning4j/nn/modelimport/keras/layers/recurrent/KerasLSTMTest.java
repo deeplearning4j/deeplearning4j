@@ -18,9 +18,9 @@ package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.LSTM;
-import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
-import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStepLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.MaskZeroLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -110,18 +110,18 @@ public class KerasLSTMTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        LSTM layer;
-        LastTimeStep lts;
+        LSTMLayer layer;
+        LastTimeStepLayer lts;
         KerasLSTM kerasLstm = new KerasLSTM(layerConfig);
         if (rs) {
             InputType outputType = kerasLstm.getOutputType(InputType.recurrent(1337));
             assertEquals(outputType, InputType.recurrent(N_OUT));
-            layer = (LSTM) kerasLstm.getLSTMLayer();
+            layer = (LSTMLayer) kerasLstm.getLSTMLayer();
         } else {
-            lts = (LastTimeStep) kerasLstm.getLSTMLayer();
+            lts = (LastTimeStepLayer) kerasLstm.getLSTMLayer();
             InputType outputType = kerasLstm.getOutputType(InputType.feedForward(1337));
             assertEquals(outputType, InputType.feedForward(N_OUT));
-            layer = (LSTM) lts.getUnderlying();
+            layer = (LSTMLayer) lts.getUnderlying();
         }
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());

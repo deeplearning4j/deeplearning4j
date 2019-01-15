@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
-import org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer;
+import org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer;
 
 
 @Data

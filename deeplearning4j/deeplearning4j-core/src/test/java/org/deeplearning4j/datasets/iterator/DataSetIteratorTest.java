@@ -30,9 +30,9 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -168,9 +168,9 @@ public class DataSetIteratorTest extends BaseDL4JTest {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
-                        .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(numChannels).nOut(6)
+                        .layer(0, new Convolution2DLayer.Builder(5, 5).nIn(numChannels).nOut(6)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.RELU).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
+                        .layer(1, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX, new int[] {2, 2})
                                         .stride(1, 1).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
@@ -229,9 +229,9 @@ public class DataSetIteratorTest extends BaseDL4JTest {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
-                        .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(channels).nOut(6).weightInit(WeightInit.XAVIER)
+                        .layer(0, new Convolution2DLayer.Builder(5, 5).nIn(channels).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
+                        .layer(1, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX, new int[] {2, 2})
                                         .build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)

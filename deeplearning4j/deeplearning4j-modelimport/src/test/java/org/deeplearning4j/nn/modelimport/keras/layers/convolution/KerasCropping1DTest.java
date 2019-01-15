@@ -16,14 +16,13 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1DLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasCropping1D;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,7 +59,7 @@ public class KerasCropping1DTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        Cropping1D layer = new KerasCropping1D(layerConfig).getCropping1DLayer();
+        Cropping1DLayer layer = new KerasCropping1D(layerConfig).getCropping1DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(CROPPING, layer.getCropping()[0]);
         assertEquals(CROPPING, layer.getCropping()[1]);

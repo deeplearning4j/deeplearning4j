@@ -21,7 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -79,9 +79,9 @@ public class KerasGlobalPooling extends KerasLayer {
     }
 
     /**
-     * Get DL4J SubsamplingLayer.
+     * Get DL4J Subsampling2DLayer.
      *
-     * @return SubsamplingLayer
+     * @return Subsampling2DLayer
      */
     public GlobalPoolingLayer getGlobalPoolingLayer() {
         return (GlobalPoolingLayer) this.layer;

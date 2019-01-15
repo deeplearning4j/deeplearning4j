@@ -17,12 +17,16 @@
 package org.deeplearning4j.nn.layers;
 
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -31,12 +35,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.FeatureUtil;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**

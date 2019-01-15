@@ -16,7 +16,12 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;

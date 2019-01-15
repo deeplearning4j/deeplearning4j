@@ -1,0 +1,169 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+package org.deeplearning4j.nn.conf.layers.convolutional;
+
+import java.util.Collection;
+import java.util.Map;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
+import org.deeplearning4j.nn.conf.layers.LayerValidation;
+import org.deeplearning4j.nn.params.DeconvolutionParamInitializer;
+import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
+/**
+ * 2D deconvolution layer configuration<br>
+ *
+ * Deconvolutions are also known as transpose convolutions or fractionally strided convolutions. In essence,
+ * deconvolutions swap forward and backward pass with regular 2D convolutions.
+ *
+ * See the paper by Matt Zeiler for details: <a href="http://www.matthewzeiler.com/wp-content/uploads/2017/07/cvpr2010.pdf">http://www.matthewzeiler.com/wp-content/uploads/2017/07/cvpr2010.pdf</a>
+ *
+ * For an intuitive guide to convolution arithmetic and shapes, see:
+ * <a href="https://arxiv.org/abs/1603.07285v1">https://arxiv.org/abs/1603.07285v1</a>
+ *
+ * @author Max Pumperla
+ */
+@Data
+@NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class Deconvolution2DLayer extends Convolution2DLayer {
+
+    /**
+     * Deconvolution2DLayer layer nIn in the input layer is the number of channels nOut is the number of filters to be used
+     * in the net or in other words the channels The builder specifies the filter/kernel size, the stride and padding
+     * The pooling layer takes the kernel size
+     */
+    protected Deconvolution2DLayer(BaseConvBuilder<?> builder) {
+        super(builder);
+        initializeConstraints(builder);
+    }
+
+    public boolean hasBias() {
+        return hasBias;
+    }
+
+    @Override
+    public Deconvolution2DLayer clone() {
+        Deconvolution2DLayer clone = (Deconvolution2DLayer) super.clone();
+        if (clone.kernelSize != null) {
+            clone.kernelSize = clone.kernelSize.clone();
+        }
+        if (clone.stride != null) {
+            clone.stride = clone.stride.clone();
+        }
+        if (clone.padding != null) {
+            clone.padding = clone.padding.clone();
+        }
+        return clone;
+    }
+
+    @Override
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
+                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        LayerValidation.assertNInNOutSet("Deconvolution2DLayer", getLayerName(), layerIndex, getNIn(), getNOut());
+
+        org.deeplearning4j.nn.layers.convolution.Deconvolution2DLayer ret =
+                        new org.deeplearning4j.nn.layers.convolution.Deconvolution2DLayer(conf);
+        ret.setListeners(trainingListeners);
+        ret.setIndex(layerIndex);
+        ret.setParamsViewArray(layerParamsView);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(paramTable);
+        ret.setConf(conf);
+        return ret;
+    }
+
+    @Override
+    public ParamInitializer initializer() {
+        return DeconvolutionParamInitializer.getInstance();
+    }
+
+    @Override
+    public InputType getOutputType(int layerIndex, InputType inputType) {
+        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+            throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
+                            + "\"): Expected CNN input, got " + inputType);
+        }
+
+        return InputTypeUtil.getOutputTypeDeconvLayer(inputType, kernelSize, stride, padding, dilation, convolutionMode,
+                        nOut, layerIndex, getLayerName(), org.deeplearning4j.nn.layers.convolution.Deconvolution2DLayer.class);
+    }
+
+    public static class Builder extends BaseConvBuilder<Builder> {
+
+        public Builder(int[] kernelSize, int[] stride, int[] padding) {
+            super(kernelSize, stride, padding);
+        }
+
+        public Builder(int[] kernelSize, int[] stride) {
+            super(kernelSize, stride);
+        }
+
+        public Builder(int... kernelSize) {
+            super(kernelSize);
+        }
+
+        public Builder() {
+            super();
+        }
+
+        /**
+         * Set the convolution mode for the Convolution layer. See {@link ConvolutionMode} for more details
+         *
+         * @param convolutionMode Convolution mode for layer
+         */
+        public Builder convolutionMode(ConvolutionMode convolutionMode) {
+            return super.convolutionMode(convolutionMode);
+        }
+
+        /**
+         * Size of the convolution rows/columns
+         *
+         * @param kernelSize the height and width of the kernel
+         */
+        public Builder kernelSize(int... kernelSize) {
+            this.kernelSize = kernelSize;
+            return this;
+        }
+
+        public Builder stride(int... stride) {
+            this.stride = stride;
+            return this;
+        }
+
+        public Builder padding(int... padding) {
+            this.padding = padding;
+            return this;
+        }
+
+        @Override
+        public Deconvolution2DLayer build() {
+            return new Deconvolution2DLayer(this);
+        }
+    }
+
+}

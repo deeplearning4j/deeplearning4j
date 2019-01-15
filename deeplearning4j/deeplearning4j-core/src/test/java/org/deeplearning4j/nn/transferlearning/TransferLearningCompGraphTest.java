@@ -25,7 +25,12 @@ import org.deeplearning4j.nn.conf.distribution.ConstantDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -250,27 +255,27 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
                                         .setInputTypes(InputType.convolutionalFlat(28, 28,
                                                 3))
                                         .addLayer("layer0",
-                                                new ConvolutionLayer.Builder(5, 5).nIn(3)
+                                                new Convolution2DLayer.Builder(5, 5).nIn(3)
                                                         .stride(1, 1).nOut(20)
                                                         .activation(Activation.IDENTITY)
                                                         .build(),
                                                 "layer0In")
                                         .addLayer("layer1",
-                                                new SubsamplingLayer.Builder(
-                                                        SubsamplingLayer.PoolingType.MAX)
+                                                new Subsampling2DLayer.Builder(
+                                                        Subsampling2DLayer.PoolingType.MAX)
                                                         .kernelSize(2, 2)
                                                         .stride(2, 2)
                                                         .build(),
                                                 "layer0")
                                         .addLayer("layer2",
-                                                new ConvolutionLayer.Builder(5, 5).stride(1, 1)
+                                                new Convolution2DLayer.Builder(5, 5).stride(1, 1)
                                                         .nOut(50)
                                                         .activation(Activation.IDENTITY)
                                                         .build(),
                                                 "layer1")
                                         .addLayer("layer3",
-                                                new SubsamplingLayer.Builder(
-                                                        SubsamplingLayer.PoolingType.MAX)
+                                                new Subsampling2DLayer.Builder(
+                                                        Subsampling2DLayer.PoolingType.MAX)
                                                         .kernelSize(2, 2)
                                                         .stride(2, 2)
                                                         .build(),
@@ -329,22 +334,22 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
                         new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In")
                                 .setInputTypes(InputType.convolutionalFlat(28,28, 3))
                                 .addLayer("layer0",
-                                        new FrozenLayer(new ConvolutionLayer.Builder(5, 5).nIn(3)
+                                        new FrozenLayer(new Convolution2DLayer.Builder(5, 5).nIn(3)
                                                 .stride(1, 1).nOut(20)
                                                 .activation(Activation.IDENTITY).build()),
                                         "layer0In")
                                 .addLayer("layer1",
-                                        new FrozenLayer(new SubsamplingLayer.Builder(
-                                                SubsamplingLayer.PoolingType.MAX)
+                                        new FrozenLayer(new Subsampling2DLayer.Builder(
+                                                Subsampling2DLayer.PoolingType.MAX)
                                                 .kernelSize(2, 2).stride(2, 2)
                                                 .build()),
                                         "layer0")
                                 .addLayer("layer2",
-                                        new ConvolutionLayer.Builder(5, 5).stride(1, 1).nOut(50)
+                                        new Convolution2DLayer.Builder(5, 5).stride(1, 1).nOut(50)
                                                 .activation(Activation.IDENTITY).build(),
                                         "layer1")
                                 .addLayer("layer3",
-                                        new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                        new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX)
                                                 .kernelSize(2, 2).stride(2, 2).build(),
                                         "layer2")
                                 .addLayer("layer4",
@@ -395,7 +400,7 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new Adam(0.1))
                 .weightInit(WeightInit.XAVIER)
                         .graphBuilder().addInputs("in")
-                        .addLayer("blstm1",new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10)
+                        .addLayer("blstm1",new GravesBidirectionalLSTMLayer.Builder().nIn(10).nOut(10)
                                                         .activation(Activation.TANH).build(),
                                         "in")
                         .addLayer("pool", new GlobalPoolingLayer.Builder().build(), "blstm1")
@@ -423,7 +428,7 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
                         .weightInit(WeightInit.XAVIER)
                         .graphBuilder().addInputs("in")
                         .addLayer("blstm1",
-                                        new FrozenLayer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10)
+                                        new FrozenLayer(new GravesBidirectionalLSTMLayer.Builder().nIn(10).nOut(10)
                                                         .activation(Activation.TANH).build()),
                                         "in")
                         .addLayer("pool", new FrozenLayer(new GlobalPoolingLayer.Builder().build()), "blstm1")
@@ -493,10 +498,10 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
                 .addInputs(inputName)
                 .setOutputs(outputName)
                 .setInputTypes(InputType.inferInputTypes(input))
-                .addLayer(firstConv, new Convolution2D.Builder(3, 3)
+                .addLayer(firstConv, new Convolution2DLayer.Builder(3, 3)
                         .nOut(10)
                         .build(), inputName)
-                .addLayer(secondConv, new Convolution2D.Builder(1, 1)
+                .addLayer(secondConv, new Convolution2DLayer.Builder(1, 1)
                         .nOut(3)
                         .build(), firstConv)
                 .addLayer(outputName, new OutputLayer.Builder()
@@ -539,11 +544,11 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
                 .addInputs(inputName)
                 .setOutputs(outputName)
                 .setInputTypes(InputType.inferInputTypes(input))
-                .addLayer(changeNoutName, new Convolution2D.Builder(1, 1)
+                .addLayer(changeNoutName, new Convolution2DLayer.Builder(1, 1)
                         .nOut(10)
                         .build(), inputName)
-                .addLayer(poolName, new SubsamplingLayer.Builder(1,1).build(), changeNoutName)
-                .addLayer(afterPoolName, new Convolution2D.Builder(1, 1)
+                .addLayer(poolName, new Subsampling2DLayer.Builder(1,1).build(), changeNoutName)
+                .addLayer(afterPoolName, new Convolution2DLayer.Builder(1, 1)
                         .nOut(7)
                         .build(), poolName)
                 .addLayer(outputName, new OutputLayer.Builder()

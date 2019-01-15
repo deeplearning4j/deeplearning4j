@@ -23,8 +23,9 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -72,7 +73,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
                         Nd4j.create(new double[] {5., 7., 6., 8., 4., 7., 5., 9.}, new long[] {1, 2, 2, 2}).castTo(Nd4j.defaultFloatingPointType());
         INDArray containedInput = getContainedData();
         INDArray input = getData();
-        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
+        Layer layer = getSubsamplingLayer(Subsampling2DLayer.PoolingType.MAX);
 
         INDArray containedOutput = layer.activate(containedInput, false, LayerWorkspaceMgr.noWorkspaces());
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
@@ -90,7 +91,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
                         Nd4j.create(new double[] {2., 4., 3., 5., 3.5, 6.5, 4.5, 8.5}, new int[] {1, 2, 2, 2}).castTo(Nd4j.defaultFloatingPointType());
         INDArray containedInput = getContainedData();
         INDArray input = getData();
-        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
+        Layer layer = getSubsamplingLayer(Subsampling2DLayer.PoolingType.AVG);
 
         INDArray containedOutput = layer.activate(containedInput, false, LayerWorkspaceMgr.noWorkspaces());
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
@@ -115,7 +116,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
 
         INDArray input = getContainedData();
 
-        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
+        Layer layer = getSubsamplingLayer(Subsampling2DLayer.PoolingType.MAX);
         layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
         Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput, LayerWorkspaceMgr.noWorkspaces());
@@ -144,7 +145,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
                         2., 2., 1.75, 1.75, 2., 2.}, new int[] {1, 2, 4, 4}).castTo(Nd4j.defaultFloatingPointType());
         INDArray input = getContainedData();
 
-        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
+        Layer layer = getSubsamplingLayer(Subsampling2DLayer.PoolingType.AVG);
         layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
         Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput, LayerWorkspaceMgr.noWorkspaces());
@@ -157,7 +158,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
 
     @Test(expected = IllegalStateException.class)
     public void testSubSampleLayerSumBackprop() throws Exception {
-        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
+        Layer layer = getSubsamplingLayer(Subsampling2DLayer.PoolingType.SUM);
         INDArray input = getData();
         layer.setInput(input, LayerWorkspaceMgr.noWorkspaces());
         layer.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
@@ -165,10 +166,10 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
 
     //////////////////////////////////////////////////////////////////////////////////
 
-    private Layer getSubsamplingLayer(SubsamplingLayer.PoolingType pooling) {
+    private Layer getSubsamplingLayer(Subsampling2DLayer.PoolingType pooling) {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
-                        .layer(new SubsamplingLayer.Builder(pooling, new int[] {2, 2}).build()).build();
+                        .layer(new Subsampling2DLayer.Builder(pooling, new int[] {2, 2}).build()).build();
 
         return conf.getLayer().instantiate(conf, null, 0, null, true);
     }
@@ -211,13 +212,13 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
         DataSet trainInput;
         MultiLayerConfiguration.Builder builder =
                         new NeuralNetConfiguration.Builder().seed(123).list()
-                                        .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
+                                        .layer(0, new Convolution2DLayer.Builder(
                                                         kernelHeight, kernelWidth).stride(1, 1).nOut(2)
                                                                         .activation(Activation.RELU).weightInit(
                                                                                         WeightInit.XAVIER)
                                                                         .build())
-                                        .layer(1, new SubsamplingLayer.Builder()
-                                                        .poolingType(SubsamplingLayer.PoolingType.MAX)
+                                        .layer(1, new Subsampling2DLayer.Builder()
+                                                        .poolingType(Subsampling2DLayer.PoolingType.MAX)
                                                         .kernelSize(imageHeight - kernelHeight + 2, 1) //imageHeight-kernelHeight+1 is ok: full height
                                                         .stride(1, 1).build())
                                         .layer(2, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)

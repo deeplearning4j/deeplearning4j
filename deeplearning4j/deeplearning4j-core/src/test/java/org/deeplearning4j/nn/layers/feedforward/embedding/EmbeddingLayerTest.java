@@ -22,8 +22,11 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
-import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingSequenceLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -36,7 +39,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -359,7 +361,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
                 .layer(0, new EmbeddingLayer.Builder().hasBias(true).nIn(nClassesIn).nOut(5).build())
-                .layer(1, new GravesLSTM.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
+                .layer(1, new GravesLSTMLayer.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
                 .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4)
                         .activation(Activation.SOFTMAX).build())
                 .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
@@ -368,7 +370,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH)
                 .weightInit(WeightInit.XAVIER).list()
                 .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).build())
-                .layer(1, new GravesLSTM.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
+                .layer(1, new GravesLSTMLayer.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
                 .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4)
                         .activation(Activation.SOFTMAX).build())
                 .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
@@ -442,7 +444,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                     .layer(0, new EmbeddingLayer.Builder().hasBias(true).activation(Activation.TANH).nIn(numInputClasses)
                             .nOut(5).build())
                     .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())
-                    .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
+                    .layer(2, new GravesLSTMLayer.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
                     .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
                             .nOut(4).build())
                     .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
@@ -457,7 +459,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                     .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(numInputClasses).nOut(5)
                             .build())
                     .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())
-                    .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
+                    .layer(2, new GravesLSTMLayer.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
                     .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
                             .nOut(4).build())
                     .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())

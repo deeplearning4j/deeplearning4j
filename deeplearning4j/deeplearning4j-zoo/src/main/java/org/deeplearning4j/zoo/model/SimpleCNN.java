@@ -18,12 +18,15 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.ModelMetaData;
@@ -50,7 +53,7 @@ public class SimpleCNN extends ZooModel {
     @Builder.Default private IUpdater updater = new AdaDelta();
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    @Builder.Default private Convolution2DLayer.AlgoMode cudnnAlgoMode = Convolution2DLayer.AlgoMode.PREFER_FASTEST;
 
     private SimpleCNN() {}
 
@@ -82,52 +85,52 @@ public class SimpleCNN extends ZooModel {
                                         .convolutionMode(ConvolutionMode.Same)
                                         .list()
                                         // block 1
-                                        .layer(0, new ConvolutionLayer.Builder(new int[] {7, 7}).name("image_array")
+                                        .layer(0, new Convolution2DLayer.Builder(new int[] {7, 7}).name("image_array")
                                                         .nIn(inputShape[0]).nOut(16).build())
-                                        .layer(1, new BatchNormalization.Builder().build())
-                                        .layer(2, new ConvolutionLayer.Builder(new int[] {7, 7}).nIn(16).nOut(16)
+                                        .layer(1, new BatchNormalizationLayer.Builder().build())
+                                        .layer(2, new Convolution2DLayer.Builder(new int[] {7, 7}).nIn(16).nOut(16)
                                                         .build())
-                                        .layer(3, new BatchNormalization.Builder().build())
+                                        .layer(3, new BatchNormalizationLayer.Builder().build())
                                         .layer(4, new ActivationLayer.Builder().activation(Activation.RELU).build())
-                                        .layer(5, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG,
+                                        .layer(5, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.AVG,
                                                         new int[] {2, 2}).build())
                                         .layer(6, new DropoutLayer.Builder(0.5).build())
 
                                         // block 2
-                                        .layer(7, new ConvolutionLayer.Builder(new int[] {5, 5}).nOut(32).build())
-                                        .layer(8, new BatchNormalization.Builder().build())
-                                        .layer(9, new ConvolutionLayer.Builder(new int[] {5, 5}).nOut(32).build())
-                                        .layer(10, new BatchNormalization.Builder().build())
+                                        .layer(7, new Convolution2DLayer.Builder(new int[] {5, 5}).nOut(32).build())
+                                        .layer(8, new BatchNormalizationLayer.Builder().build())
+                                        .layer(9, new Convolution2DLayer.Builder(new int[] {5, 5}).nOut(32).build())
+                                        .layer(10, new BatchNormalizationLayer.Builder().build())
                                         .layer(11, new ActivationLayer.Builder().activation(Activation.RELU).build())
-                                        .layer(12, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG,
+                                        .layer(12, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.AVG,
                                                         new int[] {2, 2}).build())
                                         .layer(13, new DropoutLayer.Builder(0.5).build())
 
                                         // block 3
-                                        .layer(14, new ConvolutionLayer.Builder(new int[] {3, 3}).nOut(64).build())
-                                        .layer(15, new BatchNormalization.Builder().build())
-                                        .layer(16, new ConvolutionLayer.Builder(new int[] {3, 3}).nOut(64).build())
-                                        .layer(17, new BatchNormalization.Builder().build())
+                                        .layer(14, new Convolution2DLayer.Builder(new int[] {3, 3}).nOut(64).build())
+                                        .layer(15, new BatchNormalizationLayer.Builder().build())
+                                        .layer(16, new Convolution2DLayer.Builder(new int[] {3, 3}).nOut(64).build())
+                                        .layer(17, new BatchNormalizationLayer.Builder().build())
                                         .layer(18, new ActivationLayer.Builder().activation(Activation.RELU).build())
-                                        .layer(19, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG,
+                                        .layer(19, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.AVG,
                                                         new int[] {2, 2}).build())
                                         .layer(20, new DropoutLayer.Builder(0.5).build())
 
                                         // block 4
-                                        .layer(21, new ConvolutionLayer.Builder(new int[] {3, 3}).nOut(128).build())
-                                        .layer(22, new BatchNormalization.Builder().build())
-                                        .layer(23, new ConvolutionLayer.Builder(new int[] {3, 3}).nOut(128).build())
-                                        .layer(24, new BatchNormalization.Builder().build())
+                                        .layer(21, new Convolution2DLayer.Builder(new int[] {3, 3}).nOut(128).build())
+                                        .layer(22, new BatchNormalizationLayer.Builder().build())
+                                        .layer(23, new Convolution2DLayer.Builder(new int[] {3, 3}).nOut(128).build())
+                                        .layer(24, new BatchNormalizationLayer.Builder().build())
                                         .layer(25, new ActivationLayer.Builder().activation(Activation.RELU).build())
-                                        .layer(26, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG,
+                                        .layer(26, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.AVG,
                                                         new int[] {2, 2}).build())
                                         .layer(27, new DropoutLayer.Builder(0.5).build())
 
 
                                         // block 5
-                                        .layer(28, new ConvolutionLayer.Builder(new int[] {3, 3}).nOut(256).build())
-                                        .layer(29, new BatchNormalization.Builder().build())
-                                        .layer(30, new ConvolutionLayer.Builder(new int[] {3, 3}).nOut(numClasses)
+                                        .layer(28, new Convolution2DLayer.Builder(new int[] {3, 3}).nOut(256).build())
+                                        .layer(29, new BatchNormalizationLayer.Builder().build())
+                                        .layer(30, new Convolution2DLayer.Builder(new int[] {3, 3}).nOut(numClasses)
                                                         .build())
                                         .layer(31, new GlobalPoolingLayer.Builder(PoolingType.AVG).build())
                                         .layer(32, new ActivationLayer.Builder().activation(Activation.SOFTMAX).build())

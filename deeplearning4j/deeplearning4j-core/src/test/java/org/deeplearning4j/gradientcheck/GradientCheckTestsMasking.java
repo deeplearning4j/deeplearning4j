@@ -25,6 +25,12 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
@@ -129,7 +135,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L)
                                 .list()
-                                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+                                .layer(0, new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize)
                                         .dist(new NormalDistribution(0, 1))
                                                 .updater(new NoOp()).build())
                                 .layer(1, new RnnOutputLayer.Builder(s.lf).activation(s.act).nIn(layerSize).nOut(s.nOut)
@@ -172,9 +178,9 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                             .updater(new NoOp())
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                            .layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize)
+                            .layer(0, new GravesBidirectionalLSTMLayer.Builder().nIn(nIn).nOut(layerSize)
                                             .activation(Activation.TANH).build())
-                            .layer(1, new GravesBidirectionalLSTM.Builder().nIn(layerSize).nOut(layerSize)
+                            .layer(1, new GravesBidirectionalLSTMLayer.Builder().nIn(layerSize).nOut(layerSize)
                                             .activation(Activation.TANH).build())
                             .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
@@ -355,7 +361,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1)).seed(12345)
                                 .list()
-                                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                                .layer(0, new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                                 .build())
                                 .layer(1, new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build())
@@ -386,7 +392,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 ComputationGraphConfiguration cg = new NeuralNetConfiguration.Builder().updater(new NoOp())
                                 .dist(new NormalDistribution(0, 2)).seed(12345)
                                 .graphBuilder().addInputs("in")
-                                .addLayer("0", new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+                                .addLayer("0", new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize)
                                                 .activation(Activation.TANH).build(), "in")
                                 .addLayer("1", new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build(), "0")
@@ -417,7 +423,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 .weightInit(new NormalDistribution(0,2))
                 .updater(new NoOp())
                 .list()
-                .layer(new LSTM.Builder().nIn(10).nOut(10).build())
+                .layer(new LSTMLayer.Builder().nIn(10).nOut(10).build())
                 .layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build())
                 .layer(new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.recurrent(10))
@@ -468,7 +474,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 .updater(new NoOp())
                 .graphBuilder()
                 .addInputs("in")
-                .layer("0", new LSTM.Builder().nIn(10).nOut(10).build(), "in")
+                .layer("0", new LSTMLayer.Builder().nIn(10).nOut(10).build(), "in")
                 .layer("1", new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build(), "0")
                 .layer("out", new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "1")
                 .setOutputs("out")

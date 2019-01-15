@@ -19,11 +19,8 @@ package org.deeplearning4j.nn.params;
 import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.BaseLayer;
-import org.deeplearning4j.nn.conf.layers.BaseRecurrentLayer;
-import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.ArrayList;
@@ -43,14 +40,14 @@ public class BidirectionalParamInitializer implements ParamInitializer {
     public static final String FORWARD_PREFIX = "f";
     public static final String BACKWARD_PREFIX = "b";
 
-    private final Bidirectional layer;
+    private final BidirectionalLayer layer;
     private final Layer underlying;
 
     private List<String> paramKeys;
     private List<String> weightKeys;
     private List<String> biasKeys;
 
-    public BidirectionalParamInitializer(Bidirectional layer){
+    public BidirectionalParamInitializer(BidirectionalLayer layer){
         this.layer = layer;
         this.underlying = underlying(layer);
     }
@@ -177,7 +174,7 @@ public class BidirectionalParamInitializer implements ParamInitializer {
     }
 
     private Layer underlying(Layer layer){
-        Bidirectional b = (Bidirectional)layer;
+        BidirectionalLayer b = (BidirectionalLayer)layer;
         return b.getFwd();
     }
 

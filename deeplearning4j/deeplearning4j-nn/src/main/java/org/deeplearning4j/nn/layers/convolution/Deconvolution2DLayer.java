@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import java.util.Arrays;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -23,21 +24,17 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.params.DeconvolutionParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
-
-import java.util.Arrays;
 
 /**
  * 2D deconvolution layer implementation.
@@ -54,7 +51,7 @@ import java.util.Arrays;
  *
  * @author Max Pumperla
  */
-public class Deconvolution2DLayer extends ConvolutionLayer {
+public class Deconvolution2DLayer extends Convolution2DLayer {
 
     public Deconvolution2DLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -75,7 +72,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         assertInputSet(true);
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
-                    + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
+                    + " array as input to Subsampling2DLayer with shape " + Arrays.toString(input.shape())
                     + ". Expected rank 4 array with shape [minibatchSize, channels, inputHeight, inputWidth]. "
                     + layerId());
         }
@@ -168,7 +165,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
             if (layerName == null)
                 layerName = "(not named)";
             throw new DL4JInvalidInputException("Got rank " + input.rank()
-                    + " array as input to Deconvolution2D (layer name = " + layerName + ", layer index = "
+                    + " array as input to Deconvolution2DLayer (layer name = " + layerName + ", layer index = "
                     + index + ") with shape " + Arrays.toString(input.shape()) + ". "
                     + "Expected rank 4 array with shape [minibatchSize, layerInputDepth, inputHeight, inputWidth]."
                     + (input.rank() == 2
@@ -187,7 +184,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
-            throw new DL4JInvalidInputException("Cannot do forward pass in Deconvolution2D layer (layer name = " + layerName
+            throw new DL4JInvalidInputException("Cannot do forward pass in Deconvolution2DLayer layer (layer name = " + layerName
                     + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
                     + " (data input channels = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
                     + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "

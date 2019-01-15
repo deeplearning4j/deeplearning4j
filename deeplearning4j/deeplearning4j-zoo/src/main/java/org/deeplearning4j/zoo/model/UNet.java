@@ -26,6 +26,10 @@ import org.deeplearning4j.nn.conf.distribution.TruncatedNormalDistribution;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.CnnLossLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.upsampling.Upsampling2DLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.ModelMetaData;
@@ -62,7 +66,7 @@ public class UNet extends ZooModel {
     @Builder.Default private IUpdater updater = new AdaDelta();
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    @Builder.Default private Convolution2DLayer.AlgoMode cudnnAlgoMode = Convolution2DLayer.AlgoMode.PREFER_FASTEST;
 
     private UNet() {}
 
@@ -116,107 +120,107 @@ public class UNet extends ZooModel {
 
 
         graph
-                .addLayer("conv1-1", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(64)
+                .addLayer("conv1-1", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(64)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "input")
-                .addLayer("conv1-2", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(64)
+                .addLayer("conv1-2", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(64)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "conv1-1")
-                .addLayer("pool1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2,2)
+                .addLayer("pool1", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(2,2)
                         .build(), "conv1-2")
 
-                .addLayer("conv2-1", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(128)
+                .addLayer("conv2-1", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(128)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "pool1")
-                .addLayer("conv2-2", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(128)
+                .addLayer("conv2-2", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(128)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "conv2-1")
-                .addLayer("pool2", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2,2)
+                .addLayer("pool2", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(2,2)
                         .build(), "conv2-2")
 
-                .addLayer("conv3-1", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(256)
+                .addLayer("conv3-1", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(256)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "pool2")
-                .addLayer("conv3-2", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(256)
+                .addLayer("conv3-2", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(256)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "conv3-1")
-                .addLayer("pool3", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2,2)
+                .addLayer("pool3", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(2,2)
                         .build(), "conv3-2")
 
-                .addLayer("conv4-1", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(512)
+                .addLayer("conv4-1", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(512)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "pool3")
-                .addLayer("conv4-2", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(512)
+                .addLayer("conv4-2", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(512)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "conv4-1")
                 .addLayer("drop4", new DropoutLayer.Builder(0.5).build(), "conv4-2")
-                .addLayer("pool4", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2,2)
+                .addLayer("pool4", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(2,2)
                         .build(), "drop4")
 
-                .addLayer("conv5-1", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(1024)
+                .addLayer("conv5-1", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(1024)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "pool4")
-                .addLayer("conv5-2", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(1024)
+                .addLayer("conv5-2", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(1024)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "conv5-1")
                 .addLayer("drop5", new DropoutLayer.Builder(0.5).build(), "conv5-2")
 
                 // up6
-                .addLayer("up6-1", new Upsampling2D.Builder(2).build(), "drop5")
-                .addLayer("up6-2", new ConvolutionLayer.Builder(2,2).stride(1,1).nOut(512)
+                .addLayer("up6-1", new Upsampling2DLayer.Builder(2).build(), "drop5")
+                .addLayer("up6-2", new Convolution2DLayer.Builder(2,2).stride(1,1).nOut(512)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "up6-1")
                 .addVertex("merge6", new MergeVertex(), "drop4", "up6-2")
-                .addLayer("conv6-1", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(512)
+                .addLayer("conv6-1", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(512)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "merge6")
-                .addLayer("conv6-2", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(512)
+                .addLayer("conv6-2", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(512)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "conv6-1")
 
                 // up7
-                .addLayer("up7-1", new Upsampling2D.Builder(2).build(), "conv6-2")
-                .addLayer("up7-2", new ConvolutionLayer.Builder(2,2).stride(1,1).nOut(256)
+                .addLayer("up7-1", new Upsampling2DLayer.Builder(2).build(), "conv6-2")
+                .addLayer("up7-2", new Convolution2DLayer.Builder(2,2).stride(1,1).nOut(256)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "up7-1")
                 .addVertex("merge7", new MergeVertex(), "conv3-2", "up7-2")
-                .addLayer("conv7-1", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(256)
+                .addLayer("conv7-1", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(256)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "merge7")
-                .addLayer("conv7-2", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(256)
+                .addLayer("conv7-2", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(256)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "conv7-1")
 
                 // up8
-                .addLayer("up8-1", new Upsampling2D.Builder(2).build(), "conv7-2")
-                .addLayer("up8-2", new ConvolutionLayer.Builder(2,2).stride(1,1).nOut(128)
+                .addLayer("up8-1", new Upsampling2DLayer.Builder(2).build(), "conv7-2")
+                .addLayer("up8-2", new Convolution2DLayer.Builder(2,2).stride(1,1).nOut(128)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "up8-1")
                 .addVertex("merge8", new MergeVertex(), "conv2-2", "up8-2")
-                .addLayer("conv8-1", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(128)
+                .addLayer("conv8-1", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(128)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "merge8")
-                .addLayer("conv8-2", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(128)
+                .addLayer("conv8-2", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(128)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "conv8-1")
 
                 // up9
-                .addLayer("up9-1", new Upsampling2D.Builder(2).build(), "conv8-2")
-                .addLayer("up9-2", new ConvolutionLayer.Builder(2,2).stride(1,1).nOut(64)
+                .addLayer("up9-1", new Upsampling2DLayer.Builder(2).build(), "conv8-2")
+                .addLayer("up9-2", new Convolution2DLayer.Builder(2,2).stride(1,1).nOut(64)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "up9-1")
                 .addVertex("merge9", new MergeVertex(), "conv1-2", "up9-2")
-                .addLayer("conv9-1", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(64)
+                .addLayer("conv9-1", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(64)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "merge9")
-                .addLayer("conv9-2", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(64)
+                .addLayer("conv9-2", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(64)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "conv9-1")
-                .addLayer("conv9-3", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(2)
+                .addLayer("conv9-3", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(2)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "conv9-2")
 
-                .addLayer("conv10", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(1)
+                .addLayer("conv10", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(1)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.SIGMOID).build(), "conv9-3")
                 .addLayer("output", new CnnLossLayer.Builder(LossFunctions.LossFunction.MCXENT)

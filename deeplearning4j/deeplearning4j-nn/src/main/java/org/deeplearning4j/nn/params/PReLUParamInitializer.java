@@ -21,7 +21,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.PReLULayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.PReLULayer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * PReLU weight initializer. PReLU layer has weights of input shape (excluding mini-batch
+ * PReLULayer weight initializer. PReLULayer layer has weights of input shape (excluding mini-batch
  * dimension).
  *
  * @author Max Pumperla

@@ -21,8 +21,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction;
@@ -222,7 +222,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.3)).list()
                         .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0])
                                         .updater(new Sgd(lr)).biasUpdater(new Sgd(biasLr)).build())
-                        .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(new Sgd(0.7)).build())
+                        .layer(1, new BatchNormalizationLayer.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(new Sgd(0.7)).build())
                         .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).lossFunction(LossFunctions.LossFunction.MSE).build())
                         .build();
 
@@ -282,7 +282,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l1(l1)
                         .l2(l2).list()
                         .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).build())
-                        .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).l2(0.5).build())
+                        .layer(1, new BatchNormalizationLayer.Builder().nIn(nIns[1]).nOut(nOuts[1]).l2(0.5).build())
                         .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).lossFunction(LossFunctions.LossFunction.MSE).build())
                         .build();
 

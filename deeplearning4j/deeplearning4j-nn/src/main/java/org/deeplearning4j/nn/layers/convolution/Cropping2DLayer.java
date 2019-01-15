@@ -16,19 +16,19 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
+
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
-
-import static org.nd4j.linalg.indexing.NDArrayIndex.all;
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 /**
  * Zero cropping layer for convolutional neural networks.
@@ -36,13 +36,13 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  *
  * @author Alex Black
  */
-public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D> {
+public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.convolutional.Cropping2DLayer> {
 
     private int[] cropping; //[padTop, padBottom, padLeft, padRight]
 
     public Cropping2DLayer(NeuralNetConfiguration conf) {
         super(conf);
-        this.cropping = ((org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D) conf.getLayer()).getCropping();
+        this.cropping = ((org.deeplearning4j.nn.conf.layers.convolutional.Cropping2DLayer) conf.getLayer()).getCropping();
     }
 
     @Override

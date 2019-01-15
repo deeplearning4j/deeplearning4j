@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
-import org.deeplearning4j.nn.conf.layers.SeparableConvolution2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.SeparableConvolution2DLayer;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +31,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
-public class SeparableConvolution2DLayerSpace extends BaseConvolutionLayerSpace<SeparableConvolution2D> {
+public class SeparableConvolution2DLayerSpace extends BaseConvolutionLayerSpace<SeparableConvolution2DLayer> {
 
     private ParameterSpace<Integer> depthMultiplier;
     protected ParameterSpace<List<LayerConstraint>> pointWiseConstraints;
@@ -43,13 +43,13 @@ public class SeparableConvolution2DLayerSpace extends BaseConvolutionLayerSpace<
     }
 
     @Override
-    public SeparableConvolution2D getValue(double[] parameterValues) {
-        SeparableConvolution2D.Builder b = new SeparableConvolution2D.Builder();
+    public SeparableConvolution2DLayer getValue(double[] parameterValues) {
+        SeparableConvolution2DLayer.Builder b = new SeparableConvolution2DLayer.Builder();
         setLayerOptionsBuilder(b, parameterValues);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(SeparableConvolution2D.Builder builder, double[] values){
+    protected void setLayerOptionsBuilder(SeparableConvolution2DLayer.Builder builder, double[] values){
         super.setLayerOptionsBuilder(builder, values);
         if (kernelSize != null)
             builder.kernelSize(kernelSize.getValue(values));

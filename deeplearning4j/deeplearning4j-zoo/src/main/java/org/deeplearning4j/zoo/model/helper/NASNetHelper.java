@@ -23,7 +23,12 @@ import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.SeparableConvolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.ZeroPadding2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
 import org.deeplearning4j.zoo.model.NASNet;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.primitives.Pair;
@@ -43,13 +48,13 @@ public class NASNetHelper {
 
         graphBuilder
                 .addLayer(prefix+"_act", new ActivationLayer(Activation.RELU), input)
-                .addLayer(prefix+"_sepconv1", new SeparableConvolution2D.Builder(kernelSize, kernelSize).stride(stride, stride).nOut(filters).hasBias(false)
+                .addLayer(prefix+"_sepconv1", new SeparableConvolution2DLayer.Builder(kernelSize, kernelSize).stride(stride, stride).nOut(filters).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).build(), prefix+"_act")
-                .addLayer(prefix+"_conv1_bn", new BatchNormalization.Builder().eps(1e-3).gamma(0.9997).build(), prefix+"_sepconv1")
+                .addLayer(prefix+"_conv1_bn", new BatchNormalizationLayer.Builder().eps(1e-3).gamma(0.9997).build(), prefix+"_sepconv1")
                 .addLayer(prefix+"_act2", new ActivationLayer(Activation.RELU), prefix+"_conv1_bn")
-                .addLayer(prefix+"_sepconv2", new SeparableConvolution2D.Builder(kernelSize, kernelSize).stride(stride, stride).nOut(filters).hasBias(false)
+                .addLayer(prefix+"_sepconv2", new SeparableConvolution2DLayer.Builder(kernelSize, kernelSize).stride(stride, stride).nOut(filters).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).build(), prefix+"_act2")
-                .addLayer(prefix+"_conv2_bn", new BatchNormalization.Builder().eps(1e-3).gamma(0.9997).build(), prefix+"_sepconv2");
+                .addLayer(prefix+"_conv2_bn", new BatchNormalizationLayer.Builder().eps(1e-3).gamma(0.9997).build(), prefix+"_sepconv2");
 
         return prefix+"_conv2_bn";
     }
@@ -73,20 +78,20 @@ public class NASNetHelper {
             graphBuilder
                     .addLayer(prefix+"_relu1", new ActivationLayer(Activation.RELU), input)
                     // tower 1
-                    .addLayer(prefix+"_avgpool1", new SubsamplingLayer.Builder(PoolingType.AVG).kernelSize(1,1).stride(2,2)
+                    .addLayer(prefix+"_avgpool1", new Subsampling2DLayer.Builder(PoolingType.AVG).kernelSize(1,1).stride(2,2)
                             .convolutionMode(ConvolutionMode.Truncate).build(), prefix+"_relu1")
-                    .addLayer(prefix+"_conv1", new ConvolutionLayer.Builder(1,1).stride(1,1).nOut((int) Math.floor(filters / 2)).hasBias(false)
+                    .addLayer(prefix+"_conv1", new Convolution2DLayer.Builder(1,1).stride(1,1).nOut((int) Math.floor(filters / 2)).hasBias(false)
                             .convolutionMode(ConvolutionMode.Same).build(), prefix+"_avg_pool_1")
                     // tower 2
-                    .addLayer(prefix+"_zeropad1", new ZeroPaddingLayer(0,1), prefix+"_relu1")
-                    .addLayer(prefix+"_crop1", new Cropping2D(1,0), prefix+"_zeropad_1")
-                    .addLayer(prefix+"_avgpool2", new SubsamplingLayer.Builder(PoolingType.AVG).kernelSize(1,1).stride(2,2)
+                    .addLayer(prefix+"_zeropad1", new ZeroPadding2DLayer(0,1), prefix+"_relu1")
+                    .addLayer(prefix+"_crop1", new Cropping2DLayer(1,0), prefix+"_zeropad_1")
+                    .addLayer(prefix+"_avgpool2", new Subsampling2DLayer.Builder(PoolingType.AVG).kernelSize(1,1).stride(2,2)
                             .convolutionMode(ConvolutionMode.Truncate).build(), prefix+"_crop1")
-                    .addLayer(prefix+"_conv2", new ConvolutionLayer.Builder(1,1).stride(1,1).nOut((int) Math.floor(filters / 2)).hasBias(false)
+                    .addLayer(prefix+"_conv2", new Convolution2DLayer.Builder(1,1).stride(1,1).nOut((int) Math.floor(filters / 2)).hasBias(false)
                             .convolutionMode(ConvolutionMode.Same).build(), prefix+"_avgpool2")
 
                     .addVertex(prefix+"_concat1", new MergeVertex(), prefix+"_conv1", prefix+"_conv2")
-                    .addLayer(prefix+"_bn1", new BatchNormalization.Builder().eps(1e-3).gamma(0.9997)
+                    .addLayer(prefix+"_bn1", new BatchNormalizationLayer.Builder().eps(1e-3).gamma(0.9997)
                             .build(), prefix+"_concat1");
 
             outputName = prefix+"_bn1";
@@ -95,9 +100,9 @@ public class NASNetHelper {
         if(inputShape[3] != filters) {
             graphBuilder
                     .addLayer(prefix+"_projection_relu", new ActivationLayer(Activation.RELU), outputName)
-                    .addLayer(prefix+"_projection_conv", new ConvolutionLayer.Builder(1,1).stride(1,1).nOut(filters).hasBias(false)
+                    .addLayer(prefix+"_projection_conv", new Convolution2DLayer.Builder(1,1).stride(1,1).nOut(filters).hasBias(false)
                             .convolutionMode(ConvolutionMode.Same).build(), prefix+"_projection_relu")
-                    .addLayer(prefix+"_projection_bn", new BatchNormalization.Builder().eps(1e-3).gamma(0.9997)
+                    .addLayer(prefix+"_projection_bn", new BatchNormalizationLayer.Builder().eps(1e-3).gamma(0.9997)
                             .build(), prefix+"_projection_conv");
             outputName = prefix+"_projection_bn";
         }
@@ -113,9 +118,9 @@ public class NASNetHelper {
         // top block
         graphBuilder
                 .addLayer(prefix+"_relu1", new ActivationLayer(Activation.RELU), topAdjust)
-                .addLayer(prefix+"_conv1", new ConvolutionLayer.Builder(1,1).stride(1,1).nOut(filters).hasBias(false)
+                .addLayer(prefix+"_conv1", new Convolution2DLayer.Builder(1,1).stride(1,1).nOut(filters).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).build(), prefix+"_relu1")
-                .addLayer(prefix+"_bn1", new BatchNormalization.Builder().eps(1e-3).gamma(0.9997)
+                .addLayer(prefix+"_bn1", new BatchNormalizationLayer.Builder().eps(1e-3).gamma(0.9997)
                         .build(), prefix+"_conv1");
 
         // block 1
@@ -130,15 +135,15 @@ public class NASNetHelper {
 
         // block 3
         graphBuilder
-                .addLayer(prefix+"_left3", new SubsamplingLayer.Builder(PoolingType.AVG).kernelSize(3,3).stride(1,1)
+                .addLayer(prefix+"_left3", new Subsampling2DLayer.Builder(PoolingType.AVG).kernelSize(3,3).stride(1,1)
                         .convolutionMode(ConvolutionMode.Same).build(), prefix+"_bn1")
                 .addVertex(prefix+"_add3", new ElementWiseVertex(ElementWiseVertex.Op.Add), prefix+"_left3", topAdjust);
 
         // block 4
         graphBuilder
-                .addLayer(prefix+"_left4", new SubsamplingLayer.Builder(PoolingType.AVG).kernelSize(3,3).stride(1,1)
+                .addLayer(prefix+"_left4", new Subsampling2DLayer.Builder(PoolingType.AVG).kernelSize(3,3).stride(1,1)
                         .convolutionMode(ConvolutionMode.Same).build(), topAdjust)
-                .addLayer(prefix+"_right4", new SubsamplingLayer.Builder(PoolingType.AVG).kernelSize(3,3).stride(1,1)
+                .addLayer(prefix+"_right4", new Subsampling2DLayer.Builder(PoolingType.AVG).kernelSize(3,3).stride(1,1)
                         .convolutionMode(ConvolutionMode.Same).build(), topAdjust)
                 .addVertex(prefix+"_add4", new ElementWiseVertex(ElementWiseVertex.Op.Add), prefix+"_left4", prefix+"_right4");
 
@@ -162,9 +167,9 @@ public class NASNetHelper {
         // top block
         graphBuilder
                 .addLayer(prefix+"_relu1", new ActivationLayer(Activation.RELU), topAdjust)
-                .addLayer(prefix+"_conv1", new ConvolutionLayer.Builder(1,1).stride(1,1).nOut(filters).hasBias(false)
+                .addLayer(prefix+"_conv1", new Convolution2DLayer.Builder(1,1).stride(1,1).nOut(filters).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).build(), prefix+"_relu1")
-                .addLayer(prefix+"_bn1", new BatchNormalization.Builder().eps(1e-3).gamma(0.9997)
+                .addLayer(prefix+"_bn1", new BatchNormalizationLayer.Builder().eps(1e-3).gamma(0.9997)
                         .build(), prefix+"_conv1");
 
         // block 1
@@ -173,27 +178,27 @@ public class NASNetHelper {
         graphBuilder.addVertex(prefix+"_add1", new ElementWiseVertex(ElementWiseVertex.Op.Add), left1, right1);
 
         // block 2
-        graphBuilder.addLayer(prefix+"_left2", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2)
+        graphBuilder.addLayer(prefix+"_left2", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2)
                 .convolutionMode(ConvolutionMode.Same).build(), prefix+"_bn1");
         String right2 = sepConvBlock(graphBuilder, filters, 3, 1, prefix+"_right2", topAdjust);
         graphBuilder.addVertex(prefix+"_add2", new ElementWiseVertex(ElementWiseVertex.Op.Add), prefix+"_left2", right2);
 
         // block 3
-        graphBuilder.addLayer(prefix+"_left3", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG).kernelSize(3,3).stride(2,2)
+        graphBuilder.addLayer(prefix+"_left3", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.AVG).kernelSize(3,3).stride(2,2)
                 .convolutionMode(ConvolutionMode.Same).build(), prefix+"_bn1");
         String right3 = sepConvBlock(graphBuilder, filters, 5, 2, prefix+"_right3", topAdjust);
         graphBuilder.addVertex(prefix+"_add3", new ElementWiseVertex(ElementWiseVertex.Op.Add), prefix+"_left3", right3);
 
         // block 4
         graphBuilder
-                .addLayer(prefix+"_left4", new SubsamplingLayer.Builder(PoolingType.AVG).kernelSize(3,3).stride(1,1)
+                .addLayer(prefix+"_left4", new Subsampling2DLayer.Builder(PoolingType.AVG).kernelSize(3,3).stride(1,1)
                         .convolutionMode(ConvolutionMode.Same).build(), prefix+"_add1")
                 .addVertex(prefix+"_add4", new ElementWiseVertex(ElementWiseVertex.Op.Add), prefix+"_add2", prefix+"_left4");
 
         // block 5
         String left5 = sepConvBlock(graphBuilder, filters, 3, 2, prefix+"_left5", prefix+"_add1");
         graphBuilder
-                .addLayer(prefix+"_right5", new SubsamplingLayer.Builder(PoolingType.MAX).kernelSize(3,3).stride(2,2)
+                .addLayer(prefix+"_right5", new Subsampling2DLayer.Builder(PoolingType.MAX).kernelSize(3,3).stride(2,2)
                         .convolutionMode(ConvolutionMode.Same).build(), prefix+"_bn1")
                 .addVertex(prefix+"_add5", new ElementWiseVertex(ElementWiseVertex.Op.Add), left5, prefix+"_right5");
 

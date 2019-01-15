@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.PReLULayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.PReLULayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -40,7 +40,7 @@ import java.util.Set;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 
 /**
- * Imports PReLU layer from Keras
+ * Imports PReLULayer layer from Keras
  *
  * @author Max Pumperla
  */
@@ -120,10 +120,10 @@ public class KerasPReLU extends KerasLayer {
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras PReLU layer accepts only one input (received " + inputType.length + ")");
+                    "Keras PReLULayer layer accepts only one input (received " + inputType.length + ")");
         InputType inType = inputType[0];
 
-        // Dynamically infer input shape of PReLU layer from input type
+        // Dynamically infer input shape of PReLULayer layer from input type
         PReLULayer shapedLayer = (PReLULayer) this.layer;
         shapedLayer.setInputShape(inType.getShape());
         this.layer = shapedLayer;

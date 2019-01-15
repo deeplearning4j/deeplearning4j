@@ -20,6 +20,15 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.autoencoder.AutoEncoder;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -89,7 +98,7 @@ public class LayerBuilderTest extends BaseDL4JTest {
 
     @Test
     public void testConvolutionLayer() throws Exception {
-        ConvolutionLayer conv = new ConvolutionLayer.Builder(kernelSize, stride, padding).build();
+        Convolution2DLayer conv = new Convolution2DLayer.Builder(kernelSize, stride, padding).build();
 
         checkSerialization(conv);
 
@@ -101,8 +110,8 @@ public class LayerBuilderTest extends BaseDL4JTest {
 
     @Test
     public void testSubsamplingLayer() throws Exception {
-        SubsamplingLayer sample =
-                        new SubsamplingLayer.Builder(poolType, stride).kernelSize(kernelSize).padding(padding).build();
+        Subsampling2DLayer sample =
+                        new Subsampling2DLayer.Builder(poolType, stride).kernelSize(kernelSize).padding(padding).build();
 
         checkSerialization(sample);
 
@@ -138,7 +147,7 @@ public class LayerBuilderTest extends BaseDL4JTest {
 
     @Test
     public void testGravesLSTM() throws Exception {
-        GravesLSTM glstm = new GravesLSTM.Builder().forgetGateBiasInit(1.5).activation(Activation.TANH).nIn(numIn)
+        GravesLSTMLayer glstm = new GravesLSTMLayer.Builder().forgetGateBiasInit(1.5).activation(Activation.TANH).nIn(numIn)
                         .nOut(numOut).build();
 
         checkSerialization(glstm);
@@ -151,7 +160,7 @@ public class LayerBuilderTest extends BaseDL4JTest {
 
     @Test
     public void testGravesBidirectionalLSTM() throws Exception {
-        final GravesBidirectionalLSTM glstm = new GravesBidirectionalLSTM.Builder().forgetGateBiasInit(1.5)
+        final GravesBidirectionalLSTMLayer glstm = new GravesBidirectionalLSTMLayer.Builder().forgetGateBiasInit(1.5)
                         .activation(Activation.TANH).nIn(numIn).nOut(numOut).build();
 
         checkSerialization(glstm);
@@ -173,7 +182,7 @@ public class LayerBuilderTest extends BaseDL4JTest {
 
     @Test
     public void testBatchNormLayer() throws Exception {
-        BatchNormalization bN = new BatchNormalization.Builder().nIn(numIn).nOut(numOut).gamma(2).beta(1).decay(0.5)
+        BatchNormalizationLayer bN = new BatchNormalizationLayer.Builder().nIn(numIn).nOut(numOut).gamma(2).beta(1).decay(0.5)
                         .lockGammaBeta(true).build();
 
         checkSerialization(bN);

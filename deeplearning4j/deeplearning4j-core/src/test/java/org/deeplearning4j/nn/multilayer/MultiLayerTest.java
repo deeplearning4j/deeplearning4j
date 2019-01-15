@@ -32,7 +32,16 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.autoencoder.AutoEncoder;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
@@ -142,7 +151,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                                         .activation(Activation.TANH).build())
                         .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.TANH).build())
-                        .layer(2, new BatchNormalization.Builder().nOut(2).build())
+                        .layer(2, new BatchNormalizationLayer.Builder().nOut(2).build())
                         .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).nIn(2).nOut(3).build())
@@ -556,7 +565,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         int nOut = 2;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .seed(12345L).list().layer(0, new ConvolutionLayer.Builder(2, 2).nOut(1).build())
+                        .seed(12345L).list().layer(0, new Convolution2DLayer.Builder(2, 2).nOut(1).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(2).build())
                         .setInputType(InputType.convolutionalFlat(height, width, depth))
@@ -699,7 +708,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         int height = 5;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0).nIn(2)
+                        .layer(0, new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0).nIn(2)
                                         .nOut(2).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(2).build())
@@ -902,13 +911,13 @@ public class MultiLayerTest extends BaseDL4JTest {
                         new NeuralNetConfiguration.Builder().seed(12345).l2(0.001) //l2 regularization on all layers
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                         .list()
-                                        .layer(0, new ConvolutionLayer.Builder(10, 10).nIn(3) //3 channels: RGB
+                                        .layer(0, new Convolution2DLayer.Builder(10, 10).nIn(3) //3 channels: RGB
                                                         .nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(
                                                                         WeightInit.RELU)
                                                         .updater(Updater.ADAGRAD).build()) //Output: (130-10+0)/4+1 = 31 -> 31*31*30
-                                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                        .layer(1, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX)
                                                         .kernelSize(3, 3).stride(2, 2).build()) //(31-3+0)/2+1 = 15
-                                        .layer(2, new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
+                                        .layer(2, new Convolution2DLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
                                                         .activation(Activation.RELU).weightInit(WeightInit.RELU)
                                                         .updater(Updater.ADAGRAD).build()) //Output: (15-3+0)/2+1 = 7 -> 7*7*10 = 490
                                         .layer(3, new DenseLayer.Builder().activation(Activation.RELU).nIn(490).nOut(50)
@@ -916,7 +925,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                                                         .gradientNormalization(
                                                                         GradientNormalization.ClipElementWiseAbsoluteValue)
                                                         .gradientNormalizationThreshold(10).build())
-                                        .layer(4, new GravesLSTM.Builder().activation(Activation.SOFTSIGN).nIn(50)
+                                        .layer(4, new GravesLSTMLayer.Builder().activation(Activation.SOFTSIGN).nIn(50)
                                                         .nOut(50).weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD)
                                                         .gradientNormalization(
                                                                         GradientNormalization.ClipElementWiseAbsoluteValue)
@@ -969,7 +978,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                                         .activation(Activation.TANH).build())
                         .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.TANH).build())
-                        .layer(2, new LSTM.Builder().nIn(2).nOut(2).build())
+                        .layer(2, new LSTMLayer.Builder().nIn(2).nOut(2).build())
                         .layer(3, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(3)
                                         .build())
@@ -980,7 +989,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                                         .activation(Activation.TANH).build())
                         .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.TANH).build())
-                        .layer(2, new LSTM.Builder().nIn(2).nOut(2).build())
+                        .layer(2, new LSTMLayer.Builder().nIn(2).nOut(2).build())
                         .layer(3, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(3)
                                         .build())
@@ -1010,7 +1019,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .activation(Activation.TANH).build())
                 .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER)
                         .activation(Activation.TANH).build())
-                .layer(2, new LSTM.Builder().nIn(2).nOut(2).build())
+                .layer(2, new LSTMLayer.Builder().nIn(2).nOut(2).build())
                 .layer(3, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(3)
                         .build())
@@ -1021,7 +1030,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .activation(Activation.TANH).build())
                 .layer(new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER)
                         .activation(Activation.TANH).build())
-                .layer(new LSTM.Builder().nIn(2).nOut(2).build())
+                .layer(new LSTMLayer.Builder().nIn(2).nOut(2).build())
                 .layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(3)
                         .build())
@@ -1066,8 +1075,8 @@ public class MultiLayerTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .convolutionMode(ConvolutionMode.Same)
                 .list()
-                .layer(new ConvolutionLayer.Builder().kernelSize(2,2).stride(1,1).nIn(1).nOut(1).build())
-                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(1,1).build())
+                .layer(new Convolution2DLayer.Builder().kernelSize(2,2).stride(1,1).nIn(1).nOut(1).build())
+                .layer(new Subsampling2DLayer.Builder().kernelSize(2,2).stride(1,1).build())
                 .layer(new DenseLayer.Builder().nOut(10).build())
                 .layer(new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28,28,1))
@@ -1212,8 +1221,8 @@ public class MultiLayerTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 
                 .list()
-                .layer(new ConvolutionLayer.Builder().kernelSize(2,2).nOut(6).build())
-                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).build())
+                .layer(new Convolution2DLayer.Builder().kernelSize(2,2).nOut(6).build())
+                .layer(new Subsampling2DLayer.Builder().kernelSize(2,2).build())
                 .layer(new DenseLayer.Builder().nOut(30).build())
                 .layer(new OutputLayer.Builder().nOut(13).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutional(28,28,3))
@@ -1239,7 +1248,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
-                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2).build())
+                .layer(new Subsampling2DLayer.Builder().kernelSize(2,2).stride(2,2).build())
                 .layer(new LossLayer.Builder().activation(Activation.SIGMOID).lossFunction(LossFunctions.LossFunction.MSE).build())
                 .setInputType(InputType.convolutionalFlat(28,28,1))
                 .build();
@@ -1309,8 +1318,8 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
                 .list()
-                .layer(new LSTM.Builder().nOut(6).build())
-                .layer(new LSTM.Builder().nOut(7).build())
+                .layer(new LSTMLayer.Builder().nOut(6).build())
+                .layer(new LSTMLayer.Builder().nOut(7).build())
                 .layer(new GlobalPoolingLayer())
                 .layer(new OutputLayer.Builder().nOut(8).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.recurrent(10));
@@ -1416,7 +1425,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .l2(0.01)
                 .list()
-                .layer(new ConvolutionLayer.Builder().nIn(depth).nOut(depth).kernelSize(1,1).build())
+                .layer(new Convolution2DLayer.Builder().nIn(depth).nOut(depth).kernelSize(1,1).build())
                 .layer(new Yolo2OutputLayer.Builder()
                         .boundingBoxPriors(bbPrior)
                         .build())

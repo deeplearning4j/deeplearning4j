@@ -18,15 +18,18 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.SeparableConvolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.ModelMetaData;
@@ -35,7 +38,6 @@ import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.AdaDelta;
-import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -63,7 +65,7 @@ public class Xception extends ZooModel {
     @Builder.Default private IUpdater updater = new AdaDelta();
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    @Builder.Default private Convolution2DLayer.AlgoMode cudnnAlgoMode = Convolution2DLayer.AlgoMode.PREFER_FASTEST;
 
     private Xception() {}
 
@@ -118,65 +120,65 @@ public class Xception extends ZooModel {
 
         graph
                 // block1
-                .addLayer("block1_conv1", new ConvolutionLayer.Builder(3,3).stride(2,2).nOut(32).hasBias(false)
+                .addLayer("block1_conv1", new Convolution2DLayer.Builder(3,3).stride(2,2).nOut(32).hasBias(false)
                         .cudnnAlgoMode(cudnnAlgoMode).build(), "input")
-                .addLayer("block1_conv1_bn", new BatchNormalization(), "block1_conv1")
+                .addLayer("block1_conv1_bn", new BatchNormalizationLayer(), "block1_conv1")
                 .addLayer("block1_conv1_act", new ActivationLayer(Activation.RELU), "block1_conv1_bn")
-                .addLayer("block1_conv2", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(64).hasBias(false)
+                .addLayer("block1_conv2", new Convolution2DLayer.Builder(3,3).stride(1,1).nOut(64).hasBias(false)
                         .cudnnAlgoMode(cudnnAlgoMode).build(), "block1_conv1_act")
-                .addLayer("block1_conv2_bn", new BatchNormalization(), "block1_conv2")
+                .addLayer("block1_conv2_bn", new BatchNormalizationLayer(), "block1_conv2")
                 .addLayer("block1_conv2_act", new ActivationLayer(Activation.RELU), "block1_conv2_bn")
 
                 // residual1
-                .addLayer("residual1_conv", new ConvolutionLayer.Builder(1,1).stride(2,2).nOut(128).hasBias(false)
+                .addLayer("residual1_conv", new Convolution2DLayer.Builder(1,1).stride(2,2).nOut(128).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "block1_conv2_act")
-                .addLayer("residual1", new BatchNormalization(), "residual1_conv")
+                .addLayer("residual1", new BatchNormalizationLayer(), "residual1_conv")
 
                 // block2
-                .addLayer("block2_sepconv1", new SeparableConvolution2D.Builder(3,3).nOut(128).hasBias(false)
+                .addLayer("block2_sepconv1", new SeparableConvolution2DLayer.Builder(3,3).nOut(128).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "block1_conv2_act")
-                .addLayer("block2_sepconv1_bn", new BatchNormalization(), "block2_sepconv1")
+                .addLayer("block2_sepconv1_bn", new BatchNormalizationLayer(), "block2_sepconv1")
                 .addLayer("block2_sepconv1_act",new ActivationLayer(Activation.RELU), "block2_sepconv1_bn")
-                .addLayer("block2_sepconv2", new SeparableConvolution2D.Builder(3,3).nOut(128).hasBias(false)
+                .addLayer("block2_sepconv2", new SeparableConvolution2DLayer.Builder(3,3).nOut(128).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "block2_sepconv1_act")
-                .addLayer("block2_sepconv2_bn", new BatchNormalization(), "block2_sepconv2")
-                .addLayer("block2_pool", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2)
+                .addLayer("block2_sepconv2_bn", new BatchNormalizationLayer(), "block2_sepconv2")
+                .addLayer("block2_pool", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2)
                         .convolutionMode(ConvolutionMode.Same).build(), "block2_sepconv2_bn")
                 .addVertex("add1", new ElementWiseVertex(ElementWiseVertex.Op.Add), "block2_pool", "residual1")
 
                 // residual2
-                .addLayer("residual2_conv", new ConvolutionLayer.Builder(1,1).stride(2,2).nOut(256).hasBias(false)
+                .addLayer("residual2_conv", new Convolution2DLayer.Builder(1,1).stride(2,2).nOut(256).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "add1")
-                .addLayer("residual2", new BatchNormalization(), "residual2_conv")
+                .addLayer("residual2", new BatchNormalizationLayer(), "residual2_conv")
 
                 // block3
                 .addLayer("block3_sepconv1_act", new ActivationLayer(Activation.RELU), "add1")
-                .addLayer("block3_sepconv1", new SeparableConvolution2D.Builder(3,3).nOut(256).hasBias(false)
+                .addLayer("block3_sepconv1", new SeparableConvolution2DLayer.Builder(3,3).nOut(256).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "block3_sepconv1_act")
-                .addLayer("block3_sepconv1_bn", new BatchNormalization(), "block3_sepconv1")
+                .addLayer("block3_sepconv1_bn", new BatchNormalizationLayer(), "block3_sepconv1")
                 .addLayer("block3_sepconv2_act", new ActivationLayer(Activation.RELU), "block3_sepconv1_bn")
-                .addLayer("block3_sepconv2", new SeparableConvolution2D.Builder(3,3).nOut(256).hasBias(false)
+                .addLayer("block3_sepconv2", new SeparableConvolution2DLayer.Builder(3,3).nOut(256).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "block3_sepconv2_act")
-                .addLayer("block3_sepconv2_bn", new BatchNormalization(), "block3_sepconv2")
-                .addLayer("block3_pool", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2)
+                .addLayer("block3_sepconv2_bn", new BatchNormalizationLayer(), "block3_sepconv2")
+                .addLayer("block3_pool", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2)
                         .convolutionMode(ConvolutionMode.Same).build(), "block3_sepconv2_bn")
                 .addVertex("add2", new ElementWiseVertex(ElementWiseVertex.Op.Add), "block3_pool", "residual2")
 
                 // residual3
-                .addLayer("residual3_conv", new ConvolutionLayer.Builder(1,1).stride(2,2).nOut(728).hasBias(false)
+                .addLayer("residual3_conv", new Convolution2DLayer.Builder(1,1).stride(2,2).nOut(728).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "add2")
-                .addLayer("residual3", new BatchNormalization(), "residual3_conv")
+                .addLayer("residual3", new BatchNormalizationLayer(), "residual3_conv")
 
                 // block4
                 .addLayer("block4_sepconv1_act", new ActivationLayer(Activation.RELU), "add2")
-                .addLayer("block4_sepconv1", new SeparableConvolution2D.Builder(3,3).nOut(728).hasBias(false)
+                .addLayer("block4_sepconv1", new SeparableConvolution2DLayer.Builder(3,3).nOut(728).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "block4_sepconv1_act")
-                .addLayer("block4_sepconv1_bn", new BatchNormalization(), "block4_sepconv1")
+                .addLayer("block4_sepconv1_bn", new BatchNormalizationLayer(), "block4_sepconv1")
                 .addLayer("block4_sepconv2_act", new ActivationLayer(Activation.RELU), "block4_sepconv1_bn")
-                .addLayer("block4_sepconv2", new SeparableConvolution2D.Builder(3,3).nOut(728).hasBias(false)
+                .addLayer("block4_sepconv2", new SeparableConvolution2DLayer.Builder(3,3).nOut(728).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "block4_sepconv2_act")
-                .addLayer("block4_sepconv2_bn", new BatchNormalization(), "block4_sepconv2")
-                .addLayer("block4_pool", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2)
+                .addLayer("block4_sepconv2_bn", new BatchNormalizationLayer(), "block4_sepconv2")
+                .addLayer("block4_pool", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2)
                         .convolutionMode(ConvolutionMode.Same).build(), "block4_sepconv2_bn")
                 .addVertex("add3", new ElementWiseVertex(ElementWiseVertex.Op.Add), "block4_pool", "residual3");
 
@@ -189,17 +191,17 @@ public class Xception extends ZooModel {
 
             graph
                     .addLayer(blockName+"_sepconv1_act", new ActivationLayer(Activation.RELU), previousInput)
-                    .addLayer(blockName+"_sepconv1", new SeparableConvolution2D.Builder(3,3).nOut(728).hasBias(false)
+                    .addLayer(blockName+"_sepconv1", new SeparableConvolution2DLayer.Builder(3,3).nOut(728).hasBias(false)
                             .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), blockName+"_sepconv1_act")
-                    .addLayer(blockName+"_sepconv1_bn", new BatchNormalization(), blockName+"_sepconv1")
+                    .addLayer(blockName+"_sepconv1_bn", new BatchNormalizationLayer(), blockName+"_sepconv1")
                     .addLayer(blockName+"_sepconv2_act", new ActivationLayer(Activation.RELU), blockName+"_sepconv1_bn")
-                    .addLayer(blockName+"_sepconv2", new SeparableConvolution2D.Builder(3,3).nOut(728).hasBias(false)
+                    .addLayer(blockName+"_sepconv2", new SeparableConvolution2DLayer.Builder(3,3).nOut(728).hasBias(false)
                             .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), blockName+"_sepconv2_act")
-                    .addLayer(blockName+"_sepconv2_bn", new BatchNormalization(), blockName+"_sepconv2")
+                    .addLayer(blockName+"_sepconv2_bn", new BatchNormalizationLayer(), blockName+"_sepconv2")
                     .addLayer(blockName+"_sepconv3_act", new ActivationLayer(Activation.RELU), blockName+"_sepconv2_bn")
-                    .addLayer(blockName+"_sepconv3", new SeparableConvolution2D.Builder(3,3).nOut(728).hasBias(false)
+                    .addLayer(blockName+"_sepconv3", new SeparableConvolution2DLayer.Builder(3,3).nOut(728).hasBias(false)
                             .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), blockName+"_sepconv3_act")
-                    .addLayer(blockName+"_sepconv3_bn", new BatchNormalization(), blockName+"_sepconv3")
+                    .addLayer(blockName+"_sepconv3_bn", new BatchNormalizationLayer(), blockName+"_sepconv3")
                     .addVertex("add"+(residual+1), new ElementWiseVertex(ElementWiseVertex.Op.Add), blockName+"_sepconv3_bn", previousInput);
 
             residual++;
@@ -207,33 +209,33 @@ public class Xception extends ZooModel {
         }
 
         // residual12
-                graph.addLayer("residual12_conv", new ConvolutionLayer.Builder(1,1).stride(2,2).nOut(1024).hasBias(false)
+                graph.addLayer("residual12_conv", new Convolution2DLayer.Builder(1,1).stride(2,2).nOut(1024).hasBias(false)
                 .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "add" + residual)
-                .addLayer("residual12", new BatchNormalization(), "residual12_conv");
+                .addLayer("residual12", new BatchNormalizationLayer(), "residual12_conv");
 
                 // block13
         graph
                 .addLayer("block13_sepconv1_act", new ActivationLayer(Activation.RELU), "add11" )
-                .addLayer("block13_sepconv1", new SeparableConvolution2D.Builder(3,3).nOut(728).hasBias(false)
+                .addLayer("block13_sepconv1", new SeparableConvolution2DLayer.Builder(3,3).nOut(728).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "block13_sepconv1_act")
-                .addLayer("block13_sepconv1_bn", new BatchNormalization(), "block13_sepconv1")
+                .addLayer("block13_sepconv1_bn", new BatchNormalizationLayer(), "block13_sepconv1")
                 .addLayer("block13_sepconv2_act", new ActivationLayer(Activation.RELU), "block13_sepconv1_bn")
-                .addLayer("block13_sepconv2", new SeparableConvolution2D.Builder(3,3).nOut(1024).hasBias(false)
+                .addLayer("block13_sepconv2", new SeparableConvolution2DLayer.Builder(3,3).nOut(1024).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "block13_sepconv2_act")
-                .addLayer("block13_sepconv2_bn", new BatchNormalization(), "block13_sepconv2")
-                .addLayer("block13_pool", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2)
+                .addLayer("block13_sepconv2_bn", new BatchNormalizationLayer(), "block13_sepconv2")
+                .addLayer("block13_pool", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(3,3).stride(2,2)
                         .convolutionMode(ConvolutionMode.Same).build(), "block13_sepconv2_bn")
                 .addVertex("add12", new ElementWiseVertex(ElementWiseVertex.Op.Add), "block13_pool", "residual12");
 
                 // block14
         graph
-                .addLayer("block14_sepconv1", new SeparableConvolution2D.Builder(3,3).nOut(1536).hasBias(false)
+                .addLayer("block14_sepconv1", new SeparableConvolution2DLayer.Builder(3,3).nOut(1536).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "add12")
-                .addLayer("block14_sepconv1_bn", new BatchNormalization(), "block14_sepconv1")
+                .addLayer("block14_sepconv1_bn", new BatchNormalizationLayer(), "block14_sepconv1")
                 .addLayer("block14_sepconv1_act", new ActivationLayer(Activation.RELU), "block14_sepconv1_bn")
-                .addLayer("block14_sepconv2", new SeparableConvolution2D.Builder(3,3).nOut(2048).hasBias(false)
+                .addLayer("block14_sepconv2", new SeparableConvolution2DLayer.Builder(3,3).nOut(2048).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode).build(), "block14_sepconv1_act")
-                .addLayer("block14_sepconv2_bn", new BatchNormalization(), "block14_sepconv2")
+                .addLayer("block14_sepconv2_bn", new BatchNormalizationLayer(), "block14_sepconv2")
                 .addLayer("block14_sepconv2_act", new ActivationLayer(Activation.RELU), "block14_sepconv2_bn")
 
                 .addLayer("avg_pool", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(), "block14_sepconv2_act")

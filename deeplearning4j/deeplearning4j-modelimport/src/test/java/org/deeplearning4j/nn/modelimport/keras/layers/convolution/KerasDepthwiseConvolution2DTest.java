@@ -18,7 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
-import org.deeplearning4j.nn.conf.layers.DepthwiseConvolution2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.DepthwiseConvolution2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -119,7 +119,7 @@ public class KerasDepthwiseConvolution2DTest {
                 layerConfig, previousLayers, layerNames, false);
         Preconditions.checkState(kerasLayer.getInboundLayerNames().get(0).equalsIgnoreCase("conv"), "Expected inbound name to be \"conv\" - was \"%s\"", kerasLayer.getInboundLayerNames().get(0));
 
-        DepthwiseConvolution2D layer = kerasLayer.getDepthwiseConvolution2DLayer();
+        DepthwiseConvolution2DLayer layer = kerasLayer.getDepthwiseConvolution2DLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInitFn());

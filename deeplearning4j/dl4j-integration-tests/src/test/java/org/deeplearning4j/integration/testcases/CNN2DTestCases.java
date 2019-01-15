@@ -37,6 +37,9 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
@@ -56,7 +59,6 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.VGG16ImagePreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -94,24 +96,24 @@ public class CNN2DTestCases {
                         .weightInit(WeightInit.XAVIER)
                         .updater(new Nesterovs(0.01, 0.9))
                         .list()
-                        .layer(0, new ConvolutionLayer.Builder(5, 5)
+                        .layer(0, new Convolution2DLayer.Builder(5, 5)
                                 //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
                                 .nIn(nChannels)
                                 .stride(1, 1)
                                 .nOut(20)
                                 .activation(Activation.IDENTITY)
                                 .build())
-                        .layer(1, new SubsamplingLayer.Builder(PoolingType.MAX)
+                        .layer(1, new Subsampling2DLayer.Builder(PoolingType.MAX)
                                 .kernelSize(2, 2)
                                 .stride(2, 2)
                                 .build())
-                        .layer(2, new ConvolutionLayer.Builder(5, 5)
+                        .layer(2, new Convolution2DLayer.Builder(5, 5)
                                 //Note that nIn need not be specified in later layers
                                 .stride(1, 1)
                                 .nOut(50)
                                 .activation(Activation.IDENTITY)
                                 .build())
-                        .layer(3, new SubsamplingLayer.Builder(PoolingType.MAX)
+                        .layer(3, new Subsampling2DLayer.Builder(PoolingType.MAX)
                                 .kernelSize(2, 2)
                                 .stride(2, 2)
                                 .build())
@@ -297,7 +299,7 @@ public class CNN2DTestCases {
                         .fineTuneConfiguration(fineTuneConf)
                         .removeVertexKeepConnections("conv2d_9")
                         .addLayer("convolution2d_9",
-                                new ConvolutionLayer.Builder(1,1)
+                                new Convolution2DLayer.Builder(1,1)
                                         .nIn(1024)
                                         .nOut(nBoxes * (5 + nClasses))
                                         .stride(1,1)
@@ -387,25 +389,25 @@ public class CNN2DTestCases {
                         .weightInit(WeightInit.XAVIER)
                         .updater(new Nesterovs(0.01, 0.9))
                         .list()
-                        .layer(0, new ConvolutionLayer.Builder(5, 5)
+                        .layer(0, new Convolution2DLayer.Builder(5, 5)
                                 //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
                                 .nIn(1)
                                 .stride(1, 1)
                                 .nOut(20)
                                 .activation(Activation.IDENTITY)
                                 .build())
-                        .layer(1, new SubsamplingLayer.Builder(PoolingType.MAX)
+                        .layer(1, new Subsampling2DLayer.Builder(PoolingType.MAX)
                                 .kernelSize(2, 2)
                                 .stride(2, 2)
                                 .build())
-                        .layer(2, new ConvolutionLayer.Builder(5, 5)
+                        .layer(2, new Convolution2DLayer.Builder(5, 5)
                                 //Note that nIn need not be specified in later layers
                                 .stride(1, 1)
                                 .nOut(50)
                                 .activation(Activation.IDENTITY)
                                 .dropOut(0.5)   //**** Dropout on conv layer
                                 .build())
-                        .layer(3, new SubsamplingLayer.Builder(PoolingType.MAX)
+                        .layer(3, new Subsampling2DLayer.Builder(PoolingType.MAX)
                                 .kernelSize(2, 2)
                                 .stride(2, 2)
                                 .build())

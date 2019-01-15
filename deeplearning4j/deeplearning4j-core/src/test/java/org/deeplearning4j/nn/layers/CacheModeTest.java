@@ -20,8 +20,11 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
@@ -66,8 +69,8 @@ public class CacheModeTest extends BaseDL4JTest {
                 .seed(12345)
                 .cacheMode(cacheMode)
                 .list()
-                .layer(new ConvolutionLayer.Builder().nOut(3).build())
-                .layer(new ConvolutionLayer.Builder().nOut(3).build())
+                .layer(new Convolution2DLayer.Builder().nOut(3).build())
+                .layer(new Convolution2DLayer.Builder().nOut(3).build())
                 .layer(new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.convolutionalFlat(28, 28, 1))
                 .build();
@@ -111,11 +114,11 @@ public class CacheModeTest extends BaseDL4JTest {
                 .cacheMode(cacheMode)
                 .list()
                 .layer(graves ?
-                        new GravesLSTM.Builder().nIn(3).nOut(3).build() :
-                        new LSTM.Builder().nIn(3).nOut(3).build())
+                        new GravesLSTMLayer.Builder().nIn(3).nOut(3).build() :
+                        new LSTMLayer.Builder().nIn(3).nOut(3).build())
                 .layer(graves ?
-                        new GravesLSTM.Builder().nIn(3).nOut(3).build() :
-                        new LSTM.Builder().nIn(3).nOut(3).build())
+                        new GravesLSTMLayer.Builder().nIn(3).nOut(3).build() :
+                        new LSTMLayer.Builder().nIn(3).nOut(3).build())
                 .layer(new RnnOutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build())
                 .build();
 
@@ -156,8 +159,8 @@ public class CacheModeTest extends BaseDL4JTest {
                 .cacheMode(cacheMode)
                 .graphBuilder()
                 .addInputs("in")
-                .layer("0", new ConvolutionLayer.Builder().nOut(3).build(), "in")
-                .layer("1", new ConvolutionLayer.Builder().nOut(3).build(), "0")
+                .layer("0", new Convolution2DLayer.Builder().nOut(3).build(), "in")
+                .layer("1", new Convolution2DLayer.Builder().nOut(3).build(), "0")
                 .layer("2", new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).build(), "1")
                 .setOutputs("2")
                 .setInputTypes(InputType.convolutionalFlat(28, 28, 1))

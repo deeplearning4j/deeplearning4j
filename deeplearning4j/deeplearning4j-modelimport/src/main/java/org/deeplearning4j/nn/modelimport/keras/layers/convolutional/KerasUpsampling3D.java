@@ -17,8 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.Upsampling2D;
-import org.deeplearning4j.nn.conf.layers.Upsampling3D;
+import org.deeplearning4j.nn.conf.layers.convolutional.upsampling.Upsampling3DLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -27,7 +26,7 @@ import java.util.Map;
 
 
 /**
- * Keras Upsampling3D layer support
+ * Keras Upsampling3DLayer layer support
  *
  * @author Max Pumperla
  */
@@ -60,7 +59,7 @@ public class KerasUpsampling3D extends KerasLayer {
         int[] size = KerasConvolutionUtils.getUpsamplingSizeFromConfig(layerConfig, 3, conf);
         // TODO: make sure to allow different sizes.
 
-        Upsampling3D.Builder builder = new Upsampling3D.Builder()
+        Upsampling3DLayer.Builder builder = new Upsampling3DLayer.Builder()
                 .name(this.layerName)
                 .dropOut(this.dropout)
                 .size(size[0]);
@@ -70,12 +69,12 @@ public class KerasUpsampling3D extends KerasLayer {
     }
 
     /**
-     * Get DL4J Upsampling3D layer.
+     * Get DL4J Upsampling3DLayer layer.
      *
-     * @return Upsampling3D layer
+     * @return Upsampling3DLayer layer
      */
-    public Upsampling3D getUpsampling3DLayer() {
-        return (Upsampling3D) this.layer;
+    public Upsampling3DLayer getUpsampling3DLayer() {
+        return (Upsampling3DLayer) this.layer;
     }
 
     /**

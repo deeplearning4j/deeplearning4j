@@ -20,7 +20,8 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -31,7 +32,6 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -175,7 +175,7 @@ public class OCNNOutputLayerTest {
                                 20)).build())
                 .list(new DenseLayer.Builder().activation(new ActivationReLU())
                                 .nIn(4).nOut(2).build(),
-                        new  org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer.Builder()
+                        new  OCNNOutputLayer.Builder()
                                 .nIn(2).activation(new ActivationSigmoid()).initialRValue(0.1)
                                 .nu(0.1)
                                 .hiddenLayerSize(numHidden).build())
@@ -191,7 +191,7 @@ public class OCNNOutputLayerTest {
         MultiLayerConfiguration configuration = new NeuralNetConfiguration.Builder()
                 .seed(42).updater(new NoOp()).miniBatch(false)
                 .list(new DenseLayer.Builder().activation(new ActivationIdentity()).nIn(4).nOut(4).build(),
-                        new  org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer.Builder().nIn(4)
+                        new  OCNNOutputLayer.Builder().nIn(4)
                                 .nu(0.002).activation(new ActivationSigmoid())
                                 .hiddenLayerSize(numHidden).build())
                 .build();

@@ -17,6 +17,9 @@
 package org.deeplearning4j.nn.layers;
 
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -27,11 +30,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 
 /**

@@ -22,7 +22,12 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.CnnLossLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnLossLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -93,7 +98,7 @@ public class OutputLayerTest extends BaseDL4JTest {
         }
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list()
-                        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+                        .layer(0, new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize)
                                         .dist(new NormalDistribution(0, 1)).activation(Activation.TANH)
                                         .updater(new NoOp()).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunction.MCXENT)
@@ -117,10 +122,10 @@ public class OutputLayerTest extends BaseDL4JTest {
         //As above, but for RnnOutputLayer. Expect all activations etc. to be 3d
 
         MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder().seed(12345L).list()
-                        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+                        .layer(0, new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize)
                                         .dist(new NormalDistribution(0, 1)).activation(Activation.TANH)
                                         .updater(new NoOp()).build())
-                        .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder(LossFunction.MCXENT)
+                        .layer(1, new org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer.Builder(LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                                         .dist(new NormalDistribution(0, 1))
                                         .updater(new NoOp()).build())
@@ -174,7 +179,7 @@ public class OutputLayerTest extends BaseDL4JTest {
             INDArray labels2d = proc.backprop(labels3d, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list()
-                            .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+                            .layer(0, new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize)
                                             .dist(new NormalDistribution(0, 1))
                                             .activation(Activation.TANH).updater(new NoOp()).build())
                             .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunction.MCXENT)
@@ -191,10 +196,10 @@ public class OutputLayerTest extends BaseDL4JTest {
             INDArray out3d = proc.preProcess(out2d, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
 
             MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder().seed(12345L).list()
-                            .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+                            .layer(0, new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize)
                                             .dist(new NormalDistribution(0, 1))
                                             .activation(Activation.TANH).updater(new NoOp()).build())
-                            .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder(LossFunction.MCXENT)
+                            .layer(1, new org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer.Builder(LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
                                             .dist(new NormalDistribution(0, 1))
                                             .updater(new NoOp()).build())
@@ -273,7 +278,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                 new NeuralNetConfiguration.Builder().seed(12345L)
                         .updater(new NoOp())
                         .list()
-                        .layer(new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                        .layer(new LSTMLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                 .dist(new NormalDistribution(0, 1.0))
                                 .updater(new NoOp()).build())
                         .layer(new DenseLayer.Builder().nIn(layerSize).nOut(nOut).activation(Activation.IDENTITY).build())
@@ -290,10 +295,10 @@ public class OutputLayerTest extends BaseDL4JTest {
                 new NeuralNetConfiguration.Builder().seed(12345L)
                         .updater(new NoOp())
                         .list()
-                        .layer(new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                        .layer(new LSTMLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                 .dist(new NormalDistribution(0, 1.0))
                                 .updater(new NoOp()).build())
-                        .layer(new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder(LossFunction.MCXENT)
+                        .layer(new org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer.Builder(LossFunction.MCXENT)
                                 .activation(Activation.SOFTMAX)
                                 .nIn(layerSize).nOut(nOut)
                                 .build())
@@ -353,7 +358,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                                 .inferenceWorkspaceMode(ws)
                                 .trainingWorkspaceMode(ws)
                                 .list()
-                                .layer(new ConvolutionLayer.Builder().nIn(3).nOut(4).activation(Activation.IDENTITY)
+                                .layer(new Convolution2DLayer.Builder().nIn(3).nOut(4).activation(Activation.IDENTITY)
                                         .kernelSize(2, 2).stride(1, 1)
                                         .dist(new NormalDistribution(0, 1.0))
                                         .updater(new NoOp()).build())
@@ -369,7 +374,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                                 .inferenceWorkspaceMode(ws)
                                 .trainingWorkspaceMode(ws)
                                 .list()
-                                .layer(new ConvolutionLayer.Builder().nIn(3).nOut(4).activation(a)
+                                .layer(new Convolution2DLayer.Builder().nIn(3).nOut(4).activation(a)
                                         .kernelSize(2, 2).stride(1, 1)
                                         .dist(new NormalDistribution(0, 1.0))
                                         .updater(new NoOp()).build())
@@ -443,7 +448,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                                 .trainingWorkspaceMode(ws)
                                 .graphBuilder()
                                 .addInputs("in")
-                                .addLayer("0", new ConvolutionLayer.Builder().nIn(3).nOut(4).activation(Activation.IDENTITY)
+                                .addLayer("0", new Convolution2DLayer.Builder().nIn(3).nOut(4).activation(Activation.IDENTITY)
                                         .kernelSize(2, 2).stride(1, 1)
                                         .dist(new NormalDistribution(0, 1.0))
                                         .updater(new NoOp()).build(), "in")
@@ -461,7 +466,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                                 .trainingWorkspaceMode(ws)
                                 .graphBuilder()
                                 .addInputs("in")
-                                .addLayer("0", new ConvolutionLayer.Builder().nIn(3).nOut(4).activation(a)
+                                .addLayer("0", new Convolution2DLayer.Builder().nIn(3).nOut(4).activation(a)
                                         .kernelSize(2, 2).stride(1, 1)
                                         .dist(new NormalDistribution(0, 1.0))
                                         .updater(new NoOp()).build(), "in")
@@ -527,7 +532,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                         .updater(new NoOp())
                         .convolutionMode(ConvolutionMode.Same)
                         .list()
-                        .layer(new ConvolutionLayer.Builder().nIn(3).nOut(4).activation(Activation.IDENTITY)
+                        .layer(new Convolution2DLayer.Builder().nIn(3).nOut(4).activation(Activation.IDENTITY)
                                 .dist(new NormalDistribution(0, 1.0))
                                 .updater(new NoOp()).build())
                         .layer(new CnnLossLayer.Builder(LossFunction.MSE)

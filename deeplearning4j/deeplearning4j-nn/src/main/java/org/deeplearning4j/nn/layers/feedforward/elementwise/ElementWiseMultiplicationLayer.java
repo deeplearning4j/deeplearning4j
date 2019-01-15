@@ -17,19 +17,18 @@
 package org.deeplearning4j.nn.layers.feedforward.elementwise;
 
 
-import org.deeplearning4j.nn.params.ElementWiseParamInitializer;
+import java.util.Arrays;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.params.ElementWiseParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
-
-import java.util.Arrays;
 
 /**
  * Elementwise multiplication layer with weights: implements out = activationFn(input .* w + b) where:<br>
@@ -41,7 +40,7 @@ import java.util.Arrays;
  * <p>
  * created by jingshu
  */
-public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer> {
+public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.feedforeward.elementwise.ElementWiseMultiplicationLayer> {
 
     public ElementWiseMultiplicationLayer(NeuralNetConfiguration conf){
         super(conf);

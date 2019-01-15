@@ -24,8 +24,9 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -78,10 +79,10 @@ public class TestConvolutionModes extends BaseDL4JTest {
 
                             Layer layer;
                             if (isSubsampling) {
-                                layer = new SubsamplingLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
+                                layer = new Subsampling2DLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
                                                 .build();
                             } else {
-                                layer = new ConvolutionLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
+                                layer = new Convolution2DLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
                                                 .nOut(3).build();
                             }
 
@@ -157,10 +158,10 @@ public class TestConvolutionModes extends BaseDL4JTest {
 
                             Layer layer;
                             if (isSubsampling) {
-                                layer = new SubsamplingLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
+                                layer = new Subsampling2DLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
                                                 .build();
                             } else {
-                                layer = new ConvolutionLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
+                                layer = new Convolution2DLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
                                                 .nOut(3).build();
                             }
 
@@ -209,45 +210,45 @@ public class TestConvolutionModes extends BaseDL4JTest {
         for (ConvolutionMode cm : new ConvolutionMode[] {ConvolutionMode.Strict, ConvolutionMode.Truncate}) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
                             .convolutionMode(cm).list()
-                            .layer(0, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
+                            .layer(0, new Convolution2DLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
                                             .nIn(3).nOut(
                                                             3)
                                             .build())
-                            .layer(1, new ConvolutionLayer.Builder().convolutionMode(ConvolutionMode.Strict)
+                            .layer(1, new Convolution2DLayer.Builder().convolutionMode(ConvolutionMode.Strict)
                                             .kernelSize(3, 3).stride(3, 3).padding(0, 0)
                                             .nIn(3).nOut(
                                                             3)
                                             .build())
-                            .layer(2, new ConvolutionLayer.Builder().convolutionMode(ConvolutionMode.Truncate)
+                            .layer(2, new Convolution2DLayer.Builder().convolutionMode(ConvolutionMode.Truncate)
                                             .kernelSize(3, 3).stride(3, 3).padding(0, 0)
                                             .nIn(3).nOut(
                                                             3)
                                             .build())
-                            .layer(3, new ConvolutionLayer.Builder().convolutionMode(ConvolutionMode.Same)
+                            .layer(3, new Convolution2DLayer.Builder().convolutionMode(ConvolutionMode.Same)
                                             .kernelSize(3, 3).stride(3, 3).padding(0, 0).nIn(3).nOut(3).build())
-                            .layer(4, new SubsamplingLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
+                            .layer(4, new Subsampling2DLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
                                             .build())
-                            .layer(5, new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Strict)
+                            .layer(5, new Subsampling2DLayer.Builder().convolutionMode(ConvolutionMode.Strict)
                                             .kernelSize(3, 3).stride(3, 3).padding(0, 0).build())
-                            .layer(6, new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Truncate)
+                            .layer(6, new Subsampling2DLayer.Builder().convolutionMode(ConvolutionMode.Truncate)
                                             .kernelSize(3, 3).stride(3, 3).padding(0, 0).build())
-                            .layer(7, new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Same)
+                            .layer(7, new Subsampling2DLayer.Builder().convolutionMode(ConvolutionMode.Same)
                                             .kernelSize(3, 3).stride(3, 3).padding(0, 0).build())
                             .layer(8, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).nOut(3)
                                     .activation(Activation.SOFTMAX).build())
                             .build();
 
-            assertEquals(cm, ((ConvolutionLayer) conf.getConf(0).getLayer()).getConvolutionMode());
-            assertEquals(ConvolutionMode.Strict, ((ConvolutionLayer) conf.getConf(1).getLayer()).getConvolutionMode());
+            assertEquals(cm, ((Convolution2DLayer) conf.getConf(0).getLayer()).getConvolutionMode());
+            assertEquals(ConvolutionMode.Strict, ((Convolution2DLayer) conf.getConf(1).getLayer()).getConvolutionMode());
             assertEquals(ConvolutionMode.Truncate,
-                            ((ConvolutionLayer) conf.getConf(2).getLayer()).getConvolutionMode());
-            assertEquals(ConvolutionMode.Same, ((ConvolutionLayer) conf.getConf(3).getLayer()).getConvolutionMode());
+                            ((Convolution2DLayer) conf.getConf(2).getLayer()).getConvolutionMode());
+            assertEquals(ConvolutionMode.Same, ((Convolution2DLayer) conf.getConf(3).getLayer()).getConvolutionMode());
 
-            assertEquals(cm, ((SubsamplingLayer) conf.getConf(4).getLayer()).getConvolutionMode());
-            assertEquals(ConvolutionMode.Strict, ((SubsamplingLayer) conf.getConf(5).getLayer()).getConvolutionMode());
+            assertEquals(cm, ((Subsampling2DLayer) conf.getConf(4).getLayer()).getConvolutionMode());
+            assertEquals(ConvolutionMode.Strict, ((Subsampling2DLayer) conf.getConf(5).getLayer()).getConvolutionMode());
             assertEquals(ConvolutionMode.Truncate,
-                            ((SubsamplingLayer) conf.getConf(6).getLayer()).getConvolutionMode());
-            assertEquals(ConvolutionMode.Same, ((SubsamplingLayer) conf.getConf(7).getLayer()).getConvolutionMode());
+                            ((Subsampling2DLayer) conf.getConf(6).getLayer()).getConvolutionMode());
+            assertEquals(ConvolutionMode.Same, ((Subsampling2DLayer) conf.getConf(7).getLayer()).getConvolutionMode());
         }
     }
 
@@ -257,56 +258,56 @@ public class TestConvolutionModes extends BaseDL4JTest {
                         ConvolutionMode.Same}) {
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
                             .convolutionMode(cm).graphBuilder().addInputs("in")
-                            .addLayer("0", new ConvolutionLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
+                            .addLayer("0", new Convolution2DLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
                                             .nIn(3).nOut(
                                                             3)
                                             .build(), "in")
-                            .addLayer("1", new ConvolutionLayer.Builder().convolutionMode(ConvolutionMode.Strict)
+                            .addLayer("1", new Convolution2DLayer.Builder().convolutionMode(ConvolutionMode.Strict)
                                             .kernelSize(3, 3).stride(3, 3).padding(0, 0)
                                             .nIn(3).nOut(
                                                             3)
                                             .build(), "0")
-                            .addLayer("2", new ConvolutionLayer.Builder().convolutionMode(ConvolutionMode.Truncate)
+                            .addLayer("2", new Convolution2DLayer.Builder().convolutionMode(ConvolutionMode.Truncate)
                                             .kernelSize(3, 3).stride(3, 3).padding(0, 0)
                                             .nIn(3).nOut(
                                                             3)
                                             .build(), "1")
-                            .addLayer("3", new ConvolutionLayer.Builder().convolutionMode(ConvolutionMode.Same)
+                            .addLayer("3", new Convolution2DLayer.Builder().convolutionMode(ConvolutionMode.Same)
                                             .kernelSize(3, 3).stride(3, 3).padding(0, 0).nIn(3).nOut(3).build(), "2")
-                            .addLayer("4", new SubsamplingLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
+                            .addLayer("4", new Subsampling2DLayer.Builder().kernelSize(3, 3).stride(3, 3).padding(0, 0)
                                             .build(), "3")
-                            .addLayer("5", new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Strict)
+                            .addLayer("5", new Subsampling2DLayer.Builder().convolutionMode(ConvolutionMode.Strict)
                                             .kernelSize(3, 3).stride(3, 3).padding(0, 0).build(), "4")
-                            .addLayer("6", new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Truncate)
+                            .addLayer("6", new Subsampling2DLayer.Builder().convolutionMode(ConvolutionMode.Truncate)
                                             .kernelSize(3, 3).stride(3, 3).padding(0, 0).build(), "5")
-                            .addLayer("7", new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Same)
+                            .addLayer("7", new Subsampling2DLayer.Builder().convolutionMode(ConvolutionMode.Same)
                                             .kernelSize(3, 3).stride(3, 3).padding(0, 0).build(), "6")
                             .addLayer("8", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                     .activation(Activation.SOFTMAX).nOut(3).build(), "7")
                             .setOutputs("8").build();
 
-            assertEquals(cm, ((ConvolutionLayer) ((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer())
+            assertEquals(cm, ((Convolution2DLayer) ((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer())
                             .getConvolutionMode());
             assertEquals(ConvolutionMode.Strict,
-                            ((ConvolutionLayer) ((LayerVertex) conf.getVertices().get("1")).getLayerConf().getLayer())
+                            ((Convolution2DLayer) ((LayerVertex) conf.getVertices().get("1")).getLayerConf().getLayer())
                                             .getConvolutionMode());
             assertEquals(ConvolutionMode.Truncate,
-                            ((ConvolutionLayer) ((LayerVertex) conf.getVertices().get("2")).getLayerConf().getLayer())
+                            ((Convolution2DLayer) ((LayerVertex) conf.getVertices().get("2")).getLayerConf().getLayer())
                                             .getConvolutionMode());
             assertEquals(ConvolutionMode.Same,
-                            ((ConvolutionLayer) ((LayerVertex) conf.getVertices().get("3")).getLayerConf().getLayer())
+                            ((Convolution2DLayer) ((LayerVertex) conf.getVertices().get("3")).getLayerConf().getLayer())
                                             .getConvolutionMode());
 
-            assertEquals(cm, ((SubsamplingLayer) ((LayerVertex) conf.getVertices().get("4")).getLayerConf().getLayer())
+            assertEquals(cm, ((Subsampling2DLayer) ((LayerVertex) conf.getVertices().get("4")).getLayerConf().getLayer())
                             .getConvolutionMode());
             assertEquals(ConvolutionMode.Strict,
-                            ((SubsamplingLayer) ((LayerVertex) conf.getVertices().get("5")).getLayerConf().getLayer())
+                            ((Subsampling2DLayer) ((LayerVertex) conf.getVertices().get("5")).getLayerConf().getLayer())
                                             .getConvolutionMode());
             assertEquals(ConvolutionMode.Truncate,
-                            ((SubsamplingLayer) ((LayerVertex) conf.getVertices().get("6")).getLayerConf().getLayer())
+                            ((Subsampling2DLayer) ((LayerVertex) conf.getVertices().get("6")).getLayerConf().getLayer())
                                             .getConvolutionMode());
             assertEquals(ConvolutionMode.Same,
-                            ((SubsamplingLayer) ((LayerVertex) conf.getVertices().get("7")).getLayerConf().getLayer())
+                            ((Subsampling2DLayer) ((LayerVertex) conf.getVertices().get("7")).getLayerConf().getLayer())
                                             .getConvolutionMode());
         }
     }
@@ -340,7 +341,7 @@ public class TestConvolutionModes extends BaseDL4JTest {
         InputType.InputTypeConvolutional it =
                         (InputType.InputTypeConvolutional) InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel,
                                         stride, padding, dilation, ConvolutionMode.Strict, dOut, -1, "layerName",
-                                        ConvolutionLayer.class);
+                                        Convolution2DLayer.class);
         assertEquals(2, it.getHeight());
         assertEquals(2, it.getWidth());
         assertEquals(dOut, it.getChannels());
@@ -351,7 +352,7 @@ public class TestConvolutionModes extends BaseDL4JTest {
 
         //Truncate: same as strict here
         it = (InputType.InputTypeConvolutional) InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding,
-                dilation, ConvolutionMode.Truncate, dOut, -1, "layerName", ConvolutionLayer.class);
+                dilation, ConvolutionMode.Truncate, dOut, -1, "layerName", Convolution2DLayer.class);
         assertEquals(2, it.getHeight());
         assertEquals(2, it.getWidth());
         assertEquals(dOut, it.getChannels());
@@ -361,7 +362,7 @@ public class TestConvolutionModes extends BaseDL4JTest {
 
         //Same mode: ceil(in / stride) = 3
         it = (InputType.InputTypeConvolutional) InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, null,
-                dilation, ConvolutionMode.Same, dOut, -1, "layerName", ConvolutionLayer.class);
+                dilation, ConvolutionMode.Same, dOut, -1, "layerName", Convolution2DLayer.class);
         assertEquals(3, it.getHeight());
         assertEquals(3, it.getWidth());
         assertEquals(dOut, it.getChannels());
@@ -389,7 +390,7 @@ public class TestConvolutionModes extends BaseDL4JTest {
         //Strict mode: (4-3+0)/2+1 is not an integer -> exception
         try {
             InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, dilation, ConvolutionMode.Strict, dOut, -1,
-                            "layerName", ConvolutionLayer.class);
+                            "layerName", Convolution2DLayer.class);
             fail("Expected exception");
         } catch (DL4JException e) {
             System.out.println(e.getMessage());
@@ -403,7 +404,7 @@ public class TestConvolutionModes extends BaseDL4JTest {
 
         //Truncate: (3-3+0)/2+1 = 1 in height dim; (4-3+0)/2+1 = 1 in width dim
         it = (InputType.InputTypeConvolutional) InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding,
-                dilation, ConvolutionMode.Truncate, dOut, -1, "layerName", ConvolutionLayer.class);
+                dilation, ConvolutionMode.Truncate, dOut, -1, "layerName", Convolution2DLayer.class);
         assertEquals(1, it.getHeight());
         assertEquals(1, it.getWidth());
         assertEquals(dOut, it.getChannels());
@@ -413,7 +414,7 @@ public class TestConvolutionModes extends BaseDL4JTest {
 
         //Same mode: ceil(3/2) = 2 in height dim; ceil(4/2) = 2 in width dimension
         it = (InputType.InputTypeConvolutional) InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, null,
-                dilation, ConvolutionMode.Same, dOut, -1, "layerName", ConvolutionLayer.class);
+                dilation, ConvolutionMode.Same, dOut, -1, "layerName", Convolution2DLayer.class);
         assertEquals(2, it.getHeight());
         assertEquals(2, it.getWidth());
         assertEquals(dOut, it.getChannels());
@@ -435,8 +436,8 @@ public class TestConvolutionModes extends BaseDL4JTest {
         int kW = 3;
 
         Layer[] l = new Layer[2];
-        l[0] = new ConvolutionLayer.Builder().nOut(4).kernelSize(kH, kW).stride(sH, sW).build();
-        l[1] = new SubsamplingLayer.Builder().kernelSize(kH, kW).stride(sH, sW).build();
+        l[0] = new Convolution2DLayer.Builder().nOut(4).kernelSize(kH, kW).stride(sH, sW).build();
+        l[1] = new Subsampling2DLayer.Builder().kernelSize(kH, kW).stride(sH, sW).build();
 
         for (int i = 0; i < l.length; i++) {
 

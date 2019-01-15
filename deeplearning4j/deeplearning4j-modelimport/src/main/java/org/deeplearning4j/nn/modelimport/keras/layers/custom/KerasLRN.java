@@ -18,7 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.custom;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.LocalResponseNormalization;
+import org.deeplearning4j.nn.conf.layers.normalization.LocalResponseNormalizationLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -62,7 +62,7 @@ public class KerasLRN extends KerasLayer {
         super(layerConfig, enforceTrainingConfig);
         Map<String, Object> lrnParams = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
 
-        LocalResponseNormalization.Builder builder = new LocalResponseNormalization.Builder().name(this.layerName)
+        LocalResponseNormalizationLayer.Builder builder = new LocalResponseNormalizationLayer.Builder().name(this.layerName)
                         .dropOut(this.dropout).alpha((double) lrnParams.get("alpha"))
                         .beta((double) lrnParams.get("beta")).k((int) lrnParams.get("k")).n((int) lrnParams.get("n"));
         this.layer = builder.build();
@@ -72,10 +72,10 @@ public class KerasLRN extends KerasLayer {
     /**
      * Get DL4J LRN.
      *
-     * @return  LocalResponseNormalization
+     * @return  LocalResponseNormalizationLayer
      */
-    public LocalResponseNormalization getLocalResponseNormalization() {
-        return (LocalResponseNormalization) this.layer;
+    public LocalResponseNormalizationLayer getLocalResponseNormalization() {
+        return (LocalResponseNormalizationLayer) this.layer;
     }
 
     /**

@@ -17,33 +17,29 @@
 package org.deeplearning4j.nn.layers;
 
 
+import java.util.Arrays;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.misc.RepeatVectorLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Arrays;
-
 /**
- * RepeatVector layer.
+ * RepeatVectorLayer layer.
  *
- * RepeatVector takes a mini-batch of vectors of shape (mb, length) and a repeat factor n and outputs
+ * RepeatVectorLayer takes a mini-batch of vectors of shape (mb, length) and a repeat factor n and outputs
  * a 3D tensor of shape (mb, n, length) in which x is repeated n times.
  *
  * @author Max Pumperla
  */
-public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layers.misc.RepeatVector> {
+public class RepeatVector extends AbstractLayer<RepeatVectorLayer> {
 
     public RepeatVector(NeuralNetConfiguration conf) {
         super(conf);
@@ -89,7 +85,7 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         if (input.rank() != 2) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
-                    + " array as input to RepeatVector with shape " + Arrays.toString(input.shape())
+                    + " array as input to RepeatVectorLayer with shape " + Arrays.toString(input.shape())
                     + ". Expected rank 2 array with shape [minibatchSize, size]. "
                     + layerId());
         }

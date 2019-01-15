@@ -27,7 +27,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.AutoEncoder;
+import org.deeplearning4j.nn.conf.layers.feedforeward.autoencoder.AutoEncoder;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.graph.ComputationGraph;

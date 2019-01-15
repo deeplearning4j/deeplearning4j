@@ -38,7 +38,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
     private final String LAYER_CLASS_NAME_PERMUTE = "Permute";
     private final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
-    private final String LAYER_CLASS_NAME_REPEAT = "RepeatVector";
+    private final String LAYER_CLASS_NAME_REPEAT = "RepeatVectorLayer";
     private final String LAYER_CLASS_NAME_LAMBDA = "Lambda";
     private final String LAYER_CLASS_NAME_MASKING = "Masking";
 
@@ -51,10 +51,10 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_GAUSSIAN_NOISE = "GaussianNoise";
     private final String LAYER_CLASS_NAME_DENSE = "Dense";
 
-    private final String LAYER_CLASS_NAME_LSTM = "LSTM";
+    private final String LAYER_CLASS_NAME_LSTM = "LSTMLayer";
     private final String LAYER_CLASS_NAME_SIMPLE_RNN = "SimpleRNN";
 
-    private final String LAYER_CLASS_NAME_BIDIRECTIONAL = "Bidirectional";
+    private final String LAYER_CLASS_NAME_BIDIRECTIONAL = "BidirectionalLayer";
     private final String LAYER_CLASS_NAME_TIME_DISTRIBUTED = "TimeDistributed";
 
 
@@ -67,9 +67,9 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_ZERO_PADDING_1D = "ZeroPadding1D";
     private final String LAYER_CLASS_NAME_ZERO_PADDING_2D = "ZeroPadding2D";
     private final String LAYER_CLASS_NAME_ZERO_PADDING_3D = "ZeroPadding3D";
-    private final String LAYER_CLASS_NAME_CROPPING_1D = "Cropping1D";
-    private final String LAYER_CLASS_NAME_CROPPING_2D = "Cropping2D";
-    private final String LAYER_CLASS_NAME_CROPPING_3D = "Cropping3D";
+    private final String LAYER_CLASS_NAME_CROPPING_1D = "Cropping1DLayer";
+    private final String LAYER_CLASS_NAME_CROPPING_2D = "Cropping2DLayer";
+    private final String LAYER_CLASS_NAME_CROPPING_3D = "Cropping3DLayer";
 
 
     private final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
@@ -91,7 +91,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_FUNCTIONAL_DOT = "dot";
 
 
-    private final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
+    private final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalizationLayer";
     private final String LAYER_CLASS_NAME_EMBEDDING = "Embedding";
     private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D = "GlobalMaxPooling1D";
     private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D = "GlobalMaxPooling2D";
@@ -103,23 +103,23 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_ATROUS_CONVOLUTION_1D = "AtrousConvolution1D"; // Keras 1 only
     private final String LAYER_CLASS_NAME_ATROUS_CONVOLUTION_2D = "AtrousConvolution2D"; // Keras 1 only
     private final String LAYER_CLASS_NAME_CONVOLUTION_1D = ""; // 1: Convolution1D, 2: Conv1D
-    private final String LAYER_CLASS_NAME_CONVOLUTION_2D = ""; // 1: Convolution2D, 2: Conv2D
-    private final String LAYER_CLASS_NAME_CONVOLUTION_3D = ""; // 1: Convolution2D, 2: Conv2D
+    private final String LAYER_CLASS_NAME_CONVOLUTION_2D = ""; // 1: Convolution2DLayer, 2: Conv2D
+    private final String LAYER_CLASS_NAME_CONVOLUTION_3D = ""; // 1: Convolution2DLayer, 2: Conv2D
     private final String LAYER_CLASS_NAME_LEAKY_RELU = "LeakyReLU";
-    private final String LAYER_CLASS_NAME_PRELU = "PReLU";
+    private final String LAYER_CLASS_NAME_PRELU = "PReLULayer";
     private final String LAYER_CLASS_NAME_THRESHOLDED_RELU = "ThresholdedReLU";
     private final String LAYER_CLASS_NAME_UPSAMPLING_1D = "UpSampling1D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_2D = "UpSampling2D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_3D = "UpSampling3D";
     private final String LAYER_CLASS_NAME_DEPTHWISE_CONVOLUTION_2D = "DepthwiseConv2D"; // Keras 2 only
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_1D = "SeparableConv1D"; // Keras 2 only
-    private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = ""; // 1: SeparableConvolution2D, 2: SeparableConv2D
-    private final String LAYER_CLASS_NAME_DECONVOLUTION_2D = ""; // 1: Deconvolution2D, 2: Conv2DTranspose
+    private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = ""; // 1: SeparableConvolution2DLayer, 2: SeparableConv2D
+    private final String LAYER_CLASS_NAME_DECONVOLUTION_2D = ""; // 1: Deconvolution2DLayer, 2: Conv2DTranspose
     private final String LAYER_CLASS_NAME_DECONVOLUTION_3D = "Conv2DTranspose"; // Keras 2 only
 
     // Locally connected layers
-    private final String LAYER_CLASS_NAME_LOCALLY_CONNECTED_2D = "LocallyConnected2D";
-    private final String LAYER_CLASS_NAME_LOCALLY_CONNECTED_1D = "LocallyConnected1D";
+    private final String LAYER_CLASS_NAME_LOCALLY_CONNECTED_2D = "LocallyConnected2DLayer";
+    private final String LAYER_CLASS_NAME_LOCALLY_CONNECTED_1D = "LocallyConnected1DLayer";
 
 
     /* Partially shared layer configurations. */
@@ -199,7 +199,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE = ""; // 1: running_std, 2: moving_variance
 
     /* Advanced activations */
-    // Missing: LeakyReLU, PReLU, ThresholdedReLU, ParametricSoftplus, SReLu
+    // Missing: LeakyReLU, PReLULayer, ThresholdedReLU, ParametricSoftplus, SReLu
     private final String LAYER_FIELD_PRELU_INIT = ""; // 1: init, 2: alpha_initializer
 
     /* Convolutional layer properties */

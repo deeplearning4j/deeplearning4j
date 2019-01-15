@@ -16,21 +16,20 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
+import java.util.Arrays;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-
-import java.util.Arrays;
 
 /**Recurrent Neural Network Output Layer.<br>
  * Handles calculation of gradients etc for various objective functions.<br>
@@ -41,7 +40,7 @@ import java.util.Arrays;
  * @author Alex Black
  * @see BaseOutputLayer, OutputLayer
  */
-public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.RnnOutputLayer> {
+public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer> {
 
     public RnnOutputLayer(NeuralNetConfiguration conf) {
         super(conf);

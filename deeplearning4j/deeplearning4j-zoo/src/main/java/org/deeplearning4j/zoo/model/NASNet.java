@@ -23,10 +23,12 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.TruncatedNormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.ModelMetaData;
@@ -69,7 +71,7 @@ public class NASNet extends ZooModel {
     @Builder.Default private IUpdater updater = new AdaDelta();
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    @Builder.Default private Convolution2DLayer.AlgoMode cudnnAlgoMode = Convolution2DLayer.AlgoMode.PREFER_FASTEST;
 
     // NASNet specific
     @Builder.Default private int numBlocks = 6;
@@ -140,14 +142,14 @@ public class NASNet extends ZooModel {
                 .graphBuilder();
 
         if(!skipReduction) {
-            graph.addLayer("stem_conv1", new ConvolutionLayer.Builder(3, 3).stride(2, 2).nOut(stemFilters).hasBias(false)
+            graph.addLayer("stem_conv1", new Convolution2DLayer.Builder(3, 3).stride(2, 2).nOut(stemFilters).hasBias(false)
                     .cudnnAlgoMode(cudnnAlgoMode).build(), "input");
         } else {
-            graph.addLayer("stem_conv1", new ConvolutionLayer.Builder(3, 3).stride(1, 1).nOut(stemFilters).hasBias(false)
+            graph.addLayer("stem_conv1", new Convolution2DLayer.Builder(3, 3).stride(1, 1).nOut(stemFilters).hasBias(false)
                     .cudnnAlgoMode(cudnnAlgoMode).build(), "input");
         }
 
-        graph.addLayer("stem_bn1", new BatchNormalization.Builder().eps(1e-3).gamma(0.9997).build(), "stem_conv1");
+        graph.addLayer("stem_bn1", new BatchNormalizationLayer.Builder().eps(1e-3).gamma(0.9997).build(), "stem_conv1");
 
         String inputX = "stem_bn1";
         String inputP = null;

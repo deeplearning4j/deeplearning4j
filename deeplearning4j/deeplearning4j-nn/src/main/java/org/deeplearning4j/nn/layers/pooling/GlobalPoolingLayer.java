@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.pooling;
 
+import java.util.Arrays;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.api.Layer;
@@ -25,6 +26,8 @@ import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.MaskedReductionUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
@@ -33,10 +36,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
-
-import java.util.Arrays;
 
 /**
  * Global pooling layer - used to do pooling over time for RNNs, and 2d pooling for CNNs.<br>
@@ -65,7 +64,7 @@ import java.util.Arrays;
  *
  * @author Alex Black
  */
-public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer> {
+public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer> {
 
     private static final int[] DEFAULT_TIMESERIES_POOL_DIMS = new int[]{2};
     private static final int[] DEFAULT_CNN_POOL_DIMS = new int[]{2, 3};
@@ -79,8 +78,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     public GlobalPoolingLayer(NeuralNetConfiguration conf) {
         super(conf);
 
-        org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer) conf.getLayer();
+        org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.pooling.GlobalPoolingLayer) conf.getLayer();
 
         poolingDimensions = layerConf.getPoolingDimensions();
         poolingType = layerConf.getPoolingType();

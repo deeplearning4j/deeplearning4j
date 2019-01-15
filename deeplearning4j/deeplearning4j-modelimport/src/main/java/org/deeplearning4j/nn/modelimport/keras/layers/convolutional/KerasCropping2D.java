@@ -20,7 +20,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -64,19 +64,19 @@ public class KerasCropping2D extends KerasLayer {
         super(layerConfig, enforceTrainingConfig);
         String croppingField = conf.getLAYER_FIELD_CROPPING();
         int[] cropping = getPaddingFromConfig(layerConfig, conf, croppingField, 2);
-        Cropping2D.Builder builder = new Cropping2D.Builder(cropping)
+        Cropping2DLayer.Builder builder = new Cropping2DLayer.Builder(cropping)
                 .name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
         this.vertex = null;
     }
 
     /**
-     * Get DL4J Cropping2D layer.
+     * Get DL4J Cropping2DLayer layer.
      *
-     * @return Cropping2D layer
+     * @return Cropping2DLayer layer
      */
-    public Cropping2D getCropping2DLayer() {
-        return (Cropping2D) this.layer;
+    public Cropping2DLayer getCropping2DLayer() {
+        return (Cropping2DLayer) this.layer;
     }
 
     /**

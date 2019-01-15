@@ -17,8 +17,8 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import org.deeplearning4j.nn.conf.dropout.Dropout;
-import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
-import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStepLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnnLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -91,8 +91,8 @@ public class KerasSimpleRnnTest {
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
 
-        SimpleRnn layer = rs ? (SimpleRnn) new KerasSimpleRnn(layerConfig).getSimpleRnnLayer() :
-                (SimpleRnn) ((LastTimeStep) new KerasSimpleRnn(layerConfig).getSimpleRnnLayer()).getUnderlying();
+        SimpleRnnLayer layer = rs ? (SimpleRnnLayer) new KerasSimpleRnn(layerConfig).getSimpleRnnLayer() :
+                (SimpleRnnLayer) ((LastTimeStepLayer) new KerasSimpleRnn(layerConfig).getSimpleRnnLayer()).getUnderlying();
         assertEquals(ACTIVATION, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInitFn());

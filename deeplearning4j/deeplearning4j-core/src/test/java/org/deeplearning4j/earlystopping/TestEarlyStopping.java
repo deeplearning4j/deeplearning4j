@@ -42,6 +42,10 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.feedforeward.autoencoder.AutoEncoder;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -867,7 +871,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                         .ClipElementWiseAbsoluteValue)
                 .gradientNormalizationThreshold(1.0)
                 .list()
-                .layer(0, new LSTM.Builder()
+                .layer(0, new LSTMLayer.Builder()
                         .nIn(10)
                         .nOut(10)
                         .activation(Activation.TANH)

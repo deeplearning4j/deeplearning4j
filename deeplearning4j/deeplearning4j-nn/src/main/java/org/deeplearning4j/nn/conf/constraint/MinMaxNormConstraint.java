@@ -57,7 +57,7 @@ public class MinMaxNormConstraint extends BaseConstraint {
      *
      * @param max            Maximum L2 value
      * @param min            Minimum L2 value
-     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
+     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTMLayer, etc: this should
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
@@ -71,7 +71,7 @@ public class MinMaxNormConstraint extends BaseConstraint {
      * @param max            Maximum L2 value
      * @param min            Minimum L2 value
      * @param rate           Constraint rate
-     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
+     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTMLayer, etc: this should
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
@@ -85,7 +85,7 @@ public class MinMaxNormConstraint extends BaseConstraint {
      * @param min            Minimum L2 value
      * @param rate           Constraint rate
      * @param paramNames     Which parameter names to apply constraint to
-     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTM, etc: this should
+     * @param dimensions     Dimensions to apply to. For DenseLayer, OutputLayer, RnnOutputLayer, LSTMLayer, etc: this should
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */

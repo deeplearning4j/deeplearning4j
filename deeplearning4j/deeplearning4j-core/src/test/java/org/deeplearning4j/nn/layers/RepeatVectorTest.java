@@ -18,7 +18,7 @@ package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.misc.RepeatVector;
+import org.deeplearning4j.nn.conf.layers.misc.RepeatVectorLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
@@ -38,7 +38,7 @@ public class RepeatVectorTest {
 
     private Layer getRepeatVectorLayer() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
-                .layer(new RepeatVector.Builder(REPEAT).build()).build();
+                .layer(new RepeatVectorLayer.Builder(REPEAT).build()).build();
         return conf.getLayer().instantiate(conf, null, 0,
                 null, false);
     }

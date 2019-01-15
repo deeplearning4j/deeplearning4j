@@ -34,7 +34,7 @@ class LSTMTest extends WordSpec with Matchers {
     "compile to a DL4J LSTM" in {
       val LSTMLayer = LSTM(10, 100)
       val compiledLayer = LSTMLayer.compile
-      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.LSTM] shouldBe true
+      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer] shouldBe true
     }
 
   }

@@ -16,6 +16,9 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
+
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -27,9 +30,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
-import static org.nd4j.linalg.indexing.NDArrayIndex.all;
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
-
 /**
  * Cropping layer for 3D convolutional neural networks.
  * Allows cropping to be done separately for upper and lower bounds of
@@ -37,13 +37,13 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  *
  * @author Max Pumperla
  */
-public class Cropping3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.convolutional.Cropping3D> {
+public class Cropping3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.convolutional.Cropping3DLayer> {
 
     private int[] cropping; //[cropLeftD, cropRightD, cropLeftH, cropRightH, cropLeftW, cropRightW]
 
     public Cropping3DLayer(NeuralNetConfiguration conf) {
         super(conf);
-        this.cropping = ((org.deeplearning4j.nn.conf.layers.convolutional.Cropping3D) conf.getLayer()).getCropping();
+        this.cropping = ((org.deeplearning4j.nn.conf.layers.convolutional.Cropping3DLayer) conf.getLayer()).getCropping();
     }
 
     @Override

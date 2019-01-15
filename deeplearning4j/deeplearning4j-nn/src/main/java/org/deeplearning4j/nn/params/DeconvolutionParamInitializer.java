@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.params;
 
 import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.convolutional.Deconvolution2DLayer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -42,8 +43,8 @@ public class DeconvolutionParamInitializer extends ConvolutionParamInitializer {
          Inputs to the convolution layer are:
          (batch size, num input feature maps, image height, image width)
          */
-        org.deeplearning4j.nn.conf.layers.Deconvolution2D layerConf =
-                (org.deeplearning4j.nn.conf.layers.Deconvolution2D) conf.getLayer();
+        Deconvolution2DLayer layerConf =
+                (Deconvolution2DLayer) conf.getLayer();
         if (initializeParams) {
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();
@@ -74,8 +75,8 @@ public class DeconvolutionParamInitializer extends ConvolutionParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
 
-        org.deeplearning4j.nn.conf.layers.Deconvolution2D layerConf =
-                (org.deeplearning4j.nn.conf.layers.Deconvolution2D) conf.getLayer();
+        Deconvolution2DLayer layerConf =
+                (Deconvolution2DLayer) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();

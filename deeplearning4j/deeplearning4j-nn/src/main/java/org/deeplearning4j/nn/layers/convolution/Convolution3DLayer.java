@@ -16,10 +16,10 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import java.util.Arrays;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
@@ -33,14 +33,12 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Arrays;
-
 /**
  * 3D convolution layer implementation.
  *
  * @author Max Pumperla
  */
-public class Convolution3DLayer extends ConvolutionLayer {
+public class Convolution3DLayer extends Convolution2DLayer {
 
     public Convolution3DLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -61,7 +59,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         if (input.rank() != 5) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
-                    + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
+                    + " array as input to Subsampling2DLayer with shape " + Arrays.toString(input.shape())
                     + ". Expected rank 5 array with shape [minibatchSize, channels, "
                     + "inputHeight, inputWidth, inputDepth]. "
                     + layerId());
@@ -69,9 +67,9 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
-        Convolution3D layerConfig = (Convolution3D) layerConf();
+        org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer layerConfig = (org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer) layerConf();
 
-        boolean isNCDHW = layerConfig.getDataFormat() == Convolution3D.DataFormat.NCDHW;
+        boolean isNCDHW = layerConfig.getDataFormat() == org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer.DataFormat.NCDHW;
 
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
@@ -168,10 +166,10 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
     protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
 
-        Convolution3D layerConfig = (Convolution3D) layerConf();
+        org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer layerConfig = (org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer) layerConf();
 
         ConvolutionMode mode = layerConfig.getConvolutionMode();
-        boolean isNCDHW = layerConfig.getDataFormat() == Convolution3D.DataFormat.NCDHW;
+        boolean isNCDHW = layerConfig.getDataFormat() == org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer.DataFormat.NCDHW;
 
         INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
@@ -211,7 +209,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
             } else {
                 df = ", dataFormat=NDHWC, [minibatch, depth, height, width, inputChannels]=";
             }
-            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution3D layer (layer name = "
+            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution3DLayer layer (layer name = "
                     + layerName
                     + ", layer index = " + index + "): number of input array channels does not match " +
                     "CNN layer configuration"

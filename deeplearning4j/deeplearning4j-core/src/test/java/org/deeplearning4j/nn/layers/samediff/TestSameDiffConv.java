@@ -24,7 +24,7 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffConv;
@@ -164,7 +164,7 @@ public class TestSameDiffConv extends BaseDL4JTest {
                                                     .weightInit(WeightInit.XAVIER)
                                                     .seed(12345)
                                                     .list()
-                                                    .layer(new ConvolutionLayer.Builder()
+                                                    .layer(new Convolution2DLayer.Builder()
                                                             .nIn(nIn)
                                                             .nOut(nOut)
                                                             .kernelSize(kernel)
@@ -174,7 +174,7 @@ public class TestSameDiffConv extends BaseDL4JTest {
                                                             .activation(a)
                                                             .hasBias(hasBias)
                                                             .build())
-                                                    .layer(new ConvolutionLayer.Builder()
+                                                    .layer(new Convolution2DLayer.Builder()
                                                             .nIn(nOut)
                                                             .nOut(nOut)
                                                             .kernelSize(kernel)

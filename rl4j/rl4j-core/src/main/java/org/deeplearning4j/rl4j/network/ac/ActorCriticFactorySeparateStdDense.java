@@ -23,10 +23,10 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -67,7 +67,7 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
         }
 
         if (conf.isUseLSTM()) {
-            confB.layer(conf.getNumLayer(), new LSTM.Builder().nOut(conf.getNumHiddenNodes()).activation(Activation.TANH).build());
+            confB.layer(conf.getNumLayer(), new LSTMLayer.Builder().nOut(conf.getNumHiddenNodes()).activation(Activation.TANH).build());
 
             confB.layer(conf.getNumLayer() + 1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY)
                             .nIn(conf.getNumHiddenNodes()).nOut(1).build());
@@ -102,7 +102,7 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
         }
 
         if (conf.isUseLSTM()) {
-            confB2.layer(conf.getNumLayer(), new LSTM.Builder().nOut(conf.getNumHiddenNodes()).activation(Activation.TANH).build());
+            confB2.layer(conf.getNumLayer(), new LSTMLayer.Builder().nOut(conf.getNumHiddenNodes()).activation(Activation.TANH).build());
 
             confB2.layer(conf.getNumLayer() + 1, new RnnOutputLayer.Builder(new ActorCriticLoss())
                             .activation(Activation.SOFTMAX).nIn(conf.getNumHiddenNodes()).nOut(numOutputs).build());

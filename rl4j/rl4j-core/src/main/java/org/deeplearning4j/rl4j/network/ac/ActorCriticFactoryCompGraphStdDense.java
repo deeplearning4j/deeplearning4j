@@ -23,10 +23,10 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -72,7 +72,7 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
 
 
         if (conf.isUseLSTM()) {
-            confB.addLayer(getConf().getNumLayer() + "", new LSTM.Builder().activation(Activation.TANH)
+            confB.addLayer(getConf().getNumLayer() + "", new LSTMLayer.Builder().activation(Activation.TANH)
                             .nOut(conf.getNumHiddenNodes()).build(), (getConf().getNumLayer() - 1) + "");
 
             confB.addLayer("value", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY)

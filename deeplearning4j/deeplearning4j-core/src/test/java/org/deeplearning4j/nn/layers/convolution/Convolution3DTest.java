@@ -21,16 +21,13 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.Convolution3D;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -61,7 +58,7 @@ public class Convolution3DTest {
     public void testConvolution3dForwardSameMode() {
 
         INDArray containedInput = getContainedData();
-        Convolution3DLayer layer = (Convolution3DLayer) getConvolution3DLayer(ConvolutionMode.Same);
+        org.deeplearning4j.nn.layers.convolution.Convolution3DLayer layer = (org.deeplearning4j.nn.layers.convolution.Convolution3DLayer) getConvolution3DLayer(ConvolutionMode.Same);
 
         assertTrue(layer.convolutionMode == ConvolutionMode.Same);
 
@@ -74,7 +71,7 @@ public class Convolution3DTest {
     @Test
     public void testConvolution3dForwardValidMode() throws Exception {
 
-        Convolution3DLayer layer = (Convolution3DLayer) getConvolution3DLayer(ConvolutionMode.Strict);
+        org.deeplearning4j.nn.layers.convolution.Convolution3DLayer layer = (org.deeplearning4j.nn.layers.convolution.Convolution3DLayer) getConvolution3DLayer(ConvolutionMode.Strict);
 
         assertTrue(layer.convolutionMode == ConvolutionMode.Strict);
 
@@ -88,8 +85,8 @@ public class Convolution3DTest {
     private Layer getConvolution3DLayer(ConvolutionMode mode) {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
-                .layer(new Convolution3D.Builder().kernelSize(kernelSize).nIn(nChannelsIn).nOut(nChannelsOut)
-                        .dataFormat(Convolution3D.DataFormat.NCDHW).convolutionMode(mode).hasBias(false)
+                .layer(new Convolution3DLayer.Builder().kernelSize(kernelSize).nIn(nChannelsIn).nOut(nChannelsOut)
+                        .dataFormat(org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer.DataFormat.NCDHW).convolutionMode(mode).hasBias(false)
                         .build())
                 .build();
         long numParams = conf.getLayer().initializer().numParams(conf);

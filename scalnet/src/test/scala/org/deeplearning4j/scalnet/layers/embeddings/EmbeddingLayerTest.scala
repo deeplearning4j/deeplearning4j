@@ -34,7 +34,7 @@ class EmbeddingLayerTest extends WordSpec with Matchers {
     "compile to a DL4J EmbeddingLayer" in {
       val embeddingLayer = EmbeddingLayer(10, 100)
       val compiledLayer = embeddingLayer.compile
-      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.EmbeddingLayer] shouldBe true
+      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingLayer] shouldBe true
     }
 
   }

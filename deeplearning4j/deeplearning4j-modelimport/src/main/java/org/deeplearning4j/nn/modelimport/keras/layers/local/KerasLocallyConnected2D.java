@@ -23,7 +23,7 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.LocallyConnected2D;
+import org.deeplearning4j.nn.conf.layers.LocallyConnected2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution;
@@ -103,7 +103,7 @@ public class KerasLocallyConnected2D extends KerasConvolution {
         LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_W_CONSTRAINT(), conf, kerasMajorVersion);
 
-        LocallyConnected2D.Builder builder = new LocallyConnected2D.Builder().name(this.layerName)
+        LocallyConnected2DLayer.Builder builder = new LocallyConnected2DLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
@@ -125,12 +125,12 @@ public class KerasLocallyConnected2D extends KerasConvolution {
     }
 
     /**
-     * Get DL4J LocallyConnected2D layer.
+     * Get DL4J LocallyConnected2DLayer layer.
      *
      * @return Locally connected 2D layer.
      */
-    public LocallyConnected2D getLocallyConnected2DLayer() {
-        return (LocallyConnected2D) this.layer;
+    public LocallyConnected2DLayer getLocallyConnected2DLayer() {
+        return (LocallyConnected2DLayer) this.layer;
     }
 
     /**
@@ -149,9 +149,9 @@ public class KerasLocallyConnected2D extends KerasConvolution {
 
         // Override input/output shape and input channels dynamically. This works since getOutputType will always
         // be called when initializing the model.
-        ((LocallyConnected2D) this.layer).setInputSize(new int[] {(int) convType.getHeight(),(int) convType.getWidth()});
-        ((LocallyConnected2D) this.layer).setNIn(convType.getChannels());
-        ((LocallyConnected2D) this.layer).computeOutputSize();
+        ((LocallyConnected2DLayer) this.layer).setInputSize(new int[] {(int) convType.getHeight(),(int) convType.getWidth()});
+        ((LocallyConnected2DLayer) this.layer).setNIn(convType.getChannels());
+        ((LocallyConnected2DLayer) this.layer).computeOutputSize();
 
         InputPreProcessor preprocessor = getInputPreprocessor(inputType[0]);
         if (preprocessor != null) {

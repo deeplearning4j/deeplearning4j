@@ -29,8 +29,8 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Rule;
@@ -108,7 +108,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
                             .l1(l1[i]).l2(l2[i])
                             .convolutionMode(ConvolutionMode.Same)
                             .list()
-                            .layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
+                            .layer(new Convolution2DLayer.Builder().kernelSize(2, 2).stride(1, 1)
                                     .nIn(depthIn).nOut(yoloDepth).build())//output: (5-2+0)/1+1 = 4
                             .layer(new Yolo2OutputLayer.Builder()
                                     .boundingBoxPriors(bbPrior)
@@ -214,9 +214,9 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
                 .dist(new GaussianDistribution(0,0.1))
                 .seed(12345)
                 .list()
-                .layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nOut(4).build())
-                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2).build())
-                .layer(new ConvolutionLayer.Builder().activation(Activation.IDENTITY).kernelSize(3,3).stride(1,1).nOut(depthOut).build())
+                .layer(new Convolution2DLayer.Builder().kernelSize(3,3).stride(1,1).nOut(4).build())
+                .layer(new Subsampling2DLayer.Builder().kernelSize(2,2).stride(2,2).build())
+                .layer(new Convolution2DLayer.Builder().activation(Activation.IDENTITY).kernelSize(3,3).stride(1,1).nOut(depthOut).build())
                 .layer(new Yolo2OutputLayer.Builder()
                         .boundingBoxPriors(bbPriors)
                         .build())

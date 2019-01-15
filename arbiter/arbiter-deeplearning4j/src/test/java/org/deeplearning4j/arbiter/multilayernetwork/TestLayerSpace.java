@@ -30,6 +30,12 @@ import org.deeplearning4j.nn.conf.constraint.MinMaxNormConstraint;
 import org.deeplearning4j.nn.conf.constraint.NonNegativeConstraint;
 import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Deconvolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -121,7 +127,7 @@ public class TestLayerSpace {
             }
         }
 
-        BatchNormalization bn = sp.getValue(new double[]{0.6});
+        BatchNormalizationLayer bn = sp.getValue(new double[]{0.6});
         assertTrue(bn.isLockGammaBeta());
         assertEquals(1.5, bn.getGamma(), 0.0);
         assertEquals(0.6 * (3 - 2) + 2, bn.getBeta(), 1e-4);
@@ -140,7 +146,7 @@ public class TestLayerSpace {
         BatchNormalizationSpace sp = new BatchNormalizationSpace.Builder().gamma(1.5)
                 .beta(0.6).lockGammaBeta(true).constrainBeta(constrainParamSpace).constrainGamma(new NonNegativeConstraint()).build();
 
-        BatchNormalization bnExpected = new BatchNormalization.Builder().gamma(1.5)
+        BatchNormalizationLayer bnExpected = new BatchNormalizationLayer.Builder().gamma(1.5)
                 .beta(0.6).lockGammaBeta(true).constrainBeta(new NonNegativeConstraint()).constrainGamma(new NonNegativeConstraint()).build();
         //Set the parameter numbers...
         List<ParameterSpace> list = sp.collectLeaves();
@@ -155,10 +161,10 @@ public class TestLayerSpace {
         }
 
         assertEquals(1,sp.getNumParameters());
-        BatchNormalization bn = sp.getValue(new double[]{0.6});
+        BatchNormalizationLayer bn = sp.getValue(new double[]{0.6});
         assertEquals(bnExpected,bn); //0.6 should pick the 3rd value in discrete param space
 
-        //assertEquals(bn.getConstraints().size(),2); This throws an NPE but I believe this is an issue with actual impl of BatchNormalization not arbiter
+        //assertEquals(bn.getConstraints().size(),2); This throws an NPE but I believe this is an issue with actual impl of BatchNormalizationLayer not arbiter
 }
 
     @Test
@@ -235,7 +241,7 @@ public class TestLayerSpace {
 
     @Test
     public void testSimpleConv() {
-        ConvolutionLayer conv2d = new Convolution2D.Builder().dilation(1,2).kernelSize(2,2).nIn(2).nOut(3).build();
+        Convolution2DLayer conv2d = new Convolution2DLayer.Builder().dilation(1,2).kernelSize(2,2).nIn(2).nOut(3).build();
         ConvolutionLayerSpace conv2dSpace = new ConvolutionLayerSpace.Builder().dilation(1,2).kernelSize(2,2).nIn(2).nOut(3).build();
         assertEquals(0,conv2dSpace.getNumParameters());
         assertEquals(conv2d, conv2dSpace.getValue(new double[0]));
@@ -253,7 +259,7 @@ public class TestLayerSpace {
                 list.get(j).setIndices(k++);
             }
         }
-        Deconvolution2D actual = deconvd2dls.getValue(new double[]{0.9});
+        Deconvolution2DLayer actual = deconvd2dls.getValue(new double[]{0.9});
         assertTrue(!actual.hasBias());
         assertEquals(ArrayUtils.toString(new int[] {2,1} ),ArrayUtils.toString(actual.getDilation()));
     }
@@ -288,7 +294,7 @@ public class TestLayerSpace {
                 d[j] = r.nextDouble();
             }
 
-            GravesBidirectionalLSTM el = ls.getValue(d);
+            GravesBidirectionalLSTMLayer el = ls.getValue(d);
             IActivation activation = el.getActivationFn();
             long nOut = el.getNOut();
             double forgetGate = el.getForgetGateBiasInit();

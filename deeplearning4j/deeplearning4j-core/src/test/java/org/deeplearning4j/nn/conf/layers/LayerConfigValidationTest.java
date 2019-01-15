@@ -25,6 +25,9 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -122,7 +125,7 @@ public class LayerConfigValidationTest extends BaseDL4JTest {
                 /* Graph Builder */
                 .updater(Updater.RMSPROP).graphBuilder().addInputs("in")
                 .addLayer("L" + 1,
-                        new GravesLSTM.Builder().nIn(20).updater(Updater.RMSPROP).nOut(10)
+                        new GravesLSTMLayer.Builder().nIn(20).updater(Updater.RMSPROP).nOut(10)
                                 .weightInit(WeightInit.XAVIER)
                                 .dropOut(0.4).l1(0.3).activation(Activation.SIGMOID).build(),
                         "in")

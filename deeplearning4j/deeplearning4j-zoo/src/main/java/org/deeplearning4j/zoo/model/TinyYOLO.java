@@ -19,14 +19,13 @@ package org.deeplearning4j.zoo.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration.GraphBuilder;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -99,7 +98,7 @@ public class TinyYOLO extends ZooModel {
     @Builder.Default private IUpdater updater = new Adam(1e-3);
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    @Builder.Default private Convolution2DLayer.AlgoMode cudnnAlgoMode = Convolution2DLayer.AlgoMode.PREFER_FASTEST;
 
     private TinyYOLO() {}
 
@@ -161,7 +160,7 @@ public class TinyYOLO extends ZooModel {
         int layerNumber = 9;
         graphBuilder
                 .addLayer("convolution2d_" + layerNumber,
-                        new ConvolutionLayer.Builder(1,1)
+                        new Convolution2DLayer.Builder(1,1)
                                 .nIn(1024)
                                 .nOut(nBoxes * (5 + numClasses))
                                 .weightInit(WeightInit.XAVIER)

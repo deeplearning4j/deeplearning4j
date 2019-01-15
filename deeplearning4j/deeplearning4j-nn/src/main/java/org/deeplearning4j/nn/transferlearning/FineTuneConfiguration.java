@@ -26,6 +26,8 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.IWeightInit;
@@ -75,7 +77,7 @@ public class FineTuneConfiguration {
     protected Optional<GradientNormalization> gradientNormalization;
     protected Double gradientNormalizationThreshold;
     protected ConvolutionMode convolutionMode;
-    protected ConvolutionLayer.AlgoMode cudnnAlgoMode;
+    protected Convolution2DLayer.AlgoMode cudnnAlgoMode;
     protected Optional<List<LayerConstraint>> constraints;
 
     protected Boolean pretrain;
@@ -123,7 +125,7 @@ public class FineTuneConfiguration {
         private Optional<GradientNormalization> gradientNormalization;
         private Double gradientNormalizationThreshold;
         private ConvolutionMode convolutionMode;
-        private ConvolutionLayer.AlgoMode cudnnAlgoMode;
+        private Convolution2DLayer.AlgoMode cudnnAlgoMode;
         private Optional<List<LayerConstraint>> constraints;
         private Boolean pretrain;
         private Boolean backprop;
@@ -400,9 +402,9 @@ public class FineTuneConfiguration {
 
         /**
          * Sets the cuDNN algo mode for convolutional layers, which impacts performance and memory usage of cuDNN.
-         * See {@link ConvolutionLayer.AlgoMode} for details.  Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
+         * See {@link Convolution2DLayer.AlgoMode} for details.  Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
          */
-        public Builder cudnnAlgoMode(ConvolutionLayer.AlgoMode cudnnAlgoMode) {
+        public Builder cudnnAlgoMode(Convolution2DLayer.AlgoMode cudnnAlgoMode) {
             this.cudnnAlgoMode = cudnnAlgoMode;
             return this;
         }
@@ -575,14 +577,14 @@ public class FineTuneConfiguration {
         if (minimize != null)
             nnc.setMinimize(minimize);
 
-        if (convolutionMode != null && l instanceof ConvolutionLayer) {
-            ((ConvolutionLayer) l).setConvolutionMode(convolutionMode);
+        if (convolutionMode != null && l instanceof Convolution2DLayer) {
+            ((Convolution2DLayer) l).setConvolutionMode(convolutionMode);
         }
-        if (cudnnAlgoMode != null && l instanceof ConvolutionLayer) {
-            ((ConvolutionLayer) l).setCudnnAlgoMode(cudnnAlgoMode);
+        if (cudnnAlgoMode != null && l instanceof Convolution2DLayer) {
+            ((Convolution2DLayer) l).setCudnnAlgoMode(cudnnAlgoMode);
         }
-        if (convolutionMode != null && l instanceof SubsamplingLayer) {
-            ((SubsamplingLayer) l).setConvolutionMode(convolutionMode);
+        if (convolutionMode != null && l instanceof Subsampling2DLayer) {
+            ((Subsampling2DLayer) l).setConvolutionMode(convolutionMode);
         }
 
         //Perform validation

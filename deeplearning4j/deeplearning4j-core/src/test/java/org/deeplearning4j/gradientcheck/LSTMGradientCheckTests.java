@@ -25,6 +25,13 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
@@ -56,7 +63,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
     @Test
     public void testLSTMBasicMultiLayer() {
-        //Basic test of GravesLSTM layer
+        //Basic test of GravesLSTMLayer layer
         Nd4j.getRandom().setSeed(12345L);
 
         int timeSeriesLength = 4;
@@ -72,17 +79,17 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
             Layer l0;
             Layer l1;
             if (graves) {
-                l0 = new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.SIGMOID)
+                l0 = new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.SIGMOID)
                                 .dist(new NormalDistribution(0, 1.0))
                                 .updater(new NoOp()).build();
-                l1 = new GravesLSTM.Builder().nIn(layerSize).nOut(layerSize).activation(Activation.SIGMOID)
+                l1 = new GravesLSTMLayer.Builder().nIn(layerSize).nOut(layerSize).activation(Activation.SIGMOID)
                                 .dist(new NormalDistribution(0, 1.0))
                                 .updater(new NoOp()).build();
             } else {
-                l0 = new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.SIGMOID)
+                l0 = new LSTMLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.SIGMOID)
                                 .dist(new NormalDistribution(0, 1.0))
                                 .updater(new NoOp()).build();
-                l1 = new LSTM.Builder().nIn(layerSize).nOut(layerSize).activation(Activation.SIGMOID)
+                l1 = new LSTMLayer.Builder().nIn(layerSize).nOut(layerSize).activation(Activation.SIGMOID)
                                 .dist(new NormalDistribution(0, 1.0))
                                 .updater(new NoOp()).build();
             }
@@ -119,7 +126,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                 }
             }
 
-            String testName = "testLSTMBasic(" + (graves ? "GravesLSTM" : "LSTM") + ")";
+            String testName = "testLSTMBasic(" + (graves ? "GravesLSTMLayer" : "LSTMLayer") + ")";
             if (PRINT_RESULTS) {
                 System.out.println(testName);
                 for (int j = 0; j < mln.getnLayers(); j++)
@@ -192,9 +199,9 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
                 Layer layer;
                 if (graves) {
-                    layer = new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(afn).build();
+                    layer = new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize).activation(afn).build();
                 } else {
-                    layer = new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(afn).build();
+                    layer = new LSTMLayer.Builder().nIn(nIn).nOut(layerSize).activation(afn).build();
                 }
 
                 NeuralNetConfiguration.ListBuilder conf2 = conf.list().layer(0, layer)
@@ -205,7 +212,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf2.build());
                 mln.init();
 
-                String testName = "testGradientLSTMFull(" + (graves ? "GravesLSTM" : "LSTM")
+                String testName = "testGradientLSTMFull(" + (graves ? "GravesLSTMLayer" : "LSTMLayer")
                         + " - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation="
                         + outputActivation + ", l2=" + l2 + ", l1=" + l1;
                 if (PRINT_RESULTS) {
@@ -260,9 +267,9 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
                 Layer layer;
                 if (graves) {
-                    layer = new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build();
+                    layer = new GravesLSTMLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build();
                 } else {
-                    layer = new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build();
+                    layer = new LSTMLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH).build();
                 }
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L)
@@ -274,7 +281,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
 
-                String msg = "testGradientLSTMEdgeCases(" + (graves ? "GravesLSTM" : "LSTM") + " - timeSeriesLength="
+                String msg = "testGradientLSTMEdgeCases(" + (graves ? "GravesLSTMLayer" : "LSTMLayer") + " - timeSeriesLength="
                                 + timeSeriesLength[i] + ", miniBatchSize=" + miniBatchSize[i];
                 System.out.println(msg);
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
@@ -344,7 +351,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
                     MultiLayerConfiguration mlc = conf.seed(12345L)
                                     .list().layer(0,
-                                                    new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize)
+                                                    new GravesBidirectionalLSTMLayer.Builder().nIn(nIn).nOut(layerSize)
 
                                                                     .dist(new NormalDistribution(0, 1))
                                                                     .activation(afn).updater(
@@ -412,7 +419,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L)
                             .list()
-                            .layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize)
+                            .layer(0, new GravesBidirectionalLSTMLayer.Builder().nIn(nIn).nOut(layerSize)
 
                                             .dist(new NormalDistribution(0, 1)).updater(
                                                             Updater.NONE)
@@ -436,7 +443,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
     @Test
     public void testGradientCnnFfRnn() {
-        //Test gradients with CNN -> FF -> LSTM -> RnnOutputLayer
+        //Test gradients with CNN -> FF -> LSTMLayer -> RnnOutputLayer
         //time series input/output (i.e., video classification or similar)
 
         int nChannelsIn = 3;
@@ -460,12 +467,12 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp()).seed(12345)
                         .dist(new UniformDistribution(-2, 2)).list()
-                        .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(3).nOut(5).stride(1, 1)
+                        .layer(0, new Convolution2DLayer.Builder(5, 5).nIn(3).nOut(5).stride(1, 1)
                                         .activation(Activation.TANH).build()) //Out: (10-5)/1+1 = 6 -> 6x6x5
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
+                        .layer(1, new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX).kernelSize(2, 2)
                                         .stride(1, 1).build()) //Out: (6-2)/1+1 = 5 -> 5x5x5
                         .layer(2, new DenseLayer.Builder().nIn(5 * 5 * 5).nOut(4).activation(Activation.TANH).build())
-                        .layer(3, new GravesLSTM.Builder().nIn(4).nOut(3).activation(Activation.TANH).build())
+                        .layer(3, new GravesLSTMLayer.Builder().nIn(4).nOut(3).activation(Activation.TANH).build())
                         .layer(4, new RnnOutputLayer.Builder().lossFunction(LossFunction.MCXENT).nIn(3).nOut(nClasses)
                                         .activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(10, 10, 3)).build();

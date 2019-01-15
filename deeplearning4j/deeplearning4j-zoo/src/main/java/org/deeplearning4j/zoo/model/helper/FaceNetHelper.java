@@ -19,6 +19,10 @@ package org.deeplearning4j.zoo.model.helper;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
 import org.nd4j.linalg.activations.Activation;
 
 /**
@@ -45,55 +49,55 @@ public class FaceNetHelper {
     }
 
 
-    public static ConvolutionLayer conv1x1(int in, int out, double bias) {
-        return new ConvolutionLayer.Builder(new int[] {1, 1}, new int[] {1, 1}, new int[] {0, 0}).nIn(in).nOut(out)
-                        .biasInit(bias).cudnnAlgoMode(ConvolutionLayer.AlgoMode.NO_WORKSPACE).build();
+    public static Convolution2DLayer conv1x1(int in, int out, double bias) {
+        return new Convolution2DLayer.Builder(new int[] {1, 1}, new int[] {1, 1}, new int[] {0, 0}).nIn(in).nOut(out)
+                        .biasInit(bias).cudnnAlgoMode(Convolution2DLayer.AlgoMode.NO_WORKSPACE).build();
     }
 
-    public static ConvolutionLayer c3x3reduce(int in, int out, double bias) {
+    public static Convolution2DLayer c3x3reduce(int in, int out, double bias) {
         return conv1x1(in, out, bias);
     }
 
-    public static ConvolutionLayer c5x5reduce(int in, int out, double bias) {
+    public static Convolution2DLayer c5x5reduce(int in, int out, double bias) {
         return conv1x1(in, out, bias);
     }
 
-    public static ConvolutionLayer conv3x3(int in, int out, double bias) {
-        return new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {1, 1}, new int[] {1, 1}).nIn(in).nOut(out)
+    public static Convolution2DLayer conv3x3(int in, int out, double bias) {
+        return new Convolution2DLayer.Builder(new int[] {3, 3}, new int[] {1, 1}, new int[] {1, 1}).nIn(in).nOut(out)
                         .biasInit(bias).build();
     }
 
-    public static ConvolutionLayer conv5x5(int in, int out, double bias) {
-        return new ConvolutionLayer.Builder(new int[] {5, 5}, new int[] {1, 1}, new int[] {2, 2}).nIn(in).nOut(out)
-                        .biasInit(bias).cudnnAlgoMode(ConvolutionLayer.AlgoMode.NO_WORKSPACE).build();
+    public static Convolution2DLayer conv5x5(int in, int out, double bias) {
+        return new Convolution2DLayer.Builder(new int[] {5, 5}, new int[] {1, 1}, new int[] {2, 2}).nIn(in).nOut(out)
+                        .biasInit(bias).cudnnAlgoMode(Convolution2DLayer.AlgoMode.NO_WORKSPACE).build();
     }
 
-    public static ConvolutionLayer conv7x7(int in, int out, double bias) {
-        return new ConvolutionLayer.Builder(new int[] {7, 7}, new int[] {2, 2}, new int[] {3, 3}).nIn(in).nOut(out)
-                        .biasInit(bias).cudnnAlgoMode(ConvolutionLayer.AlgoMode.NO_WORKSPACE).build();
+    public static Convolution2DLayer conv7x7(int in, int out, double bias) {
+        return new Convolution2DLayer.Builder(new int[] {7, 7}, new int[] {2, 2}, new int[] {3, 3}).nIn(in).nOut(out)
+                        .biasInit(bias).cudnnAlgoMode(Convolution2DLayer.AlgoMode.NO_WORKSPACE).build();
     }
 
-    public static SubsamplingLayer avgPool7x7(int stride) {
-        return new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG, new int[] {7, 7}, new int[] {1, 1})
+    public static Subsampling2DLayer avgPool7x7(int stride) {
+        return new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.AVG, new int[] {7, 7}, new int[] {1, 1})
                         .build();
     }
 
-    public static SubsamplingLayer avgPoolNxN(int size, int stride) {
-        return new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG, new int[] {size, size},
+    public static Subsampling2DLayer avgPoolNxN(int size, int stride) {
+        return new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.AVG, new int[] {size, size},
                         new int[] {stride, stride}).build();
     }
 
-    public static SubsamplingLayer pNormNxN(int pNorm, int size, int stride) {
-        return new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.PNORM, new int[] {size, size},
+    public static Subsampling2DLayer pNormNxN(int pNorm, int size, int stride) {
+        return new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.PNORM, new int[] {size, size},
                         new int[] {stride, stride}).pnorm(pNorm).build();
     }
 
-    public static SubsamplingLayer maxPool3x3(int stride) {
-        return new SubsamplingLayer.Builder(new int[] {3, 3}, new int[] {stride, stride}, new int[] {1, 1}).build();
+    public static Subsampling2DLayer maxPool3x3(int stride) {
+        return new Subsampling2DLayer.Builder(new int[] {3, 3}, new int[] {stride, stride}, new int[] {1, 1}).build();
     }
 
-    public static SubsamplingLayer maxPoolNxN(int size, int stride) {
-        return new SubsamplingLayer.Builder(new int[] {size, size}, new int[] {stride, stride}, new int[] {1, 1})
+    public static Subsampling2DLayer maxPoolNxN(int size, int stride) {
+        return new Subsampling2DLayer.Builder(new int[] {size, size}, new int[] {stride, stride}, new int[] {1, 1})
                         .build();
     }
 
@@ -101,27 +105,27 @@ public class FaceNetHelper {
         return new DenseLayer.Builder().nIn(in).nOut(out).dropOut(dropOut).build();
     }
 
-    public static ConvolutionLayer convNxN(int reduceSize, int outputSize, int kernelSize, int kernelStride,
+    public static Convolution2DLayer convNxN(int reduceSize, int outputSize, int kernelSize, int kernelStride,
                     boolean padding) {
         int pad = padding ? ((int) Math.floor(kernelStride / 2) * 2) : 0;
-        return new ConvolutionLayer.Builder(new int[] {kernelSize, kernelSize}, new int[] {kernelStride, kernelStride},
+        return new Convolution2DLayer.Builder(new int[] {kernelSize, kernelSize}, new int[] {kernelStride, kernelStride},
                         new int[] {pad, pad}).nIn(reduceSize).nOut(outputSize).biasInit(0.2)
-                                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.NO_WORKSPACE).build();
+                                        .cudnnAlgoMode(Convolution2DLayer.AlgoMode.NO_WORKSPACE).build();
     }
 
-    public static ConvolutionLayer convNxNreduce(int inputSize, int reduceSize, int reduceStride) {
-        return new ConvolutionLayer.Builder(new int[] {1, 1}, new int[] {reduceStride, reduceStride}).nIn(inputSize)
-                        .nOut(reduceSize).biasInit(0.2).cudnnAlgoMode(ConvolutionLayer.AlgoMode.NO_WORKSPACE).build();
+    public static Convolution2DLayer convNxNreduce(int inputSize, int reduceSize, int reduceStride) {
+        return new Convolution2DLayer.Builder(new int[] {1, 1}, new int[] {reduceStride, reduceStride}).nIn(inputSize)
+                        .nOut(reduceSize).biasInit(0.2).cudnnAlgoMode(Convolution2DLayer.AlgoMode.NO_WORKSPACE).build();
     }
 
-    public static BatchNormalization batchNorm(int in, int out) {
-        return new BatchNormalization.Builder(false).nIn(in).nOut(out).build();
+    public static BatchNormalizationLayer batchNorm(int in, int out) {
+        return new BatchNormalizationLayer.Builder(false).nIn(in).nOut(out).build();
     }
 
     public static ComputationGraphConfiguration.GraphBuilder appendGraph(
                     ComputationGraphConfiguration.GraphBuilder graph, String moduleLayerName, int inputSize,
                     int[] kernelSize, int[] kernelStride, int[] outputSize, int[] reduceSize,
-                    SubsamplingLayer.PoolingType poolingType, Activation transferFunction, String inputLayer) {
+                    Subsampling2DLayer.PoolingType poolingType, Activation transferFunction, String inputLayer) {
         return appendGraph(graph, moduleLayerName, inputSize, kernelSize, kernelStride, outputSize, reduceSize,
                         poolingType, 0, 3, 1, transferFunction, inputLayer);
     }
@@ -129,7 +133,7 @@ public class FaceNetHelper {
     public static ComputationGraphConfiguration.GraphBuilder appendGraph(
                     ComputationGraphConfiguration.GraphBuilder graph, String moduleLayerName, int inputSize,
                     int[] kernelSize, int[] kernelStride, int[] outputSize, int[] reduceSize,
-                    SubsamplingLayer.PoolingType poolingType, int pNorm, Activation transferFunction,
+                    Subsampling2DLayer.PoolingType poolingType, int pNorm, Activation transferFunction,
                     String inputLayer) {
         return appendGraph(graph, moduleLayerName, inputSize, kernelSize, kernelStride, outputSize, reduceSize,
                         poolingType, pNorm, 3, 1, transferFunction, inputLayer);
@@ -138,7 +142,7 @@ public class FaceNetHelper {
     public static ComputationGraphConfiguration.GraphBuilder appendGraph(
                     ComputationGraphConfiguration.GraphBuilder graph, String moduleLayerName, int inputSize,
                     int[] kernelSize, int[] kernelStride, int[] outputSize, int[] reduceSize,
-                    SubsamplingLayer.PoolingType poolingType, int poolSize, int poolStride, Activation transferFunction,
+                    Subsampling2DLayer.PoolingType poolingType, int poolSize, int poolStride, Activation transferFunction,
                     String inputLayer) {
         return appendGraph(graph, moduleLayerName, inputSize, kernelSize, kernelStride, outputSize, reduceSize,
                         poolingType, 0, poolSize, poolStride, transferFunction, inputLayer);
@@ -164,7 +168,7 @@ public class FaceNetHelper {
     public static ComputationGraphConfiguration.GraphBuilder appendGraph(
                     ComputationGraphConfiguration.GraphBuilder graph, String moduleLayerName, int inputSize,
                     int[] kernelSize, int[] kernelStride, int[] outputSize, int[] reduceSize,
-                    SubsamplingLayer.PoolingType poolingType, int pNorm, int poolSize, int poolStride,
+                    Subsampling2DLayer.PoolingType poolingType, int pNorm, int poolSize, int poolStride,
                     Activation transferFunction, String inputLayer) {
         // 1x1 reduce -> nxn conv
         for (int i = 0; i < kernelSize.length; i++) {

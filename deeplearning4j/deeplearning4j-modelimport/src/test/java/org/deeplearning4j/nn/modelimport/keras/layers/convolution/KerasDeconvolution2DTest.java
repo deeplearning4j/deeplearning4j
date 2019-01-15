@@ -18,7 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
-import org.deeplearning4j.nn.conf.layers.Deconvolution2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Deconvolution2DLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -114,7 +114,7 @@ public class KerasDeconvolution2DTest {
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
 
-        Deconvolution2D layer = new KerasDeconvolution2D(layerConfig).getDeconvolution2DLayer();
+        Deconvolution2DLayer layer = new KerasDeconvolution2D(layerConfig).getDeconvolution2DLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInitFn());

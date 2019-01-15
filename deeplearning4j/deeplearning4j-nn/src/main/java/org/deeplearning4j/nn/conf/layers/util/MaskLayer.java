@@ -16,20 +16,18 @@
 
 package org.deeplearning4j.nn.conf.layers.util;
 
+import java.util.Collection;
+import java.util.Map;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.NoParamLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * MaskLayer applies the mask array to the forward pass activations, and backward pass gradients, passing through

@@ -16,7 +16,14 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import java.util.Arrays;
+import java.util.List;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -24,9 +31,6 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Data
 @NoArgsConstructor

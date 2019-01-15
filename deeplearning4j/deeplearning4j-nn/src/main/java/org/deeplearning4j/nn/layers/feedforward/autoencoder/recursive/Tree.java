@@ -17,11 +17,10 @@
 package org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive;
 
 
-import org.nd4j.linalg.api.ndarray.INDArray;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * Tree for a recursive neural tensor network

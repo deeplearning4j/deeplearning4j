@@ -17,7 +17,7 @@
 package org.deeplearning4j.nn.conf.inputs;
 
 import lombok.*;
-import org.deeplearning4j.nn.conf.layers.Convolution3D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
@@ -137,11 +137,11 @@ public abstract class InputType implements Serializable {
      * @param depth    Depth of the input
      * @param channels Number of channels of the input
      * @return InputTypeConvolutional3D
-     * @deprecated Use {@link #convolutional3D(Convolution3D.DataFormat, long, long, long, long)}
+     * @deprecated Use {@link #convolutional3D(Convolution3DLayer.DataFormat, long, long, long, long)}
      */
     @Deprecated
     public static InputType convolutional3D(long depth, long height, long width,  long channels) {
-        return convolutional3D(Convolution3D.DataFormat.NDHWC, depth, height, width, channels);
+        return convolutional3D(Convolution3DLayer.DataFormat.NDHWC, depth, height, width, channels);
     }
 
     /**
@@ -155,7 +155,7 @@ public abstract class InputType implements Serializable {
      * @param channels Number of channels of the input
      * @return InputTypeConvolutional3D
      */
-    public static InputType convolutional3D(Convolution3D.DataFormat dataFormat, long depth, long height, long width, long channels) {
+    public static InputType convolutional3D(Convolution3DLayer.DataFormat dataFormat, long depth, long height, long width, long channels) {
         return new InputTypeConvolutional3D(dataFormat, depth, height, width, channels);
     }
 
@@ -303,7 +303,7 @@ public abstract class InputType implements Serializable {
     @EqualsAndHashCode(callSuper = false)
     @NoArgsConstructor
     public static class InputTypeConvolutional3D extends InputType {
-        private Convolution3D.DataFormat dataFormat;
+        private Convolution3DLayer.DataFormat dataFormat;
         private long depth;
         private long height;
         private long width;
@@ -326,7 +326,7 @@ public abstract class InputType implements Serializable {
 
         @Override
         public long[] getShape(boolean includeBatchDim) {
-            if(dataFormat == Convolution3D.DataFormat.NDHWC){
+            if(dataFormat == Convolution3DLayer.DataFormat.NDHWC){
                 if(includeBatchDim) return new long[]{-1, depth, height, width, channels};
                 else return new long[]{depth, height, width, channels};
             } else {

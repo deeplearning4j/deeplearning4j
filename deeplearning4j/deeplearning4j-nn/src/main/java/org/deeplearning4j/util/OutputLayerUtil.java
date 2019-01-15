@@ -2,8 +2,12 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.CnnLossLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
-import org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer;
+import org.deeplearning4j.nn.conf.layers.ocnn.OCNNOutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnLossLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.training.CenterLossOutputLayer;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;

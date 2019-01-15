@@ -20,6 +20,11 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,9 +45,9 @@ public class TestSetGetParameters extends BaseDL4JTest {
         //Create configuration. Doesn't matter if this doesn't actually work for forward/backward pass here
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).graphBuilder()
                         .addInputs("in").addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
-                        .addLayer("1", new GravesLSTM.Builder().nIn(10).nOut(10).build(), "in")
-                        .addLayer("2", new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build(), "in")
-                        .addLayer("3", new ConvolutionLayer.Builder().nIn(10).nOut(10).kernelSize(2, 2).stride(2, 2)
+                        .addLayer("1", new GravesLSTMLayer.Builder().nIn(10).nOut(10).build(), "in")
+                        .addLayer("2", new GravesBidirectionalLSTMLayer.Builder().nIn(10).nOut(10).build(), "in")
+                        .addLayer("3", new Convolution2DLayer.Builder().nIn(10).nOut(10).kernelSize(2, 2).stride(2, 2)
                                         .padding(2, 2).build(), "in")
                         .addLayer("4", new OutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(10).build(), "3")
                         .addLayer("5", new OutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(10).build(), "0")

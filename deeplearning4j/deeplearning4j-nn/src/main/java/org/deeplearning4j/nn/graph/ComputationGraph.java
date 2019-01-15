@@ -30,7 +30,7 @@ import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
@@ -42,7 +42,6 @@ import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
-import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -56,7 +55,6 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
 import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.base.Preconditions;
-import org.nd4j.evaluation.EvaluationUtils;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
@@ -4244,16 +4242,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     //layer with params
                     if (currentLayer.numParams() > 0) {
                         paramShape = "";
-                        if (currentLayer instanceof BidirectionalLayer) { // Bidirectional layer is not an FFL
-                            BidirectionalLayer bi = (BidirectionalLayer) currentLayer;
-                            in = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNIn());
-                            out = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNOut());
+                        if (currentLayer instanceof org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer) { // BidirectionalLayer layer is not an FFL
+                            org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer bi = (org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer) currentLayer;
+                            in = String.valueOf(((BidirectionalLayer)bi.conf().getLayer()).getNIn());
+                            out = String.valueOf(((BidirectionalLayer)bi.conf().getLayer()).getNOut());
                         } else {
                             try {
                                 in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
                                 out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
                             }
-                            catch (Exception e) { // Some layers, like PReLU, are just BaseLayers (but have parameters)
+                            catch (Exception e) { // Some layers, like PReLULayer, are just BaseLayers (but have parameters)
                             }
                         }
                         List<String> paraNames = currentLayer.conf().variables();
@@ -4546,7 +4544,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Return the layer size (number of units) for the specified layer.
      * Note that the meaning of the "layer size" can depend on the type of layer. For example:<br>
      * - DenseLayer, OutputLayer, recurrent layers: number of units (nOut configuration option)<br>
-     * - ConvolutionLayer: the channels (number of channels)<br>
+     * - Convolution2DLayer: the channels (number of channels)<br>
      * - Subsampling layers, global pooling layers, etc: size of 0 is always returned<br>
      *
      * @param layer Index of the layer to get the size of. Must be in range 0 to nLayers-1 inclusive
@@ -4565,7 +4563,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Note that the meaning of the "input size" can depend on the type of layer. For example:<br>
      * - DenseLayer, OutputLayer, etc: the feature vector size (nIn configuration option)<br>
      * - Recurrent layers: the feature vector size <i>per time step</i> (nIn configuration option)<br>
-     * - ConvolutionLayer: the channels (number of channels)<br>
+     * - Convolution2DLayer: the channels (number of channels)<br>
      * - Subsampling layers, global pooling layers, etc: size of 0 is always returned<br>
      *
      * @param layer Index of the layer to get the size of. Must be in range 0 to nLayers-1 inclusive
@@ -4583,7 +4581,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Return the layer size (number of units) for the specified layer.<br>
      * Note that the meaning of the "layer size" can depend on the type of layer. For example:<br>
      * - DenseLayer, OutputLayer, recurrent layers: number of units (nOut configuration option)<br>
-     * - ConvolutionLayer: the channels (number of channels)<br>
+     * - Convolution2DLayer: the channels (number of channels)<br>
      * - Subsampling layers, global pooling layers, etc: size of 0 is always returned<br>
      *
      * @param layerName Name of the layer to get the size of
@@ -4609,7 +4607,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Note that the meaning of the "input size" can depend on the type of layer. For example:<br>
      * - DenseLayer, OutputLayer, etc: the feature vector size (nIn configuration option)<br>
      * - Recurrent layers: the feature vector size <i>per time step</i> (nIn configuration option)<br>
-     * - ConvolutionLayer: the channels (number of channels)<br>
+     * - Convolution2DLayer: the channels (number of channels)<br>
      * - Subsampling layers, global pooling layers, etc: size of 0 is always returned<br>
      *
      * @param layerName Name of the layer to get the size of

@@ -39,13 +39,13 @@ class RnnOutputLayerTest extends WordSpec with Matchers {
     "compile to a DL4J RnnOutputLayer without loss" in {
       val rnnOutputLayer = RnnOutputLayer(10, 100, Activation.SOFTMAX)
       val compiledLayer = rnnOutputLayer.compile
-      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.RnnOutputLayer] shouldBe true
+      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer] shouldBe true
     }
 
     "compile to a DL4J RnnOutputLayer with loss" in {
       val rnnOutputLayer = RnnOutputLayer(10, 100, Activation.SOFTMAX, Option(LossFunction.MCXENT))
       val compiledLayer = rnnOutputLayer.compile
-      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.RnnOutputLayer] shouldBe true
+      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer] shouldBe true
     }
 
     "does not become an output layer when instanciated without proper loss" in {

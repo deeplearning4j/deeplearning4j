@@ -19,7 +19,7 @@ package org.deeplearning4j.nn.params;
 import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
@@ -30,7 +30,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
 
-/**LSTM Parameter initializer, for LSTM based on
+/**LSTMLayer Parameter initializer, for LSTMLayer based on
  * Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
  */
@@ -60,7 +60,7 @@ public class LSTMParamInitializer implements ParamInitializer {
 
     @Override
     public long numParams(Layer l) {
-        LSTM layerConf = (LSTM) l;
+        LSTMLayer layerConf = (LSTMLayer) l;
 
         val nL = layerConf.getNOut(); //i.e., n neurons in this layer
         val nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
@@ -100,7 +100,7 @@ public class LSTMParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
-        org.deeplearning4j.nn.conf.layers.LSTM layerConf = (org.deeplearning4j.nn.conf.layers.LSTM) conf.getLayer();
+        LSTMLayer layerConf = (LSTMLayer) conf.getLayer();
         double forgetGateInit = layerConf.getForgetGateBiasInit();
 
         val nL = layerConf.getNOut(); //i.e., n neurons in this layer
@@ -163,7 +163,7 @@ public class LSTMParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
-        org.deeplearning4j.nn.conf.layers.LSTM layerConf = (org.deeplearning4j.nn.conf.layers.LSTM) conf.getLayer();
+        LSTMLayer layerConf = (LSTMLayer) conf.getLayer();
 
         val nL = layerConf.getNOut(); //i.e., n neurons in this layer
         val nLast = layerConf.getNIn(); //i.e., n neurons in previous layer

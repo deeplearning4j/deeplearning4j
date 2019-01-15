@@ -18,18 +18,19 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.TruncatedNormalDistribution;
 import org.deeplearning4j.nn.conf.graph.L2NormalizeVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
+import org.deeplearning4j.nn.conf.layers.training.CenterLossOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.ModelMetaData;
 import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
@@ -58,7 +59,7 @@ public class InceptionResNetV1 extends ZooModel {
     @Builder.Default private IUpdater updater = new RmsProp(0.1, 0.96, 0.001);
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    @Builder.Default private Convolution2DLayer.AlgoMode cudnnAlgoMode = Convolution2DLayer.AlgoMode.PREFER_FASTEST;
 
     private InceptionResNetV1() {}
 
@@ -122,55 +123,55 @@ public class InceptionResNetV1 extends ZooModel {
         graph
                         // stem
                         .addLayer("stem-cnn1",
-                                        new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {2, 2})
+                                        new Convolution2DLayer.Builder(new int[] {3, 3}, new int[] {2, 2})
                                                         .nIn(inputShape[0]).nOut(32)
                                                         .cudnnAlgoMode(cudnnAlgoMode).build(),
                                         input)
                         .addLayer("stem-batch1",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(32).nOut(32)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(32).nOut(32)
                                                         .build(),
                                         "stem-cnn1")
                         .addLayer("stem-cnn2",
-                                        new ConvolutionLayer.Builder(new int[] {3, 3}).nIn(32).nOut(32)
+                                        new Convolution2DLayer.Builder(new int[] {3, 3}).nIn(32).nOut(32)
                                                         .cudnnAlgoMode(cudnnAlgoMode).build(),
                                         "stem-batch1")
                         .addLayer("stem-batch2",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(32).nOut(32)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(32).nOut(32)
                                                         .build(),
                                         "stem-cnn2")
                         .addLayer("stem-cnn3",
-                                        new ConvolutionLayer.Builder(new int[] {3, 3})
+                                        new Convolution2DLayer.Builder(new int[] {3, 3})
                                                         .convolutionMode(ConvolutionMode.Same).nIn(32).nOut(64)
                                                         .cudnnAlgoMode(cudnnAlgoMode).build(),
                                         "stem-batch2")
-                        .addLayer("stem-batch3", new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(64)
+                        .addLayer("stem-batch3", new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(64)
                                         .nOut(64).build(), "stem-cnn3")
 
-                        .addLayer("stem-pool4", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX,
+                        .addLayer("stem-pool4", new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.MAX,
                                         new int[] {3, 3}, new int[] {2, 2}).build(), "stem-batch3")
 
                         .addLayer("stem-cnn5",
-                                        new ConvolutionLayer.Builder(new int[] {1, 1}).nIn(64).nOut(80)
+                                        new Convolution2DLayer.Builder(new int[] {1, 1}).nIn(64).nOut(80)
                                                         .cudnnAlgoMode(cudnnAlgoMode).build(),
                                         "stem-pool4")
                         .addLayer("stem-batch5",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(80).nOut(80)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(80).nOut(80)
                                                         .build(),
                                         "stem-cnn5")
                         .addLayer("stem-cnn6",
-                                        new ConvolutionLayer.Builder(new int[] {3, 3}).nIn(80).nOut(128)
+                                        new Convolution2DLayer.Builder(new int[] {3, 3}).nIn(80).nOut(128)
                                                         .cudnnAlgoMode(cudnnAlgoMode).build(),
                                         "stem-batch5")
                         .addLayer("stem-batch6",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(128).nOut(128)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(128).nOut(128)
                                                         .build(),
                                         "stem-cnn6")
                         .addLayer("stem-cnn7",
-                                        new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {2, 2}).nIn(128)
+                                        new Convolution2DLayer.Builder(new int[] {3, 3}, new int[] {2, 2}).nIn(128)
                                                         .nOut(192).cudnnAlgoMode(cudnnAlgoMode)
                                                         .build(),
                                         "stem-batch6")
-                        .addLayer("stem-batch7", new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(192)
+                        .addLayer("stem-batch7", new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(192)
                                         .nOut(192).build(), "stem-cnn7");
 
 
@@ -182,45 +183,46 @@ public class InceptionResNetV1 extends ZooModel {
         graph
                         // 3x3
                         .addLayer("reduceA-cnn1",
-                                        new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {2, 2}).nIn(192)
+                                        new Convolution2DLayer.Builder(new int[] {3, 3}, new int[] {2, 2}).nIn(192)
                                                         .nOut(192).cudnnAlgoMode(cudnnAlgoMode)
                                                         .build(),
                                         "resnetA")
                         .addLayer("reduceA-batch1",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(192).nOut(192)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(192).nOut(192)
                                                         .build(),
                                         "reduceA-cnn1")
                         // 1x1 -> 3x3 -> 3x3
                         .addLayer("reduceA-cnn2",
-                                        new ConvolutionLayer.Builder(new int[] {1, 1})
+                                        new Convolution2DLayer.Builder(new int[] {1, 1})
                                                         .convolutionMode(ConvolutionMode.Same).nIn(192).nOut(128)
                                                         .cudnnAlgoMode(cudnnAlgoMode).build(),
                                         "resnetA")
                         .addLayer("reduceA-batch2",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(128).nOut(128)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(128).nOut(128)
                                                         .build(),
                                         "reduceA-cnn2")
                         .addLayer("reduceA-cnn3",
-                                        new ConvolutionLayer.Builder(new int[] {3, 3})
+                                        new Convolution2DLayer.Builder(new int[] {3, 3})
                                                         .convolutionMode(ConvolutionMode.Same).nIn(128).nOut(128)
                                                         .cudnnAlgoMode(cudnnAlgoMode).build(),
                                         "reduceA-batch2")
                         .addLayer("reduceA-batch3",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(128).nOut(128)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(128).nOut(128)
                                                         .build(),
                                         "reduceA-cnn3")
                         .addLayer("reduceA-cnn4",
-                                        new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {2, 2}).nIn(128)
+                                        new Convolution2DLayer.Builder(new int[] {3, 3}, new int[] {2, 2}).nIn(128)
                                                         .nOut(192).cudnnAlgoMode(cudnnAlgoMode)
                                                         .build(),
                                         "reduceA-batch3")
                         .addLayer("reduceA-batch4",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(192).nOut(192)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(192).nOut(192)
                                                         .build(),
                                         "reduceA-cnn4")
                         // maxpool
                         .addLayer("reduceA-pool5",
-                                        new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {3, 3},
+                                        new Subsampling2DLayer.Builder(
+                                                Subsampling2DLayer.PoolingType.MAX, new int[] {3, 3},
                                                         new int[] {2, 2}).build(),
                                         "resnetA")
                         // -->
@@ -235,73 +237,74 @@ public class InceptionResNetV1 extends ZooModel {
         graph
                         // 3x3 pool
                         .addLayer("reduceB-pool1",
-                                        new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {3, 3},
+                                        new Subsampling2DLayer.Builder(
+                                                Subsampling2DLayer.PoolingType.MAX, new int[] {3, 3},
                                                         new int[] {2, 2}).build(),
                                         "resnetB")
                         // 1x1 -> 3x3
                         .addLayer("reduceB-cnn2",
-                                        new ConvolutionLayer.Builder(new int[] {1, 1})
+                                        new Convolution2DLayer.Builder(new int[] {1, 1})
                                                         .convolutionMode(ConvolutionMode.Same).nIn(576).nOut(256)
                                                         .cudnnAlgoMode(cudnnAlgoMode).build(),
                                         "resnetB")
                         .addLayer("reduceB-batch1",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
                                                         .build(),
                                         "reduceB-cnn2")
                         .addLayer("reduceB-cnn3",
-                                        new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {2, 2}).nIn(256)
+                                        new Convolution2DLayer.Builder(new int[] {3, 3}, new int[] {2, 2}).nIn(256)
                                                         .nOut(256).cudnnAlgoMode(cudnnAlgoMode)
                                                         .build(),
                                         "reduceB-batch1")
                         .addLayer("reduceB-batch2",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
                                                         .build(),
                                         "reduceB-cnn3")
                         // 1x1 -> 3x3
                         .addLayer("reduceB-cnn4",
-                                        new ConvolutionLayer.Builder(new int[] {1, 1})
+                                        new Convolution2DLayer.Builder(new int[] {1, 1})
                                                         .convolutionMode(ConvolutionMode.Same).nIn(576).nOut(256)
                                                         .cudnnAlgoMode(cudnnAlgoMode).build(),
                                         "resnetB")
                         .addLayer("reduceB-batch3",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
                                                         .build(),
                                         "reduceB-cnn4")
                         .addLayer("reduceB-cnn5",
-                                        new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {2, 2}).nIn(256)
+                                        new Convolution2DLayer.Builder(new int[] {3, 3}, new int[] {2, 2}).nIn(256)
                                                         .nOut(256).cudnnAlgoMode(cudnnAlgoMode)
                                                         .build(),
                                         "reduceB-batch3")
                         .addLayer("reduceB-batch4",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
                                                         .build(),
                                         "reduceB-cnn5")
                         // 1x1 -> 3x3 -> 3x3
                         .addLayer("reduceB-cnn6",
-                                        new ConvolutionLayer.Builder(new int[] {1, 1})
+                                        new Convolution2DLayer.Builder(new int[] {1, 1})
                                                         .convolutionMode(ConvolutionMode.Same).nIn(576).nOut(256)
                                                         .cudnnAlgoMode(cudnnAlgoMode).build(),
                                         "resnetB")
                         .addLayer("reduceB-batch5",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
                                                         .build(),
                                         "reduceB-cnn6")
                         .addLayer("reduceB-cnn7",
-                                        new ConvolutionLayer.Builder(new int[] {3, 3})
+                                        new Convolution2DLayer.Builder(new int[] {3, 3})
                                                         .convolutionMode(ConvolutionMode.Same).nIn(256).nOut(256)
                                                         .cudnnAlgoMode(cudnnAlgoMode).build(),
                                         "reduceB-batch5")
                         .addLayer("reduceB-batch6",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
                                                         .build(),
                                         "reduceB-cnn7")
                         .addLayer("reduceB-cnn8",
-                                        new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {2, 2}).nIn(256)
+                                        new Convolution2DLayer.Builder(new int[] {3, 3}, new int[] {2, 2}).nIn(256)
                                                         .nOut(256).cudnnAlgoMode(cudnnAlgoMode)
                                                         .build(),
                                         "reduceB-batch6")
                         .addLayer("reduceB-batch7",
-                                        new BatchNormalization.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
+                                        new BatchNormalizationLayer.Builder(false).decay(0.995).eps(0.001).nIn(256).nOut(256)
                                                         .build(),
                                         "reduceB-cnn8")
                         // -->
@@ -314,7 +317,7 @@ public class InceptionResNetV1 extends ZooModel {
 
         // Average pooling
         graph.addLayer("avgpool",
-                        new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG, new int[] {1, 1}).build(),
+                        new Subsampling2DLayer.Builder(Subsampling2DLayer.PoolingType.AVG, new int[] {1, 1}).build(),
                         "resnetC");
 
         return graph;

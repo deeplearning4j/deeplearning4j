@@ -24,7 +24,7 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
 
 /**
  * Layer space for convolutional layers
@@ -34,7 +34,7 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
-public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLayer> {
+public class ConvolutionLayerSpace extends FeedForwardLayerSpace<Convolution2DLayer> {
     protected ParameterSpace<int[]> dilation;
     protected ParameterSpace<int[]> kernelSize;
     protected ParameterSpace<int[]> stride;
@@ -55,13 +55,13 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
     }
 
     @Override
-    public ConvolutionLayer getValue(double[] values) {
-        ConvolutionLayer.Builder b = new ConvolutionLayer.Builder();
+    public Convolution2DLayer getValue(double[] values) {
+        Convolution2DLayer.Builder b = new Convolution2DLayer.Builder();
         setLayerOptionsBuilder(b, values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(ConvolutionLayer.Builder builder, double[] values) {
+    protected void setLayerOptionsBuilder(Convolution2DLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
         if (dilation != null)
             builder.dilation(dilation.getValue(values));

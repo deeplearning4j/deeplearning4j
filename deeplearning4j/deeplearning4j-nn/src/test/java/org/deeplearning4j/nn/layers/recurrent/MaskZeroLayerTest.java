@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.junit.Test;
@@ -46,8 +47,8 @@ public class MaskZeroLayerTest {
           new double[] {0, 0, 2}
       });
 
-      // A LSTM which adds one for every non-zero timestep
-      org.deeplearning4j.nn.conf.layers.LSTM underlying = new org.deeplearning4j.nn.conf.layers.LSTM.Builder()
+      // A LSTMLayer which adds one for every non-zero timestep
+      LSTMLayer underlying = new LSTMLayer.Builder()
               .activation(Activation.IDENTITY)
               .gateActivationFunction(Activation.IDENTITY)
               .nIn(2)

@@ -27,13 +27,18 @@ import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryType;
 import org.deeplearning4j.nn.conf.memory.MemoryUseMode;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -63,9 +68,9 @@ public class TestMemoryReports extends BaseDL4JTest {
         l.add(new Pair<>(new LossLayer.Builder().build(), InputType.feedForward(20)));
 
         //RNN layers:
-        l.add(new Pair<>(new GravesLSTM.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
-        l.add(new Pair<>(new LSTM.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
-        l.add(new Pair<>(new GravesBidirectionalLSTM.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
+        l.add(new Pair<>(new GravesLSTMLayer.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
+        l.add(new Pair<>(new LSTMLayer.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
+        l.add(new Pair<>(new GravesBidirectionalLSTMLayer.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
         l.add(new Pair<>(new RnnOutputLayer.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
 
         return l;

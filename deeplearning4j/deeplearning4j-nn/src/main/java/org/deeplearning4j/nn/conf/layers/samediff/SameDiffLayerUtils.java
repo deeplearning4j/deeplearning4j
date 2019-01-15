@@ -16,11 +16,10 @@
 
 package org.deeplearning4j.nn.conf.layers.samediff;
 
-import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.IActivation;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
 
 /**
  * Utility methods for DL4J SameDiff layers

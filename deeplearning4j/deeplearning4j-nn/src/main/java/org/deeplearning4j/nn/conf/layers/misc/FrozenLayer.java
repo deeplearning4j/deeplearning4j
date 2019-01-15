@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.nn.conf.layers.misc;
 
+import java.util.Collection;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,9 +36,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
-
-import java.util.Collection;
-import java.util.List;
 
 /**
  * FrozenLayer is used for the purposes of transfer learning.<br> A frozen layer wraps another DL4J Layer within it.

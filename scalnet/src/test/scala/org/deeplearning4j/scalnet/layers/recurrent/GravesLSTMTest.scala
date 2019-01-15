@@ -34,7 +34,7 @@ class GravesLSTMTest extends WordSpec with Matchers {
     "compile to a DL4J GravesLSTM" in {
       val gravesLSTMLayer = GravesLSTM(10, 100)
       val compiledLayer = gravesLSTMLayer.compile
-      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.GravesLSTM] shouldBe true
+      compiledLayer.isInstanceOf[org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer] shouldBe true
     }
 
   }

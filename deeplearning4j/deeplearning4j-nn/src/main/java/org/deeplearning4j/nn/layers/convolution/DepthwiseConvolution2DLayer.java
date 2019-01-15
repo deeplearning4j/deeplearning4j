@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import java.util.Arrays;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -34,8 +35,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Arrays;
-
 /**
  * 2D depth-wise convolution layer configuration.
  * <p>
@@ -46,7 +45,7 @@ import java.util.Arrays;
  *
  * @author Max Pumperla
  */
-public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
+public class DepthwiseConvolution2DLayer extends Convolution2DLayer {
 
     public DepthwiseConvolution2DLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -160,7 +159,7 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
             if (layerName == null)
                 layerName = "(not named)";
             throw new DL4JInvalidInputException("Got rank " + input.rank()
-                    + " array as input to DepthwiseConvolution2D (layer name = " + layerName + ", layer index = "
+                    + " array as input to DepthwiseConvolution2DLayer (layer name = " + layerName + ", layer index = "
                     + index + ") with shape " + Arrays.toString(input.shape()) + ". "
                     + "Expected rank 4 array with shape [miniBatchSize, layerInputDepth, inputHeight, inputWidth]."
                     + (input.rank() == 2
@@ -177,7 +176,7 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
-            throw new DL4JInvalidInputException("Cannot do forward pass in DepthwiseConvolution2D layer " +
+            throw new DL4JInvalidInputException("Cannot do forward pass in DepthwiseConvolution2DLayer layer " +
                     "(layer name = " + layerName
                     + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
                     + " (data input channels = " + input.size(1) + ", [minibatch,inputDepth,height,width]="

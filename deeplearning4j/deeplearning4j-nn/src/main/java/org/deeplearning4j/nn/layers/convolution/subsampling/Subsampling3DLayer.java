@@ -16,12 +16,13 @@
 
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
+import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
@@ -34,8 +35,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Arrays;
-
 
 /**
  * Subsampling 3D layer, used for downsampling a 3D convolution
@@ -43,14 +42,14 @@ import java.util.Arrays;
  * @author Max Pumperla
  */
 @Slf4j
-public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.Subsampling3DLayer> {
+public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling3DLayer> {
 
     protected ConvolutionMode convolutionMode;
 
     public Subsampling3DLayer(NeuralNetConfiguration conf) {
         super(conf);
         this.convolutionMode =
-                ((org.deeplearning4j.nn.conf.layers.Subsampling3DLayer) conf.getLayer()).getConvolutionMode();
+                ((org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling3DLayer) conf.getLayer()).getConvolutionMode();
     }
 
     public Subsampling3DLayer(NeuralNetConfiguration conf, INDArray input) {
@@ -77,7 +76,7 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        boolean isNCDHW = layerConf().getDataFormat() == Convolution3D.DataFormat.NCDHW;
+        boolean isNCDHW = layerConf().getDataFormat() == Convolution3DLayer.DataFormat.NCDHW;
 
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
@@ -139,7 +138,7 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             applyDropOutIfNecessary(true, workspaceMgr);
         }
 
-        boolean isNCDHW = layerConf().getDataFormat() == Convolution3D.DataFormat.NCDHW;
+        boolean isNCDHW = layerConf().getDataFormat() == Convolution3DLayer.DataFormat.NCDHW;
 
         if (input.rank() != 5) {
             if(isNCDHW){

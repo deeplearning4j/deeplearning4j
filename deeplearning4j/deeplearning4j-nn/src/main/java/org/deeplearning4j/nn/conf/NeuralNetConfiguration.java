@@ -29,9 +29,11 @@ import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
@@ -495,7 +497,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected CacheMode cacheMode = CacheMode.NONE;
 
         protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
-        protected ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+        protected Convolution2DLayer.AlgoMode cudnnAlgoMode = Convolution2DLayer.AlgoMode.PREFER_FASTEST;
 
         public Builder() {
             //
@@ -971,14 +973,14 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /**
          * Sets the cuDNN algo mode for convolutional layers, which impacts performance and memory usage of cuDNN.
-         * See {@link ConvolutionLayer.AlgoMode} for details.  Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
+         * See {@link Convolution2DLayer.AlgoMode} for details.  Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
          * <br>
          * Note: values set by this method will be applied to all applicable layers in the network, unless a different
          * value is explicitly set on a given layer. In other words: values set via this method are used as the default
          * value, and can be overridden on a per-layer basis.
          * @param cudnnAlgoMode cuDNN algo mode to use
          */
-        public Builder cudnnAlgoMode(ConvolutionLayer.AlgoMode cudnnAlgoMode) {
+        public Builder cudnnAlgoMode(Convolution2DLayer.AlgoMode cudnnAlgoMode) {
             this.cudnnAlgoMode = cudnnAlgoMode;
             return this;
         }
@@ -1094,8 +1096,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 copyConfigToLayer(layerName, ((FrozenLayerWithBackprop) layer).getUnderlying());
             }
 
-            if (layer instanceof Bidirectional) {
-                Bidirectional b = (Bidirectional)layer;
+            if (layer instanceof BidirectionalLayer) {
+                BidirectionalLayer b = (BidirectionalLayer)layer;
                 copyConfigToLayer(b.getFwd().getLayerName(), b.getFwd());
                 copyConfigToLayer(b.getBwd().getLayerName(), b.getBwd());
             }
@@ -1105,8 +1107,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 configureLayer(bwr.getUnderlying());
             }
 
-            if (layer instanceof ConvolutionLayer) {
-                ConvolutionLayer cl = (ConvolutionLayer) layer;
+            if (layer instanceof Convolution2DLayer) {
+                Convolution2DLayer cl = (Convolution2DLayer) layer;
                 if (cl.getConvolutionMode() == null) {
                     cl.setConvolutionMode(convolutionMode);
                 }
@@ -1114,8 +1116,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     cl.setCudnnAlgoMode(cudnnAlgoMode);
                 }
             }
-            if (layer instanceof SubsamplingLayer) {
-                SubsamplingLayer sl = (SubsamplingLayer) layer;
+            if (layer instanceof Subsampling2DLayer) {
+                Subsampling2DLayer sl = (Subsampling2DLayer) layer;
                 if (sl.getConvolutionMode() == null) {
                     sl.setConvolutionMode(convolutionMode);
                 }

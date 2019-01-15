@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.eval.Evaluation;
@@ -25,16 +26,14 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-
-import java.util.List;
 
 /**
  * Recurrent Neural Network Loss Layer.<br>
@@ -47,7 +46,7 @@ import java.util.List;
  * @author Alex Black
  * @see RnnOutputLayer
  */
-public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.RnnLossLayer> implements IOutputLayer {
+public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.recurrent.RnnLossLayer> implements IOutputLayer {
     @Setter @Getter protected INDArray labels;
 
     public RnnLossLayer(NeuralNetConfiguration conf) {

@@ -33,7 +33,7 @@ import java.util.Arrays;
 
 /**
  * A preprocessor to allow RNN and feed-forward network layers to be used together.<br>
- * For example, GravesLSTM -> OutputLayer or GravesLSTM -> DenseLayer<br>
+ * For example, GravesLSTMLayer -> OutputLayer or GravesLSTMLayer -> DenseLayer<br>
  * This does two things:<br>
  * (a) Reshapes activations out of RNN layer (which is 3D with shape
  * [miniBatchSize,layerSize,timeSeriesLength]) into 2d activations (with shape
@@ -43,7 +43,7 @@ import java.util.Arrays;
  * [miniBatchSize,layerSize,timeSeriesLength]) for use in RNN layer
  *
  * @author Alex Black
- * @see FeedForwardToRnnPreProcessor for opposite case (i.e., DenseLayer -> GravesLSTM etc)
+ * @see FeedForwardToRnnPreProcessor for opposite case (i.e., DenseLayer -> GravesLSTMLayer etc)
  */
 @Data
 @Slf4j

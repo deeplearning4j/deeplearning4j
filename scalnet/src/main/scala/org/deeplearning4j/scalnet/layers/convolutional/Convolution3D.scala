@@ -16,7 +16,7 @@
 package org.deeplearning4j.scalnet.layers.convolutional
 
 import org.deeplearning4j.nn.conf.layers.{ Convolution3D => JConvolution3D }
-import org.deeplearning4j.nn.conf.layers.Convolution3D.DataFormat
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution3DLayer.DataFormat
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.scalnet.layers.core.Layer
 import org.deeplearning4j.scalnet.regularizers.{ NoRegularizer, WeightRegularizer }

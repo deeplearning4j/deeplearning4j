@@ -25,6 +25,10 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.autoencoder.AutoEncoder;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.normalization.BatchNormalizationLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -39,7 +43,6 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.*;
 import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -1008,9 +1011,9 @@ public class TestUpdaters extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
                 .layer(new DenseLayer.Builder().nIn(10).nOut(9).build())
-                .layer(new BatchNormalization.Builder().nOut(9).build())
+                .layer(new BatchNormalizationLayer.Builder().nOut(9).build())
                 .layer(new DenseLayer.Builder().nIn(9).nOut(8).build())
-                .layer(new BatchNormalization.Builder().nOut(8).build())
+                .layer(new BatchNormalizationLayer.Builder().nOut(8).build())
                 .layer(new OutputLayer.Builder().nIn(8).nOut(7).activation(Activation.SOFTMAX).build())
                 .build();
 
@@ -1058,11 +1061,11 @@ public class TestUpdaters extends BaseDL4JTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
-                .layer(new BatchNormalization.Builder().nOut(6).build())
-                .layer(new ConvolutionLayer.Builder().nIn(6).nOut(5).kernelSize(2,2).build())
-                .layer(new BatchNormalization.Builder().nOut(5).build())
-                .layer(new ConvolutionLayer.Builder().nIn(5).nOut(4).kernelSize(2,2).build())
-                .layer(new BatchNormalization.Builder().nOut(4).build())
+                .layer(new BatchNormalizationLayer.Builder().nOut(6).build())
+                .layer(new Convolution2DLayer.Builder().nIn(6).nOut(5).kernelSize(2,2).build())
+                .layer(new BatchNormalizationLayer.Builder().nOut(5).build())
+                .layer(new Convolution2DLayer.Builder().nIn(5).nOut(4).kernelSize(2,2).build())
+                .layer(new BatchNormalizationLayer.Builder().nOut(4).build())
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

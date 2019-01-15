@@ -16,7 +16,13 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import jdk.nashorn.internal.objects.annotations.Property;
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -35,10 +41,6 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
-
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.util.*;
 
 /**
  * A neural network layer.

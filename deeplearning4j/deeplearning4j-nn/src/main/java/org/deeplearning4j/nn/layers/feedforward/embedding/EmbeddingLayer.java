@@ -18,18 +18,18 @@ package org.deeplearning4j.nn.layers.feedforward.embedding;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 /**Embedding layer: feed-forward layer that expects single integers per example as input (class numbers, in range 0 to numClass-1)
  * as input. This input has shape [numExamples,1] instead of [numExamples,numClasses] for the equivalent one-hot representation.
@@ -42,7 +42,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
  * @author Alex Black
  */
 @Slf4j
-public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.EmbeddingLayer> {
+public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.feedforeward.embedding.EmbeddingLayer> {
     private static final int[] DIM_1 = new int[]{1};
 
     public EmbeddingLayer(NeuralNetConfiguration conf) {

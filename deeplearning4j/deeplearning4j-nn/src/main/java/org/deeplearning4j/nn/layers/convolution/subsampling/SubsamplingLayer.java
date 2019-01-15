@@ -16,17 +16,20 @@
 
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
+import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -39,12 +42,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.util.OneTimeLogger;
-
-import java.util.Arrays;
-import java.util.Properties;
 
 
 /**
@@ -55,7 +53,7 @@ import java.util.Properties;
  * @author Adam Gibson
  */
 @Slf4j
-public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
+public class SubsamplingLayer extends AbstractLayer<Subsampling2DLayer> {
 
     protected SubsamplingHelper helper = null;
     protected int helperCountFail = 0;
@@ -65,7 +63,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         super(conf);
         initializeHelper();
         this.convolutionMode =
-                        ((org.deeplearning4j.nn.conf.layers.SubsamplingLayer) conf.getLayer()).getConvolutionMode();
+                        ((Subsampling2DLayer) conf.getLayer()).getConvolutionMode();
     }
 
     public SubsamplingLayer(NeuralNetConfiguration conf, INDArray input) {
@@ -302,7 +300,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Input validation: expect rank 4 matrix
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
-                            + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
+                            + " array as input to Subsampling2DLayer with shape " + Arrays.toString(input.shape())
                             + ". Expected rank 4 array with shape [minibatchSize, channels, inputHeight, inputWidth]. "
                             + layerId());
         }

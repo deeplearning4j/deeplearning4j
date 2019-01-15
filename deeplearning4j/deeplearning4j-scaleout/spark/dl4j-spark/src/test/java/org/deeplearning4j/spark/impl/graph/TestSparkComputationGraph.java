@@ -30,7 +30,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -130,7 +130,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().l1(0.1).l2(0.1)
                         .seed(123).updater(new Nesterovs(0.1, 0.9)).graphBuilder()
                         .addInputs("in")
-                        .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(nIn).nOut(3)
+                        .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(3)
                                         .activation(Activation.TANH).build(), "in")
                         .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(3).nOut(nOut)
@@ -209,7 +209,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(Updater.RMSPROP)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
-                        .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(4).nOut(4)
+                        .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(4)
                                         .activation(Activation.TANH).build(), "in")
                         .addLayer("1", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                         LossFunctions.LossFunction.MCXENT).nIn(4).nOut(3).activation(Activation.SOFTMAX)

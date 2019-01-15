@@ -25,6 +25,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 
@@ -277,14 +279,14 @@ public class TrainModuleUtils {
             map.put("Activation Function", layer1.getActivationFn().toString());
         }
 
-        if (layer instanceof ConvolutionLayer) {
-            org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 =
-                    (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer;
+        if (layer instanceof Convolution2DLayer) {
+            Convolution2DLayer layer1 =
+                    (Convolution2DLayer) layer;
             map.put("Kernel size", Arrays.toString(layer1.getKernelSize()));
             map.put("Stride", Arrays.toString(layer1.getStride()));
             map.put("Padding", Arrays.toString(layer1.getPadding()));
-        } else if (layer instanceof SubsamplingLayer) {
-            SubsamplingLayer layer1 = (SubsamplingLayer) layer;
+        } else if (layer instanceof Subsampling2DLayer) {
+            Subsampling2DLayer layer1 = (Subsampling2DLayer) layer;
             map.put("Kernel size", Arrays.toString(layer1.getKernelSize()));
             map.put("Stride", Arrays.toString(layer1.getStride()));
             map.put("Padding", Arrays.toString(layer1.getPadding()));

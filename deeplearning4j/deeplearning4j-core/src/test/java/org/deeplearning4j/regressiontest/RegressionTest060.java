@@ -25,6 +25,12 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Convolution2DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.subsampling.Subsampling2DLayer;
+import org.deeplearning4j.nn.conf.layers.feedforeward.dense.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -152,7 +158,7 @@ public class RegressionTest060 extends BaseDL4JTest {
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(3, conf.getConfs().size());
 
-        ConvolutionLayer l0 = (ConvolutionLayer) conf.getConf(0).getLayer();
+        Convolution2DLayer l0 = (Convolution2DLayer) conf.getConf(0).getLayer();
         assertEquals("tanh", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(3, l0.getNOut());
@@ -164,7 +170,7 @@ public class RegressionTest060 extends BaseDL4JTest {
         assertArrayEquals(new int[] {0, 0}, l0.getPadding());
         assertEquals(l0.getConvolutionMode(), ConvolutionMode.Truncate); //Pre-0.7.0: no ConvolutionMode. Want to default to truncate here if not set
 
-        SubsamplingLayer l1 = (SubsamplingLayer) conf.getConf(1).getLayer();
+        Subsampling2DLayer l1 = (Subsampling2DLayer) conf.getConf(1).getLayer();
         assertArrayEquals(new int[] {2, 2}, l1.getKernelSize());
         assertArrayEquals(new int[] {1, 1}, l1.getStride());
         assertArrayEquals(new int[] {0, 0}, l1.getPadding());
@@ -199,14 +205,14 @@ public class RegressionTest060 extends BaseDL4JTest {
         MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
         assertEquals(3, conf.getConfs().size());
 
-        GravesLSTM l0 = (GravesLSTM) conf.getConf(0).getLayer();
+        GravesLSTMLayer l0 = (GravesLSTMLayer) conf.getConf(0).getLayer();
         assertEquals("tanh", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
         assertEquals(1.5, l0.getGradientNormalizationThreshold(), 1e-5);
 
-        GravesBidirectionalLSTM l1 = (GravesBidirectionalLSTM) conf.getConf(1).getLayer();
+        GravesBidirectionalLSTMLayer l1 = (GravesBidirectionalLSTMLayer) conf.getConf(1).getLayer();
         assertEquals("softsign", l1.getActivationFn().toString());
         assertEquals(4, l1.getNIn());
         assertEquals(4, l1.getNOut());
@@ -231,15 +237,15 @@ public class RegressionTest060 extends BaseDL4JTest {
         ComputationGraphConfiguration conf = net.getConfiguration();
         assertEquals(3, conf.getVertices().size());
 
-        GravesLSTM l0 = (GravesLSTM) ((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer();
+        GravesLSTMLayer l0 = (GravesLSTMLayer) ((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer();
         assertEquals("tanh", l0.getActivationFn().toString());
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
         assertEquals(1.5, l0.getGradientNormalizationThreshold(), 1e-5);
 
-        GravesBidirectionalLSTM l1 =
-                        (GravesBidirectionalLSTM) ((LayerVertex) conf.getVertices().get("1")).getLayerConf().getLayer();
+        GravesBidirectionalLSTMLayer l1 =
+                        (GravesBidirectionalLSTMLayer) ((LayerVertex) conf.getVertices().get("1")).getLayerConf().getLayer();
         assertEquals("softsign", l1.getActivationFn().toString());
         assertEquals(4, l1.getNIn());
         assertEquals(4, l1.getNOut());

@@ -16,19 +16,28 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
+import static org.nd4j.linalg.indexing.NDArrayIndex.point;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.AbstractLSTM;
-import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
+import org.deeplearning4j.nn.conf.layers.recurrent.AbstractLSTM;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesBidirectionalLSTMLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.GravesLSTMLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.blas.Level1;
@@ -40,37 +49,28 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
-import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 /**
  *
  * RNN tutorial: <a href="http://deeplearning4j.org/usingrnns.html">http://deeplearning4j.org/usingrnns.html</a>
  * READ THIS FIRST if you want to understand what the heck is happening here.
  *
- * Shared code for the standard "forwards" LSTM RNN and the bidirectional LSTM RNN
- * This was extracted from GravesLSTM and refactored into static helper functions.  The general reasoning for this was
+ * Shared code for the standard "forwards" LSTMLayer RNN and the bidirectional LSTMLayer RNN
+ * This was extracted from GravesLSTMLayer and refactored into static helper functions.  The general reasoning for this was
  * so we only have math in one place, instead of two.
  *
  * Based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
- * See also for full/vectorized equations (and a comparison to other LSTM variants):
- * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11.
+ * See also for full/vectorized equations (and a comparison to other LSTMLayer variants):
+ * Greff et al. 2015, "LSTMLayer: A Search Space Odyssey", pg11.
  * <p>
  * When 'hasPeepholeConnections' is true, this is the "vanilla" variant in said paper<br>
  * When 'hasPeepholeConnections' is false, this is the "no peephole" variant<br>
  * <a href="http://arxiv.org/pdf/1503.04069.pdf">http://arxiv.org/pdf/1503.04069.pdf</a>
  *
  *
- * @author Alex Black (LSTM implementations)
- * @author Benjamin Joseph (refactoring for bidirectional LSTM)
+ * @author Alex Black (LSTMLayer implementations)
+ * @author Benjamin Joseph (refactoring for bidirectional LSTMLayer)
  */
 @Slf4j
 public class LSTMHelpers {
@@ -91,7 +91,7 @@ public class LSTMHelpers {
                                                final boolean training, final INDArray originalPrevOutputActivations,
                                                final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
                                                final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                                               final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
+                                               final boolean hasPeepholeConnections, //True for GravesLSTMLayer, false for LSTMLayer
                                                final LSTMHelper helper, final CacheMode cacheMode, // cacheMode for layer calling this helper
                                                final LayerWorkspaceMgr workspaceMgr
                                                ) {
@@ -344,7 +344,7 @@ public class LSTMHelpers {
 
                 ////////////// same as with iFogActivations - if we use cache, let's create this array right there
                 cacheEnter(training, cacheMode, workspaceMgr);
-                //LSTM unit outputs:
+                //LSTMLayer unit outputs:
                 INDArray currMemoryCellActivation ;
                 currMemoryCellActivation = workspaceMgr.dup(ArrayType.FF_WORKING_MEM, currentMemoryCellState, 'f');
                 currMemoryCellActivation = afn.getActivation(currMemoryCellActivation, training);
@@ -433,7 +433,7 @@ public class LSTMHelpers {
                     final FwdPassReturn fwdPass, final boolean forwards, final String inputWeightKey,
                     final String recurrentWeightKey, final String biasWeightKey,
                     final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
+                    final boolean hasPeepholeConnections, //True for GravesLSTMLayer, false for LSTMLayer
                     final LSTMHelper helper,
                     final LayerWorkspaceMgr workspaceMgr) {
 
@@ -541,7 +541,7 @@ public class LSTMHelpers {
 
 
                 // FIXME: int cast
-                //LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
+                //LSTMLayer unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
                 INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension((int) time, 1, 0)); //(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
 
                 INDArray nablaOut = Shape.toOffsetZeroCopy(epsilonSlice, 'f'); //Shape: [m,n^L]
@@ -720,11 +720,11 @@ public class LSTMHelpers {
 
 
     public static LayerMemoryReport getMemoryReport(AbstractLSTM lstmLayer, InputType inputType) {
-        boolean isGraves = lstmLayer instanceof org.deeplearning4j.nn.conf.layers.GravesLSTM;
+        boolean isGraves = lstmLayer instanceof GravesLSTMLayer;
         return getMemoryReport(isGraves, lstmLayer, inputType);
     }
 
-    public static LayerMemoryReport getMemoryReport(GravesBidirectionalLSTM lstmLayer, InputType inputType) {
+    public static LayerMemoryReport getMemoryReport(GravesBidirectionalLSTMLayer lstmLayer, InputType inputType) {
         LayerMemoryReport r = getMemoryReport(true, lstmLayer, inputType);
 
         //Double everything for bidirectional
@@ -764,7 +764,7 @@ public class LSTMHelpers {
 
         //For training, we also have
         //nTimeSteps * 5 * [minibatch, nOut] - 4 x gate pre-outs, memory cell state - may be cached
-        //nTimeSteps * [minibatch, nOut] - peephole conneciton activations, graves LSTM only - may be cached
+        //nTimeSteps * [minibatch, nOut] - peephole conneciton activations, graves LSTMLayer only - may be cached
         //Total: 4 + 5 + 1 = 10xnOut per time step (training) or 4x (inference)
         val fwdPassPerTimeStepTrainCache = tsLength * 6 * lstmLayer.getNOut();
 
@@ -780,7 +780,7 @@ public class LSTMHelpers {
 
         val backpropWorkingSpace = (isGraves ? 9 : 6) * tsLength * lstmLayer.getNOut();
 
-        //TODO NO WAY TO TAKE LSTM WORKSPACE INTO ACCOUNT HERE :(
+        //TODO NO WAY TO TAKE LSTMLayer WORKSPACE INTO ACCOUNT HERE :(
 
 
         Map<CacheMode, Long> trainVariable = new HashMap<>();

@@ -16,7 +16,13 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import java.util.Collection;
+import java.util.Map;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -28,9 +34,6 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Dropout layer. This layer simply applies dropout at training time, and passes activations through unmodified at test
