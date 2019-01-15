@@ -74,29 +74,16 @@ public class TFGraphTestAllLibnd4j {
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
     private static final String[] SKIP_FOR_LIBND4J_EXEC = new String[]{
-            //These are issues that need to be looked into more and fixed
-            "reductions/max.*",
-            "reductions/mean.*",
-            "reductions/min.*",
-            "reductions/prod.*",
-            "reductions/sum.*",
-            "reductions/moments.*",
-            "multiple_outs_a",
-            "multiple_outs_b",
-
-            //Crashing
-            "cnn3d_layers/.*",
-
             //Exceptions - need to look into:
             "alpha_dropout/.*",
             "layers_dropout/.*",
             "losses/.*",
 
             //Failing only on libnd4j/native graph execution
-            "logsumexp/.*",
-            "reduce_all/.*",
-            "reduce_any/.*",
-            "split/.*",
+            //"logsumexp/.*",
+            //"reduce_all/.*",
+            //"reduce_any/.*",
+            //"split/.*",
 
             "reductions/count_nonzero.*",
             "sufficient_statistics.*",
