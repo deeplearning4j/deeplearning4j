@@ -1046,7 +1046,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         auto x = reinterpret_cast<X *>(xBuffer);
         const auto y = reinterpret_cast<const Y *>(yBuffer);
         if (x && y)
-        *(reinterpret_cast<X*>(xBuffer) + xOffset) = static_cast<X>(*reinterpret_cast<Y const*>(yBuffer) + yOffset);
+        *(reinterpret_cast<X*>(xBuffer) + xOffset) = static_cast<X>(*(reinterpret_cast<Y const*>(yBuffer) + yOffset));
     }
     BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedDoubleAssign, (void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const, LIBND4J_TYPES, LIBND4J_TYPES);
 
@@ -3153,13 +3153,13 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
     // device kernel implementation
 
     template <typename T>
-    static __global__ void tileKernel(void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape) {
+    static __global__ void tileKernel(void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //        Original code to transform in cuda-based
-        const auto resultLength = shape::length(outputShape);
+        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        int totalThreads = gridDim.x * blockDim.x;
+        //const auto resultLength = shape::length(outputShape);
         if(shape::order(outputShape) == 'c') {           //  ews == 1 always here
-            auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-            int totalThreads = gridDim.x * blockDim.x;
             for (int i = tid; i < resultLength; i += totalThreads) {
                 auto xOffset = shape::subArrayIndex(outputShape, inputShape, i);
                 *(reinterpret_cast<T*>(outputBuffer) + i) = *(reinterpret_cast<T const*>(inputBuffer) + xOffset);
@@ -3172,24 +3172,26 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         }
         else {
 //
-////#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-//            for(int i=0;  i<resultLen; ++i) {
-//
-//                auto xOffset = result.getOffset(i);
-//                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
+            //auto inputLength = shape::lenght(inputShape);
+            for (int i = tid; i < resultLength; ++i) {
+                auto xOffset = shape::getIndexOffset(i, outputShape, resultLength);
+                auto yOffset = shape::subArrayIndex(outputShape, inputShape, i);
+                *(reinterpret_cast<T *>(outputBuffer) + xOffset) = *(reinterpret_cast<T const *>(inputBuffer) +
+                                                                     yOffset);
 //                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
+            }
         }
 
     }
 
-    BUILD_SINGLE_TEMPLATE(template __global__ void tileKernel, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template __global__ void tileKernel, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength), LIBND4J_TYPES);
 
     template <typename T>
-    static  void tileKernelH(void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape) {
+    static  void tileKernelH(void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, cudaStream_t stream) {
         dim3 launchDims(256, 512, 8192);
-        tileKernel<T><<<launchDims.x, launchDims.y, launchDims.z>>>(inputBuffer, inputShape, outputBuffer, outputShape);
+        tileKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(inputBuffer, inputShape, outputBuffer, outputShape, resultLength);
     }
-    BUILD_SINGLE_TEMPLATE(template void tileKernelH, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void tileKernelH, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, cudaStream_t stream), LIBND4J_TYPES);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
@@ -3225,7 +3227,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         // looping through _buffer goes automatically by means of getSubArrayIndex applying
         const auto resultLen = result.lengthOf();
         auto xType = this->dataType();
-        BUILD_SINGLE_SELECTOR(xType, tileKernelH, (this->_bufferD, this->_shapeInfoD, result._bufferD, result._shapeInfoD), LIBND4J_TYPES);
+        auto stream = _context->getCudaStream();
+        BUILD_SINGLE_SELECTOR(xType, tileKernelH, (this->_bufferD, this->_shapeInfoD, result._bufferD, result._shapeInfoD, resultLen, *stream), LIBND4J_TYPES);
         result.tickWriteDevice();
         return result;
     }
