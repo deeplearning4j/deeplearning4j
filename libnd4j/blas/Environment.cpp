@@ -70,7 +70,7 @@ namespace nd4j {
 		    Pair p(devProperties[i].major, devProperties[i].minor);
 		    _capabilities.emplace_back(p);
 
-		    printf("CUDA device %i: [%s]; cc: [%i.%i]; Total memory: [%lld]\n", i, devProperties[i].name, devProperties[i].major, devProperties[i].minor, (Nd4jLong) devProperties[i].totalGlobalMem);
+		    printf("CUDA device %i: [%s]; cc: [%i.%i]; Total memory: [%lld];\n", i, devProperties[i].name, devProperties[i].major, devProperties[i].minor, (Nd4jLong) devProperties[i].totalGlobalMem);
 	    }
 	    fflush(stdout);
 
