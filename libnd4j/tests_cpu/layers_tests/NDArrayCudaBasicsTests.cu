@@ -1988,7 +1988,35 @@ TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_1)
     exp = 10.;
     y.printShapeInfo("Output SHAPE");
     y.printBuffer("Output TILE");
-    ASSERT_TRUE(exp.equalsTo(x));
+    exp.printBuffer("Expect TILE");
+    ASSERT_TRUE(exp.equalsTo(y));
+}
+
+TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_2)
+{
+    auto x = NDArrayFactory::create<float>('f', {2, 1, 2});
+    x = 10.;
+    auto y = x.tile({1,2,1});
+    auto exp = NDArrayFactory::create<float>('f', {2, 2, 2});
+    exp = 10.;
+    y.printShapeInfo("Output SHAPE");
+    y.printBuffer("Output TILE");
+    ASSERT_TRUE(exp.equalsTo(y));
+}
+
+TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_3)
+{
+    auto x = NDArrayFactory::create<float>('f', {2, 1, 2});
+    x = 10.;
+    x.p(1,0,1, 20);
+    auto y = x.tile({1,2,1});
+    auto exp = NDArrayFactory::create<float>('f', {2, 2, 2});
+    exp = 10.;
+    exp.p(1,0,1, 20.);
+    exp.p(1, 1, 1, 20.);
+    y.printShapeInfo("Output SHAPE");
+    y.printBuffer("Output TILE");
+    ASSERT_TRUE(exp.equalsTo(y));
 }
 
 //////////////////////////////////////////////////////////////////////
