@@ -49,7 +49,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "assert_rank/rank0_int32"
+            "log_determinant/rank2"
     };
 
     @After
@@ -100,7 +100,7 @@ public class TFGraphTestList {
                 TFGraphTestAllHelper.LOADER, maxRE, minAbs);
     }
 
-    @Test @Ignore
+    @Test
     public void testAlsoIntermediate() throws IOException {
         File dir = testDir.newFolder();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);

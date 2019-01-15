@@ -78,8 +78,7 @@ public class TFGraphTestAllSameDiff {
             //2019/01/08 - No tensorflow op found for SparseTensorDenseAdd
             "confusion/.*",
 
-            //Failing 2019/01/08 - expected/actual difference
-            "log_determinant/.*",
+            //Failing 2019/01/15 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "slogdet/.*",
 
             //Failing 2019/01/08 - NPE
