@@ -22,9 +22,11 @@
 #define LIBND4J_ENVIRONMENT_H
 
 #include <atomic>
+#include <vector>
 #include <dll.h>
 #include <stdexcept>
 #include <array/DataType.h>
+#include <types/pair.h>
 
 namespace nd4j{
     class ND4J_EXPORT Environment {
@@ -44,6 +46,9 @@ namespace nd4j{
 #else
         const bool _experimental = false;
 #endif
+
+        // device compute capability for CUDA
+        std::vector<Pair> _capabilities;
 
         static Environment* _instance;
 
@@ -81,6 +86,8 @@ namespace nd4j{
         bool isExperimentalBuild();
 
         bool isCPU();
+
+        std::vector<Pair>& capabilities();
     };
 }
 

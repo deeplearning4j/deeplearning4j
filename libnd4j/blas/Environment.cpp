@@ -75,6 +75,10 @@ namespace nd4j {
         return _dataType.load();
     }
 
+    std::vector<Pair>& Environment::capabilities() {
+        return _capabilities;
+    }
+
     void Environment::setDefaultFloatDataType(nd4j::DataType dtype) {
         if (dtype != nd4j::DataType::FLOAT32 && dtype != nd4j::DataType::DOUBLE && dtype != nd4j::DataType::FLOAT8 && dtype != nd4j::DataType::HALF)
             throw std::runtime_error("Default Float data type must be one of [FLOAT8, FLOAT16, FLOAT32, DOUBLE]");

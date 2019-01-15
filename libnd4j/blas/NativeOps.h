@@ -74,6 +74,7 @@ bool verbose = false;
 class ND4J_EXPORT NativeOps {
 
 public:
+    NativeOps();
 
     /**
      *
