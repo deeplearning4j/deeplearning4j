@@ -16,6 +16,7 @@
 
 package org.nd4j.autodiff.opvalidation;
 
+import com.google.common.collect.Lists;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -1819,5 +1820,57 @@ public class ShapeOpValidation extends BaseOpValidation {
                 .addOutputs(out1, out2)
                 .addIntegerArguments(2)
                 .build()).expectedOutput(0, exp1).expectedOutput(1,exp2)));
+    }
+
+    @Test
+    public void testDistancesExec(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/7001
+        for(String s : new String[]{"euclidean", "manhattan", "cosinesim", "cosinedist", "jaccard"}) {
+            log.info("Starting: {}", s);
+            INDArray defaultTestCase = Nd4j.create(4, 4);
+            defaultTestCase.putRow(0, Nd4j.create(new float[]{0, 2, -2, 0}));
+            defaultTestCase.putRow(1, Nd4j.create(new float[]{0, 1, -1, 0}));
+            defaultTestCase.putRow(2, Nd4j.create(new float[]{0, -1, 1, 0}));
+            defaultTestCase.putRow(3, Nd4j.create(new float[]{0, -2, 2, 0}));
+            long singleEmbeddingSize = defaultTestCase.size(1) / 2L;
+
+            // Split vectors
+            INDArray x = defaultTestCase.get(NDArrayIndex.all(), NDArrayIndex.interval(0, singleEmbeddingSize));
+            INDArray y = defaultTestCase.get(NDArrayIndex.all(), NDArrayIndex.interval(singleEmbeddingSize, defaultTestCase.size(1)));
+
+            log.info(y.shapeInfoToString());
+
+            SameDiff sd = SameDiff.create();
+            sd.enableDebugMode();
+
+            SDVariable xSd = sd.var("x", x);
+            SDVariable ySd = sd.var("y", y);
+
+            ySd = ySd.add(ySd);
+            switch (s){
+                case "euclidean":
+                    sd.euclideanDistance(s, ySd, xSd, 0);
+                    break;
+                case "manhattan":
+                    sd.manhattanDistance(s, ySd, xSd, 0);
+                    break;
+                case "cosinesim":
+                    sd.cosineSimilarity(s, ySd, xSd, 0);
+                    break;
+                case "cosinedist":
+                    sd.cosineDistance(s, ySd, xSd, 0);
+                    break;
+                case "jaccard":
+                    sd.jaccardDistance(s, ySd, xSd, 0);
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+
+//            log.info(sd.summary());
+            sd.exec(Collections.emptyMap(), Lists.newArrayList(s));
+            sd.execBackwards(Collections.emptyMap());
+        }
     }
 }

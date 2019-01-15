@@ -726,6 +726,10 @@ public class DifferentialFunctionFactory {
         return new NormMaxBp(sameDiff(), preReduceIn, grad, keepDims, dimensions).outputVariable();
     }
 
+    public SDVariable reductionShape(SDVariable shape, SDVariable axis, boolean keepDim){
+        return new ReductionShape(sameDiff(), shape, axis, keepDim).outputVariable();
+    }
+
     /**
      * Add 1s as required to the array make an array possible to be broadcast with the original (pre-reduce) array.
      * <p>
@@ -753,6 +757,13 @@ public class DifferentialFunctionFactory {
             }
             return toExpand;
         }
+    }
+
+    public SDVariable reductionBroadcastableWithOrigShape(SDVariable origInput, SDVariable axis, SDVariable toExpand) {
+        SDVariable shape = origInput.shape();
+        SDVariable reduceShape = reductionShape(shape, axis, true);
+        SDVariable reshaped = toExpand.reshape(reduceShape);
+        return reshaped;
     }
 
 

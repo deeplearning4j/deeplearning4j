@@ -91,9 +91,11 @@ public class EuclideanDistance extends BaseReduce3Op {
         //ddist(x,y)/dxi = (xi-yi)/dist(x,y)
         SDVariable euc = outputVariables()[0];
         SDVariable difference = larg().sub(rarg());
-        SDVariable divBroadcastable;
-        int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
-        divBroadcastable = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0).div(euc));
+        SDVariable divBroadcastable = i_v1.get(0).div(euc);
+        if(!keepDims && !(dimensionz == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE))){
+            //Not keep dims, and not full array reduction -> need to make broadcastable
+            divBroadcastable = f().reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), divBroadcastable);
+        }
 
         SDVariable gradX = difference.mul(divBroadcastable);
         SDVariable gradY = f().neg(gradX);

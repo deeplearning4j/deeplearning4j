@@ -107,11 +107,11 @@ public class JaccardDistance extends BaseReduce3Op {
         SDVariable dldy = yIsMax.mul(sumMin).sub(yIsMin.mul(sumMax)).div(sqSumMax);
 
         SDVariable bcGradOut;
-        if(dimensions == null){
+        if(keepDims || dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE)){
+            //KeepDims or full array reduction - already broadcastable
             bcGradOut = f1.get(0);
         } else {
-            int inRank = arg().getArr().rank();
-            bcGradOut = f().reductionBroadcastableWithOrigShape(inRank, dimensions, f1.get(0));
+            bcGradOut = sameDiff.f().reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), f1.get(0));
         }
         return Arrays.asList(dldx.mul(bcGradOut), dldy.mul(bcGradOut));
     }

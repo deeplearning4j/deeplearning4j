@@ -99,20 +99,25 @@ public class CosineSimilarity extends BaseReduce3Op {
         //Then:
         // dc(x,y)/dx_i = 1/b * (y - x * a / (l2(x))^2)
 
-        return doDiff(sameDiff, f(), larg(), rarg(), i_v1.get(0), dimensions);
+        return doDiff(sameDiff, f(), larg(), rarg(), i_v1.get(0), keepDims, dimensions);
     }
 
     public static List<SDVariable> doDiff(SameDiff sameDiff, DifferentialFunctionFactory f, SDVariable x, SDVariable y,
-                                          SDVariable gradOut, int... dimensions){
+                                          SDVariable gradOut, boolean keepDims, int... dimensions){
         SDVariable a = sameDiff.sum(x.mul(y),true, dimensions);
         SDVariable l2x = f.norm2(x, true, dimensions);
         SDVariable l2y = f.norm2(y, true, dimensions);
         SDVariable b = l2x.mul(l2y);
 
-        int origRank = Shape.rankFromShape(x.getShape());
         SDVariable l2xSq = sameDiff.square(l2x);
         SDVariable l2ySq = sameDiff.square(l2y);
-        SDVariable broadcastableGrad = f.reductionBroadcastableWithOrigShape(origRank, dimensions, gradOut);
+        SDVariable broadcastableGrad;
+        if(keepDims || dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE)){
+            //keepDims or full array reduction
+            broadcastableGrad = gradOut;
+        } else {
+            broadcastableGrad = sameDiff.f().reductionBroadcastableWithOrigShape(x, sameDiff.constant(Nd4j.createFromArray(dimensions)), gradOut);
+        }
 
         SDVariable dcdx = y.sub(x.mul(a).div(l2xSq)).div(b);
         SDVariable dcdy = x.sub(y.mul(a).div(l2ySq)).div(b);
