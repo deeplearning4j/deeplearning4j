@@ -207,6 +207,27 @@ Keras code
 
 Auto-generated documentation: https://github.com/deeplearning4j/deeplearning4j/blob/master/docs/doc_generator.py
 
+COPYRIGHT
+
+All contributions by François Chollet:
+Copyright (c) 2015 - 2018, François Chollet.
+All rights reserved.
+
+All contributions by Google:
+Copyright (c) 2015 - 2018, Google, Inc.
+All rights reserved.
+
+All contributions by Microsoft:
+Copyright (c) 2017 - 2018, Microsoft, Inc.
+All rights reserved.
+
+All other contributions:
+Copyright (c) 2015 - 2018, the respective contributors.
+All rights reserved.
+
+Each contributor holds copyright over their respective contributions.
+The project versioning (Git) records all such contribution source information.
+
 The MIT License (MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
