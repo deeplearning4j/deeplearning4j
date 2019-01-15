@@ -1982,30 +1982,33 @@ TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_51)
 TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_1)
 {
     auto x = NDArrayFactory::create<float>('c', {2, 1, 2});
-    //auto y = NDArrayFactory::create<float>('c', {8, 8});
-    //auto expected = NDArrayFactory::create<float>('c', {8, 8, 8});
-    //NDArray res2(expected);
-    x = 1.;
+    x = 10.;
     auto y = x.tile({1,2,1});
-    //expected = 3.;
-    //x.printBuffer("X=");
-    //y.printBuffer("Y=");
-    //expected.printBuffer("EXPECTED");
-    //auto result = x + y;
-    //result.printBuffer("1 + 2 =");
-    //res2.assign(x + y);
+    auto exp = NDArrayFactory::create<float>('c', {2, 2, 2});
+    exp = 10.;
     y.printShapeInfo("Output SHAPE");
     y.printBuffer("Output TILE");
-    //x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &res2);
-    //res2.printBuffer("Z=");
-    //x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &res2);// *= y;
-//    x += y;
-    //x.printBuffer("OutputX");
-    //res2.syncToHost();
-    //res2.printBuffer("OUputZ");
-    //x.printIndexedBuffer("OUtputX");
-    //ASSERT_TRUE(expected.isSameShape(&result));
-    //ASSERT_TRUE(expected.equalsTo(&result));
+    ASSERT_TRUE(exp.equalsTo(x));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_2)
+{
+    double expBuff[] = {2., 3, 3., 4., 4., 5, 5., 6., 6., 7, 7., 8.};
+
+    auto x = NDArrayFactory::create<double>('c', {3, 2, 1});
+    auto y = NDArrayFactory::create<double>('c',    {1, 2});
+    auto expected = NDArrayFactory::create<double>(expBuff, 'c', {3, 2, 2});
+
+    x.linspace(1);
+    y.linspace(1);
+    x.printBuffer("X=");
+    y.printBuffer("Y=");
+    auto result = x + y;
+    result.printIndexedBuffer("Result");
+
+    ASSERT_TRUE(expected.isSameShape(&result));
+    ASSERT_TRUE(expected.equalsTo(&result));
 }
 
 // printCudaGlobal<double><<<1,1,0,*stream>>>(dX, 6);
