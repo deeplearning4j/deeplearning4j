@@ -97,7 +97,7 @@ namespace nd4j {
 
 
         #if NOT_EXCLUDED(OP_evaluate_reduction_shape)
-        DECLARE_CUSTOM_OP(evaluate_reduction_shape, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(evaluate_reduction_shape, 2, 1, false, 0, 0);
         #endif
     }
 }

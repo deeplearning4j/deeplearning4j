@@ -25,7 +25,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(evaluate_reduction_shape, 1, 1, false, 0, 0) {
+        CUSTOM_OP_IMPL(evaluate_reduction_shape, 2, 1, false, 0, 0) {
             auto inputShape = INPUT_VARIABLE(0);
             auto axis = INPUT_VARIABLE(1)->asVectorT<int>();
             auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
@@ -34,33 +34,36 @@ namespace nd4j {
 
             auto shape = inputShape->asVectorT<Nd4jLong>();
 
-            auto tempShapeInfo = ShapeUtils::evalReduceShapeInfo(inputShape->ordering(), axis, shape.data(), keepDims, oldFormat, block.workspace());
+            auto tempShapeInfo = ShapeBuilders::createShapeInfo(nd4j::DataType::INT64, 'c', shape, block.workspace());
+            auto tempReductionShapeInfo = ShapeUtils::evalReduceShapeInfo('c', axis, tempShapeInfo, keepDims, oldFormat, block.workspace());
 
-            REQUIRE_TRUE(output->rankOf() == shape::shapeInfoLength(tempShapeInfo), 0, "evaluate_reduction_shape: output rank should be %i, but got %i instead", shape::shapeInfoLength(tempShapeInfo), output->rankOf());
+            REQUIRE_TRUE(output->lengthOf() == shape::rank(tempReductionShapeInfo), 0, "evaluate_reduction_shape: output length should be %i, but got %i instead", shape::rank(tempReductionShapeInfo), output->lengthOf());
 
-            for (int e = 0; e < shape::rank(tempShapeInfo); e++)
-                output->p(e, tempShapeInfo[e+1]);
+            for (int e = 0; e < shape::rank(tempReductionShapeInfo); e++)
+                output->p(e, tempReductionShapeInfo[e+1]);
+
+            // we must release temporary shapeInfo
+            RELEASE(tempReductionShapeInfo, block.workspace());
+            RELEASE(tempShapeInfo, block.workspace());
 
             return Status::OK();
         }
 
         DECLARE_TYPES(evaluate_reduction_shape) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, nd4j::DataType::INT64)
+                    ->setAllowedInputTypes(0, {ALL_INTS})
                     ->setAllowedInputTypes(1, {ALL_INTS})
                     ->setAllowedOutputTypes(0, nd4j::DataType::INT64);
         }
 
         DECLARE_SHAPE_FN(evaluate_reduction_shape) {
-            auto input = inputShape->at(0);
+            auto input = INPUT_VARIABLE(0);
             auto axis = INPUT_VARIABLE(1)->asVectorT<int>();
-
-
 
             auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
             auto oldFormat = block.numB() > 1 ? B_ARG(1) : false;
 
-            Nd4jLong length = shape::rank(input);
+            Nd4jLong length = input->lengthOf();
 
             if (keepDims) {
                 if (oldFormat) {
