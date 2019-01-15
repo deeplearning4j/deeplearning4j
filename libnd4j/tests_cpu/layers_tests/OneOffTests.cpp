@@ -329,7 +329,35 @@ TEST_F(OneOffTests, test_non2d_1) {
     Nd4jStatus status = GraphExecutioner::execute(graph);
     ASSERT_EQ(Status::OK(), status);
 
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(3));
+
     auto z = graph->getVariableSpace()->getVariable(3)->getNDArray();
+    ASSERT_TRUE(z != nullptr);
+
+    ASSERT_EQ(e, *z);
+
+
+    delete graph;
+}
+
+TEST_F(OneOffTests, test_reduce_all_1) {
+    auto e = NDArrayFactory::create<bool>('c', {1, 4}, {true, false, false, false});
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/reduce_all_rank2_d0_keep.fb");
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1));
+
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(2));
+    auto in = graph->getVariableSpace()->getVariable(2)->getNDArray();
+
+
+    auto z = graph->getVariableSpace()->getVariable(1)->getNDArray();
     ASSERT_TRUE(z != nullptr);
 
     ASSERT_EQ(e, *z);
