@@ -1011,7 +1011,7 @@ namespace nd4j {
          *    tensor with max values according to indices sets.
          */
         #if NOT_EXCLUDED(OP_unsorted_segment_max)
-        DECLARE_CUSTOM_OP(unsorted_segment_max, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(unsorted_segment_max, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_unsorted_segment_max_bp)
         DECLARE_CUSTOM_OP(unsorted_segment_max_bp, 3, 2, false, 0, 1);
@@ -1031,7 +1031,7 @@ namespace nd4j {
          *    tensor with min values according to indices sets.
          */
         #if NOT_EXCLUDED(OP_unsorted_segment_min_bp)
-        DECLARE_CUSTOM_OP(unsorted_segment_min, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(unsorted_segment_min, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_unsorted_segment_min_bp)
         DECLARE_CUSTOM_OP(unsorted_segment_min_bp, 3, 2, false, 0, 1);
@@ -1051,7 +1051,7 @@ namespace nd4j {
          *    tensor with sum of values according to indices sets.
          */
         #if NOT_EXCLUDED(OP_unsorted_segment_sum)
-        DECLARE_CUSTOM_OP(unsorted_segment_sum, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(unsorted_segment_sum, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_unsorted_segment_sum_bp)
         DECLARE_CUSTOM_OP(unsorted_segment_sum_bp, 3, 2, false, 0, 1);
@@ -1071,7 +1071,7 @@ namespace nd4j {
          *    tensor with product of values according to indices sets.
          */
         #if NOT_EXCLUDED(OP_unsorted_segment_prod)
-        DECLARE_CUSTOM_OP(unsorted_segment_prod, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(unsorted_segment_prod, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_unsorted_segment_prod_bp)
         DECLARE_CUSTOM_OP(unsorted_segment_prod_bp, 3, 2, false, 0, 1);
@@ -1091,7 +1091,7 @@ namespace nd4j {
          *    tensor with average of values according to indices sets.
          */
         #if NOT_EXCLUDED(OP_unsorted_segment_mean)
-        DECLARE_CUSTOM_OP(unsorted_segment_mean, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(unsorted_segment_mean, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_unsorted_segment_mean_bp)
         DECLARE_CUSTOM_OP(unsorted_segment_mean_bp, 3, 2, false, 0, 1);
@@ -1111,7 +1111,7 @@ namespace nd4j {
          *    tensor with average of values according to indices sets.
          */
         #if NOT_EXCLUDED(OP_unsorted_segment_sqrt)
-        DECLARE_CUSTOM_OP(unsorted_segment_sqrt_n, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(unsorted_segment_sqrt_n, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_unsorted_segment_sqrt_n_bp)
         DECLARE_CUSTOM_OP(unsorted_segment_sqrt_n_bp, 3, 2, false, 0, 1);

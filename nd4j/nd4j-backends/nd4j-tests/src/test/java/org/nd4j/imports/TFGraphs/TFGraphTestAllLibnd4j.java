@@ -79,17 +79,11 @@ public class TFGraphTestAllLibnd4j {
             "layers_dropout/.*",
             "losses/.*",
 
-            //Failing only on libnd4j/native graph execution
-            //"logsumexp/.*",
-            //"reduce_all/.*",
-            //"reduce_any/.*",
-            //"split/.*",
+            //"reductions/count_nonzero.*",
+            //"sufficient_statistics.*",
 
-            "reductions/count_nonzero.*",
-            "sufficient_statistics.*",
-
-            "histogram_fixed.*",
-            "unsorted_segment.*",
+            //"histogram_fixed.*",
+            //"unsorted_segment.*",
 
             //These can't pass until this is fixed: https://github.com/deeplearning4j/deeplearning4j/issues/6465#issuecomment-424209155
             //i.e., reduction ops with newFormat/keepDims args
