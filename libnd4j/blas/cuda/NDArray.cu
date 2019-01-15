@@ -480,7 +480,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
             if(!shape::equalsTypesAndShapesSoft(target->getShapeInfo(), newShapeInfo))
                 throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
-            shape::printShapeInfo(newShapeInfo, "Tested shape to check");
+            shape::printShapeInfo(newShapeInfo);
             // if workspace is not null - do not call delete.
             if (_context->getWorkspace() == nullptr)
                 delete[] newShapeInfo;
@@ -498,8 +498,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         else
             pTarget->assign(max);
 
-        if (pTarget == target)
-            printf("Only basic case\n");
         // check whether min array has to be tiled
         std::vector<Nd4jLong> repeatMin(min->rankOf());
         int product = 1;
@@ -507,23 +505,24 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             repeatMin[i-1] = (target->_shapeInfo[target->rankOf() - min->rankOf() + i] / min->_shapeInfo[i]);
             product *= repeatMin[i-1];
         }
-        printf("Product > 1? %d", product);
         auto pMin = const_cast<NDArray *>(min);
-        if(product != 1 )
-            pMin = new NDArray(min->tile(repeatMin));
+        if(product != 1 ) {
+            auto localMin = min->tile(repeatMin);
+            pMin = new NDArray(localMin);
+        }
 
         std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(*target, *pMin);
         //max->syncToDevice();
         //pMin->syncToDevice(); // tile has a problem with syncing data to device
-        pMin->printBuffer("MIN BUFFER");
-        min->printBuffer("Min buffer");
-        max->printBuffer("MAX BUFFER");
-        if (sameDims.size() == max->rankOf()) {
-            target->syncToDevice();
-            max->applyPairwiseTransform(op.p, pMin, target, extraArgs);
-            target->printBuffer("TARGET");
-        }
-        else if(max == this) {
+//        pMin->printBuffer("MIN BUFFER");
+//        min->printBuffer("Min buffer");
+//        max->printBuffer("MAX BUFFER");
+//        if (sameDims.size() == max->rankOf()) {
+//            target->syncToDevice();
+//            max->applyPairwiseTransform(op.p, pMin, target, extraArgs);
+//            target->printBuffer("TARGET");
+//        }
+        if(max == this) {
             pTarget->applyBroadcast(op.b, sameDims, pMin, target, extraArgs);
         }
         else {
@@ -3146,6 +3145,69 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         return result;
     }
 
+    //////////////////////////////////////////////////////////////////////////
+    // change an array by repeating it the number of times given by reps.
+    NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
+        int dim = reps.size();
+        int product = 1;
+        for(const auto& item : reps)
+            product *= item;
+        if(product == 0)
+            throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
+
+        int rankOld = rankOf();
+        int diff = rankOld - dim;
+        if(product==1) {        // in this case 2 possibilities are present: just reshape or nothing to do
+            NDArray result(*this);
+            if(diff < 0) {      // reshape to higher dimension
+                std::vector<Nd4jLong> shapeNew = reps;               // need to have unities at first "diff" positions of new shape
+                memcpy(&shapeNew[-diff], result._shapeInfo+1, rankOld * sizeof(Nd4jLong));   // put old shape numbers at rest of positions
+                result.reshapei(ordering(), shapeNew);
+            }
+            return result;             // nothing to do, if diff >= 0 -> identity tile
+        }
+
+        // evaluate shapeInfo for resulting array
+        auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, _context->getWorkspace());
+        // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
+        int8_t * newBuff = nullptr;
+        ALLOCATE(newBuff, _context->getWorkspace(), shape::length(newShapeInfo) * sizeOfT(), int8_t);
+        // assign new shape and new buffer to resulting array
+        NDArray result(newBuff, newShapeInfo, _context, true, true);
+        if (!isActualOnHostSide())
+            syncToHost();
+        // fill newBuff, loop through all elements of newBuff
+        // looping through _buffer goes automatically by means of getSubArrayIndex applying
+        const auto resultLen = result.lengthOf();
+        auto xType = this->dataType();
+        if(result.ordering() == 'c') {           //  ews == 1 always here
+//#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+            for(Nd4jLong i=0;  i<resultLen; ++i) {
+                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
+                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
+
+            }
+        }
+        else {
+
+//#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+            for(int i=0;  i<resultLen; ++i) {
+
+                auto xOffset = result.getOffset(i);
+                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
+                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
+            }
+        }
+        result.tickWriteHost();
+        return result;
+    }
+//                *(reinterpret_cast<double*>(newBuff) + i) = *(reinterpret_cast<double*>(_buffer) + yOffset);
+    template <typename T>
+    void NDArray::templatedAssign(void *xBuffer, Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const {
+        if (xBuffer != nullptr && yBuffer != nullptr)
+            *(reinterpret_cast<T*>(xBuffer) + xOffset) = *(reinterpret_cast<T const*>(yBuffer) + yOffset);
+    }
+    BUILD_SINGLE_TEMPLATE(template void NDArray::templatedAssign, (void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const, LIBND4J_TYPES);
 
 
 

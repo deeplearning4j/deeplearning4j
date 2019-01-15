@@ -108,16 +108,6 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool cop
     ArrayOptions::setDataType(_shapeInfo, _dataType);
 }
 
-
-    template <typename T>
-    void NDArray::templatedAssign(void *xBuffer, Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const {
-        auto x = reinterpret_cast<T *>(xBuffer);
-        const auto y = reinterpret_cast<const T*>(yBuffer);
-        if (xBuffer != nullptr && yBuffer != nullptr)
-        x[xOffset] = y[yOffset];
-    }
-    BUILD_SINGLE_TEMPLATE(template void NDArray::templatedAssign, (void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const, LIBND4J_TYPES);
-
     bool NDArray::isC() const {
         // TODO: this method must be implemented once we add support for complex numbers
         return false;
@@ -1214,62 +1204,6 @@ NDArray NDArray::transp() const {
         *this = this->tile(reps);
     }
 
-
-    //////////////////////////////////////////////////////////////////////////
-    // change an array by repeating it the number of times given by reps.
-    NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
-        int dim = reps.size();
-        int product = 1;
-        for(const auto& item : reps)
-            product *= item;
-        if(product == 0)
-            throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
-
-        int rankOld = rankOf();
-        int diff = rankOld - dim;
-        if(product==1) {        // in this case 2 possibilities are present: just reshape or nothing to do
-            NDArray result(*this);
-            if(diff < 0) {      // reshape to higher dimension
-                std::vector<Nd4jLong> shapeNew = reps;               // need to have unities at first "diff" positions of new shape
-                memcpy(&shapeNew[-diff], result._shapeInfo+1, rankOld * sizeof(Nd4jLong));   // put old shape numbers at rest of positions
-                result.reshapei(ordering(), shapeNew);
-            }
-            return result;             // nothing to do, if diff >= 0 -> identity tile
-        }
-    
-        // evaluate shapeInfo for resulting array
-        auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, _context->getWorkspace());
-        // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
-        int8_t * newBuff = nullptr;
-        ALLOCATE(newBuff, _context->getWorkspace(), shape::length(newShapeInfo) * sizeOfT(), int8_t);
-        // assign new shape and new buffer to resulting array
-        NDArray result(newBuff, newShapeInfo, _context, true, true);
-
-        // fill newBuff, loop through all elements of newBuff
-        // looping through _buffer goes automatically by means of getSubArrayIndex applying
-        const auto resultLen = result.lengthOf();
-        auto xType = this->dataType();
-        if(result.ordering() == 'c') {           //  ews == 1 always here
-//#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(Nd4jLong i=0;  i<resultLen; ++i) {
-                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
-                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
-
-            }
-        }
-        else {
-
-//#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(int i=0;  i<resultLen; ++i) {
-
-                auto xOffset = result.getOffset(i);
-                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
-                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
-            }
-        }
-        result.tickWriteHost();
-        return result;
-    }
 
     //////////////////////////////////////////////////////////////////////////
     // change an array by repeating it the number of times given by reps.

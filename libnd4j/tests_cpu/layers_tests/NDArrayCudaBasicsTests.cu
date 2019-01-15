@@ -1979,6 +1979,35 @@ TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_51)
     ASSERT_TRUE(expected.equalsTo(&result));
 }
 
+TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_1)
+{
+    auto x = NDArrayFactory::create<float>('c', {2, 1, 2});
+    //auto y = NDArrayFactory::create<float>('c', {8, 8});
+    //auto expected = NDArrayFactory::create<float>('c', {8, 8, 8});
+    //NDArray res2(expected);
+    x = 1.;
+    auto y = x.tile({1,2,1});
+    //expected = 3.;
+    //x.printBuffer("X=");
+    //y.printBuffer("Y=");
+    //expected.printBuffer("EXPECTED");
+    //auto result = x + y;
+    //result.printBuffer("1 + 2 =");
+    //res2.assign(x + y);
+    y.printShapeInfo("Output SHAPE");
+    y.printBuffer("Output TILE");
+    //x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &res2);
+    //res2.printBuffer("Z=");
+    //x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &res2);// *= y;
+//    x += y;
+    //x.printBuffer("OutputX");
+    //res2.syncToHost();
+    //res2.printBuffer("OUputZ");
+    //x.printIndexedBuffer("OUtputX");
+    //ASSERT_TRUE(expected.isSameShape(&result));
+    //ASSERT_TRUE(expected.equalsTo(&result));
+}
+
 // printCudaGlobal<double><<<1,1,0,*stream>>>(dX, 6);
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(dXShapeInfo, 8);
 //     printCudaGlobal<double><<<1,1,0,*stream>>>(dZ, 2);
