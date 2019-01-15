@@ -17,6 +17,7 @@ import org.nd4j.linalg.api.ops.impl.shape.tensorops.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -481,6 +482,8 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 Preconditions.checkState(arr != null, "Could not get axis argument for op %s: %s", df.getOwnName(), df.getClass());
                 if(!arr.isEmpty()){
                     int[] axis = arr.toIntVector();
+                    int rank = args[0].rank();
+                    axis = Shape.normalizeAxis(rank, axis);
                     df.setDimensions(axis);
                 } else {
                     df.setDimensions(null);
