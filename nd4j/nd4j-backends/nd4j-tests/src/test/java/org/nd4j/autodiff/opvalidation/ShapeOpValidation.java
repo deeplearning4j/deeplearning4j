@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.shape.*;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.checkutil.CheckUtil;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,6 +47,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
@@ -1872,5 +1874,23 @@ public class ShapeOpValidation extends BaseOpValidation {
             sd.exec(Collections.emptyMap(), Lists.newArrayList(s));
             sd.execBackwards(Collections.emptyMap());
         }
+    }
+
+    @Test
+    public void testReductionShape(){
+
+        INDArray shape = Nd4j.createFromArray(4,2);
+        INDArray axis = Nd4j.scalar(0);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("evaluate_reduction_shape")
+                .addInputs(shape,axis)
+                .build();
+        op.addBArgument(true);      //keepdim = true
+
+        List<LongShapeDescriptor> list = op.calculateOutputShape();
+        long[] s = list.get(0).getShape();
+        long[] exp = new long[]{2};         //(4,2).reduce(0,keepDims=true) -> [1,2] requires output array shape [2] here
+
+        assertArrayEquals(exp, s);  //Fails - actual shape [1]
     }
 }
