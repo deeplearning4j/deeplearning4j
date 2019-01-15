@@ -748,6 +748,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         protected int numOutputs;
         protected int numTArguments;
         protected int numIArguments;
+        protected int numBArguments;
         protected boolean inplaceCall;
         protected boolean inplaceAllowed;
         protected long opHash;
@@ -757,6 +758,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         private List<INDArray> outputArguments = new ArrayList<>();
         private List<Double> tArguments = new ArrayList<>();
         private List<Long> iArguments = new ArrayList<>();
+        private List<Boolean> bArguments = new ArrayList<>();
 
         protected DynamicCustomOpsBuilder(String opName, long hash, int numInputs, int numOutputs, boolean inplaceAllowed, int numTArguments, int numIArguments) {
             this.opHash = hash;
@@ -902,6 +904,22 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         }
 
         /**
+         * This method takes arbitrary number of Integer arguments for op,
+         * Note that this ACCUMULATES arguments. You are able to call this method
+         * multiple times and it will add arguments to a list.
+         * PLEASE NOTE: this method does NOT validate values.
+         *
+         * @param iargs
+         * @return
+         */
+        public DynamicCustomOpsBuilder addBooleanArguments(boolean... bargs) {
+            for (val in : bargs)
+                bArguments.add(in);
+
+            return this;
+        }
+
+        /**
          * This method takes arbitrary number of Double arguments for op,
          * Note that this ACCUMULATES arguments. You are able to call this method
          * multiple times and it will add arguments to a list.
@@ -959,6 +977,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             result.outputArguments = outputArguments;
             result.iArguments = iArguments;
             result.tArguments = tArguments;
+            result.bArguments = bArguments;
             result.inplaceCall = inplaceCall;
             result.hash = opHash;
             result.outputShapes = outputShapes;

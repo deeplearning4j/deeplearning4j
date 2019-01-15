@@ -1884,8 +1884,8 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         DynamicCustomOp op = DynamicCustomOp.builder("evaluate_reduction_shape")
                 .addInputs(shape,axis)
+                .addBooleanArguments(true) //keepdim = true
                 .build();
-        op.addBArgument(true);      //keepdim = true
 
         List<LongShapeDescriptor> list = op.calculateOutputShape();
         long[] s = list.get(0).getShape();
