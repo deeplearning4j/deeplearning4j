@@ -79,12 +79,6 @@ public class TFGraphTestAllLibnd4j {
             "layers_dropout/.*",
             "losses/.*",
 
-            //"reductions/count_nonzero.*",
-            //"sufficient_statistics.*",
-
-            //"histogram_fixed.*",
-            //"unsorted_segment.*",
-
             //These can't pass until this is fixed: https://github.com/deeplearning4j/deeplearning4j/issues/6465#issuecomment-424209155
             //i.e., reduction ops with newFormat/keepDims args
             "l2_normalize/.*",
