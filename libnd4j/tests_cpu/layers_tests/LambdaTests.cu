@@ -61,4 +61,6 @@ TEST_F(LambdaTests, test_basic_1) {
     ASSERT_EQ(0, res);
 
     ASSERT_EQ(e, x);
+
+    x.printIndexedBuffer("x");
 }
