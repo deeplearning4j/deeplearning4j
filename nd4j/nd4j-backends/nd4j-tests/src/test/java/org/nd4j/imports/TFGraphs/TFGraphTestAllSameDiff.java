@@ -154,12 +154,7 @@ public class TFGraphTestAllSameDiff {
             "norm_tests/norm_7",
 
             //Remaining tests failing as of 2019/01/09 - to look into these
-            "g_04",
-            "logsumexp/rank2_d-1",
-            "losses/cosine_diff_rank1",
-            "lstm_mnist",
-            "norm_tests/norm_11",
-            "reductions/count_nonzero_345_-1"
+//            "g_04",
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 

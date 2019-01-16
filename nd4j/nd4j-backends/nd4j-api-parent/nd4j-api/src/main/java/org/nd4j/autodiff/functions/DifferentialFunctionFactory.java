@@ -54,6 +54,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.api.ops.impl.loss.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
+import org.nd4j.linalg.api.ops.impl.scalar.Pow;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.scatter.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
@@ -994,6 +995,9 @@ public class DifferentialFunctionFactory {
         return new Pow(sameDiff(), iX, false, i_y).outputVariable();
     }
 
+    public SDVariable pow(SDVariable x, SDVariable y){
+        return new org.nd4j.linalg.api.ops.impl.transforms.custom.Pow(sameDiff(), x, y).outputVariable();
+    }
 
     public SDVariable sqrt(SDVariable iX) {
         return new Sqrt(sameDiff(), iX, null).outputVariable();

@@ -462,23 +462,9 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             if(op instanceof ReduceOp && ((ReduceOp) op).getOpType() != Op.Type.REDUCE3 && df.argNames().length == 2){
                 //2nd input should be treated as integer axis arg...
                 SDVariable axisArgVar = df.arg(1);
-                String n = axisArgVar.getVarName();
                 Preconditions.checkState(axisArgVar.dataType().isIntType(), "Legacy op %s input 1 (axis) was expected to be an integer type, is %s", df.getClass(), axisArgVar.dataType());
 
-                INDArray arr = null;
-                if(axisArgVar.isConstant() || axisArgVar.getVariableType() == VariableType.VARIABLE){
-                    arr = getConstantOrVariable(n);
-                } else if(axisArgVar.isPlaceHolder()){
-                    arr = placeholderValues.get(n);
-                } else {
-                    //Must be array type
-                    for(VarId vid : opInputs){
-                        if(vid.getVariable().equals(n)){
-                            arr = get(vid.getVariable(), vid.getFrame(), vid.getIteration());
-                            break;
-                        }
-                    }
-                }
+                INDArray arr = getArray(axisArgVar, opInputs);
                 Preconditions.checkState(arr != null, "Could not get axis argument for op %s: %s", df.getOwnName(), df.getClass());
                 if(!arr.isEmpty()){
                     int[] axis = arr.toIntVector();
@@ -489,6 +475,14 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     df.setDimensions(null);
                 }
                 axisArg = true;
+            } else if(op instanceof ScalarOp && df.argNames().length == 2){
+                //Scalar ops: 2nd input should be treated as scalar...
+                SDVariable scalarVar = df.arg(1);
+                String n = scalarVar.getVarName();
+                INDArray scalar = getArray(scalarVar, opInputs);
+                Preconditions.checkState(scalar != null, "Could not get scalar argument for op %s: %s", df.getOwnName(), df.getClass());
+                Preconditions.checkState(scalar.isScalar(), "Scalar argument for op %s (%s) is not a scalar: has shape %ndShape", df.getOwnName(), df.getClass(), scalar );
+                ((ScalarOp) op).setScalar(scalar);
             }
 
             if(args != null && args.length > 0){
