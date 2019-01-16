@@ -183,12 +183,11 @@ public class LocallyConnected1D extends SameDiffLayer {
             inputArray[i] = sameDiff.reshape(slice, 1, miniBatch, featureDim);
         }
         SDVariable concatOutput = sameDiff.concat(0, inputArray); // (outH, miniBatch, featureDim)
-        sameDiff.exec(Collections.<String, INDArray>emptyMap(), "out");
-
-        System.out.println(Arrays.toString(concatOutput.getShape()));
+//        sameDiff.exec(Collections.<String, INDArray>emptyMap(), "out");
+//        System.out.println(Arrays.toString(concatOutput.getShape()));
 
         SDVariable mmulResult = sameDiff.mmul(concatOutput, w); // (outH, miniBatch, nOut)
-        System.out.println(Arrays.toString(mmulResult.getShape()));
+//        System.out.println(Arrays.toString(mmulResult.getShape()));
 
         SDVariable result = sameDiff.permute(mmulResult, 1, 2, 0); // (miniBatch, nOut, outH)
 
