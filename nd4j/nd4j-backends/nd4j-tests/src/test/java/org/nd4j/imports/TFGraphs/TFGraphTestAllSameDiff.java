@@ -75,22 +75,18 @@ public class TFGraphTestAllSameDiff {
     };
 
     public static final String[] IGNORE_REGEXES = new String[]{
-            //2019/01/08 - No tensorflow op found for SparseTensorDenseAdd
-            "confusion/.*",
+
+            //Still failing: 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6322 and https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 1
+            "broadcast_dynamic_shape/.*",
+
+            //Failing 2019/01/08 - Issue 3 https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            "boolean_mask/.*",
 
             //Failing 2019/01/15 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "slogdet/.*",
 
             //Failing 2019/01/15 - Issue 11 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "bincount/.*",
-
-            //Still failing 2019/01/15 - https://github.com/deeplearning4j/deeplearning4j/issues/7008
-            "sepconv1d_layers/.*",
-
-            //scatter_nd: a few cases failing as of 2019/01/08
-            "scatter_nd/rank2shape_2indices",
-            "scatter_nd/rank3shape_2indices",
-
 
             //Failures as of 2019/01/15: due to bad gather op - Issue 12 https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "embedding_lookup/.*multiple.*",
@@ -99,14 +95,18 @@ public class TFGraphTestAllSameDiff {
             "nth_element/rank1_n0",
             "nth_element/rank2_n0",
 
-            //Still failing: 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6322 and https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 1
-            "broadcast_dynamic_shape/.*",
+            //2019/01/16 - Issue 14 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            "g_07",
 
             //Failing 2019/01/16 - Issue 15 https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "where/cond_only.*",
 
-            //Failing 2019/01/08 - Issue 3 https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            "boolean_mask/.*",
+            //Still failing 2019/01/15 - https://github.com/deeplearning4j/deeplearning4j/issues/7008
+            "sepconv1d_layers/.*",
+
+            //scatter_nd: a few cases failing as of 2019/01/08
+            "scatter_nd/rank2shape_2indices",
+            "scatter_nd/rank3shape_2indices",
 
             //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
             "truncatemod/.*",
@@ -118,9 +118,6 @@ public class TFGraphTestAllSameDiff {
             "lrn/dr3.*",
             "lrn/dr5.*",
 
-            //2019/01/16 - Issue 14 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            "g_07",
-
             //Still failing as of 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn1d_layers/channels_first_b2_k2_s1_d2_SAME",
             "cnn2d_layers/channels_first_b1_k12_s1_d12_SAME",
@@ -128,9 +125,6 @@ public class TFGraphTestAllSameDiff {
             //2019/01/16 - These have a random component so can't be validated using simple .equals... should still be compared, however to check range is sensible etc
             "alpha_dropout/.*",
             "layers_dropout/.*",
-
-            //2019/01/09 - Issue 6 at https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            "pad/rank1Pone_reflect",
 
             //2019/01/16 - "No variables are available for execution at execution step X"
             "simplewhile.*",
@@ -144,6 +138,9 @@ public class TFGraphTestAllSameDiff {
             //Still failing as of 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn2d_nn/nchw_b1_k12_s12_d12_SAME",
             "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME",
+
+            //2019/01/08 - No tensorflow op found for SparseTensorDenseAdd
+            "confusion/.*",
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
