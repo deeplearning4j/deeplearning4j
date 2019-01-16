@@ -26,6 +26,8 @@ if (CUDA_BLAS)
 	message("Tests CUDA include directory: ${CUDA_INCLUDE_DIRS}")
 	include_directories(${CUDA_INCLUDE_DIRS})
 	add_definitions(-D__CUDABLAS__=true)
+
+    list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 ${EXPM} -w -G -g --cudart=static --expt-extended-lambda -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
 endif()
 
 # -fsanitize=address
