@@ -77,6 +77,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public DynamicCustomOp() {
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
+        bArguments = new ArrayList<>();
     }
 
     public DynamicCustomOp(SameDiff sameDiff, SDVariable arg) {
@@ -92,6 +93,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.opName = opName;
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
+        bArguments = new ArrayList<>();
     }
 
     public DynamicCustomOp(String opName, INDArray input, INDArray output, List<Double> tArguments, int[] iArguments) {
@@ -130,6 +132,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             for (val a : iArguments)
                 this.iArguments.add((Long) a.longValue());
         }
+        bArguments = new ArrayList<>();
     }
 
 
@@ -161,6 +164,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.opName = opName;
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
+        bArguments = new ArrayList<>();
         this.inplaceCall = inPlace;
     }
 
@@ -172,6 +176,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.opName = opName;
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
+        bArguments = new ArrayList<>();
     }
 
 
@@ -225,85 +230,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         }
 
         return outputVariables;
-    }
-
-    private INDArray attemptToGetOrCreateArrForVar(SDVariable var, @NonNull LongShapeDescriptor descriptor) {
-        INDArray arr = null;
-        if (Shape.isPlaceholderShape(var.getShape())) {
-            if (var.getShape() == null) {
-                val shape = calculateOutputShape();
-
-                val currShape = descriptor.getShape();
-
-                if (!shape.isEmpty()) {
-                    if (currShape != null && !Shape.isPlaceholderShape(currShape)) {
-                        sameDiff.putShapeForVarName(var.getVarName(), currShape);
-                        var.setDataType(descriptor.dataType());
-                        if(currShape.length == 1 && currShape[0] == Long.MIN_VALUE){
-                            //Temporary sentinel for empty array
-                            arr = Nd4j.empty(descriptor.dataType());
-                        } else {
-                            arr = var.storeAndAllocateNewArray();
-                        }
-                    }
-
-                } else
-                    arr = null;
-            }
-
-        } else if (sameDiff.getArrForVarName(var.getVarName()) == null) {
-            if (var.getShape() != null)
-                arr = var.storeAndAllocateNewArray();
-        } else {
-            arr = var.getArr();
-        }
-
-        if (arr != null) {
-            sameDiff.associateArrayWithVariable(arr, var);
-            addOutputArgument(arr);
-        }
-
-
-        return arr;
-    }
-
-    @Deprecated
-    private INDArray attemptToGetOrCreateArrForVar(SDVariable var, long[] currShape) {
-        INDArray arr = null;
-        long[] initialVarShape = var.getShape();
-        if (Shape.isPlaceholderShape(initialVarShape)) {
-            if (initialVarShape == null) {
-                val shape = calculateOutputShape();
-
-                if (!shape.isEmpty()) {
-                    if (currShape != null && !Shape.isPlaceholderShape(currShape)) {
-                        sameDiff.putShapeForVarName(var.getVarName(), currShape);
-                        if(currShape.length == 1 && currShape[0] == Long.MIN_VALUE){
-                            //Temporary sentinel for empty array
-                            arr = Nd4j.empty();
-                        } else {
-                            arr = var.storeAndAllocateNewArray();
-                        }
-                    }
-
-                } else
-                    arr = null;
-            }
-
-        } else if (sameDiff.getArrForVarName(var.getVarName()) == null) {
-            if (var.getShape() != null)
-                arr = var.storeAndAllocateNewArray();
-        } else {
-            arr = var.getArr();
-        }
-
-        if (arr != null) {
-            sameDiff.associateArrayWithVariable(arr, var);
-            addOutputArgument(arr);
-        }
-
-
-        return arr;
     }
 
     /**
@@ -393,7 +319,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public void addTArgument(double... arg) {
         if (arg != null)
             addTArgument(Doubles.asList(arg).toArray(new Double[arg.length]));
-
     }
 
     private void addTArgument(Double... arg) {
@@ -625,7 +550,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public boolean[] bArgs() {
-        val result = new boolean[bArguments.size()];
+        val result = new boolean[bArguments == null ? 0 : bArguments.size()];
 
         for (int e = 0; e < result.length; e++)
             result[e] = bArguments.get(e);
@@ -635,8 +560,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public void addBArgument(boolean... arg) {
-        for (val b: arg)
-        bArguments.add(b);
+        if(arg != null) {
+            for (val b : arg)
+                bArguments.add(b);
+        }
     }
 
     @Override
@@ -748,6 +675,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         protected int numOutputs;
         protected int numTArguments;
         protected int numIArguments;
+        protected int numBArguments;
         protected boolean inplaceCall;
         protected boolean inplaceAllowed;
         protected long opHash;
@@ -757,6 +685,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         private List<INDArray> outputArguments = new ArrayList<>();
         private List<Double> tArguments = new ArrayList<>();
         private List<Long> iArguments = new ArrayList<>();
+        private List<Boolean> bArguments = new ArrayList<>();
 
         protected DynamicCustomOpsBuilder(String opName, long hash, int numInputs, int numOutputs, boolean inplaceAllowed, int numTArguments, int numIArguments) {
             this.opHash = hash;
@@ -902,6 +831,22 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         }
 
         /**
+         * This method takes arbitrary number of Integer arguments for op,
+         * Note that this ACCUMULATES arguments. You are able to call this method
+         * multiple times and it will add arguments to a list.
+         * PLEASE NOTE: this method does NOT validate values.
+         *
+         * @param iargs
+         * @return
+         */
+        public DynamicCustomOpsBuilder addBooleanArguments(boolean... bargs) {
+            for (val in : bargs)
+                bArguments.add(in);
+
+            return this;
+        }
+
+        /**
          * This method takes arbitrary number of Double arguments for op,
          * Note that this ACCUMULATES arguments. You are able to call this method
          * multiple times and it will add arguments to a list.
@@ -959,6 +904,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             result.outputArguments = outputArguments;
             result.iArguments = iArguments;
             result.tArguments = tArguments;
+            result.bArguments = bArguments;
             result.inplaceCall = inplaceCall;
             result.hash = opHash;
             result.outputShapes = outputShapes;

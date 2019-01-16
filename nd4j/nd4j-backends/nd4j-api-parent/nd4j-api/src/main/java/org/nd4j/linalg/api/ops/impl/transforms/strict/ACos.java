@@ -37,14 +37,6 @@ public class ACos extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ACos(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public ACos(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public ACos() {
     }
 
@@ -54,10 +46,6 @@ public class ACos extends BaseTransformStrictOp {
 
     public ACos(INDArray x, INDArray y) {
         super(x, y);
-    }
-
-    public ACos(INDArray indArray, INDArray indArray1, int length) {
-        super(indArray, indArray1, length);
     }
 
     @Override

@@ -46,11 +46,10 @@ public class Not extends BaseTransformBoolOp {
     }
 
     public Not(@NonNull INDArray x, INDArray y, INDArray z, Number comparable) {
-        super(x, null, z, x.length());
+        super(x, y, z);
         this.comparable = comparable.doubleValue();
         this.extraArgs = new Object[] {this.comparable};
     }
-
 
     @Override
     public int opNum() {

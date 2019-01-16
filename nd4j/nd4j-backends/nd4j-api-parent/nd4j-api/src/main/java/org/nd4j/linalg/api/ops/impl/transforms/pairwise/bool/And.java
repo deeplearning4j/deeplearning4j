@@ -46,30 +46,8 @@ public class And extends BaseTransformBoolOp {
         this.extraArgs = new Object[] {this.comparable};
     }
 
-    public And(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.extraArgs = new Object[] {this.comparable};
-    }
-
-    public And(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-        this.extraArgs = new Object[] {this.comparable};
-    }
-
     public And(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double comparable) {
         super(sameDiff, i_v, inPlace);
-        this.comparable = comparable;
-        this.extraArgs = new Object[] {this.comparable};
-    }
-
-    public And(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double comparable) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.comparable = comparable;
-        this.extraArgs = new Object[] {this.comparable};
-    }
-
-    public And(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double comparable) {
-        super(sameDiff, i_v, extraArgs);
         this.comparable = comparable;
         this.extraArgs = new Object[] {this.comparable};
     }
@@ -81,31 +59,18 @@ public class And extends BaseTransformBoolOp {
     }
 
     public And(@NonNull INDArray x, @NonNull INDArray y, Number comparable) {
-        this(x, y, x, comparable, x.lengthLong());
-    }
-
-    public And(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable) {
-        this(x, y, z, comparable, x.lengthLong());
-    }
-
-    public And(@NonNull INDArray x, @NonNull INDArray y, long n) {
-        this(x, y, x, n);
+        this(x, y, x, comparable);
     }
 
     public And(@NonNull INDArray x, @NonNull INDArray y, INDArray z) {
-        this(x, y, z, z.lengthLong());
+        this(x, y, z, 0.0);
     }
 
-    public And(@NonNull INDArray x, @NonNull INDArray y, INDArray z, long n) {
-        this(x, y, z, 0.0, n);
-    }
-
-    public And(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable, long n) {
-        super(x, y, z, n);
+    public And(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable) {
+        super(x, y, z);
         this.comparable = comparable.doubleValue();
         this.extraArgs = new Object[] {this.comparable};
     }
-
 
     @Override
     public int opNum() {
@@ -136,7 +101,6 @@ public class And extends BaseTransformBoolOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No Tensorflow op opName found for " +  opName());
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

@@ -191,8 +191,8 @@ public class TransformOpValidation extends BaseOpValidation {
         INDArray outC = Nd4j.createUninitialized(3,4);
         INDArray outF = Nd4j.createUninitialized(3, 4);
 
-        Nd4j.getExecutioner().exec(new ScalarMultiplication(in, null, outC, in.length(), 2.0));
-        Nd4j.getExecutioner().exec(new ScalarMultiplication(in, null, outF, in.length(), 2.0));
+        Nd4j.getExecutioner().exec(new ScalarMultiplication(in, null, outC, 2.0));
+        Nd4j.getExecutioner().exec(new ScalarMultiplication(in, null, outF, 2.0));
 
         assertEquals(outC, outF);
     }
@@ -1125,11 +1125,11 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 14:
                     t = sd.max(in1, in2);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldMax(ia, ib, ia.dup(), ia.length())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldMax(ia, ib, ia.dup())));
                     break;
                 case 15:
                     t = sd.min(in1, in2);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldMin(ia, ib, ia.dup(), ia.length())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldMin(ia, ib, ia.dup())));
                     break;
                 case 16:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));

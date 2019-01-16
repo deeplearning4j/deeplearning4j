@@ -4745,6 +4745,30 @@ public class SameDiff {
     }
 
     /**
+     * Element-wise (broadcastable) power function: out = x[i]^y[i]
+     *
+     * @param x    Input variable
+     * @param y    Power
+     * @return Output variable
+     */
+    public SDVariable pow(SDVariable x, SDVariable y) {
+        return pow(null, x, y);
+    }
+
+    /**
+     * Element-wise (broadcastable) power function: out = x[i]^y[i]
+     *
+     * @param name  Output variable name
+     * @param x    Input variable
+     * @param y    Power
+     * @return Output variable
+     */
+    public SDVariable pow(String name, SDVariable x, SDVariable y) {
+        SDVariable result = functionFactory.pow(x, y);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
      * Element-wise square root function: out = sqrt(x)
      *
      * @param x Input variable

@@ -43,10 +43,6 @@ public class OldAddOp extends BaseTransformAnyOp {
 
     public OldAddOp() {}
 
-    public OldAddOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public OldAddOp(INDArray x) {
         super(x);
     }
@@ -55,12 +51,8 @@ public class OldAddOp extends BaseTransformAnyOp {
         super(x, z);
     }
 
-    public OldAddOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public OldAddOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
     }
 
     @Override
@@ -82,16 +74,6 @@ public class OldAddOp extends BaseTransformAnyOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (y == null)
-            throw new IllegalArgumentException("No components to add");
-    }
-
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

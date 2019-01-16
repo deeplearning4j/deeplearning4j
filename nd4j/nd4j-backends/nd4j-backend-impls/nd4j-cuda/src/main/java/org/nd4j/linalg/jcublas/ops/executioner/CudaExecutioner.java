@@ -2212,11 +2212,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val tArgs = op.tArgs().length > 0 ? new DoublePointer(op.tArgs().length) : null;
 
+        val bArgs = op.bArgs().length > 0 ? new BooleanPointer(op.bArgs().length) : null;
+
+        cnt = 0;
+        for (val b: op.bArgs())
+            bArgs.put(cnt++, b);
+
         cnt = 0;
         for (val t: op.tArgs())
             tArgs.put(cnt++, (float) t);
 
-        val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapes(null, hash, inputBuffers, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
+        val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapes(null, hash, inputBuffers, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, bArgs, op.numBArguments());
 
         if (ptrptr == null)
             throw new RuntimeException();

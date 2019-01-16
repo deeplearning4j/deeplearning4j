@@ -41,23 +41,11 @@ public class Erfc extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Erfc(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Erfc(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Erfc() {
     }
 
     public Erfc(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Erfc(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Erfc(INDArray x) {

@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.RandomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -56,6 +57,10 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
         this.shape = shape;
         setInstanceId();
         sameDiff.addArgsFor(new String[0], this);
+    }
+
+    public BaseRandomOp(INDArray x, INDArray y, INDArray z){
+        super(x,y,z);
     }
 
     @Override

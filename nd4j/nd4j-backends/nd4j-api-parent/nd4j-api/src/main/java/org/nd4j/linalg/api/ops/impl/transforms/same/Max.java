@@ -38,12 +38,8 @@ public class Max extends BaseTransformSameOp  {
 
     public Max() {}
 
-    public Max(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public Max(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
+        super(x, y, z);
     }
 
 

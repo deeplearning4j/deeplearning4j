@@ -16,6 +16,7 @@
 
 package org.nd4j.autodiff.opvalidation;
 
+import com.google.common.collect.Lists;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.shape.*;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.checkutil.CheckUtil;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -45,6 +47,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
@@ -1819,5 +1822,78 @@ public class ShapeOpValidation extends BaseOpValidation {
                 .addOutputs(out1, out2)
                 .addIntegerArguments(2)
                 .build()).expectedOutput(0, exp1).expectedOutput(1,exp2)));
+    }
+
+    @Test
+    public void testDistancesExec(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/7001
+        for(String s : new String[]{"euclidean", "manhattan", "cosinesim", "cosinedist", "jaccard"}) {
+            log.info("Starting: {}", s);
+            INDArray defaultTestCase = Nd4j.create(4, 4);
+            defaultTestCase.putRow(0, Nd4j.create(new float[]{0, 2, -2, 0}));
+            defaultTestCase.putRow(1, Nd4j.create(new float[]{0, 1, -1, 0}));
+            defaultTestCase.putRow(2, Nd4j.create(new float[]{0, -1, 1, 0}));
+            defaultTestCase.putRow(3, Nd4j.create(new float[]{0, -2, 2, 0}));
+            long singleEmbeddingSize = defaultTestCase.size(1) / 2L;
+
+            // Split vectors
+            INDArray x = defaultTestCase.get(NDArrayIndex.all(), NDArrayIndex.interval(0, singleEmbeddingSize));
+            INDArray y = defaultTestCase.get(NDArrayIndex.all(), NDArrayIndex.interval(singleEmbeddingSize, defaultTestCase.size(1)));
+
+            log.info(y.shapeInfoToString());
+
+            SameDiff sd = SameDiff.create();
+            sd.enableDebugMode();
+
+            SDVariable xSd = sd.var("x", x);
+            SDVariable ySd = sd.var("y", y);
+
+            ySd = ySd.add(ySd);
+            SDVariable dist;
+            switch (s){
+                case "euclidean":
+                    dist = sd.euclideanDistance(s, ySd, xSd, 0);
+                    break;
+                case "manhattan":
+                    dist = sd.manhattanDistance(s, ySd, xSd, 0);
+                    break;
+                case "cosinesim":
+                    dist = sd.cosineSimilarity(s, ySd, xSd, 0);
+                    break;
+                case "cosinedist":
+                    dist = sd.cosineDistance(s, ySd, xSd, 0);
+                    break;
+                case "jaccard":
+                    dist = sd.jaccardDistance(s, ySd, xSd, 0);
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+            SDVariable loss = dist.sum();
+
+
+//            log.info(sd.summary());
+            sd.exec(Collections.emptyMap(), Lists.newArrayList(s));
+            sd.execBackwards(Collections.emptyMap());
+        }
+    }
+
+    @Test
+    public void testReductionShape(){
+
+        INDArray shape = Nd4j.createFromArray(4,2);
+        INDArray axis = Nd4j.scalar(0);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("evaluate_reduction_shape")
+                .addInputs(shape,axis)
+                .addBooleanArguments(true) //keepdim = true
+                .build();
+
+        List<LongShapeDescriptor> list = op.calculateOutputShape();
+        long[] s = list.get(0).getShape();
+        long[] exp = new long[]{2};         //(4,2).reduce(0,keepDims=true) -> [1,2] requires output array shape [2] here
+
+        assertArrayEquals(exp, s);  //Fails - actual shape [1]
     }
 }

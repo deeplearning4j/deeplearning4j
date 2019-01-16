@@ -314,6 +314,10 @@ public class FlatBuffersMapper {
         for( int i=0; i<extraInteger.length; i++ ){
             extraInteger[i] = fn.extraInteger(i);
         }
+        boolean[] extraBools = new boolean[fn.extraBoolsLength()];
+        for( int i=0; i<extraBools.length; i++ ){
+            extraBools[i] = fn.extraBools(i);
+        }
         int[] dimensions = new int[fn.dimensionsLength()];
         for( int i=0; i<dimensions.length; i++ ){
             dimensions[i] = fn.dimensions(i);
@@ -351,6 +355,7 @@ public class FlatBuffersMapper {
             //op.addTArgument();
             ((CustomOp) op).addIArgument(extraInteger);
             ((CustomOp) op).addTArgument(extraParams);
+            ((CustomOp) op).addBArgument(extraBools);
 
             op.setPropertiesForFunction(props);
             return op;

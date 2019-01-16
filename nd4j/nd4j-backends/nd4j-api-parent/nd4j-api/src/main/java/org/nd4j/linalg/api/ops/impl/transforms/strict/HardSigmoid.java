@@ -39,10 +39,6 @@ public class HardSigmoid extends BaseTransformStrictOp {
         super(x, z);
     }
 
-    public HardSigmoid(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public HardSigmoid(INDArray ndArray) {
         super(ndArray);
     }

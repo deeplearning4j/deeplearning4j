@@ -155,7 +155,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
 
                 //Check output (forward pass)
                 Map<String,INDArray> placeholders = new HashMap<>();
-                placeholders.put("in", f);
+                placeholders.put("input", f);
                 placeholders.put("label", l);
                 sd.exec(placeholders, lossMse.getVarName());
                 INDArray outSd = a1.getArr();

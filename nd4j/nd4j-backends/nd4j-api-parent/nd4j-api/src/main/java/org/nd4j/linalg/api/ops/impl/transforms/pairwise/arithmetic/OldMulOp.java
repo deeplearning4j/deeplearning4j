@@ -43,10 +43,6 @@ public class OldMulOp extends BaseTransformAnyOp {
 
     public OldMulOp() {}
 
-    public OldMulOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public OldMulOp(INDArray x) {
         super(x);
     }
@@ -55,12 +51,8 @@ public class OldMulOp extends BaseTransformAnyOp {
         super(x, z);
     }
 
-    public OldMulOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public OldMulOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
     }
 
     @Override
@@ -82,13 +74,6 @@ public class OldMulOp extends BaseTransformAnyOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (y == null)
-            throw new IllegalArgumentException("No components to multiply");
     }
 
 

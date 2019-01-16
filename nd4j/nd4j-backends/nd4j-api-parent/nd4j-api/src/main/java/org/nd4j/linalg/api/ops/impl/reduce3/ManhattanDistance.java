@@ -87,8 +87,12 @@ public class ManhattanDistance extends BaseReduce3Op {
         //ddist(x,y)/dxi = sign(xi-yi)
         SDVariable difference = larg().sub(rarg());
         SDVariable gradBroadcastable;
-        int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
-        gradBroadcastable = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
+        if(keepDims || dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE)){
+            //keepDims or full array reduction
+            gradBroadcastable = i_v1.get(0);
+        } else {
+            gradBroadcastable = sameDiff.f().reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), i_v1.get(0));
+        }
 
         SDVariable gradX = sameDiff.sign(difference).mul(gradBroadcastable);
         SDVariable gradY = f().neg(gradX);

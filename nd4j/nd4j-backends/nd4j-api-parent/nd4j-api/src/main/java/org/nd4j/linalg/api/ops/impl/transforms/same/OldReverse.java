@@ -41,10 +41,6 @@ public class OldReverse extends BaseTransformSameOp {
         super(x, z);
     }
 
-    public OldReverse(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public OldReverse(INDArray x) {
         super(x);
     }

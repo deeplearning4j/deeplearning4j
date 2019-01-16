@@ -37,23 +37,11 @@ public class LogSigmoid extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public LogSigmoid(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public LogSigmoid(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public LogSigmoid() {
     }
 
     public LogSigmoid(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public LogSigmoid(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public LogSigmoid(INDArray ndArray) {

@@ -47,7 +47,7 @@ public class BinomialDistributionEx extends BaseRandomOp {
      * @param probability
      */
     public BinomialDistributionEx(@NonNull INDArray z, int trials, double probability) {
-        init(z, z, z, z.lengthLong());
+        super(z, z, z);
         this.trials = trials;
         this.probability = probability;
         this.extraArgs = new Object[] {(double) this.trials, this.probability};
@@ -60,6 +60,7 @@ public class BinomialDistributionEx extends BaseRandomOp {
      * @param probabilities array with probability value for each trial
      */
     public BinomialDistributionEx(@NonNull INDArray z, int trials, @NonNull INDArray probabilities) {
+        super(z, probabilities, z);
         if (z.lengthLong() != probabilities.lengthLong())
             throw new IllegalStateException("Length of probabilities array should match length of target array");
 
@@ -67,8 +68,6 @@ public class BinomialDistributionEx extends BaseRandomOp {
             throw new IllegalStateException("Probabilities array shouldn't have negative elementWiseStride");
 
         Preconditions.checkArgument(probabilities.dataType() == z.dataType(), "Probabilities and Z operand should have same data type");
-
-        init(z, probabilities, z, z.lengthLong());
 
         this.trials = trials;
         this.probability = 0.0;

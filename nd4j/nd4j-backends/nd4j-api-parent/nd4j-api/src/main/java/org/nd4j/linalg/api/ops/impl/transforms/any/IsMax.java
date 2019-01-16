@@ -57,11 +57,7 @@ public class IsMax extends BaseTransformAnyOp {
     }
 
     public IsMax(INDArray x, INDArray z, int... dimensions) {
-        this(x, z, x.length(), dimensions);
-    }
-
-    public IsMax(INDArray x, INDArray z, long n, int... dimensions) {
-        super(x, z, n);
+        super(x, z);
         this.extraArgs = new Object[dimensions.length + 1];
         this.extraArgs[0] = dimensions.length;
         for (int i = 0; i < dimensions.length; i++)

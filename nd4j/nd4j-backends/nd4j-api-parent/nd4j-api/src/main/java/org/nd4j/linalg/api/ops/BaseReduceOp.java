@@ -138,11 +138,10 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
 
     public BaseReduceOp(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
         this.newFormat = newFormat;
         this.keepDims = keepDims;
         this.dimensions = dimensions;
-        init();
         defineDimensions(dimensions);
     }
 
@@ -160,18 +159,6 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
     public BaseReduceOp(SameDiff sameDiff) {
         this.sameDiff = sameDiff;
-    }
-
-
-
-
-    private void init() {
-        /*
-            if (z == null || x == z)
-                init(x, y, x, x.lengthLong());
-            else
-                init(x, y, z, x.lengthLong());
-        */
     }
 
     @Override
@@ -197,32 +184,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
         if (!attributesForNode.containsKey("axis") && !hasReductionIndices(nodeDef)) {
             this.dimensions = new int[] { Integer.MAX_VALUE };
-        }
-        else if(hasReductionIndices(nodeDef)) {
-            NodeDef reductionNode = null;
-            for(int i = 0; i < graph.getNodeCount(); i++) {
-                if (graph.getNode(i).getName().equals(nodeDef.getName() + "/reduction_indices")) {
-                    reductionNode = graph.getNode(i);
-                    val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value", reductionNode, graph);
-
-                    boolean keepAxis = nodeDef.getAttrOrThrow("keep_dims").getB();
-
-                    // keepAxis = false by default
-                    //int[] dimensions = ArrayUtils.add(arr.data().asInt(), 0, keepAxis ? 1 : 0);
-                    int[] dimensions = arr.data().asInt();
-
-                    this.dimensions = dimensions;
-                    break;
-                }
-            }
-
-            if(reductionNode == null)
-                throw new ND4JIllegalStateException("No node found!");
-        }
-        else {
-            val dims = TFGraphMapper.getInstance().getNDArrayFromTensor("axis",nodeDef,graph).data().asInt();
-            this.dimensions = dims;
-        }
+        }   //Otherwise: dimensions are dynamically set during execution in InferenceSession
 
         if(attributesForNode.containsKey("keep_dims")) {
             val keepDims = attributesForNode.get("keep_dims").getB();

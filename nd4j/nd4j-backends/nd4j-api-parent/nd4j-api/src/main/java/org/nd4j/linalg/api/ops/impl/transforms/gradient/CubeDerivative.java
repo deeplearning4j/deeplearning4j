@@ -33,22 +33,10 @@ public class CubeDerivative extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public CubeDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public CubeDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public CubeDerivative() {}
 
     public CubeDerivative(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public CubeDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public CubeDerivative(INDArray x) {

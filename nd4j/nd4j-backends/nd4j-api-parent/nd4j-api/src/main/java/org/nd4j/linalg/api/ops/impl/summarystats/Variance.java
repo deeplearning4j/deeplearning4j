@@ -67,14 +67,11 @@ public class Variance extends BaseReduceOp {
     public Variance(INDArray x, INDArray z, boolean biasCorrected, int... dimensions) {
         this(x, z, true, false, dimensions);
         this.biasCorrected = biasCorrected;
-        init(x, y, z, n);
-        defineDimensions(dimensions);
     }
 
     public Variance(INDArray x, boolean biasCorrected, int... dimensions) {
         super(x);
         this.biasCorrected = biasCorrected;
-        init(x, y, z, n);
         defineDimensions(dimensions);
     }
 
@@ -97,23 +94,6 @@ public class Variance extends BaseReduceOp {
     @Override
     public String opName() {
         return "var";
-    }
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (Nd4j.executionMode == OpExecutioner.ExecutionMode.JAVA) {
-            if (biasCorrected)
-                this.bias = Nd4j.getExecutioner().exec(new Bias(x)).getDouble(0);
-            mean = Nd4j.getExecutioner().exec(new Mean(x)).getDouble(0);
-        }
-
-    }
-
-    @Override
-    public boolean isPassThrough() {
-        return false;
     }
 
 

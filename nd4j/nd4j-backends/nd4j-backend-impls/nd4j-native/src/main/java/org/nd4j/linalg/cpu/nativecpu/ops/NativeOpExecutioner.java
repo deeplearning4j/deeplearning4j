@@ -1744,10 +1744,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
             val tArgs = op.numTArguments() > 0 ? getDoublePointerFrom(tArgsPointer,op.numTArguments()) : null;
-            val tArgs1 = op.tArgs();
             val bArgs = op.numBArguments() > 0 ? getBooleanPointerFrom(bArgsPointer,op.numBArguments()) : null;
 
             cnt = 0;
+            val bArgs1 = op.bArgs();
+            for (val b: bArgs1)
+                bArgs.put(cnt++, b);
+
+            cnt = 0;
+            val tArgs1 = op.tArgs();
             for (val t: tArgs1)
                 tArgs.put(cnt++, t);
 
@@ -1863,17 +1868,23 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             val tArgs = op.numTArguments() > 0 ? new DoublePointer(op.numTArguments()) : null;
 
+            val bArgs = op.numBArguments() > 0 ? new BooleanPointer(op.numBArguments()) : null;
+
+            cnt = 0;
+            val bArgs1 = op.bArgs();
+            for (val b: bArgs1)
+                bArgs.put(cnt++, b);
+
             cnt = 0;
             val tArgs1 = op.tArgs();
             for (val t: tArgs1)
                 tArgs.put(cnt++, t);
 
-
             Nd4jCpu.ShapeList ptrptr;
             try {
                 ptrptr = (Nd4jCpu.ShapeList) loop.calculateOutputShapes(null,
                         hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs,
-                        op.numTArguments(), iArgs, op.numIArguments());
+                        op.numTArguments(), iArgs, op.numIArguments(), bArgs, op.numBArguments());
             } catch (Throwable t){
                 StringBuilder sb = new StringBuilder();
                 sb.append("Inputs: [(");

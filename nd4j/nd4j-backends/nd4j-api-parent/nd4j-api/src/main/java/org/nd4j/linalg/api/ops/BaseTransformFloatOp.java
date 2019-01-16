@@ -57,11 +57,6 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
         super();
     }
 
-    public BaseTransformFloatOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-
     public BaseTransformFloatOp(INDArray x) {
         super(x);
     }
@@ -100,8 +95,6 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
     public List<LongShapeDescriptor> calculateOutputShape() {
         if(x == null)
             return Collections.emptyList();
-
-        this.n = x.length();
         return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), x.isR() ? x.dataType() : Nd4j.defaultFloatingPointType()));
     }
 

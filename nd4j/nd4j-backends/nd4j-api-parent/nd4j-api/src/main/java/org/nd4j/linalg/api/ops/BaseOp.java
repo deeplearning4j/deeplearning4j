@@ -48,10 +48,7 @@ import java.util.Map;
 public abstract class BaseOp extends DifferentialFunction implements Op {
 
     protected INDArray x, y, z;
-    protected long n;
-    protected long numProcessed;
     protected Object[] extraArgs;
-    protected boolean passThrough;
     @Getter @Setter
     protected String xVertexId,yVertexId,zVertexId;
     // cached instance, for dataType checks
@@ -77,24 +74,15 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
      * @param z the output array
      */
     public BaseOp(INDArray x, INDArray z) {
-        this(x, z, x.lengthLong());
-    }
-
-    /**
-     * Specify an alternative output array
-     *
-     * @param x the input
-     * @param z the output
-     * @param n the number of elements to iterate on
-     */
-    public BaseOp(INDArray x, INDArray z, long n) {
-        this(x, null, z, n);
+        this(x, null, z);
     }
 
 
-    public BaseOp(INDArray x, INDArray y, INDArray z, long n) {
+    public BaseOp(INDArray x, INDArray y, INDArray z) {
         super(false);
-        init(x, y, z, n);
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
 
@@ -104,7 +92,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
      * @param x the ndarray
      */
     public BaseOp(INDArray x) {
-        this(x, null, x, x == null ? 0 : x.lengthLong());
+        this(x, null, x);
     }
 
     public static Type getOpType(Op op) {
@@ -224,7 +212,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 throw new ND4JIllegalStateException("Unable to set null array for x. Also unable to infer from differential function arguments");
         } else
             this.x = x;
-        numProcessed = 0;
     }
 
     @Override
@@ -245,7 +232,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");
         } else
             this.z = z;
-        numProcessed = 0;
     }
 
     @Override
@@ -262,7 +248,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 throw new ND4JIllegalStateException("Unable to set null array for y. Also unable to infer from differential function arguments");
         } else
             this.y = y;
-        numProcessed = 0;
     }
 
     @Override
@@ -324,19 +309,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.n = n;
-    }
-
-    @Override
-    public long numProcessed() {
-        return numProcessed;
-    }
-
-    @Override
     public String toString() {
         return opName();
     }
@@ -376,9 +348,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
         BaseOp baseOp = (BaseOp) o;
 
-        if (n != baseOp.n) return false;
-        if (numProcessed != baseOp.numProcessed) return false;
-        if (passThrough != baseOp.passThrough) return false;
         if (x != null ? !x.equals(baseOp.x) : baseOp.x != null) return false;
         if (y != null ? !y.equals(baseOp.y) : baseOp.y != null) return false;
         if (z != null ? !z.equals(baseOp.z) : baseOp.z != null) return false;
@@ -393,10 +362,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         result = 31 * result + (x != null ? x.hashCode() : 0);
         result = 31 * result + (y != null ? y.hashCode() : 0);
         result = 31 * result + (z != null ? z.hashCode() : 0);
-        result = 31 * result + (int) (n ^ (n >>> 32));
-        result = 31 * result + (int) (numProcessed ^ (numProcessed >>> 32));
         result = 31 * result + Arrays.hashCode(extraArgs);
-        result = 31 * result + (passThrough ? 1 : 0);
         result = 31 * result + (extraArgz != null ? extraArgz.hashCode() : 0);
         return result;
     }

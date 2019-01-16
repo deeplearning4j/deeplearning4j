@@ -53,46 +53,18 @@ public class Or extends BaseTransformBoolOp {
         this.extraArgs = new Object[] {this.comparable};
     }
 
-    public Or(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double comparable) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.comparable = comparable;
-        this.extraArgs = new Object[] {this.comparable};
-    }
-
-    public Or(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double comparable) {
-        super(sameDiff, i_v, extraArgs);
-        this.comparable = comparable;
-        this.extraArgs = new Object[] {this.comparable};
-    }
-
     public Or() {}
 
     public Or(@NonNull INDArray x, @NonNull INDArray y) {
-        this(x, y, 0.0);
-    }
-
-    public Or(@NonNull INDArray x, @NonNull INDArray y, Number comparable) {
-        this(x, y, x, comparable, x.lengthLong());
-    }
-
-    public Or(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable) {
-        this(x, y, z, comparable, x.lengthLong());
-    }
-
-    public Or(@NonNull INDArray x, @NonNull INDArray y, long n) {
-        this(x, y, x, n);
+        this(x, y, x, 0.0);
     }
 
     public Or(@NonNull INDArray x, @NonNull INDArray y, INDArray z) {
-        this(x, y, z, z.lengthLong());
+        this(x, y, z, 0.0);
     }
 
-    public Or(@NonNull INDArray x, @NonNull INDArray y, INDArray z, long n) {
-        this(x, y, z, 0.0, n);
-    }
-
-    public Or(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable, long n) {
-        super(x, y, z, n);
+    public Or(@NonNull INDArray x, @NonNull INDArray y, INDArray z, Number comparable) {
+        super(x, y, z);
         this.comparable = comparable.doubleValue();
         this.extraArgs = new Object[] {this.comparable};
     }

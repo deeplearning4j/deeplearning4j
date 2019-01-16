@@ -37,23 +37,11 @@ public class OldIdentity extends BaseTransformSameOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public OldIdentity(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public OldIdentity(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public OldIdentity() {
     }
 
     public OldIdentity(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public OldIdentity(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public OldIdentity(INDArray x) {

@@ -45,10 +45,6 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
         super(sameDiff);
     }
 
-    public BaseTransformAnyOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public BaseTransformAnyOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
         super(sameDiff, i_v1, i_v2, extraArgs);
     }
@@ -73,12 +69,12 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
         super(x, z);
     }
 
-    public BaseTransformAnyOp() {
-        super();
+    public BaseTransformAnyOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
     }
 
-    public BaseTransformAnyOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+    public BaseTransformAnyOp() {
+        super();
     }
 
 
@@ -110,8 +106,6 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
     public List<LongShapeDescriptor> calculateOutputShape() {
         if(x == null)
             return Collections.emptyList();
-
-        this.n = x.length();
         return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), x.dataType()));
     }
 

@@ -34,8 +34,8 @@ public class ScalarMultiplication extends BaseScalarOp {
 
     public ScalarMultiplication() {}
 
-    public ScalarMultiplication(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarMultiplication(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
     }
 
     public ScalarMultiplication(INDArray x, Number num) {
@@ -56,14 +56,6 @@ public class ScalarMultiplication extends BaseScalarOp {
         super(sameDiff, i_v, scalar, inPlace);
     }
 
-    public ScalarMultiplication(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, inPlace, extraArgs);
-    }
-
-    public ScalarMultiplication(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, extraArgs);
-    }
-
     @Override
     public int opNum() {
         return 2;
@@ -82,9 +74,6 @@ public class ScalarMultiplication extends BaseScalarOp {
     public String tensorflowName() {
         return "RealMul";
     }
-
-
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {

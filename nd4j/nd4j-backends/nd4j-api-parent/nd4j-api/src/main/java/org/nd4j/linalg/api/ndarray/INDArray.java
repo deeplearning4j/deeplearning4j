@@ -2291,7 +2291,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      * Returns the total number of elements in the ndarray
      *
      * @return the number of elements in the ndarray
+     * @deprecated use {@link #length()}
      */
+    @Deprecated
     long lengthLong();
 
 

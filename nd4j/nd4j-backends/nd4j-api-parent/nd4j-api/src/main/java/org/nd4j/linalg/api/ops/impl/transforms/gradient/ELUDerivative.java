@@ -42,24 +42,12 @@ public class ELUDerivative extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ELUDerivative(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public ELUDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public ELUDerivative() {
 
     }
 
     public ELUDerivative(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public ELUDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public ELUDerivative(INDArray x) {

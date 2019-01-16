@@ -36,22 +36,10 @@ public class Round extends BaseTransformSameOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Round(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Round(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Round() {}
 
     public Round(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Round(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Round(INDArray x) {

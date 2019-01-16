@@ -44,27 +44,11 @@ public class OldFModOp extends BaseTransformAnyOp {
         super(sameDiff);
     }
 
-    public OldFModOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
     public OldFModOp(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public OldFModOp(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public OldFModOp(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public OldFModOp() {}
-
-    public OldFModOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
 
     public OldFModOp(INDArray x) {
         super(x);
@@ -73,13 +57,8 @@ public class OldFModOp extends BaseTransformAnyOp {
     public OldFModOp(INDArray x, INDArray z) {
         super(x, z);
     }
-
-    public OldFModOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public OldFModOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
     }
 
     @Override
@@ -100,14 +79,6 @@ public class OldFModOp extends BaseTransformAnyOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (y == null)
-            throw new IllegalArgumentException("No components to divide");
     }
 
     @Override

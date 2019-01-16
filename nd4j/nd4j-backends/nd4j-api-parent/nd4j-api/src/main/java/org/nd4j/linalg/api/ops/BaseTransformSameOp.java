@@ -16,17 +16,13 @@
 
 package org.nd4j.linalg.api.ops;
 
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
-import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -42,10 +38,6 @@ public abstract class BaseTransformSameOp extends BaseTransformOp implements Tra
 
     public BaseTransformSameOp(SameDiff sameDiff) {
         super(sameDiff);
-    }
-
-    public BaseTransformSameOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
     }
 
     public BaseTransformSameOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
@@ -72,12 +64,12 @@ public abstract class BaseTransformSameOp extends BaseTransformOp implements Tra
         super(x, z);
     }
 
-    public BaseTransformSameOp() {
-        super();
+    public BaseTransformSameOp(INDArray x, INDArray y, INDArray z){
+        super(x,y,z);
     }
 
-    public BaseTransformSameOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+    public BaseTransformSameOp() {
+        super();
     }
 
 
@@ -120,7 +112,6 @@ public abstract class BaseTransformSameOp extends BaseTransformOp implements Tra
         if(x == null)
             return Collections.emptyList();
 
-        this.n = x.length();
         return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), x.dataType()));
     }
 

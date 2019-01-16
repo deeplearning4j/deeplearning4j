@@ -43,10 +43,6 @@ public class TruncateDivOp extends BaseDynamicTransformOp {
 
     public TruncateDivOp() {}
 
-    public TruncateDivOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(new INDArray[]{x, y}, new INDArray[]{z});
-    }
-
     public TruncateDivOp(INDArray x, INDArray y, INDArray z) {
         super(new INDArray[]{x, y}, new INDArray[]{z});
     }

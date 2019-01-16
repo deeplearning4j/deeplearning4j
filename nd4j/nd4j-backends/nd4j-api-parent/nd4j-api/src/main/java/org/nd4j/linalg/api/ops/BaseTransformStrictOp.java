@@ -65,10 +65,6 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
         super();
     }
 
-    public BaseTransformStrictOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
 
     public BaseTransformStrictOp(INDArray x) {
         super(x);
@@ -112,8 +108,6 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
     public List<LongShapeDescriptor> calculateOutputShape() {
         if(x == null)
             return Collections.emptyList();
-
-        this.n = x.length();
         return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), x.dataType()));
     }
 

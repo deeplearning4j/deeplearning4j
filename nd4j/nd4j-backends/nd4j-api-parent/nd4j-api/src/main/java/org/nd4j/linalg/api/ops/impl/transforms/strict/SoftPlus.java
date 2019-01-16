@@ -34,14 +34,6 @@ public class SoftPlus extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SoftPlus(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public SoftPlus(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public SoftPlus(INDArray x, INDArray z) {
         super(x, z);
     }
@@ -49,11 +41,6 @@ public class SoftPlus extends BaseTransformStrictOp {
     public SoftPlus() {
         super();
     }
-
-    public SoftPlus(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
 
     public SoftPlus(INDArray x) {
         super(x);

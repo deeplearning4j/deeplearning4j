@@ -69,13 +69,6 @@ public class Bias extends BaseReduceFloatOp {
         return "bias";
     }
 
-
-    @Override
-    public boolean isPassThrough() {
-        return false;
-    }
-
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;

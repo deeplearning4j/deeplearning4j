@@ -1585,7 +1585,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray eps(Number other) {
         validateNumericalArray("eps");
-        return Nd4j.getExecutioner().exec(new ScalarEps(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other));
+        return Nd4j.getExecutioner().exec(new ScalarEps(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other));
     }
 
     /**
@@ -1599,7 +1599,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray eps(INDArray other) {
         validateNumericalArray("eps");
-        return Nd4j.getExecutioner().exec(new Eps(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length()));
+        return Nd4j.getExecutioner().exec(new Eps(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
     }
 
     @Override
@@ -1611,13 +1611,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray lte(Number other) {
         validateNumericalArray("less than or equals (lte)");
-        return Nd4j.getExecutioner().exec(new ScalarLessThanOrEqual(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other));
+        return Nd4j.getExecutioner().exec(new ScalarLessThanOrEqual(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other));
     }
 
     @Override
     public INDArray eq(Number other) {
         Preconditions.checkArgument(dataType() != DataType.BOOL || other.doubleValue() == 0.0 || other.doubleValue() == 1.0, "Scalar equality on boolean arrays can only be applied with values 0 or 1: got value %s",other);
-        return Nd4j.getExecutioner().exec(new ScalarEquals(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other));
+        return Nd4j.getExecutioner().exec(new ScalarEquals(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other));
     }
 
     @Override
@@ -1629,36 +1629,36 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray gte(Number other) {
         validateNumericalArray("greater than or equals (gte)");
-        return Nd4j.getExecutioner().exec(new ScalarGreaterThanOrEqual(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other));
+        return Nd4j.getExecutioner().exec(new ScalarGreaterThanOrEqual(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other));
     }
 
 
     @Override
     public INDArray lt(INDArray other) {
         validateNumericalArray("less than (lt)");
-        return Nd4j.getExecutioner().exec(new OldLessThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length()));
+        return Nd4j.getExecutioner().exec(new OldLessThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
     }
 
     @Override
     public INDArray neq(Number other) {
         Preconditions.checkArgument(dataType() != DataType.BOOL || other.doubleValue() == 0.0 || other.doubleValue() == 1.0, "Scalar non-equality on boolean arrays can only be applied with values 0 or 1: got value %s",other);
-        return Nd4j.getExecutioner().exec(new ScalarNotEquals(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other));
+        return Nd4j.getExecutioner().exec(new ScalarNotEquals(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other));
     }
 
     @Override
     public INDArray neq(INDArray other) {
-        return Nd4j.getExecutioner().exec(new OldNotEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length()));
+        return Nd4j.getExecutioner().exec(new OldNotEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
     }
 
     @Override
     public INDArray eq(INDArray other) {
-        return Nd4j.getExecutioner().exec(new OldEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length()));
+        return Nd4j.getExecutioner().exec(new OldEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
     }
 
     @Override
     public INDArray gt(INDArray other) {
         validateNumericalArray("greater than (gt)");
-        return Nd4j.getExecutioner().exec(new OldGreaterThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length()));
+        return Nd4j.getExecutioner().exec(new OldGreaterThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
     }
 
     @Override
@@ -1702,9 +1702,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         validateNumericalArray("rdivi");
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarReverseDivision(this, null, result, result.length(), n));
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
+        Nd4j.getExecutioner().exec(new ScalarReverseDivision(this, null, result, n));
         return result;
     }
 
@@ -1720,10 +1718,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(this, null, result, result.lengthLong(), n));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
+        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(this, result, n));
         return result;
     }
 
@@ -1738,12 +1733,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarDivision(this, null, result, result.lengthLong(), n));
-
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
+        Nd4j.getExecutioner().exec(new ScalarDivision(this, null, result, n));
         return result;
     }
 
@@ -1757,11 +1747,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         validateNumericalArray("muli");
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarMultiplication(this, null, result, result.lengthLong(), n));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
+        Nd4j.getExecutioner().exec(new ScalarMultiplication(this, null, result, n));
         return result;
     }
 
@@ -1777,11 +1763,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarSubtraction(this, null, result, result.lengthLong(), n));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
+        Nd4j.getExecutioner().exec(new ScalarSubtraction(this, null, result, n));
         return result;
     }
 
@@ -1796,11 +1778,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, result.lengthLong(), n));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
+        Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, n));
         return result;
     }
 
@@ -2784,51 +2762,50 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if (rank() == 2 && elementWiseStride() == 1 && ordering() == 'c' && columnVector.elementWiseStride() == 1) {
                 switch (operation) {
                     case 'a': {
-                        ScalarAdd op = new ScalarAdd(this, columnVector, this, this.length(), 0.0);
+                        ScalarAdd op = new ScalarAdd(this, columnVector, this, 0.0);
                         op.setDimension(1);
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
                     case 'p': {
-                        ScalarSet op = new ScalarSet(this, columnVector, this, this.length(), 0.0);
+                        ScalarSet op = new ScalarSet(this, columnVector, this, 0.0);
                         op.setDimension(1);
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
                     case 's': {
-                        ScalarSubtraction op = new ScalarSubtraction(this, columnVector, this, this.length(), 0.0);
+                        ScalarSubtraction op = new ScalarSubtraction(this, columnVector, this, 0.0);
                         op.setDimension(1);
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
                     case 'm': {
                         ScalarMultiplication op =
-                                new ScalarMultiplication(this, columnVector, this, this.length(), 0.0);
+                                new ScalarMultiplication(this, columnVector, this, 0.0);
                         op.setDimension(1);
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
                     case 'd': {
-                        ScalarDivision op = new ScalarDivision(this, columnVector, this, this.length(), 0.0);
+                        ScalarDivision op = new ScalarDivision(this, columnVector, this, 0.0);
                         op.setDimension(1);
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
                     case 'h': {
                         ScalarReverseSubtraction op =
-                                new ScalarReverseSubtraction(this, columnVector, this, this.length(), 0.0);
+                                new ScalarReverseSubtraction(this, columnVector, this, 0.0);
                         op.setDimension(1);
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
                     case 't': {
                         ScalarReverseDivision op =
-                                new ScalarReverseDivision(this, columnVector, this, this.length(), 0.0);
+                                new ScalarReverseDivision(this, columnVector, this, 0.0);
                         op.setDimension(1);
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
-
                 }
             } else {
                 applyBroadcastOp(columnVector, operation);
@@ -2949,44 +2926,44 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if (rank() == 2 && elementWiseStride() == 1 && ordering() == 'f' && rowVector.elementWiseStride() == 1) {
                 switch (operation) {
                     case 'a': {
-                        ScalarAdd op = new ScalarAdd(this, rowVector, this, this.length(), 0.0);
+                        ScalarAdd op = new ScalarAdd(this, rowVector, this, 0.0);
                         op.setDimension(0);
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
                     case 'p': {
-                        ScalarSet op = new ScalarSet(this, rowVector, this, this.length(), 0.0);
+                        ScalarSet op = new ScalarSet(this, rowVector, this, 0.0);
                         op.setDimension(0);
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
                     case 's': {
-                        ScalarSubtraction op = new ScalarSubtraction(this, rowVector, this, this.length(), 0.0);
+                        ScalarSubtraction op = new ScalarSubtraction(this, rowVector, this, 0.0);
                         op.setDimension(0);
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
                     case 'm': {
-                        ScalarMultiplication op = new ScalarMultiplication(this, rowVector, this, this.length(), 0.0);
+                        ScalarMultiplication op = new ScalarMultiplication(this, rowVector, this, 0.0);
                         op.setDimension(0);
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
                     case 'd': {
-                        ScalarDivision op = new ScalarDivision(this, rowVector, this, this.length(), 0.0);
+                        ScalarDivision op = new ScalarDivision(this, rowVector, this, 0.0);
                         op.setDimension(0);
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
                     case 'h': {
                         ScalarReverseSubtraction op =
-                                new ScalarReverseSubtraction(this, rowVector, this, this.length(), 0.0);
+                                new ScalarReverseSubtraction(this, rowVector, this, 0.0);
                         op.setDimension(0);
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
                     case 't': {
-                        ScalarReverseDivision op = new ScalarReverseDivision(this, rowVector, this, this.length(), 0.0);
+                        ScalarReverseDivision op = new ScalarReverseDivision(this, rowVector, this, 0.0);
                         op.setDimension(0);
                         Nd4j.getExecutioner().exec(op);
                         break;
@@ -3749,9 +3726,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         // 1D edge case: reshape back to vector
         if (other.rank() == 1)
             result = result.reshape(result.length());
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
         return result;
     }
 
@@ -3798,10 +3772,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         LinAlgExceptions.assertSameShape(other, result);
-        Nd4j.getExecutioner().exec(new OldDivOp(this, other, result, length()));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
+        Nd4j.getExecutioner().exec(new OldDivOp(this, other, result));
         return result;
     }
 
@@ -3844,11 +3815,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         LinAlgExceptions.assertSameShape(other, result);
 
-        Nd4j.getExecutioner().exec(new OldMulOp(this, other, result, length()));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
+        Nd4j.getExecutioner().exec(new OldMulOp(this, other, result));
         return result;
     }
 
@@ -3892,10 +3859,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         Nd4j.getExecutioner().exec(new OldSubOp(this, other,result));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
         return result;
     }
 
@@ -3937,12 +3900,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         LinAlgExceptions.assertSameShape(other, result);
 
-        Nd4j.getExecutioner().exec(new OldAddOp(this, other, result, length()));
-
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
+        Nd4j.getExecutioner().exec(new OldAddOp(this, other, result));
         return result;
     }
 
@@ -5832,7 +5790,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray remainder(Number denominator, INDArray result) {
         validateNumericalArray("remainder");
-        ScalarRemainder op = new ScalarRemainder(this, null, result, this.length(), denominator);
+        ScalarRemainder op = new ScalarRemainder(this, null, result, denominator);
         Nd4j.getExecutioner().exec(op);
         return result;
     }
@@ -5848,7 +5806,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray remainderi(Number denominator) {
         validateNumericalArray("remainderi");
-        ScalarRemainder op = new ScalarRemainder(this, null, this, this.length(), denominator);
+        ScalarRemainder op = new ScalarRemainder(this, null, this, denominator);
         Nd4j.getExecutioner().exec(op);
         return this;
     }
@@ -5875,7 +5833,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray fmod(Number denominator, INDArray result) {
         validateNumericalArray("fmod");
-        ScalarFMod op = new ScalarFMod(this, null, result, this.length(), denominator);
+        ScalarFMod op = new ScalarFMod(this, null, result, denominator);
         Nd4j.getExecutioner().exec(op);
         return result;
     }
@@ -5891,7 +5849,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray fmodi(Number denominator) {
         validateNumericalArray("fmodi");
-        ScalarFMod op = new ScalarFMod(this, null, this, this.length(), denominator);
+        ScalarFMod op = new ScalarFMod(this, null, this, denominator);
         Nd4j.getExecutioner().exec(op);
         return this;
     }

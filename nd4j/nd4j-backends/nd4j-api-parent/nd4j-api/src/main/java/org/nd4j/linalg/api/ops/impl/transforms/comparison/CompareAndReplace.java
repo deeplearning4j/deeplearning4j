@@ -85,12 +85,12 @@ public class CompareAndReplace extends BaseTransformSameOp {
      * @param condition
      */
     public CompareAndReplace(INDArray x, INDArray y, INDArray z, Condition condition) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
         this.compare = condition.getValue();
         this.set = 0;
         this.mode = condition.condtionNum();
         this.eps = condition.epsThreshold();
-        init(x, y, z, x.lengthLong());
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode};
     }
 
 
@@ -125,12 +125,6 @@ public class CompareAndReplace extends BaseTransformSameOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {compare, set, eps, (double) mode};
     }
 
 
