@@ -50,7 +50,7 @@ public class TFGraphTestZooModels {
     public TemporaryFolder testDir = new TemporaryFolder();
     private static File currentTestDir;
 
-    public static final File BASE_MODEL_DL_DIR = new File(System.getProperty("user.home"), ".nd4jtests");
+    public static final File BASE_MODEL_DL_DIR = new File(getBaseModelDir(), ".nd4jtests");
 
     private static final String BASE_DIR = "tf_graphs/zoo_models";
     private static final String MODEL_FILENAME = "tf_model.txt";
@@ -59,6 +59,14 @@ public class TFGraphTestZooModels {
     private Map<String, INDArray> predictions;
     private String modelName;
     private File localTestDir;
+
+    public static String getBaseModelDir(){
+        String s = System.getProperty("org.nd4j.tests.modeldir");
+        if(s != null && !s.isEmpty()){
+            return s;
+        }
+        return System.getProperty("user.home");
+    }
 
     public static final BiFunction<File,String,SameDiff> LOADER = new RemoteCachingLoader();
 
