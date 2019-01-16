@@ -92,7 +92,7 @@ public class EuclideanDistance extends BaseReduce3Op {
         SDVariable euc = outputVariables()[0];
         SDVariable difference = larg().sub(rarg());
         SDVariable divBroadcastable = i_v1.get(0).div(euc);
-        if(!keepDims && !(dimensionz == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE))){
+        if(!keepDims && !(dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE))){
             //Not keep dims, and not full array reduction -> need to make broadcastable
             divBroadcastable = f().reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), divBroadcastable);
         }

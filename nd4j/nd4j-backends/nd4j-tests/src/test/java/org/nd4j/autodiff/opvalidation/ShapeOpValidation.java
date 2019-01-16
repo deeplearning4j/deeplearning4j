@@ -1849,25 +1849,28 @@ public class ShapeOpValidation extends BaseOpValidation {
             SDVariable ySd = sd.var("y", y);
 
             ySd = ySd.add(ySd);
+            SDVariable dist;
             switch (s){
                 case "euclidean":
-                    sd.euclideanDistance(s, ySd, xSd, 0);
+                    dist = sd.euclideanDistance(s, ySd, xSd, 0);
                     break;
                 case "manhattan":
-                    sd.manhattanDistance(s, ySd, xSd, 0);
+                    dist = sd.manhattanDistance(s, ySd, xSd, 0);
                     break;
                 case "cosinesim":
-                    sd.cosineSimilarity(s, ySd, xSd, 0);
+                    dist = sd.cosineSimilarity(s, ySd, xSd, 0);
                     break;
                 case "cosinedist":
-                    sd.cosineDistance(s, ySd, xSd, 0);
+                    dist = sd.cosineDistance(s, ySd, xSd, 0);
                     break;
                 case "jaccard":
-                    sd.jaccardDistance(s, ySd, xSd, 0);
+                    dist = sd.jaccardDistance(s, ySd, xSd, 0);
                     break;
                 default:
                     throw new RuntimeException();
             }
+
+            SDVariable loss = dist.sum();
 
 
 //            log.info(sd.summary());
