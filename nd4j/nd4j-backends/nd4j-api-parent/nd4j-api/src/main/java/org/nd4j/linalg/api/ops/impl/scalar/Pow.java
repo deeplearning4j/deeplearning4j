@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.scalar;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -119,7 +120,7 @@ public class Pow extends BaseScalarOp {
 
     @Override
     public String tensorflowName() {
-        return "Pow";
+        throw new NoOpNameFoundException("No TensorFlow op found for " + getClass().getSimpleName());
     }
 
     @Override
