@@ -44,29 +44,10 @@ public class Stabilize extends BaseTransformStrictOp {
         this.k = k;
     }
 
-    public Stabilize(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double realMin, double cutOff, double k) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.realMin = realMin;
-        this.cutOff = cutOff;
-        this.k = k;
-    }
-
-    public Stabilize(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double realMin, double cutOff, double k) {
-        super(sameDiff, i_v, extraArgs);
-        this.realMin = realMin;
-        this.cutOff = cutOff;
-        this.k = k;
-    }
-
     public Stabilize() {}
 
     public Stabilize(INDArray x, INDArray z, double k) {
         super(x, z);
-        this.k = k;
-    }
-
-    public Stabilize(INDArray x, INDArray z, long n, double k) {
-        super(x, z, n);
         this.k = k;
     }
 

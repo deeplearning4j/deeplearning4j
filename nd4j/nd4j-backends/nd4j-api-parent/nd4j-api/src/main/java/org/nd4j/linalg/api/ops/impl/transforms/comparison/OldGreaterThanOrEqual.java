@@ -50,8 +50,8 @@ public class OldGreaterThanOrEqual extends BaseTransformBoolOp {
 
     public OldGreaterThanOrEqual() {}
 
-    public OldGreaterThanOrEqual(INDArray x, INDArray z) {
-        super(x, z);
+    public OldGreaterThanOrEqual(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
     }
 
     public OldGreaterThanOrEqual(INDArray x) {

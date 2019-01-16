@@ -44,10 +44,6 @@ public class RectifiedTanhDerivative extends BaseTransformStrictOp {
         super(x, z);
     }
 
-    public RectifiedTanhDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public RectifiedTanhDerivative(INDArray x) {
         super(x);
     }

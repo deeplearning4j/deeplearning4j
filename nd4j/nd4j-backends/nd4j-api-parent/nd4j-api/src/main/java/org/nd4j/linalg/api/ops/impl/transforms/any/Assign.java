@@ -38,23 +38,11 @@ public class Assign extends BaseTransformAnyOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Assign(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Assign(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Assign() {
     }
 
     public Assign(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Assign(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Assign(INDArray x) {

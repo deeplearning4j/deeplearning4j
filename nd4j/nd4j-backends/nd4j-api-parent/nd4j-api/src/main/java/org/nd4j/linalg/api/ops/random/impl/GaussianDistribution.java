@@ -57,7 +57,7 @@ public class GaussianDistribution extends BaseRandomOp {
      * @param stddev
      */
     public GaussianDistribution(@NonNull INDArray z, double mean, double stddev) {
-        init(z, z, z, z.lengthLong());
+        super(z, z, z);
         this.mean = mean;
         this.stddev = stddev;
         this.extraArgs = new Object[] {this.mean, this.stddev};

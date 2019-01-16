@@ -43,10 +43,6 @@ public class Exp extends BaseTransformStrictOp {
         super(x, z);
     }
 
-    public Exp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public Exp(INDArray x) {
         super(x);
     }

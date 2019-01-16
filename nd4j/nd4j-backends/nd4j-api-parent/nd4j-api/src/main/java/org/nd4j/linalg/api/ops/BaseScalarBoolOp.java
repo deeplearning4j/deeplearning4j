@@ -40,7 +40,7 @@ import java.util.List;
 public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
     public BaseScalarBoolOp() {}
 
-    public BaseScalarBoolOp(INDArray x, INDArray y, INDArray z, long n, Number num) {
+    public BaseScalarBoolOp(INDArray x, INDArray y, INDArray z, Number num) {
         super(x, y, z);
         this.scalarValue = Nd4j.scalar(x.dataType(), num);
     }

@@ -43,8 +43,8 @@ public class ScalarLessThanOrEqual extends BaseScalarBoolOp {
     public ScalarLessThanOrEqual() {
     }
 
-    public ScalarLessThanOrEqual(INDArray x, INDArray z, long n, Number num) {
-        super(x, null, z, n, num);
+    public ScalarLessThanOrEqual(INDArray x, INDArray z, Number num) {
+        super(x, null, z, num);
     }
 
     public ScalarLessThanOrEqual(INDArray x, Number num) {

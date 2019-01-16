@@ -42,22 +42,15 @@ public class BooleanNot extends BaseTransformBoolOp {
         //
     }
 
-
     public BooleanNot(@NonNull INDArray x) {
-        this(x, x, x.lengthLong());
+        this(x, x);
     }
 
     public BooleanNot(@NonNull INDArray x, INDArray z) {
-        this(x, z, x.lengthLong());
-    }
-
-
-    public BooleanNot(@NonNull INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+        super(x, null, z);
         Preconditions.checkArgument(x.dataType() == DataType.BOOL, "X operand must be BOOL");
         Preconditions.checkArgument(z.dataType() == DataType.BOOL, "Z operand must be BOOL");
     }
-
 
     @Override
     public int opNum() {
