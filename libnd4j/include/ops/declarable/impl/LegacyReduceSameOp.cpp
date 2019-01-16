@@ -21,6 +21,7 @@
 #include <ops/declarable/LegacyReduceSameOp.h>
 #include <helpers/TAD.h>
 #include <helpers/ShapeUtils.h>
+#include <Status.h>
 
 namespace nd4j {
     namespace ops {
@@ -119,7 +120,7 @@ namespace nd4j {
                 }
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         /**
