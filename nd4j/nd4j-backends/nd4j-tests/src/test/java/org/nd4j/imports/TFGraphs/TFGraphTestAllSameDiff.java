@@ -102,7 +102,7 @@ public class TFGraphTestAllSameDiff {
             //Still failing: 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6322 and https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 1
             "broadcast_dynamic_shape/.*",
 
-            //Failing 2019/01/08 - Shape... input is float in TF, but this dousn't match TF docs! Maybe it's index of non-zero elements like numpy?
+            //Failing 2019/01/16 - Issue 15 https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "where/cond_only.*",
 
             //Failing 2019/01/08 - Issue 3 https://github.com/deeplearning4j/deeplearning4j/issues/6958
@@ -118,28 +118,25 @@ public class TFGraphTestAllSameDiff {
             "lrn/dr3.*",
             "lrn/dr5.*",
 
-            //This is failing on strided slice - on what appears to be an invalid op arguments. Will replace
-            // this test with a set of more thorough/isolated strided slice tests
+            //2019/01/16 - Issue 14 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "g_07",
 
             //Still failing as of 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn1d_layers/channels_first_b2_k2_s1_d2_SAME",
             "cnn2d_layers/channels_first_b1_k12_s1_d12_SAME",
 
-            //These have a random component so can't be validated using simple .equals... should still be compared, however to check range is sensible etc
+            //2019/01/16 - These have a random component so can't be validated using simple .equals... should still be compared, however to check range is sensible etc
             "alpha_dropout/.*",
             "layers_dropout/.*",
 
             //2019/01/09 - Issue 6 at https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "pad/rank1Pone_reflect",
 
-            //These absurdly slow:
+            //2019/01/16 - "No variables are available for execution at execution step X"
             "simplewhile.*",
 
-            //New failures:
-            "gru_dynamic_mnist",
+            //2019/01/16 - "org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter cannot be cast to org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray"
             "primitive_gru_dynamic",
-            "simple_while",
 
             //Still failing as of 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn2d_nn/nchw_b1_k12_s12_d12_SAME",
