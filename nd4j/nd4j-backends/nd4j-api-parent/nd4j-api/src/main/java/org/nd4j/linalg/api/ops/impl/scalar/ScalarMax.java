@@ -34,8 +34,8 @@ import java.util.List;
 public class ScalarMax extends BaseScalarOp {
     public ScalarMax() {}
 
-    public ScalarMax(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarMax(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
     }
 
     public ScalarMax(INDArray x, Number num) {

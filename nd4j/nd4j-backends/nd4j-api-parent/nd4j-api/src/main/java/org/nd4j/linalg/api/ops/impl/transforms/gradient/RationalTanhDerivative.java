@@ -45,10 +45,6 @@ public class RationalTanhDerivative extends BaseTransformStrictOp {
         super(x, z);
     }
 
-    public RationalTanhDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public RationalTanhDerivative(INDArray x) {
         super(x);
     }

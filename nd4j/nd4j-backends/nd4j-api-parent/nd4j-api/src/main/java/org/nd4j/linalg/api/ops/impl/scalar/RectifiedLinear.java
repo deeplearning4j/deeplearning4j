@@ -30,14 +30,6 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class RectifiedLinear extends BaseScalarOp {
-    public RectifiedLinear(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double cutoff) {
-        super(sameDiff, i_v1, cutoff, inPlace);
-    }
-
-    public RectifiedLinear(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double cutoff) {
-        super(sameDiff, i_v1, cutoff, extraArgs);
-    }
-
     public RectifiedLinear(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
         super(sameDiff, i_v, cutoff, inPlace);
     }
@@ -47,28 +39,15 @@ public class RectifiedLinear extends BaseScalarOp {
     }
 
     public RectifiedLinear(INDArray x, INDArray z, double cutoff) {
-        super(x, null, z, x.length(), cutoff);
-
-        init(x, null, z, n); //Need to re-init to properly set cutoff in extra args array
-    }
-
-    public RectifiedLinear(INDArray x, INDArray z, long n, double cutoff) {
-        super(x, null, z, n, cutoff);
-        init(x, null, z, n);
+        super(x, null, z, cutoff);
     }
 
     public RectifiedLinear(INDArray x, double cutoff) {
         super(x, cutoff);
-
-        init(x, null, x, x.length());
     }
 
     public RectifiedLinear(INDArray x, INDArray z) {
         this(x, z, 0.0f);
-    }
-
-    public RectifiedLinear(INDArray x, INDArray z, long n) {
-        this(x, z, n, 0.0f);
     }
 
     public RectifiedLinear(INDArray x) {
@@ -93,11 +72,6 @@ public class RectifiedLinear extends BaseScalarOp {
     @Override
     public String tensorflowName() {
         return "Relu";
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
     }
 
 

@@ -43,8 +43,8 @@ public class OldDivOp extends BaseTransformAnyOp {
 
     public OldDivOp() {}
 
-    public OldDivOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public OldDivOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
     }
 
     public OldDivOp(INDArray x) {
@@ -53,10 +53,6 @@ public class OldDivOp extends BaseTransformAnyOp {
 
     public OldDivOp(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public OldDivOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
     }
 
     @Override

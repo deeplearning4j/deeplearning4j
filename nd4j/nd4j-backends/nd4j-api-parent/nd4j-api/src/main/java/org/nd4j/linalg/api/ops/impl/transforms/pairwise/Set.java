@@ -45,14 +45,6 @@ public class Set extends BaseTransformAnyOp {
     public Set() {
     }
 
-    public Set(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public Set(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public Set(INDArray x) {
         super(x);
     }

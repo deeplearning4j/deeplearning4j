@@ -69,6 +69,10 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
         super(x, z);
     }
 
+    public BaseTransformAnyOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
+    }
+
     public BaseTransformAnyOp() {
         super();
     }

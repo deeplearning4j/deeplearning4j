@@ -51,23 +51,8 @@ public class Axpy extends BaseTransformSameOp {
         this.p = p;
     }
 
-    public Axpy(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double p) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-        this.p = p;
-    }
-
     public Axpy(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double p) {
         super(sameDiff, i_v, inPlace);
-        this.p = p;
-    }
-
-    public Axpy(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double p) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.p = p;
-    }
-
-    public Axpy(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double p) {
-        super(sameDiff, i_v, extraArgs);
         this.p = p;
     }
 
@@ -76,19 +61,19 @@ public class Axpy extends BaseTransformSameOp {
     }
 
     public Axpy(INDArray x, INDArray z, double p) {
-        //      super(x, z, z, z.lengthLong());
+        super(x,z);
         this.p = p;
-        this.extraArgs = new Object[] {p, (double) n};
+        this.extraArgs = new Object[] {p};
     }
 
     public Axpy(INDArray x, INDArray z, double p, long n) {
-        //        super(x, z, n);
+        super(x,z);
         this.p = p;
         this.extraArgs = new Object[] {p, (double) n};
     }
 
     public Axpy(INDArray x, INDArray y, INDArray z, double p, long n) {
-        //        super(x,y,z,n);
+        super(x,y,z);
         this.p = p;
         this.extraArgs = new Object[] {p, (double) n};
     }

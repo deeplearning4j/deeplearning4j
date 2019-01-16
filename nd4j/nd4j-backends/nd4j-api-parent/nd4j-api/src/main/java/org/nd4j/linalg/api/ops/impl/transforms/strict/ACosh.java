@@ -45,21 +45,9 @@ public class ACosh extends BaseTransformStrictOp {
         super(x, y);
     }
 
-    public ACosh(INDArray indArray, INDArray indArray1, int length) {
-        super(indArray, indArray1, length);
-    }
-
     public ACosh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
 
         super(sameDiff, i_v, inPlace);
-    }
-
-    public ACosh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public ACosh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
     }
 
     @Override

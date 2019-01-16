@@ -41,7 +41,7 @@ public class JaccardDistance extends BaseReduce3Op {
     }
 
     public JaccardDistance() {
-        passThrough = false;
+
     }
 
     public JaccardDistance(INDArray x, INDArray y, int... dimensions) {

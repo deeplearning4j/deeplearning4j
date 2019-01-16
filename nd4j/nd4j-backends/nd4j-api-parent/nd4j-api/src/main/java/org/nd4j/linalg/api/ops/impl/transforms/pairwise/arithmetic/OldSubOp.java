@@ -52,7 +52,7 @@ public class OldSubOp extends BaseTransformAnyOp {
     }
 
     public OldSubOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
     }
 
     @Override

@@ -34,11 +34,6 @@ import java.util.List;
  */
 public class ATanh extends BaseTransformStrictOp {
 
-
-    public ATanh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public ATanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
@@ -48,10 +43,6 @@ public class ATanh extends BaseTransformStrictOp {
 
     public ATanh(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public ATanh(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public ATanh(INDArray x) {

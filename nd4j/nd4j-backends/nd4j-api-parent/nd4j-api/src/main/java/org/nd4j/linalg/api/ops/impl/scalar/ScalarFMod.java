@@ -32,8 +32,8 @@ import java.util.List;
 public class ScalarFMod extends BaseScalarOp {
     public ScalarFMod() {}
 
-    public ScalarFMod(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarFMod(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
     }
 
     public ScalarFMod(INDArray x, Number num) {

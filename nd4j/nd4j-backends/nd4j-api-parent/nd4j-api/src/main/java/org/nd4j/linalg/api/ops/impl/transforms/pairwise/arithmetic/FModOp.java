@@ -45,28 +45,12 @@ public class FModOp extends BaseTransformSameOp {
         super(sameDiff);
     }
 
-    public FModOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
     public FModOp(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public FModOp(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public FModOp(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public FModOp(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public FModOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public FModOp(INDArray x, INDArray y, INDArray z, long n) {

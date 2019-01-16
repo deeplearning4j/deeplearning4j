@@ -68,6 +68,10 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
         super(x, z);
     }
 
+    public BaseTransformBoolOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
+    }
+
     public BaseTransformBoolOp() {
         super();
     }

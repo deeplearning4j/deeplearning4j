@@ -52,26 +52,13 @@ public class OldSoftMax extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public OldSoftMax(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public OldSoftMax(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public OldSoftMax() {
     }
 
-    private OldSoftMax(INDArray x, INDArray z) {
+    public OldSoftMax(INDArray x, INDArray z) {
         super(x, z);
         Preconditions.checkArgument(x != null && x.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only. Got x (source) array with shape: %ndShape", x);
         Preconditions.checkArgument(z != null && z.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only. Got z (result) array with shape: %ndShape", z);
-    }
-
-    public OldSoftMax(INDArray x, int... dimensions) {
-        super(x);
-        Preconditions.checkArgument(x != null && x.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only");
     }
 
     @Override

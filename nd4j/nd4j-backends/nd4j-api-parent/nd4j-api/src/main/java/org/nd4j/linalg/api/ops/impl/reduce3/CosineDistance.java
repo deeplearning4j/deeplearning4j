@@ -43,7 +43,6 @@ public class CosineDistance extends BaseReduce3Op {
     }
 
     public CosineDistance() {
-        passThrough = true;
     }
 
     public CosineDistance(INDArray x, INDArray y, INDArray z) {
@@ -52,7 +51,6 @@ public class CosineDistance extends BaseReduce3Op {
 
     public CosineDistance(INDArray x, INDArray y, INDArray z, int... dimension) {
         super(x, y, z, dimension);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
