@@ -66,7 +66,7 @@ namespace nd4j {
 		    cudaSetDevice(i);
 		    cudaGetDeviceProperties(&devProperties[i], i);
 
-		    cudaDeviceSetLimit(cudaLimitStackSize, 4096);
+		    //cudaDeviceSetLimit(cudaLimitStackSize, 4096);
 		    Pair p(devProperties[i].major, devProperties[i].minor);
 		    _capabilities.emplace_back(p);
 
