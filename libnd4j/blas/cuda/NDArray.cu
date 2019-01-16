@@ -42,7 +42,7 @@
 #include <exceptions/datatype_exception.h>
 #include <exceptions/cuda_exception.h>
 #include <specials_cuda.h>
-
+#include <loops/special_kernels.h>
 #include "../NDArray.hpp"
 
 namespace nd4j {
@@ -493,7 +493,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             std::vector<Nd4jLong> repeatMax(max->rankOf());
             for(int i = 1; i <= max->rankOf(); ++i) {
                 repeatMax[i - 1] = (target->_shapeInfo[i] / max->_shapeInfo[i]);
-                nd4j_printf("repeatMax[%i] = %i\n", i - 1, repeatMax[i - 1]);
+                //nd4j_printf("repeatMax[%i] = %i\n", i - 1, repeatMax[i - 1]);
             }
             max->tile(repeatMax, *pTarget);
         }
@@ -516,9 +516,9 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         std::vector<int> sameDims = ShapeUtils::getDimsWithSameShape(*target, *pMin);
         //max->syncToDevice();
         //pMin->syncToDevice(); // tile has a problem with syncing data to device
-        pMin->printBuffer("MIN BUFFER");
-        min->printBuffer("Min buffer");
-        max->printBuffer("MAX BUFFER");
+        //pMin->printBuffer("MIN BUFFER");
+        //min->printBuffer("Min buffer");
+        //max->printBuffer("MAX BUFFER");
 //        if (sameDims.size() == max->rankOf()) {
 //            target->syncToDevice();
 //            max->applyPairwiseTransform(op.p, pMin, target, extraArgs);
@@ -1046,7 +1046,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         auto x = reinterpret_cast<X *>(xBuffer);
         const auto y = reinterpret_cast<const Y *>(yBuffer);
         if (x && y)
-        *(reinterpret_cast<X*>(xBuffer) + xOffset) = static_cast<X>(*reinterpret_cast<Y const*>(yBuffer) + yOffset);
+        *(reinterpret_cast<X*>(xBuffer) + xOffset) = static_cast<X>(*(reinterpret_cast<Y const*>(yBuffer) + yOffset));
     }
     BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedDoubleAssign, (void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const, LIBND4J_TYPES, LIBND4J_TYPES);
 
@@ -3147,8 +3147,10 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         return result;
     }
 
-    //////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // change an array by repeating it the number of times given by reps.
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
         int dim = reps.size();
         int product = 1;
@@ -3182,25 +3184,9 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         // looping through _buffer goes automatically by means of getSubArrayIndex applying
         const auto resultLen = result.lengthOf();
         auto xType = this->dataType();
-        if(result.ordering() == 'c') {           //  ews == 1 always here
-//#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(Nd4jLong i=0;  i<resultLen; ++i) {
-                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
-                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
-
-            }
-        }
-        else {
-
-//#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(int i=0;  i<resultLen; ++i) {
-
-                auto xOffset = result.getOffset(i);
-                auto yOffset = shape::subArrayIndex(newShapeInfo, _shapeInfo, i);
-                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
-            }
-        }
-        result.tickWriteHost();
+        auto stream = _context->getCudaStream();
+        BUILD_SINGLE_SELECTOR(xType, tileKernelH, (this->_bufferD, this->_shapeInfoD, result._bufferD, result._shapeInfoD, resultLen, *stream), LIBND4J_TYPES);
+        result.tickWriteDevice();
         return result;
     }
 //                *(reinterpret_cast<double*>(newBuff) + i) = *(reinterpret_cast<double*>(_buffer) + yOffset);
@@ -3228,29 +3214,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         // looping through _buffer goes automatically by means of getSubArrayIndex applying
         const int ews = target.ews();
         const int targetLen = target.lengthOf();
-        if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(Nd4jLong i=0;  i<targetLen; ++i) {
-                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
-                BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
-            }
-        }
-        else if(target.ordering() == 'c' && ews > 1) {
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(int i=0;  i<targetLen; ++i) {
-                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
-                BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i*ews, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
-            }
-        }
-        else {
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(int i=0;  i<targetLen; ++i) {
-
-                auto xOffset = target.getOffset(i);
-                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
-                BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, xOffset, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
-            }
-        }
+        auto stream = _context->getCudaStream();
+        BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), tileKernelHH, (_bufferD, _shapeInfoD, target._bufferD, target._shapeInfoD, targetLen, ews, *stream), LIBND4J_TYPES, LIBND4J_TYPES);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -3265,32 +3230,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         // looping through _buffer goes automatically by means of getSubArrayIndex applying
         const auto ews = target.ews();
         const auto targetLen = target.lengthOf();
-        if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for (int i = 0; i < targetLen; ++i) {
-                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
-                nd4j_printf("x[%i] = y[%i]", i, yOffset);
-                BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
-            }
-        }
-        else if(target.ordering() == 'c' && ews > 1) {
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(int i=0;  i<targetLen; ++i) {
-                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
-                nd4j_printf("2(EWS> 1) x[%i] = y[%i]", i*ews, yOffset);
-                BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i*ews, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
-            }
-        }
-        else {
-
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(int i=0;  i<targetLen; ++i) {
-
-                auto xOffset = target.getOffset(i);
-                auto yOffset = shape::subArrayIndex(target._shapeInfo, _shapeInfo, i);
-                BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, xOffset, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
-            }
-        }
+        auto stream = _context->getCudaStream();
+        BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), tileKernelHH, (_bufferD, _shapeInfoD, target._bufferD, target._shapeInfoD, targetLen, ews, *stream), LIBND4J_TYPES, LIBND4J_TYPES);
     }
 
 }

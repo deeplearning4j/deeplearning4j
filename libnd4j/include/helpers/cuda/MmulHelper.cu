@@ -67,21 +67,21 @@ void MmulHelper::basicGemm(const NDArray* A, const NDArray* B, NDArray* C, doubl
     }
     else if(xType == yType) {
 
-    	if(xType == DataType::INT8 && zType == DataType::INT32) {            
-    		int alphaI(alpha), betaI(beta);
-    		status = cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alphaI, A->getSpecialBuffer(), CUDA_R_8I, M, B->getSpecialBuffer(), CUDA_R_8I, K, &betaI, C->getSpecialBuffer(), CUDA_R_32I, M, CUDA_R_32I, CUBLAS_GEMM_DEFAULT);
-    	}
-    	else if(xType == DataType::INT8 && zType == DataType::FLOAT32) {
-    		float alphaF(alpha), betaF(beta);
-    		status = cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alphaF, A->getSpecialBuffer(), CUDA_R_8I, M, B->getSpecialBuffer(), CUDA_R_8I, K, &betaF, C->getSpecialBuffer(), CUDA_R_32F, M, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
-    	}
-    	else if(xType == DataType::HALF && zType == DataType::FLOAT32) {
-    		float alphaF(alpha), betaF(beta);
-    		status = cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alphaF, A->getSpecialBuffer(), CUDA_R_16F, M, B->getSpecialBuffer(), CUDA_R_16F, K, &betaF, C->getSpecialBuffer(), CUDA_R_32F, M, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
-    	}
-    	else {
-    		throw std::runtime_error("MmulHelper::basicGemm cublasGemmEx cuda: not implemented yet for given data types !");
-    	}
+    	if(xType == DataType::INT8 && zType == DataType::FLOAT32) {            
+            float alphaF(alpha), betaF(beta);
+            status = cublasSgemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alphaF, A->getSpecialBuffer(), CUDA_R_8I, M, B->getSpecialBuffer(), CUDA_R_8I, K, &betaF, C->getSpecialBuffer(), CUDA_R_32F, M);            
+        }
+        else if(xType == DataType::HALF && zType == DataType::FLOAT32) {
+            float alphaF(alpha), betaF(beta);
+            status = cublasSgemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alphaF, A->getSpecialBuffer(), CUDA_R_16F, M, B->getSpecialBuffer(), CUDA_R_16F, K, &betaF, C->getSpecialBuffer(), CUDA_R_32F, M);
+        }
+        // else if(xType == DataType::HALF && zType == DataType::FLOAT32) {
+        //  float alphaF(alpha), betaF(beta);
+        //  status = cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alphaF, A->getSpecialBuffer(), CUDA_R_16F, M, B->getSpecialBuffer(), CUDA_R_16F, K, &betaF, C->getSpecialBuffer(), CUDA_R_32F, M, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
+        // }
+        else {
+            throw std::runtime_error("MmulHelper::basicGemm cublasGemmEx cuda: not implemented yet for given data types !");
+        }
     }
     else
     	throw std::runtime_error("MmulHelper::basicGemm cuda: not implemented yet for given data types !");

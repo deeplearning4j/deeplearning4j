@@ -1988,14 +1988,43 @@ TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_1)
     exp = 10.;
     y.printShapeInfo("Output SHAPE");
     y.printBuffer("Output TILE");
-    ASSERT_TRUE(exp.equalsTo(x));
+    exp.printBuffer("Expect TILE");
+    ASSERT_TRUE(exp.equalsTo(y));
+}
+
+TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_2)
+{
+    auto x = NDArrayFactory::create<float>('f', {2, 1, 2});
+    x = 10.;
+    auto y = x.tile({1,2,1});
+    auto exp = NDArrayFactory::create<float>('f', {2, 2, 2});
+    exp = 10.;
+    y.printShapeInfo("Output SHAPE");
+    y.printBuffer("Output TILE");
+    ASSERT_TRUE(exp.equalsTo(y));
+}
+
+TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_3)
+{
+    auto x = NDArrayFactory::create<float>('f', {2, 1, 2});
+    x = 10.;
+    x.p(1,0,1, 20);
+    auto y = x.tile({1,2,1});
+    auto exp = NDArrayFactory::create<float>('f', {2, 2, 2});
+    exp = 10.;
+    exp.p(1,0,1, 20.);
+    exp.p(1, 1, 1, 20.);
+    y.printShapeInfo("Output SHAPE");
+    y.printBuffer("Output TILE");
+    ASSERT_TRUE(exp.equalsTo(y));
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_2)
 {
     double expBuff[] = {2., 3, 3., 4., 4., 5, 5., 6., 6., 7, 7., 8.};
-
+    NDArray a('c', {4,4}, {1.,2,3,4,5,6,7,8,9,2,3,2,1,0,4,7.}, nd4j::DataType::FLOAT32);
+    a.printBuffer();
     auto x = NDArrayFactory::create<double>('c', {3, 2, 1});
     auto y = NDArrayFactory::create<double>('c',    {1, 2});
     auto expected = NDArrayFactory::create<double>(expBuff, 'c', {3, 2, 2});
