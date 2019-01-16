@@ -43,14 +43,11 @@ public class AlphaDropOut extends BaseRandomOp {
     }
 
     public AlphaDropOut(@NonNull INDArray x, double p, double alpha, double alphaPrime, double beta) {
-        this(x, x, p, alpha, alphaPrime, beta, x.lengthLong());
+        this(x, x, p, alpha, alphaPrime, beta);
     }
 
     public AlphaDropOut(@NonNull INDArray x, @NonNull INDArray z, double p, double alpha, double alphaPrime, double beta) {
-        this(x, z, p, alpha, alphaPrime, beta, x.lengthLong());
-    }
-
-    public AlphaDropOut(@NonNull INDArray x, @NonNull INDArray z, double p, double alpha, double alphaPrime, double beta, long n) {
+        super(x,null,z);
         this.p = p;
         this.a = alpha;
         this.b = beta;

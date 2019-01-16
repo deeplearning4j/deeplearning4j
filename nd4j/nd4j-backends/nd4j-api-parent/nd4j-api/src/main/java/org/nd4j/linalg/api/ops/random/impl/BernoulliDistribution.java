@@ -55,6 +55,7 @@ public class BernoulliDistribution extends BaseRandomOp {
     
      */
     public BernoulliDistribution(@NonNull INDArray z, double prob) {
+        super(null, null, z);
         this.prob = prob;
         this.extraArgs = new Object[] {this.prob};
     }
@@ -66,6 +67,7 @@ public class BernoulliDistribution extends BaseRandomOp {
     
      */
     public BernoulliDistribution(@NonNull INDArray z, @NonNull INDArray prob) {
+        super(prob, null, z);
         if (prob.elementWiseStride() != 1)
             throw new ND4JIllegalStateException("Probabilities should have ElementWiseStride of 1");
 

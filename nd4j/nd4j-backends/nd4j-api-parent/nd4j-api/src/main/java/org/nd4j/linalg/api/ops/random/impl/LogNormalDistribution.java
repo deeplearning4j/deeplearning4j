@@ -57,7 +57,7 @@ public class LogNormalDistribution extends BaseRandomOp {
      * @param stddev
      */
     public LogNormalDistribution(@NonNull INDArray z, double mean, double stddev) {
-        super(null,null,z);
+        super(z, z, z);
         this.mean = mean;
         this.stddev = stddev;
         this.extraArgs = new Object[] {this.mean, this.stddev};
@@ -65,7 +65,7 @@ public class LogNormalDistribution extends BaseRandomOp {
 
 
     public LogNormalDistribution(@NonNull INDArray z, @NonNull INDArray means, double stddev) {
-        super(null,null,z);
+        super(z,means,z);
         if (z.lengthLong() != means.lengthLong())
             throw new IllegalStateException("Result length should be equal to provided Means length");
 
