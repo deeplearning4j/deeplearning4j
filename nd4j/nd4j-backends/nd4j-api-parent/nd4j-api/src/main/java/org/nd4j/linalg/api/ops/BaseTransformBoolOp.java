@@ -48,11 +48,6 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
         super(sameDiff, i_v, inPlace);
     }
 
-    public BaseTransformBoolOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-
     public BaseTransformBoolOp(SameDiff sameDiff) {
         super(sameDiff);
     }
@@ -76,11 +71,6 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
     public BaseTransformBoolOp() {
         super();
     }
-
-    public BaseTransformBoolOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
 
     public BaseTransformBoolOp(INDArray x) {
         super(x);
@@ -118,8 +108,6 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
     public List<LongShapeDescriptor> calculateOutputShape() {
         if(x == null)
             return Collections.emptyList();
-
-        this.n = x.length();
         return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), DataType.BOOL));
     }
 

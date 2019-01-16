@@ -35,10 +35,6 @@ import java.util.List;
 public class ScalarSet extends BaseScalarOp {
     public ScalarSet() {}
 
-    public ScalarSet(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
-    }
-
     public ScalarSet(INDArray x, Number num) {
         super(x, num);
     }
@@ -50,14 +46,6 @@ public class ScalarSet extends BaseScalarOp {
 
     public ScalarSet(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
-    }
-
-    public ScalarSet(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, inPlace, extraArgs);
-    }
-
-    public ScalarSet(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, extraArgs);
     }
 
 
@@ -79,16 +67,6 @@ public class ScalarSet extends BaseScalarOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (scalarValue != null) {
-            this.extraArgs = new Object[] {scalarValue};
-        }
-
     }
 
 

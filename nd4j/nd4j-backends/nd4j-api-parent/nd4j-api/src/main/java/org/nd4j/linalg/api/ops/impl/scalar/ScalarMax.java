@@ -67,15 +67,6 @@ public class ScalarMax extends BaseScalarOp {
         return "RealMax";
     }
 
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (scalarValue != null)
-            this.extraArgs = new Object[]{scalarValue};
-
-    }
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         SDVariable mask = arg().gt(scalarValue.getDouble(0)).castTo(arg().dataType());

@@ -63,12 +63,8 @@ public class OldSoftMax extends BaseTransformStrictOp {
     public OldSoftMax() {
     }
 
-    public OldSoftMax(INDArray x, INDArray z, int... axis) {
-        this(x, z, x.length());
-    }
-
-    private OldSoftMax(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+    private OldSoftMax(INDArray x, INDArray z) {
+        super(x, z);
         Preconditions.checkArgument(x != null && x.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only. Got x (source) array with shape: %ndShape", x);
         Preconditions.checkArgument(z != null && z.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only. Got z (result) array with shape: %ndShape", z);
     }
@@ -97,12 +93,6 @@ public class OldSoftMax extends BaseTransformStrictOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        passThrough = true;
     }
 
     @Override

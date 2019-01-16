@@ -55,7 +55,7 @@ public class AlphaDropOut extends BaseRandomOp {
         this.a = alpha;
         this.b = beta;
         this.alphaPrime = alphaPrime;
-        init(x, null, z, n);
+        this.extraArgs = new Object[] {p, a, b, alphaPrime};
     }
 
     @Override
@@ -69,12 +69,6 @@ public class AlphaDropOut extends BaseRandomOp {
     }
 
     @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {p, a, b, alphaPrime};
-    }
-
-    @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
@@ -83,7 +77,6 @@ public class AlphaDropOut extends BaseRandomOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

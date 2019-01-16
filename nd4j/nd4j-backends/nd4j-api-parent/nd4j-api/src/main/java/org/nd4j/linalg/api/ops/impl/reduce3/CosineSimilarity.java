@@ -50,12 +50,11 @@ public class CosineSimilarity extends BaseReduce3Op {
     }
 
     public CosineSimilarity() {
-        passThrough = true;
+        extraArgs = new Object[]{0.0f, 0.0f};
     }
 
     public CosineSimilarity(INDArray x, INDArray y, INDArray z, int... dimensions) {
         super(x, y, z, dimensions);
-        passThrough = Nd4j.getExecutioner().executionMode() == OpExecutioner.ExecutionMode.JAVA;
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 

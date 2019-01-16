@@ -43,20 +43,12 @@ public class OldRDivOp extends BaseTransformAnyOp {
 
     public OldRDivOp() {}
 
-    public OldRDivOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public OldRDivOp(INDArray x) {
         super(x);
     }
 
     public OldRDivOp(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public OldRDivOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public OldRDivOp(INDArray x, INDArray y, INDArray z) {
@@ -82,18 +74,6 @@ public class OldRDivOp extends BaseTransformAnyOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (y == null)
-            throw new IllegalArgumentException("No components to divide");
-    }
-
-
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

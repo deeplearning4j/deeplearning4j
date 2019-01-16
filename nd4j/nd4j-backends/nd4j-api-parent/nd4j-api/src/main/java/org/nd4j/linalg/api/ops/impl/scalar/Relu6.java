@@ -40,14 +40,6 @@ import java.util.Map;
  * @author Max Pumperla
  */
 public class Relu6 extends BaseScalarOp {
-    public Relu6(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double cutoff) {
-        super(sameDiff, i_v1, cutoff, inPlace);
-    }
-
-    public Relu6(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double cutoff) {
-        super(sameDiff, i_v1, cutoff, extraArgs);
-    }
-
     public Relu6(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
         super(sameDiff, i_v, cutoff, inPlace);
     }
@@ -57,38 +49,19 @@ public class Relu6 extends BaseScalarOp {
     }
 
     public Relu6(INDArray x, INDArray z, double cutoff) {
-        super(x,null, z, x.length(), cutoff);
-
-        init(x, null, z, x.length()); //Need to re-init to properly set cutoff in extra args array
+        super(x,null, z, cutoff);
     }
-
-    public Relu6(INDArray x, INDArray z, long n, double cutoff) {
-        super(x, null, z, n, cutoff);
-
-        init(x, null, z, n);
-    }
-
     public Relu6(INDArray x, double cutoff) {
         super(x, cutoff);
-        init(x, null, x, x.length());
     }
 
     public Relu6(INDArray x, INDArray z) {
-        super(x, null, z, x.length(), 0.0f);
-    }
-
-    public Relu6(INDArray x, INDArray z, long n) {
-        super(x, null, z, n, 0.0f);
+        super(x, null, z,0.0f);
     }
 
 
     public Relu6(INDArray x) {
         this(x, 0.0f);
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
     }
 
     @Override

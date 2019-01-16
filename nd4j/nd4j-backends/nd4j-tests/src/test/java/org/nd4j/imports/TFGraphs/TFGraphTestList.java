@@ -49,11 +49,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-//            "sepconv1d_layers/channels_last_b1_k2_s1_d1_SAME_dm1"
-//            "embedding_lookup/rank2_multiple_div_nomaxnorm"
-//            "cnn2d_nn/nchw_35_35_32_b1_k3_s1_SAME"
-//            "cnn2d_nn/nhwc_35_35_32_b1_k3_s1_SAME"
-            "nth_element/rank2_n0"
+            "lrn/dr3_b05_a05_b02"
     };
 
     @After

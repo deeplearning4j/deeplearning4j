@@ -148,7 +148,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     }
 
     public BaseBroadcastOp(INDArray x, INDArray y, INDArray z, int... dimension) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
         Broadcast.validateBroadcastDims(x,y,z, dimension);
 
         this.dimension = dimension;

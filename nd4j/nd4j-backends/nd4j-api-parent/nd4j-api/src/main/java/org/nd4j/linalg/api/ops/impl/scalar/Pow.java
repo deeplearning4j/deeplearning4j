@@ -59,27 +59,13 @@ public class Pow extends BaseScalarOp {
     public Pow(INDArray x, INDArray z, double pow) {
         super(x, z, pow);
         this.pow = pow;
-        init(x, null, z, x.lengthLong());
-    }
-
-    public Pow(INDArray x, INDArray z, long n, double pow) {
-        super(x, z, n);
-        this.pow = pow;
-        init(x, null, z, n);
-
-    }
-
-    public Pow(INDArray x, INDArray y, INDArray z, long n, double pow) {
-        super(x, y, z, n, pow);
-        this.pow = pow;
-        init(x, y, z, n);
-
+        this.extraArgs = new Object[]{pow};
     }
 
     public Pow(INDArray x, double pow) {
         super(x, pow);
         this.pow = pow;
-        init(x, null, x, x.lengthLong());
+        this.extraArgs = new Object[]{pow};
     }
 
     @Override
@@ -92,17 +78,9 @@ public class Pow extends BaseScalarOp {
         return "pow";
     }
 
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[]{pow};
-    }
-
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val weightsName = nodeDef.getInput(1);
-        val variable = initWith.getVariable(weightsName);
         val tmp = initWith.getArrForVarName(weightsName);
 
         // if second argument is scalar - we should provide array of same shape

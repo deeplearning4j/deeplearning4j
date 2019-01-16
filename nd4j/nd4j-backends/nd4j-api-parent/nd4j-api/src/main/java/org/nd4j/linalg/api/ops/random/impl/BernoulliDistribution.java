@@ -55,7 +55,6 @@ public class BernoulliDistribution extends BaseRandomOp {
     
      */
     public BernoulliDistribution(@NonNull INDArray z, double prob) {
-        init(null, null, z, z.lengthLong());
         this.prob = prob;
         this.extraArgs = new Object[] {this.prob};
     }
@@ -73,8 +72,6 @@ public class BernoulliDistribution extends BaseRandomOp {
         if (prob.lengthLong() != z.lengthLong())
             throw new ND4JIllegalStateException("Length of probabilities array [" + prob.lengthLong()
                             + "] doesn't match length of output array [" + z.lengthLong() + "]");
-
-        init(prob, null, z, z.lengthLong());
         this.prob = 0.0;
         this.extraArgs = new Object[] {this.prob};
     }

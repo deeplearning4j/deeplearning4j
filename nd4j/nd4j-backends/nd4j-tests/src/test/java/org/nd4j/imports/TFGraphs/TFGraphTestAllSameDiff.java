@@ -114,7 +114,7 @@ public class TFGraphTestAllSameDiff {
             //2019/01/08 - This is simply an order issue - need to account for this in test (TF gives no order guarantees)
             "topk/.*",
 
-            //Still failing as of 2019/01/08
+            //2019/01/15 - failing on expected/actual. Maybe op issue?
             "lrn/dr3.*",
             "lrn/dr5.*",
 
@@ -136,6 +136,9 @@ public class TFGraphTestAllSameDiff {
             "simplewhile.*",
 
             //2019/01/16 - "org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter cannot be cast to org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray"
+            //Doesn't seem like a valid structure, based on the docs
+            // TensorArrayReadV3 has 3 inputs - handle, index, and flow_in
+            //'handle' is supposed to be the handle to a TensorArray, but here's it's the output variable of an Enter op
             "primitive_gru_dynamic",
 
             //Still failing as of 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447

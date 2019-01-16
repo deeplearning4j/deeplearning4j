@@ -43,8 +43,6 @@ public class Choice extends BaseRandomOp {
 
         if (probabilities.elementWiseStride() < 1 || source.elementWiseStride() < 1)
             throw new IllegalStateException("Source and probabilities should have element-wise stride >= 1");
-
-        init(source, probabilities, z, z.lengthLong());
         this.extraArgs = new Object[] {0.0};
     }
 

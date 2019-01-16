@@ -138,11 +138,10 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
 
     public BaseReduceOp(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
         this.newFormat = newFormat;
         this.keepDims = keepDims;
         this.dimensions = dimensions;
-        init();
         defineDimensions(dimensions);
     }
 
@@ -160,18 +159,6 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
     public BaseReduceOp(SameDiff sameDiff) {
         this.sameDiff = sameDiff;
-    }
-
-
-
-
-    private void init() {
-        /*
-            if (z == null || x == z)
-                init(x, y, x, x.lengthLong());
-            else
-                init(x, y, z, x.lengthLong());
-        */
     }
 
     @Override
