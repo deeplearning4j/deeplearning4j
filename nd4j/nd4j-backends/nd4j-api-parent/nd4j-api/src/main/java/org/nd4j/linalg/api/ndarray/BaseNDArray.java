@@ -1703,8 +1703,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
         Nd4j.getExecutioner().exec(new ScalarReverseDivision(this, null, result, n));
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
         return result;
     }
 
@@ -1721,9 +1719,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             n = Nd4j.EPS_THRESHOLD;
 
         Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(this, result, n));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
         return result;
     }
 
@@ -1739,11 +1734,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
         Nd4j.getExecutioner().exec(new ScalarDivision(this, null, result, n));
-
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
         return result;
     }
 
@@ -1758,10 +1748,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
         Nd4j.getExecutioner().exec(new ScalarMultiplication(this, null, result, n));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
         return result;
     }
 
@@ -1778,10 +1764,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             n = Nd4j.EPS_THRESHOLD;
 
         Nd4j.getExecutioner().exec(new ScalarSubtraction(this, null, result, n));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
         return result;
     }
 
@@ -1797,10 +1779,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             n = Nd4j.EPS_THRESHOLD;
 
         Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, n));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
         return result;
     }
 
@@ -3748,9 +3726,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         // 1D edge case: reshape back to vector
         if (other.rank() == 1)
             result = result.reshape(result.length());
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
         return result;
     }
 
@@ -3798,9 +3773,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         LinAlgExceptions.assertSameShape(other, result);
         Nd4j.getExecutioner().exec(new OldDivOp(this, other, result));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
         return result;
     }
 
@@ -3844,10 +3816,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         LinAlgExceptions.assertSameShape(other, result);
 
         Nd4j.getExecutioner().exec(new OldMulOp(this, other, result));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
         return result;
     }
 
@@ -3891,10 +3859,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         Nd4j.getExecutioner().exec(new OldSubOp(this, other,result));
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
         return result;
     }
 
@@ -3937,11 +3901,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         LinAlgExceptions.assertSameShape(other, result);
 
         Nd4j.getExecutioner().exec(new OldAddOp(this, other, result));
-
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
         return result;
     }
 

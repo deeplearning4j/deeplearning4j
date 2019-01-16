@@ -59,7 +59,6 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
     public void before() {
         Nd4j.MAX_SLICES_TO_PRINT = -1;
         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         if (irisIter == null) {
             irisIter = new IrisDataSetIterator(5, 5);
         }

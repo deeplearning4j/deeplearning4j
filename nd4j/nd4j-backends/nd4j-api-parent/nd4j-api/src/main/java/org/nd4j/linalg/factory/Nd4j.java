@@ -110,7 +110,6 @@ import java.util.logging.Logger;
  */
 public class Nd4j {
 
-    public final static String NUMERICAL_STABILITY = "force.stability";
     public final static String DATA_BUFFER_OPS = "databufferfactory";
     public final static String CONVOLUTION_OPS = "convops";
     /**@deprecated Use {@link ND4JSystemProperties#DTYPE}*/
@@ -155,7 +154,6 @@ public class Nd4j {
     //number of elements to print in begin and end
     public static int MAX_ELEMENTS_PER_SLICE = 3;
     public static int MAX_SLICES_TO_PRINT = 3;
-    public static boolean ENFORCE_NUMERICAL_STABILITY = false;
     public static boolean copyOnOps = true;
     public static boolean shouldInstrument = false;
     public static boolean resourceManagerOn = false;
@@ -6052,7 +6050,6 @@ public class Nd4j {
             SPARSE_BLAS_WRAPPER_INSTANCE = sparseBlasWrapperClazz.newInstance();
             DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
 
-            ENFORCE_NUMERICAL_STABILITY = pp.toBoolean(NUMERICAL_STABILITY);
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
             getExecutioner().setExecutionMode(executionMode);
 
