@@ -773,22 +773,22 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable abs(SDVariable iX) {
-        return new Abs(sameDiff(), iX, null).outputVariable();
+        return new Abs(sameDiff(), iX, false).outputVariable();
     }
 
 
     public SDVariable neg(SDVariable iX) {
-        return new Negative(sameDiff(), iX, null).outputVariable();
+        return new Negative(sameDiff(), iX, false).outputVariable();
     }
 
 
     public SDVariable cos(SDVariable iX) {
-        return new Cos(sameDiff(), iX, null).outputVariable();
+        return new Cos(sameDiff(), iX, false).outputVariable();
     }
 
 
     public SDVariable sin(SDVariable iX) {
-        return new Sin(sameDiff(), iX, null).outputVariable();
+        return new Sin(sameDiff(), iX, false).outputVariable();
     }
 
 
@@ -828,17 +828,17 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable acos(SDVariable iX) {
-        return new ACos(sameDiff(), iX, null).outputVariable();
+        return new ACos(sameDiff(), iX, false).outputVariable();
     }
 
 
     public SDVariable asin(SDVariable iX) {
-        return new ASin(sameDiff(), iX, null).outputVariable();
+        return new ASin(sameDiff(), iX, false).outputVariable();
     }
 
 
     public SDVariable atan(SDVariable iX) {
-        return new ATan(sameDiff(), iX, null).outputVariable();
+        return new ATan(sameDiff(), iX, false).outputVariable();
 
     }
 
@@ -848,18 +848,18 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable cosh(SDVariable iX) {
-        return new Cosh(sameDiff(), iX, null).outputVariable();
+        return new Cosh(sameDiff(), iX, false).outputVariable();
 
     }
 
 
     public SDVariable sinh(SDVariable iX) {
-        return new Sinh(sameDiff(), iX, null).outputVariable();
+        return new Sinh(sameDiff(), iX, false).outputVariable();
     }
 
 
     public SDVariable tanh(SDVariable iX) {
-        return new Tanh(sameDiff(), iX, null).outputVariable();
+        return new Tanh(sameDiff(), iX, false).outputVariable();
     }
 
     public SDVariable tanhRational(SDVariable in) {
@@ -888,17 +888,17 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable acosh(SDVariable iX) {
-        return new ACosh(sameDiff(), iX, null).outputVariable();
+        return new ACosh(sameDiff(), iX).outputVariable();
     }
 
 
     public SDVariable asinh(SDVariable iX) {
-        return new ASinh(sameDiff(), iX, null).outputVariable();
+        return new ASinh(sameDiff(), iX).outputVariable();
     }
 
 
     public SDVariable atanh(SDVariable iX) {
-        return new ATanh(sameDiff(), iX, null).outputVariable();
+        return new ATanh(sameDiff(), iX).outputVariable();
     }
 
 
@@ -907,15 +907,15 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable expm1(SDVariable iX) {
-        return new Expm1(sameDiff(), iX, null).outputVariable();
+        return new Expm1(sameDiff(), iX, false).outputVariable();
     }
 
     public SDVariable rsqrt(SDVariable iX) {
-        return new RSqrt(sameDiff(), iX, null).outputVariable();
+        return new RSqrt(sameDiff(), iX, false).outputVariable();
     }
 
     public SDVariable log(SDVariable iX) {
-        return new Log(sameDiff(), iX, null).outputVariable();
+        return new Log(sameDiff(), iX, false).outputVariable();
     }
 
     public SDVariable log(SDVariable in, double base) {
@@ -923,20 +923,20 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable log1p(SDVariable iX) {
-        return new Log1p(sameDiff(), iX, null).outputVariable();
+        return new Log1p(sameDiff(), iX, false).outputVariable();
     }
 
 
     public SDVariable isFinite(SDVariable ix) {
-        return new IsFinite(sameDiff(), ix, null).outputVariable();
+        return new IsFinite(sameDiff(), ix, false).outputVariable();
     }
 
     public SDVariable isInfinite(SDVariable ix) {
-        return new IsInf(sameDiff(), ix, null).outputVariable();
+        return new IsInf(sameDiff(), ix, false).outputVariable();
     }
 
     public SDVariable isNaN(SDVariable ix) {
-        return new IsNaN(sameDiff(), ix, null).outputVariable();
+        return new IsNaN(sameDiff(), ix, false).outputVariable();
     }
 
     public SDVariable isMax(SDVariable ix) {
@@ -952,7 +952,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable round(SDVariable ix) {
-        return new Round(sameDiff(), ix, null).outputVariable();
+        return new Round(sameDiff(), ix, false).outputVariable();
     }
 
     public SDVariable or(SDVariable iX, SDVariable i_y) {
@@ -1000,7 +1000,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable sqrt(SDVariable iX) {
-        return new Sqrt(sameDiff(), iX, null).outputVariable();
+        return new Sqrt(sameDiff(), iX, false).outputVariable();
     }
 
 
@@ -1010,16 +1010,16 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable cube(SDVariable iX) {
-        return new Cube(sameDiff(), iX, null).outputVariable();
+        return new Cube(sameDiff(), iX, false).outputVariable();
     }
 
     public SDVariable cubeDerivative(SDVariable iX) {
-        return new CubeDerivative(sameDiff(), iX, null).outputVariable();
+        return new CubeDerivative(sameDiff(), iX, false).outputVariable();
     }
 
 
     public SDVariable floor(SDVariable iX) {
-        return new Floor(sameDiff(), iX, null).outputVariable();
+        return new Floor(sameDiff(), iX, false).outputVariable();
     }
 
     public SDVariable floorDiv(SDVariable x, SDVariable y) {
@@ -1072,11 +1072,11 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable hardTanh(SDVariable iX) {
-        return new HardTanh(sameDiff(), iX, null).outputVariable();
+        return new HardTanh(sameDiff(), iX, false).outputVariable();
     }
 
     public SDVariable hardTanhDerivative(SDVariable iX) {
-        return new HardTanhDerivative(sameDiff(), iX, null).outputVariable();
+        return new HardTanhDerivative(sameDiff(), iX, false).outputVariable();
     }
 
     public SDVariable hardSigmoid(SDVariable in) {
@@ -1085,7 +1085,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable sigmoid(SDVariable iX) {
-        return new Sigmoid(sameDiff(), iX, null).outputVariable();
+        return new Sigmoid(sameDiff(), iX, false).outputVariable();
     }
 
 
@@ -1095,7 +1095,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable logSigmoid(SDVariable iX) {
-        return new LogSigmoid(sameDiff(), iX, null).outputVariable();
+        return new LogSigmoid(sameDiff(), iX, false).outputVariable();
     }
 
     public SDVariable powDerivative(SDVariable iX, double pow) {
@@ -1104,7 +1104,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable swish(SDVariable iX) {
-        return new Swish(sameDiff(), iX, null).outputVariable();
+        return new Swish(sameDiff(), iX, false).outputVariable();
     }
 
 
@@ -1114,7 +1114,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable sign(SDVariable iX) {
-        return new Sign(sameDiff(), iX, null).outputVariable();
+        return new Sign(sameDiff(), iX, false).outputVariable();
     }
 
 
@@ -1202,31 +1202,31 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable softsign(SDVariable iX) {
-        return new SoftSign(sameDiff(), iX, null).outputVariable();
+        return new SoftSign(sameDiff(), iX, false).outputVariable();
 
     }
 
 
     public SDVariable softsignDerivative(SDVariable iX) {
-        return new SoftSignDerivative(sameDiff(), iX, null).outputVariable();
+        return new SoftSignDerivative(sameDiff(), iX, false).outputVariable();
 
     }
 
 
     public SDVariable softplus(SDVariable iX) {
-        return new SoftPlus(sameDiff(), iX, null).outputVariable();
+        return new SoftPlus(sameDiff(), iX, false).outputVariable();
 
     }
 
 
     public SDVariable elu(SDVariable iX) {
-        return new ELU(sameDiff(), iX, null).outputVariable();
+        return new ELU(sameDiff(), iX, false).outputVariable();
 
     }
 
 
     public SDVariable eluDerivative(SDVariable iX) {
-        return new ELUDerivative(sameDiff(), iX, null).outputVariable();
+        return new ELUDerivative(sameDiff(), iX, false).outputVariable();
 
     }
 
@@ -1437,13 +1437,13 @@ public class DifferentialFunctionFactory {
 
     public SDVariable selu(SDVariable arg) {
         validateDifferentialFunctionsameDiff(arg);
-        return new SELU(sameDiff(), arg, null).outputVariable();
+        return new SELU(sameDiff(), arg, false).outputVariable();
     }
 
 
     public SDVariable seluDerivative(SDVariable arg) {
         validateDifferentialFunctionsameDiff(arg);
-        return new SELUDerivative(sameDiff(), arg, null).outputVariable();
+        return new SELUDerivative(sameDiff(), arg, false).outputVariable();
     }
 
 

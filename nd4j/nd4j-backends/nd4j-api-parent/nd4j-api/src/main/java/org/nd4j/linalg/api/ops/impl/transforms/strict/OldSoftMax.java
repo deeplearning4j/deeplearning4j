@@ -55,6 +55,10 @@ public class OldSoftMax extends BaseTransformStrictOp {
     public OldSoftMax() {
     }
 
+    public OldSoftMax(INDArray x){
+        this(x,x);
+    }
+
     public OldSoftMax(INDArray x, INDArray z) {
         super(x, z);
         Preconditions.checkArgument(x != null && x.rank() == 2, "OldSoftMax op supports rank 2 (2d) arrays only. Got x (source) array with shape: %ndShape", x);

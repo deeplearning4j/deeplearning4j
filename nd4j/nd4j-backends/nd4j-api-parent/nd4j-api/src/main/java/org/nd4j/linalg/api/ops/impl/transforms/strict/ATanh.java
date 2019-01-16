@@ -34,6 +34,10 @@ import java.util.List;
  */
 public class ATanh extends BaseTransformStrictOp {
 
+    public ATanh(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
+    }
+
     public ATanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
