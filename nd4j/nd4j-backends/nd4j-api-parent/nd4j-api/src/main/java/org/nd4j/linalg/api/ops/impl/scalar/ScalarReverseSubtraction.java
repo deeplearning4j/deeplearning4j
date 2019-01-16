@@ -38,6 +38,14 @@ public class ScalarReverseSubtraction extends BaseScalarOp {
         super(x, num);
     }
 
+    public ScalarReverseSubtraction(INDArray x, INDArray z, Number num) {
+        super(x, z, num);
+    }
+
+    public ScalarReverseSubtraction(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
+    }
+
     public ScalarReverseSubtraction(SameDiff sameDiff, SDVariable i_v, Number scalar) {
         super(sameDiff, i_v, scalar);
     }

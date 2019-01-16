@@ -1585,7 +1585,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray eps(Number other) {
         validateNumericalArray("eps");
-        return Nd4j.getExecutioner().exec(new ScalarEps(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other));
+        return Nd4j.getExecutioner().exec(new ScalarEps(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other));
     }
 
     /**
@@ -1599,7 +1599,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray eps(INDArray other) {
         validateNumericalArray("eps");
-        return Nd4j.getExecutioner().exec(new Eps(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length()));
+        return Nd4j.getExecutioner().exec(new Eps(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
     }
 
     @Override
@@ -1611,7 +1611,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray lte(Number other) {
         validateNumericalArray("less than or equals (lte)");
-        return Nd4j.getExecutioner().exec(new ScalarLessThanOrEqual(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other));
+        return Nd4j.getExecutioner().exec(new ScalarLessThanOrEqual(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other));
     }
 
     @Override
@@ -1629,7 +1629,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray gte(Number other) {
         validateNumericalArray("greater than or equals (gte)");
-        return Nd4j.getExecutioner().exec(new ScalarGreaterThanOrEqual(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), this.length(), other));
+        return Nd4j.getExecutioner().exec(new ScalarGreaterThanOrEqual(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other));
     }
 
 
@@ -1702,7 +1702,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         validateNumericalArray("rdivi");
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarReverseDivision(this, null, result, result.length(), n));
+        Nd4j.getExecutioner().exec(new ScalarReverseDivision(this, null, result, n));
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
         return result;
@@ -1720,7 +1720,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(this, null, result, result.lengthLong(), n));
+        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(this, result, n));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -1738,7 +1738,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarDivision(this, null, result, result.lengthLong(), n));
+        Nd4j.getExecutioner().exec(new ScalarDivision(this, null, result, n));
 
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
@@ -1757,7 +1757,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         validateNumericalArray("muli");
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
-        Nd4j.getExecutioner().exec(new ScalarMultiplication(this, null, result, result.lengthLong(), n));
+        Nd4j.getExecutioner().exec(new ScalarMultiplication(this, null, result, n));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -1777,7 +1777,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarSubtraction(this, null, result, result.lengthLong(), n));
+        Nd4j.getExecutioner().exec(new ScalarSubtraction(this, null, result, n));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -1796,7 +1796,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
-        Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, result.lengthLong(), n));
+        Nd4j.getExecutioner().exec(new ScalarAdd(this, null, result, n));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -2828,7 +2828,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                         Nd4j.getExecutioner().exec(op);
                         break;
                     }
-
                 }
             } else {
                 applyBroadcastOp(columnVector, operation);
@@ -3798,7 +3797,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         LinAlgExceptions.assertSameShape(other, result);
-        Nd4j.getExecutioner().exec(new OldDivOp(this, other, result, length()));
+        Nd4j.getExecutioner().exec(new OldDivOp(this, other, result));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -3844,7 +3843,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         LinAlgExceptions.assertSameShape(other, result);
 
-        Nd4j.getExecutioner().exec(new OldMulOp(this, other, result, length()));
+        Nd4j.getExecutioner().exec(new OldMulOp(this, other, result));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -3937,7 +3936,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         LinAlgExceptions.assertSameShape(other, result);
 
-        Nd4j.getExecutioner().exec(new OldAddOp(this, other, result, length()));
+        Nd4j.getExecutioner().exec(new OldAddOp(this, other, result));
 
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)

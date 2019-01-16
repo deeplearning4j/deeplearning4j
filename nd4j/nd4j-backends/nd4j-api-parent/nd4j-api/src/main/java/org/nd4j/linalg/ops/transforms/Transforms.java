@@ -1096,7 +1096,7 @@ public class Transforms {
     public static INDArray not(INDArray x) {
         val z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
         if (x.isB()) {
-            Nd4j.getExecutioner().exec(new BooleanNot(x, z, x.length()));
+            Nd4j.getExecutioner().exec(new BooleanNot(x, z));
         } else {
             Nd4j.getExecutioner().exec(new ScalarNot(x, z, 0.0f));
         }

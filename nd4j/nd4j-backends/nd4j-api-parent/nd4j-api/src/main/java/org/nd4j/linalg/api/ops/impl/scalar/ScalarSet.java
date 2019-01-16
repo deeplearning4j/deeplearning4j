@@ -39,6 +39,10 @@ public class ScalarSet extends BaseScalarOp {
         super(x, num);
     }
 
+    public ScalarSet(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
+    }
+
 
     public ScalarSet(SameDiff sameDiff, SDVariable i_v, Number scalar) {
         super(sameDiff, i_v, scalar);

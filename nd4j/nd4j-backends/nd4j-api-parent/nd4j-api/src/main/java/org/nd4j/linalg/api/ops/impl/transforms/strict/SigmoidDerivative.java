@@ -43,22 +43,10 @@ public class SigmoidDerivative extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SigmoidDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public SigmoidDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public SigmoidDerivative() {}
 
     public SigmoidDerivative(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public SigmoidDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public SigmoidDerivative(INDArray x) {

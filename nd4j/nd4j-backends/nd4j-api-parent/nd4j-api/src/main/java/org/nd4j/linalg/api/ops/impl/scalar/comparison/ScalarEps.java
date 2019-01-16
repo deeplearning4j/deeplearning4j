@@ -43,6 +43,10 @@ public class ScalarEps extends BaseScalarBoolOp {
         this(x, 0);
     }
 
+    public ScalarEps(INDArray x, INDArray z, Number num) {
+        super(x, null, z, num);
+    }
+
     public ScalarEps(SameDiff sameDiff, SDVariable i_v, Number scalar) {
         super(sameDiff, i_v, scalar);
     }

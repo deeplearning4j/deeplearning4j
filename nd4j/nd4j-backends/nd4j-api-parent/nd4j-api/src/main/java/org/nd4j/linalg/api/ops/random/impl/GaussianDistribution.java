@@ -65,13 +65,13 @@ public class GaussianDistribution extends BaseRandomOp {
 
 
     public GaussianDistribution(@NonNull INDArray z, @NonNull INDArray means, double stddev) {
+        super(z, means, z);
         if (z.lengthLong() != means.lengthLong())
             throw new IllegalStateException("Result length should be equal to provided Means length");
 
         if (means.elementWiseStride() < 1)
             throw new IllegalStateException("Means array can't have negative EWS");
 
-        init(z, means, z, z.lengthLong());
         this.mean = 0.0;
         this.stddev = stddev;
         this.extraArgs = new Object[] {this.mean, this.stddev};
