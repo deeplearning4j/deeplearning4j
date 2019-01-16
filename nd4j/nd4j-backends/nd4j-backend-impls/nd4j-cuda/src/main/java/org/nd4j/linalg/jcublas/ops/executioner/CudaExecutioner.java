@@ -1543,8 +1543,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             argsPos /= 4;
 
         int shapesPos = argsPos + (batch.getSample().maxArguments() * (Batch.getBatchLimit() * 16));
+        DataType dataType = null;
         for (int i = 0; i < batch.getNumAggregates(); i++) {
             T op = batch.getAggregates().get(i);
+
+            if (i == 0)
+                dataType = op.getArguments().get(0).dataType();
 
             // put num arguments
             int idx = i * maxTypes;
@@ -1574,24 +1578,33 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             // TODO: variable datatype should be handled here
             // putting real arguments
-            if (Nd4j.dataType() == DataType.FLOAT) {
-                FloatPointer realPtr = new FloatPointer(pointer);
-                for (int e = 0; e < op.getRealArguments().size(); e++) {
-                    idx = realPos + i * op.maxRealArguments();
-                    realPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
+            switch (dataType) {
+                case FLOAT: {
+                    FloatPointer realPtr = new FloatPointer(pointer);
+                    for (int e = 0; e < op.getRealArguments().size(); e++) {
+                        idx = realPos + i * op.maxRealArguments();
+                        realPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
+                    }
                 }
-            } else if (Nd4j.dataType() == DataType.DOUBLE) {
-                DoublePointer dPtr = new DoublePointer(pointer);
-                for (int e = 0; e < op.getRealArguments().size(); e++) {
-                    idx = realPos + (i * op.maxRealArguments());
-                    dPtr.put(idx + e, op.getRealArguments().get(e).doubleValue());
+                break;
+                case DOUBLE: {
+                    DoublePointer dPtr = new DoublePointer(pointer);
+                    for (int e = 0; e < op.getRealArguments().size(); e++) {
+                        idx = realPos + (i * op.maxRealArguments());
+                        dPtr.put(idx + e, op.getRealArguments().get(e).doubleValue());
+                    }
                 }
-            } else if (Nd4j.dataType() == DataType.HALF) {
-                ShortPointer sPtr = new ShortPointer(pointer);
-                for (int e = 0; e < op.getRealArguments().size(); e++) {
-                    idx = realPos + (i * op.maxRealArguments());
-                    sPtr.put(idx + e, BaseDataBuffer.fromFloat(op.getRealArguments().get(e).floatValue()));
+                break;
+                case HALF: {
+                    ShortPointer sPtr = new ShortPointer(pointer);
+                    for (int e = 0; e < op.getRealArguments().size(); e++) {
+                        idx = realPos + (i * op.maxRealArguments());
+                        sPtr.put(idx + e, BaseDataBuffer.fromFloat(op.getRealArguments().get(e).floatValue()));
+                    }
                 }
+                break;
+                default:
+                    throw new UnsupportedOperationException("Unknown data type");
             }
 
             // putting arguments pointers
@@ -1633,7 +1646,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     batch.getSample().maxArguments(), batch.getSample().maxShapes(),
                     batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
                     batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(),
-                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context), FlatBuffersMapper.getDataTypeAsByte(DataType.FLOAT));
+                    AtomicAllocator.getInstance().getPointer(surfaceBuffer, context), FlatBuffersMapper.getDataTypeAsByte(dataType));
 
         surfacePoint.tickHostWrite();
     }
