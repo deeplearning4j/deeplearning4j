@@ -61,6 +61,9 @@ TEST_F(OneOffTests, test_non2d_0A_1) {
 }
 
 TEST_F(OneOffTests, test_assert_scalar_float32_1) {
+    nd4j::ops::Assert op;
+    nd4j::ops::identity op1;
+    nd4j::ops::noop op2;
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/scalar_float32.fb");
 
     ASSERT_TRUE(graph != nullptr);
@@ -298,6 +301,8 @@ TEST_F(OneOffTests, test_cond_false_1) {
 
 TEST_F(OneOffTests, test_identity_n_2) {
     auto e = NDArrayFactory::create<float>('c', {2, 3}, {0.77878559f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f});
+
+    nd4j::ops::identity_n op;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/identity_n_2.fb");
     ASSERT_TRUE(graph != nullptr);

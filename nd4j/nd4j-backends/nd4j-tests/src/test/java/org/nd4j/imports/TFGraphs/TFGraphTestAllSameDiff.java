@@ -66,11 +66,11 @@ public class TFGraphTestAllSameDiff {
 
 
     private static final String[] SKIP_ARR = new String[] {
-            "deep_mnist",
-            "deep_mnist_no_dropout",
-            "ssd_mobilenet_v1_coco",
-            "yolov2_608x608",
-            "inception_v3_with_softmax",
+            //"deep_mnist",
+            //"deep_mnist_no_dropout",
+            //"ssd_mobilenet_v1_coco",
+            //"yolov2_608x608",
+            //"inception_v3_with_softmax",
             "conv_5", // this test runs, but we can't make it pass atm due to different RNG algorithms
     };
 
