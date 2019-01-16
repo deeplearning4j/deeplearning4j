@@ -601,7 +601,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
         }
         INDArray out = Nd4j.createUninitialized(in.shape(), 'f');
         CustomOp op = DynamicCustomOp.builder("reverse")
-                .addIntegerArguments(new int[]{0,1})
+                .addIntegerArguments(2)
                 .addInputs(in)
                 .addOutputs(out)
                 .callInplace(false)
