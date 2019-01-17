@@ -117,7 +117,7 @@ NDArray::NDArray(nd4j::DataType dtype, nd4j::graph::LaunchContext* context) {
 
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
-NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc) {
+NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc) {
     
     if (shapeInfo == nullptr)
         throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
@@ -128,10 +128,10 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::Launc
     _context = context;        
 
     if(!isShapeAlloc) {
-        setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, _context->getWorkspace()));       
+        setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, _context->getWorkspace()), dtype);
     }
     else {
-        setShapeInfo(shapeInfo);
+        setShapeInfo(shapeInfo, dtype);        
         if(!copyStrides)
             shape::updateStrides(_shapeInfo, shape::order(shapeInfo));         
     }
@@ -937,8 +937,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         ArrayOptions::setDataType(outShapeInfo, this->dataType());
 
-        auto result = new NDArray(this->_buffer, outShapeInfo, this->_context);
-        result->_isShapeAlloc = true;
+        auto result = new NDArray(_buffer, outShapeInfo, _context, false, true);
+        
         return result;
     }
 
@@ -1057,9 +1057,9 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (this == &other)
             return;
 
-        if (!Environment::getInstance()->isExperimentalBuild() && (this->dataType() != other.dataType() && other.dataType() != DataType::BOOL)) {
-            throw datatype_exception::build("NDArray::assign: cannot assign array of different types", this->dataType(), other.dataType());
-        }
+        // if (!Environment::getInstance()->isExperimentalBuild() && (this->dataType() != other.dataType() && other.dataType() != DataType::BOOL)) {
+        //     throw datatype_exception::build("NDArray::assign: cannot assign array of different types", this->dataType(), other.dataType());
+        // }
 
         if (other.isScalar()) {
             if(this->isScalar()) {
@@ -1092,16 +1092,12 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("Lengths of arrays are mismatched");
         }
 
-        //syncToDevice();
-
         // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1) {
+        if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1)
             cudaMemcpy(_bufferD, other._bufferD, _length * sizeOfT(), cudaMemcpyDeviceToDevice);
-        }
-        else if(_dataType == other._dataType)
-            NativeOpExecutioner::execTransformSame(_context, transform::Copy, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, nullptr, nullptr);
-        else
-            NativeOpExecutioner::execPairwiseTransform(_context, pairwise::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr);
+        else 
+            NativeOpExecutioner::execTransformAny(_context, transform::Assign, nullptr, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr, _shapeInfo, _bufferD, _shapeInfoD, nullptr, nullptr, nullptr);
+
         syncToHost();
 
         tickWriteDevice();
@@ -2320,7 +2316,39 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
         syncShape();
     } 
     else {
-        this->_dataType = nd4j::DataType::INHERIT;    
+        _dataType = nd4j::DataType::INHERIT;    
+        _shapeInfoD = nullptr;
+        _isShapeDAlloc = false;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
+    
+     if(_isShapeAlloc && _context->getWorkspace() == nullptr)                
+        delete []_shapeInfo;
+
+    if(_isShapeDAlloc)
+        cudaFree(_shapeInfoD);
+        
+    _shapeInfo = shapeInfo;
+
+    if (shapeInfo != nullptr) {
+
+        ArrayOptions::setDataType(_shapeInfo, dtype);
+
+        if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+            _length = 0;
+        else
+            _length = shape::length(shapeInfo);
+        
+        _dataType = dtype;
+        ALLOCATE_SPECIAL(_shapeInfoD, _context->getWorkspace(), shape::shapeInfoLength(_shapeInfo), Nd4jLong);
+        _isShapeDAlloc = true;
+        syncShape();
+    } 
+    else {
+        _dataType = nd4j::DataType::INHERIT;    
         _shapeInfoD = nullptr;
         _isShapeDAlloc = false;
     }
@@ -2351,7 +2379,8 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
         auto res = cudaStreamSynchronize(*_context->getCudaStream());
         if (res != 0)
             throw cuda_exception::build("NDArray::equalsTo failed", res);
-        if (nd4j::math::nd4j_abs(tmp.e<float>(0)) > eps)
+        
+        if (tmp.e<int>(0) > 0)
             return false;
 
         return true;
@@ -2777,20 +2806,11 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
-        Nd4jLong* shapeInfo;
-        if (_context->getWorkspace() == nullptr) {
-            shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad.tadOnlyShapeInfo)];
-        } else {
-            shapeInfo = reinterpret_cast<Nd4jLong *>(_context->getWorkspace()->allocateBytes(shape::shapeInfoByteLength(tad.tadOnlyShapeInfo)));
-        }
-        std::memcpy(shapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-        auto array = new NDArray(shapeInfo, _context);
+        // FIXME MISTAKE PRESENT
+        auto array = new NDArray(tad.tadOnlyShapeInfo, true, _context, false);
         //cudaFree(array->_bufferD);
-        array->_bufferD = (int8_t*)specialBufferWithOffset(tad.tadOffsets[index]); //, array->lengthOf() * DataTypeUtils::sizeOf(dataType()), cudaMemcpyDeviceToDevice);
-        array->_isBuffAlloc = false;
-        array->_isBuffDAlloc = false;
-        array->_isShapeAlloc = true;
-        array->_isShapeDAlloc = true;
+        array->_bufferD = (int8_t*)specialBufferWithOffset(tad.tadOffsets[index]); //, array->lengthOf() * DataTypeUtils::sizeOf(dataType()), cudaMemcpyDeviceToDevice);        
+        array->_isBuffDAlloc = false;        
         array->_isView = true;
 
         return array;
@@ -3131,6 +3151,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         auto shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
         std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
         //lazyAllocateBuffer();
+        // FIXME MISTAKE PRESENT
         for (int idx = 0; idx < numTads; idx++ ) {
             auto array = new NDArray(shapeInfo); //ordering(), shapeInfo);
             //array->_shapeInfo = shapeInfo;

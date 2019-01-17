@@ -37,8 +37,8 @@ TEST_F(NDArrayTest2, Test_ByteVector_1) {
 
     auto vec = x.asByteVector();
 
-    auto restored = new NDArray((float *)vec.data(), x.shapeInfo());
-    restored->triggerAllocationFlag(false, false);
+    auto restored = new NDArray((float *)vec.data(), x.shapeInfo(), x.getContext(), false, false);
+    
 
     ASSERT_TRUE(x.equalsTo(restored));
 
@@ -51,9 +51,8 @@ TEST_F(NDArrayTest2, Test_ByteVector_2) {
 
     auto vec = x.asByteVector();
 
-    auto restored = new NDArray((bfloat16 *)vec.data(), x.shapeInfo());
-    restored->triggerAllocationFlag(false, false);
-
+    auto restored = new NDArray((bfloat16 *)vec.data(), x.shapeInfo(), x.getContext(), false, false);
+    
     ASSERT_TRUE(x.equalsTo(restored));
 
     delete restored;
@@ -65,8 +64,7 @@ TEST_F(NDArrayTest2, Test_ByteVector_3) {
 
     auto vec = x.asByteVector();
 
-    auto restored = new NDArray((double *)vec.data(), x.shapeInfo());
-    restored->triggerAllocationFlag(false, false);
+    auto restored = new NDArray((double *)vec.data(), x.shapeInfo(), x.getContext(), false, false);    
 
     ASSERT_TRUE(x.equalsTo(restored));
 
@@ -667,8 +665,8 @@ TEST_F(NDArrayTest2, permute_test4) {
     auto arr1Buffer = new float[786432];
     auto arr2Buffer = new float[786432];
 
-    NDArray arr1(arr1Buffer, arr1ShapeInfo, nullptr);
-    NDArray arr2(arr2Buffer, arr2ShapeInfo, nullptr);
+    NDArray arr1(arr1Buffer, arr1ShapeInfo, graph::LaunchContext::defaultContext());
+    NDArray arr2(arr2Buffer, arr2ShapeInfo, graph::LaunchContext::defaultContext());
 
     const std::vector<int> perm = {0, 4, 5, 1, 2, 3};    
     auto arr1P = arr1.permute(perm);

@@ -192,7 +192,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
-    NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc) {
+    NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc) {
 
         if (shapeInfo == nullptr)
             throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
@@ -203,11 +203,11 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         _context = context;
         _isAttached = _context->getWorkspace() != nullptr;
 
-        if(!isShapeAlloc) {
-            setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, _context->getWorkspace()));            
+        if(!isShapeAlloc) {            
+            setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, _context->getWorkspace()), dtype);
         }
         else {
-            setShapeInfo(shapeInfo);
+            setShapeInfo(shapeInfo, dtype);            
             if(!copyStrides)
                 shape::updateStrides(_shapeInfo, shape::order(shapeInfo));
         }
@@ -910,8 +910,8 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         ArrayOptions::setDataType(outShapeInfo, this->dataType());
 
-        auto result = new NDArray(this->_buffer, outShapeInfo, this->_context);
-        result->_isShapeAlloc = true;
+        auto result = new NDArray(this->_buffer, outShapeInfo, this->_context, false, true);
+        
         return result;
     }
 
@@ -1012,9 +1012,9 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         if (this == &other)
             return;
 
-        if (!Environment::getInstance()->isExperimentalBuild() && (this->dataType() != other.dataType() && other.dataType() != DataType::BOOL)) {
-            throw datatype_exception::build("NDArray::assign: cannot assign array of different types", this->dataType(), other.dataType());
-        }
+        // if (!Environment::getInstance()->isExperimentalBuild() && (this->dataType() != other.dataType() && other.dataType() != DataType::BOOL)) {
+        //     throw datatype_exception::build("NDArray::assign: cannot assign array of different types", this->dataType(), other.dataType());
+        // }
 
         if (other.isScalar()) {
             if(this->isScalar()) {
@@ -1044,12 +1044,9 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         // memcpy is allowed only for same order && same ews (being equal to 1)
         if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1)
-            memcpy(_buffer, other._buffer, _length * sizeOfT());
-        else if(_dataType == other._dataType)
-            NativeOpExecutioner::execTransformSame(nullptr, transform::Copy, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, nullptr, nullptr);
+            memcpy(_buffer, other._buffer, _length * sizeOfT());        
         else
-            NativeOpExecutioner::execPairwiseTransform(nullptr, pairwise::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr);
-
+            NativeOpExecutioner::execTransformAny(_context, transform::Assign, other._buffer, other._shapeInfo, nullptr, nullptr, _buffer, _shapeInfo, nullptr, nullptr, nullptr, nullptr, nullptr);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -1078,18 +1075,14 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         // we need to be able to compare [1, len] to [len]
         if ((rankOf() == 1 && other->rankOf() == 2) || (rankOf() == 2 && other->rankOf() == 1)) {
             // FIXME: do something here?
-        } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
+        } 
+        else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
             return false;
-
-        auto extras = NDArrayFactory::create(eps, _context);
-        auto ptr = extras.getBufferAsPointer(nd4j::DataType::DOUBLE);
 
         NDArray tmp(nd4j::DataType::FLOAT32, _context); // scalar = 0
 
-        // we don't need extraparams for this op
-        NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, ptr, other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
-
-        RELEASE(reinterpret_cast<int8_t *>(ptr), _context);
+        ExtraArguments extras({eps}); 
+        NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extras.argumentAsT(DataType::FLOAT32), other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);        
 
         if (tmp.e<int>(0) > 0)
             return false;
@@ -1914,13 +1907,42 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         _shapeInfo = shapeInfo;
 
         if (shapeInfo != nullptr) {
-            this->_length = shape::length(shapeInfo);
-            this->_dataType = ArrayOptions::dataType(shapeInfo);
-        } else {
-            this->_dataType = nd4j::DataType::INHERIT;
+
+            if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+                _length = 0;
+            else
+                _length = shape::length(_shapeInfo);
+
+            _dataType = ArrayOptions::dataType(_shapeInfo);
+        } 
+        else {
+            _dataType = nd4j::DataType::INHERIT;
         }
     }
     
+    //////////////////////////////////////////////////////////////////////////
+    void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
+        if(_isShapeAlloc && _context->getWorkspace() == nullptr)
+            delete []_shapeInfo;
+
+        _shapeInfo = shapeInfo;
+
+        if (shapeInfo != nullptr) {
+             
+             ArrayOptions::setDataType(_shapeInfo, dtype);
+
+            if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
+                _length = 0;
+            else
+                _length = shape::length(shapeInfo);
+            
+            _dataType = dtype;
+        } 
+        else {
+            _dataType = nd4j::DataType::INHERIT;
+        }
+    }
+
 //////////////////////////////////////////////////////////////////////////
     bool NDArray::permutei(const int* dimensions, const int rank) {
 
@@ -2191,19 +2213,9 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
         shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
-        tad.createOffsets();
+        tad.createOffsets();        
 
-        Nd4jLong* shapeInfo;
-        if (_context->getWorkspace() == nullptr) {
-            shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad.tadOnlyShapeInfo)];
-        } else {
-            shapeInfo = reinterpret_cast<Nd4jLong *>(_context->getWorkspace()->allocateBytes(shape::shapeInfoByteLength(tad.tadOnlyShapeInfo)));
-        }
-        std::memcpy(shapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-
-        auto array = new NDArray(bufferWithOffset(tad.tadOffsets[index]), shapeInfo, _context);
-        array->_isBuffAlloc = false;
-        array->_isShapeAlloc = true;
+        auto array = new NDArray(bufferWithOffset(tad.tadOffsets[index]), tad.tadOnlyShapeInfo, _context, false, false);        
         array->_isView = true;
 
         return array;
@@ -2439,21 +2451,12 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, copy.data(), copy.size()));
         tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
-
-        auto shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
-        std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
+        tad->createOffsets();        
 
         for (int idx = 0; idx < numTads; idx++ ) {
-            auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), shapeInfo);
+            auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), tad->tadOnlyShapeInfo, _context, false, false);
             result->push_back(array);
-        }
-
-        // if we have no indices - just delete shapeInfo
-        if (result->size() > 0)
-            result->at(0)->triggerAllocationFlag(false, true);
-        else
-            delete[] shapeInfo;
+        }        
 
         return result;
     }

@@ -102,11 +102,9 @@ NDArray::NDArray(nd4j::graph::LaunchContext* context) {
 
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros, set dtype as array type
-NDArray::NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc): 
-                NDArray(shapeInfo, copyStrides, context, isShapeAlloc) {
-    
-    ArrayOptions::setDataType(_shapeInfo, _dataType);
-}
+NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::LaunchContext* context, const bool isShapeAlloc): 
+                NDArray(shapeInfo, ArrayOptions::dataType(shapeInfo), copyStrides, context, isShapeAlloc) {    
+}   
 
     bool NDArray::isC() const {
         // TODO: this method must be implemented once we add support for complex numbers
@@ -1029,9 +1027,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         ALLOCATE(newShapeInfo , _context->getWorkspace(), shapeInfoLength, Nd4jLong);
         memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
 
-        auto newArr = new NDArray(_buffer, newShapeInfo, _context);
-        newArr->_isShapeAlloc = true;
-        newArr->_isBuffAlloc  = false;
+        auto newArr = new NDArray(_buffer, newShapeInfo, _context, false, true);
 
         newArr->transposei();
 
@@ -1501,8 +1497,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
 
         //shape::printShapeInfoLinear(newShape);
 
-        auto result = new NDArray(bufferWithOffset(offset), newShape, this->_context);
-        result->_isShapeAlloc = true;
+        auto result = new NDArray(bufferWithOffset(offset), newShape, this->_context, false, true);        
 
         return result;
     }
@@ -2456,6 +2451,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
 
     return shape::getIndexOffset(i, _shapeInfo, _length);
 }
+
 
 /*
 #ifndef __CLION_IDE__
