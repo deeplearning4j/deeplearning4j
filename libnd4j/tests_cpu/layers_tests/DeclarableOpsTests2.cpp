@@ -37,7 +37,7 @@ TEST_F(DeclarableOpsTests2, Gather_test_1) {
     
     auto input    = NDArrayFactory::create<float>('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
     auto indices  = NDArrayFactory::create<int>('c', {1,6},   {0,1, 2,2, 1,2});
-    auto expected = NDArrayFactory::create<float>('c', {2,6,4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16, 17,18,19,20, 21,22,23,24, 21,22,23,24, 17,18,19,20, 21,22,23,24});
+    auto expected = NDArrayFactory::create<float>('c', {2,1,6,4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16, 17,18,19,20, 21,22,23,24, 21,22,23,24, 17,18,19,20, 21,22,23,24});
 
     nd4j::ops::gather op;
 
@@ -45,7 +45,7 @@ TEST_F(DeclarableOpsTests2, Gather_test_1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    auto* output = result->at(0);
+    auto* output = result->at(0);    
 
     ASSERT_TRUE(expected.isSameShapeStrict(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -66,7 +66,7 @@ TEST_F(DeclarableOpsTests2, Gather_test_1_I) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    auto* output = result->at(0);
+    auto* output = result->at(0);    
 
     ASSERT_TRUE(expected.isSameShapeStrict(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -80,7 +80,7 @@ TEST_F(DeclarableOpsTests2, Gather_test_2) {
     
     auto input    = NDArrayFactory::create<float>('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
     auto indices  = NDArrayFactory::create<int>('c', {1,1},   {2});
-    auto expected = NDArrayFactory::create<float>('c', {2,4}, {9,10,11,12,21,22,23,24});
+    auto expected = NDArrayFactory::create<float>('c', {2,1,1,4}, {9,10,11,12,21,22,23,24});
 
     nd4j::ops::gather op;
 

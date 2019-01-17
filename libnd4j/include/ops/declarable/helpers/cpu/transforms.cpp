@@ -610,58 +610,38 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
 #pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
             for (int e = 0; e < indices->lengthOf(); e++)
                 output->p(e, input->e<T>(indices->e<Nd4jLong>(e)));
-        }
-        // second case: indices is vector
-        else if(indices->isVector()) {      
-            auto listOut = output->allTensorsAlongDimension(ShapeUtils::evalDimsToExclude(output->rankOf(), {axis}));
-            auto listIn  = input->allTensorsAlongDimension(ShapeUtils::evalDimsToExclude(input->rankOf(),  {axis}));
-#pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)             
-            for(int i = 0; i < listOut->size(); ++i)
-                listOut->at(i)->assign(listIn->at(indices->e<Nd4jLong>(i)));
-            delete listOut;
-            delete listIn;
-        }
-        // third case: indices is usual n-dim array
-        else {
-            std::vector<int> dimsOut(indices->rankOf());
+        }        
+        else {   
+            
+            std::vector<int> dimsOut(indices->rankOf());            
             std::iota(dimsOut.begin(), dimsOut.end(), axis);   // fill with axis, axis+1, ... indices->rankOf()-1
-            std::vector<int> temp1 = ShapeUtils::evalDimsToExclude(output->rankOf(), dimsOut);
-            std::vector<int> temp2 = ShapeUtils::evalDimsToExclude(input->rankOf(),  {axis});
-            auto listOut = output->allTensorsAlongDimension(temp1);
-            auto listIn = input->allTensorsAlongDimension(temp2 );
-#pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-            for(int i = 0; i < listOut->size(); ++i)
-                listOut->at(i)->assign(listIn->at(indices->e<Nd4jLong>(i)));
-            delete listOut;
-            delete listIn;
-        }
+            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), dimsOut);            
+#pragma omp parallel for if(numOfSubArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)             
+            for(int i = 0; i < numOfSubArrs; ++i) {
+                NDArray subArrOut = (*output)(i, dimsOut);
+                NDArray subArrIn  = (*input)(indices->e<Nd4jLong>(i), {axis});
+                subArrOut.assign(subArrIn);
+            }            
+        }        
     } 
-    else {          // in this case always (numOfIntArgs > 1) !!!
+    else {
         
         for(int i = 1; i < numOfIntArgs; ++i)
             if(intArgs[i] >= input->sizeAt(axis))
                 throw std::runtime_error("helpers::gather function: some of input indexes is larger than corresponding shape of input array !");
 
         // we only allow scalar/vector case here
-        if (numOfIntArgs == 2) {
-            // scalar case
-            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-            shape::TAD tad(input->getShapeInfo(), dimensions.data(), dimensions.size());
-            tad.createTadOnlyShapeInfo();
-            tad.createOffsets();
-            auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tad.tadOffsets[intArgs[1]]), tad.tadOnlyShapeInfo);
-            output->assign(&tadArr);
-        } else {
-            // vector case
-            auto listOut = output->allTensorsAlongDimension(ShapeUtils::evalDimsToExclude(output->rankOf(), {axis}));
-            auto listIn  = input->allTensorsAlongDimension(ShapeUtils::evalDimsToExclude(input->rankOf(),  {axis}));
-
-            // that's fine, since we know that number of iArgs matches number of elements in listOut
-#pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
-            for(int i = 0; i < listOut->size(); ++i)
-                listOut->at(i)->assign(listIn->at(intArgs[i+1]));
-            delete listOut;
-            delete listIn;
+        if (numOfIntArgs == 2) { // scalar case            
+            output->assign((*input)(intArgs[1], {axis}));
+        } 
+        else { // vector case
+            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), {axis});
+#pragma omp parallel for if(numOfSubArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)             
+            for(int i = 0; i < numOfSubArrs; ++i) {
+                NDArray subArrOut = (*output)(i, {axis});
+                NDArray subArrIn  = (*input)(intArgs[i+1], {axis});
+                subArrOut.assign(subArrIn);
+            }
         }
     }    
 }

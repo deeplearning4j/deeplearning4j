@@ -118,7 +118,7 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
     Nd4jLong iArgs[] = {1};
     auto hash = op.getOpHash();
 
-    auto shapeList = nativeOps.calculateOutputShapes(nullptr, hash, inputBuffers, inputShapes, 2, nullptr, 0, iArgs, 1);
+    auto shapeList = nativeOps.calculateOutputShapes(nullptr, hash, inputBuffers, inputShapes, 2, nullptr, 0, iArgs, 1, nullptr, 0);
 
     ASSERT_EQ(3, shapeList->size());
 
@@ -637,8 +637,8 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_2) {
 TEST_F(JavaInteropTests, Test_Inplace_Outputs_3) {
     auto input = NDArrayFactory::create<float>('c', {2, 3, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
     auto indices = NDArrayFactory::create<Nd4jLong>('c', {1, 6},   {0,1, 2,2, 1,2});
-    auto output = NDArrayFactory::create<float>('f', {2, 6, 4});
-    auto e = NDArrayFactory::create<float>('c', {2, 6, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16, 17,18,19,20, 21,22,23,24, 21,22,23,24, 17,18,19,20, 21,22,23,24});
+    auto output = NDArrayFactory::create<float>('f', {2, 1, 6, 4});
+    auto e = NDArrayFactory::create<float>('c', {2, 1, 6, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16, 17,18,19,20, 21,22,23,24, 21,22,23,24, 17,18,19,20, 21,22,23,24});
 
     nd4j::ops::gather op;
 
@@ -910,7 +910,7 @@ TEST_F(JavaInteropTests, Test_Boolean_Broadcastables_1) {
 
     nd4j::ops::greater_equal op;
     NativeOps ops;
-    auto shapeList = ops.calculateOutputShapes(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, nullptr, 0, nullptr, 0);
+    auto shapeList = ops.calculateOutputShapes(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, nullptr, 0, nullptr, 0, nullptr, 0);
 
     delete shapeList;
 }
