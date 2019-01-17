@@ -59,9 +59,10 @@ public class LossOpValidation extends BaseOpValidation {
 
         int totalRun = 0;
         for (String fn : new String[]{"absdiff", "cosine", "hinge", "huber", "log", "mse",
-                "sigmoidxent", "sigmoidxent_smooth", "softmaxxent", "softmaxxent_smooth", "mpwse", "softmaxxentlogits", "sparsesoftmax"}) {
+                "sigmoidxent", "sigmoidxent_smooth", "softmaxxent", "softmaxxent_smooth", "mpwse",
+                "sparsesoftmax", "sparsesoftmax_onehot"}) {
 
-            if((fn.equals("softmaxxentlogits") || fn.equals("sparsesoftmax")) && OpValidationSuite.IGNORE_FAILING){
+            if((fn.equals("sparsesoftmax")) && OpValidationSuite.IGNORE_FAILING){
                 log.warn("NOT YET IMPLEMENTED: {}", fn);
                 continue;
             }
@@ -229,9 +230,6 @@ public class LossOpValidation extends BaseOpValidation {
                                 }
                             }
                             loss = sd.lossMeanPairwiseSquaredError("loss", labels, predictions, w);
-                            break;
-                        case "softmaxxentlogits":
-
                             break;
                         case "sparsesoftmax":
 
