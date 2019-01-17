@@ -1667,7 +1667,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     @Override
     public String toString() {
-        return varName;
+        return "SDVariable(name=\"" + varName + "\",variableType=" + variableType + ",dtype=" + dataType + ")";
     }
 
     @Override

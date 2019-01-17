@@ -47,7 +47,7 @@ import java.util.Map;
 public class SparseSoftmaxCrossEntropyLossWithLogitsBp extends DynamicCustomOp {
 
     public SparseSoftmaxCrossEntropyLossWithLogitsBp(SameDiff sameDiff, SDVariable logits, SDVariable labels) {
-        super(null, sameDiff, new SDVariable[]{logits, labels}, false);
+        super(null, sameDiff, new SDVariable[]{labels, logits}, false);
     }
 
     @Override
@@ -58,5 +58,16 @@ public class SparseSoftmaxCrossEntropyLossWithLogitsBp extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad){
         throw new UnsupportedOperationException("Differentiation of " + getClass().getName() + " not supported");
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected 2 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(1));    //Same as predictions (logits)
+    }
+
+    @Override
+    public int getNumOutputs(){
+        return 1;
     }
 }

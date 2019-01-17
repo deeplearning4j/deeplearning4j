@@ -58,14 +58,10 @@ public class LossOpValidation extends BaseOpValidation {
         List<String> failed = new ArrayList<>();
 
         int totalRun = 0;
-        for (String fn : new String[]{"absdiff", "cosine", "hinge", "huber", "log", "mse",
+        for (String fn : new String[]{
+                "absdiff", "cosine", "hinge", "huber", "log", "mse",
                 "sigmoidxent", "sigmoidxent_smooth", "softmaxxent", "softmaxxent_smooth", "mpwse",
-                "sparsesoftmax", "sparsesoftmax_onehot"}) {
-
-            if((fn.equals("sparsesoftmax")) && OpValidationSuite.IGNORE_FAILING){
-                log.warn("NOT YET IMPLEMENTED: {}", fn);
-                continue;
-            }
+                "sparsesoftmax"}) {
 
 
             for(String weights : new String[]{"none", "scalar", "perExample", "perOutput"}) {
@@ -83,12 +79,22 @@ public class LossOpValidation extends BaseOpValidation {
                     if((fn.equals("softmaxxent") || fn.equals("softmaxxent_smooth")) && reduction == LossReduce.NONE)
                         continue;       //Combination not supported (doesn't make sense)
 
+                    if(fn.equals("sparsesoftmax") && (!weights.equals("none") || reduction != LossReduce.SUM) )
+                        continue;   //sparse softmax doesn't support weights or reduction confic
+
                     SameDiff sd = SameDiff.create();
 
                     int nOut = 4;
                     int minibatch = 10;
                     SDVariable predictions = sd.var("in", DataType.DOUBLE, -1, nOut);
-                    SDVariable labels = sd.var("labels", DataType.DOUBLE, -1, nOut);
+                    SDVariable labels;
+                    if("sparsesoftmax".equalsIgnoreCase(fn)){
+                        labels = sd.var("labels", DataType.INT, -1);
+                    } else {
+                        //ALl other loss functions
+                        labels = sd.var("labels", DataType.DOUBLE, -1, nOut);
+                    }
+
                     SDVariable w;
                     INDArray wArrBroadcast;
                     switch (weights){
@@ -232,7 +238,18 @@ public class LossOpValidation extends BaseOpValidation {
                             loss = sd.lossMeanPairwiseSquaredError("loss", labels, predictions, w);
                             break;
                         case "sparsesoftmax":
+                            labelsArr = Nd4j.create(DataType.INT, minibatch);
+                            INDArray oneHot = Nd4j.create(DataType.DOUBLE, minibatch, nOut);
+                            for( int i=0; i<minibatch; i++ ){
+                                labelsArr.putScalar(i, i%nOut);
+                                oneHot.putScalar(i, i%nOut, 1.0);
+                            }
 
+                            INDArray softmaxPredictions2 = Transforms.softmax(predictionsArr, true);
+                            INDArray logP2_2 = Transforms.log(softmaxPredictions2, true);
+                            expOut = oneHot.mul(logP2_2).negi().sum(1);
+
+                            loss = sd.lossSparseSoftmaxCrossEntropy(predictions, labels).sum("loss");
                             break;
 
                         default:
@@ -302,8 +319,11 @@ public class LossOpValidation extends BaseOpValidation {
                     TestCase tc = new TestCase(sd)
                             .expectedOutput("loss", expOut)
                             .gradientCheck(doGradCheck)
-                            .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
-                            ;
+                            .testFlatBufferSerialization(TestCase.TestSerialization.BOTH);
+
+                    if(fn.equals("sparsesoftmax")){
+                        tc.gradCheckSkipVariables("labels");
+                    }
 
                     String error;
                     try {
