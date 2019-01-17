@@ -1324,6 +1324,10 @@ public class DifferentialFunctionFactory {
         return new WeightedCrossEntropyLoss(sameDiff(), targets, inputs, weights).outputVariable();
     }
 
+    public SDVariable lossL2(SDVariable var){
+        return new L2Loss(sameDiff(), var).outputVariable();
+    }
+
     public SDVariable lossAbsoluteDifference(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
         return new AbsoluteDifferenceLoss(sameDiff(), lossReduce, predictions, weights, label).outputVariable();
     }

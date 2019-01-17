@@ -8710,6 +8710,26 @@ public class SameDiff {
     }
 
     /**
+     * L2 loss: 1/2 * sum(x^2)
+     * @param var  Variable to calculate L2 loss of
+     * @return L2 loss
+     */
+    public SDVariable lossL2(@NonNull SDVariable var){
+        return lossL2(null, var);
+    }
+
+    /**
+     * L2 loss: 1/2 * sum(x^2)
+     * @param name Name of the output variable
+     * @param var  Variable to calculate L2 loss of
+     * @return L2 loss
+     */
+    public SDVariable lossL2(String name, @NonNull SDVariable var){
+        SDVariable ret = f().lossL2(var);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * See {@link #lossAbsoluteDifference(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
      */
     public SDVariable lossAbsoluteDifference(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
@@ -10540,7 +10560,7 @@ public class SameDiff {
             inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outIdx));
         }
 
-        log.debug("Own Name: {}", node.getOwnName());
+        log.trace("Own Name: {}", node.getOwnName());
         int ownId = id != null ? id : idCounter.incrementAndGet();  //forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
         String[] outNames = node.outputVariablesNames();
         for(String s : outNames){
@@ -10665,7 +10685,7 @@ public class SameDiff {
         List<SDVariable> allVars = variables();
         for (SDVariable variable : allVars) {
             INDArray arr = variable.getArr();
-            log.debug("Exporting variable: [{}]", variable.getVarName());
+            log.trace("Exporting variable: [{}]", variable.getVarName());
 
             //If variable is the output of some op - let's use the ONE index for exporting, and properly track the output
             // numbers. For example, unstack(x) -> y0, y1, y2 -> the y's should be say (3,0), (3,1), (3,2) NOT (4,0), (5,0), (6,0)
