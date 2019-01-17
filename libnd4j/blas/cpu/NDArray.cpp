@@ -2602,6 +2602,93 @@ NDArray NDArray::e(const Nd4jLong i) const {
         }
     }
 
+    //////////////////////////////////////////////////////////////////////////
+    // create new  array by repeating it the number of times given by reps
+    NDArray* NDArray::repeat(int dimension, const std::vector<Nd4jLong>& repeats) const {
+        auto outShape = ShapeUtils::evalRepeatShape(dimension, repeats, *this);
+
+        // the size of outShape == rank
+        int rank = rankOf();            // = outShape.size()
+
+        std::vector<Nd4jLong> newShape(rank);
+        for (int i = 0; i < rank; i++)
+            newShape[i] = outShape[i];
+
+        auto ret = new NDArray('c', outShape, _dataType,  _context);
+
+        auto repeatDelta = shape::prodLong(newShape.data(), rank) / this->lengthOf();
+        auto numTads = this->tensorsAlongDimension({dimension});
+        printf("Repeat delta %lld, numTads %lld\n", repeatDelta, numTads);
+        for (int i = 0; i < numTads; i++) {
+            auto thisTensor = this->tensorAlongDimension(i, {dimension});
+            auto retTensor = ret->tensorAlongDimension(i, {dimension});
+            Nd4jLong retIdx = 0;
+
+            for (Nd4jLong k = 0; k < thisTensor->lengthOf(); k++) {
+                auto s = thisTensor->e(k);
+                for (Nd4jLong j = 0; j < repeatDelta; j++) {
+                    retTensor->p(retIdx++, s);
+                    printf("Iteration is %lld\n", retIdx);
+                }
+            }
+//            if (isR()) {
+//            } else {
+//                for (int k = 0; k < thisTensor->lengthOf(); k++) {
+//                    auto s = thisTensor->e<Nd4jLong>(k);
+//                    for (int j = 0; j < repeatDelta; j++) {
+//                        retTensor->p<Nd4jLong>(retIdx++, s);
+//                    }
+//                }
+//            }
+
+            delete thisTensor;
+            delete retTensor;
+        }
+
+        return ret;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    // fill array by repeating it the number of times given by reps
+    void NDArray::repeat(int dimension, NDArray& target) const {
+
+        if(dimension < 0)
+            dimension += rankOf();
+
+        if(rankOf() != target.rankOf())
+            throw std::invalid_argument("NDArray::repeat(int dimension, NDArray& target) method: wrong rank of target array it must be equal to this array rank!");
+
+        Nd4jLong repeatDelta = target.sizeAt(dimension) / sizeAt(dimension);
+
+        if(repeatDelta == 0)
+            throw std::invalid_argument("NDArray::repeat(int dimension, NDArray& target) method: wrong shape of target array!");
+
+
+        std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rankOf(), {dimension});
+        const Nd4jLong numTads = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);
+
+        for (int i = 0; i < numTads; i++) {
+            auto thisTensor = (*this)(i, dimsToExclude);
+            auto retTensor = target(i, dimsToExclude);
+            int retIdx = 0;
+            if (isR()) {
+                for (int k = 0; k < thisTensor.lengthOf(); k++) {
+                    auto s = thisTensor.e<double>(k);
+                    for (int j = 0; j < repeatDelta; j++) {
+                        retTensor.p<double>(retIdx++, s);
+                    }
+                }
+            } else {
+                for (int k = 0; k < thisTensor.lengthOf(); k++) {
+                    auto s = thisTensor.e<Nd4jLong>(k);
+                    for (int j = 0; j < repeatDelta; j++) {
+                        retTensor.p<Nd4jLong>(retIdx++, s);
+                    }
+                }
+            }
+        }
+    }
+
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*
 #ifndef __CLION_IDE__
