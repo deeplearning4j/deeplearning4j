@@ -1142,10 +1142,10 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
     @Test
     public void testRandomGraph2() throws Exception {
-        val tg = TFGraphMapper.getInstance().importGraph(new File("c:\\develop\\mobilenet_v1_0.5_128_frozen.pb"));
+        val tg = TFGraphMapper.getInstance().importGraph(new File("c:\\develop\\mobilenet_v2_1.0_224_frozen.pb"));
         assertNotNull(tg);
 
-        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/mobilenet_v1.fb"));
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/mobilenet_v2.fb"));
     }
 
 
