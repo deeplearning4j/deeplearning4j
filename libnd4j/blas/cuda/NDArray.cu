@@ -3239,24 +3239,36 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
     // create new  array by repeating it the number of times given by reps
 
     template <typename T>
-    static __global__ void repeatKernel(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength) {
+    static __global__ void repeatKernel(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
+            Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
+            Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets) {
         //auto tid = blockIdx.x * blockDim.x; // + threadIdx.x;
-        //int totalThreads = gridDim.x * blockDim.x;
+        int totalThreads = gridDim.x * blockDim.x;
         //const auto resultLength = shape::length(outputShape);
-            for (Nd4jLong i = blockIdx.x; i < numTads; i += blockDim.x) {
+            for (Nd4jLong i = blockIdx.x; i < numTads; i += gridDim.x) {
+                auto yOffset = tadInputOffsets[i];
+                auto xOffset = tadOutputOffsets[i];
                 for (Nd4jLong j = threadIdx.x; j < inputLength; j += totalThreads) {
-                    *(reinterpret_cast<T*>(outputBuffer) + i * inputLength + j) = *(reinterpret_cast<T const*>(inputBuffer) + j);
+                    *(reinterpret_cast<T*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo, inputLength)) = *(reinterpret_cast<T const*>(inputBuffer) + yOffset + shape::getIndexOffset(j, tadOnlyInputShapeInfo, inputLength));
                 }
             }
     }
-    BUILD_SINGLE_TEMPLATE(template __global__ void repeatKernel, (void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template __global__ void repeatKernel, (void const* inputBuffer, void* outputBuffer,
+            Nd4jLong numTads, Nd4jLong inputLength, Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
+            Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets), LIBND4J_TYPES);
 
     template <typename T>
-    static void repeatKernelH(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength, cudaStream_t stream) {
-        dim3 launchDims(256, 512, 8192, stream);
-        repeatKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(inputBuffer, outputBuffer, numTads, inputLength);
+    static void repeatKernelH(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
+                              Nd4jLong *tadOnlyInputShapeInfo, Nd4jLong *tadInputOffsets,
+                              Nd4jLong *tadOnlyOutputShapeInfo,Nd4jLong *tadOutputOffsets,
+                              cudaStream_t stream) {
+        dim3 launchDims(256, 512, 8192);
+        repeatKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(inputBuffer, outputBuffer, numTads, inputLength, tadOnlyInputShapeInfo, tadInputOffsets, tadOnlyOutputShapeInfo, tadOutputOffsets);
     }
-    BUILD_SINGLE_TEMPLATE(template void repeatKernelH, (void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength, cudaStream_t stream), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void repeatKernelH, (void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
+            Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
+            Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets,
+            cudaStream_t stream), LIBND4J_TYPES);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::repeat(int dimension, const std::vector<Nd4jLong>& repeats) const {
         auto outShape = ShapeUtils::evalRepeatShape(dimension, repeats, *this);
