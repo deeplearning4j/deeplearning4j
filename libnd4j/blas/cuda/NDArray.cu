@@ -3240,11 +3240,11 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
     template <typename T>
     static __global__ void repeatKernel(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength) {
-        auto tid = blockIdx.x * blockDim.x; // + threadIdx.x;
-        int totalThreads = gridDim.x * blockDim.x;
+        //auto tid = blockIdx.x * blockDim.x; // + threadIdx.x;
+        //int totalThreads = gridDim.x * blockDim.x;
         //const auto resultLength = shape::length(outputShape);
-            for (Nd4jLong i = tid; i < numTads; i += totalThreads) {
-                for (Nd4jLong j = threadIdx.x; j < inputLength; j++) {
+            for (Nd4jLong i = blockIdx.x; i < numTads; i += blockDim.x) {
+                for (Nd4jLong j = threadIdx.x; j < inputLength; j += totalThreads) {
                     *(reinterpret_cast<T*>(outputBuffer) + i * inputLength + j) = *(reinterpret_cast<T const*>(inputBuffer) + j);
                 }
             }
@@ -3253,7 +3253,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
     template <typename T>
     static void repeatKernelH(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength, cudaStream_t stream) {
-        dim3 launchDims;
+        dim3 launchDims(256, 512, 8192, stream);
         repeatKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(inputBuffer, outputBuffer, numTads, inputLength);
     }
     BUILD_SINGLE_TEMPLATE(template void repeatKernelH, (void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength, cudaStream_t stream), LIBND4J_TYPES);
