@@ -78,10 +78,6 @@ public class SoftmaxCrossEntropyLoss extends BaseLoss {
         throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
-//    @Override
-//    public String tensorflowName() {
-//        return "SoftmaxCrossEntropy";
-//    }
     @Override
     public String tensorflowName() {
         return "SoftmaxCrossEntropy";
