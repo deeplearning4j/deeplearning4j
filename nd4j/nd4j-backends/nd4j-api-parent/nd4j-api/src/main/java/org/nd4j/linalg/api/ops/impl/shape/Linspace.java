@@ -51,6 +51,6 @@ public class Linspace extends DynamicCustomOp {
         INDArray l = arg(2).getArr();
         if(l == null)
             return Collections.emptyList();
-        return LongShapeDescriptor.fromShape(new long[]{l.getLong(0), dataType});
+        return Collections.singletonList(LongShapeDescriptor.fromShape(new long[]{l.getLong(0)}, dataType));
     }
 }

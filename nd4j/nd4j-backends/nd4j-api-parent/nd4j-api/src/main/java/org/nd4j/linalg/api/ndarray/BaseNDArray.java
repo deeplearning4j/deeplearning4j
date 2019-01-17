@@ -1834,7 +1834,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public int getLong(long... indices) {
+    public long getLong(long... indices) {
         return Shape.getLong(this, indices);
     }
 
