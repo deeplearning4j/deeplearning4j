@@ -26,6 +26,8 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -44,7 +46,7 @@ public class LossOpValidation extends BaseOpValidation {
 
     @Test
     public void testLoss2d() {
-        OpValidationSuite.ignoreFailing();  //2018-01-09 - Multiple failures
+//        OpValidationSuite.ignoreFailing();  //2018-01-09 - Multiple failures
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -267,9 +269,14 @@ public class LossOpValidation extends BaseOpValidation {
                     sd.associateArrayWithVariable(predictionsArr, predictions);
                     sd.associateArrayWithVariable(labelsArr, labels);
 
+                    if(reduction == LossReduce.NONE){
+                        //Sum to make scalar output for gradient check...
+                        loss = loss.sum();
+                    }
+
                     TestCase tc = new TestCase(sd)
                             .expectedOutput("loss", expOut)
-                            .gradientCheck(false)                       //TODO  https://github.com/deeplearning4j/deeplearning4j/issues/6517
+                            .gradientCheck(true)
                             .testFlatBufferSerialization(TestCase.TestSerialization.NONE)   //TODO Re-enable later
                             ;
 
@@ -282,5 +289,24 @@ public class LossOpValidation extends BaseOpValidation {
         }
 
         assertEquals(failed.toString(), 0, failed.size());
+    }
+
+
+    @Test
+    public void testCosineDistance(){
+        INDArray arr = Nd4j.create(new double[][]{{-0.3, -0.2, -0.1}, {0, 0.1, 0.2}});
+        INDArray label = Nd4j.create(new double[][]{{1.0, 2.0, 3.0}, {-1.0, 2.0, 1.0}});
+        INDArray w = Nd4j.create(new double[][]{{0},{1}});
+        INDArray out = Nd4j.scalar(0.0);
+
+        CustomOp op = DynamicCustomOp.builder("cosine_distance_loss")
+                .addInputs(arr, w, label)
+                .addOutputs(out)
+                .addIntegerArguments(2, 1) //weighted mean, dimension 1
+                .build();
+        Nd4j.getExecutioner().exec(op);
+
+        INDArray exp = Nd4j.scalar(0.6);    //https://github.com/deeplearning4j/deeplearning4j/issues/6532
+        assertEquals(exp, out);
     }
 }

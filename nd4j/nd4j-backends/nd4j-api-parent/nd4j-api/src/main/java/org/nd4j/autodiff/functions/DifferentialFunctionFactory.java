@@ -32,6 +32,9 @@ import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
+import org.nd4j.linalg.api.ops.impl.loss.bp.AbsoluteDifferenceLossBp;
+import org.nd4j.linalg.api.ops.impl.loss.bp.CosineDistanceLossBp;
+import org.nd4j.linalg.api.ops.impl.loss.bp.HingeLossBp;
 import org.nd4j.linalg.api.ops.impl.reduce.*;
 import org.nd4j.linalg.api.ops.impl.reduce.custom.*;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
@@ -1327,12 +1330,24 @@ public class DifferentialFunctionFactory {
         return new AbsoluteDifferenceLoss(sameDiff(), lossReduce, predictions, weights, label).outputVariable();
     }
 
+    public SDVariable[] lossAbsoluteDifferenceBP(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
+        return new AbsoluteDifferenceLossBp(sameDiff(), lossReduce, predictions, weights, label).outputVariables();
+    }
+
     public SDVariable lossCosineDistance(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce, int dimension){
         return new CosineDistanceLoss(sameDiff(), lossReduce, predictions, weights, label, dimension).outputVariable();
     }
 
+    public SDVariable[] lossCosineDistanceBp(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce, int dimension){
+        return new CosineDistanceLossBp(sameDiff(), lossReduce, predictions, weights, label, dimension).outputVariables();
+    }
+
     public SDVariable lossHinge(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
         return new HingeLoss(sameDiff(), lossReduce, predictions, weights, label).outputVariable();
+    }
+
+    public SDVariable[] lossHingeBp(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
+        return new HingeLossBp(sameDiff(), lossReduce, predictions, weights, label).outputVariables();
     }
 
     public SDVariable lossHuber(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce, double delta){
