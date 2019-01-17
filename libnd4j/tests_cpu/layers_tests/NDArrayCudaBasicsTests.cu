@@ -2040,6 +2040,19 @@ TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_2)
     ASSERT_TRUE(expected.equalsTo(&result));
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, assign_2)
+{    
+    NDArray x('c', {4}, {1.5,2.5,3.5,4.5}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {4}, nd4j::DataType::INT32);
+    NDArray expected('c', {4}, {1,2,3,4}, nd4j::DataType::INT32);
+    
+    y.assign(x);
+    y.printBuffer();
+    
+    ASSERT_TRUE(expected.equalsTo(&y));
+}
+
 // printCudaGlobal<double><<<1,1,0,*stream>>>(dX, 6);
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(dXShapeInfo, 8);
 //     printCudaGlobal<double><<<1,1,0,*stream>>>(dZ, 2);

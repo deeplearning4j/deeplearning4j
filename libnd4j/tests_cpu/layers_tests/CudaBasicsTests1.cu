@@ -3005,9 +3005,9 @@ TEST_F(CudaBasicsTests1, execRandom_3) {
 TEST_F(CudaBasicsTests1, execRandom_4) {
     	       
     NDArray z('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE);    
-    NDArray exp('c', {10}, {2.373649, 2.281399, 2.239791, 1.828228, 1.887353, 2.228222, 2.488636, 2.490847, 2.068904, 1.669537}, nd4j::DataType::DOUBLE);                              
+    NDArray exp('c', {10}, {2.373649, 2.239791,	1.887353, 2.488636,	2.068904, 2.281399,	1.828228, 2.228222,	2.490847, 1.669537}, nd4j::DataType::DOUBLE);
     z.permutei({1,0});        
-    
+        
     std::vector<double> extraArguments = {1.5, 2.5};
     nd4j::graph::RandomGenerator gen(119,5);
     
@@ -3032,7 +3032,7 @@ TEST_F(CudaBasicsTests1, execRandom_4) {
 								devicePtrs[0]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost(); 	
+    z.syncToHost();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
