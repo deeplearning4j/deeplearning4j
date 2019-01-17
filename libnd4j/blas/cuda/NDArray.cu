@@ -3257,6 +3257,25 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
             Nd4jLong numTads, Nd4jLong inputLength, Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
             Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets), LIBND4J_TYPES);
 
+    template <typename X, typename Y>
+    static __global__ void repeatKernelDouble(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
+                                        Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
+                                        Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets) {
+        //auto tid = blockIdx.x * blockDim.x; // + threadIdx.x;
+        int totalThreads = gridDim.x * blockDim.x;
+        //const auto resultLength = shape::length(outputShape);
+        for (Nd4jLong i = blockIdx.x; i < numTads; i += gridDim.x) {
+            auto yOffset = tadInputOffsets[i];
+            auto xOffset = tadOutputOffsets[i];
+            for (Nd4jLong j = threadIdx.x; j < inputLength; j += totalThreads) {
+                *(reinterpret_cast<X*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo, inputLength)) = static_cast<X>(*(reinterpret_cast<Y const*>(inputBuffer) + yOffset + shape::getIndexOffset(j, tadOnlyInputShapeInfo, inputLength)));
+            }
+        }
+    }
+    BUILD_DOUBLE_TEMPLATE(template __global__ void repeatKernelDouble, (void const* inputBuffer, void* outputBuffer,
+            Nd4jLong numTads, Nd4jLong inputLength, Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
+            Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets), LIBND4J_TYPES, LIBND4J_TYPES);
+
     template <typename T>
     static void repeatKernelH(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
                               Nd4jLong *tadOnlyInputShapeInfo, Nd4jLong *tadInputOffsets,
@@ -3269,6 +3288,21 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
             Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
             Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets,
             cudaStream_t stream), LIBND4J_TYPES);
+
+
+    template <typename X, typename Y>
+    static void repeatKernelHH(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
+                              Nd4jLong *tadOnlyInputShapeInfo, Nd4jLong *tadInputOffsets,
+                              Nd4jLong *tadOnlyOutputShapeInfo,Nd4jLong *tadOutputOffsets,
+                              cudaStream_t stream) {
+        dim3 launchDims(256, 512, 8192);
+        repeatKernelDouble<X,Y><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(inputBuffer, outputBuffer, numTads, inputLength, tadOnlyInputShapeInfo, tadInputOffsets, tadOnlyOutputShapeInfo, tadOutputOffsets);
+    }
+    BUILD_DOUBLE_TEMPLATE(template void repeatKernelHH, (void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
+            Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
+            Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets,
+            cudaStream_t stream), LIBND4J_TYPES, LIBND4J_TYPES);
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::repeat(int dimension, const std::vector<Nd4jLong>& repeats) const {
         auto outShape = ShapeUtils::evalRepeatShape(dimension, repeats, *this);
@@ -3283,32 +3317,52 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         auto ret = new NDArray('c', outShape, _dataType,  _context);
 
         auto repeatDelta = shape::prodLong(newShape.data(), rank) / this->lengthOf();
-        auto numTads = this->tensorsAlongDimension({dimension});
-        printf("Repeat delta %lld, numTads %lld\n", repeatDelta, numTads);
-        for (int i = 0; i < numTads; i++) {
-            auto thisTensor = this->tensorAlongDimension(i, {dimension});
-            auto retTensor = ret->tensorAlongDimension(i, {dimension});
-            Nd4jLong retIdx = 0;
+        std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rankOf(), {dimension});
+        const Nd4jLong numTads = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude); //this->tensorsAlongDimension({dimension});
+        //printf("Repeat delta %lld, numTads %lld\n", repeatDelta, numTads);
+        //tadOnlyInputShapeInfo, tadInputOffsets, tadOnlyOutputShapeInfo, tadOutputOffsets;
+        std::vector<int> copy({dimension});
+        shape::TAD tadInput(this->_shapeInfo, copy.data(), copy.size());
+        tadInput.createTadOnlyShapeInfo();
+        tadInput.createOffsets();
+        if (!this->isActualOnDeviceSide())
+            this->syncToDevice();
 
-            for (Nd4jLong k = 0; k < thisTensor->lengthOf(); k++) {
-                auto s = thisTensor->e(k);
-                for (Nd4jLong j = 0; j < repeatDelta; j++) {
-                    retTensor->p(retIdx++, s);
-                    printf("Iteration is %lld\n", retIdx);
-                }
-            }
-//            if (isR()) {
-//            } else {
-//                for (int k = 0; k < thisTensor->lengthOf(); k++) {
-//                    auto s = thisTensor->e<Nd4jLong>(k);
-//                    for (int j = 0; j < repeatDelta; j++) {
-//                        retTensor->p<Nd4jLong>(retIdx++, s);
-//                    }
-//                }
-//            }
+        shape::TAD tadOutput(ret->_shapeInfo, copy.data(), copy.size());
+        tadOutput.createTadOnlyShapeInfo();
+        tadOutput.createOffsets();
+        if (!this->isActualOnDeviceSide())
+            this->syncToDevice();
 
-            delete thisTensor;
-            delete retTensor;
+        // prepare input arrays for prepareDataForCuda function
+        std::vector<std::pair<void*,size_t>> hostData;
+        hostData.emplace_back(tadInput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadInput.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tadInput.tadOffsets, tadInput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        hostData.emplace_back(tadOutput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tadOutput.tadOffsets, tadOutput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        std::vector<void*> devicePtrs(hostData.size(), nullptr);
+
+        // create cuda stream and LaunchContext
+        cudaError_t cudaResult;
+        //cudaStream_t stream;
+        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+        //cudaStream_t* stream = this->getContext()->getCudaStream();
+        // allocate required amount of global device memory and copy host data to it
+//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaResult = cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot copy memory block for tads on device", cudaResult);
+        }
+        auto stream = _context->getCudaStream();
+        BUILD_SINGLE_SELECTOR(_dataType, repeatKernelH, (_bufferD, ret->_bufferD, numTads, lengthOf(), (Nd4jLong*)devicePtrs[0], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[3], *stream), LIBND4J_TYPES);
+
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+            cudaResult = cudaFree(devicePtrs[i]);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+//            cudaResult = cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
+//            if(cudaResult != 0) throw cuda_exception::build("Cannot copy memory block for tads on device", cudaResult);
         }
 
         return ret;
@@ -3333,31 +3387,51 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rankOf(), {dimension});
         const Nd4jLong numTads = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);
 
-        for (int i = 0; i < numTads; i++) {
-            auto thisTensor = (*this)(i, dimsToExclude);
-            auto retTensor = target(i, dimsToExclude);
-            int retIdx = 0;
+        std::vector<int> copy({dimension});
+        shape::TAD tadInput(this->_shapeInfo, copy.data(), copy.size());
+        tadInput.createTadOnlyShapeInfo();
+        tadInput.createOffsets();
+        if (!this->isActualOnDeviceSide())
+            this->syncToDevice();
 
-            for (int k = 0; k < thisTensor.lengthOf(); k++) {
-                auto s = thisTensor.e(k);
-                for (int j = 0; j < repeatDelta; j++) {
-                    retTensor.p(retIdx++, s);
-                }
-            }
+        shape::TAD tadOutput(target._shapeInfo, copy.data(), copy.size());
+        tadOutput.createTadOnlyShapeInfo();
+        tadOutput.createOffsets();
+        if (!this->isActualOnDeviceSide())
+            this->syncToDevice();
+        if (!target.isActualOnDeviceSide())
+            target.syncToDevice();
+        // prepare input arrays for prepareDataForCuda function
+        std::vector<std::pair<void*,size_t>> hostData;
+        hostData.emplace_back(tadInput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadInput.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tadInput.tadOffsets, tadInput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        hostData.emplace_back(tadOutput.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadOutput.tadOnlyShapeInfo));	// 1 -- xTadShapeInfo
+        hostData.emplace_back(tadOutput.tadOffsets, tadOutput.numTads * sizeof(Nd4jLong));							// 2 -- xTadOffsets
+        std::vector<void*> devicePtrs(hostData.size(), nullptr);
 
-//            if (isR()) {
-//            } else {
-//                for (int k = 0; k < thisTensor.lengthOf(); k++) {
-//                    auto s = thisTensor.e<Nd4jLong>(k);
-//                    for (int j = 0; j < repeatDelta; j++) {
-//                        retTensor.p<Nd4jLong>(retIdx++, s);
-//                    }
-//                }
-//            }
+        // create cuda stream and LaunchContext
+        cudaError_t cudaResult;
+        //cudaStream_t stream;
+        //cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
+        //cudaStream_t* stream = this->getContext()->getCudaStream();
+        // allocate required amount of global device memory and copy host data to it
+//    cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+            cudaResult = cudaMalloc(reinterpret_cast<void **>(&devicePtrs[i]), hostData[i].second);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
+            cudaResult = cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot copy memory block for tads on device", cudaResult);
+        }
+        auto stream = _context->getCudaStream();
+        //BUILD_SINGLE_SELECTOR(_dataType, repeatKernelH, (_bufferD, target._bufferD, numTads, lengthOf(), (Nd4jLong*)devicePtrs[0], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[3], *stream), LIBND4J_TYPES);
+        BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, repeatKernelHH, (_bufferD, target._bufferD, numTads, lengthOf(), (Nd4jLong*)devicePtrs[0], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[3], *stream), LIBND4J_TYPES, LIBND4J_TYPES);
+        for(int i = 0; i < devicePtrs.size(); ++i) {
+            cudaResult = cudaFree(devicePtrs[i]);
+            if(cudaResult != 0) throw cuda_exception::build("Cannot allocate memory for tads on device", cudaResult);
         }
     }
-
-}
+//
+} // end namespace nd4j
 
 
 
