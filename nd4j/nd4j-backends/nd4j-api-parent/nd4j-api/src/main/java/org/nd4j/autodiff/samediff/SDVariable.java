@@ -277,7 +277,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return Shape of the variable
      */
     public long[] getShape() {
-        if (variableType == VariableType.PLACEHOLDER)
+        if (variableType == VariableType.PLACEHOLDER && getArr() == null)
             return shape;
 
         long[] initialShape =  sameDiff.getShapeForVarName(getVarName());
