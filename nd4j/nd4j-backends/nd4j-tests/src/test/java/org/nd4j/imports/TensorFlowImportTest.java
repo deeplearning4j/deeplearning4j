@@ -1140,6 +1140,14 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/scalar_float32.fb"));
     }
 
+    @Test
+    public void testRandomGraph2() throws Exception {
+        val tg = TFGraphMapper.getInstance().importGraph(new File("c:\\develop\\mobilenet_v1_0.5_128_frozen.pb"));
+        assertNotNull(tg);
+
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/mobilenet_v1.fb"));
+    }
+
 
     @Test
     public void testControlDependencies1() throws Exception {

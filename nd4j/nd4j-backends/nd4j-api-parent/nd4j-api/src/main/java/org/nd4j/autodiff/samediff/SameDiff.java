@@ -10739,12 +10739,18 @@ public class SameDiff {
 
 //            val arr = variable.getArr();
 
+            int shape = 0;
             int name = bufferBuilder.createString(variable.getVarName());
             int array = arr == null ? 0 : arr.toFlatArray(bufferBuilder);
             int id = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
             byte varType = (byte)variable.getVariableType().ordinal();
 
-            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name,  FlatBuffersMapper.getDataTypeAsByte(variable.dataType()), 0, array, -1, varType);
+            if (variable.getVariableType() == VariableType.PLACEHOLDER) {
+                val shp = variable.getShape();
+                shape = FlatVariable.createShapeVector(bufferBuilder, shp);
+            }
+
+            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name,  FlatBuffersMapper.getDataTypeAsByte(variable.dataType()), shape, array, -1, varType);
             flatVariables.add(flatVariable);
         }
 
