@@ -45,12 +45,7 @@ public class SoftmaxCrossEntropyWithLogitsLossBp extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "softmax_cross_entropy_loss_with_logits";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "SoftmaxCrossEntropyWithLogits";
+        return "softmax_cross_entropy_loss_with_logits_grad";
     }
 
     @Override
