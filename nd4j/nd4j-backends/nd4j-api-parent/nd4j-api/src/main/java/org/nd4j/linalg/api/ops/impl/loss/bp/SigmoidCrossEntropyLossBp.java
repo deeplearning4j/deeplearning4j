@@ -14,23 +14,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.loss;
+package org.nd4j.linalg.api.ops.impl.loss.bp;
 
 import lombok.NoArgsConstructor;
-
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
-
-import java.util.*;
+import org.nd4j.linalg.api.ops.impl.loss.BaseLoss;
 
 
 /**
@@ -39,19 +29,14 @@ import java.util.*;
  * @author Max Pumperla
  */
 @NoArgsConstructor
-public class SigmoidCrossEntropyLoss extends BaseLoss {
-    public static final double DEFAULT_LABEL_SMOOTHING = 0.0;
+public class SigmoidCrossEntropyLossBp extends BaseLossBp {
     private double labelSmoothing = 0.0;
 
-    public SigmoidCrossEntropyLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights,
-                                   SDVariable labels, double labelSmoothing) {
+    public SigmoidCrossEntropyLossBp(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights,
+                                     SDVariable labels, double labelSmoothing) {
         super(sameDiff, lossReduce, logits, weights, labels);
         this.labelSmoothing = labelSmoothing;
         addArgs();
-    }
-
-    public SigmoidCrossEntropyLoss(SameDiff sameDiff, LossReduce reductionMode, SDVariable logits, SDVariable weights, SDVariable labels) {
-        this(sameDiff, reductionMode, logits, weights, labels, 0.0);
     }
 
     public void addArgs() {
@@ -61,11 +46,6 @@ public class SigmoidCrossEntropyLoss extends BaseLoss {
 
     @Override
     public String opName() {
-        return "sigm_cross_entropy_loss";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "sigmoid_cross_entropy";
+        return "sigm_cross_entropy_loss_grad";
     }
 }

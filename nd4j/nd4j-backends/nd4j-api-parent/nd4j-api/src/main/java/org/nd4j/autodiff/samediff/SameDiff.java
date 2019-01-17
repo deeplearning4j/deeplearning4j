@@ -10691,7 +10691,7 @@ public class SameDiff {
 
 
             reverseMap.put(variable.getVarName(), varIdx);
-            log.debug("Adding [{}] as [{}]", variable.getVarName(), varIdx);
+            log.trace("Adding [{}] as [{}]", variable.getVarName(), varIdx);
 
 //            val arr = variable.getArr();
 
@@ -10734,7 +10734,7 @@ public class SameDiff {
                 val pair = parseVariable(node.getVarName());
                 reverseMap.put(pair.getFirst(), idx);
 
-                log.debug("Adding [{}] as [{}]", pair.getFirst(), idx);
+                log.trace("Adding [{}] as [{}]", pair.getFirst(), idx);
 
                 byte varType = (byte)node.getVariableType().ordinal();
                 int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, FlatBuffersMapper.getDataTypeAsByte(arr.dataType()),0, array, -1, varType);
