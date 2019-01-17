@@ -34,8 +34,8 @@ import java.util.List;
 @NoArgsConstructor
 public class L2Loss extends DynamicCustomOp {
 
-    public L2Loss(SameDiff sameDiff, SDVariable[] args) {
-        super(null, sameDiff, args);
+    public L2Loss(SameDiff sameDiff, SDVariable var) {
+        super(sameDiff, new SDVariable[]{var});
     }
 
     @Override
@@ -58,5 +58,12 @@ public class L2Loss extends DynamicCustomOp {
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected 1 input type for %s, got %s", getClass(), inputDataTypes);
         Preconditions.checkState(inputDataTypes.get(0).isFPType(), "Input datatype must be floating point for %s, got %s", getClass(), inputDataTypes);
         return inputDataTypes;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grad){
+        //L2 loss: L = 1/2 * sum(x_i^2)
+        //dL/dxi = xi
+        return Collections.singletonList(f().identity(arg()));
     }
 }

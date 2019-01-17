@@ -1267,6 +1267,7 @@ public class SameDiff {
      * @return The differential function that this variable is an output of, or null if it is not the output of a function
      */
     public DifferentialFunction getVariableOutputFunction(String variableName) {
+        Preconditions.checkState(variables.containsKey(variableName), "No variable with name \"%s\" found in graph", variableName);
         if(variables.get(variableName).getOutputOfOp() == null)
             return null;
         return ops.get(variables.get(variableName).getOutputOfOp()).getOp();
@@ -8710,6 +8711,26 @@ public class SameDiff {
     }
 
     /**
+     * L2 loss: 1/2 * sum(x^2)
+     * @param var  Variable to calculate L2 loss of
+     * @return L2 loss
+     */
+    public SDVariable lossL2(@NonNull SDVariable var){
+        return lossL2(null, var);
+    }
+
+    /**
+     * L2 loss: 1/2 * sum(x^2)
+     * @param name Name of the output variable
+     * @param var  Variable to calculate L2 loss of
+     * @return L2 loss
+     */
+    public SDVariable lossL2(String name, @NonNull SDVariable var){
+        SDVariable ret = f().lossL2(var);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * See {@link #lossAbsoluteDifference(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
      */
     public SDVariable lossAbsoluteDifference(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
@@ -9032,6 +9053,29 @@ public class SameDiff {
             weights = this.scalar(null, 1.0);
         SDVariable result = functionFactory.lossSoftmaxCrossEntropy(oneHotLabels, logitPreductions, weights, lossReduce, labelSmoothing);
         return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * See {@link #lossSparseSoftmaxCrossEntropy(String, SDVariable, SDVariable)}
+     */
+    public SDVariable lossSparseSoftmaxCrossEntropy(@NonNull SDVariable logits, @NonNull SDVariable labels) {
+        return lossSparseSoftmaxCrossEntropy(null, logits, labels);
+    }
+
+    /**
+     * As per {@link #lossSoftmaxCrossEntropy(String, SDVariable, SDVariable, LossReduce)} but the labels variable
+     * is represented as an integer array instead of the equivalent one-hot array.<br>
+     * i.e., if logits are rank N, then labels have rank N-1
+     *
+     * @param name       Name of the output variable. May be null
+     * @param logits     Logits array ("pre-softmax activations")
+     * @param labels     Labels array. Must be an integer type.
+     * @return Softmax cross entropy
+     */
+    public SDVariable lossSparseSoftmaxCrossEntropy(String name, @NonNull SDVariable logits, @NonNull SDVariable labels) {
+        Preconditions.checkState(labels.dataType().isIntType(), "Labels variable must be an integer type: got %s", logits);
+        SDVariable ret = f().lossSparseSoftmaxCrossEntropy(logits, labels);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -10540,7 +10584,7 @@ public class SameDiff {
             inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outIdx));
         }
 
-        log.debug("Own Name: {}", node.getOwnName());
+        log.trace("Own Name: {}", node.getOwnName());
         int ownId = id != null ? id : idCounter.incrementAndGet();  //forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
         String[] outNames = node.outputVariablesNames();
         for(String s : outNames){
@@ -10665,7 +10709,7 @@ public class SameDiff {
         List<SDVariable> allVars = variables();
         for (SDVariable variable : allVars) {
             INDArray arr = variable.getArr();
-            log.debug("Exporting variable: [{}]", variable.getVarName());
+            log.trace("Exporting variable: [{}]", variable.getVarName());
 
             //If variable is the output of some op - let's use the ONE index for exporting, and properly track the output
             // numbers. For example, unstack(x) -> y0, y1, y2 -> the y's should be say (3,0), (3,1), (3,2) NOT (4,0), (5,0), (6,0)

@@ -129,7 +129,9 @@ public class GradCheckUtil {
         Set<String> gradVarNames = new HashSet<>();
         for(Variable v : sd.getVariables().values()){
             if(v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER){
-                gradVarNames.add(v.getVariable().getGradient().getVarName());
+                SDVariable g = v.getVariable().getGradient();
+                Preconditions.checkNotNull(g, "No gradient variable found for variable %s", v.getVariable());
+                gradVarNames.add(g.getVarName());
             }
         }
 

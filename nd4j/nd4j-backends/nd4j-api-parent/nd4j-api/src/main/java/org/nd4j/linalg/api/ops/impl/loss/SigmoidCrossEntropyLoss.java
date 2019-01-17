@@ -68,4 +68,12 @@ public class SigmoidCrossEntropyLoss extends BaseLoss {
     public String tensorflowName() {
         return "sigmoid_cross_entropy";
     }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grad){
+        //No external gradient
+        //Args are: predictions, weights, label
+        SDVariable[] grads = f().lossSigmoidCrossEntropyBp(arg(2), arg(0), arg(1), lossReduce, labelSmoothing);
+        return Arrays.asList(grads);
+    }
 }

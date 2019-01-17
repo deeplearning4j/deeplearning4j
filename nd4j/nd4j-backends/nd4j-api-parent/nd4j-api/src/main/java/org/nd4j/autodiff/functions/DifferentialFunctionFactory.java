@@ -1324,6 +1324,10 @@ public class DifferentialFunctionFactory {
         return new WeightedCrossEntropyLoss(sameDiff(), targets, inputs, weights).outputVariable();
     }
 
+    public SDVariable lossL2(SDVariable var){
+        return new L2Loss(sameDiff(), var).outputVariable();
+    }
+
     public SDVariable lossAbsoluteDifference(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
         return new AbsoluteDifferenceLoss(sameDiff(), lossReduce, predictions, weights, label).outputVariable();
     }
@@ -1394,6 +1398,14 @@ public class DifferentialFunctionFactory {
 
     public SDVariable[] lossSoftmaxCrossEntropyWithLogitsBp(SDVariable labels, SDVariable logits, SDVariable weights, int classDim) {
         return new SoftmaxCrossEntropyWithLogitsLossBp(sameDiff(), logits, weights, labels, classDim).outputVariables();
+    }
+
+    public SDVariable lossSparseSoftmaxCrossEntropy(SDVariable logits, SDVariable labels){
+        return new SparseSoftmaxCrossEntropyLossWithLogits(sameDiff(), logits, labels).outputVariable();
+    }
+
+    public SDVariable[] lossSparseSoftmaxCrossEntropyBp(SDVariable logits, SDVariable labels){
+        return new SparseSoftmaxCrossEntropyLossWithLogitsBp(sameDiff(), logits, labels).outputVariables();
     }
 
 
