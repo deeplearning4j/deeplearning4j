@@ -15,8 +15,7 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com
-// @author Yurii Shyrma, created on 15.11.2018
+// @author GS <sgazeos@gmail.com>, created on 16.01.2019
 //
 
 #include <loops/special_kernels.h>
