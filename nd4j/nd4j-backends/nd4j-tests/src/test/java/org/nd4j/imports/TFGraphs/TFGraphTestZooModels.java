@@ -160,8 +160,7 @@ public class TFGraphTestZooModels {
 
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
-//        if(!modelName.startsWith("deeplab")){
-//        if(!modelName.startsWith("ssd")){
+//        if(!modelName.startsWith("mobilenet_v1_0.5_128")){
 //            OpValidationSuite.ignoreFailing();
 //        }
         currentTestDir = testDir.newFolder();
@@ -180,15 +179,15 @@ public class TFGraphTestZooModels {
         Double maxRE = 1e-3;
         Double minAbs = 1e-4;
         currentTestDir = testDir.newFolder();
+        log.info("----- SameDiff Exec: {} -----", modelName);
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
                 LOADER, maxRE, minAbs);
 
 
-
-
-//        Double maxRE = 1e-2;
-//        Double minAbs = 1e-3;
-//        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
-//                LOADER, maxRE, minAbs, localTestDir);
+        //Libnd4j exec:
+        currentTestDir = testDir.newFolder();
+        log.info("----- Libnd4j Exec: {} -----", modelName);
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.LIBND4J,
+                LOADER, maxRE, minAbs);
     }
 }
