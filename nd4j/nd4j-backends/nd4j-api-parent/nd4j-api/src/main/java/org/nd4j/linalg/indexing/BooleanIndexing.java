@@ -21,9 +21,11 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
 import org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Choose;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.BaseCondition;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -36,6 +38,107 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class BooleanIndexing {
+
+    /**
+     * And over the whole ndarray given some condition
+     *
+     * @param n    the ndarray to test
+     * @param cond the condition to test against
+     * @return true if all of the elements meet the specified
+     * condition false otherwise
+     */
+    public static boolean and(final INDArray n, final Condition cond) {
+        if (cond instanceof BaseCondition) {
+            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond)).getDouble(0);
+
+            if (val == n.lengthLong())
+                return true;
+            else
+                return false;
+
+        } else {
+            throw new RuntimeException("Can only execute BaseCondition conditions using this method");
+        }
+    }
+
+    /**
+     * And over the whole ndarray given some condition, with respect to dimensions
+     *
+     * @param n    the ndarray to test
+     * @param condition the condition to test against
+     * @return true if all of the elements meet the specified
+     * condition false otherwise
+     */
+    public static boolean[] and(final INDArray n, final Condition condition, int... dimension) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        MatchCondition op = new MatchCondition(n, condition, dimension);
+        INDArray arr = Nd4j.getExecutioner().exec(op);
+        boolean[] result = new boolean[(int) arr.length()];
+
+        long tadLength = Shape.getTADLength(n.shape(), dimension);
+
+        for (int i = 0; i < arr.length(); i++) {
+            if (arr.getDouble(i) == tadLength)
+                result[i] = true;
+            else
+                result[i] = false;
+        }
+
+        return result;
+    }
+
+
+    /**
+     * Or over the whole ndarray given some condition, with respect to dimensions
+     *
+     * @param n    the ndarray to test
+     * @param condition the condition to test against
+     * @return true if all of the elements meet the specified
+     * condition false otherwise
+     */
+    public static boolean[] or(final INDArray n, final Condition condition, int... dimension) {
+        if (!(condition instanceof BaseCondition))
+            throw new UnsupportedOperationException("Only static Conditions are supported");
+
+        MatchCondition op = new MatchCondition(n, condition, dimension);
+        INDArray arr = Nd4j.getExecutioner().exec(op);
+
+        // FIXME: int cast
+
+        boolean[] result = new boolean[(int) arr.length()];
+
+        for (int i = 0; i < arr.length(); i++) {
+            if (arr.getDouble(i) > 0)
+                result[i] = true;
+            else
+                result[i] = false;
+        }
+
+        return result;
+    }
+
+    /**
+     * Or over the whole ndarray given some condition
+     *
+     * @param n
+     * @param cond
+     * @return
+     */
+    public static boolean or(final INDArray n, final Condition cond) {
+        if (cond instanceof BaseCondition) {
+            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond)).getDouble(0);
+
+            if (val > 0)
+                return true;
+            else
+                return false;
+
+        } else {
+            throw new RuntimeException("Can only execute BaseCondition conditions using this method");
+        }
+    }
 
     /**
      * This method does element-wise comparison

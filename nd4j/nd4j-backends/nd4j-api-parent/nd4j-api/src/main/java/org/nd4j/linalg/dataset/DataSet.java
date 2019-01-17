@@ -388,11 +388,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return ret;
     }
 
-    @Override
-    public void apply(Condition condition, Function<Number, Number> function) {
-        BooleanIndexing.applyWhere(getFeatures(), condition, function);
-    }
-
     /**
      * Clone the dataset
      *

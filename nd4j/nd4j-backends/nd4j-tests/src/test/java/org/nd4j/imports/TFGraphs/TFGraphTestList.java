@@ -49,7 +49,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "pad/rank1Pone_reflect"
+            "losses/softmax_ce"
     };
 
     @After
