@@ -682,6 +682,11 @@ public class Shape {
         return arr.data().getDouble(offset);
     }
 
+    public static long getLong(INDArray arr, long... indices) {
+        long offset = getOffset(arr.shapeInfo(), indices);
+        return arr.data().getLong(offset);
+    }
+
     /**
      * Iterate over 2
      * coordinate spaces given 2 arrays

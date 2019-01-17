@@ -93,6 +93,7 @@ import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
 import org.nd4j.linalg.api.ops.random.impl.*;
+import org.nd4j.linalg.api.ops.random.impl.Linspace;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -179,6 +180,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable linspace(double lower, double upper, long count) {
         return new Linspace(sameDiff(), lower, upper, count).outputVariable();
+    }
+
+    public SDVariable linspace(SDVariable lower, SDVariable upper, SDVariable count, DataType dt) {
+        return new org.nd4j.linalg.api.ops.impl.shape.Linspace(sameDiff(), lower, upper, count, dt).outputVariable();
     }
 
     public SDVariable range(double from, double to, double step) {

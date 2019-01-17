@@ -1833,6 +1833,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return (int) getDouble(indices);
     }
 
+    @Override
+    public int getLong(long... indices) {
+        return Shape.getLong(this, indices);
+    }
+
     /**
      * Returns the elements at the specified indices
      *

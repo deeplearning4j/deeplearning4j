@@ -1949,7 +1949,6 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
-
     /**
      * Create an SDVariable with a fixed/constant value, with a generated name
      * @param constant Value for the constant SDVariable
@@ -2024,6 +2023,11 @@ public class SameDiff {
      */
     public SDVariable linspace(String name, double start, double stop, long number) {
         SDVariable ret = f().linspace(start, stop, number);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable linspace(String name, SDVariable from, SDVariable to, SDVariable length, DataType dt){
+        SDVariable ret = f().linspace(from, to, length, dt);
         return updateVariableNameAndReference(ret, name);
     }
 
