@@ -97,20 +97,6 @@ public interface OpExecutioner {
      */
     INDArray exec(Op op);
 
-    /**
-     * Iterate over every row of every slice
-     *
-     * @param op the operation to apply
-     */
-    void iterateOverAllRows(Op op);
-
-    /**
-     * Iterate over every column of every slice
-     *
-     * @param op the operation to apply
-     */
-    void iterateOverAllColumns(Op op);
-
     /**Execute a TransformOp and return the result
      * @param op the operation to execute
      */
