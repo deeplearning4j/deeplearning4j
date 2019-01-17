@@ -53,7 +53,7 @@ public class LossOpValidation extends BaseOpValidation {
         List<String> failed = new ArrayList<>();
 
         for (String fn : new String[]{"absdiff", "cosine", "hinge", "huber", "log", "mse",
-                "sigmoidxent", "sigmoidxent_smooth", "softmaxxent", "softmaxxent_smooth", "mpwse"}) {
+                "sigmoidxent", "sigmoidxent_smooth", "softmaxxent", "softmaxxent_smooth", "mpwse", "softmaxxentlogit"}) {
             for(String weights : new String[]{"none", "scalar", "perExample", "perOutput"}) {
                 if((fn.startsWith("softmax") || fn.equals("cosine")) && weights.equals("perOutput"))
                     continue;   //Skip this combination (not possible)
