@@ -207,12 +207,12 @@ public class ElementWiseVertex extends BaseGraphVertex {
         if (maskArrays.length == 1) {
             return new Pair<>(maskArrays[0], currentMaskState);
         } else {
-            INDArray ret = maskArrays[0].dup(maskArrays[0].ordering());
-            Nd4j.getExecutioner().exec(new Or(maskArrays[0], maskArrays[1], ret));
+            INDArray ret = Nd4j.createUninitialized(DataType.BOOL, maskArrays[0].shape());  //maskArrays[0].dup(maskArrays[0].ordering());
+            Nd4j.getExecutioner().exec(new Or(maskArrays[0].castTo(DataType.BOOL), maskArrays[1].castTo(DataType.BOOL), ret));
             for (int i = 2; i < maskArrays.length; i++) {
-                Nd4j.getExecutioner().exec(new Or(maskArrays[i], ret, ret));
+                Nd4j.getExecutioner().exec(new Or(maskArrays[i].castTo(DataType.BOOL), ret, ret));
             }
-            return new Pair<>(ret, currentMaskState);
+            return new Pair<>(ret.castTo(Nd4j.defaultFloatingPointType()), currentMaskState);
         }
     }
 
