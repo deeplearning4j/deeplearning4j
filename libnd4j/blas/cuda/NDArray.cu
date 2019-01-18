@@ -665,10 +665,99 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     }
     BUILD_SINGLE_TEMPLATE(template std::vector, NDArray::asVectorT(), LIBND4J_TYPES);
 
-//
+
+    //
 //
 // Nd4jLong coords[2] = {i, j};
 // auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    template <typename T>
+    static __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, T& value, int diagonal, Nd4jLong rows, Nd4jLong cols) {
+        //auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        Nd4jLong  rank = shape::rank(shape);
+        int totalThreads = gridDim.x * blockDim.x;
+        //const auto resultLength = shape::length(outputShape);
+        T* z = reinterpret_cast<T*>(buffer);
+        for (Nd4jLong i = blockIdx.x; i < rows; i += blockDim.x) {
+            for (Nd4jLong j = threadIdx.x; j < cols; j += totalThreads) {
+                Nd4jLong coords[2] = {i, j};
+                Nd4jLong xOffset = shape::getOffset(0, shape, shape::calcStrides(shape, rank), coords, rank);
+                if ((i + diagonal) <= j)
+                    z[xOffset] = value;
+            }
+        }
+
+    }
+
+    template <typename T>
+    static __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, T& value, int diagonal, Nd4jLong rows, Nd4jLong cols) {
+        //auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        Nd4jLong  rank = shape::rank(shape);
+        int totalThreads = gridDim.x * blockDim.x;
+        //const auto resultLength = shape::length(outputShape);
+        for (Nd4jLong i = blockIdx.x; i < rows; i += blockDim.x) {
+            for (int j = threadIdx.x; j < cols; j += totalThreads) {
+                Nd4jLong coords[2] = {i, j};
+                auto xOffset = shape::getOffset(0, shape, shape::calcStrides(shape, rank), coords, rank);
+                if (i + diagonal >= j)
+                    *(reinterpret_cast<T*>(buffer) + xOffset) = value;
+            }
+        }
+
+    }
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, double& value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, double& value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, float& value,    int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, float& value,    int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, int& value,      int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, int& value,      int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, float16& value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, float16& value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, bfloat16& value, int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, bfloat16& value, int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, Nd4jLong& value, int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, Nd4jLong& value, int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, int16_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, int16_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, uint8_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, uint8_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, int8_t& value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, int8_t& value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, bool& value,     int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, bool& value,     int diagonal, Nd4jLong rows, Nd4jLong cols);
+
+    template <typename T>
+    static void setDiagValueUpper(void* buffer, Nd4jLong* shape, T& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream) {
+        dim3 launchDims(256, 512, 8192);
+        setDiagValueUpperKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(buffer, shape, value, diagonal, rows, cols);
+    }
+
+    template <typename T>
+    static void setDiagValueLower(void* buffer, Nd4jLong* shape, T& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream) {
+        dim3 launchDims(256, 512, 8192);
+        setDiagValueLowerKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(buffer, shape, value, diagonal, rows, cols);
+    }
+
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, float& value,    int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, int& value,      int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, float16& value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, bfloat16& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, Nd4jLong& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, int16_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, uint8_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, int8_t& value,   int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, bool& value,     int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, double& value,   int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, float& value,    int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, int& value,      int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, float16& value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, bfloat16& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, Nd4jLong& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, int16_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, uint8_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, int8_t& value,   int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, bool& value,     int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, double& value,   int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
     ////////////////////////////////////////////////////////////////////////
     template<typename T>
     void NDArray::setValueInDiagMatrix(const T& value, const int diag, const char direction) {
@@ -676,10 +765,13 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("NDArray::setValueInDiagMatrix: you can't use this method on String array!");
         if(rankOf() != 2)
            throw std::string("NDArray::setValueInDiagMatrix method: array must have rank = 2, but got " + toStringValue(rankOf()) + " instead !");
+        cudaStream_t* stream = _context->getCudaStream();
+        const auto rows = sizeAt(0);
+        const auto cols = sizeAt(1);
+        T val(value);
         switch(direction) {
-
             case 'u':                           // fill upper triangular block
-                //TODO:-->>//setDiagValueUpper(_bufferD, _shapeInfoD, stidesD, value, diag);
+                setDiagValueUpper((void*)_bufferD, _shapeInfoD, val, diag, rows, cols,  *stream);
 //#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
 //                for(Nd4jLong i = 0; i < rows; ++i)
 //                    for(Nd4jLong j = 0; j < cols; ++j)
@@ -688,7 +780,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 break;
 
             case 'l':                           // fill lower triangular block
-                //TODO:-->>//setDiagValueLower(_bufferD, _shapeInfoD, stridesD, value, diag);
+                setDiagValueLower((void*)_bufferD, _shapeInfoD, val, diag, rows, cols, *stream);
 //#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
 //                for(Nd4jLong i = 0; i < rows; ++i)
 //                    for(Nd4jLong j = 0; j < cols; ++j)
