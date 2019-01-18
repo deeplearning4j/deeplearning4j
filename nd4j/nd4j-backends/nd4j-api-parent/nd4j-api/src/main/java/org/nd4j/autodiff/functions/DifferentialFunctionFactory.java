@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.NoOp;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
+import org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches;
 import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.loss.bp.*;
@@ -480,6 +481,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable col2Im(SDVariable input, Conv2DConfig config) {
         return new Col2Im(sameDiff(), input, config).outputVariable();
+    }
+
+    public SDVariable extractImagePatches(SDVariable input, int kH, int kW, int sH, int sW, int rH, int rW, boolean sameMode){
+        return new ExtractImagePatches(sameDiff(), input, new int[]{kH, kW}, new int[]{sH, sW}, new int[]{rH, rW}, sameMode).outputVariable();
     }
 
     public SDVariable[] moments(SDVariable input, int... axes) {
