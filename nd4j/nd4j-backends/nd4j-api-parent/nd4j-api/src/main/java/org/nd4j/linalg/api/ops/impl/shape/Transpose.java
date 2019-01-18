@@ -116,7 +116,7 @@ public class Transpose extends DynamicCustomOp {
         }
 
         //handle once properly mapped
-        if (arg().getShape() == null || arg().getVariableType() == VariableType.PLACEHOLDER) {
+        if (arg().getShape() == null || arg().getVariableType() == VariableType.PLACEHOLDER || arg().getArr() == null) {
             return;
         }
 
