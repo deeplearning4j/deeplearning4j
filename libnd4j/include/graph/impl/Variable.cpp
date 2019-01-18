@@ -24,6 +24,7 @@
 #include <array/ByteOrderUtils.h>
 #include <array/DataTypeConversions.h>
 #include <graph/FlatUtils.h>
+#include <helpers/StringUtils.h>
 
 namespace nd4j {
     namespace graph {
@@ -145,7 +146,14 @@ namespace nd4j {
             }
 
             if (this->_ndarray == nullptr) {
-                throw std::runtime_error("Array doesn't exist for Variable <" + this->_name + ">");
+                if (_name.empty()) {
+                    auto nodeId = StringUtils::valueToString<int>(this->id());
+                    auto outputIndex = StringUtils::valueToString<int>(this->index());
+                    throw std::runtime_error("Array doesn't exist for Variable <" + nodeId + ":" + outputIndex + ">");
+                } else {
+                    auto outputIndex = StringUtils::valueToString<int>(this->index());
+                    throw std::runtime_error("Array doesn't exist for Variable <" + this->_name + ":" + outputIndex+ ">");
+                }
             }
 
             return this->_ndarray;
@@ -238,18 +246,21 @@ namespace nd4j {
                         if (flatVariable->shape() == nullptr && flatVariable->ndarray() == nullptr)
                             throw std::runtime_error("PLACEHOLDER variable must have shape defined");
 
-                        if (flatVariable->shape() != nullptr) {
-                            int shapeLen = flatVariable->shape()->Length();
-                            for (int i = 0; i < flatVariable->shape()->size(); i++)
-                                _shape.emplace_back(flatVariable->shape()->Get(i));
-
-                            _variableType = VariableType::PLACEHOLDER;
-                        } else {
+                        if (flatVariable->ndarray() != nullptr) {
                             auto ar = flatVariable->ndarray();
                             _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
                             _ndarray->triggerAllocationFlag(true, true);
 
                             _variableType = VariableType::NDARRAY;
+                        }
+
+                        if (flatVariable->shape() != nullptr) {
+                            int shapeLen = flatVariable->shape()->Length();
+                            for (int i = 0; i < flatVariable->shape()->size(); i++)
+                                _shape.emplace_back(flatVariable->shape()->Get(i));
+
+                            if (_ndarray == nullptr)
+                                _variableType = VariableType::PLACEHOLDER;
                         }
                     }
                     break;

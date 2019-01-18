@@ -566,7 +566,7 @@ namespace nd4j {
                     NDArray *aV = v->getNDArray();
 
                     // if array is empty intentionally - we're ok with that
-                    if (v->isEmpty())
+                    if (v->hasNDArray() && v->isEmpty())
                         continue;
 
                     if (aV == nullptr || !aV->nonNull()) {

@@ -147,7 +147,7 @@ namespace nd4j {
                 std::pair<int,int> pair(1, e);
                 if (varSpace.hasVariable(pair)) {
                     auto var = varSpace.getVariable(pair);
-                    if (var->getNDArray() != nullptr) {
+                    if (var->hasNDArray()) {
                         auto arr = var->getNDArray();
                         if (arr->isAttached()) {
                             auto d = arr->detach();
