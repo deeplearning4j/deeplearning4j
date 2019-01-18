@@ -1248,6 +1248,7 @@ NDArray NDArray::transp() const {
     //////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::permute(const int* dimensions, const int rank) const {
         // evaluate shapeInfo for output (permuted) array ret
+        lazyAllocateBuffer();
         auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
         // create array to be returned
         auto ret = new NDArray(_buffer, shapeInfoNew, _context, false, true);
