@@ -28,9 +28,17 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN
+// all arrays must to be in f order and have continuous buffer
 void MmulHelper::basicGemm(const NDArray* A, const NDArray* B, NDArray* C, double alpha, double beta) {
+	
+    if(!A->isActualOnDeviceSide())
+        A->syncToDevice();
+    if(!B->isActualOnDeviceSide())
+        B->syncToDevice();
+    if(!C->isActualOnDeviceSide())
+        C->syncToDevice();
 
-	const int M = A->sizeAt(0);
+    const int M = A->sizeAt(0);
 	const int K = A->sizeAt(1);
 	const int N = B->sizeAt(1);
 
@@ -49,10 +57,7 @@ void MmulHelper::basicGemm(const NDArray* A, const NDArray* B, NDArray* C, doubl
 
     const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
 
-    // // choose appropriate cuda gemm api depending on data types
-    // if(ABC && aType != DataType::DOUBLE && aType != DataType::FLOAT32 && aType != DataType::HALF) {
-    //     throw std::runtime_error("MmulHelper::basicGemm cuda: not implemented yet for given data types !");
-    // }
+    // choose appropriate cuda gemm api depending on data types    
     if(ABC && aType == DataType::DOUBLE) {
     	status = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alpha, (double*)A->getSpecialBuffer(), M, (double*)B->getSpecialBuffer(), K, &beta, (double*)C->getSpecialBuffer(), M);
     }
@@ -73,7 +78,9 @@ void MmulHelper::basicGemm(const NDArray* A, const NDArray* B, NDArray* C, doubl
         status = cublasSgemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alphaF, A->getSpecialBuffer(), CUDA_R_16F, M, B->getSpecialBuffer(), CUDA_R_16F, K, &betaF, C->getSpecialBuffer(), CUDA_R_32F, M);
     }    
     else {
-        auto systemFloatType = Environment::getInstance()->defaultFloatDataType();        
+        auto systemFloatType = Environment::getInstance()->defaultFloatDataType();
+        if(systemFloatType != DataType::DOUBLE && systemFloatType != DataType::FLOAT32 && systemFloatType != DataType::HALF) 
+            throw std::runtime_error("MmulHelper::basicGemm cuda: not implemented yet for given data types !");        
         NDArray *pA(const_cast<NDArray*>(A)), *pB(const_cast<NDArray*>(B)), *pC(const_cast<NDArray*>(C));
         if(aType != systemFloatType) {pA = new NDArray(A->getShapeInfo(), systemFloatType, true, A->getContext()); pA->assign(A); }
         if(bType != systemFloatType) {pB = new NDArray(B->getShapeInfo(), systemFloatType, true, B->getContext()); pB->assign(B); }
@@ -105,7 +112,6 @@ void MmulHelper::basicGemm(const NDArray* A, const NDArray* B, NDArray* C, doubl
 
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN
-template<typename X, typename Y, typename Z>
 NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, double alpha, double beta) {
 
 	if(A->rankOf() != 2)
@@ -126,15 +132,8 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 	if(C != nullptr && C->sizeAt(1) != N)
 		throw std::runtime_error("MmulHelper::mmulMxM cuda: C array has wrong number of columns !");
 
-	if(C == nullptr)
-		C = new NDArray('f', {M,N}, DataTypeUtils::fromT<Z>(), A->getContext());
-
-	if(!A->isActualOnDeviceSide())
-		A->syncToDevice();
-	if(!B->isActualOnDeviceSide())
-		B->syncToDevice();
-	if(!C->isActualOnDeviceSide())
-		C->syncToDevice();
+	if(C == nullptr) 		
+        C = new NDArray('f', {M,N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()), A->getContext());
 
 	NDArray *pA(const_cast<NDArray*>(A)), *pB(const_cast<NDArray*>(B)), *pC(const_cast<NDArray*>(C));
 
@@ -158,9 +157,6 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 
 	return C;
 }
-
-
-BUILD_TRIPLE_TEMPLATE(template nd4j::NDArray* MmulHelper::mmulMxM, (const NDArray* A, const NDArray* B, NDArray* C, double alpha, double beta), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
 
 
 }

@@ -415,6 +415,8 @@ namespace nd4j {
         template <typename T>
         bool hasGEMM();
 
+        bool hasGEMM(const nd4j::DataType dtype) const;
+
         template <typename T>
         bool hasBatchedGEMM();
 

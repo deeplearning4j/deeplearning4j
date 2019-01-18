@@ -223,8 +223,7 @@ TEST_F(NDArrayTest2, mmul_test1) {
     auto y = NDArrayFactory::create<float>('c', {1, 4}, {1, 2, 3, 4});
     auto exp = NDArrayFactory::create<float>('c', {4, 4}, {1,2, 3, 4,2,4, 6, 8,3,6, 9,12,4,8,12,16});
                                                      
-    auto result = mmul(x, y);
-
+    auto result = mmul(x, y);    
     ASSERT_TRUE(exp.isSameShape(&result));
     ASSERT_TRUE(exp.equalsTo(&result));    
 

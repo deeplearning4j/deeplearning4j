@@ -449,16 +449,16 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
             if(aRank > bRank) {
                 NDArray aSubArr = (*A)(idxRanges);
-                BUILD_TRIPLE_SELECTOR(A->dataType(), B->dataType(), C->dataType(), c = mmulMxM, (&aSubArr, B, &cSubArr, 1., 0.), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+                c = mmulMxM(&aSubArr, B, &cSubArr, 1., 0.);
             }
             else if(bRank > aRank) {
                 NDArray bSubArr = (*B)(idxRanges);
-                BUILD_TRIPLE_SELECTOR(A->dataType(), B->dataType(), C->dataType(), c = mmulMxM, (A, &bSubArr, &cSubArr, 1., 0.), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+                c = mmulMxM(A, &bSubArr, &cSubArr, 1., 0);
             }
             else {
                 NDArray aSubArr = (*A)(idxRanges);
                 NDArray bSubArr = (*B)(idxRanges);
-                BUILD_TRIPLE_SELECTOR(A->dataType(), B->dataType(), C->dataType(), c = mmulMxM, (&aSubArr, &bSubArr, &cSubArr, 1., 0.), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+                c = mmulMxM(&aSubArr, &bSubArr, &cSubArr, 1., 0.);
             }
 
             if (c != &cSubArr) { cSubArr.assign(c); delete c; }
@@ -527,7 +527,7 @@ nd4j::NDArray* MmulHelper::mmul(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArra
     } else { //if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix()) || (A->isColumnVector() && B->isRowVector())) {
         // gemm
         // int[] shape = {rows(), other.columns()};
-        BUILD_TRIPLE_SELECTOR(xType, yType, zType, return mmulMxM, (A, B, C, alpha, beta), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+        return mmulMxM(A, B, C, alpha, beta);
     }
     return result;
 }
