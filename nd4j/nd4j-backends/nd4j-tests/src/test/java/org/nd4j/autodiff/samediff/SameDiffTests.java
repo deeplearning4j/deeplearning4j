@@ -738,7 +738,6 @@ public class SameDiffTests {
     public void testNegativeOneShape() {
         val sd = SameDiff.create();
         SDVariable var = sd.placeHolder("test", DataType.FLOAT, -1, 3);
-        assertNull(var.getShape());
         assertTrue(var.isPlaceHolder());
     }
 

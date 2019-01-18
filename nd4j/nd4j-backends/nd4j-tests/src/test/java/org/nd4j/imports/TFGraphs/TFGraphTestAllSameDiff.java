@@ -141,6 +141,9 @@ public class TFGraphTestAllSameDiff {
 
             //2019/01/08 - No tensorflow op found for SparseTensorDenseAdd
             "confusion/.*",
+
+            //2019/01/18 - Issue 18 here: https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            "extractImagePatches/.*"
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 

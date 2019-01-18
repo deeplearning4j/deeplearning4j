@@ -143,7 +143,7 @@ DECLARE_TYPES(softmax_cross_entropy_loss) {
 	
 	getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
 					->setAllowedInputTypes(1, {ALL_FLOATS})
-					->setAllowedInputTypes(2, {ALL_INTS})
+					->setAllowedInputTypes(2, {ALL_FLOATS, ALL_INTS})
 					->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -358,7 +358,7 @@ DECLARE_TYPES(softmax_cross_entropy_loss_grad) {
 	
 	getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
 					 ->setAllowedInputTypes(1, {ALL_FLOATS})
-					 ->setAllowedInputTypes(2, {ALL_INTS})
+					 ->setAllowedInputTypes(2, {ALL_FLOATS, ALL_INTS})
 					 ->setAllowedInputTypes(3, {ALL_FLOATS})
 					 ->setAllowedInputTypes(4, {ALL_FLOATS})
 					 ->setAllowedInputTypes(5, {ALL_FLOATS})

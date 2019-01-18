@@ -73,7 +73,10 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        INDArray outEpsilon = Nd4j.sum(epsilon,2);
+        INDArray outEpsilon;
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)){
+            outEpsilon = Nd4j.sum(epsilon,2);
+        }
 
         Gradient gradient = new DefaultGradient();
         return new Pair<>(gradient, outEpsilon);

@@ -1358,6 +1358,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
+    public long getLong(long... indices) {
+        return 0;
+    }
+
+    @Override
     public double getDouble(int... indices) {
         return 0;
     }

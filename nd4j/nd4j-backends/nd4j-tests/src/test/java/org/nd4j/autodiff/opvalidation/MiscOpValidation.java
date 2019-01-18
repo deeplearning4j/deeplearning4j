@@ -1195,6 +1195,19 @@ public class MiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
+    @Test
+    public void testLinspace2(){
+        OpValidationSuite.ignoreFailing();  //TODO 2019/01/18
+        SameDiff sd = SameDiff.create();
+        SDVariable out = sd.linspace("linspace", sd.constant(Nd4j.scalar(1)), sd.constant(Nd4j.scalar(10)), sd.constant(Nd4j.scalar(10)), DataType.DOUBLE);
+        SDVariable loss = out.std(true);
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expected(out, Nd4j.linspace(1,10,10, DataType.DOUBLE)));
+
+        assertNull(err);
+    }
+
 
     @Test
     public void testShapeFn() {

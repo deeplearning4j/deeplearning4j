@@ -78,8 +78,8 @@ public class Linspace extends BaseRandomOp {
     }
 
     @Override
-    public String opName() {
-        return "linspace";
+    public String opName(){
+        return "linspace_random";
     }
 
     @Override
