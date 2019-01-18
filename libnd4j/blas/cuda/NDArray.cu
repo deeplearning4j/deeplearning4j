@@ -2340,8 +2340,11 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
             _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
             _isShapeAlloc = true;
         } else {
-            if (!nonNull() || rank != rankOf())
-                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
+            lazyAllocateBuffer();
+            if (!nonNull())
+                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: array is nullptr!");
+            if (rank != rankOf())
+                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: rank is not suitable!");
             shape::doPermuteShapeInfo(_shapeInfo, dimensions);
         }
 
@@ -2358,8 +2361,12 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
             _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
             _isShapeAlloc = true;
         } else {
-            if (!nonNull() || rank != rankOf())
-                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
+            lazyAllocateBuffer();
+            nd4j_printf("Ranks for permutei: Given %i, Real %i\n", rank, rankOf());
+            if (!nonNull())
+                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: array is nullptr!");
+            if (rank != rankOf())
+                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: rank is not suitable!");
             shape::doPermuteShapeInfo(_shapeInfo, dimensions);
         }
 
