@@ -665,7 +665,10 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     }
     BUILD_SINGLE_TEMPLATE(template std::vector, NDArray::asVectorT(), LIBND4J_TYPES);
 
-
+//
+//
+// Nd4jLong coords[2] = {i, j};
+// auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
     ////////////////////////////////////////////////////////////////////////
     template<typename T>
     void NDArray::setValueInDiagMatrix(const T& value, const int diag, const char direction) {
@@ -673,6 +676,29 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("NDArray::setValueInDiagMatrix: you can't use this method on String array!");
         if(rankOf() != 2)
            throw std::string("NDArray::setValueInDiagMatrix method: array must have rank = 2, but got " + toStringValue(rankOf()) + " instead !");
+        switch(direction) {
+
+            case 'u':                           // fill upper triangular block
+                //TODO:-->>//setDiagValueUpper(_bufferD, _shapeInfoD, stidesD, value, diag);
+//#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
+//                for(Nd4jLong i = 0; i < rows; ++i)
+//                    for(Nd4jLong j = 0; j < cols; ++j)
+//                        if (i + diag <= j)
+//                            p<T>(i, j, value);
+                break;
+
+            case 'l':                           // fill lower triangular block
+                //TODO:-->>//setDiagValueLower(_bufferD, _shapeInfoD, stridesD, value, diag);
+//#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
+//                for(Nd4jLong i = 0; i < rows; ++i)
+//                    for(Nd4jLong j = 0; j < cols; ++j)
+//                        if (i + diag >= j)
+//                            p<T>(i, j, value);
+                break;
+            default:
+                throw std::string("NDArray::setValueInDiagMatrix method: wrong value of direction argument, expected is 'u' or 'l', but got " + std::string(1,direction) + " instead !");
+        }
+
     }
     template void NDArray::setValueInDiagMatrix(const double& value, const int diag, const char direction);
     template void NDArray::setValueInDiagMatrix(const float& value, const int diag, const char direction);
@@ -980,8 +1006,12 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     }
 
     void NDArray::syncToDevice() const {
-        cudaMemcpy(this->_bufferD, this->_buffer, this->lengthOf() * this->sizeOfT(), cudaMemcpyHostToDevice);
-        tickReadDevice();
+        if (this->_bufferD == nullptr && lengthOf() > 0)
+            throw std::runtime_error("Cannot sync data to device due device buffer is not allocated yet!");
+        if (lengthOf() > 0) {
+            cudaMemcpy(this->_bufferD, this->_buffer, this->lengthOf() * this->sizeOfT(), cudaMemcpyHostToDevice);
+            tickReadDevice();
+        }
     }
 
     void NDArray::syncShape() const {

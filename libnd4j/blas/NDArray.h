@@ -1482,7 +1482,7 @@ namespace nd4j {
  
         _buffer = reinterpret_cast<int8_t *>(buffer);
         _isBuffAlloc = false;
-        syncToDevice();
+        tickWriteHost();
     }
 
     //////////////////////////////////////////////////////////////////////////
