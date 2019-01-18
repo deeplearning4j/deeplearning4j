@@ -888,60 +888,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         BUILD_SINGLE_SELECTOR(xType, templatedSwap, (this->_buffer, other.buffer(), this->lengthOf()), LIBND4J_TYPES);
     }
 
-    ////////////////////////////////////////////////////////////////////////
-    NDArray* NDArray::diagonal(const char type) const {
-
-        if (isS())
-            throw std::runtime_error("NDArray::diagonal: you can't use this method on String array!");
-
-        const char order = ordering();
-        const int  rank  = rankOf();
-        Nd4jLong *outShapeInfo;
-        ALLOCATE(outShapeInfo, _context->getWorkspace(), 8, Nd4jLong);
-        outShapeInfo[0] = 2;
-        outShapeInfo[5] = 0;
-
-        if(isVector() || isScalar()) {
-
-            outShapeInfo[1] = outShapeInfo[2] = outShapeInfo[3] = outShapeInfo[4] = 1;
-            outShapeInfo[6] = 1;
-            outShapeInfo[7] = (int)order;
-        }
-        else {
-
-            int diagSize  = 100000000;
-            Nd4jLong indices[MAX_RANK];
-
-            for(int i = 0; i < rank; ++i) {
-                if(diagSize > shapeOf()[i])
-                    diagSize = shapeOf()[i];
-                indices[i] = 1;
-            }
-
-            auto step = shape::getOffset(0, shapeOf(), stridesOf(), indices, rank);
-
-            if(type == 'c') {
-                outShapeInfo[1] = diagSize;
-                outShapeInfo[2] = 1;
-            }
-            else {
-                outShapeInfo[1] = 1;
-                outShapeInfo[2] = diagSize;
-            }
-            shape::updateStrides(outShapeInfo, order);
-
-            outShapeInfo[3] *= step;
-            outShapeInfo[4] *= step;
-            outShapeInfo[6] =  -1;
-        }
-
-        ArrayOptions::setDataType(outShapeInfo, this->dataType());
-
-        auto result = new NDArray(_buffer, outShapeInfo, _context, false, true);
-        
-        return result;
-    }
-
     void NDArray::streamline(char o) {
         char order = o == 'a' ? this->ordering() : o;
 
