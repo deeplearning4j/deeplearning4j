@@ -676,13 +676,14 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         Nd4jLong  rank = shape::rank(shape);
         int totalThreads = gridDim.x * blockDim.x;
         //const auto resultLength = shape::length(outputShape);
-        T* z = reinterpret_cast<T*>(buffer);
-        for (Nd4jLong i = blockIdx.x; i < rows; i += gridDim.x) {
-            for (Nd4jLong j = i; j < cols; j += totalThreads) {
+        for (Nd4jLong i = blockIdx.x; i < rows; i += blockDim.x) {
+            for (Nd4jLong j = threadIdx.x; j < cols; j += totalThreads) {
                 Nd4jLong coords[2] = {i, j};
                 Nd4jLong xOffset = shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), coords, rank);
-                if ((i + diagonal) <= j)
-                    z[xOffset] = value;
+                if (i + diagonal <= j)
+                    *(reinterpret_cast<T*>(buffer) + xOffset) = value;
+                else
+                    *(reinterpret_cast<T*>(buffer) + xOffset) = (T)119.f;
             }
         }
 
@@ -694,7 +695,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         Nd4jLong  rank = shape::rank(shape);
         int totalThreads = gridDim.x * blockDim.x;
         //const auto resultLength = shape::length(outputShape);
-        for (Nd4jLong i = blockIdx.x; i < rows; i += gridDim.x) {
+        for (Nd4jLong i = blockIdx.x; i < rows; i += blockDim.x) {
             for (int j = threadIdx.x; j < cols; j += totalThreads) {
                 Nd4jLong coords[2] = {i, j};
                 auto xOffset = shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), coords, rank);
