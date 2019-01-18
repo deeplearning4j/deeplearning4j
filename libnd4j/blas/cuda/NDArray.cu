@@ -671,16 +671,16 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 // Nd4jLong coords[2] = {i, j};
 // auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
     template <typename T>
-    static __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, T& value, int diagonal, Nd4jLong rows, Nd4jLong cols) {
+    static __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, T value, int diagonal, Nd4jLong rows, Nd4jLong cols) {
         //auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         Nd4jLong  rank = shape::rank(shape);
         int totalThreads = gridDim.x * blockDim.x;
         //const auto resultLength = shape::length(outputShape);
         T* z = reinterpret_cast<T*>(buffer);
-        for (Nd4jLong i = blockIdx.x; i < rows; i += blockDim.x) {
-            for (Nd4jLong j = threadIdx.x; j < cols; j += totalThreads) {
+        for (Nd4jLong i = blockIdx.x; i < rows; i += gridDim.x) {
+            for (Nd4jLong j = i; j < cols; j += totalThreads) {
                 Nd4jLong coords[2] = {i, j};
-                Nd4jLong xOffset = shape::getOffset(0, shape, shape::calcStrides(shape, rank), coords, rank);
+                Nd4jLong xOffset = shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), coords, rank);
                 if ((i + diagonal) <= j)
                     z[xOffset] = value;
             }
@@ -689,75 +689,75 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     }
 
     template <typename T>
-    static __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, T& value, int diagonal, Nd4jLong rows, Nd4jLong cols) {
+    static __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, T value, int diagonal, Nd4jLong rows, Nd4jLong cols) {
         //auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         Nd4jLong  rank = shape::rank(shape);
         int totalThreads = gridDim.x * blockDim.x;
         //const auto resultLength = shape::length(outputShape);
-        for (Nd4jLong i = blockIdx.x; i < rows; i += blockDim.x) {
+        for (Nd4jLong i = blockIdx.x; i < rows; i += gridDim.x) {
             for (int j = threadIdx.x; j < cols; j += totalThreads) {
                 Nd4jLong coords[2] = {i, j};
-                auto xOffset = shape::getOffset(0, shape, shape::calcStrides(shape, rank), coords, rank);
+                auto xOffset = shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), coords, rank);
                 if (i + diagonal >= j)
                     *(reinterpret_cast<T*>(buffer) + xOffset) = value;
             }
         }
 
     }
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, double& value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, double& value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, float& value,    int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, float& value,    int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, int& value,      int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, int& value,      int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, float16& value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, float16& value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, bfloat16& value, int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, bfloat16& value, int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, Nd4jLong& value, int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, Nd4jLong& value, int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, int16_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, int16_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, uint8_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, uint8_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, int8_t& value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, int8_t& value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, bool& value,     int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, bool& value,     int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, double value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, double value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, float value,    int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, float value,    int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, int value,      int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, int value,      int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, float16 value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, float16 value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, bfloat16 value, int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, bfloat16 value, int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, Nd4jLong value, int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, Nd4jLong value, int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, int16_t value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, int16_t value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, uint8_t value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, uint8_t value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, int8_t value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, int8_t value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, bool value,     int diagonal, Nd4jLong rows, Nd4jLong cols);
+    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, bool value,     int diagonal, Nd4jLong rows, Nd4jLong cols);
 
     template <typename T>
-    static void setDiagValueUpper(void* buffer, Nd4jLong* shape, T& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream) {
+    static void setDiagValueUpper(void* buffer, Nd4jLong* shape, T value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream) {
         dim3 launchDims(256, 512, 8192);
         setDiagValueUpperKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(buffer, shape, value, diagonal, rows, cols);
     }
 
     template <typename T>
-    static void setDiagValueLower(void* buffer, Nd4jLong* shape, T& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream) {
+    static void setDiagValueLower(void* buffer, Nd4jLong* shape, T value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream) {
         dim3 launchDims(256, 512, 8192);
         setDiagValueLowerKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(buffer, shape, value, diagonal, rows, cols);
     }
 
-    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, float& value,    int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, int& value,      int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, float16& value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, bfloat16& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, Nd4jLong& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, int16_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, uint8_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, int8_t& value,   int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, bool& value,     int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, double& value,   int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, float value,    int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, int value,      int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, float16 value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, bfloat16 value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, Nd4jLong value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, int16_t value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, uint8_t value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, int8_t value,   int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, bool value,     int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueUpper(void* buffer, Nd4jLong* shape, double value,   int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
 
-    template void setDiagValueLower(void* buffer, Nd4jLong* shape, float& value,    int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueLower(void* buffer, Nd4jLong* shape, int& value,      int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueLower(void* buffer, Nd4jLong* shape, float16& value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueLower(void* buffer, Nd4jLong* shape, bfloat16& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueLower(void* buffer, Nd4jLong* shape, Nd4jLong& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueLower(void* buffer, Nd4jLong* shape, int16_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueLower(void* buffer, Nd4jLong* shape, uint8_t& value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueLower(void* buffer, Nd4jLong* shape, int8_t& value,   int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueLower(void* buffer, Nd4jLong* shape, bool& value,     int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
-    template void setDiagValueLower(void* buffer, Nd4jLong* shape, double& value,   int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, float value,    int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, int value,      int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, float16 value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, bfloat16 value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, Nd4jLong value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, int16_t value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, uint8_t value,  int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, int8_t value,   int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, bool value,     int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+    template void setDiagValueLower(void* buffer, Nd4jLong* shape, double value,   int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
     ////////////////////////////////////////////////////////////////////////
     template<typename T>
     void NDArray::setValueInDiagMatrix(const T& value, const int diag, const char direction) {
@@ -790,7 +790,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             default:
                 throw std::string("NDArray::setValueInDiagMatrix method: wrong value of direction argument, expected is 'u' or 'l', but got " + std::string(1,direction) + " instead !");
         }
-
+        tickWriteDevice();
     }
     template void NDArray::setValueInDiagMatrix(const double& value, const int diag, const char direction);
     template void NDArray::setValueInDiagMatrix(const float& value, const int diag, const char direction);
