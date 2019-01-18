@@ -86,7 +86,7 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
 	if(numOfNonZeroWeights.reduceNumber(reduce::Sum).e<double>(0) == 0.)
 		*output = 0.;
 	else
-        E.reduceNumber(reduce::Sum, *output);
+		E.reduceNumber(reduce::Sum, *output);
     
     if(weightsBroad != weights)
     	delete weightsBroad;

@@ -62,7 +62,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss, 3, 1, false, 0, 1) {
 			break;
 		
 		case 1: {											// 1 - "weighted_sum", output is scalar and equal to sum of all elements of E array
-            E.reduceNumber(reduce::Sum, *output);
+			E.reduceNumber(reduce::Sum, *output);
 			break;
 		}
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of all elements of weightsBroad array
@@ -91,7 +91,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss, 3, 1, false, 0, 1) {
 			if (numOfNonZeroWeights == 0)
 				(*output) = 0.;
 			else
-                output->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
+				output->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
 			break;
 		}
 	}
