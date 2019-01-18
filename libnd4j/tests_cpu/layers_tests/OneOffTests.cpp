@@ -371,3 +371,22 @@ TEST_F(OneOffTests, test_reduce_all_1) {
 
     delete graph;
 }
+
+TEST_F(OneOffTests, test_mobilenet_1) {
+    //Environment::getInstance()->setDebug(true);
+    //Environment::getInstance()->setVerbose(true);
+    auto graph = GraphExecutioner::importFromFlatBuffers("./resources/resnetv2_imagenet_frozen_graph.fb");
+
+    ASSERT_TRUE(graph != nullptr);
+
+    graph->printOut();
+
+    auto input = NDArrayFactory::create_<float>('c', {1, 224, 224, 3});
+    auto variable = new Variable(input, "input_tensor");
+    graph->getVariableSpace()->replaceVariable(variable);
+
+    Nd4jStatus status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+
+    delete graph;
+}
