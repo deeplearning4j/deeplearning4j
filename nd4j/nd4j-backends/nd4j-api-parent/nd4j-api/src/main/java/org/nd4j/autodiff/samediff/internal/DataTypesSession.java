@@ -32,7 +32,7 @@ public class DataTypesSession extends AbstractSession<DataType, DataTypesSession
     }
 
     @Override
-    public DataTypeCalc getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> inputs, Set<String> constAndPhInputs, Map<String, DataType> placeholderValues) {
+    public DataTypeCalc getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs, Map<String, DataType> placeholderValues) {
         DifferentialFunction df = sameDiff.getFunctionById(opName);
         List<DataType> inputDataTypes = new ArrayList<>();
         for(SDVariable v : df.args()){
