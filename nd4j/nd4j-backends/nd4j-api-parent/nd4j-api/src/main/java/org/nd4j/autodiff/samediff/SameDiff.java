@@ -129,8 +129,6 @@ public class SameDiff {
     @Getter
     private final Map<String,SameDiffOp> ops = new HashMap<>();
     @Getter
-    private final Map<Long,ShapeSession> shapes = new ConcurrentHashMap<>();
-    @Getter
     private final Map<Long,InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
 
     private final Map<String,DeviceLocalNDArray> constantArrays = new ConcurrentHashMap<>();

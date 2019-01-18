@@ -126,8 +126,8 @@ public class TFGraphTestAllSameDiff {
             "alpha_dropout/.*",
             "layers_dropout/.*",
 
-            //2019/01/16 - "No variables are available for execution at execution step X"
-            "simplewhile.*",
+            //2019/01/16 - "IllegalStateException: Expected exactly 1 op input, got null+null"
+            "simplewhile_nested",
 
             //2019/01/16 - "org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter cannot be cast to org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray"
             //Doesn't seem like a valid structure, based on the docs

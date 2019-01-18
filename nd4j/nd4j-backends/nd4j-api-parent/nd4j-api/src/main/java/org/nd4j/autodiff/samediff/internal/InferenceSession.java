@@ -361,7 +361,8 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     }
 
     @Override
-    public DifferentialFunction getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<String> constAndPhInputs, Map<String,INDArray> placeholderValues) {
+    public DifferentialFunction getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
+                                                     Set<String> constAndPhInputs, Map<String,INDArray> placeholderValues) {
 
         DifferentialFunction df = sameDiff.getFunctionById(opName);
 
@@ -381,13 +382,14 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         String[] argNames = df.argNames();
         int numArgs = (argNames == null ? 0 : argNames.length);
         int numNonConstIns = (opInputs == null ? 0 : opInputs.size());
+        int numNonConstInsAllIters = (allIterInputs == null ? 0 : allIterInputs.size());
         int numConstPhIns = (constAndPhInputs == null ? 0 : constAndPhInputs.size());
-        if(numArgs != (numNonConstIns + numConstPhIns)){
+        if(numArgs != (numNonConstIns + numConstPhIns + numNonConstInsAllIters)){
             if(numArgs > 1){
                 //Might be due to repeated inputs
                 Set<String> uniqueArgNames = new HashSet<>();
                 Collections.addAll(uniqueArgNames, argNames);
-                Preconditions.checkState(uniqueArgNames.size() == (numNonConstIns + numConstPhIns),
+                Preconditions.checkState(uniqueArgNames.size() == (numNonConstIns + numConstPhIns + numNonConstInsAllIters),
                         "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
                         opName, uniqueArgNames, opInputs, constAndPhInputs);
             } else {
@@ -413,6 +415,14 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                         if(vid.getVariable().equals(s)){
                             args[i] = this.nodeOutputs.get(vid);
                             break;
+                        }
+                    }
+                    if(args[i] == null && allIterInputs != null){
+                        for(VarId vid : allIterInputs){
+                            if(vid.getVariable().equals(s)){
+                                args[i] = this.nodeOutputs.get(vid);
+                                break;
+                            }
                         }
                     }
                 }
