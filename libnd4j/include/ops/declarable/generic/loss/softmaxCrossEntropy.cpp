@@ -92,7 +92,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 			break;
 		
 		case 1: {											// 1 - "weighted_sum", output is scalar and equal to sum of all elements of E array
-			*output = E.reduceNumber(reduce::Sum);
+            E.reduceNumber(reduce::Sum, *output);
 			break;
 		}
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of all elements of weightsBroad array
@@ -105,7 +105,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 			if (sum == 0.)
 				*output = 0.;
 			else 
-				*output = E.reduceNumber(reduce::Sum) / sum;
+				output->assign(E.reduceNumber(reduce::Sum) / sum);
 			break;
 		}
 		case 3: {											// 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E array divided by number of non-zero weights
@@ -120,8 +120,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 
 			if (numOfNonZeroWeights == 0)
 				*output = 0.;
-			else 
-				*output = E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights);
+			else
+				output->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
 
 			break;
 		}
