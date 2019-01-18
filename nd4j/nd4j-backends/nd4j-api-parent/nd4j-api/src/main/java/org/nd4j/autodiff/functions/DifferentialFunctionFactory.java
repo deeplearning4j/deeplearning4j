@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.NoOp;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
+import org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches;
 import org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss;
 import org.nd4j.linalg.api.ops.impl.loss.bp.*;
@@ -93,6 +94,7 @@ import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
 import org.nd4j.linalg.api.ops.random.impl.*;
+import org.nd4j.linalg.api.ops.random.impl.Linspace;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -179,6 +181,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable linspace(double lower, double upper, long count) {
         return new Linspace(sameDiff(), lower, upper, count).outputVariable();
+    }
+
+    public SDVariable linspace(SDVariable lower, SDVariable upper, SDVariable count, DataType dt) {
+        return new org.nd4j.linalg.api.ops.impl.shape.Linspace(sameDiff(), lower, upper, count, dt).outputVariable();
     }
 
     public SDVariable range(double from, double to, double step) {
@@ -475,6 +481,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable col2Im(SDVariable input, Conv2DConfig config) {
         return new Col2Im(sameDiff(), input, config).outputVariable();
+    }
+
+    public SDVariable extractImagePatches(SDVariable input, int kH, int kW, int sH, int sW, int rH, int rW, boolean sameMode){
+        return new ExtractImagePatches(sameDiff(), input, new int[]{kH, kW}, new int[]{sH, sW}, new int[]{rH, rW}, sameMode).outputVariable();
     }
 
     public SDVariable[] moments(SDVariable input, int... axes) {

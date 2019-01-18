@@ -1949,7 +1949,6 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
-
     /**
      * Create an SDVariable with a fixed/constant value, with a generated name
      * @param constant Value for the constant SDVariable
@@ -2024,6 +2023,11 @@ public class SameDiff {
      */
     public SDVariable linspace(String name, double start, double stop, long number) {
         SDVariable ret = f().linspace(start, stop, number);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable linspace(String name, SDVariable from, SDVariable to, SDVariable length, DataType dt){
+        SDVariable ret = f().linspace(from, to, length, dt);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -3410,6 +3414,25 @@ public class SameDiff {
      */
     public SDVariable col2Im(String name, SDVariable in, Conv2DConfig config) {
         SDVariable ret = f().col2Im(in, config);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Extract image patches
+     *
+     * @param name     Name of the output variable
+     * @param input    Input array. Must be rank 4, with shape [minibatch, height, width, channels]
+     * @param kH       Kernel height
+     * @param kW       Kernel width
+     * @param sH       Stride height
+     * @param sW       Stride width
+     * @param rH       Rate height
+     * @param rW       Rate width
+     * @param sameMode If true: use same mode padding. If false
+     * @return
+     */
+    public SDVariable extractImagePatches(String name, SDVariable input, int kH, int kW, int sH, int sW, int rH, int rW, boolean sameMode){
+        SDVariable ret = f().extractImagePatches(input, kH, kW, sH, sW, rH, rW, sameMode);
         return updateVariableNameAndReference(ret, name);
     }
 

@@ -48,7 +48,7 @@ public class TFGraphTestZooModels {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
-    private static File currentTestDir;
+    public static File currentTestDir;
 
     public static final File BASE_MODEL_DL_DIR = new File(getBaseModelDir(), ".nd4jtests");
 

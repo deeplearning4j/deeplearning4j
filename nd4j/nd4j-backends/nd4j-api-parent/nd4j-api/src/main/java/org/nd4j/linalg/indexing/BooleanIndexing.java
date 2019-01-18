@@ -16,24 +16,21 @@
 
 package org.nd4j.linalg.indexing;
 
-import com.google.common.base.Function;
 import lombok.NonNull;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
 import org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Choose;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Choose;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.BaseCondition;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Boolean indexing
@@ -41,7 +38,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Adam Gibson
  */
 public class BooleanIndexing {
-
 
     /**
      * And over the whole ndarray given some condition
@@ -61,17 +57,7 @@ public class BooleanIndexing {
                 return false;
 
         } else {
-            boolean ret = true;
-            final AtomicBoolean a = new AtomicBoolean(ret);
-            Shape.iterate(n, new CoordinateFunction() {
-                @Override
-                public void process(long[]... coord) {
-                    if (a.get())
-                        a.compareAndSet(true, a.get() && cond.apply(n.getDouble(coord[0])));
-                }
-            });
-
-            return a.get();
+            throw new RuntimeException("Can only execute BaseCondition conditions using this method");
         }
     }
 
@@ -150,73 +136,7 @@ public class BooleanIndexing {
                 return false;
 
         } else {
-            boolean ret = false;
-            final AtomicBoolean a = new AtomicBoolean(ret);
-            Shape.iterate(n, new CoordinateFunction() {
-                @Override
-                public void process(long[]... coord) {
-                    if (!a.get())
-                        a.compareAndSet(false, a.get() || cond.apply(n.getDouble(coord[0])));
-                }
-            });
-
-            return a.get();
-        }
-    }
-
-    /**
-     * Based on the matching elements
-     * op to based on condition to with function
-     *
-     * @param to        the ndarray to op
-     * @param condition the condition on op
-     * @param function  the function to apply the op to
-     */
-    public static void applyWhere(final INDArray to, final Condition condition,
-                                  final Function<Number, Number> function) {
-        // keep original java implementation for dynamic
-
-        Shape.iterate(to, new CoordinateFunction() {
-            @Override
-            public void process(long[]... coord) {
-                if (condition.apply(to.getDouble(coord[0])))
-                    to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).doubleValue());
-
-            }
-        });
-    }
-
-    /**
-     * This method sets provided number to all elements which match specified condition
-     *
-     * @param to
-     * @param condition
-     * @param number
-     */
-    public static void applyWhere(final INDArray to, final Condition condition, final Number number) {
-        if (condition instanceof BaseCondition) {
-            // for all static conditions we go native
-
-            Nd4j.getExecutioner().exec(new CompareAndSet(to, number.doubleValue(), condition));
-
-        } else {
-            final double value = number.doubleValue();
-
-            final Function<Number, Number> dynamic = new Function<Number, Number>() {
-                @Override
-                public Number apply(Number number) {
-                    return value;
-                }
-            };
-
-            Shape.iterate(to, new CoordinateFunction() {
-                @Override
-                public void process(long[]... coord) {
-                    if (condition.apply(to.getDouble(coord[0])))
-                        to.putScalar(coord[0], dynamic.apply(to.getDouble(coord[0])).doubleValue());
-
-                }
-            });
+            throw new RuntimeException("Can only execute BaseCondition conditions using this method");
         }
     }
 
@@ -345,29 +265,6 @@ public class BooleanIndexing {
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
         Nd4j.getExecutioner().exec(new CompareAndSet(to, set.doubleValue(), condition));
-    }
-
-    /**
-     * Based on the matching elements
-     * op to based on condition to with function
-     *
-     * @param to        the ndarray to op
-     * @param condition the condition on op
-     * @param function  the function to apply the op to
-     */
-    public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function,
-                                  final Function<Number, Number> alternativeFunction) {
-        Shape.iterate(to, new CoordinateFunction() {
-            @Override
-            public void process(long[]... coord) {
-                if (condition.apply(to.getDouble(coord[0]))) {
-                    to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).doubleValue());
-                } else {
-                    to.putScalar(coord[0], alternativeFunction.apply(to.getDouble(coord[0])).doubleValue());
-                }
-            }
-        });
-
     }
 
     /**

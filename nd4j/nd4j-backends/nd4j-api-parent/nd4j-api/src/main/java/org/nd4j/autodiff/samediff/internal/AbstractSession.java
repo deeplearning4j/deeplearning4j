@@ -116,8 +116,8 @@ public abstract class AbstractSession<T, O> {
         Preconditions.checkState(sdPlaceholders == null || sdPlaceholders.isEmpty()
                         || (placeholderValues != null && placeholderValues.size() == sdPlaceholders.size() &&
                         placeholderValues.keySet().containsAll(sdPlaceholders)),
-                "Invalid placeholders: SameDiff instance has placeholders %s, got placeholders %s", sdPlaceholders,
-                (placeholderValues == null ? null : placeholderValues.keySet()));
+                "Attempting to perform inference with invalid placeholders: SameDiff instance has placeholder variables %s, placeholders provided for inference: %s",
+                sdPlaceholders, (placeholderValues == null ? null : placeholderValues.keySet()));
 
 
         //Step 0: validation - that variables exist, placeholders have arrays, etc
