@@ -172,6 +172,15 @@ namespace nd4j {
         return false;
     }
 
+    bool BlasHelper:: hasGEMM(const nd4j::DataType dtype) const {
+        if(dtype == DataType::FLOAT32)
+            return _hasSgemm;
+        if(dtype == DataType::DOUBLE)
+            return _hasDgemm;
+        return false;
+    }
+
+
     template <>
     bool BlasHelper::hasBatchedGEMM<float>() {
         return _hasSgemmBatch;
