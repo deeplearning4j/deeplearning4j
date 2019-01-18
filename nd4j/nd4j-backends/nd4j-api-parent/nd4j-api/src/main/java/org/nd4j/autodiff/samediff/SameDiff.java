@@ -3418,6 +3418,25 @@ public class SameDiff {
     }
 
     /**
+     * Extract image patches
+     *
+     * @param name     Name of the output variable
+     * @param input    Input array. Must be rank 4, with shape [minibatch, height, width, channels]
+     * @param kH       Kernel height
+     * @param kW       Kernel width
+     * @param sH       Stride height
+     * @param sW       Stride width
+     * @param rH       Rate height
+     * @param rW       Rate width
+     * @param sameMode If true: use same mode padding. If false
+     * @return
+     */
+    public SDVariable extractImagePatches(String name, SDVariable input, int kH, int kW, int sH, int sW, int rH, int rW, boolean sameMode){
+        SDVariable ret = f().extractImagePatches(input, kH, kW, sH, sW, rH, rW, sameMode);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * Create a new scalar (rank 0) SDVariable with the specified value
      * @param name  Name of the SDVariable
      * @param value Value to initialize the variable with
