@@ -253,35 +253,35 @@ Seq[Any](format.raw/*1.40*/("""
         </div><!--End Row Fluid-->
 
         <!-- Start JavaScript-->
-        """),format.raw/*232.67*/("""
-        """),format.raw/*233.9*/("""<script src="/assets/webjars/jquery/1.9.1/jquery.min.js"></script>
-        """),format.raw/*234.75*/("""
-        """),format.raw/*235.9*/("""<script src="/assets/webjars/jquery-migrate/1.2.1/jquery-migrate.min.js"></script>
-        """),format.raw/*236.78*/("""
-        """),format.raw/*237.9*/("""<!-- TODO CAN'T FIND NEXT 2 in jquery-ui -->
-        <script src="/webjars/jquery-ui/1.10.2/jquery-ui.custom.min.js"></script>
-        <script src="/assets/js/jquery.ui.touch-punch.js"></script>
+        <script src="/assets/webjars/jquery/1.9.1/jquery.min.js"></script>
+        <script src="/assets/webjars/jquery-migrate/1.2.1/jquery-migrate.min.js"></script>
+        <!-- TODO CAN'T FIND NEXT 2 in jquery-ui -->
+        <script src="/assets/js/jquery-ui-1.10.0.custom.min.js"></script>
+        """),format.raw/*236.86*/("""
+        """),format.raw/*237.9*/("""<script src="/assets/js/jquery.ui.touch-punch.js"></script>
+
         <script src="/assets/webjars/modernizr/2.6.2/modernizr.js"></script>
         <script src="/assets/webjars/bootstrap/2.3.1/js/bootstrap.min.js"></script>
-        """),format.raw/*242.64*/("""
-        """),format.raw/*243.9*/("""<script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js"></script>
-        """),format.raw/*244.67*/("""
-        """),format.raw/*245.9*/("""<script src="/assets/webjars/fullcalendar/fullcalendar.min.js"></script>
-        """),format.raw/*246.39*/("""
-        """),format.raw/*247.9*/("""<script src="/assets/js/jquery.dataTables.min.js"></script>
-        """),format.raw/*248.59*/("""
-        """),format.raw/*249.9*/("""<script src="/assets/webjars/excanvas/3/excanvas.js"></script>
-        <script src="/assets/js/jquery.flot.js"></script>
-        <script src="/assets/js/jquery.flot.pie.js"></script>
-        <script src="/assets/js/jquery.flot.stack.js"></script>
-        <script src="/assets/js/jquery.flot.resize.min.js"></script>
-        <script src="/assets/js/jquery.flot.selection.js"></script>
-        <script src="/assets/js/jquery.chosen.min.js"></script>
-        <script src="/assets/js/jquery.uniform.min.js"></script>
-        <script src="/assets/js/jquery.cleditor.min.js"></script>
-        <script src="/assets/js/jquery.noty.js"></script>
+        <script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js"></script>
+        <script src="/assets/webjars/fullcalendar/fullcalendar.min.js"></script>
+        <script src="/assets/webjars/excanvas/3/excanvas.js"></script>
+        <script src="/assets/webjars/retinajs/0.0.2/retina.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.pie.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.stack.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.resize.min.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.selection.js"></script>
+        <script src="/assets/webjars/chosen/0.9.8/chosen/chosen.jquery.min.js"></script>
+        <script src="/assets/webjars/uniform/2.1.2/jquery.uniform.min.js"></script>
+        <script src="/assets/webjars/noty/2.2.2/jquery.noty.packaged.js"></script>
+        <script src="/assets/webjars/jquery-raty/2.5.2/jquery.raty.min.js"></script>
+
+        <script src="/assets/js/train/overview.js"></script>    <!-- Charts and tables are generated here! -->
+        <script src="/assets/js/train/train.js"></script>   <!-- Common (lang selection, etc) -->
+
+        """),format.raw/*258.39*/("""
+        """),format.raw/*259.9*/("""<script src="/assets/js/jquery.cleditor.min.js"></script>
         <script src="/assets/js/jquery.elfinder.min.js"></script>
-        <script src="/assets/js/jquery.raty.min.js"></script>
         <script src="/assets/js/jquery.iphone.toggle.js"></script>
         <script src="/assets/js/jquery.uploadify-3.1.min.js"></script>
         <script src="/assets/js/jquery.gritter.min.js"></script>
@@ -290,23 +290,21 @@ Seq[Any](format.raw/*1.40*/("""
         <script src="/assets/js/jquery.knob.modified.js"></script>
         <script src="/assets/js/jquery.sparkline.min.js"></script>
         <script src="/assets/js/counter.js"></script>
-        """),format.raw/*269.57*/("""
-        """),format.raw/*270.9*/("""<script src="/assets/webjars/retinajs/0.0.2/retina.js"></script>
-        <script src="/assets/js/train/overview.js"></script>    <!-- Charts and tables are generated here! -->
-        <script src="/assets/js/train/train.js"></script>   <!-- Common (lang selection, etc) -->
+
+        <script src="/assets/js/jquery.dataTables.min.js"></script>
 
         <!-- Execute once on page load -->
         <script>
-                $(document).ready(function () """),format.raw/*276.47*/("""{"""),format.raw/*276.48*/("""
-                    """),format.raw/*277.21*/("""renderOverviewPage(true);
-                """),format.raw/*278.17*/("""}"""),format.raw/*278.18*/(""");
+                $(document).ready(function () """),format.raw/*274.47*/("""{"""),format.raw/*274.48*/("""
+                    """),format.raw/*275.21*/("""renderOverviewPage(true);
+                """),format.raw/*276.17*/("""}"""),format.raw/*276.18*/(""");
         </script>
 
             <!-- Execute periodically (every 2 sec) -->
         <script>
-                setInterval(function () """),format.raw/*283.41*/("""{"""),format.raw/*283.42*/("""
-                    """),format.raw/*284.21*/("""renderOverviewPage(false);
-                """),format.raw/*285.17*/("""}"""),format.raw/*285.18*/(""", 2000);
+                setInterval(function () """),format.raw/*281.41*/("""{"""),format.raw/*281.42*/("""
+                    """),format.raw/*282.21*/("""renderOverviewPage(false);
+                """),format.raw/*283.17*/("""}"""),format.raw/*283.18*/(""", 2000);
         </script>
             <!-- End JavaScript-->
 
@@ -332,11 +330,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingOverview extends TrainingOverview_Scope0.TrainingOverview
               /*
                   -- GENERATED --
-                  DATE: Sat Jan 19 14:03:13 AEDT 2019
+                  DATE: Sat Jan 19 14:25:32 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingOverview.scala.html
-                  HASH: 8b53203071eb4c28a131bed8512c9328137716a4
-                  MATRIX: 604->1|737->39|765->41|1683->932|1696->936|1747->966|2379->1811|2416->1821|3534->2912|3547->2916|3598->2946|3746->3067|3759->3071|3814->3105|3868->3131|4184->3420|4197->3424|4259->3465|4313->3491|5067->4217|5081->4221|5136->4254|5285->4375|5299->4379|5351->4409|5505->4535|5519->4539|5572->4570|5647->4747|5705->4777|5884->4928|5898->4932|5953->4965|8685->7669|8699->7673|8767->7719|9055->7979|9069->7983|9143->8034|9210->8072|9271->8105|9285->8109|9354->8155|9421->8193|9839->8583|9853->8587|9920->8632|10237->8921|10251->8925|10324->8975|10565->9188|10579->9192|10649->9240|10888->9451|10902->9455|10972->9503|11211->9714|11225->9718|11296->9767|11537->9980|11551->9984|11626->10036|11870->10252|11884->10256|11957->10306|12199->10520|12213->10524|12293->10581|12542->10802|12556->10806|12632->10859|12877->11076|12891->11080|12968->11134|13565->11703|13579->11707|13653->11759|13961->12039|13975->12043|14055->12100|14122->12138|14243->12231|14257->12235|14337->12292|14404->12330|14511->12409|14525->12413|14593->12459|15023->12861|15037->12865|15105->12911|15445->13222|15460->13226|15539->13282|15715->13429|15730->13433|15807->13487|15979->13630|15994->13634|16069->13686|16392->13981|16406->13985|16480->14036|16547->14074|16668->14167|16682->14171|16756->14222|16823->14260|16930->14339|16944->14343|17012->14389|17424->14830|17462->14840|17567->14982|17605->14992|17726->15153|17764->15163|18162->15587|18200->15597|18317->15743|18355->15753|18466->15865|18504->15875|18602->15994|18640->16004|19984->17367|20022->17377|20438->17764|20468->17765|20519->17787|20591->17830|20621->17831|20790->17971|20820->17972|20871->17994|20944->18038|20974->18039
-                  LINES: 20->1|25->1|26->2|48->24|48->24|48->24|57->33|58->34|83->59|83->59|83->59|85->61|85->61|85->61|86->62|91->67|91->67|91->67|92->68|108->84|108->84|108->84|109->85|109->85|109->85|110->86|110->86|110->86|111->87|112->88|113->89|113->89|113->89|151->127|151->127|151->127|155->131|155->131|155->131|156->132|156->132|156->132|156->132|157->133|165->141|165->141|165->141|170->146|170->146|170->146|174->150|174->150|174->150|178->154|178->154|178->154|182->158|182->158|182->158|186->162|186->162|186->162|190->166|190->166|190->166|194->170|194->170|194->170|198->174|198->174|198->174|202->178|202->178|202->178|216->192|216->192|216->192|220->196|220->196|220->196|221->197|222->198|222->198|222->198|223->199|224->200|224->200|224->200|232->208|232->208|232->208|234->210|234->210|234->210|235->211|235->211|235->211|236->212|236->212|236->212|241->217|241->217|241->217|242->218|243->219|243->219|243->219|244->220|245->221|245->221|245->221|256->232|257->233|258->234|259->235|260->236|261->237|266->242|267->243|268->244|269->245|270->246|271->247|272->248|273->249|293->269|294->270|300->276|300->276|301->277|302->278|302->278|307->283|307->283|308->284|309->285|309->285
+                  HASH: e66fa3404138083845c3899c35bcffecd2665b9e
+                  MATRIX: 604->1|737->39|765->41|1683->932|1696->936|1747->966|2379->1811|2416->1821|3534->2912|3547->2916|3598->2946|3746->3067|3759->3071|3814->3105|3868->3131|4184->3420|4197->3424|4259->3465|4313->3491|5067->4217|5081->4221|5136->4254|5285->4375|5299->4379|5351->4409|5505->4535|5519->4539|5572->4570|5647->4747|5705->4777|5884->4928|5898->4932|5953->4965|8685->7669|8699->7673|8767->7719|9055->7979|9069->7983|9143->8034|9210->8072|9271->8105|9285->8109|9354->8155|9421->8193|9839->8583|9853->8587|9920->8632|10237->8921|10251->8925|10324->8975|10565->9188|10579->9192|10649->9240|10888->9451|10902->9455|10972->9503|11211->9714|11225->9718|11296->9767|11537->9980|11551->9984|11626->10036|11870->10252|11884->10256|11957->10306|12199->10520|12213->10524|12293->10581|12542->10802|12556->10806|12632->10859|12877->11076|12891->11080|12968->11134|13565->11703|13579->11707|13653->11759|13961->12039|13975->12043|14055->12100|14122->12138|14243->12231|14257->12235|14337->12292|14404->12330|14511->12409|14525->12413|14593->12459|15023->12861|15037->12865|15105->12911|15445->13222|15460->13226|15539->13282|15715->13429|15730->13433|15807->13487|15979->13630|15994->13634|16069->13686|16392->13981|16406->13985|16480->14036|16547->14074|16668->14167|16682->14171|16756->14222|16823->14260|16930->14339|16944->14343|17012->14389|17721->15146|17759->15156|19304->16702|19342->16712|20208->17549|20238->17550|20289->17572|20361->17615|20391->17616|20560->17756|20590->17757|20641->17779|20714->17823|20744->17824
+                  LINES: 20->1|25->1|26->2|48->24|48->24|48->24|57->33|58->34|83->59|83->59|83->59|85->61|85->61|85->61|86->62|91->67|91->67|91->67|92->68|108->84|108->84|108->84|109->85|109->85|109->85|110->86|110->86|110->86|111->87|112->88|113->89|113->89|113->89|151->127|151->127|151->127|155->131|155->131|155->131|156->132|156->132|156->132|156->132|157->133|165->141|165->141|165->141|170->146|170->146|170->146|174->150|174->150|174->150|178->154|178->154|178->154|182->158|182->158|182->158|186->162|186->162|186->162|190->166|190->166|190->166|194->170|194->170|194->170|198->174|198->174|198->174|202->178|202->178|202->178|216->192|216->192|216->192|220->196|220->196|220->196|221->197|222->198|222->198|222->198|223->199|224->200|224->200|224->200|232->208|232->208|232->208|234->210|234->210|234->210|235->211|235->211|235->211|236->212|236->212|236->212|241->217|241->217|241->217|242->218|243->219|243->219|243->219|244->220|245->221|245->221|245->221|260->236|261->237|282->258|283->259|298->274|298->274|299->275|300->276|300->276|305->281|305->281|306->282|307->283|307->283
                   -- GENERATED --
               */
           
