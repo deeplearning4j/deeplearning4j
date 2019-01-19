@@ -667,7 +667,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sigmoidDerivative(INDArray ndArray) {
-        return sigmoid(ndArray, true);
+        return sigmoidDerivative(ndArray, true);
     }
 
     /**
