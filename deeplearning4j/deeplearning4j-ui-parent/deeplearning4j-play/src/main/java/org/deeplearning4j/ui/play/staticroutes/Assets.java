@@ -42,15 +42,22 @@ public class Assets implements Function<String, Result> {
 
     @Override
     public Result apply(String s) {
-        String fullPath = assetsRootDirectory + s;
+
+        String fullPath;
+        if(s.startsWith("webjars/")){
+            fullPath = "META-INF/resources/" + s;
+        } else {
+             fullPath = assetsRootDirectory + s;
+        }
+
+//        log.info("REQUESTED: {}", s);
+//        log.info("FULL PATH: {}", fullPath);
 
         InputStream inputStream;
         try {
             inputStream = new ClassPathResource(fullPath).getInputStream();
-        } catch (Exception e) {
-            log.debug("Could not find asset: {}", s);
-            return ok();
         } catch (Throwable t) {
+            log.warn("Could not find asset: {}", s, t);
             return ok();
         }
 
@@ -65,6 +72,7 @@ public class Assets implements Function<String, Result> {
             ct = "application/octet-stream";
         }
 
+        log.info("PATH CONTENT TYPE: {} - {}", ct, s);
         return ok(inputStream).as(ct);
     }
 }
