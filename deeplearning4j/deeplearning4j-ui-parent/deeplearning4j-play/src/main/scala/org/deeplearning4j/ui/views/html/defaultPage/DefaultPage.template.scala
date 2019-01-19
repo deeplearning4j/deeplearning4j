@@ -1,18 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
 
 package org.deeplearning4j.ui.views.html.defaultPage
 
@@ -37,7 +22,23 @@ class DefaultPage extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appendable
       {
 
 
-Seq[Any](format.raw/*1.1*/("""<html>
+Seq[Any](format.raw/*1.1*/("""<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright (c) 2015-2018 Skymind, Inc.
+  ~
+  ~ This program and the accompanying materials are made available under the
+  ~ terms of the Apache License, Version 2.0 which is available at
+  ~ https://www.apache.org/licenses/LICENSE-2.0.
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  ~ SPDX-License-Identifier: Apache-2.0
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<html>
     <head>
         <title>DeepLearning4j UI</title>
         <meta charset="utf-8" />
@@ -57,36 +58,36 @@ Seq[Any](format.raw/*1.1*/("""<html>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 
         <style>
-        body """),format.raw/*21.14*/("""{"""),format.raw/*21.15*/("""
-            """),format.raw/*22.13*/("""font-family: 'Roboto', sans-serif;
+        body """),format.raw/*37.14*/("""{"""),format.raw/*37.15*/("""
+            """),format.raw/*38.13*/("""font-family: 'Roboto', sans-serif;
             color: #333;
             font-weight: 300;
             font-size: 16px;
-        """),format.raw/*26.9*/("""}"""),format.raw/*26.10*/("""
-        """),format.raw/*27.9*/(""".hd """),format.raw/*27.13*/("""{"""),format.raw/*27.14*/("""
-            """),format.raw/*28.13*/("""background-color: #000000;
+        """),format.raw/*42.9*/("""}"""),format.raw/*42.10*/("""
+        """),format.raw/*43.9*/(""".hd """),format.raw/*43.13*/("""{"""),format.raw/*43.14*/("""
+            """),format.raw/*44.13*/("""background-color: #000000;
             font-size: 18px;
             color: #FFFFFF;
-        """),format.raw/*31.9*/("""}"""),format.raw/*31.10*/("""
-        """),format.raw/*32.9*/(""".block """),format.raw/*32.16*/("""{"""),format.raw/*32.17*/("""
-            """),format.raw/*33.13*/("""width: 250px;
+        """),format.raw/*47.9*/("""}"""),format.raw/*47.10*/("""
+        """),format.raw/*48.9*/(""".block """),format.raw/*48.16*/("""{"""),format.raw/*48.17*/("""
+            """),format.raw/*49.13*/("""width: 250px;
             height: 350px;
             display: inline-block;
 
             margin-right: 64px;
-        """),format.raw/*38.9*/("""}"""),format.raw/*38.10*/("""
-        """),format.raw/*39.9*/(""".hd-small """),format.raw/*39.19*/("""{"""),format.raw/*39.20*/("""
-            """),format.raw/*40.13*/("""background-color: #000000;
+        """),format.raw/*54.9*/("""}"""),format.raw/*54.10*/("""
+        """),format.raw/*55.9*/(""".hd-small """),format.raw/*55.19*/("""{"""),format.raw/*55.20*/("""
+            """),format.raw/*56.13*/("""background-color: #000000;
             font-size: 14px;
             color: #FFFFFF;
-        """),format.raw/*43.9*/("""}"""),format.raw/*43.10*/("""
-        """),format.raw/*44.9*/("""</style>
+        """),format.raw/*59.9*/("""}"""),format.raw/*59.10*/("""
+        """),format.raw/*60.9*/("""</style>
 
             <!-- Booststrap Notify plugin-->
         <script src="./assets/bootstrap-notify.min.js"></script>
 
-        """),format.raw/*49.56*/("""
-    """),format.raw/*50.5*/("""</head>
+        """),format.raw/*65.56*/("""
+    """),format.raw/*66.5*/("""</head>
     <body>
         <table style="width: 100%; padding: 5px;" class="hd">
             <tbody>
@@ -111,8 +112,8 @@ Seq[Any](format.raw/*1.1*/("""<html>
             <div class="block">
                     <!-- TSNE block. It's session-dependant. -->
                 <b>T-SNE</b><br/><br/>
-                """),format.raw/*75.181*/("""
-                """),format.raw/*76.17*/("""<a href="#"><img src="./assets/i_plot.img" border="0" style="opacity: 1.0" id="TSNE"/></a><br/><br/>
+                """),format.raw/*91.181*/("""
+                """),format.raw/*92.17*/("""<a href="#"><img src="./assets/i_plot.img" border="0" style="opacity: 1.0" id="TSNE"/></a><br/><br/>
                 <div style="text-align: left; margin: 5px;">
                         &nbsp;Plot T-SNE data uploaded by user or retrieved from DL4j.
                 </div>
@@ -129,8 +130,8 @@ Seq[Any](format.raw/*1.1*/("""<html>
 
             <div class="block">
                 <b>Activations</b><br/><br/>
-                """),format.raw/*93.206*/("""
-                """),format.raw/*94.17*/("""<a href="#"><img src="./assets/i_ladder.img" border="0"  style="opacity: 0.2" id="ACTIVATIONS" /></a><br/><br/>
+                """),format.raw/*109.206*/("""
+                """),format.raw/*110.17*/("""<a href="#"><img src="./assets/i_ladder.img" border="0"  style="opacity: 0.2" id="ACTIVATIONS" /></a><br/><br/>
                 <div style="text-align: left; margin: 5px;">
                         &nbsp;Activations retrieved from Convolution Neural network.
                 </div>
@@ -139,8 +140,8 @@ Seq[Any](format.raw/*1.1*/("""<html>
             <div class="block">
                     <!-- Histogram block. It's session-dependant block -->
                 <b>Histograms &amp; Score</b><br/><br/>
-                """),format.raw/*103.194*/("""
-                """),format.raw/*104.17*/("""<a href="#"><img id="HISTOGRAM" src="./assets/i_histo.img" border="0" style="opacity: 0.2"/></a><br/><br/>
+                """),format.raw/*119.194*/("""
+                """),format.raw/*120.17*/("""<a href="#"><img id="HISTOGRAM" src="./assets/i_histo.img" border="0" style="opacity: 0.2"/></a><br/><br/>
                 <div style="text-align: left; margin: 5px;">
                         &nbsp;Neural network scores retrieved from DL4j during training.
                 </div>
@@ -149,8 +150,8 @@ Seq[Any](format.raw/*1.1*/("""<html>
             <div class="block">
                     <!-- Flow  block. It's session-dependant block -->
                 <b>Model flow</b><br/><br/>
-                """),format.raw/*113.180*/("""
-                """),format.raw/*114.17*/("""<a href="#"><img id="FLOW" src="./assets/i_flow.img" border="0" style="opacity: 0.2"/></a><br/><br/>
+                """),format.raw/*129.180*/("""
+                """),format.raw/*130.17*/("""<a href="#"><img id="FLOW" src="./assets/i_flow.img" border="0" style="opacity: 0.2"/></a><br/><br/>
                 <div style="text-align: left; margin: 5px;">
                         &nbsp;MultiLayerNetwork/ComputationalGraph model state rendered.
                 </div>
@@ -159,8 +160,8 @@ Seq[Any](format.raw/*1.1*/("""<html>
             <div class="block">
                     <!-- Arbiter block. It's session-dependant block -->
                 <b>Arbiter </b><br/><br/>
-                """),format.raw/*123.192*/("""
-                """),format.raw/*124.17*/("""<a href="#"><img id="ARBITER" src="./assets/i_arbiter.img" border="0" style="opacity: 0.2"/></a><br/><br/>
+                """),format.raw/*139.192*/("""
+                """),format.raw/*140.17*/("""<a href="#"><img id="ARBITER" src="./assets/i_arbiter.img" border="0" style="opacity: 0.2"/></a><br/><br/>
                 <div style="text-align: left; margin: 5px;">
                         &nbsp;State &amp; management for Arbiter optimization processes.
                 </div>
@@ -207,11 +208,11 @@ Seq[Any](format.raw/*1.1*/("""<html>
 object DefaultPage extends DefaultPage_Scope0.DefaultPage
               /*
                   -- GENERATED --
-                  DATE: Fri May 18 19:33:53 PDT 2018
-                  SOURCE: C:/develop/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/defaultPage/DefaultPage.scala.html
-                  HASH: 7dfb895d69ecdc3c039e34fe7a091eea7cdc962b
-                  MATRIX: 655->0|1846->1163|1875->1164|1917->1178|2075->1309|2104->1310|2141->1320|2173->1324|2202->1325|2244->1339|2366->1434|2395->1435|2432->1445|2467->1452|2496->1453|2538->1467|2687->1589|2716->1590|2753->1600|2791->1610|2820->1611|2862->1625|2984->1720|3013->1721|3050->1731|3212->1912|3245->1918|4126->2934|4172->2952|5012->3952|5058->3970|5577->4636|5624->4654|6126->5289|6173->5307|6669->5948|6716->5966
-                  LINES: 25->1|45->21|45->21|46->22|50->26|50->26|51->27|51->27|51->27|52->28|55->31|55->31|56->32|56->32|56->32|57->33|62->38|62->38|63->39|63->39|63->39|64->40|67->43|67->43|68->44|73->49|74->50|99->75|100->76|117->93|118->94|127->103|128->104|137->113|138->114|147->123|148->124
+                  DATE: Sat Jan 19 12:31:33 AEDT 2019
+                  SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/defaultPage/DefaultPage.scala.html
+                  HASH: da6a311236bb425835c99277e9483be69b05e8b4
+                  MATRIX: 655->0|2638->1955|2667->1956|2709->1970|2867->2101|2896->2102|2933->2112|2965->2116|2994->2117|3036->2131|3158->2226|3187->2227|3224->2237|3259->2244|3288->2245|3330->2259|3479->2381|3508->2382|3545->2392|3583->2402|3612->2403|3654->2417|3776->2512|3805->2513|3842->2523|4004->2704|4037->2710|4918->3726|4964->3744|5805->4744|5852->4762|6371->5428|6418->5446|6920->6081|6967->6099|7463->6740|7510->6758
+                  LINES: 25->1|61->37|61->37|62->38|66->42|66->42|67->43|67->43|67->43|68->44|71->47|71->47|72->48|72->48|72->48|73->49|78->54|78->54|79->55|79->55|79->55|80->56|83->59|83->59|84->60|89->65|90->66|115->91|116->92|133->109|134->110|143->119|144->120|153->129|154->130|163->139|164->140
                   -- GENERATED --
               */
           
