@@ -1,18 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
 
 package org.deeplearning4j.ui.views.html.histogram
 
@@ -38,53 +23,70 @@ class Histogram extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appendable,F
 
 
 Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright (c) 2015-2018 Skymind, Inc.
+  ~
+  ~ This program and the accompanying materials are made available under the
+  ~ terms of the Apache License, Version 2.0 which is available at
+  ~ https://www.apache.org/licenses/LICENSE-2.0.
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  ~ SPDX-License-Identifier: Apache-2.0
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
 <html>
     <head>
         <meta charset="utf-8"/>
         <title>Weights/Gradients/Score</title>
         <style>
-        .bar rect """),format.raw/*7.19*/("""{"""),format.raw/*7.20*/("""
-            """),format.raw/*8.13*/("""fill: steelblue;
+        .bar rect """),format.raw/*24.19*/("""{"""),format.raw/*24.20*/("""
+            """),format.raw/*25.13*/("""fill: steelblue;
             shape-rendering: crispEdges;
-        """),format.raw/*10.9*/("""}"""),format.raw/*10.10*/("""
+        """),format.raw/*27.9*/("""}"""),format.raw/*27.10*/("""
 
-        """),format.raw/*12.9*/(""".bar text """),format.raw/*12.19*/("""{"""),format.raw/*12.20*/("""
-            """),format.raw/*13.13*/("""fill: #EFEFEF;
-        """),format.raw/*14.9*/("""}"""),format.raw/*14.10*/("""
+        """),format.raw/*29.9*/(""".bar text """),format.raw/*29.19*/("""{"""),format.raw/*29.20*/("""
+            """),format.raw/*30.13*/("""fill: #EFEFEF;
+        """),format.raw/*31.9*/("""}"""),format.raw/*31.10*/("""
 
-        """),format.raw/*16.9*/(""".area """),format.raw/*16.15*/("""{"""),format.raw/*16.16*/("""
-            """),format.raw/*17.13*/("""fill: steelblue;
-        """),format.raw/*18.9*/("""}"""),format.raw/*18.10*/("""
-
-        """),format.raw/*20.9*/(""".axis path, .axis line """),format.raw/*20.32*/("""{"""),format.raw/*20.33*/("""
-            """),format.raw/*21.13*/("""fill: none;
-            stroke: #000;
-            shape-rendering: crispEdges;
-        """),format.raw/*24.9*/("""}"""),format.raw/*24.10*/("""
-
-        """),format.raw/*26.9*/(""".tick line """),format.raw/*26.20*/("""{"""),format.raw/*26.21*/("""
-            """),format.raw/*27.13*/("""opacity: 0.2;
-            shape-rendering: crispEdges;
-        """),format.raw/*29.9*/("""}"""),format.raw/*29.10*/("""
-
-        """),format.raw/*31.9*/("""path """),format.raw/*31.14*/("""{"""),format.raw/*31.15*/("""
-            """),format.raw/*32.13*/("""stroke: steelblue;
-            stroke-width: 2;
-            fill: none;
+        """),format.raw/*33.9*/(""".area """),format.raw/*33.15*/("""{"""),format.raw/*33.16*/("""
+            """),format.raw/*34.13*/("""fill: steelblue;
         """),format.raw/*35.9*/("""}"""),format.raw/*35.10*/("""
 
-        """),format.raw/*37.9*/(""".legend """),format.raw/*37.17*/("""{"""),format.raw/*37.18*/("""
-            """),format.raw/*38.13*/("""font-size: 12px;
-            text-anchor: middle;
-        """),format.raw/*40.9*/("""}"""),format.raw/*40.10*/("""
+        """),format.raw/*37.9*/(""".axis path, .axis line """),format.raw/*37.32*/("""{"""),format.raw/*37.33*/("""
+            """),format.raw/*38.13*/("""fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        """),format.raw/*41.9*/("""}"""),format.raw/*41.10*/("""
 
-        """),format.raw/*42.9*/(""".brush .extent """),format.raw/*42.24*/("""{"""),format.raw/*42.25*/("""
-            """),format.raw/*43.13*/("""stroke: #fff;
-            fill-opacity: .125;
+        """),format.raw/*43.9*/(""".tick line """),format.raw/*43.20*/("""{"""),format.raw/*43.21*/("""
+            """),format.raw/*44.13*/("""opacity: 0.2;
             shape-rendering: crispEdges;
         """),format.raw/*46.9*/("""}"""),format.raw/*46.10*/("""
 
-        """),format.raw/*48.9*/("""</style>
+        """),format.raw/*48.9*/("""path """),format.raw/*48.14*/("""{"""),format.raw/*48.15*/("""
+            """),format.raw/*49.13*/("""stroke: steelblue;
+            stroke-width: 2;
+            fill: none;
+        """),format.raw/*52.9*/("""}"""),format.raw/*52.10*/("""
+
+        """),format.raw/*54.9*/(""".legend """),format.raw/*54.17*/("""{"""),format.raw/*54.18*/("""
+            """),format.raw/*55.13*/("""font-size: 12px;
+            text-anchor: middle;
+        """),format.raw/*57.9*/("""}"""),format.raw/*57.10*/("""
+
+        """),format.raw/*59.9*/(""".brush .extent """),format.raw/*59.24*/("""{"""),format.raw/*59.25*/("""
+            """),format.raw/*60.13*/("""stroke: #fff;
+            fill-opacity: .125;
+            shape-rendering: crispEdges;
+        """),format.raw/*63.9*/("""}"""),format.raw/*63.10*/("""
+
+        """),format.raw/*65.9*/("""</style>
 
             <!-- jQuery -->
         <script src="/assets/legacy/jquery-2.2.0.min.js"></script>
@@ -122,51 +124,51 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
         <script src="/assets/legacy/common.js"></script>
 
         <style>
-        body """),format.raw/*86.14*/("""{"""),format.raw/*86.15*/("""
-            """),format.raw/*87.13*/("""font-family: 'Roboto', sans-serif;
+        body """),format.raw/*103.14*/("""{"""),format.raw/*103.15*/("""
+            """),format.raw/*104.13*/("""font-family: 'Roboto', sans-serif;
             color: #333;
             font-weight: 300;
             font-size: 16px;
-        """),format.raw/*91.9*/("""}"""),format.raw/*91.10*/("""
+        """),format.raw/*108.9*/("""}"""),format.raw/*108.10*/("""
 
-        """),format.raw/*93.9*/(""".hd """),format.raw/*93.13*/("""{"""),format.raw/*93.14*/("""
-            """),format.raw/*94.13*/("""background-color: #000000;
+        """),format.raw/*110.9*/(""".hd """),format.raw/*110.13*/("""{"""),format.raw/*110.14*/("""
+            """),format.raw/*111.13*/("""background-color: #000000;
             font-size: 18px;
             color: #FFFFFF;
-        """),format.raw/*97.9*/("""}"""),format.raw/*97.10*/("""
+        """),format.raw/*114.9*/("""}"""),format.raw/*114.10*/("""
 
-        """),format.raw/*99.9*/(""".block """),format.raw/*99.16*/("""{"""),format.raw/*99.17*/("""
-            """),format.raw/*100.13*/("""width: 250px;
+        """),format.raw/*116.9*/(""".block """),format.raw/*116.16*/("""{"""),format.raw/*116.17*/("""
+            """),format.raw/*117.13*/("""width: 250px;
             height: 350px;
             display: inline-block;
             border: 1px solid #DEDEDE;
             margin-right: 64px;
-        """),format.raw/*105.9*/("""}"""),format.raw/*105.10*/("""
+        """),format.raw/*122.9*/("""}"""),format.raw/*122.10*/("""
 
-        """),format.raw/*107.9*/(""".hd-small """),format.raw/*107.19*/("""{"""),format.raw/*107.20*/("""
-            """),format.raw/*108.13*/("""background-color: #000000;
+        """),format.raw/*124.9*/(""".hd-small """),format.raw/*124.19*/("""{"""),format.raw/*124.20*/("""
+            """),format.raw/*125.13*/("""background-color: #000000;
             font-size: 14px;
             color: #FFFFFF;
-        """),format.raw/*111.9*/("""}"""),format.raw/*111.10*/("""
+        """),format.raw/*128.9*/("""}"""),format.raw/*128.10*/("""
 
-        """),format.raw/*113.9*/(""".charts, .chart """),format.raw/*113.25*/("""{"""),format.raw/*113.26*/("""
-            """),format.raw/*114.13*/("""font-size: 10px;
+        """),format.raw/*130.9*/(""".charts, .chart """),format.raw/*130.25*/("""{"""),format.raw/*130.26*/("""
+            """),format.raw/*131.13*/("""font-size: 10px;
             font-color: #000000;
             position: relative;
-        """),format.raw/*117.9*/("""}"""),format.raw/*117.10*/("""
+        """),format.raw/*134.9*/("""}"""),format.raw/*134.10*/("""
 
-        """),format.raw/*119.9*/(""".scoreboard """),format.raw/*119.21*/("""{"""),format.raw/*119.22*/("""
-            """),format.raw/*120.13*/("""position: absolute;
+        """),format.raw/*136.9*/(""".scoreboard """),format.raw/*136.21*/("""{"""),format.raw/*136.22*/("""
+            """),format.raw/*137.13*/("""position: absolute;
             top: 20px;
             right: 10px;
             z-index: 1000;
             font-size: 11px;
-        """),format.raw/*125.9*/("""}"""),format.raw/*125.10*/("""
+        """),format.raw/*142.9*/("""}"""),format.raw/*142.10*/("""
 
-        """),format.raw/*127.9*/(""".score """),format.raw/*127.16*/("""{"""),format.raw/*127.17*/("""
-            """),format.raw/*128.13*/("""font-size: 11px;
-        """),format.raw/*129.9*/("""}"""),format.raw/*129.10*/("""
-        """),format.raw/*130.9*/("""</style>
+        """),format.raw/*144.9*/(""".score """),format.raw/*144.16*/("""{"""),format.raw/*144.17*/("""
+            """),format.raw/*145.13*/("""font-size: 11px;
+        """),format.raw/*146.9*/("""}"""),format.raw/*146.10*/("""
+        """),format.raw/*147.9*/("""</style>
 
     </head>
     <body>
@@ -298,11 +300,11 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
 object Histogram extends Histogram_Scope0.Histogram
               /*
                   -- GENERATED --
-                  DATE: Fri May 18 19:33:53 PDT 2018
-                  SOURCE: C:/develop/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/histogram/Histogram.scala.html
-                  HASH: 3727d1ee009725c0fa87af96b5bccdf0ee513442
-                  MATRIX: 649->0|829->153|857->154|898->168|993->236|1022->237|1061->249|1099->259|1128->260|1170->274|1221->298|1250->299|1289->311|1323->317|1352->318|1394->332|1447->358|1476->359|1515->371|1566->394|1595->395|1637->409|1754->499|1783->500|1822->512|1861->523|1890->524|1932->538|2024->603|2053->604|2092->616|2125->621|2154->622|2196->636|2306->719|2335->720|2374->732|2410->740|2439->741|2481->755|2568->815|2597->816|2636->828|2679->843|2708->844|2750->858|2875->956|2904->957|2943->969|4389->2387|4418->2388|4460->2402|4618->2533|4647->2534|4686->2546|4718->2550|4747->2551|4789->2565|4911->2660|4940->2661|4979->2673|5014->2680|5043->2681|5086->2695|5274->2855|5304->2856|5344->2868|5383->2878|5413->2879|5456->2893|5579->2988|5609->2989|5649->3001|5694->3017|5724->3018|5767->3032|5888->3125|5918->3126|5958->3138|5999->3150|6029->3151|6072->3165|6237->3302|6267->3303|6307->3315|6343->3322|6373->3323|6416->3337|6470->3363|6500->3364|6538->3374
-                  LINES: 25->1|31->7|31->7|32->8|34->10|34->10|36->12|36->12|36->12|37->13|38->14|38->14|40->16|40->16|40->16|41->17|42->18|42->18|44->20|44->20|44->20|45->21|48->24|48->24|50->26|50->26|50->26|51->27|53->29|53->29|55->31|55->31|55->31|56->32|59->35|59->35|61->37|61->37|61->37|62->38|64->40|64->40|66->42|66->42|66->42|67->43|70->46|70->46|72->48|110->86|110->86|111->87|115->91|115->91|117->93|117->93|117->93|118->94|121->97|121->97|123->99|123->99|123->99|124->100|129->105|129->105|131->107|131->107|131->107|132->108|135->111|135->111|137->113|137->113|137->113|138->114|141->117|141->117|143->119|143->119|143->119|144->120|149->125|149->125|151->127|151->127|151->127|152->128|153->129|153->129|154->130
+                  DATE: Sat Jan 19 12:31:33 AEDT 2019
+                  SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/histogram/Histogram.scala.html
+                  HASH: 85e90b78e2ac617a501aec7122117d1826790d73
+                  MATRIX: 649->0|1624->947|1653->948|1695->962|1790->1030|1819->1031|1858->1043|1896->1053|1925->1054|1967->1068|2018->1092|2047->1093|2086->1105|2120->1111|2149->1112|2191->1126|2244->1152|2273->1153|2312->1165|2363->1188|2392->1189|2434->1203|2551->1293|2580->1294|2619->1306|2658->1317|2687->1318|2729->1332|2821->1397|2850->1398|2889->1410|2922->1415|2951->1416|2993->1430|3103->1513|3132->1514|3171->1526|3207->1534|3236->1535|3278->1549|3365->1609|3394->1610|3433->1622|3476->1637|3505->1638|3547->1652|3672->1750|3701->1751|3740->1763|5187->3181|5217->3182|5260->3196|5419->3327|5449->3328|5489->3340|5522->3344|5552->3345|5595->3359|5718->3454|5748->3455|5788->3467|5824->3474|5854->3475|5897->3489|6085->3649|6115->3650|6155->3662|6194->3672|6224->3673|6267->3687|6390->3782|6420->3783|6460->3795|6505->3811|6535->3812|6578->3826|6699->3919|6729->3920|6769->3932|6810->3944|6840->3945|6883->3959|7048->4096|7078->4097|7118->4109|7154->4116|7184->4117|7227->4131|7281->4157|7311->4158|7349->4168
+                  LINES: 25->1|48->24|48->24|49->25|51->27|51->27|53->29|53->29|53->29|54->30|55->31|55->31|57->33|57->33|57->33|58->34|59->35|59->35|61->37|61->37|61->37|62->38|65->41|65->41|67->43|67->43|67->43|68->44|70->46|70->46|72->48|72->48|72->48|73->49|76->52|76->52|78->54|78->54|78->54|79->55|81->57|81->57|83->59|83->59|83->59|84->60|87->63|87->63|89->65|127->103|127->103|128->104|132->108|132->108|134->110|134->110|134->110|135->111|138->114|138->114|140->116|140->116|140->116|141->117|146->122|146->122|148->124|148->124|148->124|149->125|152->128|152->128|154->130|154->130|154->130|155->131|158->134|158->134|160->136|160->136|160->136|161->137|166->142|166->142|168->144|168->144|168->144|169->145|170->146|170->146|171->147
                   -- GENERATED --
               */
           

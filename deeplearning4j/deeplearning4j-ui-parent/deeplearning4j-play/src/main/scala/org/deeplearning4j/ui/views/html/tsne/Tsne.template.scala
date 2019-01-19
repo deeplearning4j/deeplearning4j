@@ -1,18 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
 
 package org.deeplearning4j.ui.views.html.tsne
 
@@ -38,6 +23,23 @@ class Tsne extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appendable,Format
 
 
 Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright (c) 2015-2018 Skymind, Inc.
+  ~
+  ~ This program and the accompanying materials are made available under the
+  ~ terms of the Apache License, Version 2.0 which is available at
+  ~ https://www.apache.org/licenses/LICENSE-2.0.
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  ~ SPDX-License-Identifier: Apache-2.0
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
 <html lang="en">
     <head>
         <meta charset="utf-8" />
@@ -73,121 +75,121 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
 
 
         <style>
-        .hd """),format.raw/*37.13*/("""{"""),format.raw/*37.14*/("""
-            """),format.raw/*38.13*/("""background-color: #000000;
+        .hd """),format.raw/*54.13*/("""{"""),format.raw/*54.14*/("""
+            """),format.raw/*55.13*/("""background-color: #000000;
             font-size: 18px;
             color: #FFFFFF;
-        """),format.raw/*41.9*/("""}"""),format.raw/*41.10*/("""
+        """),format.raw/*58.9*/("""}"""),format.raw/*58.10*/("""
 
-        """),format.raw/*43.9*/(""".block """),format.raw/*43.16*/("""{"""),format.raw/*43.17*/("""
-            """),format.raw/*44.13*/("""width: 250px;
+        """),format.raw/*60.9*/(""".block """),format.raw/*60.16*/("""{"""),format.raw/*60.17*/("""
+            """),format.raw/*61.13*/("""width: 250px;
             height: 350px;
             display: inline-block;
             border: 1px solid #DEDEDE;
             margin-right: 64px;
-        """),format.raw/*49.9*/("""}"""),format.raw/*49.10*/("""
+        """),format.raw/*66.9*/("""}"""),format.raw/*66.10*/("""
 
-        """),format.raw/*51.9*/(""".hd-small """),format.raw/*51.19*/("""{"""),format.raw/*51.20*/("""
-            """),format.raw/*52.13*/("""background-color: #000000;
+        """),format.raw/*68.9*/(""".hd-small """),format.raw/*68.19*/("""{"""),format.raw/*68.20*/("""
+            """),format.raw/*69.13*/("""background-color: #000000;
             font-size: 14px;
             color: #FFFFFF;
-        """),format.raw/*55.9*/("""}"""),format.raw/*55.10*/("""
+        """),format.raw/*72.9*/("""}"""),format.raw/*72.10*/("""
 
-        """),format.raw/*57.9*/("""body """),format.raw/*57.14*/("""{"""),format.raw/*57.15*/("""
-            """),format.raw/*58.13*/("""font-family: 'Roboto', sans-serif;
+        """),format.raw/*74.9*/("""body """),format.raw/*74.14*/("""{"""),format.raw/*74.15*/("""
+            """),format.raw/*75.13*/("""font-family: 'Roboto', sans-serif;
             color: #333;
             font-weight: 300;
             font-size: 16px;
-        """),format.raw/*62.9*/("""}"""),format.raw/*62.10*/("""
+        """),format.raw/*79.9*/("""}"""),format.raw/*79.10*/("""
 
-        """),format.raw/*64.9*/("""#wrap """),format.raw/*64.15*/("""{"""),format.raw/*64.16*/("""
-            """),format.raw/*65.13*/("""width: 800px;
+        """),format.raw/*81.9*/("""#wrap """),format.raw/*81.15*/("""{"""),format.raw/*81.16*/("""
+            """),format.raw/*82.13*/("""width: 800px;
             margin-left: auto;
             margin-right: auto;
-        """),format.raw/*68.9*/("""}"""),format.raw/*68.10*/("""
+        """),format.raw/*85.9*/("""}"""),format.raw/*85.10*/("""
 
-        """),format.raw/*70.9*/("""#embed """),format.raw/*70.16*/("""{"""),format.raw/*70.17*/("""
-            """),format.raw/*71.13*/("""margin-top: 10px;
-        """),format.raw/*72.9*/("""}"""),format.raw/*72.10*/("""
+        """),format.raw/*87.9*/("""#embed """),format.raw/*87.16*/("""{"""),format.raw/*87.17*/("""
+            """),format.raw/*88.13*/("""margin-top: 10px;
+        """),format.raw/*89.9*/("""}"""),format.raw/*89.10*/("""
 
-        """),format.raw/*74.9*/("""h1 """),format.raw/*74.12*/("""{"""),format.raw/*74.13*/("""
-            """),format.raw/*75.13*/("""text-align: center;
+        """),format.raw/*91.9*/("""h1 """),format.raw/*91.12*/("""{"""),format.raw/*91.13*/("""
+            """),format.raw/*92.13*/("""text-align: center;
             font-weight: normal;
-        """),format.raw/*77.9*/("""}"""),format.raw/*77.10*/("""
+        """),format.raw/*94.9*/("""}"""),format.raw/*94.10*/("""
 
-        """),format.raw/*79.9*/(""".tt """),format.raw/*79.13*/("""{"""),format.raw/*79.14*/("""
-            """),format.raw/*80.13*/("""margin-top: 10px;
+        """),format.raw/*96.9*/(""".tt """),format.raw/*96.13*/("""{"""),format.raw/*96.14*/("""
+            """),format.raw/*97.13*/("""margin-top: 10px;
             background-color: #EEE;
             border-bottom: 1px solid #333;
             padding: 5px;
-        """),format.raw/*84.9*/("""}"""),format.raw/*84.10*/("""
+        """),format.raw/*101.9*/("""}"""),format.raw/*101.10*/("""
 
-        """),format.raw/*86.9*/(""".txth """),format.raw/*86.15*/("""{"""),format.raw/*86.16*/("""
-            """),format.raw/*87.13*/("""color: #F55;
-        """),format.raw/*88.9*/("""}"""),format.raw/*88.10*/("""
+        """),format.raw/*103.9*/(""".txth """),format.raw/*103.15*/("""{"""),format.raw/*103.16*/("""
+            """),format.raw/*104.13*/("""color: #F55;
+        """),format.raw/*105.9*/("""}"""),format.raw/*105.10*/("""
 
-        """),format.raw/*90.9*/(""".cit """),format.raw/*90.14*/("""{"""),format.raw/*90.15*/("""
-            """),format.raw/*91.13*/("""font-family: courier;
+        """),format.raw/*107.9*/(""".cit """),format.raw/*107.14*/("""{"""),format.raw/*107.15*/("""
+            """),format.raw/*108.13*/("""font-family: courier;
             padding-left: 20px;
             font-size: 14px;
-        """),format.raw/*94.9*/("""}"""),format.raw/*94.10*/("""
-        """),format.raw/*95.9*/("""</style>
+        """),format.raw/*111.9*/("""}"""),format.raw/*111.10*/("""
+        """),format.raw/*112.9*/("""</style>
 
         <script>
-        $(document).ready(function () """),format.raw/*98.39*/("""{"""),format.raw/*98.40*/("""
-            """),format.raw/*99.13*/("""$('#filenamebutton').click(function () """),format.raw/*99.52*/("""{"""),format.raw/*99.53*/("""
-                """),format.raw/*100.17*/("""document.getElementById('form').reset();
+        $(document).ready(function () """),format.raw/*115.39*/("""{"""),format.raw/*115.40*/("""
+            """),format.raw/*116.13*/("""$('#filenamebutton').click(function () """),format.raw/*116.52*/("""{"""),format.raw/*116.53*/("""
+                """),format.raw/*117.17*/("""document.getElementById('form').reset();
                 $('#form').hide();
                 var filename = $('#filename').val();
                 $('#filename').val('');
                 updateFileName(filename);
                 drawTsne();
-            """),format.raw/*106.13*/("""}"""),format.raw/*106.14*/(""");
+            """),format.raw/*123.13*/("""}"""),format.raw/*123.14*/(""");
 
-            $('#form').fileUpload("""),format.raw/*108.35*/("""{"""),format.raw/*108.36*/("""
-                """),format.raw/*109.17*/("""success: function (data, textStatus, jqXHR) """),format.raw/*109.61*/("""{"""),format.raw/*109.62*/("""
-                    """),format.raw/*110.21*/("""var fullPath = document.getElementById('form').value;
+            $('#form').fileUpload("""),format.raw/*125.35*/("""{"""),format.raw/*125.36*/("""
+                """),format.raw/*126.17*/("""success: function (data, textStatus, jqXHR) """),format.raw/*126.61*/("""{"""),format.raw/*126.62*/("""
+                    """),format.raw/*127.21*/("""var fullPath = document.getElementById('form').value;
                     var filename = data['name'];
-                    if (fullPath) """),format.raw/*112.35*/("""{"""),format.raw/*112.36*/("""
-                        """),format.raw/*113.25*/("""var startIndex = (fullPath.indexOf('\\') >= 0 ? fullPath.lastIndexOf('\\') : fullPath.lastIndexOf('/'));
+                    if (fullPath) """),format.raw/*129.35*/("""{"""),format.raw/*129.36*/("""
+                        """),format.raw/*130.25*/("""var startIndex = (fullPath.indexOf('\\') >= 0 ? fullPath.lastIndexOf('\\') : fullPath.lastIndexOf('/'));
                         var filename = fullPath.substring(startIndex);
-                        if (filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) """),format.raw/*115.90*/("""{"""),format.raw/*115.91*/("""
-                            """),format.raw/*116.29*/("""filename = filename.substring(1);
-                        """),format.raw/*117.25*/("""}"""),format.raw/*117.26*/("""
-                    """),format.raw/*118.21*/("""}"""),format.raw/*118.22*/("""
+                        if (filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) """),format.raw/*132.90*/("""{"""),format.raw/*132.91*/("""
+                            """),format.raw/*133.29*/("""filename = filename.substring(1);
+                        """),format.raw/*134.25*/("""}"""),format.raw/*134.26*/("""
+                    """),format.raw/*135.21*/("""}"""),format.raw/*135.22*/("""
 
-                    """),format.raw/*120.21*/("""document.getElementById('form').reset();
+                    """),format.raw/*137.21*/("""document.getElementById('form').reset();
 
                     updateFileName(filename);
                     drawTsne();
-                """),format.raw/*124.17*/("""}"""),format.raw/*124.18*/(""", error: function (err) """),format.raw/*124.42*/("""{"""),format.raw/*124.43*/("""
-                    """),format.raw/*125.21*/("""console.log(err);
+                """),format.raw/*141.17*/("""}"""),format.raw/*141.18*/(""", error: function (err) """),format.raw/*141.42*/("""{"""),format.raw/*141.43*/("""
+                    """),format.raw/*142.21*/("""console.log(err);
                     drawTsne();
-                """),format.raw/*127.17*/("""}"""),format.raw/*127.18*/("""
-            """),format.raw/*128.13*/("""}"""),format.raw/*128.14*/(""");
+                """),format.raw/*144.17*/("""}"""),format.raw/*144.18*/("""
+            """),format.raw/*145.13*/("""}"""),format.raw/*145.14*/(""");
 
 
-            function updateFileName(name) """),format.raw/*131.43*/("""{"""),format.raw/*131.44*/("""
-                """),format.raw/*132.17*/("""$.ajax("""),format.raw/*132.24*/("""{"""),format.raw/*132.25*/("""
-                    """),format.raw/*133.21*/("""url: '/tsne/upload',
+            function updateFileName(name) """),format.raw/*148.43*/("""{"""),format.raw/*148.44*/("""
+                """),format.raw/*149.17*/("""$.ajax("""),format.raw/*149.24*/("""{"""),format.raw/*149.25*/("""
+                    """),format.raw/*150.21*/("""url: '/tsne/upload',
                     type: 'POST',
                     dataType: 'json',
-                    data: JSON.stringify("""),format.raw/*136.42*/("""{"""),format.raw/*136.43*/(""""url": name"""),format.raw/*136.54*/("""}"""),format.raw/*136.55*/("""),
+                    data: JSON.stringify("""),format.raw/*153.42*/("""{"""),format.raw/*153.43*/(""""url": name"""),format.raw/*153.54*/("""}"""),format.raw/*153.55*/("""),
                     cache: false,
-                    success: function (data, textStatus, jqXHR) """),format.raw/*138.65*/("""{"""),format.raw/*138.66*/("""
-                        """),format.raw/*139.25*/("""setSessionId("UploadedFile");
+                    success: function (data, textStatus, jqXHR) """),format.raw/*155.65*/("""{"""),format.raw/*155.66*/("""
+                        """),format.raw/*156.25*/("""setSessionId("UploadedFile");
                         drawTsne();
-                    """),format.raw/*141.21*/("""}"""),format.raw/*141.22*/(""",
-                    error: function (jqXHR, textStatus, errorThrown) """),format.raw/*142.70*/("""{"""),format.raw/*142.71*/("""
-                        """),format.raw/*143.25*/("""// Handle errors here
+                    """),format.raw/*158.21*/("""}"""),format.raw/*158.22*/(""",
+                    error: function (jqXHR, textStatus, errorThrown) """),format.raw/*159.70*/("""{"""),format.raw/*159.71*/("""
+                        """),format.raw/*160.25*/("""// Handle errors here
                         console.log('ERRORS: ' + textStatus);
                         drawTsne();
-                    """),format.raw/*146.21*/("""}"""),format.raw/*146.22*/("""
-                """),format.raw/*147.17*/("""}"""),format.raw/*147.18*/(""");
-            """),format.raw/*148.13*/("""}"""),format.raw/*148.14*/("""
+                    """),format.raw/*163.21*/("""}"""),format.raw/*163.22*/("""
+                """),format.raw/*164.17*/("""}"""),format.raw/*164.18*/(""");
+            """),format.raw/*165.13*/("""}"""),format.raw/*165.14*/("""
 
 
-        """),format.raw/*151.9*/("""}"""),format.raw/*151.10*/(""") ;
+        """),format.raw/*168.9*/("""}"""),format.raw/*168.10*/(""") ;
 
     </script>
 
@@ -242,14 +244,14 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
                 </form>
             </div>
 
-            """),format.raw/*206.53*/("""
-                """),format.raw/*207.96*/("""
-                """),format.raw/*208.42*/("""
-                    """),format.raw/*209.59*/("""
-                    """),format.raw/*210.68*/("""
-                """),format.raw/*211.27*/("""
-            """),format.raw/*212.23*/("""
-        """),format.raw/*213.9*/("""</div>
+            """),format.raw/*223.53*/("""
+                """),format.raw/*224.96*/("""
+                """),format.raw/*225.42*/("""
+                    """),format.raw/*226.59*/("""
+                    """),format.raw/*227.68*/("""
+                """),format.raw/*228.27*/("""
+            """),format.raw/*229.23*/("""
+        """),format.raw/*230.9*/("""</div>
     </body>
 
 </html>"""))
@@ -272,11 +274,11 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
 object Tsne extends Tsne_Scope0.Tsne
               /*
                   -- GENERATED --
-                  DATE: Fri May 18 19:33:53 PDT 2018
-                  SOURCE: C:/develop/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/tsne/Tsne.scala.html
-                  HASH: ac938699c7d11da35fb782a100e2bbf41828e2b5
-                  MATRIX: 634->0|1838->1176|1867->1177|1909->1191|2031->1286|2060->1287|2099->1299|2134->1306|2163->1307|2205->1321|2392->1481|2421->1482|2460->1494|2498->1504|2527->1505|2569->1519|2691->1614|2720->1615|2759->1627|2792->1632|2821->1633|2863->1647|3021->1778|3050->1779|3089->1791|3123->1797|3152->1798|3194->1812|3309->1900|3338->1901|3377->1913|3412->1920|3441->1921|3483->1935|3537->1962|3566->1963|3605->1975|3636->1978|3665->1979|3707->1993|3797->2056|3826->2057|3865->2069|3897->2073|3926->2074|3968->2088|4130->2223|4159->2224|4198->2236|4232->2242|4261->2243|4303->2257|4352->2279|4381->2280|4420->2292|4453->2297|4482->2298|4524->2312|4645->2406|4674->2407|4711->2417|4807->2485|4836->2486|4878->2500|4945->2539|4974->2540|5021->2558|5307->2815|5337->2816|5406->2856|5436->2857|5483->2875|5556->2919|5586->2920|5637->2942|5805->3081|5835->3082|5890->3108|6186->3375|6216->3376|6275->3406|6363->3465|6393->3466|6444->3488|6474->3489|6527->3513|6696->3653|6726->3654|6779->3678|6809->3679|6860->3701|6957->3769|6987->3770|7030->3784|7060->3785|7139->3835|7169->3836|7216->3854|7252->3861|7282->3862|7333->3884|7499->4021|7529->4022|7569->4033|7599->4034|7731->4137|7761->4138|7816->4164|7933->4252|7963->4253|8064->4325|8094->4326|8149->4352|8321->4495|8351->4496|8398->4514|8428->4515|8473->4531|8503->4532|8545->4546|8575->4547|10680->6663|10727->6760|10774->6803|10825->6863|10876->6932|10923->6960|10966->6984|11004->6994
-                  LINES: 25->1|61->37|61->37|62->38|65->41|65->41|67->43|67->43|67->43|68->44|73->49|73->49|75->51|75->51|75->51|76->52|79->55|79->55|81->57|81->57|81->57|82->58|86->62|86->62|88->64|88->64|88->64|89->65|92->68|92->68|94->70|94->70|94->70|95->71|96->72|96->72|98->74|98->74|98->74|99->75|101->77|101->77|103->79|103->79|103->79|104->80|108->84|108->84|110->86|110->86|110->86|111->87|112->88|112->88|114->90|114->90|114->90|115->91|118->94|118->94|119->95|122->98|122->98|123->99|123->99|123->99|124->100|130->106|130->106|132->108|132->108|133->109|133->109|133->109|134->110|136->112|136->112|137->113|139->115|139->115|140->116|141->117|141->117|142->118|142->118|144->120|148->124|148->124|148->124|148->124|149->125|151->127|151->127|152->128|152->128|155->131|155->131|156->132|156->132|156->132|157->133|160->136|160->136|160->136|160->136|162->138|162->138|163->139|165->141|165->141|166->142|166->142|167->143|170->146|170->146|171->147|171->147|172->148|172->148|175->151|175->151|230->206|231->207|232->208|233->209|234->210|235->211|236->212|237->213
+                  DATE: Sat Jan 19 12:31:33 AEDT 2019
+                  SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/tsne/Tsne.scala.html
+                  HASH: 8c3701d9bbabb0a0f1fd606302a47f6c169bb85d
+                  MATRIX: 634->0|2632->1970|2661->1971|2703->1985|2825->2080|2854->2081|2893->2093|2928->2100|2957->2101|2999->2115|3186->2275|3215->2276|3254->2288|3292->2298|3321->2299|3363->2313|3485->2408|3514->2409|3553->2421|3586->2426|3615->2427|3657->2441|3815->2572|3844->2573|3883->2585|3917->2591|3946->2592|3988->2606|4103->2694|4132->2695|4171->2707|4206->2714|4235->2715|4277->2729|4331->2756|4360->2757|4399->2769|4430->2772|4459->2773|4501->2787|4591->2850|4620->2851|4659->2863|4691->2867|4720->2868|4762->2882|4925->3017|4955->3018|4995->3030|5030->3036|5060->3037|5103->3051|5153->3073|5183->3074|5223->3086|5257->3091|5287->3092|5330->3106|5452->3200|5482->3201|5520->3211|5617->3279|5647->3280|5690->3294|5758->3333|5788->3334|5835->3352|6121->3609|6151->3610|6220->3650|6250->3651|6297->3669|6370->3713|6400->3714|6451->3736|6619->3875|6649->3876|6704->3902|7000->4169|7030->4170|7089->4200|7177->4259|7207->4260|7258->4282|7288->4283|7341->4307|7510->4447|7540->4448|7593->4472|7623->4473|7674->4495|7771->4563|7801->4564|7844->4578|7874->4579|7953->4629|7983->4630|8030->4648|8066->4655|8096->4656|8147->4678|8313->4815|8343->4816|8383->4827|8413->4828|8545->4931|8575->4932|8630->4958|8747->5046|8777->5047|8878->5119|8908->5120|8963->5146|9135->5289|9165->5290|9212->5308|9242->5309|9287->5325|9317->5326|9359->5340|9389->5341|11494->7457|11541->7554|11588->7597|11639->7657|11690->7726|11737->7754|11780->7778|11818->7788
+                  LINES: 25->1|78->54|78->54|79->55|82->58|82->58|84->60|84->60|84->60|85->61|90->66|90->66|92->68|92->68|92->68|93->69|96->72|96->72|98->74|98->74|98->74|99->75|103->79|103->79|105->81|105->81|105->81|106->82|109->85|109->85|111->87|111->87|111->87|112->88|113->89|113->89|115->91|115->91|115->91|116->92|118->94|118->94|120->96|120->96|120->96|121->97|125->101|125->101|127->103|127->103|127->103|128->104|129->105|129->105|131->107|131->107|131->107|132->108|135->111|135->111|136->112|139->115|139->115|140->116|140->116|140->116|141->117|147->123|147->123|149->125|149->125|150->126|150->126|150->126|151->127|153->129|153->129|154->130|156->132|156->132|157->133|158->134|158->134|159->135|159->135|161->137|165->141|165->141|165->141|165->141|166->142|168->144|168->144|169->145|169->145|172->148|172->148|173->149|173->149|173->149|174->150|177->153|177->153|177->153|177->153|179->155|179->155|180->156|182->158|182->158|183->159|183->159|184->160|187->163|187->163|188->164|188->164|189->165|189->165|192->168|192->168|247->223|248->224|249->225|250->226|251->227|252->228|253->229|254->230
                   -- GENERATED --
               */
           
