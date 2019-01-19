@@ -48,6 +48,12 @@ public abstract class AbstractSession<T, O> {
      */
     protected final Map<VarId, Set<VarId>> execInputs = new HashMap<>();
 
+    /**
+     * As per execInputs map - with the different that the iteration number should be ignored (i.e., always 0)
+     * Reason: Enter nodes - these are executed once
+     * Example: EnterOp(x) -> LoopCondition(less(x,y)): less op requires "X" on all iterations which is the output of the
+     * enter op, which is only executed for iteration 0 in a frame.
+     */
     protected final Map<VarId, Set<VarId>> execInputsAllIter = new HashMap<>();
 
     /**
@@ -231,7 +237,7 @@ public abstract class AbstractSession<T, O> {
                 //Execute op
                 FrameIter frameIter = varToExec.toFrameIter();
                 O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, placeholderValues);
-                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, constPhForVar);
+                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar);
 
 
                 //Post execution: work out what is now available for exec
@@ -688,7 +694,7 @@ public abstract class AbstractSession<T, O> {
      * @param inputs          The specific input arrays for the op
      * @return The outputs of the op
      */
-    public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<String> constAndPhInputs);
+    public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs);
 
     /**
      * This method is used to record that the specified input is required for calculating the specified output.
@@ -735,13 +741,16 @@ public abstract class AbstractSession<T, O> {
     }
 
 
-    protected static VarId lookup(String name, Collection<VarId> varIds){
+    protected static VarId lookup(String name, Collection<VarId> varIds, boolean exceptionOnNotFound){
         for(VarId vid : varIds){
             if(vid.getVariable().equals(name)){
                 return vid;
             }
         }
-        throw new RuntimeException("Could not find VarId to input " + name);
+        if(exceptionOnNotFound) {
+            throw new RuntimeException("Could not find VarId to input " + name);
+        }
+        return null;
     }
 
     /*
