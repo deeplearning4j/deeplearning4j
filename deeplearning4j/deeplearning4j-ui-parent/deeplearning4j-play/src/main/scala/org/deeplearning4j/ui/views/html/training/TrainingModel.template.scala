@@ -50,8 +50,8 @@ Seq[Any](format.raw/*1.40*/("""
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- end: Mobile Specific -->
 
-        <link id="bootstrap-style" href="/assets/css/bootstrap.min.css" rel="stylesheet">
-        <link href="/assets/css/bootstrap-responsive.min.css" rel="stylesheet">
+        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.1/css/bootstrap.min.css" rel="stylesheet">
+        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.1/css/bootstrap-responsive.min.css" rel="stylesheet">
         <link id="base-style" href="/assets/css/style.css" rel="stylesheet">
         <link id="base-style-responsive" href="/assets/css/style-responsive.css" rel="stylesheet">
         <link href='/assets/css/opensans-fonts.css' rel='stylesheet' type='text/css'>
@@ -276,42 +276,42 @@ Seq[Any](format.raw/*1.40*/("""
         </div> <!-- End Row Fluid-->
 
         <!-- Start JavaScript-->
-        <script src="/assets/js/jquery-1.9.1.min.js"></script>
-        <script src="/assets/js/jquery-migrate-1.0.0.min.js"></script>
-        <script src="/assets/js/jquery-ui-1.10.0.custom.min.js"></script>
-        <script src="/assets/js/jquery.ui.touch-punch.js"></script>
-        <script src="/assets/js/modernizr.js"></script>
-        <script src="/assets/js/bootstrap.min.js"></script>
-        <script src="/assets/js/jquery.cookie.js"></script>
-        <script src="/assets/js/fullcalendar.min.js"></script>
-        <script src="/assets/js/jquery.dataTables.min.js"></script>
-        <script src="/assets/js/excanvas.js"></script>
-        <script src="/assets/js/jquery.flot.js"></script>
-        <script src="/assets/js/jquery.flot.pie.js"></script>
-        <script src="/assets/js/jquery.flot.stack.js"></script>
-        <script src="/assets/js/jquery.flot.resize.min.js"></script>
-        <script src="/assets/js/jquery.chosen.min.js"></script>
-        <script src="/assets/js/jquery.uniform.min.js"></script>
-        <script src="/assets/js/jquery.cleditor.min.js"></script>
-        <script src="/assets/js/jquery.noty.js"></script>
-        <script src="/assets/js/jquery.elfinder.min.js"></script>
-        <script src="/assets/js/jquery.raty.min.js"></script>
-        <script src="/assets/js/jquery.iphone.toggle.js"></script>
-        <script src="/assets/js/jquery.uploadify-3.1.min.js"></script>
-        <script src="/assets/js/jquery.gritter.min.js"></script>
-        <script src="/assets/js/jquery.imagesloaded.js"></script>
-        <script src="/assets/js/jquery.masonry.min.js"></script>
-        <script src="/assets/js/jquery.knob.modified.js"></script>
-        <script src="/assets/js/jquery.sparkline.min.js"></script>
-        <script src="/assets/js/counter.js"></script>
-        <script src="/assets/js/retina.js"></script>
-        """),format.raw/*284.64*/("""
-        """),format.raw/*285.9*/("""<script src="/assets/webjars/cytoscape/2.7.12/dist/cytoscape.min.js"></script>
-        <script src="/assets/js/dagre.min.js"></script>
-        <script src="/assets/js/cytoscape-dagre.js"></script>
+        <script src="/assets/webjars/jquery/1.9.1/jquery.min.js"></script>
+        <script src="/assets/webjars/jquery-migrate/1.2.1/jquery-migrate.min.js"></script>
+        <script src="/assets/webjars/jquery-ui-touch-punch/0.2.2/jquery.ui.touch-punch.min.js"></script>
+        <script src="/assets/webjars/modernizr/2.6.2/modernizr.js"></script>
+        <script src="/assets/webjars/bootstrap/2.3.1/js/bootstrap.min.js"></script>
+        <script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js"></script>
+        <script src="/assets/webjars/fullcalendar/fullcalendar.min.js"></script>
+        <script src="/assets/webjars/datatables/1.9.4/media/js/jquery/jquery.dataTables.min.js"></script>
+        <script src="/assets/webjars/excanvas/3/excanvas.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.pie.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.stack.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.resize.min.js"></script>
+        <script src="/assets/webjars/chosen/0.9.8/chosen/chosen.jquery.min.js"></script>
+        <script src="/assets/webjars/uniform/2.1.2/jquery.uniform.min.js"></script>
+        <script src="/assets/webjars/noty/2.2.2/jquery.noty.packaged.js"></script>
+        <script src="/assets/webjars/jquery-raty/2.5.2/jquery.raty.min.js"></script>
+        <script src="/assets/webjars/imagesloaded/2.1.1/jquery.imagesloaded.min.js"></script>
+        <script src="/assets/webjars/masonry/3.1.5/masonry.pkgd.min.js"></script>
+        <script src="/assets/webjars/jquery-knob/1.2.2/jquery.knob.min.js"></script>
+        <script src="/assets/webjars/jquery.sparkline/2.1.2/jquery.sparkline.min.js"></script>
+        <script src="/assets/webjars/retinajs/0.0.2/retina.js"></script>
+        <script src="/assets/webjars/cytoscape/2.7.12/dist/cytoscape.min.js"></script>
+        <script src="/assets/webjars/cytoscape-dagre/2.1.0/cytoscape-dagre.js"></script>
+
         <script src="/assets/js/train/model.js"></script> <!-- Charts and tables are generated here! -->
         <script src="/assets/js/train/model-graph.js"></script> <!-- Layer graph generated here! -->
         <script src="/assets/js/train/train.js"></script> <!-- Common (lang selection, etc) -->
+        <script src="/assets/js/counter.js"></script>
+
+        <script src="/assets/js/jquery-ui-1.10.0.custom.min.js"></script>
+        <script src="/assets/js/jquery.cleditor.min.js"></script>
+        <script src="/assets/js/jquery.elfinder.min.js"></script>
+        <script src="/assets/js/jquery.iphone.toggle.js"></script>
+        <script src="/assets/js/jquery.uploadify-3.1.min.js"></script>
+        <script src="/assets/js/jquery.gritter.min.js"></script>
 
             <!-- Execute once on page load -->
        <script>
@@ -349,11 +349,11 @@ Seq[Any](format.raw/*1.40*/("""
 object TrainingModel extends TrainingModel_Scope0.TrainingModel
               /*
                   -- GENERATED --
-                  DATE: Sat Jan 19 14:03:13 AEDT 2019
+                  DATE: Sat Jan 19 15:17:55 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingModel.scala.html
-                  HASH: a142ae8aee279d39ed9a1177b2c43349523c86b0
-                  MATRIX: 598->1|731->39|759->41|1677->932|1690->936|1741->966|3402->2600|3415->2604|3466->2634|3614->2755|3627->2759|3682->2793|3736->2819|4052->3108|4065->3112|4127->3153|4181->3179|4910->3880|4924->3884|4979->3917|5158->4068|5172->4072|5224->4102|5379->4229|5393->4233|5446->4264|5521->4442|5579->4472|5792->4658|5805->4662|5859->4695|8394->7201|8424->7202|8475->7224|8660->7380|8690->7381|8737->7399|9264->7898|9278->7902|9347->7949|9807->8381|9821->8385|9895->8437|10250->8763|10265->8767|10332->8811|10502->8952|10517->8956|10584->9000|10756->9143|10771->9147|10839->9192|11252->9577|11266->9581|11346->9638|11503->9767|11517->9771|11585->9817|11656->9859|11938->10113|11952->10117|12023->10166|12308->10423|12322->10427|12399->10481|12466->10519|12576->10601|12590->10605|12658->10651|12729->10693|13008->10944|13022->10948|13091->10995|13715->11591|13729->11595|13799->11643|14422->12238|14436->12242|14498->12282|14784->12540|14798->12544|14866->12589|14933->12627|15044->12710|15058->12714|15126->12760|15197->12802|19461->17092|19499->17102|20145->17719|20175->17720|20225->17741|20333->17820|20363->17821|20534->17963|20564->17964|20615->17986|20685->18027|20715->18028
-                  LINES: 20->1|25->1|26->2|48->24|48->24|48->24|81->57|81->57|81->57|83->59|83->59|83->59|84->60|89->65|89->65|89->65|90->66|106->82|106->82|106->82|107->83|107->83|107->83|108->84|108->84|108->84|109->85|110->86|112->88|112->88|112->88|146->122|146->122|147->123|151->127|151->127|152->128|165->141|165->141|165->141|174->150|174->150|174->150|176->152|176->152|176->152|177->153|177->153|177->153|178->154|178->154|178->154|184->160|184->160|184->160|186->162|186->162|186->162|187->163|193->169|193->169|193->169|197->173|197->173|197->173|198->174|199->175|199->175|199->175|200->176|206->182|206->182|206->182|217->193|217->193|217->193|228->204|228->204|228->204|232->208|232->208|232->208|233->209|234->210|234->210|234->210|235->211|308->284|309->285|318->294|318->294|319->295|321->297|321->297|326->302|326->302|327->303|328->304|328->304
+                  HASH: 54d06bdee8ce90349de9c128b9895868c85f6fdd
+                  MATRIX: 598->1|731->39|759->41|1677->932|1690->936|1741->966|3471->2669|3484->2673|3535->2703|3683->2824|3696->2828|3751->2862|3805->2888|4121->3177|4134->3181|4196->3222|4250->3248|4979->3949|4993->3953|5048->3986|5227->4137|5241->4141|5293->4171|5448->4298|5462->4302|5515->4333|5590->4511|5648->4541|5861->4727|5874->4731|5928->4764|8463->7270|8493->7271|8544->7293|8729->7449|8759->7450|8806->7468|9333->7967|9347->7971|9416->8018|9876->8450|9890->8454|9964->8506|10319->8832|10334->8836|10401->8880|10571->9021|10586->9025|10653->9069|10825->9212|10840->9216|10908->9261|11321->9646|11335->9650|11415->9707|11572->9836|11586->9840|11654->9886|11725->9928|12007->10182|12021->10186|12092->10235|12377->10492|12391->10496|12468->10550|12535->10588|12645->10670|12659->10674|12727->10720|12798->10762|13077->11013|13091->11017|13160->11064|13784->11660|13798->11664|13868->11712|14491->12307|14505->12311|14567->12351|14853->12609|14867->12613|14935->12658|15002->12696|15113->12779|15127->12783|15195->12829|15266->12871|20601->18177|20631->18178|20681->18199|20789->18278|20819->18279|20990->18421|21020->18422|21071->18444|21141->18485|21171->18486
+                  LINES: 20->1|25->1|26->2|48->24|48->24|48->24|81->57|81->57|81->57|83->59|83->59|83->59|84->60|89->65|89->65|89->65|90->66|106->82|106->82|106->82|107->83|107->83|107->83|108->84|108->84|108->84|109->85|110->86|112->88|112->88|112->88|146->122|146->122|147->123|151->127|151->127|152->128|165->141|165->141|165->141|174->150|174->150|174->150|176->152|176->152|176->152|177->153|177->153|177->153|178->154|178->154|178->154|184->160|184->160|184->160|186->162|186->162|186->162|187->163|193->169|193->169|193->169|197->173|197->173|197->173|198->174|199->175|199->175|199->175|200->176|206->182|206->182|206->182|217->193|217->193|217->193|228->204|228->204|228->204|232->208|232->208|232->208|233->209|234->210|234->210|234->210|235->211|318->294|318->294|319->295|321->297|321->297|326->302|326->302|327->303|328->304|328->304
                   -- GENERATED --
               */
           
