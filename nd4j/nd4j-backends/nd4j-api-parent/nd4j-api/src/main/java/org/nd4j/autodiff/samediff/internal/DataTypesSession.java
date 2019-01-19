@@ -54,7 +54,7 @@ public class DataTypesSession extends AbstractSession<DataType, DataTypesSession
     }
 
     @Override
-    public DataType[] getOutputs(DataTypeCalc op, FrameIter outputFrameIter, Set<VarId> inputs, Set<String> constAndPhInputs) {
+    public DataType[] getOutputs(DataTypeCalc op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs) {
         List<DataType> outTypes = op.getFn().calculateOutputDataTypes(op.getInputTypes());
         return outTypes.toArray(new DataType[outTypes.size()]);
     }
