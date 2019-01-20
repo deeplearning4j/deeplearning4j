@@ -45,7 +45,7 @@ namespace nd4j {
     public:
 
         // multiptication Matrix to Matrix        
-        static nd4j::NDArray* mmulMxM(const nd4j::NDArray* A, const nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0);
+        static nd4j::NDArray* mmulMxM(const nd4j::NDArray* A, const nd4j::NDArray* B, nd4j::NDArray* C, double alpha = 1.0, double beta = 0.0, const char outOrder = 'f');
 
         static nd4j::NDArray* mmul(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArray* C = nullptr, double alpha = 1.0, double beta = 0.0);
 
