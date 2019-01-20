@@ -50,6 +50,7 @@ namespace ops {
        */               
         #if NOT_EXCLUDED(OP_hinge_loss)
         DECLARE_CUSTOM_OP(hinge_loss, 3, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(hinge_loss_grad, 3, 3, false, 0, 1);
         #endif
 
 
