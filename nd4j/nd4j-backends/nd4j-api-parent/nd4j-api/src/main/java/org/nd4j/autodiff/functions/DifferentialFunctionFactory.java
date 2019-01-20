@@ -1366,6 +1366,10 @@ public class DifferentialFunctionFactory {
         return new HuberLoss(sameDiff(), lossReduce, predictions, weights, label, delta).outputVariable();
     }
 
+    public SDVariable[] lossHuberBp(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce, double delta){
+        return new HuberLossBp(sameDiff(), lossReduce, predictions, weights, label, delta).outputVariables();
+    }
+
     public SDVariable lossLog(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce, double epsilon){
         return new LogLoss(sameDiff(), lossReduce, predictions, weights, label, epsilon).outputVariable();
     }

@@ -35,8 +35,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotEquals;
 
 @Slf4j
 public class LossOpValidation extends BaseOpValidation {
@@ -46,7 +46,7 @@ public class LossOpValidation extends BaseOpValidation {
 
     public static final Set<String> NO_BP_YET = new HashSet<>();
     static {
-        NO_BP_YET.addAll(Arrays.asList("hinge", "huber", "l2_loss", "poisson", "mpwse"));
+        NO_BP_YET.addAll(Arrays.asList("l2_loss", "poisson", "mpwse"));
     }
 
     @Test
@@ -157,8 +157,8 @@ public class LossOpValidation extends BaseOpValidation {
                         case "huber":
                             //https://en.wikipedia.org/wiki/Huber_loss
                             double delta = 1.0;
-                            INDArray absDiff = Transforms.abs(labelsArr.sub(predictionsArr));
                             INDArray diff = labelsArr.sub(predictionsArr);
+                            INDArray absDiff = Transforms.abs(diff);
                             INDArray lte = absDiff.lte(delta).castTo(DataType.DOUBLE);
                             INDArray gt = absDiff.gt(delta).castTo(DataType.DOUBLE);
                             expOut = diff.mul(diff).mul(0.5).muli(lte);
@@ -401,6 +401,64 @@ public class LossOpValidation extends BaseOpValidation {
 
             String err = OpValidation.validate(tc);
             assertNull(err);
+        }
+    }
+
+    @Test
+    public void testNonZeroResult() {
+        INDArray predictions = Nd4j.rand(org.nd4j.graph.DataType.DOUBLE, 10, 4);
+        INDArray w = Nd4j.scalar(1.0);
+        INDArray label = Nd4j.rand(org.nd4j.graph.DataType.DOUBLE, 10, 5);
+        final INDArray zero = Nd4j.scalar(0.);
+        final INDArray zeroBp = Nd4j.zerosLike(predictions);
+
+        final String[] lossOps = {
+                "absolute_difference_loss",
+                "cosine_distance_loss",
+                "mean_pairwssqerr_loss",
+                "mean_sqerr_loss",
+                "sigm_cross_entropy_loss",
+                "hinge_loss",
+                "huber_loss",
+                "log_loss",
+                "softmax_cross_entropy_loss"
+        };
+
+        for (String lossOp : lossOps) {
+            for (int reductionMode : new int[]{1, 2, 3}) {
+                INDArray out = Nd4j.scalar(0.0);
+                CustomOp op = DynamicCustomOp.builder(lossOp)
+                        .addInputs(predictions, w, label)
+                        .addOutputs(out)
+                        .addIntegerArguments(
+                                reductionMode,
+                                0 // for cosine_distance_loss
+                        )
+                        .addFloatingPointArguments(1.0) // for sigm_cross_entropy_loss
+                        .build();
+                Nd4j.getExecutioner().exec(op);
+
+                assertNotEquals(lossOp + " returns zero result. Reduction Mode " + reductionMode, out, zero);
+            }
+        }
+
+        final String[] lossBPOps = {"absolute_difference_loss", "cosine_distance_loss", "sigm_cross_entropy_loss", "log_loss", "mean_sqerr_loss", "sigm_cross_entropy_loss", "softmax_cross_entropy_loss"};
+        for (String lossOp : lossBPOps) {
+            for (int reductionMode : new int[]{1, 2, 3}) {
+                INDArray outBP = Nd4j.zerosLike(predictions);
+                CustomOp op = DynamicCustomOp.builder(lossOp + "_grad")
+                        .addInputs(predictions, w, label)
+                        .addOutputs(outBP, Nd4j.zerosLike(w), Nd4j.zerosLike(label))
+                        .addIntegerArguments(
+                                reductionMode,
+                                0 // for cosine_distance_loss
+                        )
+                        .addFloatingPointArguments(1.0) // for sigm_cross_entropy_loss
+                        .build();
+                Nd4j.getExecutioner().exec(op);
+
+                assertNotEquals(lossOp + "_grad returns zero result. Reduction Mode " + reductionMode, outBP, zeroBp);
+            }
         }
     }
 }

@@ -83,6 +83,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_huber_loss)
         DECLARE_CUSTOM_OP(huber_loss, 3, 1, false, 1, 1);
+        DECLARE_CUSTOM_OP(huber_loss_grad, 3, 1, false, 1, 1);
         #endif
 
     
