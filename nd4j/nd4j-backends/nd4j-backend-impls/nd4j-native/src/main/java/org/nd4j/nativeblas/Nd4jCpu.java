@@ -20778,25 +20778,25 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 
         /**
-         * This op calculates logarithmic loss of poison distributed input
+         * This op calculates logarithmic loss of poisson distributed input
          * Input arguments
          *  0 - target
          *  1 - input
          *  optional int - boolean value compute_full_loss: 0 (default) or 1 (compute)
          */
-//         #if NOT_EXCLUDED(OP_log_poison_loss)
-        @Namespace("nd4j::ops") public static class log_poison_loss extends DeclarableOp {
+//         #if NOT_EXCLUDED(OP_log_poisson_loss)
+        @Namespace("nd4j::ops") public static class log_poisson_loss extends DeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public log_poison_loss(Pointer p) { super(p); }
+            public log_poisson_loss(Pointer p) { super(p); }
             /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public log_poison_loss(long size) { super((Pointer)null); allocateArray(size); }
+            public log_poisson_loss(long size) { super((Pointer)null); allocateArray(size); }
             private native void allocateArray(long size);
-            @Override public log_poison_loss position(long position) {
-                return (log_poison_loss)super.position(position);
+            @Override public log_poisson_loss position(long position) {
+                return (log_poisson_loss)super.position(position);
             }
         
-                                                                                    public log_poison_loss() { super((Pointer)null); allocate(); }
+                                                                                    public log_poisson_loss() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }

@@ -19,14 +19,14 @@
 //
 
 #include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_log_poison_loss)
+#if NOT_EXCLUDED(OP_log_poisson_loss)
 
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
 namespace ops {
 
-    CONFIGURABLE_OP_IMPL(log_poison_loss, 2, 1, true, 0, 0) {
+    CONFIGURABLE_OP_IMPL(log_poisson_loss, 2, 1, true, 0, 0) {
         auto targets = INPUT_VARIABLE(0);
         auto input = INPUT_VARIABLE(1);
         bool computeFullLoss = false;
@@ -34,18 +34,18 @@ namespace ops {
         if (block.numI() > 0)
             computeFullLoss = INT_ARG(0) != 0;
         
-        REQUIRE_TRUE(targets->isSameShape(input), 0, "log_poison_loss: The shape of both input params should be equal.");
+        REQUIRE_TRUE(targets->isSameShape(input), 0, "log_poisson_loss: The shape of both input params should be equal.");
 
         auto output = OUTPUT_VARIABLE(0);
         if (!computeFullLoss)
-            targets->applyPairwiseTransform(pairwise::LogPoisonLoss, input, output, nullptr);
+            targets->applyPairwiseTransform(pairwise::LogPoissonLoss, input, output, nullptr);
         else
-            targets->applyPairwiseTransform(pairwise::LogPoisonLossFull, input, output, nullptr);
+            targets->applyPairwiseTransform(pairwise::LogPoissonLossFull, input, output, nullptr);
 
         return Status::OK();
     }
 
-    DECLARE_TYPES(log_poison_loss) {
+    DECLARE_TYPES(log_poisson_loss) {
         getOpDescriptor()
                 ->setAllowedInputTypes(nd4j::DataType::ANY)
                 ->setAllowedOutputTypes(DataType::BOOL);

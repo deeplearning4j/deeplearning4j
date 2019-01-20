@@ -130,14 +130,14 @@ namespace ops {
 
 
         /**
-         * This op calculates logarithmic loss of poison distributed input
+         * This op calculates logarithmic loss of poisson distributed input
          * Input arguments
          *  0 - target
          *  1 - input
          *  optional int - boolean value compute_full_loss: 0 (default) or 1 (compute)
          */
-        #if NOT_EXCLUDED(OP_log_poison_loss)
-        DECLARE_CONFIGURABLE_OP(log_poison_loss, 2, 1, true, 0, 0);
+        #if NOT_EXCLUDED(OP_log_poisson_loss)
+        DECLARE_CONFIGURABLE_OP(log_poisson_loss, 2, 1, true, 0, 0);
         #endif
 
     //////////////////////////////////////////////////////////////////////////
