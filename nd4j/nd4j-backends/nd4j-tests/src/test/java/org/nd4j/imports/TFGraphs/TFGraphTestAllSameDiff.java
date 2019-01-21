@@ -114,10 +114,6 @@ public class TFGraphTestAllSameDiff {
             //2019/01/08 - This is simply an order issue - need to account for this in test (TF gives no order guarantees)
             "topk/.*",
 
-            //2019/01/15 - failing on expected/actual. Maybe op issue?
-            "lrn/dr3.*",
-            "lrn/dr5.*",
-
             //Still failing as of 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn1d_layers/channels_first_b2_k2_s1_d2_SAME",
             "cnn2d_layers/channels_first_b1_k12_s1_d12_SAME",
