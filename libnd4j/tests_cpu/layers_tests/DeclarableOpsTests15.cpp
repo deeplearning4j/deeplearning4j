@@ -105,8 +105,8 @@ TEST_F(DeclarableOpsTests15, test_avgpooling_edge_1) {
             hFrom = nd4j::math::nd4j_max<int>(0, hFrom);
             wFrom = nd4j::math::nd4j_max<int>(0, wFrom);
 
-            hTo = nd4j::math::nd4j_max<int>(inOutH, hTo);
-            wTo = nd4j::math::nd4j_max<int>(inOutW, wTo);
+            hTo = nd4j::math::nd4j_min<int>(inOutH, hTo);
+            wTo = nd4j::math::nd4j_min<int>(inOutW, wTo);
 
             int idxOut[4];
             int idxIn[4];
