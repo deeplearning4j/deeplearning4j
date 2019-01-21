@@ -121,9 +121,9 @@ TEST_F(DeclarableOpsTests15, test_avgpooling_edge_1) {
                         idxIn[1] = kh;
                         idxIn[2] = kw;
 
-                        auto inVal = x.e<float>(1, kh, kw, ch);
-                        m.p(1, h, w, ch, inVal + m.e<float>(1, h, w, ch));
-                        c.p(1, h, w, ch, 1 + c.e<int>(1, h, w, ch));
+                        auto inVal = x.e<float>(0, kh, kw, ch);
+                        m.p(0, h, w, ch, inVal + m.e<float>(0, h, w, ch));
+                        c.p(0, h, w, ch, 1 + c.e<int>(0, h, w, ch));
                     }
                 }
             }
