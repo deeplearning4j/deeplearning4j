@@ -120,11 +120,11 @@ TEST_F(DeclarableOpsTests1, BasicInitialization1) {
     block.getIArguments()->push_back(1);
     block.fillInputs({-1, -2, -3, -4, -5});
 
-    ASSERT_TRUE(nodeVar->getNDArray() == nullptr);
+    ASSERT_FALSE(nodeVar->hasNDArray());
 
     Nd4jStatus result = concat->execute(&block);
 
-    ASSERT_TRUE(nodeVar->getNDArray() != nullptr);
+    ASSERT_TRUE(nodeVar->hasNDArray());
 
     ASSERT_EQ(25, nodeVar->getNDArray()->lengthOf());
 

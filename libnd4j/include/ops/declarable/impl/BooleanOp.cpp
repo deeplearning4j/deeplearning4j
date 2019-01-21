@@ -79,7 +79,7 @@ namespace nd4j {
 
                 auto var = ctx.variable(pair);
 
-                if (var->getNDArray() == nullptr) {
+                if (!var->hasNDArray()) {
                     var->setNDArray(NDArrayFactory::create_('c', {1, 1}, BOOL, ctx.getWorkspace()));
                     var->markRemovable(true);
                 }

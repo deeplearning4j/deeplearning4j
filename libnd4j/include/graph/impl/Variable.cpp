@@ -24,6 +24,7 @@
 #include <array/ByteOrderUtils.h>
 #include <array/DataTypeConversions.h>
 #include <graph/FlatUtils.h>
+#include <helpers/StringUtils.h>
 
 namespace nd4j {
     namespace graph {
@@ -73,7 +74,7 @@ namespace nd4j {
         }
 
         bool nd4j::graph::Variable::hasNDArray() {
-            return _variableType == VariableType::NDARRAY && _ndarray != nullptr;
+            return _ndarray != nullptr;
         }
 
         void nd4j::graph::Variable::setVariableType(VariableType variableType) {
@@ -81,7 +82,7 @@ namespace nd4j {
         }
 
         bool nd4j::graph::Variable::hasNDArrayList() {
-            return _variableType == VariableType::ARRAY_LIST && _list != nullptr;
+            return _list != nullptr;
         }
 
         bool nd4j::graph::Variable::isPlaceholder() {
@@ -141,7 +142,18 @@ namespace nd4j {
 
         nd4j::NDArray * nd4j::graph::Variable::getNDArray() {
             if (_variableType != VariableType::NDARRAY) {
-                nd4j_debug("Variable[%i:%i/<%s>] is has [%s] type, but NDArray was requested\n", this->_id, this->_index, this->_name.c_str(), EnumUtils::_VariableTypeToString(_variableType));
+                nd4j_printf("Variable[%i:%i/<%s>] is has [%s] type, but NDArray was requested\n", this->_id, this->_index, this->_name.c_str(), EnumUtils::_VariableTypeToString(_variableType));
+            }
+
+            if (this->_ndarray == nullptr) {
+                if (_name.empty()) {
+                    auto nodeId = StringUtils::valueToString<int>(this->id());
+                    auto outputIndex = StringUtils::valueToString<int>(this->index());
+                    throw std::runtime_error("Array doesn't exist for Variable <" + nodeId + ":" + outputIndex + ">");
+                } else {
+                    auto outputIndex = StringUtils::valueToString<int>(this->index());
+                    throw std::runtime_error("Array doesn't exist for Variable <" + this->_name + ":" + outputIndex+ ">");
+                }
             }
 
             return this->_ndarray;
@@ -234,18 +246,21 @@ namespace nd4j {
                         if (flatVariable->shape() == nullptr && flatVariable->ndarray() == nullptr)
                             throw std::runtime_error("PLACEHOLDER variable must have shape defined");
 
-                        if (flatVariable->shape() != nullptr) {
-                            int shapeLen = flatVariable->shape()->Length();
-                            for (int i = 0; i < flatVariable->shape()->size(); i++)
-                                _shape.emplace_back(flatVariable->shape()->Get(i));
-
-                            _variableType = VariableType::PLACEHOLDER;
-                        } else {
+                        if (flatVariable->ndarray() != nullptr) {
                             auto ar = flatVariable->ndarray();
                             _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
                             _ndarray->triggerAllocationFlag(true, true);
 
                             _variableType = VariableType::NDARRAY;
+                        }
+
+                        if (flatVariable->shape() != nullptr) {
+                            int shapeLen = flatVariable->shape()->Length();
+                            for (int i = 0; i < flatVariable->shape()->size(); i++)
+                                _shape.emplace_back(flatVariable->shape()->Get(i));
+
+                            if (_ndarray == nullptr)
+                                _variableType = VariableType::PLACEHOLDER;
                         }
                     }
                     break;
