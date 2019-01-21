@@ -674,16 +674,15 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     static __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, T value, int diagonal, Nd4jLong rows, Nd4jLong cols) {
         //auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         Nd4jLong  rank = shape::rank(shape);
-        int totalThreads = gridDim.x * blockDim.x;
+        int totalThreads = blockDim.x;
+        //int totalThreadsY = blockDim.y;
         //const auto resultLength = shape::length(outputShape);
-        for (Nd4jLong i = blockIdx.x; i < rows; i += blockDim.x) {
-            for (Nd4jLong j = threadIdx.x; j < cols; j += totalThreads) {
+        for (Nd4jLong i = blockIdx.x; i < rows; i += gridDim.x) {
+            for (int j = threadIdx.x; j < cols; j += totalThreads) {
                 Nd4jLong coords[2] = {i, j};
                 Nd4jLong xOffset = shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), coords, rank);
                 if (i + diagonal <= j)
                     *(reinterpret_cast<T*>(buffer) + xOffset) = value;
-                else
-                    *(reinterpret_cast<T*>(buffer) + xOffset) = (T)119.f;
             }
         }
 
@@ -693,9 +692,10 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     static __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, T value, int diagonal, Nd4jLong rows, Nd4jLong cols) {
         //auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         Nd4jLong  rank = shape::rank(shape);
-        int totalThreads = gridDim.x * blockDim.x;
+//        int totalThreads = gridDim.x * blockDim.x;
+        int totalThreads = blockDim.x;
         //const auto resultLength = shape::length(outputShape);
-        for (Nd4jLong i = blockIdx.x; i < rows; i += blockDim.x) {
+        for (Nd4jLong i = blockIdx.x; i < rows; i += gridDim.x) {
             for (int j = threadIdx.x; j < cols; j += totalThreads) {
                 Nd4jLong coords[2] = {i, j};
                 auto xOffset = shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), coords, rank);
