@@ -571,9 +571,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
         public void awaitDone() throws InterruptedException {
                 while (!done.get()) {
-                    synchronized (this) {
-                        this.wait();
-                    }
+                  ThreadUtils.uncheckedSleep(1);
                 }
         }
 
@@ -636,9 +634,7 @@ public class VocabConstructor<T extends SequenceElement> {
             } finally {
                 finalCounter.incrementAndGet();
                 done.set(true);
-                synchronized (this) {
-                    this.notifyAll();
-                }
+                //this.notifyAll();
             }
         }
     }
