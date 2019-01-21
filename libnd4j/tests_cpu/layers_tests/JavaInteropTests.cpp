@@ -410,8 +410,6 @@ TEST_F(JavaInteropTests, Test_Synonyms_3) {
 }
 
 TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
-    Environment::getInstance()->setUseMKLDNN(false);
-
     int inOutH = 35;
     int inOutW = 35;
     int inOutC = 192;
