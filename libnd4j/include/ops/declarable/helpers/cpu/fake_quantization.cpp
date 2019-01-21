@@ -73,7 +73,7 @@ namespace helpers {
         *output -= nudged_min;
        // auto nudgedScale = scale;
         (*output) /= scaleTensor;
-        (*output) += 0.5f;
+        (*output) += T(0.5f);
         output->applyTransform(transform::Floor, nullptr, nullptr);
         (*output) *= scaleTensor;
         (*output) += nudged_min;
@@ -91,9 +91,9 @@ namespace helpers {
     }
 
     void fakeQuantWithMinMaxVars(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), fakeQuantWithMinMaxVars_, (input, min, max, numBits, narrowed, output), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), fakeQuantWithMinMaxVars_, (input, min, max, numBits, narrowed, output), FLOAT_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void fakeQuantWithMinMaxVars_, (NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void fakeQuantWithMinMaxVars_, (NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output), FLOAT_TYPES);
 
 }
 }

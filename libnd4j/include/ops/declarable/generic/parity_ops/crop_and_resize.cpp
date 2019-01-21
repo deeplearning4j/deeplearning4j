@@ -36,7 +36,7 @@ namespace nd4j {
             int width;
             int height;
             int method = 0; // bilinear
-            T extrapolationVal = (T)0.f; 
+            double extrapolationVal = 0.;
 
             auto newImageSize = INPUT_VARIABLE(3);
             REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "crop_and_resize: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
@@ -66,8 +66,8 @@ namespace nd4j {
             auto newImageSize = INPUT_VARIABLE(3);
             REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "crop_and_resize: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
             //REQUIRE_TRUE(block.numI() <= 1, 0, "crop_and_resize: Resize params already given by the second param. Int params are expensive.");
-            width = int(newImageSize->getScalar(0));
-            height = int(newImageSize->getScalar(1));
+            width = newImageSize->e<int>(0);
+            height = newImageSize->e<int>(1);
             
             ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
             outputShape[0] = 4;
@@ -80,7 +80,11 @@ namespace nd4j {
             shapeList->push_back(outputShape); 
             return shapeList;
         }
-
+        DECLARE_TYPES(crop_and_resize) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
     }
 }
 

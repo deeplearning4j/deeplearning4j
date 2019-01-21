@@ -205,7 +205,7 @@ TEST_F(DeclarableOpsTests10, MirrorPad_SGO_Test_1) {
 
     auto res = op.execute({&in, &pad}, {10.0}, {0}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    res->at(0);
+    res->at(0)->printIndexedBuffer("Mirror pad:");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
     delete res;
 }
@@ -2569,15 +2569,15 @@ TEST_F(DeclarableOpsTests10, batchnorm_new_test1) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test2) {
+TEST_F(DeclarableOpsTests10, batchnorm_new_test2) {
 
-    auto input    = NDArrayFactory::create<TypeParam>('c', {2,3,4});
-    auto mean     = NDArrayFactory::create<TypeParam>('c', {3}, {1.05, 1.1, 1.15});
-    auto variance = NDArrayFactory::create<TypeParam>('c', {3}, {0.5, 0.6, 0.7});
-    auto gamma    = NDArrayFactory::create<TypeParam>('c', {3}, {1.2, 1.3, 1.4});
-    auto beta     = NDArrayFactory::create<TypeParam>('c', {3}, {0.1, 0.2, 0.3});
+    auto input    = NDArrayFactory::create<double>('c', {2,3,4});
+    auto mean     = NDArrayFactory::create<double>('c', {3}, {1.05, 1.1, 1.15});
+    auto variance = NDArrayFactory::create<double>('c', {3}, {0.5, 0.6, 0.7});
+    auto gamma    = NDArrayFactory::create<double>('c', {3}, {1.2, 1.3, 1.4});
+    auto beta     = NDArrayFactory::create<double>('c', {3}, {0.1, 0.2, 0.3});
 
-    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-1.51218734,-1.34248341,-1.17277948,-1.00307555,-0.80696728,-0.6391394 ,-0.47131152,-0.30348364,-0.11832703, 0.04900378, 0.21633459, 0.38366541,
+    auto expected = NDArrayFactory::create<double>('c', {2,3,4}, {-1.51218734,-1.34248341,-1.17277948,-1.00307555,-0.80696728,-0.6391394 ,-0.47131152,-0.30348364,-0.11832703, 0.04900378, 0.21633459, 0.38366541,
                                             0.52425983, 0.69396376, 0.86366769, 1.03337162, 1.20696728, 1.37479516, 1.54262304, 1.71045092, 1.8896427 , 2.05697351, 2.22430432, 2.39163513,});
 
     input.linspace(0.1, 0.1);
@@ -2597,15 +2597,15 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test2) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test3) {
+TEST_F(DeclarableOpsTests10, batchnorm_new_test3) {
 
-    auto input    = NDArrayFactory::create<TypeParam>('c', {2,3,4});
-    auto mean     = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4});
-    auto variance = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2});
-    auto gamma    = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9});
-    auto beta     = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {0.1, 0.2, 0.3, 0.4, 0.5, 0.66, 0.7, 0.8});
+    auto input    = NDArrayFactory::create<double>('c', {2,3,4});
+    auto mean     = NDArrayFactory::create<double>('c', {2,1,4}, {1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4});
+    auto variance = NDArrayFactory::create<double>('c', {2,1,4}, {0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2});
+    auto gamma    = NDArrayFactory::create<double>('c', {2,1,4}, {1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9});
+    auto beta     = NDArrayFactory::create<double>('c', {2,1,4}, {0.1, 0.2, 0.3, 0.4, 0.5, 0.66, 0.7, 0.8});
 
-    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-1.51218734,-1.31045092,-1.12231189,-0.9416324 ,-0.83337162,-0.6391394 ,-0.45298865,-0.2708162 ,-0.1545559 , 0.03217212, 0.21633459, 0.4,
+    auto expected = NDArrayFactory::create<double>('c', {2,3,4}, {-1.51218734,-1.31045092,-1.12231189,-0.9416324 ,-0.83337162,-0.6391394 ,-0.45298865,-0.2708162 ,-0.1545559 , 0.03217212, 0.21633459, 0.4,
                                             0.58432694, 0.82999915, 0.95743373, 1.14688951, 1.25894242, 1.50999575, 1.64392367, 1.84066852, 1.93355791, 2.18999235, 2.33041362, 2.53444754});
 
     input.linspace(0.1, 0.1);
