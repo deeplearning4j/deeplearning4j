@@ -43,12 +43,7 @@ namespace nd4j {
     NDArray* NDArray::asT() {
         auto result = new NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>());
         auto l = this->lengthOf();
-
-        // FIXME: we want to avoid put/get indexed scalars here really
-#pragma omp parallel for
-        for (int e = 0; e < l; e++) {
-            result->p(e, this->e<T>(e));
-        }
+        this->applyTransform(transform::Assign, result, nullptr);
 
         return result;
     }
@@ -1577,7 +1572,9 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     NDArray* NDArray::asT(DataType dtype) {
         if (isS())
             throw std::runtime_error("NDArray::asT: you can't use this method on String array!");
+
         BUILD_SINGLE_SELECTOR(dtype, return asT, (), LIBND4J_TYPES);
+
         return nullptr;
     }
 

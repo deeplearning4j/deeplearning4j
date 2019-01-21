@@ -1572,7 +1572,6 @@ NDArray NDArray::e(const Nd4jLong i) const {
     }
 
     void NDArray::applyTransform(nd4j::transform::AnyOps op, NDArray *target, ExtraArguments *extraParams) {
-        nd4j_printf("Any op %i transform:\n", (int)op);
 
         if (isS())
             throw std::runtime_error("NDArray::applyTransform AnyOps: you can't use this method on String array!");
