@@ -27,8 +27,8 @@ namespace nd4j {
 namespace ops {
 
     CONFIGURABLE_OP_IMPL(log_poisson_loss, 2, 1, true, 0, 0) {
-        auto targets = INPUT_VARIABLE(0);
-        auto input = INPUT_VARIABLE(1);
+        auto input = INPUT_VARIABLE(0);
+        auto targets = INPUT_VARIABLE(1);
         bool computeFullLoss = false;
 
         if (block.numI() > 0)
