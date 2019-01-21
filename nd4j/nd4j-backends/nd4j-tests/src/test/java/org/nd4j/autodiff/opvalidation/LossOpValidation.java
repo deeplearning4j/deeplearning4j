@@ -46,7 +46,7 @@ public class LossOpValidation extends BaseOpValidation {
 
     public static final Set<String> NO_BP_YET = new HashSet<>();
     static {
-        NO_BP_YET.addAll(Arrays.asList("l2_loss", "poisson", "mpwse"));
+        NO_BP_YET.addAll(Arrays.asList("l2_loss", "mpwse"));
     }
 
     @Test
@@ -59,9 +59,11 @@ public class LossOpValidation extends BaseOpValidation {
 
         int totalRun = 0;
         for (String fn : new String[]{
+                "log_poisson", "log_poisson_full",
                 "absdiff", "cosine", "hinge", "huber", "log", "mse",
                 "sigmoidxent", "sigmoidxent_smooth", "softmaxxent", "softmaxxent_smooth", "mpwse",
-                "sparsesoftmax"}) {
+                "sparsesoftmax"
+                }) {
 
 
             for(String weights : new String[]{"none", "scalar", "perExample", "perOutput"}) {
@@ -175,6 +177,22 @@ public class LossOpValidation extends BaseOpValidation {
                             INDArray log1p = Transforms.log(predictionsArr.rsub(1.0).add(eps), true);
                             expOut = labelsArr.mul(logP).addi(labelsArr.rsub(1).mul(log1p)).negi();
                             loss = sd.lossLog("loss", labels, predictions, w, reduction, eps);
+                            break;
+                        case "log_poisson":
+                            predictionsArr = Transforms.log(Transforms.abs(predictionsArr));
+                            labelsArr = Transforms.abs(labelsArr);
+                            expOut = Transforms.exp(predictionsArr).sub(labelsArr.mul(predictionsArr));
+                            loss = sd.lossLogPoisson("loss", labels, predictions, w, reduction);
+                            break;
+                        case "log_poisson_full":
+                            predictionsArr = Transforms.log(Transforms.abs(predictionsArr));
+                            labelsArr = Transforms.abs(labelsArr);
+                            expOut = Transforms.exp(predictionsArr)
+                                    .sub(labelsArr.mul(predictionsArr))
+                                    .add(labelsArr.mul(Transforms.log(labelsArr)))
+                                    .sub(labelsArr)
+                                    .add(Transforms.log(labelsArr.mul(Math.PI * 2)).mul(0.5));
+                            loss = sd.lossLogPoissonFull("loss", labels, predictions, w, reduction);
                             break;
                         case "mse":
                             //To match TF, this is actually sum of squares - 1/numExamples (prediction-label)^2

@@ -2495,6 +2495,7 @@ TEST_F(DeclarableOpsTests5, L2_Loss_3) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, LogPoissonLoss_1) {
+    auto weights = NDArrayFactory::create<double>('c', {1, 1}, {1});
 
     auto input   = NDArrayFactory::create<double>('c', {2, 2, 2}, { -1.,  2. , 1.5, -1.4, 1.,   2.,  2.,   1.});
     auto targets = NDArrayFactory::create<double>('c', {2, 2, 2}, {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0});
@@ -2502,7 +2503,7 @@ TEST_F(DeclarableOpsTests5, LogPoissonLoss_1) {
     auto exp = NDArrayFactory::create<double>('c', {2, 2, 2}, {1.3678794, 5.389056, 2.981689, 1.6465969, 1.7182817, 5.389056, 5.389056, 1.7182817});
     
     nd4j::ops::log_poisson_loss op;
-    auto results = op.execute({&input, &targets}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto results = op.execute({&input, &weights, &targets}, {}, {0}, {}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2515,13 +2516,15 @@ TEST_F(DeclarableOpsTests5, LogPoissonLoss_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, LogPoissonLoss_2) {
 
+    auto weights = NDArrayFactory::create<double>('c', {1, 1}, {1});
+
     auto input   = NDArrayFactory::create<double>('c', {2, 2, 2}, { -1.,  2. , 1.5, -1.4, 1.,   2.,  2.,   1.});
     auto targets = NDArrayFactory::create<double>('c', {2, 2, 2}, {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0});
 
     auto exp = NDArrayFactory::create<double>('c', {2, 2, 2}, {3.0196857, 4.0408626, 2.1334953, 3.6984034, 1.3700882, 4.0408626, 4.0408626, 1.3700882});
  
     nd4j::ops::log_poisson_loss op;
-    auto results = op.execute({&input, &targets}, {}, {1}, {}, false, nd4j::DataType::DOUBLE);
+    auto results = op.execute({&input, &weights, &targets}, {}, {0, 1}, {}, false, nd4j::DataType::DOUBLE);
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
