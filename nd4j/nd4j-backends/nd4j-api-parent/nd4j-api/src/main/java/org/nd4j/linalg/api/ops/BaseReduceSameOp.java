@@ -96,9 +96,7 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
             return Collections.emptyList();
 
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
-        boolean scalar = x.isScalar();
-        long length = x.length();
-        long[] reducedShape = x.isScalar() ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims(), newFormat);
+        long[] reducedShape = x.length() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims(), newFormat);
         return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, this.resultType()));
     }
 

@@ -125,56 +125,6 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         assertFalse(BooleanIndexing.or(array, Conditions.greaterThan(6.0f)));
     }
 
-    @Test
-    public void testApplyWhere1() {
-        INDArray array = Nd4j.create(new float[] {-1f, -1f, -1f, -1f, -1f});
-
-        BooleanIndexing.applyWhere(array, Conditions.lessThan(Nd4j.EPS_THRESHOLD), new Value(Nd4j.EPS_THRESHOLD));
-
-        //System.out.println("Array contains: " + Arrays.toString(array.data().asFloat()));
-
-        assertTrue(BooleanIndexing.and(array, Conditions.equals(Nd4j.EPS_THRESHOLD)));
-    }
-
-    @Test
-    public void testApplyWhere2() {
-        INDArray array = Nd4j.create(new float[] {0f, 0f, 0f, 0f, 0f});
-
-        BooleanIndexing.applyWhere(array, Conditions.lessThan(1.0f), new Value(1.0f));
-
-        assertTrue(BooleanIndexing.and(array, Conditions.equals(1.0f)));
-    }
-
-    @Test
-    public void testApplyWhere3() {
-        INDArray array = Nd4j.create(new float[] {1e-18f, 1e-18f, 1e-18f, 1e-18f, 1e-18f});
-
-        BooleanIndexing.applyWhere(array, Conditions.lessThan(1e-12f), new Value(1e-12f));
-
-        //System.out.println("Array contains: " + Arrays.toString(array.data().asFloat()));
-
-        assertTrue(BooleanIndexing.and(array, Conditions.equals(1e-12f)));
-    }
-
-    @Test
-    public void testApplyWhere4() {
-        INDArray array = Nd4j.create(new float[] {1e-18f, Float.NaN, 1e-18f, 1e-18f, 1e-18f});
-
-        BooleanIndexing.applyWhere(array, Conditions.lessThan(1e-12f), new Value(1e-12f));
-
-        //System.out.println("Array contains: " + Arrays.toString(array.data().asFloat()));
-
-        BooleanIndexing.applyWhere(array, Conditions.isNan(), new Value(1e-16f));
-
-        System.out.println("Array contains: " + Arrays.toString(array.data().asFloat()));
-
-        assertFalse(BooleanIndexing.or(array, Conditions.isNan()));
-
-        assertTrue(BooleanIndexing.or(array, Conditions.equals(1e-12f)));
-
-        assertTrue(BooleanIndexing.or(array, Conditions.equals(1e-16f)));
-    }
-
     /*
         2D array checks
      */
@@ -216,25 +166,6 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         array.slice(4).putScalar(2, 1e-5f);
 
         assertTrue(BooleanIndexing.or(array, Conditions.greaterThan(1e-6f)));
-    }
-
-    @Test
-    public void test2dApplyWhere1() {
-        INDArray array = Nd4j.ones(4, 4);
-
-        array.slice(3).putScalar(2, 1e-5f);
-
-        //System.out.println("Array before: " + Arrays.toString(array.data().asFloat()));
-
-        BooleanIndexing.applyWhere(array, Conditions.lessThan(1e-4f), new Value(1e-12f));
-
-        //System.out.println("Array after 1: " + Arrays.toString(array.data().asFloat()));
-
-        assertTrue(BooleanIndexing.or(array, Conditions.equals(1e-12f)));
-
-        assertTrue(BooleanIndexing.or(array, Conditions.equals(1.0f)));
-
-        assertFalse(BooleanIndexing.and(array, Conditions.equals(1e-12f)));
     }
 
     /**
@@ -388,42 +319,6 @@ public class BooleanIndexingTest extends BaseNd4jTest {
                 .exec(new MatchCondition(array, Conditions.isInfinite())).getDouble(0);
 
         assertEquals(1, val);
-    }
-
-    @Test
-    public void testAbsValueGreaterThan() {
-        final double threshold = 2;
-
-        Condition absValueCondition = new AbsValueGreaterThan(threshold);
-        Function<Number, Number> clipFn = new Function<Number, Number>() {
-            @Override
-            public Number apply(Number number) {
-                System.out.println("Number: " + number.doubleValue());
-                return (number.doubleValue() > threshold ? threshold : -threshold);
-            }
-        };
-
-        Nd4j.getRandom().setSeed(12345);
-        INDArray orig = Nd4j.rand(1, 20).muli(6).subi(3); //Random numbers: -3 to 3
-        INDArray exp = orig.dup();
-        INDArray after = orig.dup();
-
-        for (int i = 0; i < exp.length(); i++) {
-            double d = exp.getDouble(i);
-            if (d > threshold) {
-                exp.putScalar(i, threshold);
-            } else if (d < -threshold) {
-                exp.putScalar(i, -threshold);
-            }
-        }
-
-        BooleanIndexing.applyWhere(after, absValueCondition, clipFn);
-
-        System.out.println(orig);
-        System.out.println(exp);
-        System.out.println(after);
-
-        assertEquals(exp, after);
     }
 
     @Test

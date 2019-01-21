@@ -28,6 +28,8 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 
@@ -81,8 +83,12 @@ public class SoftmaxCrossEntropyLoss extends BaseLoss {
         return "SoftmaxCrossEntropy";
     }
 
+
     @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
+    public List<SDVariable> doDiff(List<SDVariable> grad){
+        //No external gradient
+        //Args are: predictions, weights, label
+        SDVariable[] grads = f().lossSoftmaxCrossEntropyBp(arg(2), arg(0), arg(1), lossReduce, labelSmoothing);
+        return Arrays.asList(grads);
     }
 }

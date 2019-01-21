@@ -36,22 +36,10 @@ public class Negative extends BaseTransformSameOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Negative(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Negative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Negative() {}
 
     public Negative(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Negative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Negative(INDArray x) {

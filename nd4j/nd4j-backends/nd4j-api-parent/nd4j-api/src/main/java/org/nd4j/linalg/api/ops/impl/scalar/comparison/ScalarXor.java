@@ -34,8 +34,8 @@ public class ScalarXor extends BaseScalarBoolOp {
     public ScalarXor() {
     }
 
-    public ScalarXor(INDArray x, INDArray z, long n, Number num) {
-        super(x, null, z, n, num);
+    public ScalarXor(INDArray x, INDArray z, Number num) {
+        super(x, null, z, num);
     }
 
     public ScalarXor(INDArray x, Number num) {
@@ -49,14 +49,6 @@ public class ScalarXor extends BaseScalarBoolOp {
 
     public ScalarXor(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
-    }
-
-    public ScalarXor(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, inPlace, extraArgs);
-    }
-
-    public ScalarXor(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, extraArgs);
     }
 
     @Override

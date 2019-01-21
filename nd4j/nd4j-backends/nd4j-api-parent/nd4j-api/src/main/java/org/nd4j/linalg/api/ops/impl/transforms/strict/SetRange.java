@@ -40,18 +40,7 @@ public class SetRange extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
         this.min = min;
         this.max = max;
-    }
-
-    public SetRange(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double min, double max) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.min = min;
-        this.max = max;
-    }
-
-    public SetRange(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double min, double max) {
-        super(sameDiff, i_v, extraArgs);
-        this.min = min;
-        this.max = max;
+        this.extraArgs = new Object[] {min, max};
     }
 
     public SetRange() {}
@@ -64,28 +53,13 @@ public class SetRange extends BaseTransformStrictOp {
         super(x, z);
         this.min = min;
         this.max = max;
-        init(x, y, z, n);
+        this.extraArgs = new Object[] {min, max};
     }
-
-    public SetRange(INDArray x, INDArray z, long n, double min, double max) {
-        super(x, z, n);
-        this.min = min;
-        this.max = max;
-        init(x, y, z, n);
-    }
-/*
-    public SetRange(INDArray x, INDArray y, INDArray z, long n, double min, double max) {
-        super(x, y, z, n);
-        this.min = min;
-        this.max = max;
-        init(x, y, z, n);
-    }
-*/
     public SetRange(INDArray x, double min, double max) {
         super(x);
         this.min = min;
         this.max = max;
-        init(x, y, z, n);
+        this.extraArgs = new Object[] {min, max};
     }
 
     @Override
@@ -106,14 +80,6 @@ public class SetRange extends BaseTransformStrictOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {min, max};
-    }
-
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

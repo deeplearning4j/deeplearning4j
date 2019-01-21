@@ -40,45 +40,25 @@ public class BinaryMinimalRelativeError extends BaseTransformSameOp {
         super(sameDiff, i_v1, i_v2, inPlace);
     }
 
-    public BinaryMinimalRelativeError(SameDiff sameDiff) {
-        super(sameDiff);
-    }
-
-    public BinaryMinimalRelativeError(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
     public BinaryMinimalRelativeError(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
-    }
-
-    public BinaryMinimalRelativeError(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public BinaryMinimalRelativeError(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
     }
 
     public BinaryMinimalRelativeError() {
     }
 
-    public BinaryMinimalRelativeError(INDArray x, INDArray y, INDArray z, double thresholdRelative, double thresholdAbsolute, long n) {
-        super(x, y, z, n);
+    public BinaryMinimalRelativeError(INDArray x, INDArray y, INDArray z, double thresholdRelative, double thresholdAbsolute) {
+        super(x, y, z);
         this.thresholdRelative = thresholdRelative;
         this.thresholdAbsolute = thresholdAbsolute;
+        this.extraArgs = new Object[] {thresholdRelative, thresholdAbsolute};
     }
 
     public BinaryMinimalRelativeError(INDArray x, INDArray y, double thresholdRelative, double thresholdAbsolute) {
-        super(x, y, x, x.lengthLong());
+        super(x, y, x);
         this.thresholdRelative = thresholdRelative;
         this.thresholdAbsolute = thresholdAbsolute;
-    }
-
-    public BinaryMinimalRelativeError(INDArray x, INDArray y, INDArray z, double thresholdRelative, double thresholdAbsolute) {
-        super(x, y, z, x.lengthLong());
-        this.thresholdRelative = thresholdRelative;
-        this.thresholdAbsolute = thresholdAbsolute;
+        this.extraArgs = new Object[] {thresholdRelative, thresholdAbsolute};
     }
 
     @Override
@@ -99,12 +79,6 @@ public class BinaryMinimalRelativeError extends BaseTransformSameOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No  onnx opName found for " + opName());
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {thresholdRelative, thresholdAbsolute};
     }
 
 

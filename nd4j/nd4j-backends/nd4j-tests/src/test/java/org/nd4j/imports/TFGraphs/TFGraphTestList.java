@@ -49,7 +49,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "assert_rank/rank0_int32"
+            "losses/softmax_ce"
     };
 
     @After
@@ -89,6 +89,7 @@ public class TFGraphTestList {
 
     @Test
     public void testOutputOnly() throws IOException {
+        //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.newFolder();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
         Map<String, INDArray> predictions = TFGraphTestAllHelper.outputVars(modelName, MODEL_DIR, dir);
@@ -102,6 +103,7 @@ public class TFGraphTestList {
 
     @Test @Ignore
     public void testAlsoIntermediate() throws IOException {
+        //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.newFolder();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
         TFGraphTestAllHelper.checkIntermediate(inputs, modelName, MODEL_DIR, MODEL_FILENAME, executeWith, dir);

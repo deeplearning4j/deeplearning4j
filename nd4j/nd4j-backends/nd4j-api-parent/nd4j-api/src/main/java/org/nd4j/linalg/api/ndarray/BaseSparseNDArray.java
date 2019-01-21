@@ -1149,10 +1149,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
             result.assign(gemmResultArr);
         }
 
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
         return result;
     }
 
@@ -1358,6 +1354,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public int getInt(int... indices) {
+        return 0;
+    }
+
+    @Override
+    public long getLong(long... indices) {
         return 0;
     }
 

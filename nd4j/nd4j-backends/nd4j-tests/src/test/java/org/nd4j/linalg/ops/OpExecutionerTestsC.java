@@ -115,7 +115,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testScalarReverseSub() {
         INDArray input = Nd4j.valueArrayOf(4,2.0);
         INDArray result= Nd4j.zeros(4);
-        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(input,null,result,input.length(),1.0));
+        Nd4j.getExecutioner().exec(new ScalarReverseSubtraction(input,null,result,1.0));
         INDArray assertion = Nd4j.valueArrayOf(4,-1.0);
         assertEquals(assertion,result);
     }
@@ -436,7 +436,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testDimensionSoftMax() {
         INDArray linspace = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
-        OldSoftMax max = new OldSoftMax(linspace, 1);
+        OldSoftMax max = new OldSoftMax(linspace);
         Nd4j.getExecutioner().exec(max);
         linspace.assign(max.z());
         assertEquals(getFailureMessage(), linspace.getRow(0).sumNumber().doubleValue(), 1.0, 1e-1);

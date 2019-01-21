@@ -34,8 +34,8 @@ import java.util.List;
 public class ScalarMax extends BaseScalarOp {
     public ScalarMax() {}
 
-    public ScalarMax(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarMax(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
     }
 
     public ScalarMax(INDArray x, Number num) {
@@ -65,15 +65,6 @@ public class ScalarMax extends BaseScalarOp {
     @Override
     public String tensorflowName() {
         return "RealMax";
-    }
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (scalarValue != null)
-            this.extraArgs = new Object[]{scalarValue};
-
     }
 
     @Override

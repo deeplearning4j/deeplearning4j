@@ -34,8 +34,8 @@ import java.util.List;
 public class ScalarMin extends BaseScalarOp {
     public ScalarMin() {}
 
-    public ScalarMin(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarMin(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
     }
 
     public ScalarMin(INDArray x, Number num) {
@@ -45,7 +45,6 @@ public class ScalarMin extends BaseScalarOp {
     public ScalarMin(SameDiff sd, SDVariable in, Number number){
         super(sd, in, number);
     }
-
 
     @Override
     public int opNum() {
@@ -62,21 +61,9 @@ public class ScalarMin extends BaseScalarOp {
         return "RealMin";
     }
 
-
     @Override
     public String opName() {
         return "scalar_min";
-    }
-
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (scalarValue != null)
-            this.extraArgs = new Object[] {scalarValue};
-
-
     }
 
 

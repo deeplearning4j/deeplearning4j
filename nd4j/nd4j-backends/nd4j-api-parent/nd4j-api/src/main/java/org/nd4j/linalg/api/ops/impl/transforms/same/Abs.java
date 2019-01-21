@@ -35,23 +35,11 @@ public class Abs extends BaseTransformSameOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Abs(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Abs(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Abs() {
     }
 
     public Abs(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Abs(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Abs(INDArray x) {

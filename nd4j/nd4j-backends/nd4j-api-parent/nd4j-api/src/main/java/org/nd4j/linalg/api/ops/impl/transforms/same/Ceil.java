@@ -35,10 +35,6 @@ public class Ceil extends BaseTransformSameOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Ceil(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
     public Ceil(SameDiff sameDiff, SDVariable i_v) {
         super(sameDiff, i_v, (Object[]) null);
     }
@@ -48,10 +44,6 @@ public class Ceil extends BaseTransformSameOp {
 
     public Ceil(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Ceil(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Ceil(INDArray x) {

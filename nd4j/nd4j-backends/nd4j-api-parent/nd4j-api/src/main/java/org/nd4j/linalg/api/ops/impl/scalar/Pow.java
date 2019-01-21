@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.scalar;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -58,27 +59,13 @@ public class Pow extends BaseScalarOp {
     public Pow(INDArray x, INDArray z, double pow) {
         super(x, z, pow);
         this.pow = pow;
-        init(x, null, z, x.lengthLong());
-    }
-
-    public Pow(INDArray x, INDArray z, long n, double pow) {
-        super(x, z, n);
-        this.pow = pow;
-        init(x, null, z, n);
-
-    }
-
-    public Pow(INDArray x, INDArray y, INDArray z, long n, double pow) {
-        super(x, y, z, n, pow);
-        this.pow = pow;
-        init(x, y, z, n);
-
+        this.extraArgs = new Object[]{pow};
     }
 
     public Pow(INDArray x, double pow) {
         super(x, pow);
         this.pow = pow;
-        init(x, null, x, x.lengthLong());
+        this.extraArgs = new Object[]{pow};
     }
 
     @Override
@@ -91,17 +78,9 @@ public class Pow extends BaseScalarOp {
         return "pow";
     }
 
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[]{pow};
-    }
-
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val weightsName = nodeDef.getInput(1);
-        val variable = initWith.getVariable(weightsName);
         val tmp = initWith.getArrForVarName(weightsName);
 
         // if second argument is scalar - we should provide array of same shape
@@ -119,7 +98,7 @@ public class Pow extends BaseScalarOp {
 
     @Override
     public String tensorflowName() {
-        return "Pow";
+        throw new NoOpNameFoundException("No TensorFlow op found for " + getClass().getSimpleName());
     }
 
     @Override

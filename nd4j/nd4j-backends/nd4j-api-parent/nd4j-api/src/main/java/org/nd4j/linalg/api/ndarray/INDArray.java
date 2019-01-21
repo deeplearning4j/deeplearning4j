@@ -1877,6 +1877,8 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     int getInt(int... indices);
 
+    long getLong(long... indices);
+
     /**
      * Get a double value at the specified indices.
      * @param indices Indices to get the double at. Number of indices must match the array rank.
@@ -2291,7 +2293,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      * Returns the total number of elements in the ndarray
      *
      * @return the number of elements in the ndarray
+     * @deprecated use {@link #length()}
      */
+    @Deprecated
     long lengthLong();
 
 

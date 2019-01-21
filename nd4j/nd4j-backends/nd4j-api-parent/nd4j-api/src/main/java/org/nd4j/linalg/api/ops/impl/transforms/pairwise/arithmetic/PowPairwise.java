@@ -39,10 +39,6 @@ public class PowPairwise extends BaseTransformAnyOp  {
 
     public PowPairwise() {}
 
-    public PowPairwise(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public PowPairwise(INDArray x) {
         super(x);
     }
@@ -51,12 +47,8 @@ public class PowPairwise extends BaseTransformAnyOp  {
         super(x, z);
     }
 
-    public PowPairwise(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public PowPairwise(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
     }
 
     @Override
@@ -83,13 +75,4 @@ public class PowPairwise extends BaseTransformAnyOp  {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (y == null)
-            throw new IllegalArgumentException("No components to add");
-    }
-
 }

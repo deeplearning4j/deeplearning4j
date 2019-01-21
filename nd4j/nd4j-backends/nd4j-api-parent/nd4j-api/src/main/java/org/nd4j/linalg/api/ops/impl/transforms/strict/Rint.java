@@ -36,22 +36,10 @@ public class Rint extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Rint(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Rint(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Rint() {}
 
     public Rint(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Rint(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Rint(INDArray x) {

@@ -36,7 +36,6 @@ public class ApiTest {
     @Test
     @Ignore
     public void testUpdateCoords() throws Exception {
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         Nd4j.factory().setDType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250).theta(0.5).learningRate(500)

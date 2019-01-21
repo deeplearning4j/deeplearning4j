@@ -75,39 +75,38 @@ public class TFGraphTestAllSameDiff {
     };
 
     public static final String[] IGNORE_REGEXES = new String[]{
-            //2019/01/08 - No tensorflow op found for SparseTensorDenseAdd
-            "confusion/.*",
 
-            //Failing 2019/01/08 - expected/actual difference
-            "log_determinant/.*",
+            //Still failing: 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6322 and https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 1
+            "broadcast_dynamic_shape/.*",
+
+            //Failing 2019/01/08 - Issue 3 https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            "boolean_mask/.*",
+
+            //Failing 2019/01/15 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "slogdet/.*",
 
-            //Failing 2019/01/08 - NPE
+            //Failing 2019/01/15 - Issue 11 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "bincount/.*",
 
-            //Still failing 2019/01/08 - "DEPTHWISECONV2D OP: wrong shape of weights array, expected is [-1, -1, 2, 2], but got [1, 2, 2, 2] instead !"
+            //Failures as of 2019/01/15: due to bad gather op - Issue 12 https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            "embedding_lookup/.*multiple.*",
+
+            //Failing as of 2019/01/15 - Issue 13 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            "nth_element/rank1_n0",
+            "nth_element/rank2_n0",
+
+            //2019/01/16 - Issue 14 - https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            "g_07",
+
+            //Failing 2019/01/16 - Issue 15 https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            "where/cond_only.*",
+
+            //Still failing 2019/01/15 - https://github.com/deeplearning4j/deeplearning4j/issues/7008
             "sepconv1d_layers/.*",
 
             //scatter_nd: a few cases failing as of 2019/01/08
             "scatter_nd/rank2shape_2indices",
             "scatter_nd/rank3shape_2indices",
-
-
-            //Failures as of 2019/01/08: vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)
-            "embedding_lookup/.*multiple.*",
-
-            //Failing as of 2019/01/08
-            "nth_element/rank1_n0",
-            "nth_element/rank2_n0",
-
-            //Still failing: 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6322 and https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 1
-            "broadcast_dynamic_shape/.*",
-
-            //Failing 2019/01/08 - Shape... input is float in TF, but this dousn't match TF docs! Maybe it's index of non-zero elements like numpy?
-            "where/cond_only.*",
-
-            //Failing 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6958 issue 3
-            "boolean_mask/.*",
 
             //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
             "truncatemod/.*",
@@ -115,52 +114,36 @@ public class TFGraphTestAllSameDiff {
             //2019/01/08 - This is simply an order issue - need to account for this in test (TF gives no order guarantees)
             "topk/.*",
 
-            //Still failing as of 2019/01/08
+            //2019/01/15 - failing on expected/actual. Maybe op issue?
             "lrn/dr3.*",
             "lrn/dr5.*",
-
-            //This is failing on strided slice - on what appears to be an invalid op arguments. Will replace
-            // this test with a set of more thorough/isolated strided slice tests
-            "g_07",
 
             //Still failing as of 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn1d_layers/channels_first_b2_k2_s1_d2_SAME",
             "cnn2d_layers/channels_first_b1_k12_s1_d12_SAME",
 
-            //These have a random component so can't be validated using simple .equals... should still be compared, however to check range is sensible etc
+            //2019/01/16 - These have a random component so can't be validated using simple .equals... should still be compared, however to check range is sensible etc
             "alpha_dropout/.*",
             "layers_dropout/.*",
 
-            //2019/01/09 - Issue 6 at https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            "pad/rank1Pone_reflect",
+            //2019/01/16 - "IllegalStateException: Expected exactly 1 op input, got null+null"
+            "simplewhile_nested",
 
-            //These absurdly slow:
-            "simplewhile.*",
-
-            //New failures:
-            "gru_dynamic_mnist",
+            //2019/01/16 - "org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter cannot be cast to org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray"
+            //Doesn't seem like a valid structure, based on the docs
+            // TensorArrayReadV3 has 3 inputs - handle, index, and flow_in
+            //'handle' is supposed to be the handle to a TensorArray, but here's it's the output variable of an Enter op
             "primitive_gru_dynamic",
-            "simple_while",
-
-            //Bad test, no outputs (but there are non-output ("inbetween") results)
-            "g_10",
 
             //Still failing as of 2019/01/08 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn2d_nn/nchw_b1_k12_s12_d12_SAME",
             "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME",
 
-            "ae",
+            //2019/01/08 - No tensorflow op found for SparseTensorDenseAdd
+            "confusion/.*",
 
-            //Crashing
-            "norm_tests/norm_7",
-
-            //Remaining tests failing as of 2019/01/09 - to look into these
-            "g_04",
-            "logsumexp/rank2_d-1",
-            "losses/cosine_diff_rank1",
-            "lstm_mnist",
-            "norm_tests/norm_11",
-            "reductions/count_nonzero_345_-1"
+            //2019/01/18 - Issue 18 here: https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            "extractImagePatches/.*"
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 

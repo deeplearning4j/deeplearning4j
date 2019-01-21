@@ -33,11 +33,6 @@ import java.util.List;
 public class ScalarAnd extends BaseScalarBoolOp {
     public ScalarAnd() {
     }
-
-    public ScalarAnd(INDArray x, INDArray z, long n, Number num) {
-        super(x, null, z, n, num);
-    }
-
     public ScalarAnd(INDArray x, Number num) {
         super(x, num);
     }
@@ -49,14 +44,6 @@ public class ScalarAnd extends BaseScalarBoolOp {
 
     public ScalarAnd(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
-    }
-
-    public ScalarAnd(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, inPlace, extraArgs);
-    }
-
-    public ScalarAnd(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, extraArgs);
     }
 
     @Override

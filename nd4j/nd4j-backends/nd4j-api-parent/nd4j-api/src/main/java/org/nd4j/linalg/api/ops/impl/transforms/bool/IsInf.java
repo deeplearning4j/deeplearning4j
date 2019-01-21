@@ -35,14 +35,6 @@ public class IsInf extends BaseTransformBoolOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public IsInf(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public IsInf(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public IsInf() {}
 
     public IsInf(INDArray x, INDArray z) {

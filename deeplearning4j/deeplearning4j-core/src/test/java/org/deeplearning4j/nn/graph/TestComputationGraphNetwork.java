@@ -40,6 +40,7 @@ import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.misc.RepeatVector;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.preprocessor.*;
@@ -47,6 +48,7 @@ import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.GraphIndices;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.PermutePreprocessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.multilayer.MultiLayerTest;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
@@ -81,6 +83,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 
+import static org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional.Mode.CONCAT;
 import static org.junit.Assert.*;
 
 @Slf4j
@@ -1850,7 +1853,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         INDArray p1b = cg.getParam("layer_one_b");
         assertEquals(Nd4j.linspace(211, 220, 10).reshape(1,10), p1b);
 
-        INDArray newP1b = Nd4j.valueArrayOf(new long[]{1,10}, -1);
+        INDArray newP1b = Nd4j.valueArrayOf(new long[]{1,10}, -1.0);
         cg.setParam("layer_one_b", newP1b);
 
         assertEquals(newP1b, p1b);
@@ -1941,5 +1944,44 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
         assertFalse(d1 == d2);  //Should not be same object!
         assertEquals(d1, d2);   //But should be equal
+    }
+
+    @Test
+    public void testVerticesAndMasking7027(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/7027
+        int inputSize = 300;
+        int hiddenSize = 100;
+
+        ComputationGraphConfiguration configuration = new NeuralNetConfiguration.Builder()
+                .updater(new Adam())
+                .graphBuilder()
+                .addInputs("x_emb")
+                .setInputTypes(InputType.recurrent(inputSize))
+                .addLayer("agg_lstm", new Bidirectional(CONCAT, new LSTM.Builder().nIn(inputSize).nOut(hiddenSize/2).build()), "x_emb")
+                .addLayer("agg_att", new DenseLayer.Builder().nIn(100).nOut(1).activation(Activation.SOFTMAX).build(), "agg_lstm")
+                .addVertex("att", new PreprocessorVertex(new ComposableInputPreProcessor(new FeedForwardToRnnPreProcessor(), new PermutePreprocessor(new int[] {0,2,1}), new RnnToFeedForwardPreProcessor())), "agg_att")
+                .addLayer("att_repeat", new RepeatVector.Builder(hiddenSize).build(),"att")
+                .addVertex("att_trans", new PreprocessorVertex(new PermutePreprocessor(new int[] {0, 2, 1})), "att_repeat")
+                .addVertex("mult", new ElementWiseVertex(ElementWiseVertex.Op.Product), "agg_lstm", "att_trans")
+                .addLayer("sum", new GlobalPoolingLayer.Builder().build(), "mult")
+                .addLayer("agg_out", new DenseLayer.Builder().nIn(100).nOut(6).activation(Activation.TANH).build(), "sum")
+                .addLayer("output", new OutputLayer.Builder().nIn(6).nOut(6).lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build(), "agg_out")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(configuration);
+        net.init();
+
+        int dataSize = 10;
+        int seqLen = 5;
+        INDArray features = Nd4j.rand(new int[] {dataSize, inputSize, seqLen});
+        INDArray labels = Nd4j.rand(new int[] {dataSize, 6});
+        INDArray featuresMask = Nd4j.ones(dataSize, seqLen);
+        INDArray labelsMask = Nd4j.ones(dataSize, 6);
+
+        DataSet dataSet1 = new DataSet(features, labels);
+        net.fit(dataSet1);
+        DataSet dataSet2 = new DataSet(features, labels, featuresMask, labelsMask);
+        net.fit(dataSet2);
     }
 }

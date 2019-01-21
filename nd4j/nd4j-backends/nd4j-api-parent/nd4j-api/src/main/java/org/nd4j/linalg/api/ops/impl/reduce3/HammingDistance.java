@@ -41,7 +41,6 @@ public class HammingDistance extends BaseReduce3Op {
     }
 
     public HammingDistance() {
-        passThrough = true;
     }
 
     public HammingDistance(INDArray x, INDArray y, int... dimensions) {

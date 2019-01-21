@@ -327,8 +327,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             return true;
 
         boolean endsWithRead = opType.getName().endsWith("/read");
-        boolean isReductionIndices = opType.getName().endsWith("/reduction_indices");
-        return  endsWithRead  || isReductionIndices;
+        return endsWithRead;
     }
 
     @Override

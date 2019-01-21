@@ -626,7 +626,7 @@ public class Transforms {
      */
     public static INDArray pow(INDArray ndArray, INDArray power, boolean dup) {
         INDArray result = (dup ? ndArray.ulike() : ndArray);
-        return exec(new PowPairwise(ndArray, power, result, ndArray.length()));
+        return exec(new PowPairwise(ndArray, power, result));
     }
 
     /**
@@ -667,7 +667,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sigmoidDerivative(INDArray ndArray) {
-        return sigmoid(ndArray, true);
+        return sigmoidDerivative(ndArray, true);
     }
 
     /**
@@ -781,7 +781,7 @@ public class Transforms {
      * @return
      */
     public static INDArray lessThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return exec(new OldLessThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering()), first.length()));
+        return exec(new OldLessThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())));
 
     }
 
@@ -793,7 +793,7 @@ public class Transforms {
      * @return
      */
     public static INDArray greaterThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return exec(new OldGreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering()), first.length()));
+        return exec(new OldGreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())));
 
     }
 
@@ -829,7 +829,7 @@ public class Transforms {
      * @return
      */
     public static INDArray max(INDArray ndArray, double k, boolean dup) {
-        return exec(dup ? new ScalarMax(ndArray, null, ndArray.ulike(), ndArray.length(), k) : new ScalarMax(ndArray, k));
+        return exec(dup ? new ScalarMax(ndArray, null, ndArray.ulike(), k) : new ScalarMax(ndArray, k));
     }
 
     /**
@@ -856,7 +856,7 @@ public class Transforms {
         if (dup) {
             result = first.ulike();
         }
-        return exec(new OldMax(first, second, result, first.length()));
+        return exec(new OldMax(first, second, result));
     }
 
     /**
@@ -879,7 +879,7 @@ public class Transforms {
      * @return
      */
     public static INDArray min(INDArray ndArray, double k, boolean dup) {
-        return exec(dup ? new ScalarMin(ndArray, null, ndArray.ulike(), ndArray.length(), k) : new ScalarMin(ndArray, k));
+        return exec(dup ? new ScalarMin(ndArray, null, ndArray.ulike(), k) : new ScalarMin(ndArray, k));
     }
 
     /**
@@ -905,7 +905,7 @@ public class Transforms {
         if (dup) {
             first = first.dup();
         }
-        return exec(new OldMin(second, first, first, first.length()));
+        return exec(new OldMin(second, first, first));
     }
 
     /**
@@ -1096,9 +1096,9 @@ public class Transforms {
     public static INDArray not(INDArray x) {
         val z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
         if (x.isB()) {
-            Nd4j.getExecutioner().exec(new BooleanNot(x, z, x.length()));
+            Nd4j.getExecutioner().exec(new BooleanNot(x, z));
         } else {
-            Nd4j.getExecutioner().exec(new ScalarNot(x, z, x.length(), 0.0f));
+            Nd4j.getExecutioner().exec(new ScalarNot(x, z, 0.0f));
         }
         return z;
     }

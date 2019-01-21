@@ -38,23 +38,11 @@ public class Cos extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Cos(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Cos(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Cos() {
     }
 
     public Cos(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Cos(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Cos(INDArray x) {

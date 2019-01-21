@@ -35,26 +35,10 @@ public class IsFinite extends BaseTransformBoolOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public IsFinite(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public IsFinite(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public IsFinite() {}
 
     public IsFinite(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public IsFinite(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public IsFinite(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
     }
 
     public IsFinite(INDArray x) {

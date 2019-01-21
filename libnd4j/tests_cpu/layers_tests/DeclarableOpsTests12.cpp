@@ -743,3 +743,24 @@ TEST_F(DeclarableOpsTests12, scatter_add_8) {
     ASSERT_TRUE(expected.isSameShapeStrict(&z));
     ASSERT_TRUE(expected.equalsTo(z));
 }
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, gather_6) {
+    
+    NDArray input('c', {3,5}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}, nd4j::DataType::FLOAT32);    
+    NDArray indices('c', {1}, {2}, nd4j::DataType::INT32);
+    NDArray expected('c', {1,5}, {11, 12, 13, 14, 15.}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::gather op;
+
+    auto result = op.execute({&input, &indices}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto* output = result->at(0);
+    output->printShapeInfo();
+    output->printIndexedBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}

@@ -222,7 +222,7 @@ You should set 4 things:
 
 
 Some notes:
-* On YARN, it is generally necessary to set the ```spark.driver.memoryOverhead``` and ```spark.executor.memoryOverhead``` properties. The default settings are much too small for DL4J training.
+* On YARN, it is generally necessary to set the ```spark.yarn.driver.memoryOverhead``` and ```spark.yarn.executor.memoryOverhead``` properties. The default settings are much too small for DL4J training.
 * On Spark standalone, you can also configure memory by modifying the ```conf/spark-env.sh``` file on each node, as described in the [Spark configuration docs](https://spark.apache.org/docs/latest/configuration.html#environment-variables). For example, you could add the following lines to set 8GB heap for the driver, 12 GB off-heap for the driver, 12GB heap for the workers, and 18GB off-heap for the workers:
     * ```SPARK_DRIVER_OPTS=-Dorg.bytedeco.javacpp.maxbytes=12G```
     * ```SPARK_DRIVER_MEMORY=8G```

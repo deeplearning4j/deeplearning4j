@@ -48,9 +48,9 @@ public class TFGraphTestZooModels {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
-    private static File currentTestDir;
+    public static File currentTestDir;
 
-    public static final File BASE_MODEL_DL_DIR = new File(System.getProperty("user.home"), ".nd4jtests");
+    public static final File BASE_MODEL_DL_DIR = new File(getBaseModelDir(), ".nd4jtests");
 
     private static final String BASE_DIR = "tf_graphs/zoo_models";
     private static final String MODEL_FILENAME = "tf_model.txt";
@@ -59,6 +59,14 @@ public class TFGraphTestZooModels {
     private Map<String, INDArray> predictions;
     private String modelName;
     private File localTestDir;
+
+    public static String getBaseModelDir(){
+        String s = System.getProperty("org.nd4j.tests.modeldir");
+        if(s != null && !s.isEmpty()){
+            return s;
+        }
+        return System.getProperty("user.home");
+    }
 
     public static final BiFunction<File,String,SameDiff> LOADER = new RemoteCachingLoader();
 
@@ -152,8 +160,7 @@ public class TFGraphTestZooModels {
 
     @Test   //(timeout = 360000L)
     public void testOutputOnly() throws Exception {
-//        if(!modelName.startsWith("deeplab")){
-//        if(!modelName.startsWith("ssd")){
+//        if(!modelName.startsWith("mobilenet_v1_0.5_128")){
 //            OpValidationSuite.ignoreFailing();
 //        }
         currentTestDir = testDir.newFolder();
@@ -172,15 +179,15 @@ public class TFGraphTestZooModels {
         Double maxRE = 1e-3;
         Double minAbs = 1e-4;
         currentTestDir = testDir.newFolder();
+        log.info("----- SameDiff Exec: {} -----", modelName);
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
                 LOADER, maxRE, minAbs);
 
 
-
-
-//        Double maxRE = 1e-2;
-//        Double minAbs = 1e-3;
-//        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
-//                LOADER, maxRE, minAbs, localTestDir);
+        //Libnd4j exec:
+        currentTestDir = testDir.newFolder();
+        log.info("----- Libnd4j Exec: {} -----", modelName);
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.LIBND4J,
+                LOADER, maxRE, minAbs);
     }
 }

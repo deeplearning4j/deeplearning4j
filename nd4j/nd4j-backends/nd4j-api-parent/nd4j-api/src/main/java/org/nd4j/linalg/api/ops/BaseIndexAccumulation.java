@@ -105,18 +105,8 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     }
 
     public BaseIndexAccumulation(INDArray x, INDArray z, int[] dimensions) {
-        super(x, z, x.length());
-        init(x, null, z, x.length());
+        super(x, z);
         defineDimensions(dimensions);
-    }
-
-    private void init() {
-        init(x, y, x, x.lengthLong());
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
     }
 
 

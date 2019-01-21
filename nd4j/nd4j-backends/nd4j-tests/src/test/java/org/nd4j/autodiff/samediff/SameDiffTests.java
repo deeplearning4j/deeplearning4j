@@ -738,7 +738,6 @@ public class SameDiffTests {
     public void testNegativeOneShape() {
         val sd = SameDiff.create();
         SDVariable var = sd.placeHolder("test", DataType.FLOAT, -1, 3);
-        assertNull(var.getShape());
         assertTrue(var.isPlaceHolder());
     }
 
@@ -1771,11 +1770,11 @@ public class SameDiffTests {
                     break;
                 case 7:
                     t = sd.max(in1, in2);
-                    expOut = Nd4j.getExecutioner().exec(new OldMax(ia, ib, ia.dup(), ia.length()));
+                    expOut = Nd4j.getExecutioner().exec(new OldMax(ia, ib, ia.dup()));
                     break;
                 case 8:
                     t = sd.min(in1, in2);
-                    expOut = Nd4j.getExecutioner().exec(new OldMin(ia, ib, ia.dup(), ia.length()));
+                    expOut = Nd4j.getExecutioner().exec(new OldMin(ia, ib, ia.dup()));
                     break;
                 case 9:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));

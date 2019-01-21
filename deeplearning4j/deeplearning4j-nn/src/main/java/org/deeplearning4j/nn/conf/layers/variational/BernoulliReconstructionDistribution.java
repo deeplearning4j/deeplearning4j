@@ -144,7 +144,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
 
         INDArray out = Nd4j.createUninitialized(DataType.BOOL, p.shape());
 
-        Nd4j.getExecutioner().execAndReturn(new OldLessThan(rand, p, out, p.length()));
+        Nd4j.getExecutioner().execAndReturn(new OldLessThan(rand, p, out));
         return out.castTo(DataType.FLOAT);
     }
 

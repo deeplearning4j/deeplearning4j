@@ -33,22 +33,10 @@ public class TanhDerivative extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public TanhDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public TanhDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public TanhDerivative() {}
 
     public TanhDerivative(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public TanhDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public TanhDerivative(INDArray x) {

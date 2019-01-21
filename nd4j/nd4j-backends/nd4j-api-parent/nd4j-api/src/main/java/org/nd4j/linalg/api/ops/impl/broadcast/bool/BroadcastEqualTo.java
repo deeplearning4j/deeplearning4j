@@ -46,20 +46,8 @@ public class BroadcastEqualTo extends BaseBroadcastBoolOp {
         super(sameDiff);
     }
 
-    public BroadcastEqualTo(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, int[] dimension, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, dimension, extraArgs);
-    }
-
     public BroadcastEqualTo(SameDiff sameDiff, SDVariable i_v, int[] dimension, boolean inPlace) {
         super(sameDiff, i_v, dimension, inPlace);
-    }
-
-    public BroadcastEqualTo(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, int[] dimension, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, dimension, extraArgs);
-    }
-
-    public BroadcastEqualTo(SameDiff sameDiff, SDVariable i_v, int[] dimension, Object[] extraArgs) {
-        super(sameDiff, i_v, dimension, extraArgs);
     }
 
     @Override

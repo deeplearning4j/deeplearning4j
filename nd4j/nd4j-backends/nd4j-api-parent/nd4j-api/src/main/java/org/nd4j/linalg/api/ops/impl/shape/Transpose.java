@@ -21,6 +21,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -115,13 +116,14 @@ public class Transpose extends DynamicCustomOp {
         }
 
         //handle once properly mapped
-        if (arg().getShape() == null) {
+        if (arg().getShape() == null || arg().getVariableType() == VariableType.PLACEHOLDER || arg().getArr() == null) {
             return;
         }
 
         INDArray arr = sameDiff.getArrForVarName(arg().getVarName());
         if (arr == null) {
             val arrVar = sameDiff.getVariable(arg().getVarName());
+
             arr = arrVar.getWeightInitScheme().create(arrVar.dataType(), arrVar.getShape());
             sameDiff.setArrayForVariable(arg().getVarName(), arr);
         }
@@ -131,6 +133,8 @@ public class Transpose extends DynamicCustomOp {
         } else {
             addInputArgument(arr);
         }
+
+
 
         if (arr != null && permuteDims == null) {
             this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0, arr.rank()));

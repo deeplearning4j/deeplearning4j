@@ -995,8 +995,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray first = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         INDArray second = Nd4j.linspace(20, 30, 10, DataType.DOUBLE);
 
-        INDArray expAllZeros = Nd4j.getExecutioner().exec(new Eps(first, second, Nd4j.create(DataType.BOOL, 10), 10));
-        INDArray expAllOnes = Nd4j.getExecutioner().exec(new Eps(first, first, Nd4j.create(DataType.BOOL, 10), 10));
+        INDArray expAllZeros = Nd4j.getExecutioner().exec(new Eps(first, second, Nd4j.create(DataType.BOOL, 10)));
+        INDArray expAllOnes = Nd4j.getExecutioner().exec(new Eps(first, first, Nd4j.create(DataType.BOOL, 10)));
 
         System.out.println(expAllZeros);
         System.out.println(expAllOnes);
@@ -2104,7 +2104,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testEps() {
         INDArray ones = Nd4j.ones(5);
         val res = Nd4j.create(DataType.BOOL, 5);
-        Nd4j.getExecutioner().exec(new Eps(ones, ones, res, ones.length()));
+        Nd4j.getExecutioner().exec(new Eps(ones, ones, res));
 
         log.info("Result: {}", res);
         assertTrue(res.all());
@@ -2116,8 +2116,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray first = Nd4j.valueArrayOf(10, 1e-2); //0.01
         INDArray second = Nd4j.zeros(10); //0.0
 
-        INDArray expAllZeros1 = Nd4j.getExecutioner().exec(new Eps(first, second, Nd4j.create(DataType.BOOL, new long[] {1, 10}, 'f'), 10));
-        INDArray expAllZeros2 = Nd4j.getExecutioner().exec(new Eps(second, first, Nd4j.create(DataType.BOOL, new long[] {1, 10}, 'f'), 10));
+        INDArray expAllZeros1 = Nd4j.getExecutioner().exec(new Eps(first, second, Nd4j.create(DataType.BOOL, new long[] {1, 10}, 'f')));
+        INDArray expAllZeros2 = Nd4j.getExecutioner().exec(new Eps(second, first, Nd4j.create(DataType.BOOL, new long[] {1, 10}, 'f')));
 
         System.out.println(expAllZeros1);
         System.out.println(expAllZeros2);
@@ -3412,11 +3412,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray z_f = Nd4j.create(shape2, 'f');
         INDArray z_c = Nd4j.create(shape2, 'c');
 
-        Nd4j.getExecutioner().exec(new Set(arr2f, arr, z_f, arr2c.length()));
+        Nd4j.getExecutioner().exec(new Set(arr2f, arr, z_f));
 
         Nd4j.getExecutioner().commit();
 
-        Nd4j.getExecutioner().exec(new Set(arr2f, arr, z_c, arr2c.length()));
+        Nd4j.getExecutioner().exec(new Set(arr2f, arr, z_c));
 
         INDArray exp = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', shape2);
 
@@ -3438,11 +3438,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr3c = Nd4j.create(shape3, 'c');
         INDArray arr3f = Nd4j.create(shape3, 'f');
 
-        Nd4j.getExecutioner().exec(new Set(arr3c, arr, arr3f, arr3c.length()));
+        Nd4j.getExecutioner().exec(new Set(arr3c, arr, arr3f));
 
         Nd4j.getExecutioner().commit();
 
-        Nd4j.getExecutioner().exec(new Set(arr3f, arr, arr3c, arr3c.length()));
+        Nd4j.getExecutioner().exec(new Set(arr3f, arr, arr3c));
 
         INDArray exp = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', shape3);
 

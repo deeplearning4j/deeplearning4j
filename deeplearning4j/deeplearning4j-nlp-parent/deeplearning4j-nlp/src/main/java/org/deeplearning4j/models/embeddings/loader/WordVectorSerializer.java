@@ -1722,8 +1722,6 @@ public class WordVectorSerializer {
         InMemoryLookupTable lookupTable =
                         (InMemoryLookupTable) new InMemoryLookupTable.Builder().vectorLength(arrays.get(0).columns())
                                         .useAdaGrad(false).cache(cache).useHierarchicSoftmax(false).build();
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(syn);
 
         lookupTable.setSyn0(syn);
 

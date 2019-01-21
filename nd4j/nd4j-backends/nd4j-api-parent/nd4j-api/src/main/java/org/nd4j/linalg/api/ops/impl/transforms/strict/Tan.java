@@ -45,10 +45,6 @@ public class Tan extends BaseTransformStrictOp {
         super(x, z);
     }
 
-    public Tan(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public Tan(INDArray x) {
         super(x);
     }

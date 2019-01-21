@@ -55,10 +55,10 @@ public class Linspace extends BaseRandomOp {
     }
 
     public Linspace(@NonNull INDArray z, double from, double to) {
+        super(null, null, z);
         this.from = from;
         this.to = to;
         this.length = z.length();
-        init(null, null, z, z.lengthLong());
         this.extraArgs = new Object[] {from, to};
     }
 
@@ -78,8 +78,8 @@ public class Linspace extends BaseRandomOp {
     }
 
     @Override
-    public String opName() {
-        return "linspace";
+    public String opName(){
+        return "linspace_random";
     }
 
     @Override

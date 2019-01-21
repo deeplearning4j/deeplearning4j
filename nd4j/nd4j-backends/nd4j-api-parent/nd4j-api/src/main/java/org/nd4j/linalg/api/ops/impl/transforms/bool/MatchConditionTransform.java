@@ -64,7 +64,7 @@ public class MatchConditionTransform extends BaseTransformBoolOp {
 
 
     public MatchConditionTransform(INDArray x, INDArray z, double eps, @NonNull Condition condition) {
-        super(x, null, z, x.lengthLong());
+        super(x, null, z);
 
         this.compare = condition.getValue();
         this.mode = condition.condtionNum();

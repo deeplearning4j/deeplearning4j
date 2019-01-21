@@ -35,23 +35,11 @@ public class SoftSignDerivative extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SoftSignDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public SoftSignDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public SoftSignDerivative() {
     }
 
     public SoftSignDerivative(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public SoftSignDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public SoftSignDerivative(INDArray x) {

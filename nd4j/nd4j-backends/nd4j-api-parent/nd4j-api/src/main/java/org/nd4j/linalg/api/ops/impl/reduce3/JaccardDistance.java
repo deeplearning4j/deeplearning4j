@@ -41,7 +41,7 @@ public class JaccardDistance extends BaseReduce3Op {
     }
 
     public JaccardDistance() {
-        passThrough = false;
+
     }
 
     public JaccardDistance(INDArray x, INDArray y, int... dimensions) {
@@ -97,21 +97,22 @@ public class JaccardDistance extends BaseReduce3Op {
         SDVariable sumMax = max.sum(true, dimensions);
         SDVariable sumMin = min.sum(true, dimensions);
 
-        SDVariable xIsMin = f().eq(min, larg());
-        SDVariable xIsMax = f().eq(max, larg());
-        SDVariable yIsMin = f().eq(min, rarg());
-        SDVariable yIsMax = f().eq(max, rarg());
+        DataType d = arg().dataType();
+        SDVariable xIsMin = f().eq(min, larg()).castTo(d);
+        SDVariable xIsMax = f().eq(max, larg()).castTo(d);
+        SDVariable yIsMin = f().eq(min, rarg()).castTo(d);
+        SDVariable yIsMax = f().eq(max, rarg()).castTo(d);
 
         SDVariable sqSumMax = f().square(sumMax);
         SDVariable dldx = xIsMax.mul(sumMin).sub(xIsMin.mul(sumMax)).div(sqSumMax);
         SDVariable dldy = yIsMax.mul(sumMin).sub(yIsMin.mul(sumMax)).div(sqSumMax);
 
         SDVariable bcGradOut;
-        if(dimensions == null){
+        if(keepDims || dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE)){
+            //KeepDims or full array reduction - already broadcastable
             bcGradOut = f1.get(0);
         } else {
-            int inRank = arg().getArr().rank();
-            bcGradOut = f().reductionBroadcastableWithOrigShape(inRank, dimensions, f1.get(0));
+            bcGradOut = sameDiff.f().reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), f1.get(0));
         }
         return Arrays.asList(dldx.mul(bcGradOut), dldy.mul(bcGradOut));
     }

@@ -43,10 +43,6 @@ public class OldFloorDivOp extends BaseTransformAnyOp {
 
     public OldFloorDivOp() {}
 
-    public OldFloorDivOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public OldFloorDivOp(INDArray x) {
         super(x);
     }
@@ -55,12 +51,8 @@ public class OldFloorDivOp extends BaseTransformAnyOp {
         super(x, z);
     }
 
-    public OldFloorDivOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public OldFloorDivOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
     }
 
     @Override
@@ -73,16 +65,6 @@ public class OldFloorDivOp extends BaseTransformAnyOp {
         return "oldfloordiv";
     }
 
-
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (y == null)
-            throw new IllegalArgumentException("No components to divide");
-    }
-
     @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
@@ -92,11 +74,6 @@ public class OldFloorDivOp extends BaseTransformAnyOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-
-
-
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

@@ -705,7 +705,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     public void testEps() {
         val ones = Nd4j.ones(5);
         val res = Nd4j.createUninitialized(DataType.BOOL, 5);
-        assertTrue(Nd4j.getExecutioner().exec(new Eps(ones, ones, res, ones.length())).all());
+        assertTrue(Nd4j.getExecutioner().exec(new Eps(ones, ones, res)).all());
     }
 
 

@@ -98,7 +98,6 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                                         new ClassPathResource("svmLight/iris_svmLight_0.txt").getTempFileFromArchive()
                                                         .getAbsolutePath())
                         .toJavaRDD().map(new TestFn());
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         DataSet d = new IrisDataSetIterator(150, 150).next();
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)

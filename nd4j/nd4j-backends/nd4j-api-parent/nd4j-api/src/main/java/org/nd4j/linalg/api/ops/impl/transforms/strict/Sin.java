@@ -37,20 +37,8 @@ public class Sin extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Sin(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Sin(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Sin(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Sin(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Sin(INDArray x) {

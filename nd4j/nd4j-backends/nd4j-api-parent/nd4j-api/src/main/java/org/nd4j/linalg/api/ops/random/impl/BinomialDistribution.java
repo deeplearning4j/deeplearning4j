@@ -57,7 +57,7 @@ public class BinomialDistribution extends BaseRandomOp {
      * @param probability
      */
     public BinomialDistribution(@NonNull INDArray z, int trials, double probability) {
-        init(z, z, z, z.lengthLong());
+        super(z, z, z);
         this.trials = trials;
         this.probability = probability;
         this.extraArgs = new Object[] {(double) this.trials, this.probability};
@@ -70,6 +70,7 @@ public class BinomialDistribution extends BaseRandomOp {
      * @param probabilities array with probability value for each trial
      */
     public BinomialDistribution(@NonNull INDArray z, int trials, @NonNull INDArray probabilities) {
+        super(z, probabilities, z);
         if (trials > probabilities.lengthLong())
             throw new IllegalStateException("Number of trials is > then amount of probabilities provided");
 
@@ -77,8 +78,6 @@ public class BinomialDistribution extends BaseRandomOp {
             throw new IllegalStateException("Probabilities array shouldn't have negative elementWiseStride");
 
         Preconditions.checkArgument(probabilities.dataType() == z.dataType(), "Probabilities and Z operand should have same data type");
-
-        init(z, probabilities, z, z.lengthLong());
 
         this.trials = trials;
         this.probability = 0.0;
