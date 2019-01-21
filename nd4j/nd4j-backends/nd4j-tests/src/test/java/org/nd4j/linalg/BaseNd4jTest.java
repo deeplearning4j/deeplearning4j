@@ -181,8 +181,6 @@ public abstract class BaseNd4jTest {
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());
-        Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
-        Nd4j.MAX_SLICES_TO_PRINT = -1;
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         Nd4j.getExecutioner().enableDebugMode(false);
         Nd4j.getExecutioner().enableVerboseMode(false);
@@ -198,8 +196,6 @@ public abstract class BaseNd4jTest {
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());
-        Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
-        Nd4j.MAX_SLICES_TO_PRINT = -1;
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         Nd4j.getExecutioner().enableDebugMode(false);
         Nd4j.getExecutioner().enableVerboseMode(false);
