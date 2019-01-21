@@ -356,10 +356,14 @@ NDArray& NDArray::operator=(NDArray&& other) noexcept {
     if (this == &other) 
         return *this;
 
-    if(_isBuffAlloc && _context->getWorkspace() == nullptr)
-        delete []_buffer;
-    if(_isShapeAlloc && _context->getWorkspace() == nullptr)
-        delete []_shapeInfo;
+    if(_context->getWorkspace() == nullptr) {
+            
+        if(_isBuffAlloc) delete []_buffer;
+        if(_isShapeAlloc) delete []_shapeInfo;
+
+        if(_isBuffDAlloc)  RELEASE_SPECIAL(_bufferD, nullptr);
+        if(_isShapeDAlloc) RELEASE_SPECIAL(_shapeInfoD, nullptr);
+    }
 
     _isView       = other._isView;
     _buffer       = other._buffer; 
@@ -1650,9 +1654,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
     NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape)  const {
 
         const int rank = rankOf();
-        Nd4jLong *newShape;
-        ALLOCATE(newShape, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-        memcpy(newShape, _shapeInfo, shape::shapeInfoByteLength(rank));
+        Nd4jLong *newShape = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());        
         newShape[shape::shapeInfoLength(rank) - 2] = -1;
 
         auto shapeOf = shape::shapeOf(newShape);
@@ -1673,7 +1675,11 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
             }
         }
 
-        NDArray result(bufferWithOffset(offset), newShape, _context, false, true);
+        #ifdef __CUDABLAS__
+            NDArray result(specialBufferWithOffset(offset), newShape, _context, false, true, memory::MemoryType::DEVICE);
+        #else
+            NDArray result(bufferWithOffset(offset), newShape, _context, false, true, memory::MemoryType::HOST);
+        #endif
 
         if(!keepUnitiesInShape) {
 

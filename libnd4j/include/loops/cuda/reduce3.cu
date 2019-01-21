@@ -164,7 +164,7 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
         else {
             sPartials[threadIdx.x] = OpType::startingValue(x);
 
-            for(Nd4jLong i = tid ;i < length; i += gridDim.x * blockDim.x) {
+            for(Nd4jLong i = tid; i < length; i += gridDim.x * blockDim.x) {
                 auto offset  = shape::getIndexOffset(i, xShapeInfo, length);
                 auto yOffset = shape::getIndexOffset(i, yShapeInfo, length);
                 sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[offset], y[yOffset], extraZ), extraZ);

@@ -22,7 +22,6 @@
 #include <functional>
 #include <shape.h>
 #include "NativeOpExecutioner.h"
-//#include <memory/Workspace.h>
 #include <indexing/NDIndex.h>
 #include <indexing/IndicesList.h>
 #include <graph/Intervals.h>
@@ -162,7 +161,7 @@ namespace nd4j {
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
-        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext(), const bool isBuffAlloc = false, const bool isShapeAlloc = false);
+        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext(), const bool isBuffAlloc = false, const bool isShapeAlloc = false, const memory::MemoryType whereBufferIs = memory::MemoryType::HOST);
 
         /**
         *  copy constructor

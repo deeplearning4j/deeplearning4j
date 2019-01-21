@@ -83,13 +83,19 @@ NDArray::NDArray(const NDArray& other) {
 
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
-NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isShapeAlloc) {
+NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isShapeAlloc, const memory::MemoryType whereBufferIs) {
+    
+    if (whereBufferIs != memory::MemoryType::HOST)
+        throw std::runtime_error("NDArray constructor: can't be initalized with buffer on device memory !");
+
+    if (buffer == nullptr)
+        throw std::runtime_error("NDArray constructor: can't be initalized with nullptr buffer !");
     
     if (shapeInfo == nullptr)
-        throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
+        throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo !");
 
     if ((int) shapeInfo[0] > MAX_RANK)
-        throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32");
+        throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32 !");
 
      if(!isShapeAlloc) 
         setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, true, _context->getWorkspace()));
@@ -101,8 +107,7 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     _isShapeAlloc = true;
 
     if (this->isEmpty()) {
-        _length = 0;        
-        _isBuffAlloc = false;
+        _length = 0;                
     }
     else {        
         _buffer = reinterpret_cast<int8_t *>(buffer);            
@@ -757,37 +762,14 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
             shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew);
 
-            if (_isShapeAlloc)
-                RELEASE(_shapeInfo, _context->getWorkspace());
-
-            ArrayOptions::setDataType(shapeInfoNew, this->dataType());
-            _shapeInfo = shapeInfoNew;
+            setShapeInfo(shapeInfoNew, dataType());
             _isShapeAlloc = true;
-        } else {
-            Nd4jLong *shapeInfoNew;
-            ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-
-            if (order == 'c')
-                shape::shapeBuffer(shape.size(), dataType(), shape.data(), shapeInfoNew);
-            else
-                shape::shapeBufferFortran(shape.size(), dataType(), shape.data(), shapeInfoNew);
-
-            int8_t *newBuffer;
-            ALLOCATE(newBuffer, _context->getWorkspace(), this->lengthOf() * sizeOfT(), int8_t);
-
-            NativeOpExecutioner::execTransformSame(nullptr, transform::Copy, _buffer, _shapeInfo, _bufferD, _shapeInfoD, newBuffer, shapeInfoNew, nullptr, nullptr, nullptr, nullptr, nullptr);
-
-            if (_isBuffAlloc)
-                RELEASE(_buffer, _context->getWorkspace());
-
-
-            if (_isShapeAlloc)
-                RELEASE(_shapeInfo, _context->getWorkspace());
-
-            _buffer = newBuffer;
-            _shapeInfo = shapeInfoNew;
-            _isShapeAlloc = true;
-            _isBuffAlloc = true;
+        } 
+        else {
+            Nd4jLong *shapeInfoNew = ShapeBuilders::createShapeInfo(dataType(), order, shape, _context->getWorkspace());
+            NDArray temp(shapeInfoNew, true, _context, true);                    
+            this->applyTransform(transform::Copy, &temp, nullptr);                        
+            *this = std::move(temp);
         }
 
         return true;
@@ -2637,6 +2619,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
             }
         }
     }
+
 
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*

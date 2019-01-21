@@ -149,6 +149,40 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     return C;
 }
 
+////////////////////////////////////////////////////////////////////////////
+// static
+template <typename X, typename Y, typename Z>
+nd4j::NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* B, NDArray* C , const double alpha, const double beta, const char outOrder) {
+    
+    nd4j::NDArray* result = C;
+        // gemv
+        if (A->columns() != B->lengthOf())
+            throw std::runtime_error("A columns != B length");
+        if (result == nullptr)
+            result = new NDArray('f', {A->rows(),1}, DataTypeUtils::fromT<Z>(), A->getContext());
+
+        auto xType = A->dataType();
+        auto yType = B->dataType();
+        auto zType = result->dataType();
+
+        // TODO: strides!!!
+        if (xType == yType && xType == zType && BlasHelper::getInstance()->hasGEMV<X>()) {
+            nd4j_debug("Using provided GEMV pointer\n","");
+            auto layout = A->ordering() == 'f' ? CblasColMajor : CblasRowMajor;
+            if (std::is_same<X, float>::value)
+                BlasHelper::getInstance()->sgemv()(layout, CblasNoTrans, A->rows(), A->columns(), (float) alpha, reinterpret_cast<float *>(A->getBuffer()), layout == CblasColMajor ? A->rows() : A->columns(), reinterpret_cast<float *>(B->getBuffer()), 1, (float) beta, reinterpret_cast<float *>(result->getBuffer()), 1);
+            else if (std::is_same<X, double>::value)
+                BlasHelper::getInstance()->dgemv()(layout, CblasNoTrans, A->rows(), A->columns(), (double) alpha, reinterpret_cast<double *>(A->getBuffer()), layout == CblasColMajor ? A->rows() : A->columns(), reinterpret_cast<double *>(B->getBuffer()), 1, (double) beta, reinterpret_cast<double *>(result->getBuffer()), 1);
+            else
+                nd4j::blas::GEMV<X, Y, Z>::op(A->ordering() == 'f' ? CblasTrans : 0, A->rows(), A->columns(), alpha, A->getBuffer(), B->lengthOf(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
+        } else {
+            nd4j_debug("Using fallback GEMV impl\n","");
+            nd4j::blas::GEMV<X, Y, Z>::op(A->ordering() == 'f' ? CblasTrans : 0, A->rows(), A->columns(), alpha, A->getBuffer(), B->lengthOf(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
+        }
+    return result;
+}
+
 
 BUILD_TRIPLE_TEMPLATE(template void usualGemm, (const char cOrder, const bool transA, const bool transB, const int M, const int N, const int K, const double alpha, const void* A, const int lda, const void* B, const int ldb, const double beta, void* C, const int ldc), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+BUILD_TRIPLE_TEMPLATE(template NDArray* MmulHelper::mmulMxV, (const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta, const char outOrder), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
 }
