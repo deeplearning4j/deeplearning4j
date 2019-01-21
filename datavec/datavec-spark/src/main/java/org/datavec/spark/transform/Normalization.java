@@ -253,8 +253,7 @@ public class Normalization {
      */
     public static List<Row> aggregate(DataRowsFacade data, String[] columns, String[] functions) {
         String[] rest = new String[columns.length - 1];
-        for (int i = 0; i < rest.length; i++)
-            rest[i] = columns[i + 1];
+        System.arraycopy(columns, 1, rest, 0, rest.length);
         List<Row> rows = new ArrayList<>();
         for (String op : functions) {
             Map<String, String> expressions = new ListOrderedMap();
