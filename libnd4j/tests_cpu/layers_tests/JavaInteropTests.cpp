@@ -410,6 +410,8 @@ TEST_F(JavaInteropTests, Test_Synonyms_3) {
 }
 
 TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
+    Environment::getInstance()->setUseMKLDNN(false);
+
     int inOutH = 35;
     int inOutW = 35;
     int inOutC = 192;
@@ -417,6 +419,7 @@ TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
     auto x = NDArrayFactory::create<float>('c', {1, inOutH, inOutW, inOutC});
     auto z = NDArrayFactory::create<float>('c', {1, inOutH, inOutW, inOutC});
     x.linspace(1.0);
+    z.linspace(1.0);
 
     NativeOps nativeOps;
     nd4j::ops::avgpool2d op;
