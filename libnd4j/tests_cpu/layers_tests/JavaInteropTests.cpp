@@ -408,6 +408,81 @@ TEST_F(JavaInteropTests, Test_Synonyms_3) {
     ASSERT_EQ(nameExp, nameRef);
     ASSERT_EQ(nameRef, name);
 }
+
+TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
+    int inOutH = 35;
+    int inOutW = 35;
+    int inOutC = 192;
+
+    auto x = NDArrayFactory::create<float>('c', {1, inOutH, inOutW, inOutC});
+    auto z = NDArrayFactory::create<float>('c', {1, inOutH, inOutW, inOutC});
+    x.linspace(1.0);
+
+    NativeOps nativeOps;
+    nd4j::ops::avgpool2d op;
+    //auto result = op.execute({&x}, {}, {3,3, 1,1, 0,0, 1,1, 1, 0, 1});
+
+    Nd4jLong exp[] = {3,3, 1,1, 0,0, 1,1, 1, 0, 1};
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
+
+    auto result = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 11, nullptr, 0, false);
+
+    ASSERT_EQ(Status::OK(), result);
+
+    int totalPadHeight = (inOutH - 1) * 1 + 3 - inOutH;
+    int padTop = totalPadHeight / 2;
+    int padBottom = totalPadHeight - totalPadHeight / 2;
+
+    int k = 3;
+
+    auto m = NDArrayFactory::create<float>('c', {1, inOutH, inOutW, inOutC});
+    auto c = NDArrayFactory::create<float>('c', {1, inOutH, inOutW, inOutC});
+
+    for (int h = 0; h < inOutH; h++) {
+        for (int w = 0; w < inOutW; w++) {
+            int hFrom = h - padTop;
+            int wFrom = w - padBottom;
+
+            int hTo = hFrom + k;
+            int wTo = wFrom + k;
+
+            hFrom = nd4j::math::nd4j_max<int>(0, hFrom);
+            wFrom = nd4j::math::nd4j_max<int>(0, wFrom);
+
+            hTo = nd4j::math::nd4j_min<int>(inOutH, hTo);
+            wTo = nd4j::math::nd4j_min<int>(inOutW, wTo);
+
+            int idxOut[4];
+            int idxIn[4];
+            for (int ch = 0; ch < inOutC; ch++) {
+                idxOut[1] = h;
+                idxOut[2] = w;
+                idxOut[3] = ch;
+                idxIn[3] = ch;
+
+                for (int kh = hFrom; kh < hTo; kh++) {
+                    for (int kw = wFrom; kw < wTo; kw++) {
+                        idxIn[1] = kh;
+                        idxIn[2] = kw;
+
+                        auto inVal = x.e<float>(0, kh, kw, ch);
+                        m.p(0, h, w, ch, inVal + m.e<float>(0, h, w, ch));
+                        c.p(0, h, w, ch, 1 + c.e<int>(0, h, w, ch));
+                    }
+                }
+            }
+        }
+    }
+    m /= c;
+
+    ASSERT_EQ(m, z);
+}
+
 /*
 TEST_F(JavaInteropTests, Test_GraphReuse_1) {
     NativeOps nativeOps;
