@@ -208,7 +208,7 @@ Seq[Any](format.raw/*1.1*/("""<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 object DefaultPage extends DefaultPage_Scope0.DefaultPage
               /*
                   -- GENERATED --
-                  DATE: Mon Jan 21 11:34:12 AEDT 2019
+                  DATE: Mon Jan 21 12:53:55 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/defaultPage/DefaultPage.scala.html
                   HASH: da6a311236bb425835c99277e9483be69b05e8b4
                   MATRIX: 655->0|2638->1955|2667->1956|2709->1970|2867->2101|2896->2102|2933->2112|2965->2116|2994->2117|3036->2131|3158->2226|3187->2227|3224->2237|3259->2244|3288->2245|3330->2259|3479->2381|3508->2382|3545->2392|3583->2402|3612->2403|3654->2417|3776->2512|3805->2513|3842->2523|4004->2704|4037->2710|4918->3726|4964->3744|5805->4744|5852->4762|6371->5428|6418->5446|6920->6081|6967->6099|7463->6740|7510->6758
