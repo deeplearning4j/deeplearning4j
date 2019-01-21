@@ -699,6 +699,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             for (int j = threadIdx.x; j < cols; j += totalThreads) {
                 Nd4jLong coords[2] = {i, j};
                 auto xOffset = shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), coords, rank);
+                printf("%ld, %d -> %ld %d\n", i, j, xOffset, diagonal);
                 if (i + diagonal >= j)
                     *(reinterpret_cast<T*>(buffer) + xOffset) = value;
             }
