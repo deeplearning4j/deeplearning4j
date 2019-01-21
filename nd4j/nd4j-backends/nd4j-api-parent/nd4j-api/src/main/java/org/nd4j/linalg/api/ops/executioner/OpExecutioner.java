@@ -39,11 +39,6 @@ import java.util.Properties;
  */
 public interface OpExecutioner {
 
-    @Deprecated
-    enum ExecutionMode {
-        JAVA, NATIVE
-    }
-
     // in case of adding new executioner - list it here
     enum ExecutionerType {
         NATIVE_CPU,
@@ -180,18 +175,6 @@ public interface OpExecutioner {
      * @return the result from the operation
      */
     Op execAndReturn(Op op);
-
-
-    /**Get the execution mode for this
-     * executioner
-     * @return the execution mode for this executioner
-     */
-    ExecutionMode executionMode();
-
-    /**Set the execution mode
-     * @param executionMode the execution mode
-     */
-    void setExecutionMode(ExecutionMode executionMode);
 
     /**
      * Execute MetaOp

@@ -43,6 +43,7 @@ import java.util.List;
 @Data
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {
     protected boolean keepDims = false;
+    @Deprecated
     protected boolean newFormat = false;
 
     public BaseIndexAccumulation(SameDiff sameDiff,

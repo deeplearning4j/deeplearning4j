@@ -615,54 +615,50 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     public INDArray exec(ScalarOp op) {
-        if (executionMode() == ExecutionMode.JAVA) {
-            super.exec(op);
-        } else {
-            long st = profilingHookIn(op);
+        long st = profilingHookIn(op);
 
-            //validateDataType(Nd4j.dataType(), op);
+        //validateDataType(Nd4j.dataType(), op);
 
-            if (op.x().lengthLong() != op.z().lengthLong())
-                throw new ND4JIllegalStateException("op.X length should be equal to op.Z length: " +
-                        "x.length()=" + op.x().length() + ", z.length()=" + op.z().length() + " - x shape info = ["
-                        + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "], z shape info = ["
-                        + Arrays.toString(op.z().shapeInfoDataBuffer().asInt()) + "]");
+        if (op.x().lengthLong() != op.z().lengthLong())
+            throw new ND4JIllegalStateException("op.X length should be equal to op.Z length: " +
+                    "x.length()=" + op.x().length() + ", z.length()=" + op.z().length() + " - x shape info = ["
+                    + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "], z shape info = ["
+                    + Arrays.toString(op.z().shapeInfoDataBuffer().asInt()) + "]");
 
-            if (op.dimensions() != null) {
-                invokeScalarAlongDimension(op);
-                return op.z();
-            }
+        if (op.dimensions() != null) {
+            invokeScalarAlongDimension(op);
+            return op.z();
+        }
 
 
-            switch (op.getOpType()) {
-                case SCALAR:
-                    loop.execScalar(null,
+        switch (op.getOpType()) {
+            case SCALAR:
+                loop.execScalar(null,
+                    op.opNum(),
+                    op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                        null, null,
+                    op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                        null, null,
+                    op.scalar().data().addressPointer(), (LongPointer) op.scalar().shapeInfoDataBuffer().addressPointer(),
+                        null, null,
+                    getPointerForExtraArgs(op, op.z().dataType()));
+                break;
+            case SCALAR_BOOL:
+                loop.execScalarBool(null,
                         op.opNum(),
                         op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            null, null,
+                        null, null,
                         op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            null, null,
+                        null, null,
                         op.scalar().data().addressPointer(), (LongPointer) op.scalar().shapeInfoDataBuffer().addressPointer(),
-                            null, null,
-                        getPointerForExtraArgs(op, op.z().dataType()));
-                    break;
-                case SCALAR_BOOL:
-                    loop.execScalarBool(null,
-                            op.opNum(),
-                            op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            null, null,
-                            op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            null, null,
-                            op.scalar().data().addressPointer(), (LongPointer) op.scalar().shapeInfoDataBuffer().addressPointer(),
-                            null, null,
-                            getPointerForExtraArgs(op, op.x().dataType()));
-                    break;
-                default:
-                    throw new ND4JIllegalStateException("Unknown op type: [" + op.getOpType() +"]");
-            }
-
-            profilingHookOut(op, st);
+                        null, null,
+                        getPointerForExtraArgs(op, op.x().dataType()));
+                break;
+            default:
+                throw new ND4JIllegalStateException("Unknown op type: [" + op.getOpType() +"]");
         }
+
+        profilingHookOut(op, st);
 
         return op.z();
     }
@@ -936,98 +932,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
         return op.z();
-    }
-
-    private void execTBR(ReduceOp op) {
-        if (executionMode() == ExecutionMode.JAVA) {
-            super.exec(op);
-        } else {
-            long st = profilingHookIn(op);
-
-            //validateDataType(Nd4j.dataType(), op);
-
-            if(op.z() == op.x()) {
-                op.setZ(Nd4j.scalar(op.resultType(), 0));
-            }
-
-            if (!op.validateDataTypes()) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Data type validation failed for op ").append(op.getClass().getSimpleName()).append(": ")
-                        .append("Arrays: [x=(").append(op.x() == null ? null : Shape.shapeToStringShort(op.x()))
-                        .append("),y=(").append(op.y() == null ? null : Shape.shapeToStringShort(op.y()))
-                        .append("),z=(").append(op.z() == null ? null : Shape.shapeToStringShort(op.z()))
-                        .append(")]");
-
-                throw new ND4JIllegalArgumentException(sb.toString());
-            }
-
-            // since we're going to call reduceToScalar, we must ensure equal lengths
-            if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
-                if (op.x().lengthLong() != op.y().lengthLong())
-                    throw new ND4JIllegalStateException("X and Y operands should have equal lengths. X length: " + op.x().lengthLong() +
-                            ", X shape: " + Arrays.toString(op.x().shape()) + "; Y length: " + op.y().lengthLong() +
-                            ", Y shape: " + Arrays.toString(op.y().shape()));
-            }
-
-                if (op instanceof Variance) {
-                    loop.execSummaryStatsScalar(null, op.opNum(),
-                            op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            null, null,
-                            getPointerForExtraArgs(op, op.z().dataType()),
-                            op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            null, null,
-                            ((Variance) op).isBiasCorrected());
-                } else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
-                    val p = getPointerForExtraArgs(op, op.z().dataType());
-                    loop.execReduce3Scalar(null, op.opNum(),
-                            op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            null, null,
-                            p,
-                            op.y().data().addressPointer(), (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(),
-                            null, null,
-                            op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                            null, null);
-                } else {
-                    switch (op.getOpType()) {
-                        case REDUCE_FLOAT:
-                            loop.execReduceFloat(null, op.opNum(),
-                                    op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    null, null,
-                                    getPointerForExtraArgs(op, op.z().dataType()),
-                                    op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    null, null);
-                            break;
-                        case REDUCE_SAME:
-                            loop.execReduceSame(null, op.opNum(),
-                                    op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    null, null,
-                                    getPointerForExtraArgs(op, op.x().dataType()),
-                                    op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    null, null);
-                            break;
-                        case REDUCE_BOOL:
-                            loop.execReduceBool(null, op.opNum(),
-                                    op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    null, null,
-                                    getPointerForExtraArgs(op, op.x().dataType()),
-                                    op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    null, null);
-                            break;
-                        case REDUCE_LONG:
-                            loop.execReduceLong(null, op.opNum(),
-                                op.x().data().addressPointer(), (LongPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                                    null, null,
-                                getPointerForExtraArgs(op, op.x().dataType()),
-                                    op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
-                                    null, null);
-                            break;
-                        default:
-                            throw new UnsupportedOperationException("Unsupported reduce operation group:" + op.getOpType());
-                    }
-                }
-
-            profilingHookOut(op, st);
-        }
     }
 
 

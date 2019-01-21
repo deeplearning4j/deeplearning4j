@@ -30,10 +30,7 @@ import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.saver.LocalFileModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.*;
-import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
-import org.deeplearning4j.earlystopping.termination.MaxScoreIterationTerminationCondition;
-import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationCondition;
-import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition;
+import org.deeplearning4j.earlystopping.termination.*;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.earlystopping.trainer.IEarlyStoppingTrainer;
 import org.deeplearning4j.nn.api.Model;
@@ -909,6 +906,35 @@ public class TestEarlyStopping extends BaseDL4JTest {
             } else {
                 assertTrue(map.get(i) > map.get(i-1));
             }
+        }
+    }
+
+
+    @Test
+    public void testConditionJson() throws Exception {
+
+        EpochTerminationCondition[] etc = new EpochTerminationCondition[]{
+                new BestScoreEpochTerminationCondition(0.5),
+                new MaxEpochsTerminationCondition(10),
+                new ScoreImprovementEpochTerminationCondition(3, 0.5)
+        };
+
+        for(EpochTerminationCondition e : etc ){
+            String s = NeuralNetConfiguration.mapper().writeValueAsString(e);
+            EpochTerminationCondition c = NeuralNetConfiguration.mapper().readValue(s, EpochTerminationCondition.class);
+            assertEquals(e, c);
+        }
+
+        IterationTerminationCondition[] itc = new IterationTerminationCondition[]{
+                new InvalidScoreIterationTerminationCondition(),
+                new MaxScoreIterationTerminationCondition(10.0),
+                new MaxTimeIterationTerminationCondition(10, TimeUnit.MINUTES)
+        };
+
+        for(IterationTerminationCondition i : itc ){
+            String s = NeuralNetConfiguration.mapper().writeValueAsString(i);
+            IterationTerminationCondition c = NeuralNetConfiguration.mapper().readValue(s, IterationTerminationCondition.class);
+            assertEquals(i, c);
         }
     }
 }

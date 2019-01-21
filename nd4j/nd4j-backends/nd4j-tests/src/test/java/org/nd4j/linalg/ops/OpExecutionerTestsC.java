@@ -461,8 +461,6 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testColumnStd() {
-        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
-        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
         INDArray twoByThree = Nd4j.linspace(1, 600, 600, DataType.DOUBLE).reshape(150, 4);
         INDArray columnStd = twoByThree.std(0);
         INDArray assertion = Nd4j.create(new double[] {173.78147196982766f, 173.78147196982766f, 173.78147196982766f, 173.78147196982766f});

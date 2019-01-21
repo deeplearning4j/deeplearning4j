@@ -56,7 +56,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
     private static final String SCOPE_PANIC_MSG = "For more details, see the ND4J User Guide: nd4j.org/userguide#workspaces-panic";
 
     protected ProfilingMode profilingMode = ProfilingMode.SCOPE_PANIC;
-    protected ExecutionMode executionMode = ExecutionMode.JAVA;
 
     protected AtomicBoolean verbose = new AtomicBoolean(false);
     protected AtomicBoolean debug = new AtomicBoolean(false);
@@ -184,20 +183,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public INDArray exec(IndexAccumulation op) {
         throw new UnsupportedOperationException("Operation should use exec special");
-
     }
-
-    @Override
-    public ExecutionMode executionMode() {
-        return executionMode;
-    }
-
-    @Override
-    public void setExecutionMode(ExecutionMode executionMode) {
-        this.executionMode = executionMode;
-    }
-
-
 
     @Override
     public INDArray exec(BroadcastOp broadcast) {

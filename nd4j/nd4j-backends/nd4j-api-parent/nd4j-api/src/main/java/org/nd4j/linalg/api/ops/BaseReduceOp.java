@@ -55,7 +55,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     protected boolean keepDims = false;
 
     // flag for tf imported ops, shows that there's probably one more value appended in axis
-    @Setter @Getter
+    @Setter @Getter @Deprecated
     protected boolean newFormat = false;
     protected boolean isComplex = false;
 

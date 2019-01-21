@@ -548,6 +548,26 @@ public class OutputLayerTest extends BaseDL4JTest {
 
         INDArray sum = out.sum(1);
         assertEquals(Nd4j.ones(2,4,5), sum);
+    }
+
+    @Test
+    public void testOutputLayerDefaults(){
+
+        new NeuralNetConfiguration.Builder().list()
+                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(10).nOut(10).build())
+                .build();
+
+        new NeuralNetConfiguration.Builder().list()
+                .layer(new org.deeplearning4j.nn.conf.layers.LossLayer.Builder().build())
+                .build();
+
+        new NeuralNetConfiguration.Builder().list()
+                .layer(new org.deeplearning4j.nn.conf.layers.CnnLossLayer.Builder().build())
+                .build();
+
+        new NeuralNetConfiguration.Builder().list()
+                .layer(new org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer.Builder().build())
+                .build();
 
     }
 }
