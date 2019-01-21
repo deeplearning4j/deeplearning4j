@@ -26,6 +26,15 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(skipgram, 3, 1, true, 0, 0) {
+            auto syn0 = INPUT_VARIABLE(0);
+            auto syn1 = INPUT_VARIABLE(1);
+            auto syn1neg = INPUT_VARIABLE(2);
+            auto expTable = INPUT_VARIABLE(3);
+
+            auto indices = INPUT_VARIABLE(4);
+            auto codes = INPUT_VARIABLE(5);
+
+            auto isInference = block.numB() > 0 ? B_ARG(0) : true;
 
             return Status::OK();
         }
