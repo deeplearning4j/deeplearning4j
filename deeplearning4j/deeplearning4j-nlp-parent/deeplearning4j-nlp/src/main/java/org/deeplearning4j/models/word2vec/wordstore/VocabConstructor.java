@@ -34,6 +34,7 @@ import org.threadly.concurrent.PriorityScheduler;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -558,7 +559,7 @@ public class VocabConstructor<T extends SequenceElement> {
         private final Sequence<T> document;
         private final AbstractCache<T> targetVocab;
         private final AtomicLong loopCounter;
-        private boolean done;
+        private AtomicBoolean done = new AtomicBoolean(false);
 
         public VocabRunnable(@NonNull AbstractCache<T> targetVocab, @NonNull Sequence<T> sequence,
                         @NonNull AtomicLong finalCounter, @NonNull AtomicLong loopCounter) {
@@ -569,11 +570,11 @@ public class VocabConstructor<T extends SequenceElement> {
         }
 
         public void awaitDone() throws InterruptedException {
-            synchronized (this) {
-                while (! done) {
-                    this.wait();
+                while (!done.get()) {
+                    synchronized (this) {
+                        this.wait();
+                    }
                 }
-            }
         }
 
 	@Override
@@ -634,8 +635,8 @@ public class VocabConstructor<T extends SequenceElement> {
                 throw new RuntimeException(e);
             } finally {
                 finalCounter.incrementAndGet();
+                done.set(true);
                 synchronized (this) {
-                    done = true;
                     this.notifyAll();
                 }
             }
