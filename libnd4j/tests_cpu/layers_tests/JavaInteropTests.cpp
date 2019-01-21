@@ -483,6 +483,20 @@ TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
     }
     m /= c;
 
+    //z.printIndexedBuffer("z buffer", 100);
+    //m.printIndexedBuffer("m buffer", 100);
+    int cnt = 0;
+    int lim = 10;
+    for (int e = 0; e < z.lengthOf() && cnt < lim; e++) {
+        auto _m = m.e<float>(e);
+        auto _z = z.e<float>(e);
+        auto eq = nd4j::math::nd4j_eq<float>(_m, _z, 1e-5);
+        if (!eq) {
+            nd4j_printf("Difference at element e [%i]: <%f> vs <%f>\n", e, _m, _z);
+            cnt++;
+        }
+    }
+
     ASSERT_EQ(m, z);
 }
 
