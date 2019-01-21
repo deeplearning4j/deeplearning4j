@@ -28,7 +28,8 @@ namespace nd4j {
                                         Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
                                         Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets) {
         //auto tid = blockIdx.x * blockDim.x; // + threadIdx.x;
-        int totalThreads = gridDim.x * blockDim.x;
+//        int totalThreads = gridDim.x * blockDim.x;
+        int totalThreads = blockDim.x;
         //const auto resultLength = shape::length(outputShape);
         for (Nd4jLong i = blockIdx.x; i < numTads; i += gridDim.x) {
             auto yOffset = tadInputOffsets[i];
