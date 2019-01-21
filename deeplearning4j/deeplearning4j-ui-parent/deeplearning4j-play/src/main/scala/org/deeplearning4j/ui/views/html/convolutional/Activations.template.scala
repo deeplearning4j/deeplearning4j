@@ -45,16 +45,16 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
         <meta charset="utf-8" />
         <title>Neural Network activations</title>
             <!-- jQuery -->
-        <script src="/assets/legacy/jquery-2.2.0.min.js"></script>
+        <script src="/assets/webjars/jquery/1.9.1/jquery.min.js"></script>
         """),format.raw/*25.68*/("""
             """),format.raw/*26.13*/("""<!-- Latest compiled and minified CSS -->
-        <link rel="stylesheet" href="/assets/legacy/bootstrap.min.css" />
+        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.1/css/bootstrap.min.css" rel="stylesheet">
 
             <!-- Optional theme -->
         <link rel="stylesheet" href="/assets/legacy/bootstrap-theme.min.css" />
 
             <!-- Latest compiled and minified JavaScript -->
-        <script src="/assets/legacy/bootstrap.min.js" ></script>
+        <script src="/assets/webjars/bootstrap/2.3.1/js/bootstrap.min.js"></script>
 
         <style>
         body """),format.raw/*36.14*/("""{"""),format.raw/*36.15*/("""
@@ -136,10 +136,10 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
 object Activations extends Activations_Scope0.Activations
               /*
                   -- GENERATED --
-                  DATE: Mon Jan 21 12:53:55 AEDT 2019
+                  DATE: Mon Jan 21 13:56:01 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/convolutional/Activations.scala.html
-                  HASH: 658f3b7fd366911400cee3a1d089e573588101f6
-                  MATRIX: 657->0|1716->1090|1758->1104|2186->1504|2215->1505|2257->1519|2415->1650|2444->1651|2483->1663|2515->1667|2544->1668|2586->1682|2708->1777|2737->1778|2776->1790|2811->1797|2840->1798|2882->1812|3069->1972|3098->1973|3137->1985|3175->1995|3204->1996|3246->2010|3368->2105|3397->2106|3434->2116|3547->2201|3576->2202|3618->2216|3783->2354|3812->2355
+                  HASH: 6bafdfc36afe5321a3e87b29b51c9311ca991264
+                  MATRIX: 657->0|1724->1098|1766->1112|2253->1571|2282->1572|2324->1586|2482->1717|2511->1718|2550->1730|2582->1734|2611->1735|2653->1749|2775->1844|2804->1845|2843->1857|2878->1864|2907->1865|2949->1879|3136->2039|3165->2040|3204->2052|3242->2062|3271->2063|3313->2077|3435->2172|3464->2173|3501->2183|3614->2268|3643->2269|3685->2283|3850->2421|3879->2422
                   LINES: 25->1|49->25|50->26|60->36|60->36|61->37|65->41|65->41|67->43|67->43|67->43|68->44|71->47|71->47|73->49|73->49|73->49|74->50|79->55|79->55|81->57|81->57|81->57|82->58|85->61|85->61|86->62|89->65|89->65|90->66|92->68|92->68
                   -- GENERATED --
               */
