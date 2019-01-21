@@ -109,9 +109,6 @@ public class MultiLayerTest extends BaseDL4JTest {
 
     @Test
     public void testSetParams() {
-        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
-        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
-
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder()
                                         .list().layer(0,

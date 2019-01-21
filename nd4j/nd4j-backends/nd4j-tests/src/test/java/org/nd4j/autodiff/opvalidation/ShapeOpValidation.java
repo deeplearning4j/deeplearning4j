@@ -1896,4 +1896,23 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         assertArrayEquals(exp, s);  //Fails - actual shape [1]
     }
+
+    @Test
+    public void gatherTest(){
+        INDArray in = Nd4j.createFromArray(new double[][]{
+                {1,2,3,4,5},
+                {6,7,8,9,10},
+                {11,12,13,14,15}});
+        INDArray indices = Nd4j.createFromArray(2);
+        INDArray axis = Nd4j.scalar(0);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("gather")
+                .addInputs(in, indices, axis)
+                .build();
+
+        List<LongShapeDescriptor> shapeList = op.calculateOutputShape();
+        long[] shape = shapeList.get(0).getShape();
+        long[] expShape = new long[]{1,5};
+        assertArrayEquals(expShape, shape);     //Fails: actual shape: [5]
+    }
 }

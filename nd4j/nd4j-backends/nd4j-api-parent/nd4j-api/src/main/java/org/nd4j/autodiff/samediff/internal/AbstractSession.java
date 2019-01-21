@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -46,6 +47,15 @@ public abstract class AbstractSession<T, O> {
      * Values: inputs to that node (inc. frame and iteration), unordered - needed for execution of op giving variable
      */
     protected final Map<VarId, Set<VarId>> execInputs = new HashMap<>();
+
+    /**
+     * As per execInputs map - with the different that the iteration number should be ignored (i.e., always 0)
+     * Reason: Enter nodes - these are executed once
+     * Example: EnterOp(x) -> LoopCondition(less(x,y)): less op requires "X" on all iterations which is the output of the
+     * enter op, which is only executed for iteration 0 in a frame.
+     */
+    protected final Map<VarId, Set<VarId>> execInputsAllIter = new HashMap<>();
+
     /**
      * Contains the set set of constant and placeholders inputs
      * Essentially the same as the execInputs map, but the constants and placeholders are used for calculating all instances
@@ -131,6 +141,7 @@ public abstract class AbstractSession<T, O> {
         availableForExec.clear();
         subgraph.clear();
         execInputs.clear();
+        execInputsAllIter.clear();
         execConstInputs.clear();
         nodeOutputs.clear();            //TODO eventually we'll have cache here for later execs... main challenge is detecting in-place array modifications and invalidating old results
         tensorArrays.clear();
@@ -159,7 +170,26 @@ public abstract class AbstractSession<T, O> {
         Map<String, T> out = new HashMap<>();
         int step = 0;
         while (out.size() < variables.size()) {
-            Preconditions.checkState(availableForExec.size() > 0, "No variables are available for execution at execution step %s", step);
+            if(availableForExec.size() == 0){
+                int missingCount = variables.size() - out.size();
+                StringBuilder sb = new StringBuilder();
+                sb.append("No variable are available for execution at step ")
+                        .append(step).append(": ").append(missingCount).append(" values remaining");
+                Set<String> missing = new HashSet<>();
+                for(String s : variables){
+                    if(!out.containsKey(s)){
+                        missing.add(s);
+                    }
+                }
+                if(missingCount <= 10){
+                    sb.append(". Missing variables: ");
+                } else {
+                    sb.append(". First 10 missing variables: ");
+                }
+                sb.append(missing);
+                String s = sb.toString();
+                throw new IllegalStateException(s);
+            }
 
             //Get any variable and execute it's corresponding op
             VarId varToExec = availableForExec.remove();
@@ -175,6 +205,7 @@ public abstract class AbstractSession<T, O> {
 
             //Get inputs to this variable. May be actual op inputs, or just control dependencies
             Set<VarId> inputsToVar = execInputs.get(varToExec);
+            Set<VarId> inputsToVarAllIter = execInputsAllIter.get(newVarId(varToExec.getVariable(), varToExec.getFrame(), 0));
             Set<String> constPhForVar = execConstInputs.get(varToExec.getVariable());
 
             log.trace("Beginning execution step {}: variable {}", (step++), varToExec);
@@ -205,8 +236,8 @@ public abstract class AbstractSession<T, O> {
 
                 //Execute op
                 FrameIter frameIter = varToExec.toFrameIter();
-                O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, constPhForVar, placeholderValues);
-                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, constPhForVar);
+                O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, placeholderValues);
+                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar);
 
 
                 //Post execution: work out what is now available for exec
@@ -346,8 +377,8 @@ public abstract class AbstractSession<T, O> {
         if (inputForOps != null) {
             for (String opName : inputForOps) {
 
-
-                if (sameDiff.getFunctionById(opName) instanceof Merge) {
+                DifferentialFunction fn = sameDiff.getFunctionById(opName);
+                if (fn instanceof Merge) {
                     //Merge op: available for execution when *any* of its inputs are available. But only mark it for exec once...
                     List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
                     Preconditions.checkState(opOutputs.size() == 1, "Expected only 1 output variable for merge op, got %s", opOutputs);
@@ -360,12 +391,12 @@ public abstract class AbstractSession<T, O> {
                     //Mark that we need the specified input to calculate this output
                     addToExecInputs(isConstOrPhInput, executedVar, outVarId);
                     continue;
-                } else if (sameDiff.getFunctionById(opName) instanceof Enter) {
+                } else if (fn instanceof Enter) {
                     //Enter node: available for exec when any of its inputs are available for exec
                     // Note input feeds from one frame to another
                     List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
                     Preconditions.checkState(opOutputs.size() == 1, "Expected only 1 output variable for enter op, got %s", opOutputs);
-                    Enter e = (Enter) sameDiff.getFunctionById(opName);
+                    Enter e = (Enter) fn;
                     VarId outVarId = newVarId(opOutputs.get(0), e.getFrameName(), 0);
                     if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable())) {
                         availableForExec.add(outVarId);
@@ -378,7 +409,7 @@ public abstract class AbstractSession<T, O> {
                     //Mark that we need the specified input to calculate this output
                     addToExecInputs(isConstOrPhInput, executedVar, outVarId);
                     continue;
-                } else if (sameDiff.getFunctionById(opName) instanceof Exit) {
+                } else if (fn instanceof Exit) {
                     //Exit node forwards input to parent frame
                     List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
                     FrameIter parentFrame = frameParents.get(executedVar.getFrame());
@@ -391,7 +422,8 @@ public abstract class AbstractSession<T, O> {
                     }
 
                     addToExecInputs(isConstOrPhInput, executedVar, outVarId);
-                } else if (sameDiff.getFunctionById(opName) instanceof NextIteration) {
+                    continue;
+                } else if (fn instanceof NextIteration) {
                     //NextIteration is available for execution when its single input is available
                     //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
                     List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
@@ -411,7 +443,7 @@ public abstract class AbstractSession<T, O> {
 
 
                 //Can execute this op - and hence get it's output variables - if all inputs (and control deps) are available
-                String[] inputsThisOp = sameDiff.getFunctionById(opName).argNames();
+                String[] inputsThisOp = fn.argNames();
                 boolean allInputsAvailable = true;
                 if (inputsThisOp != null) {
                     allInputsAvailable = allInputsAvailable(inputsThisOp, executedVar);
@@ -495,7 +527,7 @@ public abstract class AbstractSession<T, O> {
                             VarId vid = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
                             availableForExec.add(vid);      //TODO let's avoid adding and logging duplicates... result is same (checks if already executed) but logged multiple times here...
                             log.trace("Marked variable as available for execution: {} - output of op {} ({}) with op inputs {}", vid, opName,
-                                    sameDiff.getFunctionById(opName).getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
+                                    fn.getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
                         }
                     }
                 }
@@ -606,7 +638,13 @@ public abstract class AbstractSession<T, O> {
                 }
             } else {
                 //Normal (non-constant)
-                vid = newVarId(in, executedVar.getFrame(), executedVar.getIteration());
+                //Edge case: "Enter" nodes always have iteration 0 by definition. In some TF graphs/loops, the enter node
+                // is used in multiple iterations (like, in a loop condition) - not just the first iteration
+                int iter = executedVar.getIteration();
+                if(sdv.getVariableType() == VariableType.ARRAY && sameDiff.getOps().get(variable.getOutputOfOp()).getOp() instanceof Enter){
+                    iter = 0;
+                }
+                vid = newVarId(in, executedVar.getFrame(), iter);
             }
 
             if (!nodeOutputs.containsKey(vid)) {
@@ -642,10 +680,11 @@ public abstract class AbstractSession<T, O> {
      * @param opName           Name of the op
      * @param frameIter        The frame and iteration of the op outputs
      * @param inputs           The inputs to the op (excluding constants/placeholders) - for the specific frame + iteration
+     * @param allIterInputs    The inputs - those that are not iteration-specific (mainly Enter op vars, which might be used in all iterations but are only executed once on iter 0)
      * @param constAndPhInputs The constant and placeholder inputs - used for all frames/iterations
      * @return The parameterized op
      */
-    public abstract O getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> inputs, Set<String> constAndPhInputs, Map<String,T> placeholderValues);
+    public abstract O getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs, Map<String,T> placeholderValues);
 
     /**
      * Execute the op - calculate INDArrays, or shape info, etc
@@ -655,7 +694,7 @@ public abstract class AbstractSession<T, O> {
      * @param inputs          The specific input arrays for the op
      * @return The outputs of the op
      */
-    public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<String> constAndPhInputs);
+    public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs);
 
     /**
      * This method is used to record that the specified input is required for calculating the specified output.
@@ -680,20 +719,38 @@ public abstract class AbstractSession<T, O> {
             execConstInputs.get(forVariable.getVariable()).add(inputVar.getVariable());
         } else {
             //Mark that outVar needs this specific executedVar (i.e., specific frame/iteration)
-            if (!execInputs.containsKey(forVariable))
-                execInputs.put(forVariable, new HashSet<VarId>());
-            execInputs.get(forVariable).add(inputVar);
+            //However, in the case of enter nodes, they are available for ALL iterations (used in loop conditions, for example)
+            Variable v = sameDiff.getVariables().get(inputVar.getVariable());
+            boolean isEnter = sameDiff.getVariableOutputFunction(v.getVariable().getVarName()) instanceof Enter;
+
+            if(isEnter){
+                VarId iter0 = forVariable;
+                if(iter0.getIteration() != 0){
+                    iter0 = newVarId(iter0.getVariable(), iter0.getFrame(), 0);
+                }
+                if(!execInputsAllIter.containsKey(iter0))
+                    execInputsAllIter.put(iter0, new HashSet<VarId>());
+                execInputsAllIter.get(iter0).add(inputVar);
+            } else {
+                //Most variables
+                if (!execInputs.containsKey(forVariable))
+                    execInputs.put(forVariable, new HashSet<VarId>());
+                execInputs.get(forVariable).add(inputVar);
+            }
         }
     }
 
 
-    protected static VarId lookup(String name, Collection<VarId> varIds){
+    protected static VarId lookup(String name, Collection<VarId> varIds, boolean exceptionOnNotFound){
         for(VarId vid : varIds){
             if(vid.getVariable().equals(name)){
                 return vid;
             }
         }
-        throw new RuntimeException("Could not find VarId to input " + name);
+        if(exceptionOnNotFound) {
+            throw new RuntimeException("Could not find VarId to input " + name);
+        }
+        return null;
     }
 
     /*

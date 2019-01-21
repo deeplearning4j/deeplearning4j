@@ -100,9 +100,7 @@ public class TensorflowConversion {
 
         long[] ndShape = ndArray.shape();
         long[] tfShape = new long[ndShape.length];
-        for (int i = 0; i < ndShape.length; i++) {
-            tfShape[i] = ndShape[i];
-        }
+        System.arraycopy(ndShape, 0, tfShape, 0, ndShape.length);
 
         int type;
         DataBuffer data = ndArray.data();

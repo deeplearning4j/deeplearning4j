@@ -89,10 +89,10 @@ public class LocalResponseNormalization extends DynamicCustomOp {
         val aBias = nodeDef.getAttrOrThrow("bias");
         val aDepth = nodeDef.getAttrOrThrow("depth_radius");
 
-        val alpha = aAlpha.getF();
-        val beta = aBeta.getF();
-        val bias = aBias.getF();
-        val depth = aDepth.getF();
+        double alpha = aAlpha.getF();
+        double beta = aBeta.getF();
+        double bias = aBias.getF();
+        int depth = (int)aDepth.getI();
 
         LocalResponseNormalizationConfig localResponseNormalizationConfig = LocalResponseNormalizationConfig.builder()
                 .alpha(alpha)

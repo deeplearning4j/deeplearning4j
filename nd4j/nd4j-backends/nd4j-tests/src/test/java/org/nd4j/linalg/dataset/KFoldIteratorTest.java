@@ -170,9 +170,7 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             eachBatchSize[0] = 0;
             kBatchFeats = new INDArray[batchSizes.length];
             kBatchLabels = new INDArray[batchSizes.length];
-            for (int i = 0; i < dataRank; i++) {
-                eachBatchSize[i + 1] = dataShape[i];
-            }
+            System.arraycopy(dataShape, 0, eachBatchSize, 1, dataRank);
             for (int i = 0; i < batchSizes.length; i++) {
                 eachBatchSize[0] = batchSizes[i];
                 INDArray currentBatchF = Nd4j.rand(eachBatchSize);

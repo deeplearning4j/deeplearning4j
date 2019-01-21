@@ -293,7 +293,7 @@ public class LayerOpValidation extends BaseOpValidation {
             int[] inSize;
 
             //LRN
-            String msg = "7 - LRN with NCHW - input" + Arrays.toString(inSizeNCHW);
+            String msg = "LRN with NCHW - input" + Arrays.toString(inSizeNCHW);
             inSize = inSizeNCHW;
             in = sd.var("in", inSize);
             SDVariable out = sd.localResponseNormalization(in, LocalResponseNormalizationConfig.builder()
