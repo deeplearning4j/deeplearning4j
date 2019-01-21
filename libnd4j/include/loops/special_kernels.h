@@ -100,6 +100,13 @@ namespace nd4j {
                         Nd4jLong *tadOnlyOutputShapeInfo,Nd4jLong *tadOutputOffsets,
                         cudaStream_t stream);
 
-    }
+    class NDArray;
+    template <typename T>
+    _CUDA_H void setDiagonalValueUpper(void* buffer, Nd4jLong* shape, NDArray const& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+
+    template <typename T>
+    _CUDA_H void setDiagonalValueLower(void* buffer, Nd4jLong* shape, NDArray const& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
+
+}
 
 #endif

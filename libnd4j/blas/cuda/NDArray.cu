@@ -665,71 +665,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     }
     BUILD_SINGLE_TEMPLATE(template std::vector, NDArray::asVectorT(), LIBND4J_TYPES);
 
-
-    template <typename T>
-    static __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, T value, int diagonal, Nd4jLong rows, Nd4jLong cols) {
-        Nd4jLong  rank = shape::rank(shape);
-        int totalThreads = blockDim.x;
-        T* array = reinterpret_cast<T*>(buffer);
-        for (Nd4jLong i = blockIdx.x; i < rows; i += gridDim.x) {
-            for (int j = threadIdx.x; j < cols; j += totalThreads) {
-                Nd4jLong coords[2] = {i, j};
-                Nd4jLong xOffset = shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), coords, rank);
-                if (i + diagonal <= j)
-                    array[xOffset] = value;
-            }
-        }
-    }
-
-    template <typename T>
-    static __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, T value, int diagonal, Nd4jLong rows, Nd4jLong cols) {
-        Nd4jLong  rank = shape::rank(shape);
-        int totalThreads = blockDim.x;
-        for (Nd4jLong i = blockIdx.x; i < rows; i += gridDim.x) {
-            for (int j = threadIdx.x; j < cols; j += totalThreads) {
-                Nd4jLong coords[2] = {i, j};
-                auto xOffset = shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), coords, rank);
-                if (i + diagonal >= j)
-                    *(reinterpret_cast<T*>(buffer) + xOffset) = value;
-            }
-        }
-    }
-
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, double value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, double value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, float value,    int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, float value,    int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, int value,      int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, int value,      int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, float16 value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, float16 value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, bfloat16 value, int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, bfloat16 value, int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, Nd4jLong value, int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, Nd4jLong value, int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, int16_t value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, int16_t value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, uint8_t value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, uint8_t value,  int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, int8_t value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, int8_t value,   int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, bool value,     int diagonal, Nd4jLong rows, Nd4jLong cols);
-    template __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, bool value,     int diagonal, Nd4jLong rows, Nd4jLong cols);
-
-    template <typename T>
-    static void setDiagValueUpper(void* buffer, Nd4jLong* shape, NDArray const& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream) {
-        dim3 launchDims(256, 512, 8192);
-        setDiagValueUpperKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(buffer, shape, value.e<T>(0), diagonal, rows, cols);
-    }
-
-    template <typename T>
-    static void setDiagValueLower(void* buffer, Nd4jLong* shape, NDArray const& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream) {
-        dim3 launchDims(256, 512, 8192);
-        setDiagValueLowerKernel<T><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(buffer, shape, value.e<T>(0), diagonal, rows, cols);
-    }
-
-    BUILD_SINGLE_TEMPLATE(template void setDiagValueUpper, (void* buffer, Nd4jLong* shape, NDArray const& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream), LIBND4J_TYPES);
-
     ////////////////////////////////////////////////////////////////////////
     template<typename T>
     void NDArray::setValueInDiagMatrix(const T& value, const int diag, const char direction) {
@@ -744,11 +679,11 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         NDArray val = NDArrayFactory::create(value, _context);
         switch(direction) {
             case 'u':                           // fill upper triangular block
-                BUILD_SINGLE_SELECTOR(_dataType, setDiagValueUpper, ((void*)_bufferD, _shapeInfoD, val, diag, rows, cols,  *stream), LIBND4J_TYPES);
+                BUILD_SINGLE_SELECTOR(_dataType, setDiagonalValueUpper, ((void*)_bufferD, _shapeInfoD, val, diag, rows, cols,  *stream), LIBND4J_TYPES);
                 break;
 
             case 'l':                           // fill lower triangular block
-                BUILD_SINGLE_SELECTOR(_dataType, setDiagValueLower, ((void*)_bufferD, _shapeInfoD, val, diag, rows, cols, *stream), LIBND4J_TYPES);
+                BUILD_SINGLE_SELECTOR(_dataType, setDiagonalValueLower, ((void*)_bufferD, _shapeInfoD, val, diag, rows, cols, *stream), LIBND4J_TYPES);
                 break;
             default:
                 throw std::string("NDArray::setValueInDiagMatrix method: wrong value of direction argument, expected is 'u' or 'l', but got " + std::string(1,direction) + " instead !");
