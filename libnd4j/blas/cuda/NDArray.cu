@@ -677,12 +677,14 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         int totalThreads = blockDim.x;
         //int totalThreadsY = blockDim.y;
         //const auto resultLength = shape::length(outputShape);
+        T* array = reinterpret_cast<T*>(buffer);
         for (Nd4jLong i = blockIdx.x; i < rows; i += gridDim.x) {
             for (int j = threadIdx.x; j < cols; j += totalThreads) {
                 Nd4jLong coords[2] = {i, j};
                 Nd4jLong xOffset = shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), coords, rank);
+                printf("%ld, %d -> %ld %d (%f)\n", i, j, xOffset, diagonal, array[xOffset]);
                 if (i + diagonal <= j)
-                    *(reinterpret_cast<T*>(buffer) + xOffset) = value;
+                    array[xOffset] = value;
             }
         }
 
@@ -770,6 +772,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         cudaStream_t* stream = _context->getCudaStream();
         const auto rows = sizeAt(0);
         const auto cols = sizeAt(1);
+        syncToDevice();
         T val(value);
         switch(direction) {
             case 'u':                           // fill upper triangular block
