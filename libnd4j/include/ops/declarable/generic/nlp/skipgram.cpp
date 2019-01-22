@@ -22,27 +22,38 @@
 #if NOT_EXCLUDED(OP_skipgram)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/sg_cb.h>
 
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(skipgram, 3, 1, true, 0, 0) {
-            auto syn0 = INPUT_VARIABLE(0);
-            auto syn1 = INPUT_VARIABLE(1);
-            auto syn1neg = INPUT_VARIABLE(2);
-            auto expTable = INPUT_VARIABLE(3);
+            // required part
+            auto indices = INPUT_VARIABLE(0);
+            auto codes = INPUT_VARIABLE(1);
+            auto syn0 = INPUT_VARIABLE(2);
 
-            auto indices = INPUT_VARIABLE(4);
-            auto codes = INPUT_VARIABLE(5);
+            auto syn1 = INPUT_VARIABLE(3);
+            auto syn1neg = INPUT_VARIABLE(4);
+            auto expTable = INPUT_VARIABLE(5);
+
+            auto inferenceVector = INPUT_VARIABLE(6);
 
             auto isInference = block.numB() > 0 ? B_ARG(0) : true;
+
+            REQUIRE_TRUE(syn0->dataType() == syn1->dataType() && syn0->dataType() == syn1neg->dataType(), 0, "SkipGram: all syn tables must have the same data type");
+
+            nd4j::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *indices, *codes, *inferenceVector);
 
             return Status::OK();
         }
 
         DECLARE_TYPES(skipgram) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setAllowedInputTypes(0, nd4j::DataType::INT32)
+                    ->setAllowedInputTypes(1, nd4j::DataType::INT8)
+                    ->setAllowedInputTypes(2, {ALL_FLOATS})
+                    ->setAllowedInputTypes(3, {ALL_FLOATS})
+                    ->setAllowedOutputTypes(nd4j::DataType::INT8);
         }
 
         DECLARE_SHAPE_FN(skipgram) {
