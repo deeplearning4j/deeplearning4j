@@ -17,6 +17,7 @@
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
 import com.google.gson.JsonObject;
+import lombok.val;
 import org.deeplearning4j.models.sequencevectors.serialization.ExtVocabWord;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -164,7 +165,9 @@ public class AbstractCacheTest {
             fail();
         }
         for (int i = 0; i < 3; ++i) {
-            assertNotNull(cache.wordAtIndex(i));
+            val t = cache.wordAtIndex(i);
+            assertNotNull(t);
+            assertTrue(unserialized.containsWord(t));
             assertEquals(cache.wordAtIndex(i), unserialized.wordAtIndex(i));
         }
     }
