@@ -124,8 +124,7 @@ public class VocabWord extends SequenceElement implements Serializable {
         return this.elementFrequency.get() == vocabWord.elementFrequency.get();
         */
     }
-
-
+    
 
     @Override
     public int hashCode() {

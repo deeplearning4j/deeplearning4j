@@ -117,9 +117,14 @@ public class AbstractCacheTest {
     public void testSerialization() {
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
-        cache.addToken(new VocabWord(1.0, "word"));
-        cache.addToken(new VocabWord(2.0, "test"));
-        cache.addToken(new VocabWord(3.0, "tester"));
+        VocabWord words[] = new VocabWord[3];
+        words[0] = new VocabWord(1.0, "word");
+        words[1] = new VocabWord(2.0, "test");
+        words[2] = new VocabWord(3.0, "tester");
+
+        for (int i = 0; i < 3; ++i) {
+            cache.addToken(words[i]);
+        }
 
         JsonObject json = null;
         AbstractCache<VocabWord> unserialized = null;
@@ -130,17 +135,23 @@ public class AbstractCacheTest {
         catch (Exception e) {
             fail();
         }
-        assertEquals(cache, unserialized);
+        for (int i = 0; i < 3; ++i) {
+            assertEquals(cache.wordAtIndex(i), unserialized.wordAtIndex(i));
+        }
     }
 
     @Test
     public void testUserClassSerialization() {
         AbstractCache<ExtVocabWord> cache = new AbstractCache.Builder<ExtVocabWord>().build();
 
-        ExtVocabWord word1 = new ExtVocabWord("some", 1100, 1.0, "word");
-        cache.addToken(word1);
-        cache.addToken(new ExtVocabWord("none", 23214, 2.0, "test"));
-        cache.addToken(new ExtVocabWord("wwew", 13223, 3.0, "tester"));
+        ExtVocabWord words[] = new ExtVocabWord[3];
+        words[0] = new ExtVocabWord("some", 1100, 1.0, "word");
+        words[1] = new ExtVocabWord("none", 23214, 2.0, "test");
+        words[2] = new ExtVocabWord("wwew", 13223, 3.0, "tester");
+
+        for (int i = 0; i < 3; ++i) {
+            cache.addToken(words[i]);
+        }
 
         JsonObject json = null;
         AbstractCache<VocabWord> unserialized = null;
@@ -151,8 +162,9 @@ public class AbstractCacheTest {
         catch (Exception e) {
             fail();
         }
-
-        assertEquals(cache, unserialized);
+        for (int i = 0; i < 3; ++i) {
+            assertEquals(cache.wordAtIndex(i), unserialized.wordAtIndex(i));
+        }
     }
 
 }

@@ -56,6 +56,8 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     private int minWordFrequency = 0;
     private boolean hugeModelExpected = false;
 
+    private static final String VOCABULARY_FIELD = "Vocabulary";
+
 
     // we're using <String>for compatibility & failproof reasons: it's easier to store unique labels then abstract objects of unknown size
     // TODO: wtf this one is doing here?
@@ -486,17 +488,17 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         ObjectMapper mapper = new ObjectMapper();
         JsonObject retVal = new JsonObject();
         String strVocabulary = mapper.writeValueAsString(vocabulary);
-        retVal.addProperty("Vocabulary", strVocabulary);
+        retVal.addProperty(VOCABULARY_FIELD, strVocabulary);
         return retVal;
     }
 
     public static <T extends SequenceElement> AbstractCache<T> fromJson(JsonObject json)  throws IOException {
-        AbstractCache<T> retVal = null;
+        AbstractCache<T> retVal = new AbstractCache.Builder<T>().build();
 
         ObjectMapper mapper = new ObjectMapper();
 
-        /*T value = (T)mapper.readValue(json.toString());
-        retVal.addToken(value);*/
+        ConcurrentHashMap<Long,T> deser = mapper.readValue(json.get(VOCABULARY_FIELD).getAsString(), ConcurrentHashMap.class);
+        retVal.vocabulary.putAll(deser);
 
         return retVal;
     }
