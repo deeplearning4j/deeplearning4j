@@ -50,14 +50,11 @@ public class Assets implements Function<String, Result> {
              fullPath = assetsRootDirectory + s;
         }
 
-//        log.info("REQUESTED: {}", s);
-//        log.info("FULL PATH: {}", fullPath);
-
         InputStream inputStream;
         try {
             inputStream = new ClassPathResource(fullPath).getInputStream();
         } catch (Throwable t) {
-            log.warn("Could not find asset: {}", s, t);
+            log.warn("Could not find requested UI asset: {}", s, t);
             return ok();
         }
 
@@ -72,7 +69,6 @@ public class Assets implements Function<String, Result> {
             ct = "application/octet-stream";
         }
 
-        log.info("PATH CONTENT TYPE: {} - {}", ct, s);
         return ok(inputStream).as(ct);
     }
 }
