@@ -93,8 +93,8 @@ function createGraph(data){
         edges: edges
     };
 
-
-    $('#layers').cytoscape({
+    var c = cytoscape({
+        container: $('#layers'),
         layout: {
             name: 'dagre',
             padding: 10
@@ -146,17 +146,6 @@ function createGraph(data){
 
         ready: function () {
             window.cy = this;
-//            if (vertexCount <= 4) {
-//                cy.zoom(1.6);
-//                cy.center();
-//            } else if (vertexCount > 4 && vertexCount <=6) {
-//                cy.zoom(1);
-//                cy.center();
-//            }
-//            else {
-//                cy.zoom(1);
-//                cy.panBy({x: -50, y:0});
-//            }
             cy.panningEnabled(true);
             cy.autoungrabify(true);
             cy.zoomingEnabled(true);
@@ -164,7 +153,7 @@ function createGraph(data){
         }
     });
 
-    cy.on('click', 'node', function (evt) {
+    c.on('click', 'node', function (evt) {
         setSelectedVertex(this.id());
     });
 
