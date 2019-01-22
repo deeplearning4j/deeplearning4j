@@ -2150,6 +2150,39 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     // ASSERT_TRUE(expY5.equalsTo(&y5));
         
 }
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayCudaBasicsTests, Test_diagonal_1) {
+
+    auto x = NDArrayFactory::create<float>('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    auto exp = NDArrayFactory::create<float>('c', {2, 1}, {1, 5});
+
+    auto diag = x.diagonal('c');
+    //diag->syncToDevice();
+    for (Nd4jLong e = 0; e < exp.lengthOf(); ++e) {
+        printf("VAL[%ld] = %f\n", e, diag->e<float>(e)); //, exp.e<float>(e), 1.e-5);
+    }
+    diag->printIndexedBuffer("DIAGONAL");
+    for (Nd4jLong e = 0; e < exp.lengthOf(); ++e) {
+        ASSERT_NEAR(diag->e<float>(e), exp.e<float>(e), 1.e-5);
+    }
+    double eps(1.e-5);
+    NDArray tmp(nd4j::DataType::FLOAT32, x.getContext()); // scalar = 0
+
+    ExtraArguments extras({eps});
+    NativeOpExecutioner::execReduce3Scalar(diag->getContext(), reduce3::EqualsWithEps, diag->getBuffer(),
+            diag->getShapeInfo(), diag->getSpecialBuffer(), diag->getSpecialShapeInfo(), extras.argumentAsT(nd4j::DataType::FLOAT32),
+            exp.getBuffer(), exp.getShapeInfo(), exp.getSpecialBuffer(), exp.getSpecialShapeInfo(),
+            tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo());
+    cudaStream_t* stream = x.getContext()->getCudaStream();
+    auto res = cudaStreamSynchronize(*stream);
+    tmp.syncToHost();
+    tmp.printBuffer("Compare result is (expected 0)");
+    ASSERT_TRUE(exp.isSameShape(diag));
+    ASSERT_TRUE(exp.equalsTo(diag));
+
+    delete diag;
+}
+
 // printCudaGlobal<double><<<1,1,0,*stream>>>(dX, 6);
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(dXShapeInfo, 8);
 //     printCudaGlobal<double><<<1,1,0,*stream>>>(dZ, 2);

@@ -2506,6 +2506,9 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         ArrayOptions::setDataType(outShapeInfo, this->dataType());
 
         auto result = new NDArray(_buffer, outShapeInfo, _context, false, true);
+        result->_bufferD = _bufferD;
+        result->_isBuffDAlloc = false;
+        result->tickWriteDevice();
 
         return result;
     }
