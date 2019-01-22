@@ -949,6 +949,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     }
 
     void NDArray::syncToHost() const {
+        if(this->isEmpty()) 
+            return;
         cudaStreamSynchronize(*_context->getCudaStream());
         if (this->_buffer == nullptr) {
             NDArray* constThis =  const_cast<NDArray*>(this); // not recommended solution
@@ -1095,11 +1097,11 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         if (!isS())
             throw std::runtime_error("This method is available for String arrays only");
-
-        lazyAllocateBuffer();
+        
         if(!isActualOnHostSide()) 
             syncToHost();
 
+        tickReadHost();
         auto rp = getOffset(i);
         
         return *(reinterpret_cast<utf8string**>(_buffer)[rp]);
@@ -1109,12 +1111,12 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
     template <>
     std::string NDArray::e(const Nd4jLong i) const {
         
-        lazyAllocateBuffer();
         if(!isActualOnHostSide())
             syncToHost();
 
         auto u = e<utf8string>(i);
         std::string r(u._buffer);
+        tickReadHost();
         
         return r;
     }
@@ -1125,12 +1127,12 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         if (i >= _length)
             throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
-
-        lazyAllocateBuffer();
+        
         if(!isActualOnHostSide())
             syncToHost();
 
         auto rp = getOffset(i);
+        tickReadHost();
 
         BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
         
@@ -1147,13 +1149,13 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
             throw std::invalid_argument("NDArray::e(i,j): one of input indexes is out of array length or rank!=2 !");
 
-        lazyAllocateBuffer();
         if(!isActualOnHostSide()) 
             syncToHost();
 
         auto xType = this->dataType();
         Nd4jLong coords[2] = {i, j};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        tickReadHost();
         //return (*this)(i, j);
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
                 
@@ -1169,13 +1171,13 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
             throw std::invalid_argument("NDArray::e(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
-        lazyAllocateBuffer();
         if(!isActualOnHostSide()) 
             syncToHost();
 
         auto xType = this->dataType();
         Nd4jLong coords[3] = {i, j, k};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        tickReadHost();
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
                 
         return static_cast<T>(119);
@@ -1190,13 +1192,13 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
             throw std::invalid_argument("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
 
-        lazyAllocateBuffer();
         if(!isActualOnHostSide()) 
             syncToHost();
 
         auto xType = this->dataType();
         Nd4jLong coords[4] = {i, j, k, l};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        tickReadHost();
         BUILD_SINGLE_PARTIAL_SELECTOR(xType, return templatedGet<, T>(this->_buffer, xOffset), LIBND4J_TYPES);
         
         return static_cast<T>(119);
@@ -2337,12 +2339,12 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
         if (!_isShapeAlloc) {             // if _shapeInfo is not its own
             _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
             _isShapeAlloc = true;
-        } else {
-            lazyAllocateBuffer();
+        } 
+        else {
             if (!nonNull())
-                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: array is nullptr!");
+                throw std::runtime_error("NDArray::permutei method cuda: wrong arguments in permutei method: array is nullptr!");
             if (rank != rankOf())
-                throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: rank is not suitable!");
+                throw std::runtime_error("NDArray::permutei method cuda: wrong arguments in permutei method: rank is not suitable!");
             shape::doPermuteShapeInfo(_shapeInfo, dimensions);
         }
 
@@ -2358,9 +2360,8 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
         if (!_isShapeAlloc) {             // if _shapeInfo is not its own
             _shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
             _isShapeAlloc = true;
-        } else {
-            lazyAllocateBuffer();
-            nd4j_printf("Ranks for permutei: Given %i, Real %i\n", rank, rankOf());
+        } 
+        else {
             if (!nonNull())
                 throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: array is nullptr!");
             if (rank != rankOf())
@@ -2609,16 +2610,17 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 // This method sets value in linear buffer to position i
     template <typename T>
     void NDArray::p(const Nd4jLong i, const T value) {
-        lazyAllocateBuffer();
-        if (isActualOnDeviceSide() && !isActualOnHostSide())
+        
+        if (!isActualOnHostSide())
             syncToHost();
+
         if (i >= _length)
             throw std::invalid_argument("NDArray::p(i, value): input index is out of array length !");
 
         auto rp = getOffset(i);
         const void *pV = reinterpret_cast<const void*>(const_cast<T *>(&value));
         BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), templatedSet<, T>(this->_buffer, rp, pV), LIBND4J_TYPES);
-        syncToDevice();
+        tickWriteHost();
     }
     template void NDArray::p(const Nd4jLong i, const double value);
     template void NDArray::p(const Nd4jLong i, const float value);
@@ -2632,24 +2634,18 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
     template void NDArray::p(const Nd4jLong i, const bool value);
 
     void NDArray::p(const Nd4jLong i, const NDArray& scalar) {
+        
         if(!scalar.isScalar())
             throw std::invalid_argument("NDArray::p method: input array must be scalar!");
         if (i >= _length)
             throw std::invalid_argument("NDArray::p(i, NDArray_scalar): input index is out of array length !");
-        // probably wrong args order
-        lazyAllocateBuffer();
-        if (isActualOnDeviceSide() && !isActualOnHostSide())
-            syncToHost();
-        auto rp = getOffset(i);
-        printf("Offset is %lld\n", rp);
-        BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (_bufferD, rp, scalar.dataType(), scalar.getSpecialBuffer()), LIBND4J_TYPES);
-        // void NDArray::templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, void *value)
-        //syncToDevice();
-        nd4j_printf("Offset is %i, value is %f\n", rp, *reinterpret_cast<float*>(_bufferD + rp));
-        syncToHost();
-        nd4j_printf("Offset is %i, value is %f\n", rp, *reinterpret_cast<float*>(_buffer + rp));
+
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
+        auto rp = getOffset(i);        
+        BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (_bufferD, rp, scalar.dataType(), scalar.getSpecialBuffer()), LIBND4J_TYPES);        
         tickWriteDevice();
-        //tickWriteHost();
     }
 
 
@@ -2661,16 +2657,15 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         //(*this)(i,j) = value;
         if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
             throw std::invalid_argument("NDArray:pe(i,j, value): one of input indexes is out of array length or rank!=2 !");
-
-        lazyAllocateBuffer();
-        if (isActualOnDeviceSide() && !isActualOnHostSide())
+        
+        if (!isActualOnHostSide())
             syncToHost();
-        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
-        auto xType = this->dataType();
+
+        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));        
         Nd4jLong coords[2] = {i, j};
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
-        syncToDevice();
+        BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
+        tickWriteHost();
     }
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const double value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const float value);
@@ -2691,15 +2686,15 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         //(*this)(i,j,k) = value;
         if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
             throw std::invalid_argument("NDArray:pe(i,j,k, value): one of input indexes is out of array length or rank!=3 !");
-        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
-        auto xType = this->dataType();
-        Nd4jLong coords[3] = {i, j, k};
-        lazyAllocateBuffer();
-        if (isActualOnDeviceSide() && !isActualOnHostSide())
+        
+        if (!isActualOnHostSide())
             syncToHost();
+        
+        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));        
+        Nd4jLong coords[3] = {i, j, k};        
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
-        syncToDevice();
+        BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
+        tickWriteHost();
     }
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const double value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const float value);
@@ -2718,13 +2713,14 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         //(*this)(i,j,k) = value;
         if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
             throw std::invalid_argument("NDArray::p(i,j,k,l, value): one of input indexes is out of array length or rank!=4 !");
-        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
-        auto xType = this->dataType();
-        Nd4jLong coords[4] = {i, j, k, l};
-        lazyAllocateBuffer();
+        if(!isActualOnHostSide())
+            syncToHost();
+        
+        void *p = reinterpret_cast<void *>(const_cast<T *>(&value));        
+        Nd4jLong coords[4] = {i, j, k, l};                
         auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
-        BUILD_SINGLE_PARTIAL_SELECTOR(xType, templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
-        syncToDevice();
+        BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->_buffer, xOffset, p), LIBND4J_TYPES);
+        tickWriteHost();
     }
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const double value);
     template void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const float value);
@@ -3092,30 +3088,21 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if(copy.back() >= rankOf())
             throw std::runtime_error("NDArray::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");
 
-        auto tadLength = shape::tadLength(_shapeInfo, copy.data(), copy.size());
-        auto numTads = _length / tadLength;
+        auto numTads = _length / shape::tadLength(_shapeInfo, copy.data(), copy.size());
 
         std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, copy.data(), copy.size()));
         tad->createTadOnlyShapeInfo();
-        tad->createOffsets();
-
-        auto shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
-        std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
-        //lazyAllocateBuffer();
-        // FIXME MISTAKE PRESENT
+        tad->createOffsets();        
+        
+        makeBothBuffersActual();
+        
         for (int idx = 0; idx < numTads; idx++ ) {
-            auto array = new NDArray(shapeInfo); //ordering(), shapeInfo);
-            //array->_shapeInfo = shapeInfo;
-            array->_bufferD = (int8_t*)specialBufferWithOffset(tad->tadOffsets[idx]);
-            array->_isBuffDAlloc = false;
+
+            auto array = new NDArray(specialBufferWithOffset(tad->tadOffsets[idx]), tad->tadOnlyShapeInfo, _context, false, false, memory::MemoryType::DEVICE);
+            array->_buffer = static_cast<int8_t*>(bufferWithOffset(tad->tadOffsets[idx]));
+            array->_isBuffAlloc = false;
             result->push_back(array);
         }
-
-        // if we have no indices - just delete shapeInfo
-        if (result->size() > 0)
-            result->at(0)->triggerAllocationFlag(false, true);
-        else
-            delete[] shapeInfo;
 
         return result;
     }
@@ -3337,6 +3324,54 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         }
     }
 
+ ////////////////////////////////////////////////////////////////////////
+    // operator returns sub-array with buffer pointing at this->_buffer + certain offset
+    NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape)  const {
+
+        const int rank = rankOf();
+        Nd4jLong *newShape = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());        
+        newShape[shape::shapeInfoLength(rank) - 2] = -1;
+
+        auto shapeOf = shape::shapeOf(newShape);
+        auto stridesOf = shape::stride(newShape);
+
+        Nd4jLong offset = 0;
+        Nd4jLong first, last;
+        for (int d = 0; d < rank; ++d) {
+            // building new shape first
+            if (idx[2*d] != idx[2*d+1]) {
+
+                first = idx[2*d]   >= 0 ? idx[2*d]   : idx[2*d]   + sizeAt(d) + 1;
+                last  = idx[2*d+1] >= 0 ? idx[2*d+1] : idx[2*d+1] + sizeAt(d) + 1;
+
+                shapeOf[d] = last - first;
+                // for offset we're taking only the first index
+                offset += first * stridesOf[d];
+            }
+        }
+        
+        makeBothBuffersActual();
+        NDArray result(specialBufferWithOffset(offset), newShape, _context, false, true, memory::MemoryType::DEVICE);
+        result._buffer =  static_cast<int8_t*>(bufferWithOffset(offset));
+        result._isBuffAlloc = false;
+        
+        if(!keepUnitiesInShape) {
+
+            std::vector<Nd4jLong> nonUnitDims;
+            for (int d = 0; d < rank; ++d) {
+                if(!(idx[2*d] != idx[2*d+1] && newShape[d+1] == 1))
+                    nonUnitDims.push_back(newShape[d+1]);
+            }
+            if(nonUnitDims.size() != rank)
+                result.reshapei(nonUnitDims);
+
+            // std::vector<Nd4jLong> nonUnitDims = ShapeUtils<T>::evalDimsWithoutUnities(newShape);
+            // if(nonUnitDims.size() != result.rankOf())
+            //     result.reshapei(nonUnitDims);
+        }
+
+        return result;
+    }
 } // end namespace nd4j
 
 

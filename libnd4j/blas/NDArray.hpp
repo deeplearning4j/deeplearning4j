@@ -914,7 +914,22 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
     static void printFormatted(NDArray const* arr, int depth, int limit) {
-        if (arr->rankOf() == 2) {
+        
+        if (arr->rankOf() == 1) {            
+            printf("[ ");
+            for (Nd4jLong i = 0; i < arr->lengthOf(); ++i) {                
+                if (arr->isR())
+                    printf("%f, ", arr->e<float>(i));
+                else if (arr->isZ())
+                    printf("%lld, ", arr->e<Nd4jLong>(i));
+                else if (arr->isB())
+                    printf("%s, ", arr->e<bool>(i)?"true":"false");
+                else if (arr->isS()) 
+                    printf("\"%s\", ", arr->e<std::string>(i).c_str());
+            }
+            printf("]\n");
+        }
+        else if (arr->rankOf() == 2) {
             Nd4jLong rows = arr->rows();
             Nd4jLong cols = arr->columns();
             char* padding = new char[depth + 1];
@@ -935,9 +950,8 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
                         printf("%lld,", arr->e<Nd4jLong>(row, col));
                     else if (arr->isB())
                         printf("%s,", arr->e<bool>(row, col)?"true":"false");
-                    else if (arr->isS()) {
-                        printf("\"%s\",", arr->e<std::string>(row * cols + col).c_str());
-                    }
+                    else if (arr->isS()) 
+                        printf("\"%s\",", arr->e<std::string>(row * cols + col).c_str());                    
                 }
                 if (row < rows - 1)
                     printf("]\n");
@@ -1000,7 +1014,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
                 printf("\"%s\"\n", this->e<std::string>(0).c_str());
             }
         }
-        else if (rowFlag)
+        else if (rowFlag && ews()==1)
             printBuffer(nullptr, limit);
         else {
             if (msg)
@@ -1026,7 +1040,11 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         ALLOCATE(newShapeInfo , _context->getWorkspace(), shapeInfoLength, Nd4jLong);
         memcpy(newShapeInfo, _shapeInfo, shapeInfoLength*sizeof(Nd4jLong));
 
-        auto newArr = new NDArray(_buffer, newShapeInfo, _context, false, true);
+        NDArray* newArr;
+        if(Environment::getInstance()->isCPU())
+            newArr = new NDArray(_buffer, newShapeInfo, _context, false, true, memory::MemoryType::HOST);
+        else
+            newArr = new NDArray(_bufferD, newShapeInfo, _context, false, true, memory::MemoryType::DEVICE);
 
         newArr->transposei();
 
@@ -1185,7 +1203,12 @@ NDArray NDArray::transp() const {
 
         int shapeInfoLength = shape::shapeInfoLength(rankOf());
         Nd4jLong* newShapeInfo = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());
-        auto newArr = new NDArray(_buffer, newShapeInfo, _context, false, true);
+        
+        NDArray* newArr;
+        if(Environment::getInstance()->isCPU())
+            newArr = new NDArray(_buffer, newShapeInfo, _context, false, true, memory::MemoryType::HOST);
+        else
+            newArr = new NDArray(_bufferD, newShapeInfo, _context, false, true, memory::MemoryType::DEVICE);
 
         newArr->reshapei(order, shape);
 
@@ -1649,55 +1672,7 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
          varianceAlongDimension(op, target, biasCorrected, std::vector<int>(dimensions));
     }
 
-    ////////////////////////////////////////////////////////////////////////
-    // operator returns sub-array with buffer pointing at this->_buffer + certain offset
-    NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape)  const {
-
-        const int rank = rankOf();
-        Nd4jLong *newShape = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());        
-        newShape[shape::shapeInfoLength(rank) - 2] = -1;
-
-        auto shapeOf = shape::shapeOf(newShape);
-        auto stridesOf = shape::stride(newShape);
-
-        Nd4jLong offset = 0;
-        Nd4jLong first, last;
-        for (int d = 0; d < rank; ++d) {
-            // building new shape first
-            if (idx[2*d] != idx[2*d+1]) {
-
-                first = idx[2*d]   >= 0 ? idx[2*d]   : idx[2*d]   + sizeAt(d) + 1;
-                last  = idx[2*d+1] >= 0 ? idx[2*d+1] : idx[2*d+1] + sizeAt(d) + 1;
-
-                shapeOf[d] = last - first;
-                // for offset we're taking only the first index
-                offset += first * stridesOf[d];
-            }
-        }
-
-        #ifdef __CUDABLAS__
-            NDArray result(specialBufferWithOffset(offset), newShape, _context, false, true, memory::MemoryType::DEVICE);
-        #else
-            NDArray result(bufferWithOffset(offset), newShape, _context, false, true, memory::MemoryType::HOST);
-        #endif
-
-        if(!keepUnitiesInShape) {
-
-            std::vector<Nd4jLong> nonUnitDims;
-            for (int d = 0; d < rank; ++d) {
-                if(!(idx[2*d] != idx[2*d+1] && newShape[d+1] == 1))
-                    nonUnitDims.push_back(newShape[d+1]);
-            }
-            if(nonUnitDims.size() != rank)
-                result.reshapei(nonUnitDims);
-
-            // std::vector<Nd4jLong> nonUnitDims = ShapeUtils<T>::evalDimsWithoutUnities(newShape);
-            // if(nonUnitDims.size() != result.rankOf())
-            //     result.reshapei(nonUnitDims);
-        }
-
-        return result;
-    }
+   
 
     ////////////////////////////////////////////////////////////////////////
     NDArray NDArray::operator()(const Nd4jLong subArrIdx, const std::vector<int>& dimsToExclude, bool keepUnitiesInShape)  const {

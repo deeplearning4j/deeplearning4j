@@ -2373,9 +2373,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         if(copy.back() >= rankOf())
             throw std::runtime_error("NDArray::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");
-
-        auto tadLength = shape::tadLength(_shapeInfo, copy.data(), copy.size());
-        auto numTads = _length / tadLength;
+        
+        auto numTads = _length / shape::tadLength(_shapeInfo, copy.data(), copy.size());
 
         std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, copy.data(), copy.size()));
         tad->createTadOnlyShapeInfo();
@@ -2620,7 +2619,51 @@ NDArray NDArray::e(const Nd4jLong i) const {
         }
     }
 
+ ////////////////////////////////////////////////////////////////////////
+    // operator returns sub-array with buffer pointing at this->_buffer + certain offset
+    NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape)  const {
 
+        const int rank = rankOf();
+        Nd4jLong *newShape = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());        
+        newShape[shape::shapeInfoLength(rank) - 2] = -1;
+
+        auto shapeOf = shape::shapeOf(newShape);
+        auto stridesOf = shape::stride(newShape);
+
+        Nd4jLong offset = 0;
+        Nd4jLong first, last;
+        for (int d = 0; d < rank; ++d) {
+            // building new shape first
+            if (idx[2*d] != idx[2*d+1]) {
+
+                first = idx[2*d]   >= 0 ? idx[2*d]   : idx[2*d]   + sizeAt(d) + 1;
+                last  = idx[2*d+1] >= 0 ? idx[2*d+1] : idx[2*d+1] + sizeAt(d) + 1;
+
+                shapeOf[d] = last - first;
+                // for offset we're taking only the first index
+                offset += first * stridesOf[d];
+            }
+        }
+
+        NDArray result(bufferWithOffset(offset), newShape, _context, false, true, memory::MemoryType::HOST);
+
+        if(!keepUnitiesInShape) {
+
+            std::vector<Nd4jLong> nonUnitDims;
+            for (int d = 0; d < rank; ++d) {
+                if(!(idx[2*d] != idx[2*d+1] && newShape[d+1] == 1))
+                    nonUnitDims.push_back(newShape[d+1]);
+            }
+            if(nonUnitDims.size() != rank)
+                result.reshapei(nonUnitDims);
+
+            // std::vector<Nd4jLong> nonUnitDims = ShapeUtils<T>::evalDimsWithoutUnities(newShape);
+            // if(nonUnitDims.size() != result.rankOf())
+            //     result.reshapei(nonUnitDims);
+        }
+
+        return result;
+    }
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*
 #ifndef __CLION_IDE__

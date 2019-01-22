@@ -479,20 +479,20 @@ nd4j::NDArray* MmulHelper::mmul(nd4j::NDArray* A, nd4j::NDArray* B, nd4j::NDArra
 
     if (A->rankOf() > 2 || B->rankOf() > 2) {
         return mmulNxN(A, B, C, alpha, beta);
-    } else if ((A->isMatrix() && B->isRowVector()) || (A->isMatrix() && B->isColumnVector())) {
+    } else if ((A->isMatrix() && B->isRowVector()) || (A->isMatrix() && B->isColumnVector())) {        
         BUILD_TRIPLE_SELECTOR(xType, yType, zType, return mmulMxV, (A, B, C, alpha, beta), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
     } else if ((A->isRowVector() && B->isRowVector()) || (A->isColumnVector() && B->isColumnVector())) {
         // dot
         if (A->lengthOf() != B->lengthOf())
             throw std::runtime_error("A length != B length");
-        if (result == nullptr)
-            result = NDArrayFactory::create_('c', {1, 1},B->dataType());
-        //result->p(0, nd4j::math::nd4j_dot(A->getBuffer(), B->getBuffer(), A->lengthOf()));
+        if (result == nullptr)             
+            result = new NDArray('c', {1, 1},B->dataType());        
+        //result->p(0, nd4j::math::nd4j_dot(A->getBuffer(), B->getBuffer(), A->lengthOf()));        
         BUILD_TRIPLE_SELECTOR(xType, yType, result->dataType(), _dot, (A->buffer(), B->buffer(), result->buffer(), A->lengthOf()), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
         return result;
     } else { //if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix()) || (A->isColumnVector() && B->isRowVector())) {
         // gemm
-        // int[] shape = {rows(), other.columns()};
+        // int[] shape = {rows(), other.columns()};        
         return mmulMxM(A, B, C, alpha, beta);
     }
     return result;

@@ -241,7 +241,7 @@ TEST_F(NDArrayTest, TestTad3) {
 
 
 TEST_F(NDArrayTest, TestPermuteReshape1) {
-    auto array = NDArrayFactory::create<float>('c', {2, 2, 5, 5});
+    NDArray array('c', {2, 2, 5, 5}, nd4j::DataType::FLOAT32);
     int pShape[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, -1, 99};
     int rShape[] = {3, 2, 25, 2, 25, 1, 50, 8192, -1, 99};
 
@@ -249,7 +249,6 @@ TEST_F(NDArrayTest, TestPermuteReshape1) {
 
     for (int e = 0; e < shape::shapeInfoLength(array.getShapeInfo()); e++)
         ASSERT_EQ(pShape[e], array.getShapeInfo()[e]);
-
 
     array.reshapei('c', {2, 25, 2});
 
@@ -637,7 +636,7 @@ TEST_F(NDArrayTest, TestReductionAny1) {
     array.p(1, 1.0f);
     array.p(2, 0.0f);
     array.p(3, 0.0f);
-
+    array.syncToDevice();
     auto result0 = array.reduceAlongDimension(reduce::Any, {0});
 
     ASSERT_EQ(2, result0->lengthOf());
@@ -789,11 +788,11 @@ TEST_F(NDArrayTest, TestTile6)
 TEST_F(NDArrayTest, TestMmulHelper1) {
     auto xBuffer = new float[3]{1.f, 2.f, 3.f};
     auto xShape = new Nd4jLong[8] {2, 1, 3, 1, 1, 8192, 1, 99};
-    auto x = new NDArray(xBuffer, xShape);
+    auto x = new NDArray(xBuffer, xShape);   
 
     auto yBuffer = new float[3]{2.f, 4.f, 6.f};
     auto yShape = new Nd4jLong[8] {2, 1, 3, 1, 1, 8192, 1, 99};
-    auto y = new NDArray(yBuffer, yShape);
+    auto y = new NDArray(yBuffer, yShape);    
 
     auto z = MmulHelper::mmul(x, y);
 
@@ -816,7 +815,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul1) {
 
     Nd4jLong _expS[] = {2, 3, 3, 1, 3, 8192, 1, 102};
     float _expB[] = {231.0, 252.0, 273.0, 537.0, 594.0, 651.0, 843.0, 936.0, 1029.0};
-    NDArray exp(_expB, _expS);
+    NDArray exp(_expB, _expS);     
 
     for (int e = 0; e < x.lengthOf(); e++)
         x.p(e, e+1);

@@ -1160,9 +1160,8 @@ TEST_F(NDArrayCudaBasicsTests, TestReduceSum_1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, TestDup1) {
-    float arr1[6] = {1,2,3,4,5,6};
-    Nd4jLong shape1[8] = {2,2,3,3,1,8192,1,99};
-    NDArray array(arr1, shape1);
+    
+    NDArray array('c', {2,3}, {1,2,3,4,5,6});
     array.printBuffer("Array at start");
     auto arrC = array.dup('c');
     auto arrF = array.dup('f');
@@ -1786,34 +1785,19 @@ TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest1) {
 
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     auto z = NDArrayFactory::create<float>('c', {5, 5});
-    auto row = NDArrayFactory::linspace(1.0f, 5.0f, 5);
-    float *brow = new float[5]{1,2,3,4,5};
-    auto bshape = new Nd4jLong[8]{2, 1, 5, 1, 1, 8192, 1, 99};
-    float *ebuf = new float[25] {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};
-    auto eshape = new Nd4jLong[8] {2, 5, 5, 5, 1, 8192, 1, 99};
-    NDArray expRow(brow, bshape);
-    NDArray exp(ebuf, eshape);
-    //x.assign(4.f);
+    auto row = NDArrayFactory::linspace(1.0f, 5.0f, 5);    
+    NDArray expRow('c', {1, 5,}, {1,2,3,4,5}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {5,5}, {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5}, nd4j::DataType::FLOAT32);
+    
     ASSERT_TRUE(row->equalsTo(&expRow));
-    nd4j_printf("Broadcast ADD with 5x5 and row (1x5)\n", "");
-    x.printIndexedBuffer("X");
-    row->printBuffer("Row");
-    //x -= 4.f;
-    //row->syncToDevice();
-    nd4j_printf("And hop!!! ADD with 5x5 and row (1x5)\n", "");
+            
     x.syncToDevice();
-    x.applyBroadcast(broadcast::Add, {1}, row, &z, nullptr);
-    nd4j_printf("Broadcast ADD RESULT with 5x5 and row (1x5) is \n", "");
-    z.syncToHost();
-    z.printBuffer("Result Z");
+    x.applyBroadcast(broadcast::Add, {1}, row, &z, nullptr);    
+    z.syncToHost();    
     x += *row;
-    x.printIndexedBuffer("X output");
+    
     ASSERT_TRUE(z.equalsTo(&exp));
-
-    delete[] brow;
-    delete[] bshape;
-    delete[] ebuf;
-    delete[] eshape;
+   
     delete row;
 }
 
@@ -1821,54 +1805,25 @@ TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest2) {
 
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     //auto z = NDArrayFactory::create<float>('c', {5, 5});
-    auto row = NDArrayFactory::linspace(1.0f, 5.0f, 5);
-    float *brow = new float[5]{1,2,3,4,5};
-    auto bshape = new Nd4jLong[8]{2, 1, 5, 1, 1, 8192, 1, 99};
-    float *ebuf = new float[25] {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5};
-    auto eshape = new Nd4jLong[8] {2, 5, 5, 5, 1, 8192, 1, 99};
-    NDArray expRow(brow, bshape);
-    NDArray exp(ebuf, eshape);
-    //x.assign(4.f);
-    ASSERT_TRUE(row->equalsTo(&expRow));
-    nd4j_printf("Broadcast ADD with 5x5 and row (1x5)\n", "");
-    x.printIndexedBuffer("X");
-    row->printBuffer("Row");
-    //x -= 4.f;
-    //row->syncToDevice();
-    nd4j_printf("And hop!!! ADD with 5x5 and row (1x5)\n", "");
-    //x.syncToDevice();
-    x.applyBroadcast(broadcast::Add, {1}, row);
-    nd4j_printf("Broadcast ADD RESULT with 5x5 and row (1x5) is \n", "");
-    //z.syncToHost();
-    x.printBuffer("Result X");
-    //x += *row;
-    //x.printIndexedBuffer("X output");
-    ASSERT_TRUE(x.equalsTo(&exp));
-
-    delete[] brow;
-    delete[] bshape;
-    delete[] ebuf;
-    delete[] eshape;
-    delete row;
+    auto row = NDArrayFactory::linspace(1.0f, 5.0f, 5);  
+    NDArray expRow('c', {1, 5,}, {1,2,3,4,5}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {5,5}, {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5}, nd4j::DataType::FLOAT32);
+    
+    ASSERT_TRUE(row->equalsTo(&expRow));        
+    x.applyBroadcast(broadcast::Add, {1}, row);    
+    ASSERT_TRUE(x.equalsTo(&exp));    
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, TestBroadcast_1) {
-    double _expB[] = {1.000000, 1.000000, 1.000000, 1.000000, 2.000000, 2.000000, 2.000000, 2.000000, 3.000000, 3.000000, 3.000000, 3.000000, 1.000000, 1.000000, 1.000000, 1.000000, 2.000000, 2.000000, 2.000000, 2.000000, 3.000000, 3.000000, 3.000000, 3.000000};
-    Nd4jLong _expS[] = {4, 2, 3, 2, 2, 12, 4, 2, 1, 16384, 1, 99};
-    NDArray exp(_expB, _expS);
-    exp.triggerAllocationFlag(false, false);
+    
+    NDArray exp('c', {2, 3, 2, 2}, {1., 1., 1., 1., 2., 2., 2., 2., 3., 3., 3., 3., 1., 1., 1., 1., 2., 2., 2., 2., 3., 3., 3., 3.}, nd4j::DataType::DOUBLE);
 
     auto input = NDArrayFactory::create<double>('c',{ 2, 3, 2, 2});
     auto bias = NDArrayFactory::create<double>('c', {1, 3});
 
-    bias.linspace(1);
-    input.printIndexedBuffer("X=");
-    bias.printIndexedBuffer("Y=");
-    exp.printShapeInfo("Output shape expected");
-    input.applyBroadcast(broadcast::Add, {1}, &bias);
-
-    input.printBuffer("result");
+    bias.linspace(1);    
+    input.applyBroadcast(broadcast::Add, {1}, &bias);    
     ASSERT_TRUE(exp.equalsTo(&input));
 }
 
@@ -1903,20 +1858,9 @@ TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_05)
     y = 2.;
     expected = 3.;
     res2 = 0.f;
-    //x.printBuffer("X=");
-    //y.printBuffer("Y=");
-    //expected.printBuffer("EXPECTED");
-    //auto result = x + y;
-    //result.printBuffer("1 + 2 =");
-    //res2.assign(x + y);
-
-    //x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &res2);
-    //res2.printBuffer("Z=");
+   
     x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &res2);// *= y;
-//    x += y;
-    //x.printBuffer("OutputX");
-    //res2.syncToHost();
-    res2.printBuffer("OUtput");
+
     ASSERT_TRUE(expected.isSameShape(&res2));
     ASSERT_TRUE(expected.equalsTo(&res2));
 }
@@ -2008,14 +1952,14 @@ TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_3)
 {
     auto x = NDArrayFactory::create<float>('f', {2, 1, 2});
     x = 10.;
-    x.p(1,0,1, 20);
-    auto y = x.tile({1,2,1});
+    x.p(1,0,1, 20);    
+    x.syncToDevice();
+    auto y = x.tile({1,2,1});    
     auto exp = NDArrayFactory::create<float>('f', {2, 2, 2});
     exp = 10.;
     exp.p(1,0,1, 20.);
     exp.p(1, 1, 1, 20.);
-    y.printShapeInfo("Output SHAPE");
-    y.printBuffer("Output TILE");
+    exp.syncToDevice();
     ASSERT_TRUE(exp.equalsTo(y));
 }
 
@@ -2060,17 +2004,17 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     NDArray y('f', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, nd4j::DataType::FLOAT32);
     
     Nd4jLong shapeExpX0[] = {1, 2, 12, 8192, -1, 99};
-    float    buffExpX0[]  = {1.000000, 2.000000};
+    float    buffExpX0[]  = {1.000000, 13.000000};
     Nd4jLong shapeExpX1[] = {1, 2, 12, 8192, -1, 99};
-    float    buffExpX1[]  = {2.000000, 3.000000};
+    float    buffExpX1[]  = {2.000000, 14.000000};
     Nd4jLong shapeExpX2[] = {3, 2, 1, 1, 12, 4, 1, 8192, -1, 99};
-    float    buffExpX2[]  = {1.000000, 2.000000};
+    float    buffExpX2[]  = {1.000000, 13.000000};
     Nd4jLong shapeExpX3[] = {2, 2, 4, 12, 1, 8192, -1, 99};
-    float    buffExpX3[]  = {9.000000, 10.000000, 11.000000, 12.000000, 13.000000, 14.000000, 15.000000, 16.000000};
+    float    buffExpX3[]  = {9.000000, 10.000000, 11.000000, 12.000000, 21.000000, 22.000000, 23.000000, 24.000000};
     Nd4jLong shapeExpX4[] = {3, 2, 1, 4, 12, 4, 1, 8192, -1, 99};
-    float    buffExpX4[]  = {9.000000, 10.000000, 11.000000, 12.000000, 13.000000, 14.000000, 15.000000, 16.000000};
+    float    buffExpX4[]  = {9.000000, 10.000000, 11.000000, 12.000000, 21.000000, 22.000000, 23.000000, 24.000000};
     Nd4jLong shapeExpX5[] = {2, 2, 3, 12, 4, 8192, -1, 99};
-    float    buffExpX5[]  = {4.000000, 5.000000, 6.000000, 7.000000, 8.000000, 9.000000};
+    float    buffExpX5[]  = {4.000000, 8.000000, 12.000000, 16.000000, 20.000000, 24.000000};
 
     Nd4jLong shapeExpY0[] = {1, 2, 1, 8192, -1, 99};
     float    buffExpY0[]  = {1.000000, 2.000000};
@@ -2079,75 +2023,85 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     Nd4jLong shapeExpY2[] = {3, 2, 1, 1, 1, 2, 6, 8192, -1, 102};
     float    buffExpY2[]  = {1.000000, 2.000000};
     Nd4jLong shapeExpY3[] = {2, 2, 4, 1, 6, 8192, -1, 99};
-    float    buffExpY3[]  = {5.000000, 6.000000, 7.000000, 8.000000, 9.000000, 10.000000, 11.000000, 12.000000};
+    float    buffExpY3[]  = {5.000000, 11.000000, 17.000000, 23.000000, 6.000000, 12.000000, 18.000000, 24.000000};
     Nd4jLong shapeExpY4[] = {3, 2, 1, 4, 1, 2, 6, 8192, -1, 102};
-    float    buffExpY4[]  = {5.000000, 6.000000, 7.000000, 8.000000, 9.000000, 10.000000, 11.000000, 12.000000};
+    float    buffExpY4[]  = {5.000000, 11.000000, 17.000000, 23.000000, 6.000000, 12.000000, 18.000000, 24.000000};
     Nd4jLong shapeExpY5[] = {2, 2, 3, 1, 2, 8192, -1, 99};
-    float    buffExpY5[]  = {19.000000, 20.000000, 21.000000, 22.000000, 23.000000, 24.000000};
-
-    NDArray expX0(buffExpX0, shapeExpX0, graph::LaunchContext::defaultContext(), false, false, memory::MemoryType::DEVICE);
-    NDArray expX1(buffExpX1, shapeExpX1, graph::LaunchContext::defaultContext(), false, false, memory::MemoryType::DEVICE);
-    NDArray expX2(buffExpX2, shapeExpX2, graph::LaunchContext::defaultContext(), false, false, memory::MemoryType::DEVICE);
-    NDArray expX3(buffExpX3, shapeExpX3, graph::LaunchContext::defaultContext(), false, false, memory::MemoryType::DEVICE);
-    NDArray expX4(buffExpX4, shapeExpX4, graph::LaunchContext::defaultContext(), false, false, memory::MemoryType::DEVICE);
-    NDArray expX5(buffExpX5, shapeExpX5, graph::LaunchContext::defaultContext(), false, false, memory::MemoryType::DEVICE);
-
-    NDArray expY0(buffExpY0, shapeExpY0, graph::LaunchContext::defaultContext(), false, false, memory::MemoryType::DEVICE);
-    NDArray expY1(buffExpY1, shapeExpY1, graph::LaunchContext::defaultContext(), false, false, memory::MemoryType::DEVICE);
-    NDArray expY2(buffExpY2, shapeExpY2, graph::LaunchContext::defaultContext(), false, false, memory::MemoryType::DEVICE);
-    NDArray expY3(buffExpY3, shapeExpY3, graph::LaunchContext::defaultContext(), false, false, memory::MemoryType::DEVICE);
-    NDArray expY4(buffExpY4, shapeExpY4, graph::LaunchContext::defaultContext(), false, false, memory::MemoryType::DEVICE);
-    NDArray expY5(buffExpY5, shapeExpY5, graph::LaunchContext::defaultContext(), false, false, memory::MemoryType::DEVICE);
-
+    float    buffExpY5[]  = {19.000000, 21.000000, 23.000000, 20.000000, 22.000000, 24.000000};
+    
 
     NDArray x0 = x(0, {1,2});
-    ASSERT_TRUE(expX0.isSameShapeStrict(&x0));    
-    // ASSERT_TRUE(expX0.equalsTo(&x0));
-    
+    for(int i = 0; i < shape::shapeInfoLength(x0.rankOf()); ++i)
+        ASSERT_TRUE(x0.getShapeInfo()[i] == shapeExpX0[i]);
+    for(int i = 0; i < x0.lengthOf(); ++i)
+        ASSERT_TRUE(x0.e<float>(i) == buffExpX0[i]);
+
     NDArray x1 = x(1, {1,2});
-    ASSERT_TRUE(expX1.isSameShapeStrict(&x1));
-    // ASSERT_TRUE(expX1.equalsTo(&x1));
+    for(int i = 0; i < shape::shapeInfoLength(x1.rankOf()); ++i)
+        ASSERT_TRUE(x1.getShapeInfo()[i] == shapeExpX1[i]);
+    for(int i = 0; i < x1.lengthOf(); ++i)
+        ASSERT_TRUE(x1.e<float>(i) == buffExpX1[i]);
 
     NDArray x2 = x(0, {1,2}, true);
-    ASSERT_TRUE(expX2.isSameShapeStrict(&x2));
-    // ASSERT_TRUE(expX2.equalsTo(&x2));
+    for(int i = 0; i < shape::shapeInfoLength(x2.rankOf()); ++i)
+        ASSERT_TRUE(x2.getShapeInfo()[i] == shapeExpX2[i]);
+    for(int i = 0; i < x2.lengthOf(); ++i)
+        ASSERT_TRUE(x2.e<float>(i) == buffExpX2[i]);
     
     NDArray x3 = x(2, {1});
-    ASSERT_TRUE(expX3.isSameShapeStrict(&x3));
-    // ASSERT_TRUE(expX3.equalsTo(&x3));
+    for(int i = 0; i < shape::shapeInfoLength(x3.rankOf()); ++i)
+        ASSERT_TRUE(x3.getShapeInfo()[i] == shapeExpX3[i]);
+    for(int i = 0; i < x3.lengthOf(); ++i)
+        ASSERT_TRUE(x3.e<float>(i) == buffExpX3[i]);
 
     NDArray x4 = x(2, {1}, true);
-    ASSERT_TRUE(expX4.isSameShapeStrict(&x4));
-    // ASSERT_TRUE(expX4.equalsTo(&x4));
+    for(int i = 0; i < shape::shapeInfoLength(x4.rankOf()); ++i)
+        ASSERT_TRUE(x4.getShapeInfo()[i] == shapeExpX4[i]);
+    for(int i = 0; i < x4.lengthOf(); ++i)
+        ASSERT_TRUE(x4.e<float>(i) == buffExpX4[i]);
 
     NDArray x5 = x(3, {2});
-    ASSERT_TRUE(expX5.isSameShapeStrict(&x5));
-    // ASSERT_TRUE(expX5.equalsTo(&x5));
+    for(int i = 0; i < shape::shapeInfoLength(x5.rankOf()); ++i)
+        ASSERT_TRUE(x5.getShapeInfo()[i] == shapeExpX5[i]);
+    for(int i = 0; i < x5.lengthOf(); ++i)
+        ASSERT_TRUE(x5.e<float>(i) == buffExpX5[i]);
 
     // ******************* //
     NDArray y0 = y(0, {1,2});
-    ASSERT_TRUE(expY0.isSameShapeStrict(&y0));
-    // ASSERT_TRUE(expY0.equalsTo(&y0));
+    for(int i = 0; i < shape::shapeInfoLength(y0.rankOf()); ++i)
+        ASSERT_TRUE(y0.getShapeInfo()[i] == shapeExpY0[i]);
+    for(int i = 0; i < y0.lengthOf(); ++i)
+        ASSERT_TRUE(y0.e<float>(i) == buffExpY0[i]);
 
     NDArray y1 = y(1, {1,2});
-    ASSERT_TRUE(expY1.isSameShapeStrict(&y1));
-    // ASSERT_TRUE(expY1.equalsTo(&y1));
+    for(int i = 0; i < shape::shapeInfoLength(y1.rankOf()); ++i)
+        ASSERT_TRUE(y1.getShapeInfo()[i] == shapeExpY1[i]);
+    for(int i = 0; i < y1.lengthOf(); ++i)
+        ASSERT_TRUE(y1.e<float>(i) == buffExpY1[i]);
 
     NDArray y2 = y(0, {1,2}, true);
-    ASSERT_TRUE(expY2.isSameShapeStrict(&y2));
-    // ASSERT_TRUE(expY2.equalsTo(&y2));
+    for(int i = 0; i < shape::shapeInfoLength(y2.rankOf()); ++i)
+        ASSERT_TRUE(y2.getShapeInfo()[i] == shapeExpY2[i]);
+    for(int i = 0; i < y2.lengthOf(); ++i)
+        ASSERT_TRUE(y2.e<float>(i) == buffExpY2[i]);
     
     NDArray y3 = y(2, {1});
-    ASSERT_TRUE(expY3.isSameShapeStrict(&y3));
-    // ASSERT_TRUE(expY3.equalsTo(&y3));
+    for(int i = 0; i < shape::shapeInfoLength(y3.rankOf()); ++i)
+        ASSERT_TRUE(y3.getShapeInfo()[i] == shapeExpY3[i]);
+    for(int i = 0; i < y3.lengthOf(); ++i)
+        ASSERT_TRUE(y3.e<float>(i) == buffExpY3[i]);
 
     NDArray y4 = y(2, {1}, true);
-    ASSERT_TRUE(expY4.isSameShapeStrict(&y4));
-    // ASSERT_TRUE(expY4.equalsTo(&y4));
+    for(int i = 0; i < shape::shapeInfoLength(y4.rankOf()); ++i)
+        ASSERT_TRUE(y4.getShapeInfo()[i] == shapeExpY4[i]);
+    for(int i = 0; i < y4.lengthOf(); ++i)
+        ASSERT_TRUE(y4.e<float>(i) == buffExpY4[i]);
 
     NDArray y5 = y(3, {2});
-    ASSERT_TRUE(expY5.isSameShapeStrict(&y5));
-    // ASSERT_TRUE(expY5.equalsTo(&y5));
+    for(int i = 0; i < shape::shapeInfoLength(y5.rankOf()); ++i)
+        ASSERT_TRUE(y5.getShapeInfo()[i] == shapeExpY5[i]);
+    for(int i = 0; i < y5.lengthOf(); ++i)
+        ASSERT_TRUE(y5.e<float>(i) == buffExpY5[i]);
         
 }
 //////////////////////////////////////////////////////////////////////
@@ -2191,3 +2145,4 @@ TEST_F(NDArrayCudaBasicsTests, Test_diagonal_1) {
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(tadShapeInfo, 6);
 //     printCudaGlobal<Nd4jLong><<<1,1,0,*stream>>>(tadOffsets, 2);
 //     cudaStreamSynchronize(*stream);  
+

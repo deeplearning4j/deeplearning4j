@@ -233,6 +233,7 @@ namespace nd4j {
         FORCEINLINE void tickReadDevice() const;
         FORCEINLINE bool isActualOnHostSide() const;
         FORCEINLINE bool isActualOnDeviceSide() const;
+        FORCEINLINE void makeBothBuffersActual() const;
 
         void syncToHost() const;
         void syncToDevice() const;
@@ -1572,7 +1573,10 @@ namespace nd4j {
         if (isEmpty())
             return true;
 
-        return this->_buffer != nullptr && this->_shapeInfo != nullptr;
+        if(!Environment::getInstance()->isCPU())
+            return this->_bufferD != nullptr && this->_shapeInfoD != nullptr;        
+        
+        return this->_buffer != nullptr && this->_shapeInfo != nullptr;       
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -1925,7 +1929,11 @@ T& NDArray::t(const Nd4jLong i) {
         throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
+
+    if(!isActualOnHostSide())
+        syncToHost();
     
+    tickWriteHost();
     return *(reinterpret_cast<T*>(bufferWithOffset(getOffset(i))));
 }
 
@@ -1937,9 +1945,13 @@ T& NDArray::t(const Nd4jLong i, const Nd4jLong j) {
             throw std::invalid_argument("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i,j): type of array is not equal to template type T!");
+
+    if(!isActualOnHostSide())
+        syncToHost();    
         
     Nd4jLong coords[2] = {i, j};
     auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    tickWriteHost();
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));        
 }
 
@@ -1952,6 +1964,10 @@ T NDArray::t(const Nd4jLong i) const {
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
 
+    if(!isActualOnHostSide())
+        syncToHost();
+    
+    tickReadHost();
     return *(reinterpret_cast<T*>(bufferWithOffset(getOffset(i))));
 }
 
@@ -1963,9 +1979,13 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
             throw std::invalid_argument("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i,j): type of array is not equal to template type T!");
+    
+    if(!isActualOnHostSide())
+        syncToHost();
         
     Nd4jLong coords[2] = {i, j};
     auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    tickReadHost();
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));        
 }
 
@@ -1976,6 +1996,7 @@ void NDArray::tickReadHost() const           {  _readHost    = ++_opCounter; }
 void NDArray::tickReadDevice() const         {  _readDevice  = ++_opCounter; }
 bool NDArray::isActualOnHostSide() const     { return (_writeHost > _writeDevice || _readHost > _writeDevice); }
 bool NDArray::isActualOnDeviceSide() const   { return (_writeDevice > _writeHost || _readDevice > _writeHost); }
+void NDArray::makeBothBuffersActual() const  { if(!isActualOnHostSide()) syncToHost(); if(!isActualOnDeviceSide()) syncToDevice(); }
 
 
 }
