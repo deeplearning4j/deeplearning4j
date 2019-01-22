@@ -20,6 +20,8 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +35,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 @Slf4j
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE,
+        setterVisibility = JsonAutoDetect.Visibility.NONE)
 public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
 
     // map for label->object dictionary

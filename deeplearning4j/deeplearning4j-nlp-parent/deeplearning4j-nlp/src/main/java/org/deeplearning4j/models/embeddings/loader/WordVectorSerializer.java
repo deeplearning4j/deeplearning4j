@@ -2543,7 +2543,7 @@ public class WordVectorSerializer {
         } catch (Exception e) {
             //
             try {
-                // try to load file as text csv
+                    // try to load file as text csv
                 vocabCache = new AbstractCache.Builder<VocabWord>().build();
                 storage.clear();
                 log.debug("Trying CSVReader...");
@@ -2761,5 +2761,26 @@ public class WordVectorSerializer {
 
         OneTimeLogger.info(log, "Projected memory use for model: [{} {}]", String.format("%.2f", value), sfx);
 
+    }
+
+    public static <T extends VocabWord> void  serializeWord(T word, String path)
+    {
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(path))) {
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <T extends VocabWord> T  deserializeWord(String path)
+    {
+        T retVal = null;
+
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(path))) {
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return retVal;
     }
 }

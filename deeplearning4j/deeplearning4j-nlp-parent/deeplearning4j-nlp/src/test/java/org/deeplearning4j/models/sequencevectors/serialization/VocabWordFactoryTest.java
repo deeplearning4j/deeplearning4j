@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.sequencevectors.serialization;
 
+import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,4 +58,15 @@ public class VocabWordFactoryTest {
 
         assertEquals(word, word2);
     }
+
+    @Test
+    public void testDeserializeExt() throws Exception {
+        ExtVocabWord word = new ExtVocabWord(1, "word");
+
+        /*WordVectorSerializer.serializeWord(word, "test.json");
+        ExtVocabWord word2 = WordVectorSerializer.deserializeWord("test.json");
+        assertEquals(word, word2);*/
+    }
+
+
 }
