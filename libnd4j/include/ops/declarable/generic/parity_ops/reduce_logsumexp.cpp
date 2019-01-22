@@ -41,7 +41,7 @@ namespace ops {
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
         Nd4jLong maxI = input->argMax();
-        double maxVals = input->e<double>(maxI);
+        auto maxVals = input->e(maxI);
         //void* whereMax = (void*)();
         auto internal = (*input);
         internal -= maxVals;
