@@ -25,8 +25,7 @@ import org.junit.Test;
 
 import java.util.Collection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by fartovii on 10.12.15.
@@ -122,8 +121,15 @@ public class AbstractCacheTest {
         cache.addToken(new VocabWord(2.0, "test"));
         cache.addToken(new VocabWord(3.0, "tester"));
 
-        JsonObject json = cache.asJson();
-        AbstractCache<VocabWord> unserialized = AbstractCache.fromJson(json);
+        JsonObject json = null;
+        AbstractCache<VocabWord> unserialized = null;
+        try {
+            json = cache.asJson();
+            unserialized = AbstractCache.fromJson(json);
+        }
+        catch (Exception e) {
+            fail();
+        }
         assertEquals(cache, unserialized);
     }
 
@@ -131,12 +137,21 @@ public class AbstractCacheTest {
     public void testUserClassSerialization() {
         AbstractCache<ExtVocabWord> cache = new AbstractCache.Builder<ExtVocabWord>().build();
 
-        cache.addToken(new ExtVocabWord("some", 1100, 1.0, "word"));
+        ExtVocabWord word1 = new ExtVocabWord("some", 1100, 1.0, "word");
+        cache.addToken(word1);
         cache.addToken(new ExtVocabWord("none", 23214, 2.0, "test"));
         cache.addToken(new ExtVocabWord("wwew", 13223, 3.0, "tester"));
 
-        JsonObject json = cache.asJson();
-        AbstractCache<VocabWord> unserialized = AbstractCache.fromJson(json);
+        JsonObject json = null;
+        AbstractCache<VocabWord> unserialized = null;
+        try {
+            json = cache.asJson();
+            unserialized = AbstractCache.fromJson(json);
+        }
+        catch (Exception e) {
+            fail();
+        }
+
         assertEquals(cache, unserialized);
     }
 

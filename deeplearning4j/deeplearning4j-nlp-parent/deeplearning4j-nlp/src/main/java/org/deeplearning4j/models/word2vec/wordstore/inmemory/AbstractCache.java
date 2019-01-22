@@ -17,14 +17,16 @@
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
 import com.google.gson.JsonObject;
-import jdk.nashorn.api.scripting.JSObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -479,13 +481,23 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         removeElement(element.getLabel());
     }
 
-    public JsonObject asJson() {
+    public JsonObject asJson() throws JsonProcessingException {
+
+        ObjectMapper mapper = new ObjectMapper();
         JsonObject retVal = new JsonObject();
+        String strVocabulary = mapper.writeValueAsString(vocabulary);
+        retVal.addProperty("Vocabulary", strVocabulary);
         return retVal;
     }
 
-    public static <T extends SequenceElement> AbstractCache<T> fromJson(JsonObject json) {
+    public static <T extends SequenceElement> AbstractCache<T> fromJson(JsonObject json)  throws IOException {
         AbstractCache<T> retVal = null;
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        /*T value = (T)mapper.readValue(json.toString());
+        retVal.addToken(value);*/
+
         return retVal;
     }
 
