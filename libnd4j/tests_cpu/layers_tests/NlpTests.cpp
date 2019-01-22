@@ -74,7 +74,7 @@ TEST_F(NlpTests, basic_sg_hs_ns_test_1) {
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::skipgram op;
-    auto result = *op.execute({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {}, {false});
+    auto result = *op.execute({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {3}, {false});
     ASSERT_EQ(Status::OK(), result.status());
 }
 
@@ -95,6 +95,6 @@ TEST_F(NlpTests, basic_sg_ns_test_1) {
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::skipgram op;
-    auto result = *op.execute({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {}, {false});
+    auto result = *op.execute({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {3}, {false});
     ASSERT_EQ(Status::OK(), result.status());
 }

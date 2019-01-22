@@ -26,17 +26,18 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(skipgram, 3, 1, true, 0, 0) {
+        CONFIGURABLE_OP_IMPL(skipgram, 12, 12, true, 0, 0) {
             auto target = INPUT_VARIABLE(0);
             auto ngStarter = INPUT_VARIABLE(1);
 
             // required part
             auto indices = INPUT_VARIABLE(2);
             auto codes = INPUT_VARIABLE(3);
-            auto syn0 = INPUT_VARIABLE(4);
 
+            auto syn0 = INPUT_VARIABLE(4);
             auto syn1 = INPUT_VARIABLE(5);
             auto syn1neg = INPUT_VARIABLE(6);
+
             auto expTable = INPUT_VARIABLE(7);
             auto negTable = INPUT_VARIABLE(8);
 
@@ -74,9 +75,11 @@ namespace nd4j {
                     ->setAllowedOutputTypes(nd4j::DataType::INT8);
         }
 
+        /*
         DECLARE_SHAPE_FN(skipgram) {
             return SHAPELIST(ShapeBuilders::createScalarShapeInfo(DataType::INT8, block.getWorkspace()));
         }
+        */
     }
 }
 
