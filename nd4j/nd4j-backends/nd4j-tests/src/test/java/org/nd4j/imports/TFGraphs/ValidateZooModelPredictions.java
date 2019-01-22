@@ -92,6 +92,54 @@ public class ValidateZooModelPredictions {
         assertEquals(expClass, className);
     }
 
+
+    @Test
+    public void testResnetV2() throws Exception {
+        TFGraphTestZooModels.currentTestDir = testDir.newFolder();
+
+        //Load model
+        String path = "tf_graphs/zoo_models/resnetv2_imagenet_frozen_graph/tf_model.txt";
+        File resource = new ClassPathResource(path).getFile();
+        SameDiff sd = TFGraphTestZooModels.LOADER.apply(resource, "resnetv2_imagenet_frozen_graph");
+
+        //Load data
+        //Because we don't have DataVec NativeImageLoader in ND4J tests due to circular dependencies, we'll load the image previously saved...
+        File imgFile = new ClassPathResource("deeplearning4j-zoo/goldenretriever_rgb224_unnormalized_nchw_INDArray.bin").getFile();
+        INDArray img = Nd4j.readBinary(imgFile).castTo(DataType.FLOAT);
+        img = img.permute(0,2,3,1).dup();   //to NHWC
+
+        //Resnet v2 - NO external normalization, just resize and center crop
+        // https://github.com/tensorflow/models/blob/d32d957a02f5cffb745a4da0d78f8432e2c52fd4/research/tensorrt/tensorrt.py#L70
+        // https://github.com/tensorflow/models/blob/1af55e018eebce03fb61bba9959a04672536107d/official/resnet/imagenet_preprocessing.py#L253-L256
+
+        //Perform inference
+        List<String> inputs = sd.inputs();
+        assertEquals(1, inputs.size());
+
+        String out = "softmax_tensor";
+        Map<String,INDArray> m = sd.exec(Collections.singletonMap(inputs.get(0), img), out);
+
+        INDArray outArr = m.get(out);
+
+
+        System.out.println("SHAPE: " + Arrays.toString(outArr.shape()));
+        System.out.println(outArr);
+
+        INDArray argmax = outArr.argMax(1);
+
+        //Load labels
+        List<String> labels = labels();
+
+        int classIdx = argmax.getInt(0);
+        String className = labels.get(classIdx);
+        String expClass = "golden retriever";
+        double prob = outArr.getDouble(classIdx);
+
+        System.out.println("Predicted class: " + classIdx + " - \"" + className + "\" - probability = " + prob);
+        assertEquals(expClass, className);
+    }
+
+
     public static List<String> labels() throws Exception {
         File labelsFile = new ClassPathResource("tf_graphs/zoo_models/labels/imagenet_labellist.txt").getFile();
         List<String> labels = FileUtils.readLines(labelsFile, StandardCharsets.UTF_8);
