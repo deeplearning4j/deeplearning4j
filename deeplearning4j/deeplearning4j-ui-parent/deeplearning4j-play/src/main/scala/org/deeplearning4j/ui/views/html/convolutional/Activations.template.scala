@@ -45,7 +45,7 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
         <meta charset="utf-8" />
         <title>Neural Network activations</title>
             <!-- jQuery -->
-        <script src="/assets/webjars/jquery/1.9.1/jquery.min.js"></script>
+        <script src="/assets/webjars/jquery/2.2.0/jquery.min.js"></script>
         """),format.raw/*25.68*/("""
             """),format.raw/*26.13*/("""<!-- Latest compiled and minified CSS -->
         <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.1/css/bootstrap.min.css" rel="stylesheet">
@@ -136,9 +136,9 @@ Seq[Any](format.raw/*1.1*/("""<!DOCTYPE html>
 object Activations extends Activations_Scope0.Activations
               /*
                   -- GENERATED --
-                  DATE: Tue Jan 22 15:42:19 AEDT 2019
+                  DATE: Tue Jan 22 16:25:54 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/convolutional/Activations.scala.html
-                  HASH: 6bafdfc36afe5321a3e87b29b51c9311ca991264
+                  HASH: 4bccfea1c7183212cc6a722282c4e27cb32a1b70
                   MATRIX: 657->0|1724->1098|1766->1112|2253->1571|2282->1572|2324->1586|2482->1717|2511->1718|2550->1730|2582->1734|2611->1735|2653->1749|2775->1844|2804->1845|2843->1857|2878->1864|2907->1865|2949->1879|3136->2039|3165->2040|3204->2052|3242->2062|3271->2063|3313->2077|3435->2172|3464->2173|3501->2183|3614->2268|3643->2269|3685->2283|3850->2421|3879->2422
                   LINES: 25->1|49->25|50->26|60->36|60->36|61->37|65->41|65->41|67->43|67->43|67->43|68->44|71->47|71->47|73->49|73->49|73->49|74->50|79->55|79->55|81->57|81->57|81->57|82->58|85->61|85->61|86->62|89->65|89->65|90->66|92->68|92->68
                   -- GENERATED --
