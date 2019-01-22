@@ -49,6 +49,8 @@ namespace nd4j {
             auto nsRounds = block.numI() > 0 ? INT_ARG(0) : 0;
             auto isInference = block.numB() > 0 ? B_ARG(0) : true;
 
+            REQUIRE_TRUE(block.isInplace(), 0, "SkipGram: this operation requires inplace execution only");
+
             REQUIRE_TRUE(syn0->dataType() == syn1->dataType() && syn0->dataType() == syn1neg->dataType(), 0, "SkipGram: all syn tables must have the same data type");
             REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0, "SkipGram: expTable must have the same data type as syn0 table");
 
