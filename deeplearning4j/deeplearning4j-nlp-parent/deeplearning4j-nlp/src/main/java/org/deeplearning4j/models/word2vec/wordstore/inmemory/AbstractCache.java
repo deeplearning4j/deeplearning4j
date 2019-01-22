@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
+import com.google.gson.JsonObject;
+import jdk.nashorn.api.scripting.JSObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -477,6 +479,16 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         removeElement(element.getLabel());
     }
 
+    public JsonObject asJson() {
+        JsonObject retVal = new JsonObject();
+        return retVal;
+    }
+
+    public static <T extends SequenceElement> AbstractCache<T> fromJson(JsonObject json) {
+        AbstractCache<T> retVal = null;
+        return retVal;
+    }
+
     public static class Builder<T extends SequenceElement> {
         protected int scavengerThreshold = 3000000;
         protected int retentionDelay = 3;
@@ -512,5 +524,6 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
 
             return cache;
         }
+
     }
 }

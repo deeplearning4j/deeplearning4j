@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
+import com.google.gson.JsonObject;
+import org.deeplearning4j.models.sequencevectors.serialization.ExtVocabWord;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.junit.Before;
@@ -111,4 +113,31 @@ public class AbstractCacheTest {
         assertTrue(collection.contains("test"));
         assertTrue(collection.contains("tester"));
     }
+
+    @Test
+    public void testSerialization() {
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+
+        cache.addToken(new VocabWord(1.0, "word"));
+        cache.addToken(new VocabWord(2.0, "test"));
+        cache.addToken(new VocabWord(3.0, "tester"));
+
+        JsonObject json = cache.asJson();
+        AbstractCache<VocabWord> unserialized = AbstractCache.fromJson(json);
+        assertEquals(cache, unserialized);
+    }
+
+    @Test
+    public void testUserClassSerialization() {
+        AbstractCache<ExtVocabWord> cache = new AbstractCache.Builder<ExtVocabWord>().build();
+
+        cache.addToken(new ExtVocabWord("some", 1100, 1.0, "word"));
+        cache.addToken(new ExtVocabWord("none", 23214, 2.0, "test"));
+        cache.addToken(new ExtVocabWord("wwew", 13223, 3.0, "tester"));
+
+        JsonObject json = cache.asJson();
+        AbstractCache<VocabWord> unserialized = AbstractCache.fromJson(json);
+        assertEquals(cache, unserialized);
+    }
+
 }

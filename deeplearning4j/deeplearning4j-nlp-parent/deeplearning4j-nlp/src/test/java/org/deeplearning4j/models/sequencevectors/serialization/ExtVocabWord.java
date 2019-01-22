@@ -12,7 +12,9 @@ public class ExtVocabWord extends VocabWord {
     protected String extString;
     protected long counter;
 
-    public ExtVocabWord(double wordFrequency, @NonNull String word) {
+    public ExtVocabWord(String extString, long counter, double wordFrequency, @NonNull String word) {
         super(wordFrequency, word);
+        this.extString = extString;
+        this.counter = counter;
     }
 }
