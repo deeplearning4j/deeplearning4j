@@ -36,13 +36,17 @@ namespace nd4j {
             auto syn1neg = INPUT_VARIABLE(4);
             auto expTable = INPUT_VARIABLE(5);
 
+            auto alpha = INPUT_VARIABLE(6);
+            auto randomValue = INPUT_VARIABLE(7);
+
             auto inferenceVector = INPUT_VARIABLE(6);
 
             auto isInference = block.numB() > 0 ? B_ARG(0) : true;
 
             REQUIRE_TRUE(syn0->dataType() == syn1->dataType() && syn0->dataType() == syn1neg->dataType(), 0, "SkipGram: all syn tables must have the same data type");
+            REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0, "SkipGram: expTable must have the same data type as syn0 table");
 
-            nd4j::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *indices, *codes, *inferenceVector);
+            nd4j::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *indices, *codes, *alpha, *randomValue, *inferenceVector);
 
             return Status::OK();
         }
@@ -53,6 +57,10 @@ namespace nd4j {
                     ->setAllowedInputTypes(1, nd4j::DataType::INT8)
                     ->setAllowedInputTypes(2, {ALL_FLOATS})
                     ->setAllowedInputTypes(3, {ALL_FLOATS})
+                    ->setAllowedInputTypes(4, {ALL_FLOATS})
+                    ->setAllowedInputTypes(5, {ALL_FLOATS})
+                    ->setAllowedInputTypes(6, {ALL_FLOATS})
+                    ->setAllowedInputTypes(7, nd4j::DataType::INT64)
                     ->setAllowedOutputTypes(nd4j::DataType::INT8);
         }
 
