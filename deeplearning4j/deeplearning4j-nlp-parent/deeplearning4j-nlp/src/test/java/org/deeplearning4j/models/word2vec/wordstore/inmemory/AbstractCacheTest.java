@@ -151,7 +151,7 @@ public class AbstractCacheTest {
 
         for (int i = 0; i < 3; ++i) {
             cache.addToken(words[i]);
-            cache.addWordToIndex(0, words[i].getLabel());
+            cache.addWordToIndex(i, words[i].getLabel());
         }
 
         JsonObject json = null;
