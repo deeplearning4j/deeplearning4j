@@ -307,7 +307,7 @@ namespace nd4j {
 
                     inputTypes[inT++] = array->dataType();
                     if (!_descriptor->checkInputMatch(cnt, array->dataType())) {
-                        nd4j_printf("Op [%s] failed check for input [%i], DataType: [%i]\n", _descriptor->getOpName()->data(), cnt, (int)array->dataType());
+                        nd4j_printf("Op [%sxnj failed check for input [%i], DataType: [%i]\n", _descriptor->getOpName()->data(), cnt, (int)array->dataType());
                         return ND4J_STATUS_BAD_ARGUMENTS;
                     }
                 }

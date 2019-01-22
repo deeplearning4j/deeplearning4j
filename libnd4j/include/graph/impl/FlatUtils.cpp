@@ -47,7 +47,7 @@ namespace nd4j {
             // empty arrays is special case, nothing to restore here
             if (shape::isEmpty(newShape)) {
                 delete[] newShape;
-                return NDArrayFactory::empty(dtype, nullptr);
+                return NDArrayFactory::empty_(dtype, nullptr);
             }
 
             if (dtype == UTF8) {
