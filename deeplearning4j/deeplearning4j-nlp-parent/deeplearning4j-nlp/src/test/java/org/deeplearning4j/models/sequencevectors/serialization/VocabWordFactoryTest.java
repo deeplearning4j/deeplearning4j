@@ -61,7 +61,7 @@ public class VocabWordFactoryTest {
 
     @Test
     public void testDeserializeExt() throws Exception {
-        ExtVocabWord word = new ExtVocabWord(1, "word");
+        //ExtVocabWord word = new ExtVocabWord(1, "word");
 
         /*WordVectorSerializer.serializeWord(word, "test.json");
         ExtVocabWord word2 = WordVectorSerializer.deserializeWord("test.json");
