@@ -958,7 +958,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             constThis->_isBuffAlloc = true;
         }
         if (ews() < 0) {
-            printf("Working with strange shapes\n");
+            //printf("Working with strange shapes\n");
             for (Nd4jLong i = 0; i < lengthOf(); i++) {
                 auto xOffset = getOffset(i);//shape::getIndexOffset(i, _shapeInfo, lengthOf());
                 cudaMemcpy(this->_buffer + xOffset * sizeOfT(), this->_bufferD + xOffset * sizeOfT(), this->sizeOfT(), cudaMemcpyDeviceToHost);
@@ -974,10 +974,10 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("Cannot sync data to device due device buffer is not allocated yet!");
         if (lengthOf() > 0) {
             if (ews() < 0) {
-                printf("Working with strange shapes\n");
+                //printf("Working with strange shapes\n");
                 for (Nd4jLong i = 0; i < lengthOf(); i++) {
                     auto xOffset = getOffset(i);//shape::getIndexOffset(i, _shapeInfo, lengthOf());
-                    printf("Offset is %ld\n", xOffset);
+                    //printf("Offset is %ld\n", xOffset);
                     cudaMemcpy(this->_bufferD + xOffset * sizeOfT(), this->_buffer + xOffset * sizeOfT(), this->sizeOfT(), cudaMemcpyHostToDevice);
                 }
             }
