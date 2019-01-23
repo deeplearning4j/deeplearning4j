@@ -2478,15 +2478,13 @@ template void NDArray::operator/=(const bool scalar);
 Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
 
     if (i >= _length)
-        throw std::invalid_argument("NDArray::getOffset: input index is out of array length !");
-
-    auto ews   = this->ews();
+        throw std::invalid_argument("NDArray::getOffset: input index is out of array length !");    
 
     if(ordering() == 'c') {
-        if(ews == 1)
+        if(ews() == 1)
             return i;
-        if(ews > 1)
-            return i * ews;
+        if(ews() > 1)
+            return i * ews();
     }
 
     return shape::getIndexOffset(i, _shapeInfo, _length);

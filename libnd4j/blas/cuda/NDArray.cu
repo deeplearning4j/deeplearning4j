@@ -906,43 +906,53 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             this->synchronize();
     }
 
+////////////////////////////////////////////////////////////////////////
     void NDArray::syncToHost() const {
-        if(this->isEmpty()) 
-            return;
-        cudaStreamSynchronize(*_context->getCudaStream());
-        if (this->_buffer == nullptr) {
+        
+        if(isEmpty()) return;        
+        
+        if (_buffer == nullptr) {
             NDArray* constThis =  const_cast<NDArray*>(this); // not recommended solution
-            ALLOCATE(constThis->_buffer, constThis->_context->getWorkspace(), constThis->lengthOf() * constThis->sizeOfT(), int8_t);
+            ALLOCATE(constThis->_buffer, _context->getWorkspace(), (getOffset(_length - 1) + 1) * sizeOfT(), int8_t);
             constThis->_isBuffAlloc = true;
         }
-        if (ews() < 0) {
-            //printf("Working with strange shapes\n");
-            for (Nd4jLong i = 0; i < lengthOf(); i++) {
-                auto xOffset = getOffset(i);//shape::getIndexOffset(i, _shapeInfo, lengthOf());
-                cudaMemcpy(this->_buffer + xOffset * sizeOfT(), this->_bufferD + xOffset * sizeOfT(), this->sizeOfT(), cudaMemcpyDeviceToHost);
+        
+        if (ews() != 1) {
+            #pragma parallel for schedule(guided)
+            for (Nd4jLong i = 0; i < _length; i++) {
+                auto offset = getOffset(i) * sizeOfT();
+                cudaMemcpy(_buffer + offset, _bufferD + offset, sizeOfT(), cudaMemcpyDeviceToHost);
             }
         }
         else
-        cudaMemcpy(this->_buffer, this->_bufferD, this->lengthOf() * this->sizeOfT(), cudaMemcpyDeviceToHost);
+            cudaMemcpy(_buffer, _bufferD, _length * sizeOfT(), cudaMemcpyDeviceToHost);
+        
         tickReadHost();
     }
 
+////////////////////////////////////////////////////////////////////////
     void NDArray::syncToDevice() const {
-        if (this->_bufferD == nullptr && lengthOf() > 0)
-            throw std::runtime_error("Cannot sync data to device due device buffer is not allocated yet!");
-        if (lengthOf() > 0) {
-            if (ews() < 0) {
-                //printf("Working with strange shapes\n");
-                for (Nd4jLong i = 0; i < lengthOf(); i++) {
-                    auto xOffset = getOffset(i);//shape::getIndexOffset(i, _shapeInfo, lengthOf());
-                    //printf("Offset is %ld\n", xOffset);
-                    cudaMemcpy(this->_bufferD + xOffset * sizeOfT(), this->_buffer + xOffset * sizeOfT(), this->sizeOfT(), cudaMemcpyHostToDevice);
-                }
-            }
-            else
-                cudaMemcpy(this->_bufferD, this->_buffer, this->lengthOf() * this->sizeOfT(), cudaMemcpyHostToDevice);
-            tickReadDevice();
+        
+        if(isEmpty()) return;
+
+        if (_bufferD == nullptr) {
+            NDArray* constThis =  const_cast<NDArray*>(this); // not recommended solution
+            void* p = constThis->_bufferD;
+            ALLOCATE_SPECIAL(p, _context->getWorkspace(), (getOffset(_length - 1) + 1) * sizeOfT(), int8_t);
+            constThis->_isBuffDAlloc = true;
         }
+
+         if (ews() != 1) {
+            #pragma parallel for schedule(guided)
+            for (Nd4jLong i = 0; i < _length; i++) {
+                auto offset = getOffset(i) * sizeOfT();
+                cudaMemcpy(_bufferD + offset, _buffer + offset, sizeOfT(), cudaMemcpyHostToDevice);
+            }
+        }
+        else
+            cudaMemcpy(_bufferD, _buffer, _length * sizeOfT(), cudaMemcpyHostToDevice);
+                
+        tickReadDevice();        
     }
 
     void NDArray::syncShape() const {
@@ -3248,7 +3258,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
  
 
- 
+
 } // end namespace nd4j
 
 
