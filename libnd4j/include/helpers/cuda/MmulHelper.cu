@@ -121,12 +121,9 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     const auto bType = pB->dataType();
     const auto cType = pC->dataType();
 
-    if(!pA->isActualOnDeviceSide())
-        pA->syncToDevice();
-    if(!pB->isActualOnDeviceSide())
-        pB->syncToDevice();
-    if(!pC->isActualOnDeviceSide())
-        pC->syncToDevice();    
+    if(!pA->isActualOnDeviceSide()) pA->syncToDevice();
+    if(!pB->isActualOnDeviceSide()) pB->syncToDevice();
+    if(!pC->isActualOnDeviceSide()) pC->syncToDevice();
 
     cublasStatus_t status;
     cublasHandle_t handle;
@@ -199,71 +196,92 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 ////////////////////////////////////////////////////////////////////////////
 // static
 // MXN x N = M
-template <typename X, typename Y, typename Z>
-NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* B, nd4j::NDArray* C, const double alpha, const double beta, const char outOrder) {
+template <typename T1, typename T2, typename T3>
+NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* Y, const double alpha, const double beta, const char outOrder) {
 
-    int bLenDim, cLenDim;
+    int xLenDim, yLenDim;
 
     if(A->rankOf() != 2)
         throw std::runtime_error("MmulHelper::mmulMxV cuda: rank of A array is not equal 2 !");
-    if(!B->isVector() && !shape::isCommonVector(B->getShapeInfo(), bLenDim))
-        throw std::runtime_error("MmulHelper::mmulMxV cuda: B array must be vector !");
-    if(C != nullptr && !C->isVector() && !shape::isCommonVector(C->getShapeInfo(), cLenDim))
-        throw std::runtime_error("MmulHelper::mmulMxV cuda: C array must be vector !");
+    if(!shape::isCommonVector(X->getShapeInfo(), xLenDim))
+        throw std::runtime_error("MmulHelper::mmulMxV cuda: X array must be vector !");
+    if(Y != nullptr && !shape::isCommonVector(Y->getShapeInfo(), yLenDim))
+        throw std::runtime_error("MmulHelper::mmulMxV cuda: Y array must be vector !");
 
     const auto M = A->sizeAt(0);    
     const auto N = A->sizeAt(1);
 
-    if(B->lengthOf() != N)
-        throw std::runtime_error("MmulHelper::mmulMxV cuda: B vector has wrong length !");
-    if(C != nullptr && C->lengthOf() != M)
-        throw std::runtime_error("MmulHelper::mmulMxV cuda: C array has wrong length !");    
+    if(X->lengthOf() != N)
+        throw std::runtime_error("MmulHelper::mmulMxV cuda: X vector has wrong length !");
+    if(Y != nullptr && Y->lengthOf() != M)
+        throw std::runtime_error("MmulHelper::mmulMxV cuda: Y array has wrong length !");    
 
-    if(C == nullptr)        
-        C = new NDArray(outOrder, {M}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()), A->getContext());
+    if(Y == nullptr)        
+        Y = new NDArray(outOrder, {M}, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()), A->getContext());
     
     NDArray *pA(const_cast<NDArray*>(A));
 
-    if(A->ews() != 1 || A->ordering() != 'f')
+    if(A->ews() != 1)
         pA = pA->dup('f');
-
-    // const auto aOrder = pA->ordering();
-    // const auto bOrder = pB->ordering();    
-
-    // const bool transA = aOrder != 'f';
-    // const bool transB = bOrder != 'f';
     
-    // const cublasOperation_t transAblas = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
-    // const cublasOperation_t transBblas = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
+    const bool transA =  pA->ordering() != 'f';    
+    
+    const cublasOperation_t transAblas = transA ? CUBLAS_OP_T : CUBLAS_OP_N;    
+    
+    int lda, lta;
+    if(transA) { lda = N; lta = M; }
+    else       { lda = M; lta = N; }
+    
+    const int incx = X->stridesOf()[xLenDim];
+    const int incy = Y->stridesOf()[yLenDim];
 
-    // const int lda = aOrder == 'f' ? M : K;
-    // const int ldb = bOrder == 'f' ? K : N;
-    // const int ldc = M; // cOrder == 'f' ? M : N;    
+    const auto aType = pA->dataType();
+    const auto xType = X->dataType();
+    const auto yType = Y->dataType();
 
-    // const auto aType = pA->dataType();
-    // const auto bType = pB->dataType();
-    // const auto cType = pC->dataType();
+    if(!pA->isActualOnDeviceSide()) pA->syncToDevice();
+    if(!X->isActualOnDeviceSide())  X->syncToDevice();
+    if(!Y->isActualOnDeviceSide())  Y->syncToDevice();    
 
+    cublasStatus_t status;
+    cublasHandle_t handle;
 
-    //     auto xType = A->dataType();
-    //     auto yType = B->dataType();
-    //     auto zType = result->dataType();
+    cudaStream_t* stream = A->getContext()->getCudaStream();
 
-        // // TODO: strides!!!
-        // if (xType == yType && xType == zType && BlasHelper::getInstance()->hasGEMV<X>()) {
-        //     nd4j_debug("Using provided GEMV pointer\n","");
-        //     auto layout = A->ordering() == 'f' ? CblasColMajor : CblasRowMajor;
-        //     if (std::is_same<X, float>::value)
-        //         BlasHelper::getInstance()->sgemv()(layout, CblasNoTrans, A->rows(), A->columns(), (float) alpha, reinterpret_cast<float *>(A->getBuffer()), layout == CblasColMajor ? A->rows() : A->columns(), reinterpret_cast<float *>(B->getBuffer()), 1, (float) beta, reinterpret_cast<float *>(result->getBuffer()), 1);
-        //     else if (std::is_same<X, double>::value)
-        //         BlasHelper::getInstance()->dgemv()(layout, CblasNoTrans, A->rows(), A->columns(), (double) alpha, reinterpret_cast<double *>(A->getBuffer()), layout == CblasColMajor ? A->rows() : A->columns(), reinterpret_cast<double *>(B->getBuffer()), 1, (double) beta, reinterpret_cast<double *>(result->getBuffer()), 1);
-        //     else
-        //         nd4j::blas::GEMV<X, Y, Z>::op(A->ordering() == 'f' ? CblasTrans : 0, A->rows(), A->columns(), alpha, A->getBuffer(), B->lengthOf(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
-        // } else {
-        //     nd4j_debug("Using fallback GEMV impl\n","");
-        //     nd4j::blas::GEMV<X, Y, Z>::op(A->ordering() == 'f' ? CblasTrans : 0, A->rows(), A->columns(), alpha, A->getBuffer(), B->lengthOf(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
-        // }
-    return C;
+    status = cublasCreate_v2(&handle); // initialize CUBLAS context
+    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
+
+    status = cublasSetStream_v2(handle, *stream);
+    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
+
+    const bool AX(aType == xType), AY(aType == yType), AXY(AX && AY);
+    
+    // choose appropriate cuda gemm api depending on data types    
+    if(AXY && aType == DataType::DOUBLE) {
+        status = cublasDgemv(handle, transAblas, lda, lta, &alpha, (double*)pA->getSpecialBuffer(), lda, (double*)X->getSpecialBuffer(), incx, &beta, (double*)Y->getSpecialBuffer(), incy);
+    }
+    else if(AXY && aType == DataType::FLOAT32) {        
+        float alphaF(alpha), betaF(beta);
+        status = cublasSgemv(handle, transAblas, lda, lta, &alphaF, (float*)pA->getSpecialBuffer(), lda, (float*)X->getSpecialBuffer(), incx, &betaF, (float*)Y->getSpecialBuffer(), incy);
+    }
+    else
+        throw std::runtime_error("MmulHelper::mmulMxV cuda: not implemented yet for given types of input arrays !");
+
+    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+
+    auto cudaResult = cudaStreamSynchronize(*stream);
+    if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
+   
+    cublasDestroy(handle);    
+
+    pA->tickReadDevice();
+    X->tickReadDevice();
+    Y->tickWriteDevice();
+
+    if(pA != A)
+        delete pA;
+    
+    return Y;
 }
 
 
