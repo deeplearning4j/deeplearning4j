@@ -27,13 +27,7 @@ function fileSelect(evt){
     renderSameDiffGraph();
 }
 
-function byteArrayToInt(byteArray) {
-    var value = 0;
-    for ( var i = 0; i < byteArray.length; i++) {
-        value = (value * 256) + byteArray[i];
-    }
-    return value;
-};
+
 
 function renderSameDiffGraph(){
 
@@ -50,11 +44,9 @@ function renderSameDiffGraph(){
             var bytes = new Uint8Array(arrayBuffer);
             console.log(bytes);
 
-            var header1a = bytes.slice(0,4);
-            var header1b = bytes.slice(4,8);
-
-            var headerLength = byteArrayToInt(header1a);
-            var contentLength = byteArrayToInt(header1b);
+            var lengths = extractHeaders(bytes);
+            var headerLength = lengths[0];
+            var contentLength = lengths[1];
 
             console.log("Header/content lengths: " + headerLength + ", " + contentLength);
 
@@ -62,7 +54,10 @@ function renderSameDiffGraph(){
 
             var headerSlice = bytes.slice(8, 8+headerLength);
             var buffer = new flatbuffers.ByteBuffer(headerSlice);
-            var graphStructure = nd4j.graph.UIGraphStructure.getRootAsUIGraphStructure(buffer);
+
+            var contentSlice = bytes.slice(8+headerLength, 8+headerLength+contentLength);
+            var bufferContent = new flatbuffers.ByteBuffer(contentSlice);
+            var graphStructure = nd4j.graph.UIGraphStructure.getRootAsUIGraphStructure(bufferContent);
             var inLength = graphStructure.inputsLength();
             var inputs = [];
             for( var i=0; i<inLength; i++ ){
@@ -70,6 +65,14 @@ function renderSameDiffGraph(){
                 inputs.push(inName);
             }
             console.log("Inputs: " + inputs);
+
+            var outLength = graphStructure.outputsLength();
+            var outputs = [];
+            for( var i=0; i<outLength; i++ ){
+                var outName = graphStructure.outputs(i);
+                outputs.push(outName);
+            }
+            console.log("Outputs: " + outputs);
         };
         // console.log("Number of bytes: " + bytes.length());
     }

@@ -72,6 +72,8 @@ Seq[Any](format.raw/*1.4*/("""
         <script src="/assets/webjars/dagre/0.8.4/dist/dagre.min.js"></script>
         <script src="/assets/webjars/cytoscape/3.2.5/dist/cytoscape.min.js"></script>
         <script src="/assets/webjars/cytoscape-dagre/2.1.0/cytoscape-dagre.js"></script>
+        <script src="/assets/webjars/flatbuffers/1.9.0/js/flatbuffers.js"></script>
+
         <script src="/assets/js/samediff/generated/uigraphevents_generated.js"></script>
         <script src="/assets/js/samediff/generated/uigraphstatic_generated.js"></script>
         <script src="/assets/js/samediff/generated/array_generated.js"></script>
@@ -79,6 +81,7 @@ Seq[Any](format.raw/*1.4*/("""
         <script src="/assets/js/samediff/generated/variable_generated.js"></script>
 
         <script src="/assets/js/samediff/samediff-ui.js"></script>
+        <script src="/assets/js/samediff/flatbuffers-utils.js"></script>
 
         <div class="container-fluid-full">
             <div class="row-fluid">
@@ -94,9 +97,9 @@ Seq[Any](format.raw/*1.4*/("""
             <!-- Execute once on page load -->
         <script>
                 document.getElementById('file').addEventListener('change', fileSelect, false);
-                $(document).ready(function () """),format.raw/*73.47*/("""{"""),format.raw/*73.48*/("""
-                    """),format.raw/*74.21*/("""renderSameDiffGraph();
-                """),format.raw/*75.17*/("""}"""),format.raw/*75.18*/(""");
+                $(document).ready(function () """),format.raw/*76.47*/("""{"""),format.raw/*76.48*/("""
+                    """),format.raw/*77.21*/("""renderSameDiffGraph();
+                """),format.raw/*78.17*/("""}"""),format.raw/*78.18*/(""");
         </script>
     </body>
 </html>
@@ -120,11 +123,11 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Wed Jan 23 22:32:44 AEDT 2019
+                  DATE: Thu Jan 24 00:13:59 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
-                  HASH: ee379b11d7b482987da65e6f51c4e47570890703
-                  MATRIX: 561->1|657->3|685->5|4010->3302|4039->3303|4089->3325|4157->3365|4186->3366
-                  LINES: 20->1|25->1|26->2|97->73|97->73|98->74|99->75|99->75
+                  HASH: 34d08e48a8c131d8ae609c196475e97de0e099a8
+                  MATRIX: 561->1|657->3|685->5|4171->3463|4200->3464|4250->3486|4318->3526|4347->3527
+                  LINES: 20->1|25->1|26->2|100->76|100->76|101->77|102->78|102->78
                   -- GENERATED --
               */
           

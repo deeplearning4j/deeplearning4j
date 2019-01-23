@@ -14,27 +14,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.ui.play;
 
-import org.junit.Test;
-import org.nd4j.shade.jackson.databind.JavaType;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-import java.util.Arrays;
-import java.util.List;
-
-public class Jackson {
-
-    @Test
-    public void test() throws Exception {
-
-        ObjectMapper om = new ObjectMapper();
-        List<String> l = Arrays.asList("a", "b", "c");
-        String s = om.writeValueAsString(l);
-        JavaType type = om.getTypeFactory().constructCollectionType(List.class, String.class);
-        List<String> out = om.readValue(s, type);
-        System.out.println(out);
-
-    }
-
+function extractHeaders(/*Uint8Array*/ bytes){
+    var header1a = bytes.slice(0,4);
+    var header1b = bytes.slice(4,8);
+    var headerLength = byteArrayToInt(header1a);
+    var contentLength = byteArrayToInt(header1b);
+    return [headerLength, contentLength];
 }
+
+
+function byteArrayToInt(byteArray) {
+    var value = 0;
+    for ( var i = 0; i < byteArray.length; i++) {
+        value = (value * 256) + byteArray[i];
+    }
+    return value;
+};

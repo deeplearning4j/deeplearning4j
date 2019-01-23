@@ -458,6 +458,13 @@
             <artifactId>bootstrap-glyphicons</artifactId>
             <version>bdd2cbfba0</version>
         </dependency>
+
+        <!-- For SameDiff UI -->
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>flatbuffers</artifactId>
+            <version>1.9.0</version>
+        </dependency>
     </dependencies>
 
 
