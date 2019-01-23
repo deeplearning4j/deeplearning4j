@@ -182,15 +182,17 @@ TEST_F(NlpTests, basic_sg_ns_test_1) {
 TEST_F(NlpTests, basic_cb_hs_test_1) {
     auto exp0 = NDArrayFactory::create<float>('c', {1, 10});
     auto exp1 = NDArrayFactory::create<float>('c', {1, 10});
+    auto exp2 = NDArrayFactory::create<float>('c', {1, 10});
 
-    exp0.assign(0.01001f);
-    exp1.assign(0.020005f);
+    exp0.assign(0.0095f);
+    exp1.assign(0.019875f);
+    exp2.assign(0.02f);
 
     auto target = NDArrayFactory::create<int>(0);
     auto ngStarter = NDArrayFactory::empty<int>();
-    auto context = NDArrayFactory::create<int>('c', {1}, {1});
-    auto indices = NDArrayFactory::create<int>('c', {1}, {1});
-    auto codes = NDArrayFactory::create<int8_t>('c', {1});
+    auto context = NDArrayFactory::create<int>('c', {3}, {0, 1, 2});
+    auto indices = NDArrayFactory::create<int>('c', {2}, {4, 5});
+    auto codes = NDArrayFactory::create<int8_t>('c', {2}, {1, 1});
     auto syn0 = NDArrayFactory::create<float>('c', {100, 10});
     auto syn1 = NDArrayFactory::create<float>('c', {100, 10});
     auto syn1Neg = NDArrayFactory::empty<float>();
@@ -201,11 +203,36 @@ TEST_F(NlpTests, basic_cb_hs_test_1) {
     syn1.assign(0.02);
     expTable.assign(0.5);
 
-    auto alpha = NDArrayFactory::create<double>(0.001);
-    auto randomValue = NDArrayFactory::create<Nd4jLong>(1L);
+    auto alpha = NDArrayFactory::create<double>(0.025);
+    auto randomValue = NDArrayFactory::create<Nd4jLong>(2L);
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::cbow op;
     auto result = *op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {}, {true}, true);
     ASSERT_EQ(Status::OK(), result.status());
+
+    auto row_s0_0 = *syn0.subarray({NDIndex::point(0), NDIndex::all()});
+    auto row_s0_1 = *syn0.subarray({NDIndex::point(1), NDIndex::all()});
+    auto row_s0_2 = *syn0.subarray({NDIndex::point(2), NDIndex::all()});
+
+    auto row_s1_4 = *syn1.subarray({NDIndex::point(4), NDIndex::all()});
+    auto row_s1_5 = *syn1.subarray({NDIndex::point(5), NDIndex::all()});
+    auto row_s1_6 = *syn1.subarray({NDIndex::point(6), NDIndex::all()});
+
+    row_s0_0.printIndexedBuffer("s0_0");
+    row_s0_1.printIndexedBuffer("s0_1");
+    row_s0_2.printIndexedBuffer("s0_2");
+
+    row_s1_4.printIndexedBuffer("s1_4");
+    row_s1_5.printIndexedBuffer("s1_5");
+    row_s1_6.printIndexedBuffer("s1_6");
+
+    ASSERT_EQ(exp0, row_s0_0);
+    ASSERT_EQ(exp0, row_s0_1);
+    ASSERT_EQ(exp0, row_s0_2);
+
+    ASSERT_EQ(exp1, row_s1_4);
+    ASSERT_EQ(exp1, row_s1_5);
+
+    ASSERT_EQ(exp2, row_s1_6);
 }

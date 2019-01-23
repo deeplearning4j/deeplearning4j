@@ -56,14 +56,14 @@ namespace nd4j {
                 g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T) alpha;
 
                 // axpy1
-//#pragma omp simd
+#pragma omp simd
                 for (int e = 0; e < vectorLength; e++) {
                     neu1e[e] = g * syn1[e] + neu1e[e];
                 }
 
                 // axpy2
                 if (!isInference) {
-//#pragma omp simd
+#pragma omp simd
                     for (int e = 0; e < vectorLength; e++) {
                         syn1[e] = g * syn0[e] + syn1[e];
                     }
@@ -80,7 +80,7 @@ namespace nd4j {
                 T dot = (T) 0.0f;
                 T g = (T) 0.0f;
 
-#pragma omp simd reduction(sumT:dot)
+                #pragma omp simd reduction(sumT:dot)
                 for (int e = 0; e < vectorLength; e++) {
                     dot += syn0[e] * syn1Neg[e];
                 }
@@ -101,14 +101,15 @@ namespace nd4j {
                 }
 
                 // axpy1
-//#pragma omp simd
+                #pragma omp simd
                 for (int e = 0; e < vectorLength; e++) {
                     neu1e[e] = g * syn1Neg[e] + neu1e[e];
                 }
 
                 // axpy2
                 if (!isInference) {
-//#pragma omp simd
+
+                    #pragma omp simd
                     for (int e = 0; e < vectorLength; e++) {
                         syn1Neg[e] = g * syn0[e] + syn1Neg[e];
                     }
@@ -154,7 +155,7 @@ namespace nd4j {
 
                     #pragma omp simd
                     for (int i = 0; i < vectorLength; i++) {
-                        neu1[i] /= contextWidth + infVector != nullptr ? 1 : 0;
+                        neu1[i] /= contextWidth + (infVector != nullptr ? 1 : 0);
                     }
                 }
 
@@ -165,6 +166,24 @@ namespace nd4j {
                     }
                 }
 
+                auto nsStarter = ngStarter;
+                auto irow = nsStarter;
+                if (nsRounds > 0) {
+                    for (int r = 0; r < nsRounds + 1; r++) {
+                        if (r == 0) {
+                            // target is known in advance
+                        } else {
+                            randomValue = randomValue * (unsigned long long) 25214903917 + 11;
+                            irow = negTable[(randomValue >> 16) % negLength];
+
+                            if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
+                            if (irow == nsStarter)
+                                continue;
+                        }
+
+                        nSampling_<T>(neu1, syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                    }
+                }
 
                 // if we don't train words - we skip start of idxSyn0
                 int starter = trainWords == 1 ? 0 : contextWidth - numLabels;
