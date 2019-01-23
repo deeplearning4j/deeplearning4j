@@ -515,10 +515,17 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
 
         retVal.addProperty("@class", mapper.writeValueAsString(this.getClass().getName()));
 
+        Iterator<T> iter = vocabulary.values().iterator();
+        Class clazz = null;
+        if (iter.hasNext())
+            clazz = iter.next().getClass();
+        else
+            return retVal;
+
         JsonArray jsonValues = new JsonArray();
         for (T value : vocabulary.values()) {
             JsonObject item = new JsonObject();
-            item.addProperty("@class", mapper.writeValueAsString(VocabWord.class.getName()));
+            item.addProperty("@class", mapper.writeValueAsString(clazz));
             item.addProperty("Vocab", mapper.writeValueAsString(value));
             jsonValues.add(item);
         }
