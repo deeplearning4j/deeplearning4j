@@ -794,8 +794,6 @@ namespace nd4j {
         DECLARE_OP(weighted_cross_entropy_with_logits, 3, 1, true);
         #endif
 
-
-
         /**
          * This op calculates dropout of input
          * Input arguments
@@ -1443,6 +1441,53 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_reduce_dot_bp)
         DECLARE_CUSTOM_OP(reduce_dot_bp, 3, 2, false, 0, 0);
         #endif
+        /**
+         * reduce_logsumexp - tf.reduce_logsumexe operation
+         * 
+         * input params:
+         *    0 - NDArray (input)
+         *    1 - 1D NDArray (axis) (optional) - integer array
+         *
+         * T_ARG param (optional):
+         * 0 - keep_dims != 0.
+         *
+         * int params (optional):
+         *    0 - axe 1
+         *    1 - axe 2
+         *    ...
+         *    N-1 axe N 
+         *
+         *  CAUTION: All axes are optional and should be between 0 and input->rankOf() - 1
+         *  and put either with second param or as integers but not both
+         *
+         * output:
+         *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
+         */
+        #if NOT_EXCLUDED(OP_reduce_logsumexp)
+        DECLARE_CUSTOM_OP(reduce_logsumexp, 1, 1, false, 0, 0);
+        #endif
+
+        /**
+        * This op make bilinear or nearest neighbor interpolated resize for given tensor
+        *
+        * input array:
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels) numeric type
+        *    1 - 2D-Tensor with shape (num_boxes, 4) float type
+        *    2 - 1D-Tensor with shape (num_boxes) int type
+        *    3 - 1D-Tensor with 2 values (newWidth, newHeight) (optional) int type
+        *
+        * float arguments (optional)
+        *   0 - exprapolation_value (optional) default 0.f
+        *
+        * int arguments: (optional)
+        *   0 - mode (default 0 - bilinear interpolation)
+        *
+        * output array:
+        *   the 4D-Tensor with resized to crop_size images given - float type
+        */
+        #if NOT_EXCLUDED(OP_crop_and_resize)
+        DECLARE_CUSTOM_OP(crop_and_resize, 4, 1, false, -1, -1);
+        #endif
 
         /**
         * This op make bilinear interpolated resize for given tensor
@@ -1544,10 +1589,31 @@ namespace nd4j {
          *     0 - input array
          *     1 - scalar tensor with n for operation. n should be less than last dimension
          *
+         * output:
+         *    0 - NDArray with the same shape as input
          */
         #if NOT_EXCLUDED(OP_nth_element)
         DECLARE_CUSTOM_OP(nth_element, 2, 1, false, 0, 0);
         #endif
+/**
+         * fake_quant_with_min_max_vals - tf.quantization.fake_quant_with_min_max_vars
+         * 
+         * input params:
+         *    0 - NDArray (input)
+         *    1 - 0D Tensor - min value
+         *    2 - 0D Tensor - max value
+         *
+         * int params (optional):
+         *    0 - num_bits (allowed interval [2, 16], default 8)
+         *    1 - narrow_range (default False)
+         *
+         * output:
+         *    0 - NDArray with the same shape as input
+         */
+        #if NOT_EXCLUDED(OP_fake_quant_with_min_max_vars)
+        DECLARE_CONFIGURABLE_OP(fake_quant_with_min_max_vars, 3, 1, true, 0, -2);
+        #endif
+
     }
 }
 

@@ -17,8 +17,8 @@
 //
 //  @author sgazeos@gmail.com
 //
-#ifndef __IMAGE_RESIZE_HELPERS__
-#define __IMAGE_RESIZE_HELPERS__
+#ifndef __FAKE_QUANTIZATION_H_HELPERS__
+#define __FAKE_QUANTIZATION_H_HELPERS__
 #include <op_boilerplate.h>
 #include <NDArray.h>
 
@@ -26,9 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    int resizeBilinearFunctor(NDArray const* image, int width, int height, bool center, NDArray* output);
-    int resizeNeighborFunctor(NDArray const* image, int width, int height, bool center, NDArray* output);
-    void cropAndResizeFunctor(NDArray const* images, NDArray const* boxes, NDArray const* indices, NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops);
+    void fakeQuantWithMinMaxVars(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output);
 }
 }
 }
