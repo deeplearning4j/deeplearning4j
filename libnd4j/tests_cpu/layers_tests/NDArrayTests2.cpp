@@ -107,7 +107,6 @@ TEST_F(NDArrayTest2, SetIdentity_test_1) {
     auto xExp = NDArrayFactory::create<double>('c', {1, 5}, {1, 0, 0, 0, 0});
     
     x.setIdentity();
-
     ASSERT_TRUE(x.equalsTo(&xExp));
 }
 
@@ -177,16 +176,18 @@ TEST_F(NDArrayTest2, SetIdentity_test_7) {
     ASSERT_TRUE(x.equalsTo(&xExp));
 }
 
+#ifdef ALLOWED_3D_IDENTITY
 ////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, SetIdentity_test_8) {
 
     auto x = NDArrayFactory::create<float>('c', {3, 3, 3});
     auto xExp = NDArrayFactory::create<float>('c', {3, 3, 3}, {1.,0.,0. ,0.,0.,0., 0.,0.,0.,   0.,0.,0. ,0.,1.,0., 0.,0.,0.,  0.,0.,0. ,0.,0.,0., 0.,0.,1.});
-    
+    xExp.printIndexedBuffer("Identity8");
     x.setIdentity();
 
     ASSERT_TRUE(x.equalsTo(&xExp));
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, Test_AllReduce3_1) {
@@ -573,7 +574,6 @@ TEST_F(NDArrayTest2, setValueInDiagMatrix_test3) {
     auto exp = NDArrayFactory::create<float>('c', {4, 4}, {1,2,3,4,0,6,7,8,0,0 ,11,12,0 ,0 , 0,16});
 
     x.setValueInDiagMatrix(0., -1, 'l');
-
     ASSERT_TRUE(exp.isSameShape(&x));
     ASSERT_TRUE(exp.equalsTo(&x));    
 

@@ -637,11 +637,12 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (isS())
             throw std::runtime_error("NDArray::setValueInDiagMatrix: you can't use this method on String array!");
         if(rankOf() != 2)
-           throw std::string("NDArray::setValueInDiagMatrix method: array must have rank = 2, but got " + toStringValue(rankOf()) + " instead !");
+           throw std::runtime_error("NDArray::setValueInDiagMatrix method: array must have rank = 2, but got " + toStringValue(rankOf()) + " instead !");
         cudaStream_t* stream = _context->getCudaStream();
         const auto rows = sizeAt(0);
         const auto cols = sizeAt(1);
-        syncToDevice();
+        if (!isActualOnDeviceSide())
+            syncToDevice();
         NDArray val = NDArrayFactory::create(value, _context);
         switch(direction) {
             case 'u':                           // fill upper triangular block
@@ -763,26 +764,18 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (isS())
             throw std::runtime_error("NDArray::setIdentity: you can't use this method on String array!");
 
-        this->assign(0.);
+        if (rankOf() != 2)
+            throw std::runtime_error("NDArray::setIdentity: method should work only for 2D tensors. But " + toStringValue(rankOf()) + " was given.");
 
-        int  rank    = rankOf();
-        auto shape   = shapeOf();
-        auto strides = stridesOf();
-        int  minDim  = 100000000;
-        Nd4jLong indices[MAX_RANK];
-        for(int j = 0; j < rank; ++j)
-            indices[j] = 1;
+        this->assign(1.);
 
-        Nd4jLong offset = shape::getOffset(0, shape, strides, indices, rank);
+        setValueInDiagMatrix(0.f, 1, 'u');
+        setValueInDiagMatrix(0.f, -1, 'l');
 
-        for(int i = 0; i < rank; ++i)
-            if(minDim > shape[i])
-                minDim = shape[i];
-
-        float v = 1.0f;
-#pragma omp parallel for if(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i = 0; i < minDim; ++i)
-            templatedSet<float>(_buffer, i*offset, this->dataType(), &v);
+        //setValueInDiagMatrix(0.f, 1, 'l');
+//#pragma omp parallel for if(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+//        for(int i = 0; i < minDim; ++i)
+//            templatedSet<float>(_buffer, i*offset, this->dataType(), &v);
     }
 
     template <typename T>
