@@ -82,40 +82,6 @@ NDArray::NDArray(const NDArray& other) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// do not allocate memory, memory for array is passed from outside
-NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isShapeAlloc, const memory::MemoryType whereBufferIs) {
-    
-    if (whereBufferIs != memory::MemoryType::HOST)
-        throw std::runtime_error("NDArray constructor: can't be initalized with buffer on device memory !");
-
-    if (buffer == nullptr)
-        throw std::runtime_error("NDArray constructor: can't be initalized with nullptr buffer !");
-    
-    if (shapeInfo == nullptr)
-        throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo !");
-
-    if ((int) shapeInfo[0] > MAX_RANK)
-        throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32 !");
-
-     if(!isShapeAlloc) 
-        setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, true, _context->getWorkspace()));
-    else 
-        setShapeInfo(shapeInfo);
-
-    _context = context;
-    _isAttached = _context->getWorkspace() != nullptr;
-    _isShapeAlloc = true;
-
-    if (this->isEmpty()) {
-        _length = 0;                
-    }
-    else {        
-        _buffer = reinterpret_cast<int8_t *>(buffer);            
-        _isBuffAlloc = isBuffAlloc;
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 void NDArray::lazyAllocateBuffer() const {
     // no-op
 }
@@ -2357,37 +2323,6 @@ NDArray NDArray::e(const Nd4jLong i) const {
         NativeOpExecutioner::execBroadcast(_context, nd4j::broadcast::Ops::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, column->_buffer, column->_shapeInfo, column->_bufferD, column->_shapeInfoD, this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), dimension, 1, tad->tadOnlyShapeInfo, tad->tadOffsets, nullptr, nullptr);
     }
 
-
-    ////////////////////////////////////////////////////////////////////////
-    ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
-        auto result = new ResultSet();
-
-        if(dimensions.size() == 0)
-            return result;
-
-        std::vector<int> copy(dimensions);
-
-        // we need to sort dimensions (?)
-        if (dimensions.size() > 1)
-            std::sort (copy.begin(), copy.end());
-
-        if(copy.back() >= rankOf())
-            throw std::runtime_error("NDArray::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");
-        
-        auto numTads = _length / shape::tadLength(_shapeInfo, copy.data(), copy.size());
-
-        std::unique_ptr<shape::TAD> tad(new shape::TAD(_shapeInfo, copy.data(), copy.size()));
-        tad->createTadOnlyShapeInfo();
-        tad->createOffsets();        
-
-        for (int idx = 0; idx < numTads; idx++ ) {
-            auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), tad->tadOnlyShapeInfo, _context, false, false);
-            result->push_back(array);
-        }        
-
-        return result;
-    }
-
     //////////////////////////////////////////////////////////////////////////
     // change an array by repeating it the number of times given by reps.
     NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
@@ -2619,51 +2554,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         }
     }
 
- ////////////////////////////////////////////////////////////////////////
-    // operator returns sub-array with buffer pointing at this->_buffer + certain offset
-    NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, bool keepUnitiesInShape)  const {
 
-        const int rank = rankOf();
-        Nd4jLong *newShape = ShapeBuilders::copyShapeInfo(_shapeInfo, true, _context->getWorkspace());        
-        newShape[shape::shapeInfoLength(rank) - 2] = -1;
-
-        auto shapeOf = shape::shapeOf(newShape);
-        auto stridesOf = shape::stride(newShape);
-
-        Nd4jLong offset = 0;
-        Nd4jLong first, last;
-        for (int d = 0; d < rank; ++d) {
-            // building new shape first
-            if (idx[2*d] != idx[2*d+1]) {
-
-                first = idx[2*d]   >= 0 ? idx[2*d]   : idx[2*d]   + sizeAt(d) + 1;
-                last  = idx[2*d+1] >= 0 ? idx[2*d+1] : idx[2*d+1] + sizeAt(d) + 1;
-
-                shapeOf[d] = last - first;
-                // for offset we're taking only the first index
-                offset += first * stridesOf[d];
-            }
-        }
-
-        NDArray result(bufferWithOffset(offset), newShape, _context, false, true, memory::MemoryType::HOST);
-
-        if(!keepUnitiesInShape) {
-
-            std::vector<Nd4jLong> nonUnitDims;
-            for (int d = 0; d < rank; ++d) {
-                if(!(idx[2*d] != idx[2*d+1] && newShape[d+1] == 1))
-                    nonUnitDims.push_back(newShape[d+1]);
-            }
-            if(nonUnitDims.size() != rank)
-                result.reshapei(nonUnitDims);
-
-            // std::vector<Nd4jLong> nonUnitDims = ShapeUtils<T>::evalDimsWithoutUnities(newShape);
-            // if(nonUnitDims.size() != result.rankOf())
-            //     result.reshapei(nonUnitDims);
-        }
-
-        return result;
-    }
     //BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, Y value), LIBND4J_TYPES, LIBND4J_TYPES);
 /*
 #ifndef __CLION_IDE__

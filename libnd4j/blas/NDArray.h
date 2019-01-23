@@ -161,7 +161,13 @@ namespace nd4j {
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
-        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext(), const bool isBuffAlloc = false, const bool isShapeAlloc = false, const memory::MemoryType whereBufferIs = memory::MemoryType::HOST);
+        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext(), const bool isBuffAlloc = false, const bool isShapeAlloc = false);
+
+        /**
+        *  do not allocate memory, memory for array is passed from outside
+        *  we suppose the content of both (device and host) buffers is identical 
+        */
+        NDArray(void *buffer, void *bufferD, Nd4jLong* shapeInfo, nd4j::graph::LaunchContext* context = graph::LaunchContext::defaultContext(), const bool isBuffAlloc = false, const bool isBuffDAlloc = false, const bool isShapeAlloc = false);
 
         /**
         *  copy constructor
