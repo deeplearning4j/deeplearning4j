@@ -16,6 +16,9 @@
 
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
+import com.github.os72.protobuf351.MapEntry;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -504,16 +507,27 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         return mapper;
     }
 
-    public String asJson() throws JsonProcessingException {
+    public JsonObject asJson() throws JsonProcessingException {
 
         JsonObject retVal = new JsonObject();
         ObjectMapper mapper = mapper();
-        return mapper.writeValueAsString(this);
+        //return mapper.writeValueAsString(this);
+
+        retVal.addProperty("@class", mapper.writeValueAsString(this.getClass().getName()));
+
+        JsonArray jsonValues = new JsonArray();
+        for (T value : vocabulary.values()) {
+            JsonObject item = new JsonObject();
+            item.addProperty("@class", mapper.writeValueAsString(VocabWord.class.getName()));
+            item.addProperty("Vocab", mapper.writeValueAsString(value));
+            jsonValues.add(item);
+        }
+        retVal.add("VocabList", jsonValues);
 
         //List<T> values = new ArrayList<>(vocabulary.values());
-        //retVal.addProperty("VocabularyValues", mapper.writeValueAsString(this));
+        //retVal.addProperty("VocabularyValues", mapper.writeValueAsString(values));
 
-        /*retVal.addProperty("DocumentsCounter", mapper.writeValueAsString(documentsCounter.longValue()));
+        retVal.addProperty("DocumentsCounter", mapper.writeValueAsString(documentsCounter.longValue()));
         retVal.addProperty("MinWordsFrequency", mapper.writeValueAsString(minWordFrequency));
         retVal.addProperty("HugeModelExpected", mapper.writeValueAsString(hugeModelExpected));
 
@@ -522,36 +536,39 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         retVal.addProperty("ScavengerThreshold", mapper.writeValueAsString(scavengerThreshold));
         retVal.addProperty("RetentionDelay", mapper.writeValueAsString(retentionDelay));
         retVal.addProperty("TotalWordCount", mapper.writeValueAsString(totalWordCount.longValue()));
-*/
-        //return retVal;
+
+        return retVal;
     }
 
-    public static <T extends SequenceElement> AbstractCache<T> fromJson(String json)  throws IOException {
+    public static <T extends SequenceElement> AbstractCache<T> fromJson(JsonObject json)  throws IOException {
         AbstractCache<T> retVal = new AbstractCache.Builder<T>().build();
 
         ObjectMapper mapper = mapper();
 
         //mapper.readValue(json.g)
-        retVal = mapper.readValue(json, AbstractCache.class);
+        //retVal = mapper.readValue(json, AbstractCache.class);
+        //ConcurrentHashMap<Long, T> vocab = mapper.readValue(json, ConcurrentHashMap.class);
 
-/*
         CollectionType wordsCollectionType = mapper.getTypeFactory()
-                .constructCollectionType(List.class, SequenceElement.class);
+                .constructCollectionType(List.class, VocabWord.class);
 
-
-        String sval = json.get("VocabularyValues").getAsString();
-        List<T> values = mapper.readValue(json.get("VocabularyValues").getAsString(), wordsCollectionType);
+        List<T> items = new ArrayList<>();
+        JsonArray jsonArray = json.get("VocabList").getAsJsonArray();
+        for (int i = 0; i < jsonArray.size(); ++i) {
+            VocabWord item = mapper.readValue(jsonArray.get(i).getAsJsonObject().get("Vocab").getAsString(), VocabWord.class);
+            items.add((T)item);
+        }
+        //List<T> values = mapper.readValue(json.get("VocabList").getAsString(), wordsCollectionType);
 
         ConcurrentMap<Long, T> vocabulary = new ConcurrentHashMap<>();
         Map<String, T> extendedVocabulary = new ConcurrentHashMap<>();
         Map<Integer, T> idxMap = new ConcurrentHashMap<>();
 
-        for (T value : values) {
-            vocabulary.put(value.getStorageId(), value);
-            extendedVocabulary.put(value.getLabel(), value);
-            idxMap.put(value.getIndex(), value);
+        for (T item : items) {
+            vocabulary.put(item.getStorageId(), item);
+            extendedVocabulary.put(item.getLabel(), item);
+            idxMap.put(item.getIndex(), item);
         }
-
         List<String> stopWords = mapper.readValue(json.get("StopWords").getAsString(), List.class);
 
         Long documentsCounter = json.get("DocumentsCounter").getAsLong();
@@ -571,7 +588,6 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         retVal.scavengerThreshold = scavengerThreshold;
         retVal.retentionDelay = retentionDelay;
         retVal.totalWordCount.set(totalWordCount);
-*/
         return retVal;
     }
 
