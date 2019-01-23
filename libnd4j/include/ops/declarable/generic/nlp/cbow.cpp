@@ -47,8 +47,8 @@ namespace nd4j {
 
             auto inferenceVector = INPUT_VARIABLE(12);
 
-            auto nsRounds = block.numI() > 0 ? INT_ARG(0) : 0;
-            auto numLabels = block.numI() > 1 ? INT_ARG(1) : 0;
+            auto numLabels = block.numI() > 0 ? INT_ARG(0) : 0;
+            auto nsRounds = block.numI() > 1 ? INT_ARG(1) : 0;
             auto trainWords = block.numB() > 0 ? B_ARG(0) : true;
             auto isInference = block.numB() > 1 ? B_ARG(1) : false;
 

@@ -170,7 +170,7 @@ namespace nd4j {
                 int starter = trainWords == 1 ? 0 : contextWidth - numLabels;
 
                 // propagate neu1e -> syn0
-                if (infVector != nullptr) {
+                if (infVector == nullptr) {
                     for (int c = starter; c < contextWidth; c++) {
                         T *syn0word = syn0 + (context[c] * vectorLength);
 
