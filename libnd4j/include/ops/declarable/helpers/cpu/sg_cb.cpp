@@ -122,7 +122,7 @@ namespace nd4j {
                 auto syn1 = reinterpret_cast<T *>(vsyn1);
                 auto syn1Neg = reinterpret_cast<T *>(vsyn1Neg);
                 auto expTable = reinterpret_cast<T *>(vexpTable);
-                auto negTable = reinterpret_cast<int *>(vexpTable);
+                auto negTable = reinterpret_cast<int *>(vnegTable);
                 auto infVector = reinterpret_cast<T *>(vinfVector);
 
                 auto neu1 = new T[vectorLength];
@@ -174,7 +174,8 @@ namespace nd4j {
                             // target is known in advance
                         } else {
                             randomValue = randomValue * (unsigned long long) 25214903917 + 11;
-                            irow = negTable[(randomValue >> 16) % negLength];
+                            auto idx = (randomValue >> 16) % negLength;
+                            irow = negTable[idx];
 
                             if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
                             if (irow == nsStarter)
@@ -219,7 +220,7 @@ namespace nd4j {
                 auto syn1 = reinterpret_cast<T*>(vsyn1);
                 auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
                 auto expTable = reinterpret_cast<T*>(vexpTable);
-                auto negTable = reinterpret_cast<int*>(vexpTable);
+                auto negTable = reinterpret_cast<int*>(vnegTable);
                 auto infVector = reinterpret_cast<T*>(vinfVector);
 
                 auto neu1e = new T[vectorLength];
