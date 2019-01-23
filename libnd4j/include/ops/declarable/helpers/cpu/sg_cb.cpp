@@ -56,14 +56,14 @@ namespace nd4j {
                 g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T) alpha;
 
                 // axpy1
-#pragma omp simd
+//#pragma omp simd
                 for (int e = 0; e < vectorLength; e++) {
                     neu1e[e] = g * syn1[e] + neu1e[e];
                 }
 
                 // axpy2
                 if (!isInference) {
-#pragma omp simd
+//#pragma omp simd
                     for (int e = 0; e < vectorLength; e++) {
                         syn1[e] = g * syn0[e] + syn1[e];
                     }
@@ -124,7 +124,8 @@ namespace nd4j {
                 auto negTable = reinterpret_cast<int*>(vexpTable);
                 auto infVector = reinterpret_cast<T*>(vinfVector);
 
-                auto neu1e = new T[150];
+                auto neu1e = new T[vectorLength];
+                memset(neu1e, 0, vectorLength * sizeof(T));
 
                 // hierarchic softmax goes first (if enabled)
                 auto irow = 0;
@@ -132,7 +133,7 @@ namespace nd4j {
                     for (int r = 0; r < hsRounds; r++) {
                         irow = indices[r];
 
-                        hSoftmax_<T>(syn0 + (target * vectorLength), syn1 + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, 1, expLength, true);
+                        hSoftmax_<T>(syn0 + (target * vectorLength), syn1 + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, codes[r], expLength, infVector != nullptr);
                     }
                 }
 
@@ -152,7 +153,7 @@ namespace nd4j {
                                 continue;
                         }
 
-                       nSampling_<T>(syn0 + (target * vectorLength), syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, 1, expLength, true);
+                       nSampling_<T>(syn0 + (target * vectorLength), syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, 1, expLength, infVector != nullptr);
                     }
                 }
 

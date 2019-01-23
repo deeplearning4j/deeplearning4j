@@ -38,23 +38,42 @@ public:
 };
 
 TEST_F(NlpTests, basic_sg_hs_test_1) {
+    auto exp0 = NDArrayFactory::create<float>('c', {1, 10});
+    auto exp1 = NDArrayFactory::create<float>('c', {1, 10});
+
+    exp0.assign(0.01001f);
+    exp1.assign(0.020005f);
+
     auto target = NDArrayFactory::create<int>(0);
     auto ngStarter = NDArrayFactory::empty<int>();
-    auto indices = NDArrayFactory::create<int>('c', {5}, {1, 2, 3, 4, 5});
-    auto codes = NDArrayFactory::create<int8_t>('c', {5}, {1, 1, 0, 1, 1});
-    auto syn0 = NDArrayFactory::create<float>('c', {100, 150});
-    auto syn1 = NDArrayFactory::create<float>('c', {100, 150});
+    auto indices = NDArrayFactory::create<int>('c', {1}, {1});
+    auto codes = NDArrayFactory::create<int8_t>('c', {1});
+    auto syn0 = NDArrayFactory::create<float>('c', {100, 10});
+    auto syn1 = NDArrayFactory::create<float>('c', {100, 10});
     auto syn1Neg = NDArrayFactory::empty<float>();
-    auto expTable = NDArrayFactory::create<float>('c', {1000});
+    auto expTable = NDArrayFactory::create<float>('c', {10000});
     auto negTable = NDArrayFactory::empty<float>();
 
-    auto alpha = NDArrayFactory::create<double>(1.25);
-    auto randomValue = NDArrayFactory::create<Nd4jLong>(119L);
+    syn0.assign(0.01);
+    syn1.assign(0.02);
+    expTable.assign(0.5);
+
+    auto alpha = NDArrayFactory::create<double>(0.001);
+    auto randomValue = NDArrayFactory::create<Nd4jLong>(1L);
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::skipgram op;
     auto result = *op.execute({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {}, {false}, true);
     ASSERT_EQ(Status::OK(), result.status());
+
+    auto row0 = *syn0.subarray({NDIndex::point(0), NDIndex::all()});
+    auto row1 = *syn1.subarray({NDIndex::point(1), NDIndex::all()});
+
+    row0.printIndexedBuffer("row0");
+    row1.printIndexedBuffer("row1");
+
+    ASSERT_EQ(exp0, row0);
+    ASSERT_EQ(exp1, row1);
 }
 
 TEST_F(NlpTests, basic_sg_hs_ns_test_1) {
