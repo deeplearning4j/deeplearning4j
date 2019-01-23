@@ -47,7 +47,7 @@ namespace nd4j {
             auto inferenceVector = INPUT_VARIABLE(11);
 
             auto nsRounds = block.numI() > 0 ? INT_ARG(0) : 0;
-            auto isInference = block.numB() > 0 ? B_ARG(0) : true;
+            auto isInference = block.numB() > 0 ? B_ARG(0) : false;
 
             REQUIRE_TRUE(block.isInplace(), 0, "SkipGram: this operation requires inplace execution only");
 

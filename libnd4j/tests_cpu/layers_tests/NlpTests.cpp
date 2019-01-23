@@ -206,6 +206,6 @@ TEST_F(NlpTests, basic_cb_hs_test_1) {
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::cbow op;
-    auto result = *op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {}, {false}, true);
+    auto result = *op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {}, {true}, true);
     ASSERT_EQ(Status::OK(), result.status());
 }
