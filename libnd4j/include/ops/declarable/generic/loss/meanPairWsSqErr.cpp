@@ -16,6 +16,7 @@
 
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 24.11.2017
+// @author Paul Dubs
 //
 
 #include <op_boilerplate.h>
@@ -31,6 +32,57 @@ namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
+    /*
+     * Implementation of mean pairwise squared error loss
+     *
+     * For context on where this loss function may be useful see:
+     *
+     * Wei, Z., Zhang, J., Shen, X., Lin, Z., Mech, R., Hoai, M. and Samaras, D., 2018.
+     * Good view hunting: learning photo composition from dense view pairs. In Proceedings of the IEEE Conference on
+     * Computer Vision and Pattern Recognition (pp. 5437-5446).
+     *
+     * The paper defines the loss function as:
+     *
+     * L(y,q) = 1/((n*(n-1))/2) * (sum_(i,j=1..n,i!=j)((y_i - y_j) - (q_i - q_j))^2)
+     *
+     * with y: predictions, q: labels, n: length of y and q
+     *
+     * As creating those pairs is computationally expensive, we implement a mathematically equivalent function:
+     *
+     * L(y,q) = 4/(n*(n-1)) * (n * sum (y_i - q_i)^2 - (sum y_i - q_i)^2)
+     *
+     * This equivalency can be derived as:
+     *
+     * sum_(i,j=1..n,i!=j)((y_i - y_j) - (q_i - q_j))^2 = sum_(i,j=1..n,i!=j)((y_i - q_i) - (y_j - q_j))^2
+     *
+     * To simplify the following equations we use
+     *
+     * sum_(i,j=1..n,i!=j)(d_i - d_j)^2 = sum_(i,j=1..n,i!=j)(d_i^2 + d_j^2 - 2*d_i*d_j)
+     *
+     * Due to the pairings each element will appear as both d_i and d_j exactly n-1 times. This allows us to split the sum:
+     *
+     * sum_(i,j=1..n,i!=j)(d_i^2 + d_j^2 - 2*d_i*d_j) = 2*(n-1)*sum d_i^2 - 2 * sum_(i,j=1..n,i!=j) d_i * d_j
+     *                                                = 2*((n-1) * sum d_i^2 - sum_(i,j=1..n,i!=j) d_i * d_j)
+     *
+     * Now we use the following equivalency:
+     *
+     * (sum d_i)^2 = sum d_i^2 + sum_(i,j=1..n,i!=j) d_i * d_j
+     *
+     * This allows us to now use sum d_i^2 and (sum d_i)^2 as a quick way to calculate the sum:
+     *
+     * (n-1) * sum d_i^2 - sum_(i,j=1..n,i!=j) d_i * d_j = n * sum d_i^2 - (sum d_i)^2
+     *
+     * And by substituting it into the original definition we get:
+     *
+     * 1/((n*(n-1))/2) * 2*(n * sum d_i^2 - (sum d_i)^2)
+     *
+     * Which can be again simplified to
+     *
+     * 4/(n*(n-1)) * (n * sum d_i^2 - (sum d_i)^2)
+     *
+     * After substituting d_i back to (y_i - q_i) this results in the function that we actually implement.
+     *
+     */
   	auto predictions = INPUT_VARIABLE(0);
     auto weights     = INPUT_VARIABLE(1);
     auto labels      = INPUT_VARIABLE(2);
@@ -55,38 +107,7 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
 	
 	NDArray diffs = *predictions - *labels;		
 
-	std::vector<int> reductionIdx = ShapeUtils::evalDimsToExclude(diffs.rankOf(), {0});	
-	NDArray sumSqrsDiffPerBatch = (diffs*diffs).reduceAlongDims(reduce::Sum, reductionIdx, true);
-
-	NDArray numOfNonZeroWeights(sumSqrsDiffPerBatch.getShapeInfo(), nd4j::DataType::INT64, false, block.getWorkspace());
-	if(weights->isScalar()) {
-		if((*weights).e<double>(0) != 0.)
-			numOfNonZeroWeights.assign((labels->lengthOf()/labels->sizeAt(0)));
-	}
-	else 		
-		numOfNonZeroWeights.assign(weightsBroad->reduceAlongDims(reduce::CountNonZero, reductionIdx));	
-
-	NDArray numOfNonZeroWeightsMinusOne = numOfNonZeroWeights;// - 1LL;
-	numOfNonZeroWeightsMinusOne -= 1LL;
-	
-	sumSqrsDiffPerBatch.applyPairwiseTransform(pairwise::SafeDivide, numOfNonZeroWeightsMinusOne, nullptr);
-
-	auto sumDiff = diffs.reduceAlongDims(reduce::Sum, reductionIdx, true);
-	
-	auto nonZerosSquared = numOfNonZeroWeights;
-	nonZerosSquared.applyPairwiseTransform(pairwise::Multiply, numOfNonZeroWeightsMinusOne, nullptr);
-	(sumDiff*sumDiff).applyPairwiseTransform(pairwise::SafeDivide, &nonZerosSquared, &sumDiff, nullptr);
-	
-	auto E = (sumSqrsDiffPerBatch - sumDiff);
-	E *= 2.f;
-
-    // multiply E on weights
-    E *= *weights;
-
-	if(numOfNonZeroWeights.reduceNumber(reduce::Sum).e<double>(0) == 0.)
-		*output = 0.;
-	else
-		E.reduceNumber(reduce::Sum, *output);
+	// TODO: Fill in correct calculations
     
     if(weightsBroad != weights)
     	delete weightsBroad;
