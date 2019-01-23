@@ -14,6 +14,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+include "array.fbs";	//For FlatArray
+
 namespace nd4j.graph;
 
 /*
@@ -39,7 +41,7 @@ hardwareState:HardwareState;	//Information about hardware at a specific point in
 
 
 enum UIEventType:byte {
-	ADD_NAME					//Used to register a name (essentialy, Map<Integer,String>.put(i,name)), so it can be referred to by index later. Saves us encoding really long names in every single frame...
+	ADD_NAME,					//Used to register a name (essentialy, Map<Integer,String>.put(i,name)), so it can be referred to by index later. Saves us encoding really long names in every single frame...
 	SCALAR,
 	ARRAY,
 	ARRAY_LIST,
