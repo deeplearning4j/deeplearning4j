@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author alexander@skymind.io
  */
 @Slf4j
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class", defaultImpl = WordDeserializer.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE,
         setterVisibility = JsonAutoDetect.Visibility.NONE)
 public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
@@ -504,15 +504,16 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         return mapper;
     }
 
-    public JsonObject asJson() throws JsonProcessingException {
+    public String asJson() throws JsonProcessingException {
 
         JsonObject retVal = new JsonObject();
         ObjectMapper mapper = mapper();
+        return mapper.writeValueAsString(this);
 
-        List<T> values = new ArrayList<>(vocabulary.values());
-        retVal.addProperty("VocabularyValues", mapper.writeValueAsString(values));
+        //List<T> values = new ArrayList<>(vocabulary.values());
+        //retVal.addProperty("VocabularyValues", mapper.writeValueAsString(this));
 
-        retVal.addProperty("DocumentsCounter", mapper.writeValueAsString(documentsCounter.longValue()));
+        /*retVal.addProperty("DocumentsCounter", mapper.writeValueAsString(documentsCounter.longValue()));
         retVal.addProperty("MinWordsFrequency", mapper.writeValueAsString(minWordFrequency));
         retVal.addProperty("HugeModelExpected", mapper.writeValueAsString(hugeModelExpected));
 
@@ -521,16 +522,19 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         retVal.addProperty("ScavengerThreshold", mapper.writeValueAsString(scavengerThreshold));
         retVal.addProperty("RetentionDelay", mapper.writeValueAsString(retentionDelay));
         retVal.addProperty("TotalWordCount", mapper.writeValueAsString(totalWordCount.longValue()));
-
-        return retVal;
+*/
+        //return retVal;
     }
 
-    public static <T extends SequenceElement> AbstractCache<T> fromJson(JsonObject json)  throws IOException {
+    public static <T extends SequenceElement> AbstractCache<T> fromJson(String json)  throws IOException {
         AbstractCache<T> retVal = new AbstractCache.Builder<T>().build();
 
         ObjectMapper mapper = mapper();
 
+        //mapper.readValue(json.g)
+        retVal = mapper.readValue(json, AbstractCache.class);
 
+/*
         CollectionType wordsCollectionType = mapper.getTypeFactory()
                 .constructCollectionType(List.class, SequenceElement.class);
 
@@ -567,7 +571,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         retVal.scavengerThreshold = scavengerThreshold;
         retVal.retentionDelay = retentionDelay;
         retVal.totalWordCount.set(totalWordCount);
-
+*/
         return retVal;
     }
 

@@ -17,6 +17,7 @@
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
 import com.google.gson.JsonObject;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.models.sequencevectors.serialization.ExtVocabWord;
 import org.deeplearning4j.models.word2vec.Huffman;
@@ -31,6 +32,7 @@ import static org.junit.Assert.*;
 /**
  * Created by fartovii on 10.12.15.
  */
+@Slf4j
 public class AbstractCacheTest {
 
     @Before
@@ -118,26 +120,33 @@ public class AbstractCacheTest {
     public void testSerialization() {
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
-        VocabWord words[] = new VocabWord[3];
+        val words = new VocabWord[3];
         words[0] = new VocabWord(1.0, "word");
         words[1] = new VocabWord(2.0, "test");
         words[2] = new VocabWord(3.0, "tester");
 
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < words.length; ++i) {
             cache.addToken(words[i]);
+            cache.addWordToIndex(i, words[i].getLabel());
         }
 
-        JsonObject json = null;
+        String json = null;
         AbstractCache<VocabWord> unserialized = null;
         try {
             json = cache.asJson();
+            log.info("{}", json);
+
             unserialized = AbstractCache.fromJson(json);
         }
         catch (Exception e) {
+            e.printStackTrace();
             fail();
         }
-        for (int i = 0; i < 3; ++i) {
-            assertEquals(cache.wordAtIndex(i), unserialized.wordAtIndex(i));
+        for (int i = 0; i < words.length; ++i) {
+            val cached = cache.wordAtIndex(i);
+            val restored = unserialized.wordAtIndex(i);
+            assertNotNull(cached);
+            assertEquals(cached, restored);
         }
     }
 
@@ -155,13 +164,14 @@ public class AbstractCacheTest {
             cache.addWordToIndex(i, words[i].getLabel());
         }
 
-        JsonObject json = null;
+        String json = null;
         AbstractCache<VocabWord> unserialized = null;
         try {
             json = cache.asJson();
             unserialized = AbstractCache.fromJson(json);
         }
         catch (Exception e) {
+            e.printStackTrace();
             fail();
         }
         for (int i = 0; i < 3; ++i) {
