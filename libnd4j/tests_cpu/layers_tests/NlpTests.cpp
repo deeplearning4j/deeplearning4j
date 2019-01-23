@@ -142,22 +142,39 @@ TEST_F(NlpTests, basic_sg_hs_ns_test_1) {
 }
 
 TEST_F(NlpTests, basic_sg_ns_test_1) {
-    auto target = NDArrayFactory::create<int>(0);
-    auto ngStarter = NDArrayFactory::create<int>(1);
+    auto exp0 = NDArrayFactory::create<float>('c', {1, 10});
+
+    exp0.assign(0.01);
+
+    auto target = NDArrayFactory::create<int>(1);
+    auto ngStarter = NDArrayFactory::create<int>(3);
     auto indices = NDArrayFactory::empty<int>();
     auto codes = NDArrayFactory::empty<int8_t>();
-    auto syn0 = NDArrayFactory::create<float>('c', {100, 150});
+    auto syn0 = NDArrayFactory::create<float>('c', {10, 10});
     auto syn1 = NDArrayFactory::empty<float>();
-    auto syn1Neg = NDArrayFactory::create<float>('c', {100, 150});
-    auto expTable = NDArrayFactory::empty<float>();
+    auto syn1Neg = NDArrayFactory::create<float>('c', {10, 10});
+    auto expTable = NDArrayFactory::create<float>('c', {1000});
     auto negTable = NDArrayFactory::create<float>('c', {1000});
-    negTable.linspace(1.0);
 
-    auto alpha = NDArrayFactory::create<double>(1.25);
-    auto randomValue = NDArrayFactory::create<Nd4jLong>(119L);
+    auto syn1Neg2 = NDArrayFactory::create<float>('c', {10, 10});
+
+    syn0.assign(0.01);
+    syn1.assign(0.02);
+    syn1Neg.assign(0.03);
+    syn1Neg2.assign(0.03);
+    expTable.assign(0.5);
+
+    auto alpha = NDArrayFactory::create<double>(0.001);
+    auto randomValue = NDArrayFactory::create<Nd4jLong>(2L);
     auto inferenceVector = NDArrayFactory::empty<float>();
 
     nd4j::ops::skipgram op;
-    auto result = *op.execute({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {3}, {false}, true);
+    auto result = *op.execute({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {1}, {false}, true);
     ASSERT_EQ(Status::OK(), result.status());
+
+    auto row0 = *syn0.subarray({NDIndex::point(1), NDIndex::all()});
+    row0.printIndexedBuffer("row0");
+
+    ASSERT_EQ(exp0, row0);
+    ASSERT_FALSE(syn1Neg2.equalsTo(syn1Neg, 1e-6));
 }

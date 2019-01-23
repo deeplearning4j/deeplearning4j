@@ -55,7 +55,7 @@ namespace nd4j {
             REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0, "SkipGram: expTable must have the same data type as syn0 table");
 
 
-            nd4j::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, *indices, *codes, *alpha, *randomValue, *inferenceVector);
+            nd4j::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices, *codes, *alpha, *randomValue, *inferenceVector);
 
             return Status::OK();
         }

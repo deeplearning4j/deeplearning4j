@@ -101,14 +101,14 @@ namespace nd4j {
                 }
 
                 // axpy1
-#pragma omp simd
+//#pragma omp simd
                 for (int e = 0; e < vectorLength; e++) {
                     neu1e[e] = g * syn1Neg[e] + neu1e[e];
                 }
 
                 // axpy2
                 if (!isInference) {
-#pragma omp simd
+//#pragma omp simd
                     for (int e = 0; e < vectorLength; e++) {
                         syn1Neg[e] = g * syn0[e] + syn1Neg[e];
                     }
@@ -146,14 +146,14 @@ namespace nd4j {
                             // target is known in advance
                         } else {
                             randomValue = randomValue * (unsigned long long) 25214903917 + 11;
-                            target = negTable[(randomValue >> 16) % negLength];
+                            irow = negTable[(randomValue >> 16) % negLength];
 
-                            if (target < 0 || target >= vocabSize) target = randomValue % (vocabSize - 1) + 1;
-                            if (target == nsStarter)
+                            if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
+                            if (irow == nsStarter)
                                 continue;
                         }
 
-                       nSampling_<T>(syn0 + (target * vectorLength), syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, 1, expLength, infVector != nullptr);
+                       nSampling_<T>(syn0 + (target * vectorLength), syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
                     }
                 }
 
@@ -173,11 +173,10 @@ namespace nd4j {
             }
             BUILD_SINGLE_TEMPLATE(template void skipgram_, (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
-            void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector) {
+            void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector) {
                 auto xType = syn0.dataType();
 
                 auto hsRounds = indices.lengthOf();
-                auto nsRounds = 0;
 
                 BUILD_SINGLE_SELECTOR(xType, skipgram_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0), reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t*>(codes.buffer()), alpha.e<double>(0), randomValue.e<Nd4jLong>(0), hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf()), FLOAT_TYPES);
             }
