@@ -129,13 +129,38 @@ namespace nd4j {
                 memset(neu1, 0, vectorLength * sizeof(T));
                 memset(neu1e, 0, vectorLength * sizeof(T));
 
-// building neu1 for current window
+                // building neu1 for current window
                 for (int c = 0; c < contextWidth; c++) {
                     T *syn0word = syn0 + (context[c] * vectorLength);
 
-#pragma omp simd
+                    #pragma omp simd
                     for (int i = 0; i < vectorLength; i++) {
                         neu1[i] += syn0word[i];
+                    }
+                }
+
+                // for inference we add additional inference vector
+                if (infVector != nullptr) {
+
+                    #pragma omp simd
+                    for (int i = 0; i < vectorLength; i++) {
+                        neu1[i] += infVector[i];
+                    }
+                }
+
+
+                // average neu1
+                if (contextWidth > 0) {
+
+                    #pragma omp simd
+                    for (int i = 0; i < vectorLength; i++) {
+                        neu1[i] /= contextWidth + infVector != nullptr ? 1 : 0;
+                    }
+                }
+
+                if (hsRounds > 0) {
+                    for (int i = 0; i < hsRounds; i++) {
+                        hSoftmax_<T>(neu1, syn1 + (indices[i] * vectorLength), expTable, neu1e, alpha, vectorLength, codes[i], expLength, infVector != nullptr);
                     }
                 }
 
