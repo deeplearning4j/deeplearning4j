@@ -12,11 +12,9 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
-import org.nd4j.graph.UIGraphStructure;
-import org.nd4j.graph.UIInfoType;
-import org.nd4j.graph.UIStaticInfoRecord;
-import org.nd4j.graph.UISystemInfo;
+import org.nd4j.graph.*;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -26,8 +24,8 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -59,7 +57,7 @@ public class FileReadWriteTests {
 //        System.out.println("Writing graph structure");
         long bytesWritten = w.writeGraphStructure(sd);
 //        System.out.println("Writing static info");
-        long bytesWritten2 = w.finishStatic();
+        long bytesWritten2 = w.writeFinishStaticMarker();
 //        System.out.println("Completed writing");
 
         assertTrue(bytesWritten > 0);
@@ -90,18 +88,48 @@ public class FileReadWriteTests {
 
 
         //Append a number of events
+        w.registerName("accuracy");
+        for( int iter=0; iter<3; iter++) {
+            long t = System.currentTimeMillis();
+            w.writeScalar("accuracy", t, iter, 0, 0.5 + 0.1 * iter);
+        }
+
+        //Read events back in...
+        List<Pair<UIEvent,Table>> events = w.readEvents();
+        assertEquals(4, events.size());             //add name + 3 scalars
+
+        UIAddName addName = (UIAddName) events.get(0).getRight();
+        assertEquals("accuracy", addName.name());
+
+        for( int i=1; i<4; i++ ){
+            FlatArray fa = (FlatArray) events.get(i).getRight();
+            INDArray arr = Nd4j.createFromFlatArray(fa);
+
+            INDArray exp = Nd4j.scalar(0.5 + (i-1) * 0.1);
+            assertEquals(exp, arr);
+        }
     }
 
 
     public static class LogFileWriter {
         private final File file;
         private long endStaticInfoOffset = -1;
+        private final AtomicInteger nameIndexCounter = new AtomicInteger(0);
+        private final Map<Integer,String> nameIndexMap = new HashMap<>();
+        private final Map<String,Integer> indexNameMap = new HashMap<>();
 
         public LogFileWriter(File file) throws IOException {
             this.file = file;
         }
 
+        /**
+         * Write the graph structure
+         * @param sd
+         * @return
+         * @throws IOException
+         */
         public long writeGraphStructure(SameDiff sd) throws IOException {
+            Preconditions.checkState(endStaticInfoOffset < 0, "Cannot write graph structure - already wrote end of static info marker");
             Pair<Integer, FlatBufferBuilder> h = encodeStaticHeader(UIInfoType.GRAPH_STRUCTURE);
 
             FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
@@ -112,7 +140,7 @@ public class FileReadWriteTests {
             return written;
         }
 
-        public Pair<Integer, FlatBufferBuilder> encodeStaticHeader(byte type) {
+        protected Pair<Integer, FlatBufferBuilder> encodeStaticHeader(byte type) {
             FlatBufferBuilder fbb = new FlatBufferBuilder(12);
 
             int staticInfoOffset = UIStaticInfoRecord.createUIStaticInfoRecord(fbb, type);
@@ -121,7 +149,7 @@ public class FileReadWriteTests {
             return new Pair<>(lengthHeader, fbb);
         }
 
-        private int encodeGraphStructure(FlatBufferBuilder fbb, SameDiff sd) {
+        protected int encodeGraphStructure(FlatBufferBuilder fbb, SameDiff sd) {
             //Create inputs list:
             List<String> inputs = sd.inputs();
             int[] inputListStrOffsets = new int[inputs.size()];
@@ -181,7 +209,12 @@ public class FileReadWriteTests {
             }
         }
 
-        public long finishStatic() throws IOException {
+        /**
+         * Write marker for final static data
+         * @return
+         * @throws IOException
+         */
+        public long writeFinishStaticMarker() throws IOException {
             Preconditions.checkState(endStaticInfoOffset < 0, "Wrote final static already information already");
             Pair<Integer, FlatBufferBuilder> encoded = encodeStaticHeader(UIInfoType.START_EVENTS);
             long out = append(encoded.getSecond(), null);
@@ -191,18 +224,17 @@ public class FileReadWriteTests {
 
         /**
          * Read all static information at the start of the file
+         *
          * @return
          * @throws IOException
          */
         public StaticInfo readStatic() throws IOException {
-            //For testing purposes - read only first entry...
 
             List<Pair<UIStaticInfoRecord, Table>> out = new ArrayList<>();
             boolean allStaticRead = false;
             try (RandomAccessFile f = new RandomAccessFile(file, "r"); FileChannel fc = f.getChannel()) {
                 f.seek(0);
                 while (!allStaticRead) {
-//                    System.out.println("---------- Reading ----------");
 
                     //read 2 header ints - file length;
                     int lengthHeader = f.readInt();
@@ -210,14 +242,12 @@ public class FileReadWriteTests {
 
                     ByteBuffer bb = ByteBuffer.allocate(lengthHeader);
                     int numRead = f.getChannel().read(bb);
-//                    System.out.println("Read header bytes: " + numRead);
                     bb.flip();      //Flip for reading
 
 
                     UIStaticInfoRecord r = UIStaticInfoRecord.getRootAsUIStaticInfoRecord(bb);
                     bb = ByteBuffer.allocate(lengthContent);
                     int contentRead = f.getChannel().read(bb);
-//                    System.out.println("Read content bytes: " + contentRead);
                     bb.flip();      //Flip for reading
 
                     byte infoType = r.infoType();
@@ -251,6 +281,98 @@ public class FileReadWriteTests {
                 StaticInfo s = new StaticInfo(out, f.getFilePointer());
                 return s;
             }
+        }
+
+        public List<Pair<UIEvent, Table>> readEvents() throws IOException {
+            //TODO eventually we'll support working out the offset
+            Preconditions.checkState(endStaticInfoOffset >= 0, "Cannot read events - have not written end of static info marker");
+
+            if(endStaticInfoOffset >= file.length()){
+                return Collections.emptyList();
+            }
+
+            List<Pair<UIEvent, Table>> out = new ArrayList<>();
+            try (RandomAccessFile f = new RandomAccessFile(file, "r"); FileChannel fc = f.getChannel()) {
+                f.seek(endStaticInfoOffset);
+                while (f.getFilePointer() < f.length()) {
+                    //read 2 header ints
+                    int lengthHeader = f.readInt();
+                    int lengthContent = f.readInt();
+
+                    //Read header
+                    ByteBuffer bb = ByteBuffer.allocate(lengthHeader);
+                    f.getChannel().read(bb);
+                    bb.flip();      //Flip for reading
+                    UIEvent e = UIEvent.getRootAsUIEvent(bb);
+
+                    //Read Content
+                    bb = ByteBuffer.allocate(lengthContent);
+                    f.getChannel().read(bb);
+                    bb.flip();      //Flip for reading
+
+                    byte infoType = e.eventType();
+                    Table t;
+                    switch (infoType) {
+                        case UIEventType.ADD_NAME:
+                            t = UIAddName.getRootAsUIAddName(bb);
+                            break;
+                        case UIEventType.SCALAR:
+                        case UIEventType.ARRAY:
+                            t = FlatArray.getRootAsFlatArray(bb);
+                            break;
+                        case UIEventType.ARRAY_LIST:
+                        case UIEventType.HISTOGRAM:
+                        case UIEventType.IMAGE:
+                        case UIEventType.SUMMARY_STATISTICS:
+                        case UIEventType.OP_TIMING:
+                        case UIEventType.HARDWARE_STATE:
+                        case UIEventType.GC_EVENT:
+                        default:
+                            throw new RuntimeException("Unknown or not yet implemented event type: " + e.eventType());
+                    }
+
+                    //TODO do we need to close file here?
+
+                    out.add(new Pair<>(e, t));
+                }
+                return out;
+            }
+        }
+
+
+        public long registerName(String name) throws IOException {
+            Preconditions.checkState(endStaticInfoOffset >= 0, "Cannot write name - have not written end of static info marker");
+
+            FlatBufferBuilder fbb = new FlatBufferBuilder(0);
+            long time = System.currentTimeMillis();
+            int offset = UIEvent.createUIEvent(fbb, UIEventType.ADD_NAME, -1, time, 0, 0, (short)-1, 0, 0);
+            fbb.finish(offset);
+
+            FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
+            int idx = nameIndexCounter.getAndIncrement();
+            nameIndexMap.put(idx, name);
+            indexNameMap.put(name, idx);
+            int strOffset = fbb2.createString(name);
+            int offset2 = UIAddName.createUIAddName(fbb2, idx, strOffset);
+            fbb2.finish(offset2);
+
+            long l = append(fbb, fbb2);
+            return l;
+        }
+
+        //TODO add support for plugin and frame/iter
+        public long writeScalar(String name, long time, int iteration, int epoch, Number scalar) throws IOException {
+            Preconditions.checkState(indexNameMap.containsKey(name), "Name \"%s\" not yet registered", name);
+            int idx = indexNameMap.get(name);
+            FlatBufferBuilder fbb = new FlatBufferBuilder(0);
+            int offset = UIEvent.createUIEvent(fbb, UIEventType.SCALAR, idx, time, iteration, epoch, (short)-1, 0, 0);
+            fbb.finish(offset);
+
+            FlatBufferBuilder fbb2 = new FlatBufferBuilder(0);
+            int offset2 = Nd4j.scalar(scalar).toFlatArray(fbb2);
+            fbb2.finish(offset2);
+
+            return append(fbb, fbb2);
         }
     }
 
