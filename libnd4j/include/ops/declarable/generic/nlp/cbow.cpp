@@ -56,7 +56,7 @@ namespace nd4j {
             REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0, "CBOW: expTable must have the same data type as syn0 table");
 
 
-            nd4j::ops::helpers::cbow(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices, *codes, *alpha, *randomValue, *inferenceVector);
+            nd4j::ops::helpers::cbow(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *context, *indices, *codes, *alpha, *randomValue, *inferenceVector);
 
 
             return Status::OK();
