@@ -1,0 +1,78 @@
+@()
+<!DOCTYPE html>
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ~ Copyright (c) 2015-2019 Skymind, Inc.
+  ~
+  ~ This program and the accompanying materials are made available under the
+  ~ terms of the Apache License, Version 2.0 which is available at
+  ~ https://www.apache.org/licenses/LICENSE-2.0.
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  ~ SPDX-License-Identifier: Apache-2.0
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+
+<html lang="en">
+    <head>
+
+        <meta charset="utf-8">
+        <title>SameDiff Graph Visualization</title>
+            <!-- start: Mobile Specific -->
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+            <!-- end: Mobile Specific -->
+
+        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.1/css/bootstrap.min.css" rel="stylesheet">
+
+            <!-- The HTML5 shim, for IE6-8 support of HTML5 elements -->
+            <!--[if lt IE 9]>
+	  	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+		<link id="ie-style" href="/assets/css/ie.css" rel="stylesheet"/>
+	<![endif]-->
+
+            <!--[if IE 9]>
+		<link id="ie9style" href="/assets/css/ie9.css" rel="stylesheet"/>
+	<![endif]-->
+    </head>
+
+    <body>
+            <!-- Start JavaScript-->
+        <script src="/assets/webjars/jquery/2.2.0/jquery.min.js"></script>
+        <script src="/assets/webjars/jquery-ui/1.10.2/ui/minified/jquery-ui.min.js"></script>
+        <script src="/assets/webjars/bootstrap/2.3.1/js/bootstrap.min.js"></script>
+        <script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js"></script>
+        <script src="/assets/webjars/dagre/0.8.4/dist/dagre.min.js"></script>
+        <script src="/assets/webjars/cytoscape/3.2.5/dist/cytoscape.min.js"></script>
+        <script src="/assets/webjars/cytoscape-dagre/2.1.0/cytoscape-dagre.js"></script>
+        <script src="/assets/js/samediff/generated/uigraphevents_generated.js"></script>
+        <script src="/assets/js/samediff/generated/uigraphstatic_generated.js"></script>
+        <script src="/assets/js/samediff/generated/array_generated.js"></script>
+        <script src="/assets/js/samediff/generated/utils_generated.js"></script>
+        <script src="/assets/js/samediff/generated/variable_generated.js"></script>
+
+        <script src="/assets/js/samediff/samediff-ui.js"></script>
+
+        <div class="container-fluid-full">
+            <div class="row-fluid">
+                <input type="file" id="file" name="file" />
+                <output id="list"></output>
+                <div id="graphdiv" style="width: 1024px; height: 800px;">
+
+                </div>
+            </div>
+        </div>
+
+
+            <!-- Execute once on page load -->
+        <script>
+                document.getElementById('file').addEventListener('change', fileSelect, false);
+                $(document).ready(function () {
+                    renderSameDiffGraph();
+                });
+        </script>
+    </body>
+</html>
