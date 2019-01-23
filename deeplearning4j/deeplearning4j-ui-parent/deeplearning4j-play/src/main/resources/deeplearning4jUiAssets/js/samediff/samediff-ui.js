@@ -27,10 +27,52 @@ function fileSelect(evt){
     renderSameDiffGraph();
 }
 
+function byteArrayToInt(byteArray) {
+    var value = 0;
+    for ( var i = 0; i < byteArray.length; i++) {
+        value = (value * 256) + byteArray[i];
+    }
+    return value;
+};
+
 function renderSameDiffGraph(){
 
+    var nodeNames = ["a", "b"];
+    var edges = [["a","b"]];
+
     //First: load data
-    // var file =
+    if(file) {
+        var fr = new FileReader();
+        var fileData = new Blob([file]);
+        fr.readAsArrayBuffer(fileData);
+        fr.onload = function(){
+            var arrayBuffer = fr.result
+            var bytes = new Uint8Array(arrayBuffer);
+            console.log(bytes);
+
+            var header1a = bytes.slice(0,4);
+            var header1b = bytes.slice(4,8);
+
+            var headerLength = byteArrayToInt(header1a);
+            var contentLength = byteArrayToInt(header1b);
+
+            console.log("Header/content lengths: " + headerLength + ", " + contentLength);
+
+            //https://gist.github.com/alexvictoor/0b76764857b780ad8f83
+
+            var headerSlice = bytes.slice(8, 8+headerLength);
+            var buffer = new flatbuffers.ByteBuffer(headerSlice);
+            var graphStructure = nd4j.graph.UIGraphStructure.getRootAsUIGraphStructure(buffer);
+            var inLength = graphStructure.inputsLength();
+            var inputs = [];
+            for( var i=0; i<inLength; i++ ){
+                var inName = graphStructure.inputs(i);
+                inputs.push(inName);
+            }
+            console.log("Inputs: " + inputs);
+        };
+        // console.log("Number of bytes: " + bytes.length());
+    }
 
     var nodes = [];
     var edges = [];
