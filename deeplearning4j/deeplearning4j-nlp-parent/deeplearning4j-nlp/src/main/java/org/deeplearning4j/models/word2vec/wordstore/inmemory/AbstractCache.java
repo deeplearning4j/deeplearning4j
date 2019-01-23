@@ -20,11 +20,15 @@ import com.google.gson.JsonObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.WordDeserializer;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.core.type.TypeReference;
+import org.nd4j.shade.jackson.databind.*;
+import org.nd4j.shade.jackson.databind.type.CollectionType;
 
 import java.io.IOException;
 import java.util.*;
@@ -37,42 +41,42 @@ import java.util.concurrent.atomic.AtomicLong;
  * This is generic VocabCache implementation designed as abstract SequenceElements vocabulary
  *
  * @author raver119@gmail.com
+ * @author alexander@skymind.io
  */
 @Slf4j
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class", defaultImpl = WordDeserializer.class)
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE,
         setterVisibility = JsonAutoDetect.Visibility.NONE)
 public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
 
+    // ser -> list, list <- maps
     // map for label->object dictionary
-    private final ConcurrentMap<Long, T> vocabulary = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, T> vocabulary = new ConcurrentHashMap<>(); //element.getStorageId()
 
-    private final Map<String, T> extendedVocabulary = new ConcurrentHashMap<>();
+    private final Map<String, T> extendedVocabulary = new ConcurrentHashMap<>(); // label
 
-    private final Map<Integer, T> idxMap = new ConcurrentHashMap<>();
+    private final Map<Integer, T> idxMap = new ConcurrentHashMap<>(); // vocab word get index <- T
 
-    private final AtomicLong documentsCounter = new AtomicLong(0);
+    private final AtomicLong documentsCounter = new AtomicLong(0); // ser
 
-    private int minWordFrequency = 0;
-    private boolean hugeModelExpected = false;
+    private int minWordFrequency = 0; // ser
+    private boolean hugeModelExpected = false; // ser
 
     private static final String VOCABULARY_FIELD = "Vocabulary";
 
 
     // we're using <String>for compatibility & failproof reasons: it's easier to store unique labels then abstract objects of unknown size
     // TODO: wtf this one is doing here?
-    private List<String> stopWords = new ArrayList<>();
+    private List<String> stopWords = new ArrayList<>(); // stop words
 
     // this variable defines how often scavenger will be activated
-    private int scavengerThreshold = 3000000;
-    private int retentionDelay = 3;
+    private int scavengerThreshold = 3000000; // ser
+    private int retentionDelay = 3; // ser
 
     // for scavenger mechanics we need to know the actual number of words being added
     private transient AtomicLong hiddenWordsCounter = new AtomicLong(0);
 
-    private final AtomicLong totalWordCount = new AtomicLong(0);
-
-
+    private final AtomicLong totalWordCount = new AtomicLong(0); // ser
 
     private static final int MAX_CODE_LENGTH = 40;
 
@@ -483,22 +487,86 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
         removeElement(element.getLabel());
     }
 
+    private static ObjectMapper mapper = null;
+    private static final Object lock = new Object();
+
+    private static ObjectMapper mapper() {
+        if (mapper == null) {
+            synchronized (lock) {
+                if (mapper == null) {
+                    mapper = new ObjectMapper();
+                    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                    mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+                    return mapper;
+                }
+            }
+        }
+        return mapper;
+    }
+
     public JsonObject asJson() throws JsonProcessingException {
 
-        ObjectMapper mapper = new ObjectMapper();
         JsonObject retVal = new JsonObject();
-        String strVocabulary = mapper.writeValueAsString(vocabulary);
-        retVal.addProperty(VOCABULARY_FIELD, strVocabulary);
+        ObjectMapper mapper = mapper();
+
+        List<T> values = new ArrayList<>(vocabulary.values());
+        retVal.addProperty("VocabularyValues", mapper.writeValueAsString(values));
+
+        retVal.addProperty("DocumentsCounter", mapper.writeValueAsString(documentsCounter.longValue()));
+        retVal.addProperty("MinWordsFrequency", mapper.writeValueAsString(minWordFrequency));
+        retVal.addProperty("HugeModelExpected", mapper.writeValueAsString(hugeModelExpected));
+
+        retVal.addProperty("StopWords", mapper.writeValueAsString(stopWords));
+
+        retVal.addProperty("ScavengerThreshold", mapper.writeValueAsString(scavengerThreshold));
+        retVal.addProperty("RetentionDelay", mapper.writeValueAsString(retentionDelay));
+        retVal.addProperty("TotalWordCount", mapper.writeValueAsString(totalWordCount.longValue()));
+
         return retVal;
     }
 
     public static <T extends SequenceElement> AbstractCache<T> fromJson(JsonObject json)  throws IOException {
         AbstractCache<T> retVal = new AbstractCache.Builder<T>().build();
 
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = mapper();
 
-        ConcurrentHashMap<Long,T> deser = mapper.readValue(json.get(VOCABULARY_FIELD).getAsString(), ConcurrentHashMap.class);
-        retVal.vocabulary.putAll(deser);
+
+        CollectionType wordsCollectionType = mapper.getTypeFactory()
+                .constructCollectionType(List.class, SequenceElement.class);
+
+
+        String sval = json.get("VocabularyValues").getAsString();
+        List<T> values = mapper.readValue(json.get("VocabularyValues").getAsString(), wordsCollectionType);
+
+        ConcurrentMap<Long, T> vocabulary = new ConcurrentHashMap<>();
+        Map<String, T> extendedVocabulary = new ConcurrentHashMap<>();
+        Map<Integer, T> idxMap = new ConcurrentHashMap<>();
+
+        for (T value : values) {
+            vocabulary.put(value.getStorageId(), value);
+            extendedVocabulary.put(value.getLabel(), value);
+            idxMap.put(value.getIndex(), value);
+        }
+
+        List<String> stopWords = mapper.readValue(json.get("StopWords").getAsString(), List.class);
+
+        Long documentsCounter = json.get("DocumentsCounter").getAsLong();
+        Integer minWordsFrequency = json.get("MinWordsFrequency").getAsInt();
+        Boolean hugeModelExpected = json.get("HugeModelExpected").getAsBoolean();
+        Integer scavengerThreshold = json.get("ScavengerThreshold").getAsInt();
+        Integer retentionDelay = json.get("RetentionDelay").getAsInt();
+        Long totalWordCount = json.get("TotalWordCount").getAsLong();
+
+        retVal.vocabulary.putAll(vocabulary);
+        retVal.extendedVocabulary.putAll(extendedVocabulary);
+        retVal.idxMap.putAll(idxMap);
+        retVal.stopWords.addAll(stopWords);
+        retVal.documentsCounter.set(documentsCounter);
+        retVal.minWordFrequency = minWordsFrequency;
+        retVal.hugeModelExpected = hugeModelExpected;
+        retVal.scavengerThreshold = scavengerThreshold;
+        retVal.retentionDelay = retentionDelay;
+        retVal.totalWordCount.set(totalWordCount);
 
         return retVal;
     }
