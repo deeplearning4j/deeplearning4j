@@ -16,6 +16,9 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
@@ -57,6 +60,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -1979,6 +1983,32 @@ public class WordVectorSerializer {
         }
     }
 
+    private static final String CLASS_FIELD = "@class";
+
+    public static <T extends  SequenceElement> String writeSequenceVectors(@NonNull SequenceVectors<T> vectors)
+            throws JsonProcessingException {
+
+        ObjectMapper mapper = getModelMapper();
+        JsonObject retVal = new JsonObject();
+        AbstractCache<T> vocabCache = (AbstractCache<T>)vectors.getVocab();
+        retVal.addProperty(CLASS_FIELD, mapper.writeValueAsString(vectors.getClass().getName()));
+        retVal.addProperty("Vocabulary", vocabCache.toJson());
+
+        return retVal.toString();
+    }
+
+    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(String jsonString) throws IOException {
+        ObjectMapper mapper = getModelMapper();
+        JsonParser parser = new JsonParser();
+        JsonObject jsonObject = parser.parse(jsonString).getAsJsonObject();
+        List<T> items = new ArrayList<>();
+
+        AbstractCache<T> vocabCache = AbstractCache.fromJson(jsonObject.get("Vocabulary").getAsString());
+
+        SequenceVectors<T> vectors = new SequenceVectors.Builder<T>().vocabCache(vocabCache).build();
+        return vectors;
+    }
+
     /**
      * This method loads previously saved SequenceVectors model from File
      *
@@ -2763,24 +2793,15 @@ public class WordVectorSerializer {
 
     }
 
-    public static <T extends VocabWord> void  serializeWord(T word, String path)
+    public String toJson()
     {
-        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(path))) {
+        JsonObject jsonObject = new JsonObject();
 
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+
+        return jsonObject.toString();
     }
 
-    public static <T extends VocabWord> T  deserializeWord(String path)
+    public static void fromJson(String jsonString)
     {
-        T retVal = null;
-
-        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(path))) {
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return retVal;
     }
 }
