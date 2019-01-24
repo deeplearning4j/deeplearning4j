@@ -821,52 +821,76 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
     void NDArray::streamline(char o) {
         char order = o == 'a' ? this->ordering() : o;
+        if (!isActualOnDeviceSide())
+            syncToDevice();
 
         Nd4jLong *newShape;
-        ALLOCATE(newShape, this->_context->getWorkspace(), shape::shapeInfoLength(this->rankOf()), Nd4jLong);
+        Nd4jLong* newShapeD;
+        Nd4jLong rank = this->rankOf();
+        ALLOCATE(newShape, this->_context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
+        ALLOCATE_SPECIAL(newShapeD, this->_context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
-        int8_t *newBuffer;
-        ALLOCATE(newBuffer, this->_context->getWorkspace(), this->lengthOf() * sizeOfT(), int8_t);
+        int8_t *newBuffer = nullptr;
+        int8_t* newBufferD;
+        ///ALLOCATE(newBuffer, this->_context->getWorkspace(), this->lengthOf() * sizeOfT(), int8_t);
+        ALLOCATE_SPECIAL(newBufferD, this->_context->getWorkspace(), this->lengthOf() * sizeOfT(), int8_t);
 
         std::vector<Nd4jLong> shape(this->rankOf());
         for (int e = 0; e < this->rankOf(); e++)
             shape[e] = this->sizeAt(e);
 
         if (order == 'c')
-            shape::shapeBuffer(this->rankOf(),dataType(),  shape.data(), newShape);
+            shape::shapeBuffer(this->rankOf(), dataType(), shape.data(), newShape);
         else
             shape::shapeBufferFortran(this->rankOf(), dataType(), shape.data(), newShape);
 
+        cudaMemcpy(newShapeD, newShape, shape::shapeInfoByteLength(rank), cudaMemcpyHostToDevice); // move data from host shape to device
         if (!isView()) {
-            NativeOpExecutioner::execTransformSame(nullptr, transform::Copy, _buffer, _shapeInfo, nullptr, nullptr, newBuffer, newShape, nullptr, nullptr, nullptr, nullptr, nullptr);
-            memcpy(_buffer, newBuffer, this->lengthOf() * sizeOfT());
+            NativeOpExecutioner::execTransformSame(_context, transform::Copy, _buffer, _shapeInfo, _bufferD, _shapeInfoD, newBuffer, newShape, newBufferD, newShapeD, nullptr, nullptr, nullptr);
+            //memcpy(_buffer, newBuffer, this->lengthOf() * sizeOfT());
 
-            //if (_isBuffAlloc)
-            //    RELEASE(this->_buffer, this->_workspace);
+            if (_isBuffAlloc) {
+                RELEASE(this->_buffer, this->_context->getWorkspace());
+            }
+            if (_isBuffDAlloc) {
+                RELEASE_SPECIAL(_bufferD, this->_context->getWorkspace());
+            }
             if (_isShapeAlloc)
                 RELEASE(this->_shapeInfo, this->_context->getWorkspace());
+            if (_isShapeDAlloc)
+                RELEASE_SPECIAL(_shapeInfoD, this->_context->getWorkspace());
 
+            _buffer == nullptr;
+            _shapeInfo = newShape;
+            setSpecialBuffers(newBufferD, newShapeD);
             //this->_buffer = newBuffer;
-            //this->_isBuffAlloc = true;
-
-            RELEASE(newBuffer, this->_context->getWorkspace());
-
-            this->_shapeInfo = newShape;
+            this->_isBuffAlloc = true;
+            this->_isBuffDAlloc = true;
+            this->_isShapeDAlloc = true;
             this->_isShapeAlloc = true;
         } else {
-            NativeOpExecutioner::execTransformSame(nullptr, transform::Copy, _buffer, _shapeInfo, nullptr, nullptr, newBuffer, newShape, nullptr, nullptr, nullptr, nullptr, nullptr);
+            NativeOpExecutioner::execTransformSame(_context, transform::Copy, _buffer, _shapeInfo, _bufferD, _shapeInfoD, newBuffer, newShape, newBufferD, newShapeD, nullptr, nullptr, nullptr);
 
             if (_isBuffAlloc)
                 RELEASE(this->_buffer, this->_context->getWorkspace());
             if (_isShapeAlloc)
                 RELEASE(this->_shapeInfo, this->_context->getWorkspace());
 
-            this->_buffer = newBuffer;
+            if (_isBuffDAlloc)
+                RELEASE_SPECIAL(_bufferD, this->_context->getWorkspace());
+            if (_isShapeAlloc)
+                RELEASE_SPECIAL(_shapeInfoD, this->_context->getWorkspace());
+            _buffer = nullptr;
+            //setBuffer(newBuffer);
+            _shapeInfo = newShape;
+            setSpecialBuffers(newBufferD, newShapeD);
             this->_isBuffAlloc = true;
-
-            this->_shapeInfo = newShape;
             this->_isShapeAlloc = true;
+            this->_isBuffDAlloc = true;
+            this->_isShapeDAlloc = true;
         }
+        //tickReadHost();
+        tickWriteDevice();
     }
 
     void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, ExtraArguments *extraParams) const{
