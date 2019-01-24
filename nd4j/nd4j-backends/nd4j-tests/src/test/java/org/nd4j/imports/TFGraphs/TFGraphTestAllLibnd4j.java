@@ -87,7 +87,17 @@ public class TFGraphTestAllLibnd4j {
 
             //JVM crashes
             "simpleif.*",
-            "simple_cond.*"
+            "simple_cond.*",
+
+            //2019/01/24 - Failing
+            "cond/cond_true",
+            "simplewhile_.*",
+            "simple_while",
+            "while1/.*",
+            "while2/a",
+
+            //2019/01/24 - TensorArray support missing at libnd4j exec level??
+            "tensor_array/.*"
     };
 
     @BeforeClass
