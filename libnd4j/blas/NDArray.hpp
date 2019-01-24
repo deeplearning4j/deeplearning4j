@@ -2571,7 +2571,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
                         
         for (int idx = 0; idx < numTads; idx++ ) {
 
-            #ifdef __CUBLASS__
+            #ifdef __CUDABLAS__
                 makeBothBuffersActual();
                 auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), specialBufferWithOffset(tad->tadOffsets[idx]), tad->tadOnlyShapeInfo, _context, false, false, false);
             #else
@@ -2609,10 +2609,11 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
             }
         }
 
-        #ifdef __CUBLASS__
+        #ifdef __CUDABLAS__
             makeBothBuffersActual();        
             NDArray result(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, _context, false, false, true);
-        #else
+        
+        #else            
             NDArray result(bufferWithOffset(offset), newShape, _context, false, true);
         #endif
 

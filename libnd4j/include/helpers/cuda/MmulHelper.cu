@@ -71,6 +71,47 @@ __host__ static void usualGemm(const dim3 &blocksPerGrid, const dim3 &threadsPer
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// MXN x N = M
+// C array must be in f order
+template <typename T1, typename T2, typename T3>
+static __global__ void usualCudaGemv(const bool transA, const int M, const int N, const double alpha, const void* vA, const int lda, const void* vX, const int incx, const double beta, void* vY, const int incy) {
+
+    T1* A = reinterpret_cast<T1*>(const_cast<void*>(vA));
+    T2* X = reinterpret_cast<T2*>(const_cast<void*>(vX));
+    T3* Y = reinterpret_cast<T3*>(vY);
+
+    __shared__ T3 alphaZ, betaZ;
+    __shared__ Nd4jLong strideArow, strideAcol;
+    
+    const int row = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if(row == 0) {
+        
+        alphaZ = alpha;
+        betaZ  = beta;
+
+        if(transA) { strideArow = lda; strideAcol = 1; } else { strideArow = 1; strideAcol = lda; }        
+    }
+
+    __syncthreads();
+
+    T3 val = 0;
+    if (row < M)
+        for (int i = 0; i < N; i++) {
+            val = val + A[row * strideArow + i * strideAcol] * X[i * incx];
+        }
+            
+    Y[row * incy] = alphaZ * val + betaZ * Y[row * incy];    
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename T1, typename T2, typename T3>    
+__host__ static void usualGemv(const dim3 &blocksPerGrid, const dim3 &threadsPerBlock, cudaStream_t *stream, const bool transA, const int M, const int N, const double alpha, const void* vA, const int lda, const void* vX, const int incx, const double beta, void* vY, const int incy) {
+    
+    usualCudaGemv<T1,T2,T3><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(transA, M, N, alpha, vA, lda, vX, incx, beta, vY, incy);
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN
 NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, double alpha, double beta, const char outOrder) {
 
@@ -199,7 +240,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 template <typename T1, typename T2, typename T3>
 NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* Y, const double alpha, const double beta, const char outOrder) {
 
-    int xLenDim, yLenDim;
+    int xLenDim, yLenDim(0);
 
     if(A->rankOf() != 2)
         throw std::runtime_error("MmulHelper::mmulMxV cuda: rank of A array is not equal 2 !");
@@ -224,7 +265,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
     if(A->ews() != 1)
         pA = pA->dup('f');
     
-    const bool transA =  pA->ordering() != 'f';    
+    const bool transA = pA->ordering() == 'c';
     
     const cublasOperation_t transAblas = transA ? CUBLAS_OP_T : CUBLAS_OP_N;    
     
@@ -264,8 +305,15 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
         float alphaF(alpha), betaF(beta);
         status = cublasSgemv(handle, transAblas, lda, lta, &alphaF, (float*)pA->getSpecialBuffer(), lda, (float*)X->getSpecialBuffer(), incx, &betaF, (float*)Y->getSpecialBuffer(), incy);
     }
-    else
-        throw std::runtime_error("MmulHelper::mmulMxV cuda: not implemented yet for given types of input arrays !");
+    else {
+        dim3 threadsPerBlock(M);
+        dim3 blocksPerGrid(1);
+        if (M > 512){
+            threadsPerBlock.x = 512;             
+            blocksPerGrid.x = math::nd4j_ceil<double, int>(static_cast<double>(M) / threadsPerBlock.x);    // rows            
+        }        
+        usualGemv<T1,T2,T3>(blocksPerGrid, threadsPerBlock, stream, transA, M, N, alpha, pA->getSpecialBuffer(), lda, X->getSpecialBuffer(), incx, beta, Y->getSpecialBuffer(), incy);
+    }
 
     if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
 
