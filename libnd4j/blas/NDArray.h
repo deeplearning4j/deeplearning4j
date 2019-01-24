@@ -35,6 +35,7 @@
 #include <ops/BroadcastOpsTuple.h>
 #include <ops/BroadcastBoolOpsTuple.h>
 #include <array/ExtraArguments.h>
+#include <Status.h>
 
 
 namespace nd4j {

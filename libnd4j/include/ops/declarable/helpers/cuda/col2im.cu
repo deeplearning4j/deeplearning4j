@@ -105,11 +105,6 @@ namespace nd4j {
             void _col2im(nd4j::graph::LaunchContext &context, T *dx, T *result, int *zShape, int *xShape, int sY, int sX, int pY, int pX, int imgY, int imgX, int dY, int dX) {
                 device_col2im<T><<<512, 512>>>(result, dx, zShape, xShape, sY, sX, pY, pX, imgY, imgX, dY, dX);
             };
-
-
-            template void _col2im<float>(nd4j::graph::LaunchContext& context, float *dx, float *result, int *zShape, int *xShape, int sY, int sX, int pY, int pX, int imgY, int imgX, int dY, int dX);
-            template void _col2im<float16>(nd4j::graph::LaunchContext& context, float16 *dx, float16 *result, int *zShape, int *xShape, int sY, int sX, int pY, int pX, int imgY, int imgX, int dY, int dX);
-            template void _col2im<double>(nd4j::graph::LaunchContext& context, double *dx, double *result, int *zShape, int *xShape, int sY, int sX, int pY, int pX, int imgY, int imgX, int dY, int dX);
         }
     }
 }
