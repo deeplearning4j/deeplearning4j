@@ -19,8 +19,8 @@
 //
 
 
-#include <ops/declarable/helpers/householder.h>
-#include <ops/declarable/helpers/biDiagonalUp.h>
+#include <householder.h>
+#include <biDiagonalUp.h>
 #include <NDArrayFactory.h>
 
 

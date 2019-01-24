@@ -21,8 +21,7 @@
 #ifndef LIBND4J_HHCOLPICQR_H
 #define LIBND4J_HHCOLPICQR_H
 
-#include <ops/declarable/helpers/helpers.h>
-#include <ops/declarable/helpers/hhColPivQR.h>
+#include <hhColPivQR.h>
 #include "NDArray.h"
 
 namespace nd4j {

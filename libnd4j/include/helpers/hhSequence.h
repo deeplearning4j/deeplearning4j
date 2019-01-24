@@ -21,7 +21,6 @@
 #ifndef LIBND4J_HHSEQUENCE_H
 #define LIBND4J_HHSEQUENCE_H
 
-#include <ops/declarable/helpers/helpers.h>
 #include "NDArray.h"
 
 namespace nd4j {

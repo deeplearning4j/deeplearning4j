@@ -21,8 +21,7 @@
 #ifndef LIBND4J_JACOBISVD_H
 #define LIBND4J_JACOBISVD_H
 
-#include <ops/declarable/helpers/helpers.h>
-#include <ops/declarable/helpers/hhSequence.h>
+#include <hhSequence.h>
 #include "NDArray.h"
 
 namespace nd4j {

@@ -18,8 +18,8 @@
 // Created by Yurii Shyrma on 11.01.2018
 //
 
-#include <ops/declarable/helpers/jacobiSVD.h>
-#include <ops/declarable/helpers/hhColPivQR.h>
+#include <jacobiSVD.h>
+#include <hhColPivQR.h>
 #include <NDArrayFactory.h>
 
 

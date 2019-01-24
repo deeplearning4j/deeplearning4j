@@ -15,12 +15,12 @@
  ******************************************************************************/
 
 #include "testlayers.h"
-#include <ops/declarable/helpers/householder.h>
-#include <ops/declarable/helpers/biDiagonalUp.h>
-#include <ops/declarable/helpers/hhSequence.h>
-#include <ops/declarable/helpers/svd.h>
-#include <ops/declarable/helpers/hhColPivQR.h>
-#include <ops/declarable/helpers/jacobiSVD.h>
+#include <householder.h>
+#include <biDiagonalUp.h>
+#include <hhSequence.h>
+#include <svd.h>
+#include <hhColPivQR.h>
+#include <jacobiSVD.h>
 #include <ops/declarable/helpers/reverse.h>
 #include <ops/declarable/helpers/activations.h>
 #include <ops/declarable/helpers/rnn.h>

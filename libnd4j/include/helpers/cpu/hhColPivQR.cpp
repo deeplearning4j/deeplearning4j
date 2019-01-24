@@ -18,8 +18,8 @@
 // Created by Yurii Shyrma on 11.01.2018
 //
 
-#include <ops/declarable/helpers/hhColPivQR.h>
-#include <ops/declarable/helpers/householder.h>
+#include <hhColPivQR.h>
+#include <householder.h>
 #include <NDArrayFactory.h>
 
 namespace nd4j {

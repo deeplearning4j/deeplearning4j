@@ -18,8 +18,8 @@
 // Created by Yurii Shyrma on 02.01.2018
 //
 
-#include <ops/declarable/helpers/hhSequence.h>
-#include <ops/declarable/helpers/householder.h>
+#include <hhSequence.h>
+#include <householder.h>
 #include <NDArrayFactory.h>
 
 namespace nd4j {

@@ -18,7 +18,7 @@
 // Created by Yurii Shyrma on 18.12.2017
 //
 
-#include <ops/declarable/helpers/householder.h>
+#include <householder.h>
 #include <NDArrayFactory.h>
 
 namespace nd4j {
