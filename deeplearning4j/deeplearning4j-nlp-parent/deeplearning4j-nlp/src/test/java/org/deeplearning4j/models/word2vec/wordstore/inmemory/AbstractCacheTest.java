@@ -142,6 +142,9 @@ public class AbstractCacheTest {
             e.printStackTrace();
             fail();
         }
+        assertEquals(cache.totalWordOccurrences(),unserialized.totalWordOccurrences());
+        assertEquals(cache.totalNumberOfDocs(), unserialized.totalNumberOfDocs());
+
         for (int i = 0; i < words.length; ++i) {
             val cached = cache.wordAtIndex(i);
             val restored = unserialized.wordAtIndex(i);
@@ -174,6 +177,8 @@ public class AbstractCacheTest {
             e.printStackTrace();
             fail();
         }
+        assertEquals(cache.totalWordOccurrences(),unserialized.totalWordOccurrences());
+        assertEquals(cache.totalNumberOfDocs(), unserialized.totalNumberOfDocs());
         for (int i = 0; i < 3; ++i) {
             val t = cache.wordAtIndex(i);
             assertNotNull(t);
