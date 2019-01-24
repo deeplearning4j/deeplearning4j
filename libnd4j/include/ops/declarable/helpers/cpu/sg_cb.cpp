@@ -174,7 +174,7 @@ namespace nd4j {
                             // target is known in advance
                         } else {
                             randomValue = randomValue * (unsigned long long) 25214903917 + 11;
-                            auto idx = (randomValue >> 16) % negLength;
+                            auto idx = nd4j::math::nd4j_abs<Nd4jLong >((randomValue >> 16) % negLength);
                             irow = negTable[idx];
 
                             if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
@@ -245,7 +245,8 @@ namespace nd4j {
                             // target is known in advance
                         } else {
                             randomValue = randomValue * (unsigned long long) 25214903917 + 11;
-                            irow = negTable[(randomValue >> 16) % negLength];
+                            auto idx = nd4j::math::nd4j_abs<Nd4jLong >((randomValue >> 16) % negLength);
+                            irow = negTable[idx];
 
                             if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
                             if (irow == nsStarter)
