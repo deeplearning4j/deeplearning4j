@@ -42,7 +42,7 @@ struct bfloat16;
 
 struct ihalf : public __half {
     public:
-        _CUDA_HD ihalf() : half() {
+        __host__ __device__ ihalf() : half() {
             //
         }
 /*
@@ -50,15 +50,15 @@ struct ihalf : public __half {
             this->__x = ((__half_raw *) &f)->x;
         }
 */
-        inline _CUDA_HD unsigned short * getXP() {
+        inline __host__ __device__ unsigned short * getXP() {
            return &this->__x;
         }
 
-        inline _CUDA_HD unsigned short getX() const  {
+        inline __host__ __device__ unsigned short getX() const  {
             return this->__x;
         }
 
-        inline _CUDA_HD void assign(const half f) {
+        inline __host__ __device__ void assign(const half f) {
             this->__x = ((__half_raw *) &f)->x;
         }
 };
@@ -66,19 +66,19 @@ struct ihalf : public __half {
 #else
 struct ihalf : public __half {
     public:
-        _CUDA_HD ihalf() : half() {
+        __host__ __device__ ihalf() : half() {
             //
         }
 
-        inline _CUDA_HD unsigned short * getXP() {
+        inline __host__ __device__ unsigned short * getXP() {
             return &this->x;
         }
 
-        inline _CUDA_HD unsigned short getX() const {
+        inline __host__ __device__ unsigned short getX() const {
             return this->x;
         }
 
-        inline _CUDA_HD void assign(const half f) {
+        inline __host__ __device__ void assign(const half f) {
             this->x = ((__half *) &f)->x;
         }
 };

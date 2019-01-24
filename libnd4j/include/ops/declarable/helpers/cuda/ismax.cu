@@ -15,25 +15,31 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 30.11.17.
+// @author Yurii Shyrma, created on 21.09.2018
+// @author raver119@gmail.com
 //
 
-#include <ops/declarable/helpers/col2im.h>
 
-namespace nd4j {
-    namespace ops {
-        namespace helpers {
+#include <helpers/TAD.h>
+#include<ops/declarable/helpers/ismax.h>
 
+namespace nd4j 	  {
+namespace ops 	  {
+namespace helpers {
 
+template <typename T>
+static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>& dimensions) {
 
-            template<typename T>
-            void _col2im(nd4j::graph::LaunchContext &context, T *dx, T *result, int *zShape, int *xShape, int sY, int sX, int pY, int pX, int imgY, int imgX, int dY, int dX) {
-                //device_col2im<T><<<512, 512>>>(result, dx, zShape, xShape, sY, sX, pY, pX, imgY, imgX, dY, dX);
-            };
-
-            void col2im(graph::LaunchContext& context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
-
-            }
-        }
-    }
 }
+
+
+void ismax(const NDArray *input, NDArray *output, const std::vector<int>& dimensions) {
+    BUILD_SINGLE_SELECTOR(input->dataType(), ismax_, (input, output, dimensions), LIBND4J_TYPES);
+}
+
+BUILD_SINGLE_TEMPLATE(template void ismax_, (const NDArray *input, NDArray *output, const std::vector<int>& dimensions), LIBND4J_TYPES);
+
+}
+}
+}
+

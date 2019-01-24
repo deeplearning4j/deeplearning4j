@@ -15,25 +15,25 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 30.11.17.
+// Created by raver119 on 20.12.17.
 //
 
-#include <ops/declarable/helpers/col2im.h>
+#include <ops/declarable/helpers/matmul.h>
 
 namespace nd4j {
     namespace ops {
         namespace helpers {
-
-
-
-            template<typename T>
-            void _col2im(nd4j::graph::LaunchContext &context, T *dx, T *result, int *zShape, int *xShape, int sY, int sX, int pY, int pX, int imgY, int imgX, int dY, int dX) {
-                //device_col2im<T><<<512, 512>>>(result, dx, zShape, xShape, sY, sX, pY, pX, imgY, imgX, dY, dX);
-            };
-
-            void col2im(graph::LaunchContext& context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
+            template <typename X, typename Y, typename Z>
+            void __matmul(NDArray *vA, NDArray *vB, NDArray *vC, int transA, int transB, double alpha, double beta) {
 
             }
+
+
+            void _matmul(NDArray *vA, NDArray *vB, NDArray *vC, int transA, int transB, double alpha, double beta) {
+                BUILD_TRIPLE_SELECTOR(vA->dataType(), vB->dataType(), vC->dataType(), __matmul, (vA, vB, vC, transA, transB, alpha, beta), LIBND4J_TYPES, LIBND4J_TYPES, LIBND4J_TYPES);
+            }
+
+            BUILD_TRIPLE_TEMPLATE(template void __matmul, (NDArray *A, NDArray *B, NDArray *C, int transA, int transB, double alpha, double beta), LIBND4J_TYPES, LIBND4J_TYPES, LIBND4J_TYPES);
         }
     }
 }

@@ -15,25 +15,24 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 30.11.17.
+//  @author George A. Shulinok <sgazeos@gmail.com>
 //
-
-#include <ops/declarable/helpers/col2im.h>
+#include <ops/declarable/helpers/matrix_band.h>
 
 namespace nd4j {
-    namespace ops {
-        namespace helpers {
+namespace ops {
+namespace helpers {
 
+    template <typename T>
+    void matrixBandPart_(NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
 
-
-            template<typename T>
-            void _col2im(nd4j::graph::LaunchContext &context, T *dx, T *result, int *zShape, int *xShape, int sY, int sX, int pY, int pX, int imgY, int imgX, int dY, int dX) {
-                //device_col2im<T><<<512, 512>>>(result, dx, zShape, xShape, sY, sX, pY, pX, imgY, imgX, dY, dX);
-            };
-
-            void col2im(graph::LaunchContext& context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
-
-            }
-        }
     }
+
+    void matrixBandPart(NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), matrixBandPart_, (input, output, lowerBand, upperBand), FLOAT_TYPES);
+    }
+    BUILD_SINGLE_TEMPLATE(template void matrixBandPart_, (NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand), FLOAT_TYPES);
 }
+}
+}
+

@@ -15,25 +15,26 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 30.11.17.
+//  @author sgazeos@gmail.com
 //
 
-#include <ops/declarable/helpers/col2im.h>
+#include <ops/declarable/helpers/image_suppression.h>
+//#include <blas/NDArray.h>
 
 namespace nd4j {
-    namespace ops {
-        namespace helpers {
+namespace ops {
+namespace helpers {
 
+    template <typename T>
+    static void nonMaxSuppressionV2_(NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {
 
-
-            template<typename T>
-            void _col2im(nd4j::graph::LaunchContext &context, T *dx, T *result, int *zShape, int *xShape, int sY, int sX, int pY, int pX, int imgY, int imgX, int dY, int dX) {
-                //device_col2im<T><<<512, 512>>>(result, dx, zShape, xShape, sY, sX, pY, pX, imgY, imgX, dY, dX);
-            };
-
-            void col2im(graph::LaunchContext& context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
-
-            }
-        }
     }
+
+    void nonMaxSuppressionV2(NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(output->dataType(), nonMaxSuppressionV2_, (boxes, scales, maxSize, threshold, output), NUMERIC_TYPES);
+    }
+    BUILD_SINGLE_TEMPLATE(template void nonMaxSuppressionV2_, (NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output), NUMERIC_TYPES);
+
+}
+}
 }

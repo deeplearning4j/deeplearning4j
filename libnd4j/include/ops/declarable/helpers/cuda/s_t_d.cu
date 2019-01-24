@@ -15,25 +15,26 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 30.11.17.
+//
 //
 
-#include <ops/declarable/helpers/col2im.h>
+#include <ops/declarable/helpers/s_t_d.h>
 
 namespace nd4j {
-    namespace ops {
-        namespace helpers {
+namespace ops {
+namespace helpers {
 
+    template <typename T>
+    static void _spaceTodepth_(NDArray *input, NDArray *output, int block_size, bool isNHWC) {
 
-
-            template<typename T>
-            void _col2im(nd4j::graph::LaunchContext &context, T *dx, T *result, int *zShape, int *xShape, int sY, int sX, int pY, int pX, int imgY, int imgX, int dY, int dX) {
-                //device_col2im<T><<<512, 512>>>(result, dx, zShape, xShape, sY, sX, pY, pX, imgY, imgX, dY, dX);
-            };
-
-            void col2im(graph::LaunchContext& context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
-
-            }
-        }
     }
+
+    void _spaceTodepth(NDArray *input, NDArray *output, int block_size, bool isNHWC) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), _spaceTodepth_, (input, output, block_size, isNHWC), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void _spaceTodepth_, (NDArray *input, NDArray *output, int block_size, bool isNHWC), LIBND4J_TYPES);
+
+}
+}
 }

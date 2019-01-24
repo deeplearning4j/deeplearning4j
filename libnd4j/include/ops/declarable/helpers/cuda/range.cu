@@ -15,25 +15,28 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 30.11.17.
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 27.08.2018
 //
 
-#include <ops/declarable/helpers/col2im.h>
+
+#include <ops/declarable/helpers/range.h>
 
 namespace nd4j {
-    namespace ops {
-        namespace helpers {
+namespace ops {
+namespace helpers {
 
+    //////////////////////////////////////////////////////////////////////////
+    // be careful: outVector must have c-order and ews = 1 !!!
+    template <typename T>
+    static void _range(const NDArray& start, const NDArray& delta, NDArray& outVector) {
 
-
-            template<typename T>
-            void _col2im(nd4j::graph::LaunchContext &context, T *dx, T *result, int *zShape, int *xShape, int sY, int sX, int pY, int pX, int imgY, int imgX, int dY, int dX) {
-                //device_col2im<T><<<512, 512>>>(result, dx, zShape, xShape, sY, sX, pY, pX, imgY, imgX, dY, dX);
-            };
-
-            void col2im(graph::LaunchContext& context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
-
-            }
-        }
     }
+
+    void range(const NDArray& start, const NDArray& delta, NDArray& outVector) {
+        BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (start, delta, outVector), LIBND4J_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void _range, (const NDArray& start, const NDArray& delta, NDArray& outVector), LIBND4J_TYPES);
+}
+}
 }

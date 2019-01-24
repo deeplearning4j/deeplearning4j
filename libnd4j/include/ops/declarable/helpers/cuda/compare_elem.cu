@@ -14,26 +14,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-// Created by raver119 on 30.11.17.
-//
-
-#include <ops/declarable/helpers/col2im.h>
+#include <ops/declarable/helpers/compare_elem.h>
 
 namespace nd4j {
     namespace ops {
         namespace helpers {
-
-
-
             template<typename T>
-            void _col2im(nd4j::graph::LaunchContext &context, T *dx, T *result, int *zShape, int *xShape, int sY, int sX, int pY, int pX, int imgY, int imgX, int dY, int dX) {
-                //device_col2im<T><<<512, 512>>>(result, dx, zShape, xShape, sY, sX, pY, pX, imgY, imgX, dY, dX);
-            };
-
-            void col2im(graph::LaunchContext& context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
+            static void _compare_elem(NDArray *input, bool isStrictlyIncreasing, bool& output) {
 
             }
+
+            void compare_elem(NDArray *input, bool isStrictlyIncreasing, bool& output) {
+                auto xType = input->dataType();
+
+                BUILD_SINGLE_SELECTOR(xType, _compare_elem, (input, isStrictlyIncreasing, output), LIBND4J_TYPES);
+            }
+
+
+            BUILD_SINGLE_TEMPLATE(template void _compare_elem, (NDArray *A, bool isStrictlyIncreasing, bool& output);, LIBND4J_TYPES);
         }
     }
 }

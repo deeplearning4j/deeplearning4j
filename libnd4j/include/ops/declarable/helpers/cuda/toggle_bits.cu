@@ -15,24 +15,23 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 30.11.17.
+// @author raver119@gmail.com
 //
 
-#include <ops/declarable/helpers/col2im.h>
+#include <ops/declarable/helpers/toggle_bits.h>
+#include <helpers/BitwiseUtils.h>
 
 namespace nd4j {
     namespace ops {
         namespace helpers {
-
-
-
             template<typename T>
-            void _col2im(nd4j::graph::LaunchContext &context, T *dx, T *result, int *zShape, int *xShape, int sY, int sX, int pY, int pX, int imgY, int imgX, int dY, int dX) {
-                //device_col2im<T><<<512, 512>>>(result, dx, zShape, xShape, sY, sX, pY, pX, imgY, imgX, dY, dX);
-            };
+            void toggle_bits__(NDArray &in, NDArray &out) {
 
-            void col2im(graph::LaunchContext& context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
+            }
+            BUILD_SINGLE_TEMPLATE(template void toggle_bits__, (NDArray &in, NDArray &out), INTEGER_TYPES);
 
+            void __toggle_bits(NDArray& in, NDArray& out) {
+                BUILD_SINGLE_SELECTOR(in.dataType(), toggle_bits__, (in, out), INTEGER_TYPES);
             }
         }
     }
