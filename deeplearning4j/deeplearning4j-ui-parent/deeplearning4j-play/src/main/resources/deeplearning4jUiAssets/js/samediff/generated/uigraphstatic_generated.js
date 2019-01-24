@@ -503,11 +503,36 @@ nd4j.graph.UIVariable.prototype.type = function() {
 };
 
 /**
+ * @returns {nd4j.graph.DataType}
+ */
+nd4j.graph.UIVariable.prototype.datatype = function() {
+  var offset = this.bb.__offset(this.bb_pos, 10);
+  return offset ? /** @type {nd4j.graph.DataType} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.DataType.INHERIT;
+};
+
+/**
+ * @param {number} index
+ * @returns {flatbuffers.Long}
+ */
+nd4j.graph.UIVariable.prototype.shape = function(index) {
+  var offset = this.bb.__offset(this.bb_pos, 12);
+  return offset ? this.bb.readInt64(this.bb.__vector(this.bb_pos + offset) + index * 8) : this.bb.createLong(0, 0);
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.UIVariable.prototype.shapeLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 12);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
  * @param {flatbuffers.Encoding=} optionalEncoding
  * @returns {string|Uint8Array|null}
  */
 nd4j.graph.UIVariable.prototype.outputOfOp = function(optionalEncoding) {
-  var offset = this.bb.__offset(this.bb_pos, 10);
+  var offset = this.bb.__offset(this.bb_pos, 14);
   return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
 };
 
@@ -517,7 +542,7 @@ nd4j.graph.UIVariable.prototype.outputOfOp = function(optionalEncoding) {
  * @returns {string|Uint8Array}
  */
 nd4j.graph.UIVariable.prototype.inputsForOp = function(index, optionalEncoding) {
-  var offset = this.bb.__offset(this.bb_pos, 12);
+  var offset = this.bb.__offset(this.bb_pos, 16);
   return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
 };
 
@@ -525,7 +550,7 @@ nd4j.graph.UIVariable.prototype.inputsForOp = function(index, optionalEncoding) 
  * @returns {number}
  */
 nd4j.graph.UIVariable.prototype.inputsForOpLength = function() {
-  var offset = this.bb.__offset(this.bb_pos, 12);
+  var offset = this.bb.__offset(this.bb_pos, 16);
   return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -535,7 +560,7 @@ nd4j.graph.UIVariable.prototype.inputsForOpLength = function() {
  * @returns {string|Uint8Array}
  */
 nd4j.graph.UIVariable.prototype.controlDepsForOp = function(index, optionalEncoding) {
-  var offset = this.bb.__offset(this.bb_pos, 14);
+  var offset = this.bb.__offset(this.bb_pos, 18);
   return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
 };
 
@@ -543,7 +568,7 @@ nd4j.graph.UIVariable.prototype.controlDepsForOp = function(index, optionalEncod
  * @returns {number}
  */
 nd4j.graph.UIVariable.prototype.controlDepsForOpLength = function() {
-  var offset = this.bb.__offset(this.bb_pos, 14);
+  var offset = this.bb.__offset(this.bb_pos, 18);
   return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -553,7 +578,7 @@ nd4j.graph.UIVariable.prototype.controlDepsForOpLength = function() {
  * @returns {string|Uint8Array}
  */
 nd4j.graph.UIVariable.prototype.controlDepsForVar = function(index, optionalEncoding) {
-  var offset = this.bb.__offset(this.bb_pos, 16);
+  var offset = this.bb.__offset(this.bb_pos, 20);
   return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
 };
 
@@ -561,7 +586,7 @@ nd4j.graph.UIVariable.prototype.controlDepsForVar = function(index, optionalEnco
  * @returns {number}
  */
 nd4j.graph.UIVariable.prototype.controlDepsForVarLength = function() {
-  var offset = this.bb.__offset(this.bb_pos, 16);
+  var offset = this.bb.__offset(this.bb_pos, 20);
   return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -570,7 +595,7 @@ nd4j.graph.UIVariable.prototype.controlDepsForVarLength = function() {
  * @returns {string|Uint8Array|null}
  */
 nd4j.graph.UIVariable.prototype.gradientVariable = function(optionalEncoding) {
-  var offset = this.bb.__offset(this.bb_pos, 18);
+  var offset = this.bb.__offset(this.bb_pos, 22);
   return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
 };
 
@@ -578,7 +603,7 @@ nd4j.graph.UIVariable.prototype.gradientVariable = function(optionalEncoding) {
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.UIVariable.startUIVariable = function(builder) {
-  builder.startObject(8);
+  builder.startObject(10);
 };
 
 /**
@@ -607,10 +632,47 @@ nd4j.graph.UIVariable.addType = function(builder, type) {
 
 /**
  * @param {flatbuffers.Builder} builder
+ * @param {nd4j.graph.DataType} datatype
+ */
+nd4j.graph.UIVariable.addDatatype = function(builder, datatype) {
+  builder.addFieldInt8(3, datatype, nd4j.graph.DataType.INHERIT);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} shapeOffset
+ */
+nd4j.graph.UIVariable.addShape = function(builder, shapeOffset) {
+  builder.addFieldOffset(4, shapeOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<flatbuffers.Long>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.UIVariable.createShapeVector = function(builder, data) {
+  builder.startVector(8, data.length, 8);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addInt64(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.UIVariable.startShapeVector = function(builder, numElems) {
+  builder.startVector(8, numElems, 8);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
  * @param {flatbuffers.Offset} outputOfOpOffset
  */
 nd4j.graph.UIVariable.addOutputOfOp = function(builder, outputOfOpOffset) {
-  builder.addFieldOffset(3, outputOfOpOffset, 0);
+  builder.addFieldOffset(5, outputOfOpOffset, 0);
 };
 
 /**
@@ -618,7 +680,7 @@ nd4j.graph.UIVariable.addOutputOfOp = function(builder, outputOfOpOffset) {
  * @param {flatbuffers.Offset} inputsForOpOffset
  */
 nd4j.graph.UIVariable.addInputsForOp = function(builder, inputsForOpOffset) {
-  builder.addFieldOffset(4, inputsForOpOffset, 0);
+  builder.addFieldOffset(6, inputsForOpOffset, 0);
 };
 
 /**
@@ -647,7 +709,7 @@ nd4j.graph.UIVariable.startInputsForOpVector = function(builder, numElems) {
  * @param {flatbuffers.Offset} controlDepsForOpOffset
  */
 nd4j.graph.UIVariable.addControlDepsForOp = function(builder, controlDepsForOpOffset) {
-  builder.addFieldOffset(5, controlDepsForOpOffset, 0);
+  builder.addFieldOffset(7, controlDepsForOpOffset, 0);
 };
 
 /**
@@ -676,7 +738,7 @@ nd4j.graph.UIVariable.startControlDepsForOpVector = function(builder, numElems) 
  * @param {flatbuffers.Offset} controlDepsForVarOffset
  */
 nd4j.graph.UIVariable.addControlDepsForVar = function(builder, controlDepsForVarOffset) {
-  builder.addFieldOffset(6, controlDepsForVarOffset, 0);
+  builder.addFieldOffset(8, controlDepsForVarOffset, 0);
 };
 
 /**
@@ -705,7 +767,7 @@ nd4j.graph.UIVariable.startControlDepsForVarVector = function(builder, numElems)
  * @param {flatbuffers.Offset} gradientVariableOffset
  */
 nd4j.graph.UIVariable.addGradientVariable = function(builder, gradientVariableOffset) {
-  builder.addFieldOffset(7, gradientVariableOffset, 0);
+  builder.addFieldOffset(9, gradientVariableOffset, 0);
 };
 
 /**

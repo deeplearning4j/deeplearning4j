@@ -18,9 +18,19 @@ public struct UIOp : IFlatbufferObject
   public UIOp __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public string Name { get { int o = __p.__offset(4); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetNameBytes() { return __p.__vector_as_span(4); }
+#else
   public ArraySegment<byte>? GetNameBytes() { return __p.__vector_as_arraysegment(4); }
+#endif
+  public byte[] GetNameArray() { return __p.__vector_as_array<byte>(4); }
   public string OpName { get { int o = __p.__offset(6); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetOpNameBytes() { return __p.__vector_as_span(6); }
+#else
   public ArraySegment<byte>? GetOpNameBytes() { return __p.__vector_as_arraysegment(6); }
+#endif
+  public byte[] GetOpNameArray() { return __p.__vector_as_array<byte>(6); }
   public string Inputs(int j) { int o = __p.__offset(8); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
   public int InputsLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
   public string Outputs(int j) { int o = __p.__offset(10); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
@@ -48,12 +58,15 @@ public struct UIOp : IFlatbufferObject
   public static void AddOpName(FlatBufferBuilder builder, StringOffset opNameOffset) { builder.AddOffset(1, opNameOffset.Value, 0); }
   public static void AddInputs(FlatBufferBuilder builder, VectorOffset inputsOffset) { builder.AddOffset(2, inputsOffset.Value, 0); }
   public static VectorOffset CreateInputsVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateInputsVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartInputsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddOutputs(FlatBufferBuilder builder, VectorOffset outputsOffset) { builder.AddOffset(3, outputsOffset.Value, 0); }
   public static VectorOffset CreateOutputsVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateOutputsVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartOutputsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddControlDeps(FlatBufferBuilder builder, VectorOffset controlDepsOffset) { builder.AddOffset(4, controlDepsOffset.Value, 0); }
   public static VectorOffset CreateControlDepsVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateControlDepsVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartControlDepsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static Offset<UIOp> EndUIOp(FlatBufferBuilder builder) {
     int o = builder.EndObject();

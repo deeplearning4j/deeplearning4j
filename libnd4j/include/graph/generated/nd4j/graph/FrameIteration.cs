@@ -18,7 +18,12 @@ public struct FrameIteration : IFlatbufferObject
   public FrameIteration __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public string Frame { get { int o = __p.__offset(4); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetFrameBytes() { return __p.__vector_as_span(4); }
+#else
   public ArraySegment<byte>? GetFrameBytes() { return __p.__vector_as_arraysegment(4); }
+#endif
+  public byte[] GetFrameArray() { return __p.__vector_as_array<byte>(4); }
   public ushort Iteration { get { int o = __p.__offset(6); return o != 0 ? __p.bb.GetUshort(o + __p.bb_pos) : (ushort)0; } }
 
   public static Offset<FrameIteration> CreateFrameIteration(FlatBufferBuilder builder,

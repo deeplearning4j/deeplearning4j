@@ -30,7 +30,7 @@ class UIAddName(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
-        return bytes()
+        return None
 
 def UIAddNameStart(builder): builder.StartObject(2)
 def UIAddNameAddNameIdx(builder, nameIdx): builder.PrependInt32Slot(0, nameIdx, 0)

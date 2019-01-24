@@ -351,9 +351,9 @@
             <version>3</version>
         </dependency>
         <dependency>
-            <groupId>org.webjars.bower</groupId>
+            <groupId>org.webjars.npm</groupId>
             <artifactId>cytoscape</artifactId>
-            <version>3.2.5</version>
+            <version>3.2.20</version>
         </dependency>
         <dependency>
             <groupId>org.webjars.bower</groupId>

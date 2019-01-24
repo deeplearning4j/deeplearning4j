@@ -30,6 +30,7 @@ public struct FlatArrayList : IFlatbufferObject
   public static void StartFlatArrayList(FlatBufferBuilder builder) { builder.StartObject(1); }
   public static void AddList(FlatBufferBuilder builder, VectorOffset listOffset) { builder.AddOffset(0, listOffset.Value, 0); }
   public static VectorOffset CreateListVector(FlatBufferBuilder builder, Offset<FlatArray>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateListVectorBlock(FlatBufferBuilder builder, Offset<FlatArray>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartListVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static Offset<FlatArrayList> EndFlatArrayList(FlatBufferBuilder builder) {
     int o = builder.EndObject();

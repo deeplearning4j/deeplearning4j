@@ -235,7 +235,7 @@ struct FrameIteration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_FRAME) &&
-           verifier.Verify(frame()) &&
+           verifier.VerifyString(frame()) &&
            VerifyField<uint16_t>(verifier, VT_ITERATION) &&
            verifier.EndTable();
   }
@@ -297,7 +297,7 @@ struct UIAddName FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_NAMEIDX) &&
            VerifyOffset(verifier, VT_NAME) &&
-           verifier.Verify(name()) &&
+           verifier.VerifyString(name()) &&
            verifier.EndTable();
   }
 };
@@ -353,7 +353,7 @@ struct FlatArrayList FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_LIST) &&
-           verifier.Verify(list()) &&
+           verifier.VerifyVector(list()) &&
            verifier.VerifyVectorOfTables(list()) &&
            verifier.EndTable();
   }
@@ -425,7 +425,7 @@ struct UIHistogram FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_Y) &&
            verifier.VerifyTable(y()) &&
            VerifyOffset(verifier, VT_BINLABELS) &&
-           verifier.Verify(binlabels()) &&
+           verifier.VerifyVector(binlabels()) &&
            verifier.VerifyVectorOfStrings(binlabels()) &&
            verifier.EndTable();
   }
@@ -639,7 +639,7 @@ struct UIHardwareState FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_GPUMEMORY) &&
-           verifier.Verify(gpuMemory()) &&
+           verifier.VerifyVector(gpuMemory()) &&
            VerifyField<int64_t>(verifier, VT_HOSTMEMORY) &&
            verifier.EndTable();
   }

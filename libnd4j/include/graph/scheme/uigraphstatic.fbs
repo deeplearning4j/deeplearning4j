@@ -16,6 +16,7 @@
 
 include "utils.fbs";		//For: IntPair
 include "variable.fbs";		//For: VarType
+include "array.fbs";		//For: DataType
 
 namespace nd4j.graph;
 
@@ -50,6 +51,8 @@ table UIVariable {
     id:IntPair;                     //Existing IntPair class
     name:string;
     type:VarType;                   //Use existing VarType:     VARIABLE, CONSTANT, ARRAY, PLACEHOLDER
+	datatype:DataType;
+	shape:[long];
     outputOfOp:string;              //Null for placeholders/constants. For array type SDVariables, the name of the op it's an output of
     inputsForOp:[string];           //Used as input for specific op. Mainly for quick lookup on front end
     controlDepsForOp:[string];      //if a op control dependency (x -> opY) exists, then "opY" will be in this list

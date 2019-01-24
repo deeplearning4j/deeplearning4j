@@ -46,18 +46,23 @@ public struct UIGraphStructure : IFlatbufferObject
   public static void StartUIGraphStructure(FlatBufferBuilder builder) { builder.StartObject(5); }
   public static void AddInputs(FlatBufferBuilder builder, VectorOffset inputsOffset) { builder.AddOffset(0, inputsOffset.Value, 0); }
   public static VectorOffset CreateInputsVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateInputsVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartInputsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddInputsPair(FlatBufferBuilder builder, VectorOffset inputsPairOffset) { builder.AddOffset(1, inputsPairOffset.Value, 0); }
   public static VectorOffset CreateInputsPairVector(FlatBufferBuilder builder, Offset<IntPair>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateInputsPairVectorBlock(FlatBufferBuilder builder, Offset<IntPair>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartInputsPairVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddOutputs(FlatBufferBuilder builder, VectorOffset outputsOffset) { builder.AddOffset(2, outputsOffset.Value, 0); }
   public static VectorOffset CreateOutputsVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateOutputsVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartOutputsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddVariables(FlatBufferBuilder builder, VectorOffset variablesOffset) { builder.AddOffset(3, variablesOffset.Value, 0); }
   public static VectorOffset CreateVariablesVector(FlatBufferBuilder builder, Offset<UIVariable>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateVariablesVectorBlock(FlatBufferBuilder builder, Offset<UIVariable>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartVariablesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddOps(FlatBufferBuilder builder, VectorOffset opsOffset) { builder.AddOffset(4, opsOffset.Value, 0); }
   public static VectorOffset CreateOpsVector(FlatBufferBuilder builder, Offset<UIOp>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateOpsVectorBlock(FlatBufferBuilder builder, Offset<UIOp>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartOpsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static Offset<UIGraphStructure> EndUIGraphStructure(FlatBufferBuilder builder) {
     int o = builder.EndObject();

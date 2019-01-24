@@ -161,19 +161,19 @@ struct UIGraphStructure FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_INPUTS) &&
-           verifier.Verify(inputs()) &&
+           verifier.VerifyVector(inputs()) &&
            verifier.VerifyVectorOfStrings(inputs()) &&
            VerifyOffset(verifier, VT_INPUTSPAIR) &&
-           verifier.Verify(inputsPair()) &&
+           verifier.VerifyVector(inputsPair()) &&
            verifier.VerifyVectorOfTables(inputsPair()) &&
            VerifyOffset(verifier, VT_OUTPUTS) &&
-           verifier.Verify(outputs()) &&
+           verifier.VerifyVector(outputs()) &&
            verifier.VerifyVectorOfStrings(outputs()) &&
            VerifyOffset(verifier, VT_VARIABLES) &&
-           verifier.Verify(variables()) &&
+           verifier.VerifyVector(variables()) &&
            verifier.VerifyVectorOfTables(variables()) &&
            VerifyOffset(verifier, VT_OPS) &&
-           verifier.Verify(ops()) &&
+           verifier.VerifyVector(ops()) &&
            verifier.VerifyVectorOfTables(ops()) &&
            verifier.EndTable();
   }
@@ -246,11 +246,13 @@ struct UIVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_ID = 4,
     VT_NAME = 6,
     VT_TYPE = 8,
-    VT_OUTPUTOFOP = 10,
-    VT_INPUTSFOROP = 12,
-    VT_CONTROLDEPSFOROP = 14,
-    VT_CONTROLDEPSFORVAR = 16,
-    VT_GRADIENTVARIABLE = 18
+    VT_DATATYPE = 10,
+    VT_SHAPE = 12,
+    VT_OUTPUTOFOP = 14,
+    VT_INPUTSFOROP = 16,
+    VT_CONTROLDEPSFOROP = 18,
+    VT_CONTROLDEPSFORVAR = 20,
+    VT_GRADIENTVARIABLE = 22
   };
   const IntPair *id() const {
     return GetPointer<const IntPair *>(VT_ID);
@@ -260,6 +262,12 @@ struct UIVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   VarType type() const {
     return static_cast<VarType>(GetField<int8_t>(VT_TYPE, 0));
+  }
+  DataType datatype() const {
+    return static_cast<DataType>(GetField<int8_t>(VT_DATATYPE, 0));
+  }
+  const flatbuffers::Vector<int64_t> *shape() const {
+    return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_SHAPE);
   }
   const flatbuffers::String *outputOfOp() const {
     return GetPointer<const flatbuffers::String *>(VT_OUTPUTOFOP);
@@ -281,21 +289,24 @@ struct UIVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_ID) &&
            verifier.VerifyTable(id()) &&
            VerifyOffset(verifier, VT_NAME) &&
-           verifier.Verify(name()) &&
+           verifier.VerifyString(name()) &&
            VerifyField<int8_t>(verifier, VT_TYPE) &&
+           VerifyField<int8_t>(verifier, VT_DATATYPE) &&
+           VerifyOffset(verifier, VT_SHAPE) &&
+           verifier.VerifyVector(shape()) &&
            VerifyOffset(verifier, VT_OUTPUTOFOP) &&
-           verifier.Verify(outputOfOp()) &&
+           verifier.VerifyString(outputOfOp()) &&
            VerifyOffset(verifier, VT_INPUTSFOROP) &&
-           verifier.Verify(inputsForOp()) &&
+           verifier.VerifyVector(inputsForOp()) &&
            verifier.VerifyVectorOfStrings(inputsForOp()) &&
            VerifyOffset(verifier, VT_CONTROLDEPSFOROP) &&
-           verifier.Verify(controlDepsForOp()) &&
+           verifier.VerifyVector(controlDepsForOp()) &&
            verifier.VerifyVectorOfStrings(controlDepsForOp()) &&
            VerifyOffset(verifier, VT_CONTROLDEPSFORVAR) &&
-           verifier.Verify(controlDepsForVar()) &&
+           verifier.VerifyVector(controlDepsForVar()) &&
            verifier.VerifyVectorOfStrings(controlDepsForVar()) &&
            VerifyOffset(verifier, VT_GRADIENTVARIABLE) &&
-           verifier.Verify(gradientVariable()) &&
+           verifier.VerifyString(gradientVariable()) &&
            verifier.EndTable();
   }
 };
@@ -311,6 +322,12 @@ struct UIVariableBuilder {
   }
   void add_type(VarType type) {
     fbb_.AddElement<int8_t>(UIVariable::VT_TYPE, static_cast<int8_t>(type), 0);
+  }
+  void add_datatype(DataType datatype) {
+    fbb_.AddElement<int8_t>(UIVariable::VT_DATATYPE, static_cast<int8_t>(datatype), 0);
+  }
+  void add_shape(flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape) {
+    fbb_.AddOffset(UIVariable::VT_SHAPE, shape);
   }
   void add_outputOfOp(flatbuffers::Offset<flatbuffers::String> outputOfOp) {
     fbb_.AddOffset(UIVariable::VT_OUTPUTOFOP, outputOfOp);
@@ -344,6 +361,8 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariable(
     flatbuffers::Offset<IntPair> id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     VarType type = VarType_VARIABLE,
+    DataType datatype = DataType_INHERIT,
+    flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
     flatbuffers::Offset<flatbuffers::String> outputOfOp = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> inputsForOp = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepsForOp = 0,
@@ -355,8 +374,10 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariable(
   builder_.add_controlDepsForOp(controlDepsForOp);
   builder_.add_inputsForOp(inputsForOp);
   builder_.add_outputOfOp(outputOfOp);
+  builder_.add_shape(shape);
   builder_.add_name(name);
   builder_.add_id(id);
+  builder_.add_datatype(datatype);
   builder_.add_type(type);
   return builder_.Finish();
 }
@@ -366,6 +387,8 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariableDirect(
     flatbuffers::Offset<IntPair> id = 0,
     const char *name = nullptr,
     VarType type = VarType_VARIABLE,
+    DataType datatype = DataType_INHERIT,
+    const std::vector<int64_t> *shape = nullptr,
     const char *outputOfOp = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *inputsForOp = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepsForOp = nullptr,
@@ -376,6 +399,8 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariableDirect(
       id,
       name ? _fbb.CreateString(name) : 0,
       type,
+      datatype,
+      shape ? _fbb.CreateVector<int64_t>(*shape) : 0,
       outputOfOp ? _fbb.CreateString(outputOfOp) : 0,
       inputsForOp ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*inputsForOp) : 0,
       controlDepsForOp ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDepsForOp) : 0,
@@ -409,17 +434,17 @@ struct UIOp FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
-           verifier.Verify(name()) &&
+           verifier.VerifyString(name()) &&
            VerifyOffset(verifier, VT_OPNAME) &&
-           verifier.Verify(opName()) &&
+           verifier.VerifyString(opName()) &&
            VerifyOffset(verifier, VT_INPUTS) &&
-           verifier.Verify(inputs()) &&
+           verifier.VerifyVector(inputs()) &&
            verifier.VerifyVectorOfStrings(inputs()) &&
            VerifyOffset(verifier, VT_OUTPUTS) &&
-           verifier.Verify(outputs()) &&
+           verifier.VerifyVector(outputs()) &&
            verifier.VerifyVectorOfStrings(outputs()) &&
            VerifyOffset(verifier, VT_CONTROLDEPS) &&
-           verifier.Verify(controlDeps()) &&
+           verifier.VerifyVector(controlDeps()) &&
            verifier.VerifyVectorOfStrings(controlDeps()) &&
            verifier.EndTable();
   }

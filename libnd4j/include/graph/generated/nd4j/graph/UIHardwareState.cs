@@ -19,7 +19,12 @@ public struct UIHardwareState : IFlatbufferObject
 
   public long GpuMemory(int j) { int o = __p.__offset(4); return o != 0 ? __p.bb.GetLong(__p.__vector(o) + j * 8) : (long)0; }
   public int GpuMemoryLength { get { int o = __p.__offset(4); return o != 0 ? __p.__vector_len(o) : 0; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetGpuMemoryBytes() { return __p.__vector_as_span(4); }
+#else
   public ArraySegment<byte>? GetGpuMemoryBytes() { return __p.__vector_as_arraysegment(4); }
+#endif
+  public long[] GetGpuMemoryArray() { return __p.__vector_as_array<long>(4); }
   public long HostMemory { get { int o = __p.__offset(6); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)0; } }
 
   public static Offset<UIHardwareState> CreateUIHardwareState(FlatBufferBuilder builder,
@@ -34,6 +39,7 @@ public struct UIHardwareState : IFlatbufferObject
   public static void StartUIHardwareState(FlatBufferBuilder builder) { builder.StartObject(2); }
   public static void AddGpuMemory(FlatBufferBuilder builder, VectorOffset gpuMemoryOffset) { builder.AddOffset(0, gpuMemoryOffset.Value, 0); }
   public static VectorOffset CreateGpuMemoryVector(FlatBufferBuilder builder, long[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddLong(data[i]); return builder.EndVector(); }
+  public static VectorOffset CreateGpuMemoryVectorBlock(FlatBufferBuilder builder, long[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
   public static void StartGpuMemoryVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
   public static void AddHostMemory(FlatBufferBuilder builder, long hostMemory) { builder.AddLong(1, hostMemory, 0); }
   public static Offset<UIHardwareState> EndUIHardwareState(FlatBufferBuilder builder) {

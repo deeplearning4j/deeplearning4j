@@ -46,6 +46,7 @@ public struct UIHistogram : IFlatbufferObject
   public static void AddY(FlatBufferBuilder builder, Offset<FlatArray> yOffset) { builder.AddOffset(3, yOffset.Value, 0); }
   public static void AddBinlabels(FlatBufferBuilder builder, VectorOffset binlabelsOffset) { builder.AddOffset(4, binlabelsOffset.Value, 0); }
   public static VectorOffset CreateBinlabelsVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateBinlabelsVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartBinlabelsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static Offset<UIHistogram> EndUIHistogram(FlatBufferBuilder builder) {
     int o = builder.EndObject();

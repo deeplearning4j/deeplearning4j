@@ -70,7 +70,7 @@ Seq[Any](format.raw/*1.4*/("""
         <script src="/assets/webjars/bootstrap/2.3.1/js/bootstrap.min.js"></script>
         <script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js"></script>
         <script src="/assets/webjars/dagre/0.8.4/dist/dagre.min.js"></script>
-        <script src="/assets/webjars/cytoscape/3.2.5/dist/cytoscape.min.js"></script>
+        <script src="/assets/webjars/cytoscape/3.2.20/dist/cytoscape.min.js"></script>
         <script src="/assets/webjars/cytoscape-dagre/2.1.0/cytoscape-dagre.js"></script>
         <script src="/assets/webjars/flatbuffers/1.9.0/js/flatbuffers.js"></script>
 
@@ -123,10 +123,10 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Thu Jan 24 13:07:39 AEDT 2019
+                  DATE: Thu Jan 24 15:27:20 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
-                  HASH: 34d08e48a8c131d8ae609c196475e97de0e099a8
-                  MATRIX: 561->1|657->3|685->5|4171->3463|4200->3464|4250->3486|4318->3526|4347->3527
+                  HASH: 5ce23c9c09a34af9fbfb6a1c9a1b25fc111c384b
+                  MATRIX: 561->1|657->3|685->5|4172->3464|4201->3465|4251->3487|4319->3527|4348->3528
                   LINES: 20->1|25->1|26->2|100->76|100->76|101->77|102->78|102->78
                   -- GENERATED --
               */
