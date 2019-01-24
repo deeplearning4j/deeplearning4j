@@ -72,8 +72,8 @@ public class SkipGramRound extends DynamicCustomOp {
         val lr = Nd4j.scalar(alpha);
         val nr = Nd4j.scalar(randomValue);
 
-        inputArguments.add(Nd4j.create(target));
-        inputArguments.add(Nd4j.create(ngStarter));
+        inputArguments.add(Nd4j.createFromArray(target));
+        inputArguments.add(Nd4j.createFromArray(ngStarter));
         inputArguments.add(idx);
         inputArguments.add(code);
         inputArguments.add(syn0);
@@ -91,5 +91,6 @@ public class SkipGramRound extends DynamicCustomOp {
 
         // this op is always inplace
         setInPlace(true);
+        setInplaceCall(true);
     }
 }

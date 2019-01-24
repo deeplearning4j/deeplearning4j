@@ -17,6 +17,7 @@
 package org.nd4j.linalg.aggregates;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,6 +27,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateCBOW;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateSkipGram;
 import org.nd4j.linalg.api.ops.aggregates.impl.HierarchicSoftmax;
+import org.nd4j.linalg.api.ops.impl.nlp.CbowRound;
+import org.nd4j.linalg.api.ops.impl.nlp.SkipGramRound;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -314,10 +317,12 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
         INDArray expSyn0_row3 = Nd4j.create(10).assign(0.01f);
         INDArray expSyn1Neg_row6 = Nd4j.create(10).assign(0.030125f);
 
-        AggregateCBOW op = new AggregateCBOW(syn0, syn1, syn1Neg, expTable, table, 0, new int[] {0, 1, 2}, new int[] {},
-                        new int[] {}, 2, 6, 10, lr, 2L, 10);
+        AggregateCBOW op = new AggregateCBOW(syn0, syn1, syn1Neg, expTable, table, 0, new int[] {0, 1, 2}, new int[] {}, new int[] {}, 2, 6, 10, lr, 2L, 10);
+        //Nd4j.getExecutioner().exec(op);
 
-        Nd4j.getExecutioner().exec(op);
+        val sg = new CbowRound(0, new int[]{0, 1, 2}, 6, syn0, syn1Neg, expTable, table,  2, lr, 2L, Nd4j.empty(syn0.dataType()));
+        Nd4j.getExecutioner().exec(sg);
+
 
         assertNotEquals(syn0dup, syn0);
         assertNotEquals(syn1NegDup, syn1Neg);

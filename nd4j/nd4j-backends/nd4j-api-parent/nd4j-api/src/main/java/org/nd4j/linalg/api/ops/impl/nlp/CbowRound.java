@@ -85,8 +85,8 @@ public class CbowRound extends DynamicCustomOp {
         val lr = Nd4j.scalar(alpha);
         val nr = Nd4j.scalar(nextRandom);
 
-        inputArguments.add(Nd4j.create(target));
-        inputArguments.add(Nd4j.create(ngStarter));
+        inputArguments.add(Nd4j.scalar(target));
+        inputArguments.add(Nd4j.scalar(ngStarter));
         inputArguments.add(ctx);
         inputArguments.add(idx);
         inputArguments.add(code);
@@ -108,6 +108,7 @@ public class CbowRound extends DynamicCustomOp {
 
         // this op is always inplace
         setInPlace(true);
+        setInplaceCall(true);
     }
 
     @Override
