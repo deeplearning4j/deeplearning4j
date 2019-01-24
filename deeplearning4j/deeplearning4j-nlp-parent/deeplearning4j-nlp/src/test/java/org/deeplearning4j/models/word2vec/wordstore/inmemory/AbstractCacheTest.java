@@ -130,10 +130,10 @@ public class AbstractCacheTest {
             cache.addWordToIndex(i, words[i].getLabel());
         }
 
-        JsonObject json = null;
+        String json = null;
         AbstractCache<VocabWord> unserialized = null;
         try {
-            json = cache.asJson();
+            json = cache.toJson();
             log.info("{}", json.toString());
 
             unserialized = AbstractCache.fromJson(json);
@@ -164,10 +164,10 @@ public class AbstractCacheTest {
             cache.addWordToIndex(i, words[i].getLabel());
         }
 
-        JsonObject json = null;
+        String json = null;
         AbstractCache<VocabWord> unserialized = null;
         try {
-            json = cache.asJson();
+            json = cache.toJson();
             unserialized = AbstractCache.fromJson(json);
         }
         catch (Exception e) {
