@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.*;
@@ -1984,28 +1983,99 @@ public class WordVectorSerializer {
     }
 
     private static final String CLASS_FIELD = "@class";
+    private static final String VOCAB_FIELD = "Vocabulary";
+    private static final String CONFIG_FIELD = "Configuration";
+    private static final String SYN0_FIELD = "Syn0";
+    private static final String SYN1_FIELD = "Syn1";
+    private static final String SYN1_NEG_FIELD = "Syn1Neg";
 
-    public static <T extends  SequenceElement> String writeSequenceVectors(@NonNull SequenceVectors<T> vectors)
-            throws JsonProcessingException {
+    public static <T extends  SequenceElement> String writeSequenceVectors(@NonNull SequenceVectors<T> vectors/*,
+                                                                           @NonNull OutputStream stream*/)
+            throws JsonProcessingException, IOException {
 
+        WeightLookupTable<T> lookupTable = vectors.getLookupTable();
+        AbstractCache<T> vocabCache = (AbstractCache<T>)vectors.getVocab();
         ObjectMapper mapper = getModelMapper();
         JsonObject retVal = new JsonObject();
-        AbstractCache<T> vocabCache = (AbstractCache<T>)vectors.getVocab();
-        retVal.addProperty(CLASS_FIELD, mapper.writeValueAsString(vectors.getClass().getName()));
-        retVal.addProperty("Vocabulary", vocabCache.toJson());
 
+ //       try (PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8)))) {
+
+
+   //         writer.write(vectors.getConfiguration().toEncodedJson());
+   //         writer.write(((AbstractCache<T>) vocabCache).toJson());
+            //writer.write(((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn0());
+
+            retVal.addProperty(CLASS_FIELD, mapper.writeValueAsString(vectors.getClass().getName()));
+            retVal.addProperty(VOCAB_FIELD, vocabCache.toJson());
+
+            VectorsConfiguration configuration = vectors.getConfiguration();
+            retVal.addProperty(CLASS_FIELD, VectorsConfiguration.class.getName());
+            retVal.addProperty(CONFIG_FIELD, configuration.toJson());
+
+            INDArray syn0 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn0();
+            INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
+            INDArray syn1Neg = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1Neg();
+
+            if (syn0 != null) {
+                retVal.addProperty(CLASS_FIELD, INDArray.class.getName());
+                retVal.addProperty(SYN0_FIELD, syn0.toString());
+            }
+            if (syn1 != null) {
+                retVal.addProperty(CLASS_FIELD, INDArray.class.getName());
+                retVal.addProperty(SYN1_FIELD, syn1.toString());
+            }
+            if (syn1Neg != null) {
+                retVal.addProperty(CLASS_FIELD, INDArray.class.getName());
+                retVal.addProperty(SYN1_NEG_FIELD, syn1Neg.toString());
+            }
+        //}
         return retVal.toString();
     }
 
-    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(String jsonString) throws IOException {
+
+    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(@NonNull String jsonString/*,
+                                                                                     @NonNull InputStream stream*/) throws IOException {
         ObjectMapper mapper = getModelMapper();
         JsonParser parser = new JsonParser();
         JsonObject jsonObject = parser.parse(jsonString).getAsJsonObject();
         List<T> items = new ArrayList<>();
 
-        AbstractCache<T> vocabCache = AbstractCache.fromJson(jsonObject.get("Vocabulary").getAsString());
+        AbstractCache<T> vocabCache = AbstractCache.fromJson(jsonObject.get(VOCAB_FIELD).getAsString());
+        VectorsConfiguration configuration = VectorsConfiguration.fromJson(jsonObject.get(CONFIG_FIELD).getAsString());
 
-        SequenceVectors<T> vectors = new SequenceVectors.Builder<T>().vocabCache(vocabCache).build();
+        INDArray syn0 = Nd4j.create(10, 2),
+                syn1 = Nd4j.create(10, 2),
+                syn1Neg = Nd4j.create(10, 2);
+
+        if (jsonObject.get(SYN0_FIELD) != null) {
+            float[][] arraySyn0 = mapper.readValue(jsonObject.get(SYN0_FIELD).getAsString(), float[][].class);
+            for (int i = 0; i < 10; ++i) {
+                syn0.putRow(i, Nd4j.create(arraySyn0[i]));
+            }
+        }
+
+        if (jsonObject.get(SYN1_FIELD) != null) {
+            float[][] arraySyn0 = mapper.readValue(jsonObject.get(SYN1_FIELD).getAsString(), float[][].class);
+            for (int i = 0; i < 10; ++i) {
+                syn1.putRow(i, Nd4j.create(arraySyn0[i]));
+            }
+        }
+
+        if (jsonObject.get(SYN1_NEG_FIELD) != null) {
+            float[][] arraySyn0 = mapper.readValue(jsonObject.get(SYN1_NEG_FIELD).getAsString(), float[][].class);
+            for (int i = 0; i < 10; ++i) {
+                syn1Neg.putRow(i, Nd4j.create(arraySyn0[i]));
+            }
+        }
+        WeightLookupTable<T> lookupTable = new InMemoryLookupTable<>();
+        ((InMemoryLookupTable<T>) lookupTable).setSyn0(syn0);
+        ((InMemoryLookupTable<T>) lookupTable).setSyn1(syn1);
+        ((InMemoryLookupTable<T>) lookupTable).setSyn1Neg(syn1Neg);
+        SequenceVectors<T> vectors = new SequenceVectors.Builder<T>(configuration).
+                //lookupTable(lookupTable).
+                vocabCache(vocabCache).
+                build();
+
         return vectors;
     }
 
@@ -2791,17 +2861,5 @@ public class WordVectorSerializer {
 
         OneTimeLogger.info(log, "Projected memory use for model: [{} {}]", String.format("%.2f", value), sfx);
 
-    }
-
-    public String toJson()
-    {
-        JsonObject jsonObject = new JsonObject();
-
-
-        return jsonObject.toString();
-    }
-
-    public static void fromJson(String jsonString)
-    {
     }
 }

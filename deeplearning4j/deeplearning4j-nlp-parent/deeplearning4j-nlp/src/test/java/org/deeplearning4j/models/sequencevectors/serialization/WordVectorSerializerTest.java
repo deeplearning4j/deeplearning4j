@@ -1,6 +1,7 @@
 package org.deeplearning4j.models.sequencevectors.serialization;
 
 import lombok.val;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
@@ -8,6 +9,8 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.*;
 
@@ -31,8 +34,27 @@ public class WordVectorSerializerTest {
 
     @Test
     public void sequenceVectorsCorrect_WhenDeserialized() {
+
+        INDArray syn0 = Nd4j.create(10, 2),
+                syn1 = Nd4j.create(10, 2),
+                syn1Neg = Nd4j.create(10, 2);
+        float[] vector = new float[10];
+        syn0.putRow(0, Nd4j.create(vector));
+        syn1.putRow(0, Nd4j.create(vector));
+        syn1Neg.putRow(0, Nd4j.create(vector));
+
+        InMemoryLookupTable<VocabWord> lookupTable =
+                (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
+                        .useAdaGrad(false).cache(cache)
+                        .build();
+
+        lookupTable.setSyn0(syn0);
+        lookupTable.setSyn1(syn1);
+        lookupTable.setSyn1Neg(syn1Neg);
+
         SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(new VectorsConfiguration()).
                 vocabCache(cache).
+                lookupTable(lookupTable).
                 build();
         SequenceVectors<VocabWord> deser = null;
         try {
@@ -42,6 +64,9 @@ public class WordVectorSerializerTest {
             e.printStackTrace();
             fail();
         }
+
+        assertNotNull(vectors.getConfiguration());
+        assertEquals(vectors.getConfiguration(), deser.getConfiguration());
 
         assertEquals(cache.totalWordOccurrences(),deser.vocab().totalWordOccurrences());
         assertEquals(cache.totalNumberOfDocs(), deser.vocab().totalNumberOfDocs());
