@@ -353,7 +353,7 @@
         <dependency>
             <groupId>org.webjars.npm</groupId>
             <artifactId>cytoscape</artifactId>
-            <version>3.2.20</version>
+            <version>3.3.3</version>
         </dependency>
         <dependency>
             <groupId>org.webjars.bower</groupId>

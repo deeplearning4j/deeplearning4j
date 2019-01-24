@@ -101,6 +101,8 @@ function varTypeToString(varType){
             return "placeholder";
         case nd4j.graph.VarType.VARIABLE:
             return "variable";
+        case nd4j.graph.VarType.ARRAY:
+            return "array";
         default:
             return "" + varType;
     }
@@ -108,8 +110,8 @@ function varTypeToString(varType){
 
 function varShapeToString(/*UIVariable*/ uivar){
     var n = uivar.shapeLength();
-    if(n == 0)
-        return "-";
+    if(n === 0)
+        return "";
     var shape = [];
     for( var i=0; i<n; i++ ){
         var l = uivar.shape(i);

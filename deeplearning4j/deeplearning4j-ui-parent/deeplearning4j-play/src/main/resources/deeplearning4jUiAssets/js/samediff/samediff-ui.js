@@ -106,9 +106,10 @@ function fileSelect(evt) {
                                     id: "edge_" + name + "_" + j,
                                     source: "var-" + name,
                                     target: opName,
+                                    label: ""
                                 };
 
-                                edges.push({data: edgeObj});
+                                edges.push({data: edgeObj, classes:"opoutputedge"});
                             }
                         }
                     }
@@ -154,7 +155,7 @@ function fileSelect(evt) {
                                     var edgeObj = {
                                         source: name,
                                         target: opName,
-                                        label: outVarName + "(" + dt + ")"
+                                        label: outVarName + " (" + dt + ")"
                                     };
                                     edges.push({data: edgeObj, classes:"opoutputedge"});
                                 }
@@ -166,6 +167,32 @@ function fileSelect(evt) {
                 }
 
                 //Also add the outputs:
+                for( var i=0; i<outputs.length; i++ ){
+                    var outName = outputs[i];
+                    var v = mapVars.get(outName);
+                    var opName = v.outputOfOp();
+                    if(opName != null){
+                        var dt = dataTypeToString(v.datatype());
+                        var shape = varShapeToString(v);
+                        var n = "Output: \"" + outName + "\"\n" + varTypeToString(vType) + "\n" + dt + " " + shape;
+
+                        var nodeObj = {
+                            label: n,
+                            id: "out-" + name,
+                            name: "out-" +name
+                        };
+
+                        nodes.push({data: nodeObj, classes:"uivariable output"});
+
+                        //Also add edge:
+                        var edgeObj = {
+                            label: "",
+                            source: opName,
+                            target: "out-" + name
+                        };
+                        edges.push({data: edgeObj, classes:"opoutputedge"});
+                    }
+                }
 
 
             } else if (decoded[0] === "systeminfo") {
@@ -200,7 +227,8 @@ function renderSameDiffGraph() {
             },
             style: fetch('/assets/js/samediff/cytoscape-style.json').then(function(res){
                 return res.json();
-            })
+            }),
+            wheelSensitivity: 0.2
         });
     }
 }
