@@ -22,6 +22,7 @@ public final class OpType {
   public static final byte PAIRWISE_BOOL = 15;
   public static final byte REDUCE_3 = 16;
   public static final byte SUMMARYSTATS = 17;
+  public static final byte SHAPE = 18;
   public static final byte AGGREGATION = 19;
   public static final byte RANDOM = 20;
   public static final byte CUSTOM = 21;

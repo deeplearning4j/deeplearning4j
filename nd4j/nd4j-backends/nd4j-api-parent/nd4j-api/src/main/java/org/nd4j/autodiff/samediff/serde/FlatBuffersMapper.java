@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.*;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
@@ -636,5 +637,35 @@ public class FlatBuffersMapper {
             }
         }
         return out;
+    }
+
+    public static byte toVarType(VariableType variableType){
+        switch (variableType){
+            case VARIABLE:
+                return VarType.VARIABLE;
+            case CONSTANT:
+                return VarType.CONSTANT;
+            case ARRAY:
+                return VarType.ARRAY;
+            case PLACEHOLDER:
+                return VarType.PLACEHOLDER;
+            default:
+                throw new RuntimeException("Unknown variable type: " + variableType);
+        }
+    }
+
+    public static VariableType fromVarType(byte varType){
+        switch (varType){
+            case VarType.VARIABLE:
+                return VariableType.VARIABLE;
+            case VarType.CONSTANT:
+                return VariableType.CONSTANT;
+            case VarType.ARRAY:
+                return VariableType.ARRAY;
+            case VarType.PLACEHOLDER:
+                return VariableType.PLACEHOLDER;
+            default:
+                throw new IllegalStateException("Unknown VarType byte value:" + varType);
+        }
     }
 }
