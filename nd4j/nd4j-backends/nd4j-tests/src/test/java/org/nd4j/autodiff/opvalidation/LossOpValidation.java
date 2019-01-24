@@ -237,22 +237,24 @@ public class LossOpValidation extends BaseOpValidation {
                             break;
                         case "mpwse":
                             expOut = Nd4j.create(labelsArr.size(0));
-                            int pairCount = 0;
-                            for( int i=0; i<labelsArr.size(0); i++ ){
-                                for( int j=0; j<labelsArr.size(1); j++){
-                                    for(int k=j+1; k<labelsArr.size(1); k++){
-                                        double d1 = predictionsArr.getDouble(i, j);
-                                        double d2 = predictionsArr.getDouble(i, k);
-                                        double d3 = labelsArr.getDouble(i, j);
-                                        double d4 = labelsArr.getDouble(i, k);
-                                        double add = ((d1-d2)-(d3-d4));
-                                        add *= add;
-                                        expOut.putScalar(i, expOut.getDouble(i) + add);
-                                        if(i == 0)
-                                            pairCount++;
+                            double n = (double) labelsArr.size(1);
+                            for(int example = 0; example < labelsArr.size(0); example++){
+                                for(int i = 0; i < labelsArr.size(1); i++){
+                                    for(int k = 0; k < labelsArr.size(1); k++){
+                                        if(i != k){
+                                            double y_i = predictionsArr.getDouble(example, i);
+                                            double y_k = predictionsArr.getDouble(example, k);
+                                            double q_i = labelsArr.getDouble(example, i);
+                                            double q_k = labelsArr.getDouble(example, k);
+                                            double add = Math.pow(((y_i-y_k)-(q_i-q_k)), 2);
+                                            expOut.putScalar(example, expOut.getDouble(example) + add);
+                                        }
                                     }
                                 }
                             }
+
+                            expOut.muli(1/((n*(n-1)) / 2));
+
                             loss = sd.lossMeanPairwiseSquaredError("loss", labels, predictions, w);
                             break;
                         case "sparsesoftmax":
