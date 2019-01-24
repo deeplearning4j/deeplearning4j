@@ -234,8 +234,10 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         AggregateCBOW op = new AggregateCBOW(syn0, syn1, null, expTable, null, 0, new int[] {0, 1, 2}, new int[] {4, 5},
                         new int[] {1, 1}, 0, 0, 10, lr, 2L, 10);
+        //Nd4j.getExecutioner().exec(op);
 
-        Nd4j.getExecutioner().exec(op);
+        val sg = new CbowRound(0, new int[] {0, 1, 2}, syn0, syn1, expTable, new int[] {4, 5}, new byte[]{1, 1}, lr, 2L, Nd4j.empty(syn0.dataType()));
+        Nd4j.getExecutioner().exec(sg);
 
         INDArray syn0row_0 = syn0.getRow(0);
         INDArray syn0row_1 = syn0.getRow(1);

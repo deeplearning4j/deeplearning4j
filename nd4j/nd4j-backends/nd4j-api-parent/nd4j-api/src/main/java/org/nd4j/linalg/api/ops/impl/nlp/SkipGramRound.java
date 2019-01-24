@@ -92,5 +92,8 @@ public class SkipGramRound extends DynamicCustomOp {
         // this op is always inplace
         setInPlace(true);
         setInplaceCall(true);
+
+        for (val in:inputArguments)
+            outputArguments.add(in);
     }
 }

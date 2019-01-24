@@ -79,7 +79,7 @@ public class CbowRound extends DynamicCustomOp {
         if (indices != null)
             Preconditions.checkArgument(indices.length == codes.length, "Indices length should be equal to codes length");
 
-        val ctx = indices == null ? Nd4j.empty(DataType.INT) : Nd4j.createFromArray(context);
+        val ctx = Nd4j.createFromArray(context);
         val idx = indices == null ? Nd4j.empty(DataType.INT) : Nd4j.createFromArray(indices);
         val code = codes == null ? Nd4j.empty(DataType.BYTE) : Nd4j.createFromArray(codes);
         val lr = Nd4j.scalar(alpha);
@@ -109,6 +109,9 @@ public class CbowRound extends DynamicCustomOp {
         // this op is always inplace
         setInPlace(true);
         setInplaceCall(true);
+
+        for (val in:inputArguments)
+            outputArguments.add(in);
     }
 
     @Override
