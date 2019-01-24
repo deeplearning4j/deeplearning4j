@@ -94,16 +94,19 @@ NDArray::NDArray(const NDArray& other) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::lazyAllocateBuffer(){
-    if (lengthOf() > 0)
-    if (_buffer == nullptr && !this->isEmpty()) {
-        //int8_t* pB = const_cast<int8_t*>(_buffer);
-        ALLOCATE(_buffer, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
-        //const_cast<NDArray*>(this)->_buffer = pB;
-        _isBuffAlloc = true;
-        syncToHost();
+void NDArray::lazyAllocateBuffer() const {
+    
+    if (lengthOf() > 0) {
+        NDArray* constThis = const_cast<NDArray*>(this);
+        if (_buffer == nullptr && !this->isEmpty()) {
+            //int8_t* pB = const_cast<int8_t*>(_buffer);
+            ALLOCATE(constThis->_buffer, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
+            //const_cast<NDArray*>(this)->_buffer = pB;
+            constThis->_isBuffAlloc = true;
+            syncToHost();
+        }
     }
-}
+}   
 
 ////////////////////////////////////////////////////////////////////////
 // scalar constructor
