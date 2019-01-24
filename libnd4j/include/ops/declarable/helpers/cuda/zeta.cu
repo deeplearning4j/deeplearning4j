@@ -25,11 +25,11 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    _CUDA_HD const int maxIter = 1000000;							// max number of loop iterations
-    _CUDA_HD const double machep =  1.11022302462515654042e-16;
+    const int maxIter = 1000000;							// max number of loop iterations
+    const double machep =  1.11022302462515654042e-16;
 
     // expansion coefficients for Euler-Maclaurin summation formula (2k)! / B2k, where B2k are Bernoulli numbers
-    _CUDA_HD const double coeff[] = { 12.0,-720.0,30240.0,-1209600.0,47900160.0,-1.8924375803183791606e9,7.47242496e10,-2.950130727918164224e12, 1.1646782814350067249e14, -4.5979787224074726105e15, 1.8152105401943546773e17, -7.1661652561756670113e18};
+    const double coeff[] = { 12.0,-720.0,30240.0,-1209600.0,47900160.0,-1.8924375803183791606e9,7.47242496e10,-2.950130727918164224e12, 1.1646782814350067249e14, -4.5979787224074726105e15, 1.8152105401943546773e17, -7.1661652561756670113e18};
 
 
     //////////////////////////////////////////////////////////////////////////

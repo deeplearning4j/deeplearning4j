@@ -53,66 +53,12 @@ const double weights[18] = {0.0055657196642445571,
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
-// modified Lentz’s algorithm for continued fractions, 
-// reference: Lentz, W.J. 1976, “Generating Bessel Functions in Mie Scattering Calculations Using Continued Fractions,” 
-template <typename T> 
-static T continFract(const T a, const T b, const T x) {	
-    return (T) 0;
-}
-
-///////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////
-// evaluates incomplete beta integral using Gauss-Legendre quadrature method
-template <typename T>
-static T gausLegQuad(const T a, const T b, const T x) {
-	return (T) 0;
-}
-
-
-///////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////
-// evaluates incomplete beta function for positive a and b, and x between 0 and 1.
-template <typename T> 
-static T betaIncTA(T a, T b, T x) {
-	return (T) 0.0f;
-}
-
-template<typename T>
-NDArray betaIncT(const NDArray& a, const NDArray& b, const NDArray& x) {
-	auto result = NDArray(&x, false, x.getContext());
-
-	return result;
-}
-
-///////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
 NDArray betaInc(const NDArray& a, const NDArray& b, const NDArray& x) {
 	auto xType = a.dataType();
-	BUILD_SINGLE_SELECTOR(xType, return betaIncT, (a, b, x), FLOAT_TYPES);
+	//BUILD_SINGLE_SELECTOR(xType, return betaIncT, (a, b, x), FLOAT_TYPES);
 	return a;
 }
-
-
-template float   continFract<float>  (const float   a, const float   b, const float   x);
-template float16 continFract<float16>(const float16 a, const float16 b, const float16 x);
-template bfloat16 continFract<bfloat16>(const bfloat16 a, const bfloat16 b, const bfloat16 x);
-template double  continFract<double> (const double  a, const double  b, const double  x);
-
-template float   gausLegQuad<float>  (const float   a, const float   b, const float   x);
-template float16 gausLegQuad<float16>(const float16 a, const float16 b, const float16 x);
-template bfloat16 gausLegQuad<bfloat16>(const bfloat16 a, const bfloat16 b, const bfloat16 x);
-template double  gausLegQuad<double> (const double  a, const double  b, const double  x);
-
-template float   betaIncTA<float>  (const float   a, const float   b, const float   x);
-template float16 betaIncTA<float16>(const float16 a, const float16 b, const float16 x);
-template bfloat16 betaIncTA<bfloat16>(const bfloat16 a, const bfloat16 b, const bfloat16 x);
-template double  betaIncTA<double> (const double  a, const double  b, const double  x);
-
-template NDArray betaIncT<float>  (const NDArray&   a, const NDArray&   b, const NDArray&  x);
-template NDArray betaIncT<float16>(const NDArray& a, const NDArray& b, const NDArray& x);
-template NDArray betaIncT<bfloat16>(const NDArray& a, const NDArray& b, const NDArray& x);
-template NDArray betaIncT<double> (const NDArray&  a, const NDArray&  b, const NDArray& x);
 
 
 }
