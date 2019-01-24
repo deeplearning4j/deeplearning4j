@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.factory.Nd4j;
@@ -312,12 +315,109 @@ public class LogFileWriter {
         int outputsOffset = UIGraphStructure.createInputsVector(fbb, outputListStrOffsets);
 
         //Create variables list
-        int outputsListOffset = -1;
+        Map<String,Variable> varMap = sd.getVariables();
+        int[] varListOffsets = new int[varMap.size()];
+        int count = 0;
+        for(Map.Entry<String,Variable> e : varMap.entrySet()){
+            int intPair = 0;
+            int name = fbb.createString(e.getKey());
+
+            String outputOfOp = e.getValue().getOutputOfOp();
+            int outputOfOpIdx = 0;
+            if(outputOfOp != null)
+                outputOfOpIdx = fbb.createString(outputOfOp);
+
+            List<String> inputsForOps = e.getValue().getInputsForOp();
+            int inputsForOpIdx = 0;
+            if(inputsForOps != null && !inputsForOps.isEmpty()){
+                int[] idx = encodeStrings(fbb, inputsForOps);
+                inputsForOpIdx = UIVariable.createInputsForOpVector(fbb, idx);
+            }
+
+            List<String> controlDepsForOp = e.getValue().getControlDepsForOp();
+            int controlDepsForOpIdx = 0;
+            if(controlDepsForOp != null && !controlDepsForOp.isEmpty()){
+                int[] idx = encodeStrings(fbb, controlDepsForOp);
+                controlDepsForOpIdx = UIVariable.createInputsForOpVector(fbb, idx);
+            }
+
+            List<String> controlDepsForVar = e.getValue().getControlDepsForVar();
+            int controlDepsForVarIdx = 0;
+            if(controlDepsForVar != null && !controlDepsForVar.isEmpty()){
+                int[] idx = encodeStrings(fbb, controlDepsForVar);
+                controlDepsForVarIdx = UIVariable.createInputsForOpVector(fbb, idx);
+            }
+
+            int uiVariableIdx = UIVariable.createUIVariable(fbb,
+                    intPair,
+                    name,
+                    FlatBuffersMapper.toVarType(e.getValue().getVariable().getVariableType()),
+                    outputOfOpIdx,
+                    inputsForOpIdx,
+                    controlDepsForOpIdx,
+                    controlDepsForVarIdx,
+                    0       //TODO gradient variable
+            );
+
+            varListOffsets[count++] = uiVariableIdx;
+        }
+        int outputsListOffset = UIGraphStructure.createVariablesVector(fbb, varListOffsets);
+
 
         //Create ops list
-        int opsListOffset = -1;
+        Map<String,SameDiffOp> opMap = sd.getOps();
+        count = 0;
+        int[] opListOffsets = new int[opMap.size()];
+        for(Map.Entry<String,SameDiffOp> e : opMap.entrySet()){
+
+            int nameIdx = fbb.createString(e.getKey());
+            String opName = e.getValue().getOp().opName();
+            int opNameIdx = fbb.createString(opName);
+
+            //Op input variables
+            int inputsIdx = 0;
+            List<String> opInputs = e.getValue().getInputsToOp();
+            if(opInputs != null && !opInputs.isEmpty()){
+                int[] idx = encodeStrings(fbb, opInputs);
+                inputsIdx = UIOp.createInputsVector(fbb, idx);
+            }
+
+            //Op output variables
+            int outputsIdx = 0;
+            List<String> opOutputs = e.getValue().getOutputsOfOp();
+            if(opOutputs != null && !opOutputs.isEmpty()){
+                int[] idx = encodeStrings(fbb, opOutputs);
+                outputsIdx = UIOp.createOutputsVector(fbb, idx);
+            }
+
+            int controlDepIdxs = 0;
+            List<String> opCDeps = e.getValue().getControlDeps();
+            if(opCDeps != null && !opCDeps.isEmpty()){
+                int[] idx = encodeStrings(fbb, opCDeps);
+                controlDepIdxs = UIOp.createControlDepsVector(fbb, idx);
+            }
+
+            opListOffsets[count++] = UIOp.createUIOp(fbb,
+                    nameIdx,
+                    opNameIdx,
+                    inputsIdx,
+                    outputsIdx,
+                    controlDepIdxs);
+
+        }
+        int opsListOffset = UIGraphStructure.createOpsVector(fbb, opListOffsets);
 
         return UIGraphStructure.createUIGraphStructure(fbb, inputsOffset, inputPairOffset, outputsOffset, outputsListOffset, opsListOffset);
+    }
+
+    private int[] encodeStrings(FlatBufferBuilder fbb, List<String> list){
+        if(list == null || list.isEmpty())
+            return null;
+        int[] idx = new int[list.size()];
+        for( int i=0; i<idx.length; i++ ){
+            idx[i] = fbb.createString(list.get(i));
+        }
+        return idx;
     }
 
     private long append(FlatBufferBuilder h, FlatBufferBuilder c) throws IOException {

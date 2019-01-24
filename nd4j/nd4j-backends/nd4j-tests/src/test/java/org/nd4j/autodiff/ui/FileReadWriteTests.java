@@ -8,6 +8,10 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.graph.*;
 import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -18,7 +22,9 @@ import org.nd4j.linalg.primitives.Pair;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -62,6 +68,7 @@ public class FileReadWriteTests {
         assertEquals(fileLength, read.getFileOffset());
 
         //Check graph structure:
+            //Inputs
         UIGraphStructure s = (UIGraphStructure) read.getData().get(0).getSecond();
         List<String> l = new ArrayList<>(s.inputsLength());
         for (int i = 0; i < s.inputsLength(); i++) {
@@ -69,11 +76,48 @@ public class FileReadWriteTests {
         }
         assertEquals(sd.inputs(), l);
 
+            //Outputs
         List<String> outputs = new ArrayList<>(s.outputsLength());
         for (int i = 0; i < s.outputsLength(); i++) {
             outputs.add(s.outputs(i));
         }
         assertEquals(sd.outputs(), outputs);
+
+            //Check variables
+        int numVars = s.variablesLength();
+        List<UIVariable> varsList = new ArrayList<>(numVars);
+        Map<String,UIVariable> varsMap = new HashMap<>();
+        for( int i=0; i<numVars; i++ ){
+            UIVariable uivar = s.variables(i);
+            varsList.add(uivar);
+            String name = uivar.name();
+            varsMap.put(name, uivar);
+        }
+
+        Map<String,Variable> sdVarsMap = sd.getVariables();
+        assertEquals(sdVarsMap.keySet(), varsMap.keySet());
+        for(String vName : sdVarsMap.keySet()){
+            VariableType vt = sdVarsMap.get(vName).getVariable().getVariableType();
+            VariableType vt2 = FlatBuffersMapper.fromVarType(varsMap.get(vName).type());
+            assertEquals(vt, vt2);
+
+            //TODO check inputs to, output of, etc
+        }
+
+        //Check ops
+        int numOps = s.opsLength();
+        List<UIOp> opsList = new ArrayList<>(numVars);
+        Map<String,UIOp> opMap = new HashMap<>();
+        for( int i=0; i<numOps; i++ ){
+            UIOp uiop = s.ops(i);
+            opsList.add(uiop);
+            String name = uiop.name();
+            opMap.put(name, uiop);
+        }
+
+        Map<String,SameDiffOp> sdOpsMap = sd.getOps();
+        assertEquals(sdOpsMap.keySet(), opMap.keySet());
+        //TODO check inputs, outputs etc
 
         assertEquals(UIInfoType.START_EVENTS, read.getData().get(1).getFirst().infoType());
 
