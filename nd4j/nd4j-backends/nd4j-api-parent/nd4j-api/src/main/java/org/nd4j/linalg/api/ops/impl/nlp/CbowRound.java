@@ -19,5 +19,9 @@ package org.nd4j.linalg.api.ops.impl.nlp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 public class CbowRound extends DynamicCustomOp {
+    @Override
+    public String opName() {
+        return "cbow";
+    }
 
 }
