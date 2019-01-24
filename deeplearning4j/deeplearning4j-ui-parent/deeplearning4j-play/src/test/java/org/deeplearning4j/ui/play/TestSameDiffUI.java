@@ -17,6 +17,7 @@
 package org.deeplearning4j.ui.play;
 
 import org.deeplearning4j.ui.api.UIServer;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -25,8 +26,10 @@ import org.nd4j.linalg.api.buffer.DataType;
 
 import java.io.File;
 
+@Ignore
 public class TestSameDiffUI {
 
+    @Ignore
     @Test
     public void testSameDiff() throws Exception {
 
