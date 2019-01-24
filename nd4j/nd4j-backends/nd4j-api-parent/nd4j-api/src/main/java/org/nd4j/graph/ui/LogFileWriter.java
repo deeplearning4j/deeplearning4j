@@ -353,14 +353,17 @@ public class LogFileWriter {
             byte dtVal = FlatBuffersMapper.getDataTypeAsByte(dt);
 
             long[] shape = e.getValue().getVariable().getShape();
+            int shapeOffset = 0;
             if(shape != null){
-
+                shapeOffset = UIVariable.createShapeVector(fbb, shape);
             }
 
             int uiVariableIdx = UIVariable.createUIVariable(fbb,
                     intPair,
                     name,
                     FlatBuffersMapper.toVarType(e.getValue().getVariable().getVariableType()),
+                    dtVal,
+                    shapeOffset,
                     outputOfOpIdx,
                     inputsForOpIdx,
                     controlDepsForOpIdx,

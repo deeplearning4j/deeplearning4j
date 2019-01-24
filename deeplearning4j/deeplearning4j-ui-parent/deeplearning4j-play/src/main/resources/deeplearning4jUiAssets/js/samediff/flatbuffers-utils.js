@@ -106,3 +106,62 @@ function varTypeToString(varType){
     }
 }
 
+function varShapeToString(/*UIVariable*/ uivar){
+    var n = uivar.shapeLength();
+    if(n == 0)
+        return "-";
+    var shape = [];
+    for( var i=0; i<n; i++ ){
+        var l = uivar.shape(i);
+        var s = l.toString();
+        var s2 = l.toFloat64().toString();
+        shape.push(s2);
+    }
+    return "[" + shape.toString() + "]";
+}
+
+function dataTypeToString(dataTypeByte){
+    switch (dataTypeByte){
+        case nd4j.graph.DataType.INHERIT:
+            return "INHERIT";
+        case nd4j.graph.DataType.BOOL:
+            return "BOOL";
+        case nd4j.graph.DataType.FLOAT8:
+            return "FLOAT8";
+        case nd4j.graph.DataType.HALF:
+            return "HALF";
+        case nd4j.graph.DataType.HALF2:
+            return "HALF2";
+        case nd4j.graph.DataType.FLOAT:
+            return "FLOAT";
+        case nd4j.graph.DataType.DOUBLE:
+            return "DOUBLE";
+        case nd4j.graph.DataType.INT8:
+            return "INT8";
+        case nd4j.graph.DataType.INT16:
+            return "INT16";
+        case nd4j.graph.DataType.INT32:
+            return "INT32";
+        case nd4j.graph.DataType.INT64:
+            return "INT64";
+        case nd4j.graph.DataType.UINT8:
+            return "UINT8";
+        case nd4j.graph.DataType.UINT16:
+            return "UINT16";
+        case nd4j.graph.DataType.UINT32:
+            return "UINT32";
+        case nd4j.graph.DataType.UINT64:
+            return "UINT64";
+        case nd4j.graph.DataType.QINT8:
+            return "QINT8";
+        case nd4j.graph.DataType.QINT16:
+            return "QINT16";
+        case nd4j.graph.DataType.BFLOAT16:
+            return "BFLOAT16";
+        case nd4j.graph.DataType.UTF8:
+            return "UTF8";
+        default:
+            return "" + dataTypeByte;
+    }
+}
+

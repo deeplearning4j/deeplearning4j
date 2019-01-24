@@ -78,15 +78,26 @@ function fileSelect(evt) {
                     //Add variables/constants/placeholders as a node
                     var vType = v.type();
                     if(vType === nd4j.graph.VarType.CONSTANT || vType === nd4j.graph.VarType.PLACEHOLDER || vType === nd4j.graph.VarType.VARIABLE ){
-
+                        var dt = dataTypeToString(v.datatype());
+                        var shape = varShapeToString(v);
+                        var n = "\"" + name + "\"\n" + varTypeToString(vType) + "\n" + dt + " " + shape;
 
                         var nodeObj = {
-                            label: name + "\n(" + varTypeToString(vType) + ")",
+                            label: n,
                             id: "var-" + name,
                             name: "var-" +name
-                            //TODO Node styling
                         };
-                        nodes.push({data: nodeObj});
+
+                        var renderStyle = "";
+                        if(vType === nd4j.graph.VarType.VARIABLE){
+                            renderStyle = "uivariable variable";
+                        } else if(vType === nd4j.graph.VarType.PLACEHOLDER){
+                            renderStyle = "uivariable placeholder";
+                        } else if(vType === nd4j.graph.VarType.CONSTANT){
+                            renderStyle = "uivariable constant";
+                        }
+
+                        nodes.push({data: nodeObj, classes: renderStyle});
 
                         if(v.inputsForOpLength() > 0){
                             for(var j=0; j<v.inputsForOpLength(); j++ ){
@@ -95,8 +106,6 @@ function fileSelect(evt) {
                                     id: "edge_" + name + "_" + j,
                                     source: "var-" + name,
                                     target: opName,
-                                    faveColor: '#A9A9A9',
-                                    strength: 100
                                 };
 
                                 edges.push({data: edgeObj});
@@ -107,6 +116,7 @@ function fileSelect(evt) {
                     count += 1;
                 }
 
+                //Op nodes
                 var mapOpNameInteger = new Map();
                 var mapOp = new Map();
                 count = 0;
@@ -121,9 +131,8 @@ function fileSelect(evt) {
                         label: name + "\n(" + opName + ")",
                         id: name,
                         name: name
-                        //TODO Node styling
                     };
-                    nodes.push({data: nodeObj});
+                    nodes.push({data: nodeObj, classes:"uiop"});
 
 
                     //Add edges between ops:
@@ -137,15 +146,17 @@ function fileSelect(evt) {
                             //Op -> outVar -> otherOp exists
                             //But we'll represent this as one edge in the graph only
 
+                            var dt = dataTypeToString(outVar.datatype());
+
                             if(outVarInputCount > 0){
                                 for( var k=0; k<outVarInputCount; k++ ){
                                     var opName = outVar.inputsForOp(k);
                                     var edgeObj = {
                                         source: name,
                                         target: opName,
-                                        label: outVarName
+                                        label: outVarName + "(" + dt + ")"
                                     };
-                                    edges.push({data: edgeObj, classes: 'autorotate'});
+                                    edges.push({data: edgeObj, classes:"opoutputedge"});
                                 }
                             }
                         }
@@ -153,6 +164,9 @@ function fileSelect(evt) {
 
                     count += 1;
                 }
+
+                //Also add the outputs:
+
 
             } else if (decoded[0] === "systeminfo") {
 
@@ -184,35 +198,9 @@ function renderSameDiffGraph() {
                 nodes: nodes,
                 edges: edges
             },
-
-            style: [ // the stylesheet for the graph
-                {
-                    selector: 'node',
-                    style: {
-                        'background-color': '#666',
-                        'label': 'data(id)'
-                    }
-                },
-                {
-                    selector: "edge",
-                    style: {
-                        'curve-style': 'bezier',        //Necessary for arrow rendering, default style doesn't have them
-                        'width': 2,
-                        'line-color': '#ccc',
-                        'target-arrow-shape': 'triangle',
-                        'source-arrow-shape': 'none',
-                        'source-arrow-color': '#A9A9A9',
-                        'target-arrow-color': '#A9A9A9'
-                    }
-                },
-                {
-                    "selector": "edge[label]",
-                    "style": {
-                        "label": "data(label)",
-                        "width": 3
-                    }
-                }
-            ]
+            style: fetch('/assets/js/samediff/cytoscape-style.json').then(function(res){
+                return res.json();
+            })
         });
     }
 }
