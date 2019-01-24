@@ -217,8 +217,11 @@ function renderSameDiffGraph() {
             container: document.getElementById('graphdiv'), // container to render in
 
             layout: {
-                name: 'dagre',
-                padding: 10
+                name: samediffgraphlayout,
+                padding: 10,
+                klay : {
+                    direction: klaylayout
+                }
             },
 
             elements: {
@@ -231,4 +234,19 @@ function renderSameDiffGraph() {
             wheelSensitivity: 0.2
         });
     }
+}
+
+samediffgraphlayout = "dagre";
+klaylayout = "DOWN";
+function setLayout(newLayout){
+    //spread( cytoscape );
+    if(newLayout === "klay_down"){
+        klaylayout = "DOWN"
+        newLayout = "klay";
+    } else if(newLayout === "klay_lr"){
+        klaylayout = "RIGHT";
+        newLayout = "klay";
+    }
+    samediffgraphlayout = newLayout;
+    renderSameDiffGraph();
 }
