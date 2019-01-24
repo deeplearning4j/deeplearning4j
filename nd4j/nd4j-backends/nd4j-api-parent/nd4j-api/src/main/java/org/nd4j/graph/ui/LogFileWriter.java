@@ -11,6 +11,7 @@ import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.*;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -346,6 +347,14 @@ public class LogFileWriter {
             if(controlDepsForVar != null && !controlDepsForVar.isEmpty()){
                 int[] idx = encodeStrings(fbb, controlDepsForVar);
                 controlDepsForVarIdx = UIVariable.createInputsForOpVector(fbb, idx);
+            }
+
+            DataType dt = e.getValue().getVariable().dataType();
+            byte dtVal = FlatBuffersMapper.getDataTypeAsByte(dt);
+
+            long[] shape = e.getValue().getVariable().getShape();
+            if(shape != null){
+
             }
 
             int uiVariableIdx = UIVariable.createUIVariable(fbb,
