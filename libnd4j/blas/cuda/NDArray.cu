@@ -94,10 +94,13 @@ NDArray::NDArray(const NDArray& other) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::lazyAllocateBuffer() const {
+void NDArray::lazyAllocateBuffer(){
+    if (lengthOf() > 0)
     if (_buffer == nullptr && !this->isEmpty()) {
-        int8_t* pB = const_cast<int8_t*>(_buffer);
-        ALLOCATE(pB, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
+        //int8_t* pB = const_cast<int8_t*>(_buffer);
+        ALLOCATE(_buffer, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
+        //const_cast<NDArray*>(this)->_buffer = pB;
+        _isBuffAlloc = true;
         syncToHost();
     }
 }
@@ -857,6 +860,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             }
             if (_isShapeAlloc)
                 RELEASE(this->_shapeInfo, this->_context->getWorkspace());
+
             if (_isShapeDAlloc)
                 RELEASE_SPECIAL(_shapeInfoD, this->_context->getWorkspace());
 
@@ -928,12 +932,18 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         
         if(isEmpty()) return;        
         
-        if (_buffer == nullptr) {
-            NDArray* constThis =  const_cast<NDArray*>(this); // not recommended solution
-            ALLOCATE(constThis->_buffer, _context->getWorkspace(), (getOffset(_length - 1) + 1) * sizeOfT(), int8_t);
-            constThis->_isBuffAlloc = true;
+        if (_buffer == nullptr && !this->isEmpty()) {
+//            const_cast<NDArray*>(this)->lazyAllocateBuffer();
+            //NDArray* constThis =  const_cast<NDArray*>(this); // not recommended solution
+            //ALLOCATE(constThis->_buffer, _context->getWorkspace(), (getOffset(_length - 1) + 1) * sizeOfT(), int8_t);
+            //constThis->_isBuffAlloc = true;
+            throw std::runtime_error("Cannot sync to host due host buffer is not allocated yet.");
         }
-        
+        else if (lengthOf() == 0) {
+            printf("sync with zero lenght is not needed.");
+            return;
+        }
+
         if (ews() != 1) {
             #pragma parallel for schedule(guided)
             for (Nd4jLong i = 0; i < _length; i++) {
@@ -1000,7 +1010,9 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 if (!this->isEmpty() && !other.isEmpty()) {
                     BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign,
                                           (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
+                    if (!isActualOnDeviceSide())
                     syncToDevice();
+                    tickWriteHost();
                 }
                 else if (this->isEmpty() != other.isEmpty()) { // need assign non-empty scalar to empty
                     if (other.isEmpty()) {
@@ -1012,6 +1024,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
                 }
             }
             else {
+                if (!isActualOnDeviceSide())
                 syncToDevice();
                 NativeOpExecutioner::execScalar(_context, scalar::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr);
             }
@@ -1032,7 +1045,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         else 
             NativeOpExecutioner::execTransformAny(_context, transform::Assign, nullptr, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr, _shapeInfo, _bufferD, _shapeInfoD, nullptr, nullptr, nullptr);
 
-        syncToHost();
+        //syncToHost();
 
         tickWriteDevice();
     }
@@ -1112,7 +1125,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         if (i >= _length)
             throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
-        
+
+        const_cast<NDArray*>(this)->lazyAllocateBuffer();
         if(!isActualOnHostSide())
             syncToHost();
 
@@ -2202,11 +2216,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
 ////////////////////////////////////////////////////////////////////////
 // default destructor
 NDArray::~NDArray() noexcept {
-
-    if (_isBuffAlloc && _context->getWorkspace() == nullptr && _buffer != nullptr) {
-        if (!isS()) {
-            delete[] _buffer;
-        } else {
+    if (isS()) {
+        if (_isBuffAlloc && _context->getWorkspace() == nullptr && _buffer != nullptr) {
             for (int e = 0; e < lengthOf(); e++) {
                 auto t = reinterpret_cast<utf8string**>(_buffer);
                 delete t[e];
@@ -2214,9 +2225,13 @@ NDArray::~NDArray() noexcept {
             delete[] _buffer;
         }
     }
+    else
+    if (_isBuffAlloc)
+        RELEASE(_buffer, _context->getWorkspace());
 
-    if (_isShapeAlloc  && _context->getWorkspace() == nullptr && _shapeInfo != nullptr)
-        delete[] _shapeInfo;
+    if (_isShapeAlloc)
+        RELEASE(_shapeInfo, _context->getWorkspace());
+
 
     if (_isShapeDAlloc)
         RELEASE_SPECIAL(_shapeInfoD, _context->getWorkspace());
@@ -2297,7 +2312,7 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
         } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
             return false;
 
-        NDArray tmp(nd4j::DataType::FLOAT32, _context); // scalar = 0
+        NDArray tmp = NDArrayFactory::create<double>(0LL, _context); // scalar = 0
 
         if(!isActualOnDeviceSide()) 
             syncToDevice();
@@ -2311,7 +2326,7 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
         if (res != 0)
             throw cuda_exception::build("NDArray::equalsTo failed", res);
         
-        if (tmp.e<int>(0) > 0)
+        if (tmp.e<Nd4jLong>(0) > 0LL)
             return false;
 
         return true;
@@ -2596,6 +2611,9 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
     template <typename T>
     void NDArray::p(const Nd4jLong i, const T value) {
         
+        //if (!isActualOnHostSide())
+        //    syncToHost();
+        lazyAllocateBuffer();
         if (!isActualOnHostSide())
             syncToHost();
 
@@ -3087,8 +3105,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         ALLOCATE(newBuff, _context->getWorkspace(), shape::length(newShapeInfo) * sizeOfT(), int8_t);
         // assign new shape and new buffer to resulting array
         NDArray result(newBuff, newShapeInfo, _context, true, true);
-        if (!isActualOnHostSide())
-            syncToHost();
+//        if (!isActualOnHostSide())
+//            syncToHost();
         // fill newBuff, loop through all elements of newBuff
         // looping through _buffer goes automatically by means of getSubArrayIndex applying
         const auto resultLen = result.lengthOf();

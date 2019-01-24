@@ -1461,7 +1461,7 @@ namespace nd4j {
 
         FORCEINLINE bool operator!=(const NDArray &other) const;
 
-        void lazyAllocateBuffer() const;
+        void lazyAllocateBuffer();
     };
 
 

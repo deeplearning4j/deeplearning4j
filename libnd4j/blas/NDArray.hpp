@@ -356,12 +356,10 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
             throw std::runtime_error("NDArray::linspace: you can't use this method on String array!");
 
         Nd4jLong numElements = this->lengthOf();
-        if (_buffer == nullptr)
-            lazyAllocateBuffer();
+        lazyAllocateBuffer();
         for (Nd4jLong e = 0; e < numElements; e++) {
             this->p(e, start + (step * e));
         }
-        syncToDevice();
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1331,10 +1329,12 @@ NDArray NDArray::transp() const {
     //////////////////////////////////////////////////////////////////////////
     NDArray* NDArray::permute(const int* dimensions, const int rank) const {
         // evaluate shapeInfo for output (permuted) array ret
-        lazyAllocateBuffer();
+        const_cast<NDArray*>(this)->lazyAllocateBuffer();
+        int8_t* buffer = _buffer;
+        //if (buffer == nullptr)
         auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, _context->getWorkspace());
         // create array to be returned
-        auto ret = new NDArray(_buffer, shapeInfoNew, _context, false, true);
+        auto ret = new NDArray(buffer, shapeInfoNew, _context, false, true);
 	    ret->_isView = true;
 
         return ret;

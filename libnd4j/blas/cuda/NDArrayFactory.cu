@@ -563,15 +563,20 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
     template <typename T>
     NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<T> &data, nd4j::graph::LaunchContext* context) {
         auto res = create<T>(order, shape, context);
-        res.lazyAllocateBuffer();
+        int8_t* buffer = nullptr;
+        size_t allocationSize = res.lengthOf() * res.sizeOfT();
+        ALLOCATE(buffer, context->getWorkspace(), allocationSize, int8_t);
+        res.setBuffer(buffer);
+        //res.lazyAllocateBuffer();
         //memcpy(res.buffer(), data.data(), res.lengthOf() * res.sizeOfT());
-        memcpyFromVector<T>(res.getBuffer(), data);
+        memcpyFromVector<T>(res.buffer(), data);
         size_t bufferSize = data.size() * sizeof(T);
         size_t shapeSize = shape::shapeInfoByteLength(res.shapeInfo());//shape.size() * sizeof(Nd4jLong);
         cudaMemcpy(res.specialBuffer(), res.buffer(), bufferSize, cudaMemcpyHostToDevice);
         cudaMemcpy(res.specialShapeInfo(), res.shapeInfo(), shapeSize, cudaMemcpyHostToDevice);
         res.tickWriteDevice();
-        res.tickReadHost();
+        res.triggerAllocationFlag(true, true);
+//        res.tickReadHost();
         return res;
     }
     template NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double> &data, nd4j::graph::LaunchContext* context);
