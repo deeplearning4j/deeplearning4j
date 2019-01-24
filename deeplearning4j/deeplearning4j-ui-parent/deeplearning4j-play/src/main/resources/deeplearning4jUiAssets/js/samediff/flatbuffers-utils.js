@@ -31,4 +31,78 @@ function byteArrayToInt(byteArray) {
         value = (value * 256) + byteArray[i];
     }
     return value;
-};
+}
+
+function decodeStaticInfo(headerContentBytes, bufferContentBytes){
+
+    var headerBuffer = new flatbuffers.ByteBuffer(headerContentBytes);
+    var contentBuffer = new flatbuffers.ByteBuffer(bufferContentBytes);
+
+
+    var header = nd4j.graph.UIStaticInfoRecord.getRootAsUIStaticInfoRecord(headerBuffer);
+    var infoType = header.infoType();
+    switch(infoType){
+        case nd4j.graph.UIInfoType.GRAPH_STRUCTURE:
+            var graphStructure = nd4j.graph.UIGraphStructure.getRootAsUIGraphStructure(contentBuffer);
+            return ["graph", graphStructure];
+        case nd4j.graph.UIInfoType.SYTEM_INFO:
+            var info = nd4j.graph.UISystemInfo.getRootAsUISystemInfo(contentBuffer);
+            return ["systeminfo", info];
+        case nd4j.graph.UIInfoType.START_EVENTS:
+            return ["startevents", null];
+        default:
+            console.log("Unknown static information type: " + infoType);
+            return null;
+
+    }
+}
+
+function uiGraphGetInputs(/*UIGraphStructure*/ graph){
+    var inLength = graph.inputsLength();
+    var inputs = [];
+    for( var i=0; i<inLength; i++ ){
+        inputs.push(graph.inputs(i));
+    }
+    return inputs;
+}
+
+function uiGraphGetOutputs(/*UIGraphStructure*/ graph){
+    var inLength = graph.outputsLength();
+    var outputs = [];
+    for( var i=0; i<inLength; i++ ){
+        outputs.push(graph.outputs(i));
+    }
+    return outputs;
+}
+
+function uiGraphGetVariables(/*UIGraphStructure*/ graph){
+    var varsLength = graph.variablesLength();
+    var vars = [];
+    for( var i=0; i<varsLength; i++ ){
+        vars.push(graph.variables(i));
+    }
+    return vars;
+}
+
+function uiGraphGetOps(/*UIGraphStructure*/ graph){
+    var opsLength = graph.opsLength();
+    var ops = [];
+    for( var i=0; i<opsLength; i++ ){
+        ops.push(graph.ops(i));
+    }
+    return ops;
+}
+
+function varTypeToString(varType){
+    switch (varType){
+        case nd4j.graph.VarType.CONSTANT:
+            return "constant";
+        case nd4j.graph.VarType.PLACEHOLDER:
+            return "placeholder";
+        case nd4j.graph.VarType.VARIABLE:
+            return "variable";
+        default:
+            return "" + varType;
+    }
+}
+
