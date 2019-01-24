@@ -113,8 +113,9 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         AggregateSkipGram op = new AggregateSkipGram(syn0, syn1, syn1Neg, expTable, null, idxSyn0, new int[] {1},
                         new int[] {0}, 0, 0, 10, lr, 1L, 10);
-
-        Nd4j.getExecutioner().exec(op);
+        //Nd4j.getExecutioner().exec(op);
+        val sg = new SkipGramRound(idxSyn0, syn0, syn1, expTable, new int[] {1}, new byte[]{0}, lr, 1L, Nd4j.empty(syn0.dataType()));
+        Nd4j.getExecutioner().exec(sg);
 
         log.info("syn0row after: {}", Arrays.toString(syn0row.dup().data().asFloat()));
 
@@ -145,8 +146,9 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         AggregateSkipGram op = new AggregateSkipGram(syn0, syn1, null, expTable, null, idxSyn0, new int[] {1, 2},
                         new int[] {0, 1}, 0, 0, 10, lr, 1L, 10);
-
-        Nd4j.getExecutioner().exec(op);
+        //Nd4j.getExecutioner().exec(op);
+        val sg = new SkipGramRound(idxSyn0, syn0, syn1, expTable, new int[] {1, 2}, new byte[]{0, 1}, lr, 1L, Nd4j.empty(syn0.dataType()));
+        Nd4j.getExecutioner().exec(sg);
 
         /*
             Since expTable contains all-equal values, and only difference for ANY index is code being 0 or 1, syn0 row will stay intact,
@@ -210,8 +212,10 @@ public class HierarchicSoftmaxTests extends BaseNd4jTest {
 
         AggregateSkipGram op = new AggregateSkipGram(syn0, syn1, syn1Neg, expTable, table, idxSyn0, new int[] {},
                         new int[] {}, 1, 3, 10, lr, 2L, 10);
+        //Nd4j.getExecutioner().exec(op);
 
-        Nd4j.getExecutioner().exec(op);
+        val sg = new SkipGramRound(idxSyn0, 3, syn0, syn1Neg, expTable, table, 1, lr, 2L, Nd4j.empty(syn0.dataType()));
+        Nd4j.getExecutioner().exec(sg);
 
         log.info("syn0row1 after: {}", Arrays.toString(syn0.getRow(idxSyn0).dup().data().asFloat()));
 
