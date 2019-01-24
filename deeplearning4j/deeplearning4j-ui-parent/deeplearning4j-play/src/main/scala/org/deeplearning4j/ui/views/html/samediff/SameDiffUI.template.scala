@@ -63,16 +63,27 @@ Seq[Any](format.raw/*1.4*/("""
 	<![endif]-->
     </head>
 
-    <body style="height: 100%; margin: 0;">
+    <body style="height: 100%;
+        margin: 0;">
             <!-- Start JavaScript-->
         <script src="/assets/webjars/jquery/2.2.0/jquery.min.js"></script>
         <script src="/assets/webjars/jquery-ui/1.10.2/ui/minified/jquery-ui.min.js"></script>
         <script src="/assets/webjars/bootstrap/2.3.1/js/bootstrap.min.js"></script>
         <script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js"></script>
-        <script src="/assets/webjars/dagre/0.8.4/dist/dagre.min.js"></script>
-        <script src="/assets/webjars/cytoscape/3.3.3/dist/cytoscape.min.js"></script>
-        <script src="/assets/webjars/cytoscape-dagre/2.1.0/cytoscape-dagre.js"></script>
         <script src="/assets/webjars/flatbuffers/1.9.0/js/flatbuffers.js"></script>
+
+        <script src="/assets/webjars/cytoscape/3.3.3/dist/cytoscape.min.js"></script>
+        <script src="/assets/webjars/dagre/0.8.4/dist/dagre.min.js"></script>
+        <script src="/assets/webjars/cytoscape-dagre/2.1.0/cytoscape-dagre.js"></script>
+        <script src="/assets/webjars/cytoscape-cose-bilkent/4.0.0/cytoscape-cose-bilkent.js"></script>
+        <script src="/assets/webjars/webcola/3.1.3/WebCola/cola.js"></script>
+        <script src="/assets/webjars/cytoscape-cola/2.3.0/cytoscape-cola.js"></script>
+        <script src="/assets/webjars/cytoscape-euler/1.2.1/cytoscape-euler.js"></script>
+        <script src="/assets/webjars/klayjs/0.4.1/klay.js"></script>
+        <script src="/assets/webjars/cytoscape-klay/3.1.2/cytoscape-klay.js"></script>
+        <script src="/assets/webjars/weaverjs/1.2.0/dist/weaver.js"></script>
+        <script src="/assets/webjars/cytoscape-spread/3.0.0/cytoscape-spread.js"></script>
+
 
         <script src="/assets/js/samediff/generated/uigraphevents_generated.js"></script>
         <script src="/assets/js/samediff/generated/uigraphstatic_generated.js"></script>
@@ -87,10 +98,24 @@ Seq[Any](format.raw/*1.4*/("""
             <div class="row-fluid">
                 <input type="file" id="file" name="file" />
                 <output id="list"></output>
-                """),format.raw/*66.78*/("""
-            """),format.raw/*67.13*/("""</div>
+                """),format.raw/*77.78*/("""
+                """),format.raw/*78.17*/("""<div class="row-fluid">
+                    Layout:
+                    <button onclick="setLayout('dagre')">Dagre</button>
+                    <button onclick="setLayout('klay_down')">Klay (Down)</button>
+                    <button onclick="setLayout('klay_lr')">Klay (Right)</button>
+                    <button onclick="setLayout('euler')">Euler</button>
+                    <button onclick="setLayout('spread')">Spread</button>
+                    <button onclick="setLayout('cola')">Cola</button>
+                    <button onclick="setLayout('cose-bilkent')">CoSE Bilkent</button>
+                    <button onclick="setLayout('breadthfirst')">Breadth First</button>
+                    <button onclick="setLayout('grid')">Grid</button>
+                </div>
+            </div>
         </div>
-        <div id="graphdiv" style="height:calc(100% - 60px); width: 100%; display: table">
+        <div id="graphdiv" style="height: calc(100% - 60px);
+            width: 100%;
+            display: table">
 
         </div>
 
@@ -98,9 +123,9 @@ Seq[Any](format.raw/*1.4*/("""
             <!-- Execute once on page load -->
         <script>
                 document.getElementById('file').addEventListener('change', fileSelect, false);
-                $(document).ready(function () """),format.raw/*77.47*/("""{"""),format.raw/*77.48*/("""
-                    """),format.raw/*78.21*/("""renderSameDiffGraph();
-                """),format.raw/*79.17*/("""}"""),format.raw/*79.18*/(""");
+                $(document).ready(function () """),format.raw/*102.47*/("""{"""),format.raw/*102.48*/("""
+                    """),format.raw/*103.21*/("""renderSameDiffGraph();
+                """),format.raw/*104.17*/("""}"""),format.raw/*104.18*/(""");
         </script>
     </body>
 </html>
@@ -124,11 +149,11 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Thu Jan 24 17:52:31 AEDT 2019
+                  DATE: Fri Jan 25 00:11:55 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
-                  HASH: e8b4f13064ac5abe94920c261d615a8913b48295
-                  MATRIX: 561->1|657->3|685->5|3892->3245|3934->3259|4307->3604|4336->3605|4386->3627|4454->3667|4483->3668
-                  LINES: 20->1|25->1|26->2|90->66|91->67|101->77|101->77|102->78|103->79|103->79
+                  HASH: e600b40b62deb946d4e4607ca2bda0e34006927e
+                  MATRIX: 561->1|657->3|685->5|4595->3948|4641->3966|5835->5131|5865->5132|5916->5154|5985->5194|6015->5195
+                  LINES: 20->1|25->1|26->2|101->77|102->78|126->102|126->102|127->103|128->104|128->104
                   -- GENERATED --
               */
           
