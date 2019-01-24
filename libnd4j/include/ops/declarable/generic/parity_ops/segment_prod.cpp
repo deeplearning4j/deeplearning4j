@@ -69,7 +69,9 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
             auto outIndices = OUTPUT_VARIABLE(1);
             outIndices->assign(indices);
+            #ifndef __CUDABLAS__
             return helpers::segmentProdFunctorBP(input, indices, gradOut, output);
+            #endif
         }
 
         DECLARE_TYPES(segment_prod) {
