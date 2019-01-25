@@ -32,7 +32,7 @@ namespace nd4j {
 
             bool isStrictlyIncreasing = true;
 
-            nd4j::ops::helpers::compare_elem(input, true, isStrictlyIncreasing);
+            nd4j::ops::helpers::compare_elem(block.launchContext(), input, true, isStrictlyIncreasing);
 
             if (isStrictlyIncreasing)
                 return ND4J_STATUS_TRUE;

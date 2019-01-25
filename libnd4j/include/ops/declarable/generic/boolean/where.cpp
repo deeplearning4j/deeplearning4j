@@ -84,7 +84,7 @@ namespace nd4j {
 
                 std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(width, {0});
 
-                helpers::_where(*condition, *output, block.workspace());
+                helpers::_where(block.launchContext(), *condition, *output, block.workspace());
             }
             return ND4J_STATUS_OK;
         }

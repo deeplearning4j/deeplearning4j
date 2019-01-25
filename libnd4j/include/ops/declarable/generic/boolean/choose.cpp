@@ -37,13 +37,13 @@ namespace nd4j {
                 auto arg = INPUT_VARIABLE(0);
                 auto comp = INPUT_VARIABLE(1);
 
-                helpers::chooseFunctorArray(arg, comp, mode, result, numResults);
+                helpers::chooseFunctorArray(block.launchContext(), arg, comp, mode, result, numResults);
 
             }//scalar case
             else {
                 double scalar = T_ARG(0);
                 auto arg = INPUT_VARIABLE(0);
-                helpers::chooseFunctorScalar(arg, scalar, mode, result, numResults);
+                helpers::chooseFunctorScalar(block.launchContext(), arg, scalar, mode, result, numResults);
             }
 
 
