@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void minMaxReduceFunctor(NDArray* input, NDArray* gradOut, NDArray* tempVals, NDArray* output, bool normalize = false);
+    void minMaxReduceFunctor(graph::LaunchContext* context, NDArray* input, NDArray* gradOut, NDArray* tempVals, NDArray* output, bool normalize = false);
 //    void minMaxReduceFunctor(NDArray<T> const* input, NDArray<T> const* gradOut, NDArray<T> const* tempVals, NDArray<T>* output);
 
 }

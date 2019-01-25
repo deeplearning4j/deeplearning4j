@@ -28,7 +28,7 @@ namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
-void stack(const std::vector<NDArray*>& inArrs, NDArray& outArr, const int dim);
+void stack(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& outArr, const int dim);
     
 
 }

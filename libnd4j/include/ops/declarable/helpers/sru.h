@@ -28,13 +28,13 @@ namespace ops     {
 namespace helpers {
 
 
-	void sruCell(const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c);
+	void sruCell(graph::LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c);
 
-	void sruTimeLoop(const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c);
+	void sruTimeLoop(graph::LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c);
 
-	void sruBI(NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct);
+	void sruBI(graph::LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct);
 
-	void sruBIBP(NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* ct, const NDArray* inGradC0, const NDArray* inGradH, const NDArray* mask,    
+	void sruBIBP(graph::LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* ct, const NDArray* inGradC0, const NDArray* inGradH, const NDArray* mask,
                  NDArray* gradI, NDArray* gradWeights, NDArray* gradB, NDArray* gradC0);
 }
 }

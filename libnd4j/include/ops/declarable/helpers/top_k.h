@@ -26,9 +26,9 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    int topKFunctor(NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort);
+    int topKFunctor(graph::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort);
 
-    int inTopKFunctor(NDArray* input, NDArray* target, NDArray* result, int k);
+    int inTopKFunctor(graph::LaunchContext* context, NDArray* input, NDArray* target, NDArray* result, int k);
 
 }
 }

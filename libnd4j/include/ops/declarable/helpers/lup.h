@@ -27,14 +27,14 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    T lup(NDArray* input, NDArray* compound, NDArray* permutation);
+    T lup(graph::LaunchContext* context, NDArray* input, NDArray* compound, NDArray* permutation);
 
-    int determinant(NDArray* input, NDArray* output);
-    int log_abs_determinant(NDArray* input, NDArray* output);
+    int determinant(graph::LaunchContext* context, NDArray* input, NDArray* output);
+    int log_abs_determinant(graph::LaunchContext* context, NDArray* input, NDArray* output);
 
-    int inverse(NDArray* input, NDArray* output);
+    int inverse(graph::LaunchContext* context, NDArray* input, NDArray* output);
 
-    int cholesky(NDArray* input, NDArray* output, bool inplace = false);
+    int cholesky(graph::LaunchContext* context, NDArray* input, NDArray* output, bool inplace = false);
 }
 }
 }

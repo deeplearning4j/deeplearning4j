@@ -28,7 +28,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    NDArray betaInc(const NDArray& a, const NDArray& b, const NDArray& x);
+    NDArray betaInc(graph::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x);
     
 
 }

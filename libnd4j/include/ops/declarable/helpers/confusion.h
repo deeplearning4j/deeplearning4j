@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output);
+    void confusionFunctor(graph::LaunchContext* context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output);
 
 }
 }

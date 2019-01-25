@@ -24,9 +24,9 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-    void rollFunctorLinear(NDArray* input, NDArray* output, int shift, bool inplace = false);
+    void rollFunctorLinear(graph::LaunchContext* context, NDArray* input, NDArray* output, int shift, bool inplace = false);
 
-    void rollFunctorFull(NDArray* input, NDArray* output, int shift, std::vector<int> const& axes, bool inplace = false);
+    void rollFunctorFull(graph::LaunchContext* context, NDArray* input, NDArray* output, int shift, std::vector<int> const& axes, bool inplace = false);
 }
 }
 }

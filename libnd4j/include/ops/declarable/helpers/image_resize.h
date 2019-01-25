@@ -26,8 +26,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    int resizeBilinearFunctor(NDArray const* image, int width, int height, bool center, NDArray* output);
-    int resizeNeighborFunctor(NDArray const* image, int width, int height, bool center, NDArray* output);
+    int resizeBilinearFunctor(graph::LaunchContext* context, NDArray const* image, int width, int height, bool center, NDArray* output);
+    int resizeNeighborFunctor(graph::LaunchContext* context, NDArray const* image, int width, int height, bool center, NDArray* output);
 }
 }
 }

@@ -43,26 +43,26 @@ namespace helpers {
     FORCEINLINE void sigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
     FORCEINLINE void hardSigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
 */
-    void reluDerivative(NDArray* theFirst, NDArray* theSecond);
-    void reluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void relu6Derivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void leakyReluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void eluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void seluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void cubeDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void reduceNorm1(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void sigmCrossEntropy(NDArray* logits, NDArray* lablels, NDArray* theOutput);
-    void sigmCrossEntropyGrad(NDArray* logits, NDArray* lablels, NDArray* theOutput);
-    void tanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void hardTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void rationalTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void rectifiedTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void softSignDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void softPlusDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void sigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void hardSigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    void logSumExp(NDArray* input, NDArray* axis, NDArray* output);
-    void logSumExp(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output);
+    void reluDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond);
+    void reluDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void relu6Derivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void leakyReluDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void eluDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void seluDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void cubeDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void reduceNorm1(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void sigmCrossEntropy(graph::LaunchContext* context, NDArray* logits, NDArray* lablels, NDArray* theOutput);
+    void sigmCrossEntropyGrad(graph::LaunchContext* context, NDArray* logits, NDArray* lablels, NDArray* theOutput);
+    void tanhDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void hardTanhDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void rationalTanhDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void rectifiedTanhDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void softSignDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void softPlusDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void sigmoidDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void hardSigmoidDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+    void logSumExp(graph::LaunchContext* context, NDArray* input, NDArray* axis, NDArray* output);
+    void logSumExp(graph::LaunchContext* context, NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output);
 }
 }
 }

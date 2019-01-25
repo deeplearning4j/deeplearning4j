@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void sequenceMask(NDArray* input, NDArray* output, int maxIndex);
+    void sequenceMask(graph::LaunchContext* context, NDArray* input, NDArray* output, int maxIndex);
 
 }
 }

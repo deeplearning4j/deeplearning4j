@@ -26,13 +26,13 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void reduceNorm2BP_scalar(NDArray *input, NDArray *epsilon, NDArray *tempNorm, NDArray *output);
+    void reduceNorm2BP_scalar(graph::LaunchContext* context, NDArray *input, NDArray *epsilon, NDArray *tempNorm, NDArray *output);
 
-    void reduceNorm1BP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims);
+    void reduceNorm1BP(graph::LaunchContext* context, NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims);
 
-    void reduceNorm2BP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims);
+    void reduceNorm2BP(graph::LaunchContext* context, NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims);
 
-    void reduceSquareNormBP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims);
+    void reduceSquareNormBP(graph::LaunchContext* context, NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims);
 
 }
 }

@@ -28,53 +28,53 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    bool segmentIndicesValidate(NDArray* indices, NDArray& expected, NDArray& output);
+    bool segmentIndicesValidate(graph::LaunchContext* context, NDArray* indices, NDArray& expected, NDArray& output);
 
-    bool unsortedSegmentIndicesValidate(NDArray* indices, Nd4jLong numOfClasses, Nd4jLong& output);
+    bool unsortedSegmentIndicesValidate(graph::LaunchContext* context, NDArray* indices, Nd4jLong numOfClasses, Nd4jLong& output);
 
-    void segmentMaxFunctor(NDArray* input, NDArray* indices, NDArray* output);
+    void segmentMaxFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output);
 
-    void segmentMinFunctor(NDArray* input, NDArray* indices, NDArray* output);
+    void segmentMinFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output);
 
-    void segmentMeanFunctor(NDArray* input, NDArray* indices, NDArray* output);
+    void segmentMeanFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output);
 
-    void segmentSumFunctor(NDArray* input, NDArray* indices, NDArray* output);
+    void segmentSumFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output);
 
-    void segmentProdFunctor(NDArray* input, NDArray* indices, NDArray* output);
+    void segmentProdFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output);
 
-    void unsortedSegmentSqrtNFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
+    void unsortedSegmentSqrtNFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
 
-    void unsortedSegmentMaxFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
+    void unsortedSegmentMaxFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
 
-    void unsortedSegmentMinFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
+    void unsortedSegmentMinFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
 
-    void unsortedSegmentMeanFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
+    void unsortedSegmentMeanFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
 
-    void unsortedSegmentSumFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
+    void unsortedSegmentSumFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
 
-    void unsortedSegmentProdFunctor(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
+    void unsortedSegmentProdFunctor(graph::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output);
 
-    int segmentMaxFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
+    int segmentMaxFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
 
-    int segmentMinFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
+    int segmentMinFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
 
-    int segmentMeanFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
+    int segmentMeanFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
 
-    int segmentSumFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
+    int segmentSumFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
 
-    int segmentProdFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
+    int segmentProdFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output);
 
-    int unsortedSegmentSqrtNFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
+    int unsortedSegmentSqrtNFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
 
-    int unsortedSegmentMaxFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
+    int unsortedSegmentMaxFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
 
-    int unsortedSegmentMinFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
+    int unsortedSegmentMinFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
 
-    int unsortedSegmentMeanFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
+    int unsortedSegmentMeanFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
 
-    int unsortedSegmentSumFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
+    int unsortedSegmentSumFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
 
-    int unsortedSegmentProdFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
+    int unsortedSegmentProdFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output);
 
 }
 }

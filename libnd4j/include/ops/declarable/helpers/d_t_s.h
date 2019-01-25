@@ -25,7 +25,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void _depthToSpace(NDArray *input, NDArray *output, int block_size, bool isNHWC);
+    void _depthToSpace(graph::LaunchContext* context, NDArray *input, NDArray *output, int block_size, bool isNHWC);
 }
 }
 }

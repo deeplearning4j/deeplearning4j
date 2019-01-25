@@ -28,51 +28,51 @@ namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
-	void triu(const NDArray& input, NDArray& output, const int diagonal);
+	void triu(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int diagonal);
 
 
-	void triuBP(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal);
+	void triuBP(graph::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal);
 
-	void trace(const NDArray& input, NDArray& output);
+	void trace(graph::LaunchContext* context, const NDArray& input, NDArray& output);
 
-	void randomShuffle(NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
+	void randomShuffle(graph::LaunchContext* context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
     
     // auxiliary function which serves for recursion purpose and is used in pad operation
 	// void recursiveLoopForPad(const int mode, NDArray& input, const NDArray& paddings, NDArray& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, NDArray& padValue);
 
-	void pad(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue);
+	void pad(graph::LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue);
 
-	void invertPermutation(const NDArray& input, NDArray& output);
+	void invertPermutation(graph::LaunchContext* context, const NDArray& input, NDArray& output);
 
-	void gatherND(NDArray& input, NDArray& indices, NDArray& output);
+	void gatherND(graph::LaunchContext* context, NDArray& input, NDArray& indices, NDArray& output);
 
-	void gather(NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs);
+	void gather(graph::LaunchContext* context, NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs);
 
-	void eye(NDArray& output);
+	void eye(graph::LaunchContext* context, NDArray& output);
 
-	void scatterUpdate(NDArray& operand, NDArray& updates, const std::vector<int>* intArgs);
+	void scatterUpdate(graph::LaunchContext* context, NDArray& operand, NDArray& updates, const std::vector<int>* intArgs);
 
-	void mergeMaxIndex(const std::vector<NDArray*>& inArrs, NDArray& output);
+	void mergeMaxIndex(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output);
 
-	void mergeMax(const std::vector<NDArray*>& inArrs, NDArray& output);
+	void mergeMax(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output);
 
-	void mergeAvg(const std::vector<NDArray*>& inArrs, NDArray& output);
+	void mergeAvg(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output);
 
-	void mergeAdd(const std::vector<NDArray*>& inArrs, NDArray& output);
+	void mergeAdd(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output);
 
-	void clipByNorm(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace);
-	void clipByGlobalNorm(std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace);
+	void clipByNorm(graph::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace);
+	void clipByGlobalNorm(graph::LaunchContext* context, std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace);
 
-	void clipByNormBP(const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm);
+	void clipByNormBP(graph::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm);
 
-	void clipByAveraged(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace);
-	void clipByValue(NDArray& input, double leftBound, double rightBound, NDArray& output);
+	void clipByAveraged(graph::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace);
+	void clipByValue(graph::LaunchContext* context, NDArray& input, double leftBound, double rightBound, NDArray& output);
 
-	void mirrorPad(const NDArray& input, const NDArray& paddings, NDArray& output, const int mode);
+	void mirrorPad(graph::LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode);
 
-	void concat(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis);
+	void concat(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis);
 
-	void tileBP(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps);
+	void tileBP(graph::LaunchContext* context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps);
 
 }
 }

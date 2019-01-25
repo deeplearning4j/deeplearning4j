@@ -26,10 +26,10 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void adjustAxis(NDArray* input, NDArray* axisVector, std::vector<int>& output);
+    void adjustAxis(graph::LaunchContext* context, NDArray* input, NDArray* axisVector, std::vector<int>& output);
 
 
-    void adjustAxis(Nd4jLong *inputShape, std::vector<int> &axisVector);
+    void adjustAxis(graph::LaunchContext* context, Nd4jLong *inputShape, std::vector<int> &axisVector);
 
 }
 }

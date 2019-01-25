@@ -29,11 +29,11 @@ namespace helpers {
     // this method MUST be platform-specific
 
     template <typename T, int NUM_BLOCK_DIMS, bool B2S>
-    void _execute(void *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, void *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
+    void _execute(graph::LaunchContext* context, void *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, void *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
 
 
     template <int NUM_BLOCK_DIMS, bool B2S>
-    FORCEINLINE void _prepare(NDArray * space, NDArray *batch, const Nd4jLong block_array[NUM_BLOCK_DIMS], const Nd4jLong padding_array[NUM_BLOCK_DIMS * 2]) {
+    FORCEINLINE void _prepare(graph::LaunchContext* context, NDArray * space, NDArray *batch, const Nd4jLong block_array[NUM_BLOCK_DIMS], const Nd4jLong padding_array[NUM_BLOCK_DIMS * 2]) {
 
         Nd4jLong pad_start[NUM_BLOCK_DIMS];
         Nd4jLong block_shape[NUM_BLOCK_DIMS];
@@ -73,7 +73,7 @@ namespace helpers {
         }
     };
 
-    FORCEINLINE Nd4jStatus _spaceToBatch(int internal_block_dims, NDArray *input, NDArray *output, std::vector<Nd4jLong> &internal_input_shape, std::vector<Nd4jLong> &internal_output_shape, Nd4jLong *block_shape, Nd4jLong *paddings) {
+    FORCEINLINE Nd4jStatus _spaceToBatch(graph::LaunchContext* context, int internal_block_dims, NDArray *input, NDArray *output, std::vector<Nd4jLong> &internal_input_shape, std::vector<Nd4jLong> &internal_output_shape, Nd4jLong *block_shape, Nd4jLong *paddings) {
         auto in = input->reshape('c', internal_input_shape);
         auto out = output->reshape('c', internal_output_shape);
         switch (internal_block_dims) {
@@ -101,7 +101,7 @@ namespace helpers {
     }
 
 
-    FORCEINLINE Nd4jStatus _batchToSpace(int internal_block_dims, NDArray *input, NDArray *output, std::vector<Nd4jLong> &internal_input_shape, std::vector<Nd4jLong> &internal_output_shape, Nd4jLong *block_shape, Nd4jLong *crops) {
+    FORCEINLINE Nd4jStatus _batchToSpace(graph::LaunchContext* context, int internal_block_dims, NDArray *input, NDArray *output, std::vector<Nd4jLong> &internal_input_shape, std::vector<Nd4jLong> &internal_output_shape, Nd4jLong *block_shape, Nd4jLong *crops) {
         auto in = input->reshape('c', internal_input_shape);
         auto out = output->reshape('c', internal_output_shape);
         switch (internal_block_dims) {

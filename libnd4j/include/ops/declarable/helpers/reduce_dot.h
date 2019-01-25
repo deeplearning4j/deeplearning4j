@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void reduceDotBP(NDArray* inputX, NDArray* inputY, NDArray* epsilon, NDArray* outputX, NDArray* outputY, std::vector<int> const& axes);
+    void reduceDotBP(graph::LaunchContext* context, NDArray* inputX, NDArray* inputY, NDArray* epsilon, NDArray* outputX, NDArray* outputY, std::vector<int> const& axes);
 
 }
 }

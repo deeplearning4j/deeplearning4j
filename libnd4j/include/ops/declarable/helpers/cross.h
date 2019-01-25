@@ -23,7 +23,7 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-    void FORCEINLINE _cross(NDArray *a, NDArray *b, NDArray *o) {
+    void FORCEINLINE _cross(graph::LaunchContext* context, NDArray *a, NDArray *b, NDArray *o) {
         if (a->isR()) {
             auto a0 = a->e<double>(0);
             auto a1 = a->e<double>(1);
@@ -53,7 +53,7 @@ namespace helpers {
         }
     }
 
-    void FORCEINLINE _crossBatched(NDArray *a, NDArray *b, NDArray *o) {
+    void FORCEINLINE _crossBatched(graph::LaunchContext* context, NDArray *a, NDArray *b, NDArray *o) {
         auto _a = a->reshape(a->ordering(), {-1, 3});
         auto _b = b->reshape(b->ordering(), {-1, 3});
         auto _o = o->reshape(o->ordering(), {-1, 3});

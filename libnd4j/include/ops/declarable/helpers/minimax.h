@@ -26,8 +26,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void minimumBPFunctor(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY);
-    void maximumBPFunctor(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY);
+    void minimumBPFunctor(graph::LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY);
+    void maximumBPFunctor(graph::LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY);
 
 }
 }
