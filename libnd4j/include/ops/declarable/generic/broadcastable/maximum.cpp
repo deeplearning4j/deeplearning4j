@@ -63,7 +63,7 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
             
-            helpers::maximumBPFunctor(x, y, epsNext, gradX, gradY);
+            helpers::maximumBPFunctor(block.launchContext(), x, y, epsNext, gradX, gradY);
             return Status::OK();
         }
 

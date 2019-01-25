@@ -64,7 +64,7 @@ namespace nd4j {
 
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
-            helpers::minimumBPFunctor(x, y, epsNext, gradX, gradY);
+            helpers::minimumBPFunctor(block.launchContext(), x, y, epsNext, gradX, gradY);
             return Status::OK();
         }
 
