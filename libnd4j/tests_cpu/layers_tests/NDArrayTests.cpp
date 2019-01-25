@@ -83,10 +83,10 @@ TEST_F(NDArrayTest, AssignScalar1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, NDArrayOrder1) {
     // original part
-    float *c = new float[4] {1, 2, 3, 4};
+    auto c = new float[4] {1, 2, 3, 4};
 
     // expected part
-    float *f = new float[4] {1, 3, 2, 4};
+    auto f = new float[4] {1, 3, 2, 4};
 
     auto arrayC = new NDArray(c, cShape);
     auto arrayF = arrayC->dup('f');
@@ -97,7 +97,7 @@ TEST_F(NDArrayTest, NDArrayOrder1) {
     ASSERT_EQ('c', arrayC2->ordering());
 
     for (int i = 0; i < 4; i++) {
-        ASSERT_EQ(f[i], arrayF->bufferAsT<float>()[i]);
+        ASSERT_NEAR(f[i], arrayF->bufferAsT<float>()[i], 1e-5f);
     }
 
     for (int i = 0; i < 8; i++) {
@@ -105,12 +105,13 @@ TEST_F(NDArrayTest, NDArrayOrder1) {
     }
 
     for (int i = 0; i < 4; i++) {
-        ASSERT_EQ(c[i], arrayC2->bufferAsT<float>()[i]);
+        ASSERT_NEAR(c[i], arrayC2->bufferAsT<float>()[i], 1e-5f);
     }
 
     for (int i = 0; i < 8; i++) {
         ASSERT_EQ(cShape[i], arrayC2->getShapeInfo()[i]);
     }
+
 
     delete[] c;
     delete[] f;

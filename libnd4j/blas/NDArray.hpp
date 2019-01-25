@@ -1498,6 +1498,10 @@ NDArray NDArray::transp() const {
         if (isS())
             throw std::runtime_error("You can't use this method on String array");
 
+        lazyAllocateBuffer();
+        if (!isActualOnHostSide())
+            syncToHost();
+
         return reinterpret_cast<T*>(_buffer);
     }
     BUILD_SINGLE_UNCHAINED_TEMPLATE(template, * NDArray::bufferAsT() const, LIBND4J_TYPES);
