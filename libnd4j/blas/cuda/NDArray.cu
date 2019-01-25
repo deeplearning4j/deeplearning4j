@@ -330,7 +330,9 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("NDArray::applyTrueBroadcast bool: you can't use this method on String array!");
         if(target == nullptr || other == nullptr)
             throw std::runtime_error("NDArray::applyTrueBroadcast bool method: target or other = nullptr !");
-        
+
+        NDArray::prepareSpecialUse({target}, {this, other});
+
         if (isScalar()) {
             NDArray temp(target->_shapeInfo, _dataType, false, _context);
             temp.assign(this);
@@ -425,7 +427,10 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
         if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other->isB()) || (op.s == scalar::ReverseDivide && this->isB()))
             throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
-        //NDArray::registerSpecialUse({target}, {this,other});
+
+
+        NDArray::prepareSpecialUse({target}, {this, other});
+
         if (isScalar()) {
             target->assign(this);
             target->applyPairwiseTransform(op.p, *other, extraArgs);

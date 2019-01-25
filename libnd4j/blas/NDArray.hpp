@@ -1798,7 +1798,11 @@ template void NDArray::pIdx(const Nd4jLong* indices, const bool value);
         }
         if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
             NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_shapeInfo, other._shapeInfo), false, this->_context);
+            NDArray::prepareSpecialUse({&result}, {this, &other});
+
             NativeOpExecutioner::execPairwiseTransform(_context, nd4j::pairwise::Add, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, result._buffer, result._shapeInfo, result._bufferD, result._shapeInfoD, nullptr);
+
+            NDArray::registerSpecialUse({&result}, {this, &other});
             return result;
         }
 
@@ -1814,7 +1818,11 @@ NDArray NDArray::operator+(const T& scalar) const {
 
     auto tmp = NDArrayFactory::create(_dataType, scalar, _context);
     NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_dataType, DataTypeUtils::fromT<T>()), false, _context);
+    NDArray::prepareSpecialUse({&result}, {this, &tmp});
+
     NativeOpExecutioner::execScalar(_context, nd4j::scalar::Add, _buffer, _shapeInfo, _bufferD, _shapeInfoD, result._buffer, result._shapeInfo, result._bufferD, result._shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {this, &tmp});
     return result;
 }
 template NDArray NDArray::operator+(const double&   scalar) const;
@@ -1837,7 +1845,11 @@ NDArray NDArray::operator-(const T& scalar) const {
 
     auto tmp = NDArrayFactory::create(this->dataType(), scalar, this->_context);
     NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_dataType, DataTypeUtils::fromT<T>()), false, _context);
+    NDArray::prepareSpecialUse({&result}, {this, &tmp});
+
     NativeOpExecutioner::execScalar(_context, nd4j::scalar::Subtract, _buffer, _shapeInfo, _bufferD, _shapeInfoD, result._buffer, result._shapeInfo, result._bufferD, result._shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {this, &tmp});
     return result;
 }
 template NDArray NDArray::operator-(const double&   scalar) const;
@@ -1860,7 +1872,11 @@ NDArray NDArray::operator*(const T& scalar) const {
 
     auto tmp = NDArrayFactory::create(this->dataType(), scalar, _context);
     NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_dataType, DataTypeUtils::fromT<T>()), false, _context);
+    NDArray::prepareSpecialUse({&result}, {this, &tmp});
+
     NativeOpExecutioner::execScalar(_context, nd4j::scalar::Multiply, _buffer, _shapeInfo, _bufferD, _shapeInfoD, result._buffer, result._shapeInfo, result._bufferD, result._shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {this, &tmp});
     return result;
 }
 template NDArray NDArray::operator*(const double&   scalar) const;
@@ -1886,7 +1902,11 @@ NDArray NDArray::operator/(const T& scalar) const {
 
     auto tmp = NDArrayFactory::create(this->dataType(), scalar, _context);
     NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(_dataType, DataTypeUtils::fromT<T>()), false, _context);
+    NDArray::prepareSpecialUse({&result}, {this, &tmp});
+
     NativeOpExecutioner::execScalar(_context, nd4j::scalar::Divide, _buffer, _shapeInfo, _bufferD, _shapeInfoD, result._buffer, result._shapeInfo, result._bufferD, result._shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {this, &tmp});
     return result;
 }
 template NDArray NDArray::operator/(const double&   scalar) const;
@@ -1950,7 +1970,11 @@ ND4J_EXPORT NDArray operator-(const float16& scalar, const NDArray & arr) {
 
     auto tmp = NDArrayFactory::create(scalar, arr.getContext());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float16>()), false, arr.getContext());
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+
     NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
     return result;
 }
 
@@ -1961,7 +1985,11 @@ ND4J_EXPORT NDArray operator-(const bfloat16& scalar, const NDArray & arr) {
 
     auto tmp = NDArrayFactory::create(scalar, arr.getContext());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<bfloat16>()), false, arr.getContext());
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+
     NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
     return result;
 }
 
@@ -1971,7 +1999,11 @@ ND4J_EXPORT NDArray operator-(const float& scalar, const NDArray& arr) {
 
     auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float>()), false, arr.getContext());
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+
     NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
     return result;
 }
 
@@ -1981,7 +2013,11 @@ ND4J_EXPORT NDArray operator-(const double& scalar, const NDArray& arr) {
 
     auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<double>()), false, arr.getContext());
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+
     NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
     return result;
 }
 
@@ -1991,7 +2027,11 @@ ND4J_EXPORT NDArray operator-(const Nd4jLong& scalar, const NDArray& arr) {
 
     auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<Nd4jLong>()), false, arr.getContext());
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+
     NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
     return result;
 }
 
@@ -2001,7 +2041,11 @@ ND4J_EXPORT NDArray operator-(const int& scalar, const NDArray& arr) {
 
     auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<int>()), false, arr.getContext());
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
+
     NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
     return result;
 }
 
@@ -2015,7 +2059,11 @@ ND4J_EXPORT NDArray operator/(const bfloat16& scalar, const NDArray& arr) {
 
     auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<bfloat16>()), false, arr.getContext());
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+
     NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
     return result;
 }
 ////////////////////////////////////////////////////////////////////////
@@ -2027,7 +2075,11 @@ ND4J_EXPORT NDArray operator/(const float16& scalar, const NDArray& arr) {
 
     auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float16>()), false, arr.getContext());
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+
     NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
     return result;
 }
 
@@ -2039,7 +2091,11 @@ ND4J_EXPORT NDArray operator/(const float& scalar, const NDArray & arr) {
 
     auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float>()), false, arr.getContext());
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+
     NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
     return result;
 }
 
@@ -2051,7 +2107,11 @@ ND4J_EXPORT NDArray operator/(const double& scalar, const NDArray & arr) {
 
     auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<double>()), false, arr.getContext());
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+
     NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
     return result;
 }
 
@@ -2063,7 +2123,11 @@ ND4J_EXPORT NDArray operator/(const int& scalar, const NDArray & arr) {
 
     auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
     NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<int>()), false, arr.getContext());
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+
     NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
     return result;
 }
 
