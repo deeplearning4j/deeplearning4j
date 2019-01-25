@@ -16,8 +16,6 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
@@ -69,7 +67,6 @@ import org.nd4j.util.OneTimeLogger;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1997,7 +1994,8 @@ public class WordVectorSerializer {
         File tempFileConfig = DL4JFileUtils.createTempFile("config", "0");
         tempFileConfig.deleteOnExit();
 
-        try (ZipOutputStream zipfile = new ZipOutputStream(new BufferedOutputStream(new CloseShieldOutputStream(stream)))) {
+        try (ZipOutputStream zipfile = new ZipOutputStream(new BufferedOutputStream(new CloseShieldOutputStream(stream)));
+             DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile))) {
 
             ZipEntry config = new ZipEntry("configuration.json");
             zipfile.putNextEntry(config);
@@ -2013,23 +2011,20 @@ public class WordVectorSerializer {
             INDArray syn0Data = lookupTable.getSyn0();
             ZipEntry syn0 = new ZipEntry("syn0.bin");
             zipfile.putNextEntry(syn0);
-            byte[] syn0AsBytes = SerializationUtils.toByteArray(syn0Data);
-            zipfile.write(syn0AsBytes);
+            Nd4j.write(syn0Data, dos);
 
             INDArray syn1Data = lookupTable.getSyn1();
             if (syn1Data != null) {
                 ZipEntry syn1 = new ZipEntry("syn1.bin");
                 zipfile.putNextEntry(syn1);
-                byte[] syn1AsBytes = SerializationUtils.toByteArray(syn1Data);
-                zipfile.write(syn1AsBytes);
+                Nd4j.write(syn1Data, dos);
             }
 
             INDArray syn1NegData = lookupTable.getSyn1Neg();
             if (syn1NegData != null) {
                 ZipEntry syn1neg = new ZipEntry("syn1neg.bin");
                 zipfile.putNextEntry(syn1neg);
-                byte[] syn1NegAsBytes = SerializationUtils.toByteArray(syn1NegData);
-                zipfile.write(syn1NegAsBytes);
+                Nd4j.write(syn1NegData, dos);
             }
         }
     }
@@ -2044,14 +2039,14 @@ public class WordVectorSerializer {
         AbstractCache<T> vocabCache = null;
         VectorsConfiguration configuration = null;
 
-        //vocabCache.words().size()
+        INDArray syn0 = null, syn1 = null, syn1neg = null;
 
         //try (ZipFile zipfile = new ZipFile(zipPath)) {
         try (ZipInputStream zipfile = new ZipInputStream(new BufferedInputStream(stream))) {
 
             /*ZipEntry config = zipfile.getEntry("configuration.json");
-            zipfile.getInputStream(config);
-            configuration = VectorsConfiguration.fromJson(new String(bytes, "UTF-8"));*/
+            InputStream is = zipfile.getInputStream(config);
+            configuration = VectorsConfiguration.fromJson(new String(new ByteArrayInputStream(is), "UTF-8"));*/
 
             ZipEntry entry = null;
             while ((entry = zipfile.getNextEntry()) != null) {
@@ -2068,49 +2063,22 @@ public class WordVectorSerializer {
                     vocabCache = AbstractCache.fromJson(content);
                 }
                 else if (name.equals("syn0.bin")) {
-
+                    syn0 = Nd4j.read(new ByteArrayInputStream(bytes));
 
                 }
                 else if (name.equals("syn1.bin")) {
-
+                    syn1 = Nd4j.read(new ByteArrayInputStream(bytes));
                 }
                 else if (name.equals("syn1neg.bin")) {
-
+                    syn1neg = Nd4j.read(new ByteArrayInputStream(bytes));
                 }
-
-
-            /*INDArray syn0 = Nd4j.create(10, 2),
-                    syn1 = Nd4j.create(10, 2),
-                    syn1Neg = Nd4j.create(10, 2);
-
-            if (jsonObject.get(SYN0_FIELD) != null) {
-                float[][] arraySyn0 = mapper.readValue(jsonObject.get(SYN0_FIELD).getAsString(), float[][].class);
-                for (int i = 0; i < 10; ++i) {
-                    syn0.putRow(i, Nd4j.create(arraySyn0[i]));
-                }
-            }
-
-            if (jsonObject.get(SYN1_FIELD) != null) {
-                float[][] arraySyn0 = mapper.readValue(jsonObject.get(SYN1_FIELD).getAsString(), float[][].class);
-                for (int i = 0; i < 10; ++i) {
-                    syn1.putRow(i, Nd4j.create(arraySyn0[i]));
-                }
-            }
-
-            if (jsonObject.get(SYN1_NEG_FIELD) != null) {
-                float[][] arraySyn0 = mapper.readValue(jsonObject.get(SYN1_NEG_FIELD).getAsString(), float[][].class);
-                for (int i = 0; i < 10; ++i) {
-                    syn1Neg.putRow(i, Nd4j.create(arraySyn0[i]));
-                }
-            }*/
-
             }
 
         }
-        WeightLookupTable<T> lookupTable = new InMemoryLookupTable<>();
-            /*((InMemoryLookupTable<T>) lookupTable).setSyn0(syn0);
-            ((InMemoryLookupTable<T>) lookupTable).setSyn1(syn1);
-            ((InMemoryLookupTable<T>) lookupTable).setSyn1Neg(syn1Neg);*/
+        InMemoryLookupTable<T> lookupTable = new InMemoryLookupTable<>();
+        lookupTable.setSyn0(syn0);
+        lookupTable.setSyn1(syn1);
+        lookupTable.setSyn1Neg(syn1neg);
         vectors = new SequenceVectors.Builder<T>(configuration).
                 lookupTable(lookupTable).
                 vocabCache(vocabCache).
