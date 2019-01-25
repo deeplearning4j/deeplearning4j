@@ -49,7 +49,7 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             //input->applyPairwiseTransform(pairwise::SigmoidDerivativeE, epsilon, z, nullptr);
-            helpers::sigmoidDerivative(input, epsilon, z);
+            helpers::sigmoidDerivative(block.launchContext(), input, epsilon, z);
             return Status::OK();
         }
 

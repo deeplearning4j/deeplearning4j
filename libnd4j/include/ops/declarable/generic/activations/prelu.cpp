@@ -60,13 +60,13 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
 
     //const Nd4jLong expectedAlphaLen =  0; //std::accumulate(expectedAlphaShape.begin(), expectedAlphaShape.end(), 1, std::multiplies<T>());
 
-    REQUIRE_TRUE(helpers::checkAlphaShapeLen(expectedAlphaShape, alphaLen), 0, "PRELU OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
+    REQUIRE_TRUE(helpers::checkAlphaShapeLen(block.launchContext(), expectedAlphaShape, alphaLen), 0, "PRELU OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
     // ***** end of validation ***** //
 
     if(alphaShape != expectedAlphaShape)
         alpha = alpha->reshape(alpha->ordering(), expectedAlphaShape);
 
-    helpers::prelu(*input, *alpha, *output);
+    helpers::prelu(block.launchContext(), *input, *alpha, *output);
 
     if(alphaShape != expectedAlphaShape)
         delete alpha;
@@ -114,7 +114,7 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
         expectedAlphaShape[sharedAxes[i] - 1] = 1;
     }
 
-    REQUIRE_TRUE(helpers::checkAlphaShapeLen(expectedAlphaShape, alphaLen), 0, "PRELU_BP OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
+    REQUIRE_TRUE(helpers::checkAlphaShapeLen(block.launchContext(), expectedAlphaShape, alphaLen), 0, "PRELU_BP OP: wrong shape of alpha array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
     // ***** end of validation ***** //
     
     if(alphaShape != expectedAlphaShape) {
@@ -122,7 +122,7 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
         dLdA  = dLdA->reshape(dLdA->ordering(), expectedAlphaShape);
     }
 
-    helpers::preluBP(*input, *alpha, *dLdO, *dLdI, *dLdA);
+    helpers::preluBP(block.launchContext(), *input, *alpha, *dLdO, *dLdI, *dLdA);
 
     if(alphaShape != expectedAlphaShape) {        
         delete alpha;

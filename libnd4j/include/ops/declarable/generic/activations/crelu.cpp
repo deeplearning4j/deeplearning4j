@@ -36,7 +36,7 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            helpers::concat({x, tmp}, *z, x->rankOf()-1);
+            helpers::concat(block.launchContext(), {x, tmp}, *z, x->rankOf()-1);
             // NDArrayFactory<T>::concat({x, tmp}, -1, z);
 
             // TODO: make this configurable?
@@ -88,7 +88,7 @@ namespace nd4j {
 
             // now we do RELU backward pass
             //actv->applyPairwiseTransform(pairwise::RELUDerivativeE, *epsilon, nullptr);
-            helpers::reluDerivative(actv, epsilonNext);
+            helpers::reluDerivative(block.launchContext(), actv, epsilonNext);
             // now we split updated array into 2 chunks along last dimension
             nd4j::ops::concat_bp opc;
             auto dec = opc.execute({input, input, actv}, {}, {-1}, {});

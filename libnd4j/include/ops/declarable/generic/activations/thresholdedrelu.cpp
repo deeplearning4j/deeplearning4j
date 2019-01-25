@@ -36,7 +36,7 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 0, 0) {
 
     auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-    helpers::thresholdRelu(*input, scalar, *output);
+    helpers::thresholdRelu(block.launchContext(), *input, scalar, *output);
 
     return Status::OK();
 }
@@ -55,7 +55,7 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 0, 0) {
     auto dLdI = OUTPUT_VARIABLE(0);
     auto threshold = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-    helpers::thresholdReluDerivative(input, threshold, dLdO, dLdI);
+    helpers::thresholdReluDerivative(block.launchContext(), input, threshold, dLdO, dLdI);
 
     return Status::OK();
 }

@@ -50,7 +50,7 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             //input->applyPairwiseTransform(pairwise::SoftsignDerivativeE, epsilon, z, nullptr);
-            helpers::softSignDerivative(input, epsilon, z);
+            helpers::softSignDerivative(block.launchContext(), input, epsilon, z);
 
             return Status::OK();
         }
