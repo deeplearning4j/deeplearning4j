@@ -75,8 +75,8 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
     // NHWC: [kH, kW, oC, iC] x [bS, iH, iW, iC] = [kH, kW, oC, bS, iH, iW]
     // NCHW: [iC, oC, kH, kW] x [bS, iC, iH, iW] = [oC, kH, kW, bS, iH, iW]
     nd4j::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, {2, 3, 1, 0, 4, 5});
-    LaunchContext ctx;
-    helpers::col2im(ctx, columns, *output, sH, sW, pH, pW, oH, oW, dH, dW);     // [bS, oC, kH, kW, iH, iW] is de-convoluted to [bS, oC, oH, oW]
+    LaunchContext* ctx = block.launchContext();
+    helpers::col2im(*ctx, columns, *output, sH, sW, pH, pW, oH, oW, dH, dW);     // [bS, oC, kH, kW, iH, iW] is de-convoluted to [bS, oC, oH, oW]
            
     //----- add biases if required -----//
     if(bias)
@@ -226,8 +226,8 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
     // ----- calculation of gradW ----- //
     NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(), block.getVariableSpace()->launchContext());
 
-    LaunchContext ctx;
-    helpers::im2col(ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
+    LaunchContext* ctx = block.launchContext();
+    helpers::im2col(*ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
     MmulHelper::tensorDot(input, &columns, gradW, inputAxesForDot, {0, 4, 5}, {3, 2, 0, 1});     // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]
 
     // ----- calculation of gradB ----- //

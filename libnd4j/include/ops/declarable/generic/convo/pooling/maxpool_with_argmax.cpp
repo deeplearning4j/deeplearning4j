@@ -37,7 +37,7 @@ namespace nd4j {
 
             auto argI = *(block.getIArguments());
 
-            helpers::maxPoolingFunctor(block, x, z, argI, indeces);
+            helpers::maxPoolingFunctor(block.launchContext(), block, x, z, argI, indeces);
 
             return Status::OK();
         }

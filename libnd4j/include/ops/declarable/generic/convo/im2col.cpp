@@ -50,8 +50,8 @@ namespace nd4j {
                 zeroPadVal = T_ARG(0);
 
             // FIXME: zeropad value is void
-            LaunchContext ctx;
-            nd4j::ops::helpers::im2col(ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, NDArrayFactory::create(zeroPadVal, block.getVariableSpace()->launchContext()));
+            LaunchContext* ctx = block.launchContext();
+            nd4j::ops::helpers::im2col(*ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, NDArrayFactory::create(zeroPadVal, block.getVariableSpace()->launchContext()));
 
             STORE_RESULT(*z);
 
@@ -130,9 +130,9 @@ namespace nd4j {
 			int imgH = input->sizeAt(2);
 			int imgW = input->sizeAt(3);
 			
-            LaunchContext ctx;
+            LaunchContext* ctx = block.launchContext();
             // FIXME:: all helpers should accept NDArray
-			ops::helpers::col2im(ctx, *gradAtOutput, *z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
+			ops::helpers::col2im(*ctx, *gradAtOutput, *z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
 
             return Status::OK();
         }
