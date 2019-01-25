@@ -62,7 +62,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
 	NDArray E(labels, false, block.getVariableSpace()->launchContext());
 
 	// logits - labels * logits + log(1 + exp(-logits)) -> take into account numerical stability at large logits
-	helpers::sigmCrossEntropy(logits, newLabels, &E);
+	helpers::sigmCrossEntropy(block.launchContext(), logits, newLabels, &E);
 
     // multiply E on weights
     E *= *weightsBroad;
