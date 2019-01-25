@@ -2322,6 +2322,94 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
 }
 
 ////////////////////////////////////////////////////////////////////////
+    NDArray* NDArray::varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const {
+        if (isS())
+            throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");
+
+        std::vector<int> copy(dimensions);
+        if (copy.size() > 1)
+            std::sort(copy.begin(), copy.end());
+
+        auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, false, false, _context->getWorkspace());
+        ArrayOptions::setDataType(newShape, DataTypeUtils::pickFloatingType(_dataType));
+        auto result = new NDArray(newShape, true, _context, true);
+
+        NDArray::prepareSpecialUse({result}, {this});
+
+        if(rankOf() == copy.size() || copy.empty())
+            NativeOpExecutioner::execSummaryStatsScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), biasCorrected);
+        else {
+            Nd4jLong *xTadShapeInfo;
+            Nd4jLong *xTadOffsets;
+            int *tmp;
+            ALLOCATE_SPECIAL(tmp, _context->getWorkspace(), copy.size(), int);
+
+            cudaMemcpyAsync(tmp, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());
+            shape::TAD tad(this->getShapeInfo(), copy.data(), copy.size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();
+            ALLOCATE_SPECIAL(xTadOffsets, _context->getWorkspace(), tad.numTads, Nd4jLong);
+            ALLOCATE_SPECIAL(xTadShapeInfo, _context->getWorkspace(), shape::shapeInfoLength(tad.tadOnlyShapeInfo), Nd4jLong);
+
+            cudaMemcpyAsync(xTadOffsets, tad.tadOffsets, tad.numTads * sizeof(Nd4jLong), cudaMemcpyHostToDevice, *_context->getCudaStream());
+            cudaMemcpyAsync(xTadShapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo), cudaMemcpyHostToDevice, *_context->getCudaStream());
+
+            NativeOpExecutioner::execSummaryStats(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, tmp, copy.size(), xTadShapeInfo, xTadOffsets, biasCorrected);
+
+            auto res = cudaStreamSynchronize(*_context->getCudaStream());
+            if (res != 0)
+                throw cuda_exception::build("varianceAlongDimension failed", res);
+
+            RELEASE_SPECIAL(tmp, _context->getWorkspace());
+            RELEASE_SPECIAL(xTadShapeInfo, _context->getWorkspace());
+            RELEASE_SPECIAL(xTadOffsets, _context->getWorkspace());
+        }
+
+
+        NDArray::registerSpecialUse({result}, {this});
+
+        return result;
+    }
+
+    void NDArray::varianceAlongDimension(nd4j::variance::Ops op, const NDArray *target, const bool biasCorrected, const std::vector<int>& dimensions) {
+        if (isS())
+            throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");
+
+        std::vector<int> copy(dimensions);
+        if (copy.size() > 1)
+            std::sort(copy.begin(), copy.end());
+
+        if (!target->isR())
+            throw std::runtime_error("NDArray::varianceAlongDimension: target array must have FLOAT type");
+
+        if(rankOf() == copy.size() || copy.empty())
+            NativeOpExecutioner::execSummaryStatsScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), biasCorrected);
+        else {
+            Nd4jLong *xTadShapeInfo;
+            Nd4jLong *xTadOffsets;
+            int *tmp;
+            ALLOCATE_SPECIAL(tmp, _context->getWorkspace(), copy.size(), int);
+
+            cudaMemcpyAsync(tmp, copy.data(), copy.size() * sizeof(int), cudaMemcpyHostToDevice, *_context->getCudaStream());
+            shape::TAD tad(this->getShapeInfo(), copy.data(), copy.size());
+            tad.createTadOnlyShapeInfo();
+            tad.createOffsets();
+            ALLOCATE_SPECIAL(xTadOffsets, _context->getWorkspace(), tad.numTads, Nd4jLong);
+            ALLOCATE_SPECIAL(xTadShapeInfo, _context->getWorkspace(), shape::shapeInfoLength(tad.tadOnlyShapeInfo), Nd4jLong);
+
+            NativeOpExecutioner::execSummaryStats(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, tmp, copy.size(), xTadShapeInfo, xTadOffsets, biasCorrected);
+
+            auto res = cudaStreamSynchronize(*_context->getCudaStream());
+            if (res != 0)
+                throw cuda_exception::build("varianceAlongDimension failed", res);
+
+            RELEASE_SPECIAL(tmp, _context->getWorkspace());
+            RELEASE_SPECIAL(xTadShapeInfo, _context->getWorkspace());
+            RELEASE_SPECIAL(xTadOffsets, _context->getWorkspace());
+        }
+    }
+
+////////////////////////////////////////////////////////////////////////
     // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
     bool NDArray::equalsTo(const NDArray *other, double eps) const {
         if (this->dataType() != other->dataType() || lengthOf() != other->lengthOf())
