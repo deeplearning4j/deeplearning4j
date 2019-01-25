@@ -202,21 +202,22 @@ public abstract class AbstractSession<T, O> {
                 if (variables.contains(varToExec.getVariable())) {  //Check if required output
                     out.put(varToExec.getVariable(), nodeOutputs.get(varToExec));
                 }
-                updateDescendentsForExec(varToExec);
+                updateDescendentsForExec(step, varToExec);
                 continue;
             }
 
             //Get inputs to this variable. May be actual op inputs, or just control dependencies
             Set<VarId> inputsToVar = execInputs.get(varToExec);
-            Set<VarId> inputsToVarAllIter = execInputsAllIter.get(newVarId(varToExec.getVariable(), varToExec.getFrame(), 0, varToExec.getParentFrame()));
+            VarId allIterInputVar = adaptForNestedEnter(newVarId(varToExec.getVariable(), varToExec.getFrame(), 0, varToExec.getParentFrame()));
+            Set<VarId> inputsToVarAllIter = execInputsAllIter.get(allIterInputVar);
             Set<String> constPhForVar = execConstInputs.get(varToExec.getVariable());
 
-            log.trace("Beginning execution step {}: variable {}", (step++), varToExec);
+            log.trace("Beginning execution step {}: variable {}", step, varToExec);
 
             if (sameDiff.getVariable(varToExec.getVariable()).isPlaceHolder()) {
                 //Variable is placeholder: do lookup
                 nodeOutputs.put(varToExec, placeholderValues.get(varToExec.getVariable()));
-                updateDescendentsForExec(varToExec); //Check + mark descendants as available for exec
+                updateDescendentsForExec(step, varToExec); //Check + mark descendants as available for exec
                 if (variables.contains(varToExec.getVariable())) {  //Check if required output
                     out.put(varToExec.getVariable(), placeholderValues.get(varToExec.getVariable()));
                 }
@@ -227,7 +228,7 @@ public abstract class AbstractSession<T, O> {
                 T phArr = getConstantOrVariable(varToExec.getVariable());
                 Preconditions.checkNotNull(phArr, "Encountered null placeholder array for constant: %s", varToExec);
                 nodeOutputs.put(varToExec, phArr);
-                updateDescendentsForExec(varToExec); //Check + mark descendants as available for exec
+                updateDescendentsForExec(step, varToExec); //Check + mark descendants as available for exec
                 if (variables.contains(varToExec.getVariable())) {  //Check if required output
                     out.put(varToExec.getVariable(), phArr);
                 }
@@ -291,7 +292,7 @@ public abstract class AbstractSession<T, O> {
                     }
 
                     nodeOutputs.put(outputVarId, opOutputValues[i]);
-                    updateDescendentsForExec(outputVarId); //Check + mark descendants as available for exec
+                    updateDescendentsForExec(step, outputVarId); //Check + mark descendants as available for exec
 
                     if (variables.contains(opOutputVarNames[i])) {  //Check if required output
                         out.put(opOutputVarNames[i], opOutputValues[i]);
@@ -301,6 +302,7 @@ public abstract class AbstractSession<T, O> {
                 Variable v = sameDiff.getVariables().get(varToExec.getVariable());
                 throw new IllegalStateException("Unable to execute variable " + varToExec + " of type " + v.getVariable().getVariableType());
             }
+            step++;
         }
 
 
@@ -375,9 +377,10 @@ public abstract class AbstractSession<T, O> {
      * This method should be called for a variable once it's array is ready for use.
      * For example, post op execution, etc
      *
+     * @param execStep    Current execution step (mainly for debugging)
      * @param executedVar Variable that was just executed
      */
-    protected void updateDescendentsForExec(VarId executedVar) {
+    protected void updateDescendentsForExec(int execStep, VarId executedVar) {
         String varName = executedVar.getVariable();
         Variable var = sameDiff.getVariables().get(executedVar.getVariable());
         //Find any ops (or variables with control dependencies) that this is required for execution of and check if now available for exec
@@ -467,7 +470,7 @@ public abstract class AbstractSession<T, O> {
                 String[] inputsThisOp = fn.argNames();
                 boolean allInputsAvailable = true;
                 if (inputsThisOp != null) {
-                    allInputsAvailable = allInputsAvailable(inputsThisOp, executedVar);
+                    allInputsAvailable = allInputsAvailable(execStep, inputsThisOp, executedVar);
                 }
 
                 //Check Op control dependencies
@@ -588,7 +591,7 @@ public abstract class AbstractSession<T, O> {
                         boolean allInputsAvailable = true;
                         if(op.getInputsToOp() != null && !op.getInputsToOp().isEmpty()){
                             List<String> inputList = op.getInputsToOp();
-                            allInputsAvailable = allInputsAvailable(inputList.toArray(new String[inputList.size()]), executedVar);
+                            allInputsAvailable = allInputsAvailable(execStep, inputList.toArray(new String[inputList.size()]), executedVar);
                         }
 
                         if(allInputsAvailable && op.getControlDeps() != null){
@@ -649,7 +652,7 @@ public abstract class AbstractSession<T, O> {
         }
     }
 
-    protected boolean allInputsAvailable(String[] inputsThisOp, VarId executedVar){
+    protected boolean allInputsAvailable(int execStep, String[] inputsThisOp, VarId executedVar){
         for (String in : inputsThisOp) {
             //The input (for normal ops - not Enter/Exit/NextIteration) have the same frame and iteration number as the just executed var
             //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame (unless variable control dep exists)
@@ -658,6 +661,7 @@ public abstract class AbstractSession<T, O> {
             SDVariable sdv = sameDiff.getVariable(in);
             Variable variable = sameDiff.getVariables().get(in);
             VarId vid;
+            boolean nestedWhile = false;
             if (sdv.isConstant() || sdv.isPlaceHolder()) {
                 //Constant
                 if(variable.getControlDeps() == null || variable.getControlDeps().isEmpty()){
@@ -673,14 +677,50 @@ public abstract class AbstractSession<T, O> {
                 //Edge case: "Enter" nodes always have iteration 0 by definition. In some TF graphs/loops, the enter node
                 // is used in multiple iterations (like, in a loop condition) - not just the first iteration
                 int iter = executedVar.getIteration();
+                FrameIter parentFrame = executedVar.getParentFrame();
                 if(sdv.getVariableType() == VariableType.ARRAY && sameDiff.getOps().get(variable.getOutputOfOp()).getOp() instanceof Enter){
                     iter = 0;
+                    //Image and more thorough descritption: https://gist.github.com/AlexDBlack/bd84813a93db94cd17aec353453fc1cb
+                    //Edge case hack: Graph structure X -> Enter(a) -> Enter(b) -> opY
+                    //(Or any arbitrary number of chained enter ops)
+                    //Challenge here: op Y should (indirectly) use variable X for iteration 0 for BOTH frames (a and b)
+                    //If we look for VarId("enter-b", frame="b", iter=0, parent=("a",iter=1+)) then we wont find it
+                    //Instead, what we want to look for VarId("enter-b", frame="b", iter=0, parent=("a",iter=0))
+                    //Put another way: "enter-b" is available for all iterations of frame "b".
+                    //TODO is there a cleaner way to handle this edge case?
+                    Enter e = (Enter) sameDiff.getOps().get(variable.getOutputOfOp()).getOp();
+                    String inputName = e.arg().getVarName();
+                    boolean isNestedEnter = (sameDiff.getVariableOutputFunction(inputName) instanceof Enter);
+                    if(isNestedEnter){
+                        parentFrame = parentFrame.clone();
+                    }
+
+                    Enter currentEnter = e;
+                    FrameIter frameToModifyParent = parentFrame;
+                    while(isNestedEnter && frameToModifyParent != null){
+                        frameToModifyParent.setIteration(0);
+                        inputName = currentEnter.arg().getVarName();
+                        isNestedEnter = (sameDiff.getVariableOutputFunction(inputName) instanceof Enter);
+                        if(isNestedEnter){
+                            currentEnter = (Enter) sameDiff.getVariableOutputFunction(inputName);
+                            frameToModifyParent = frameToModifyParent.getParentFrame();
+                        }
+                    }
+                    nestedWhile = true;
                 }
-                vid = newVarId(in, executedVar.getFrame(), iter, executedVar.getParentFrame());
+                vid = newVarId(in, executedVar.getFrame(), iter, parentFrame);
             }
 
             if (!nodeOutputs.containsKey(vid)) {
                 return false;
+            } else if(nestedWhile){
+                Enter e = (Enter) sameDiff.getOps().get(variable.getOutputOfOp()).getOp();
+                //check that vars have this input set, for: e -> (ops) -> (vars)
+                Variable v = sameDiff.getVariables().get(e.outputVariable().getVarName());
+                List<String> opNames = v.getInputsForOp();
+                for(String s : opNames){
+                    
+                }
             }
         }
         return true;
@@ -760,6 +800,33 @@ public abstract class AbstractSession<T, O> {
                 if(iter0.getIteration() != 0){
                     iter0 = newVarId(iter0.getVariable(), iter0.getFrame(), 0, forVariable.getParentFrame());
                 }
+
+//                //Nested Enter nodes case - see handling in allInputsAvailable for reasoning here
+//                Variable var = sameDiff.getVariables().get(inputVar.getVariable());
+//                Enter e = (Enter) sameDiff.getOps().get(var.getOutputOfOp()).getOp();
+//                String inputName = e.arg().getVarName();
+//                boolean isNestedEnter = (sameDiff.getVariableOutputFunction(inputName) instanceof Enter);
+//                if(isNestedEnter){
+//                    iter0 = newVarId(iter0.getVariable(), iter0.getFrame(), iter0.getIteration(), iter0.getParentFrame().clone());
+//                }
+//
+//                Enter currentEnter = e;
+//                FrameIter frameToModifyParent = iter0.getParentFrame();
+//                while(isNestedEnter && frameToModifyParent != null){
+//                    frameToModifyParent.setIteration(0);
+//                    inputName = currentEnter.arg().getVarName();
+//                    isNestedEnter = (sameDiff.getVariableOutputFunction(inputName) instanceof Enter);
+//                    if(isNestedEnter){
+//                        currentEnter = (Enter) sameDiff.getVariableOutputFunction(inputName);
+//                        frameToModifyParent = frameToModifyParent.getParentFrame();
+//                    }
+//                }
+
+
+                //Nested Enter nodes case - see handling in allInputsAvailable for reasoning here
+                inputVar = adaptForNestedEnter(inputVar);
+
+
                 if(!execInputsAllIter.containsKey(iter0))
                     execInputsAllIter.put(iter0, new HashSet<VarId>());
                 execInputsAllIter.get(iter0).add(inputVar);
@@ -823,6 +890,47 @@ public abstract class AbstractSession<T, O> {
         public String toString(){
             return "(\"" + frame + "\"," + iteration + (parentFrame == null ? "" : ",parent=" + parentFrame.toString()) + ")";
         }
+
+        @Override
+        public FrameIter clone(){
+            return new FrameIter(frame, iteration, (parentFrame == null ? null : parentFrame.clone()));
+        }
     }
 
+    /**
+     *
+     * @param varId Variable to execute - output of an enter op
+     * @return
+     */
+    protected VarId adaptForNestedEnter(VarId varId){
+        //Nested Enter nodes case - see handling in allInputsAvailable for reasoning here
+        Variable var = sameDiff.getVariables().get(varId.getVariable());
+        SameDiffOp op = sameDiff.getOps().get(var.getOutputOfOp());
+        if(var.getVariable().getVariableType() != VariableType.ARRAY || op == null || !(op.getOp() instanceof Enter)){
+            //Standard/usual case
+            return varId;
+        }
+
+        Enter e = (Enter) op.getOp();
+        String inputName = e.arg().getVarName();
+        boolean isNestedEnter = (sameDiff.getVariableOutputFunction(inputName) instanceof Enter);
+        VarId vid = varId;
+        if(isNestedEnter){
+            vid = newVarId(vid.getVariable(), vid.getFrame(), vid.getIteration(), vid.getParentFrame().clone());
+        }
+
+        Enter currentEnter = e;
+        FrameIter frameToModifyParent = vid.getParentFrame();
+        while(isNestedEnter && frameToModifyParent != null){
+            frameToModifyParent.setIteration(0);
+            inputName = currentEnter.arg().getVarName();
+            isNestedEnter = (sameDiff.getVariableOutputFunction(inputName) instanceof Enter);
+            if(isNestedEnter){
+                currentEnter = (Enter) sameDiff.getVariableOutputFunction(inputName);
+                frameToModifyParent = frameToModifyParent.getParentFrame();
+            }
+        }
+
+        return vid;
+    }
 }
