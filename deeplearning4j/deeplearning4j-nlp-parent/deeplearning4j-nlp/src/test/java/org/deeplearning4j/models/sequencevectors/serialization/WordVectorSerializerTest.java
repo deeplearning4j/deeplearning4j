@@ -14,9 +14,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.io.StringWriter;
+import java.io.*;
 
 import static org.junit.Assert.*;
 
@@ -69,7 +67,8 @@ public class WordVectorSerializerTest {
             FileOutputStream fos = new FileOutputStream("test.zip");
             WordVectorSerializer.writeSequenceVectors(vectors, fos);
             //byte[] bytesResult = baos.toByteArray();
-            //        deser = WordVectorSerializer.readSequenceVectors(json, );
+            //deser = WordVectorSerializer.readSequenceVectors(new ByteArrayInputStream(bytesResult));
+            deser = WordVectorSerializer.readSequenceVectors(new FileInputStream("test.zip"));
         } catch (Exception e) {
             e.printStackTrace();
             fail();
