@@ -1989,8 +1989,8 @@ public class WordVectorSerializer {
     private static final String SYN1_FIELD = "Syn1";
     private static final String SYN1_NEG_FIELD = "Syn1Neg";
 
-    public static <T extends  SequenceElement> String writeSequenceVectors(@NonNull SequenceVectors<T> vectors/*,
-                                                                           @NonNull OutputStream stream*/)
+    public static <T extends  SequenceElement> String writeSequenceVectors(@NonNull SequenceVectors<T> vectors,
+                                                                           @NonNull OutputStream stream)
             throws JsonProcessingException, IOException {
 
         WeightLookupTable<T> lookupTable = vectors.getLookupTable();
@@ -1998,11 +1998,10 @@ public class WordVectorSerializer {
         ObjectMapper mapper = getModelMapper();
         JsonObject retVal = new JsonObject();
 
- //       try (PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8)))) {
+        try (PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8)))) {
 
-
-   //         writer.write(vectors.getConfiguration().toEncodedJson());
-   //         writer.write(((AbstractCache<T>) vocabCache).toJson());
+            //writer.write(vectors.getConfiguration().toEncodedJson());
+            //writer.write(((AbstractCache<T>) vocabCache).toJson());
             //writer.write(((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn0());
 
             retVal.addProperty(CLASS_FIELD, mapper.writeValueAsString(vectors.getClass().getName()));
@@ -2012,70 +2011,79 @@ public class WordVectorSerializer {
             retVal.addProperty(CLASS_FIELD, VectorsConfiguration.class.getName());
             retVal.addProperty(CONFIG_FIELD, configuration.toJson());
 
+            writer.write(retVal.toString());
+
             INDArray syn0 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn0();
             INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
             INDArray syn1Neg = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1Neg();
 
+            String classInfo = CLASS_FIELD + INDArray.class.getName();
+
             if (syn0 != null) {
-                retVal.addProperty(CLASS_FIELD, INDArray.class.getName());
-                retVal.addProperty(SYN0_FIELD, syn0.toString());
+                writer.write(classInfo);
+                //writer.write(syn0);
+                /*retVal.addProperty(CLASS_FIELD, INDArray.class.getName());
+                retVal.addProperty(SYN0_FIELD, syn0.toString());*/
             }
             if (syn1 != null) {
-                retVal.addProperty(CLASS_FIELD, INDArray.class.getName());
-                retVal.addProperty(SYN1_FIELD, syn1.toString());
+                /*retVal.addProperty(CLASS_FIELD, INDArray.class.getName());
+                retVal.addProperty(SYN1_FIELD, syn1.toString());*/
             }
             if (syn1Neg != null) {
-                retVal.addProperty(CLASS_FIELD, INDArray.class.getName());
-                retVal.addProperty(SYN1_NEG_FIELD, syn1Neg.toString());
+                /*retVal.addProperty(CLASS_FIELD, INDArray.class.getName());
+                retVal.addProperty(SYN1_NEG_FIELD, syn1Neg.toString());*/
             }
-        //}
+        }
         return retVal.toString();
     }
 
 
-    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(@NonNull String jsonString/*,
-                                                                                     @NonNull InputStream stream*/) throws IOException {
+    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(/*@NonNull String jsonString,*/
+                                                                                     @NonNull InputStream stream) throws IOException {
         ObjectMapper mapper = getModelMapper();
-        JsonParser parser = new JsonParser();
-        JsonObject jsonObject = parser.parse(jsonString).getAsJsonObject();
-        List<T> items = new ArrayList<>();
+        SequenceVectors<T> vectors = null;
 
-        AbstractCache<T> vocabCache = AbstractCache.fromJson(jsonObject.get(VOCAB_FIELD).getAsString());
-        VectorsConfiguration configuration = VectorsConfiguration.fromJson(jsonObject.get(CONFIG_FIELD).getAsString());
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+            String jsonString = reader.toString();
+            JsonParser parser = new JsonParser();
+            JsonObject jsonObject = parser.parse(jsonString).getAsJsonObject();
 
-        INDArray syn0 = Nd4j.create(10, 2),
-                syn1 = Nd4j.create(10, 2),
-                syn1Neg = Nd4j.create(10, 2);
+            AbstractCache<T> vocabCache = AbstractCache.fromJson(jsonObject.get(VOCAB_FIELD).getAsString());
+            VectorsConfiguration configuration = VectorsConfiguration.fromJson(jsonObject.get(CONFIG_FIELD).getAsString());
 
-        if (jsonObject.get(SYN0_FIELD) != null) {
-            float[][] arraySyn0 = mapper.readValue(jsonObject.get(SYN0_FIELD).getAsString(), float[][].class);
-            for (int i = 0; i < 10; ++i) {
-                syn0.putRow(i, Nd4j.create(arraySyn0[i]));
+            INDArray syn0 = Nd4j.create(10, 2),
+                    syn1 = Nd4j.create(10, 2),
+                    syn1Neg = Nd4j.create(10, 2);
+
+            if (jsonObject.get(SYN0_FIELD) != null) {
+                float[][] arraySyn0 = mapper.readValue(jsonObject.get(SYN0_FIELD).getAsString(), float[][].class);
+                for (int i = 0; i < 10; ++i) {
+                    syn0.putRow(i, Nd4j.create(arraySyn0[i]));
+                }
             }
-        }
 
-        if (jsonObject.get(SYN1_FIELD) != null) {
-            float[][] arraySyn0 = mapper.readValue(jsonObject.get(SYN1_FIELD).getAsString(), float[][].class);
-            for (int i = 0; i < 10; ++i) {
-                syn1.putRow(i, Nd4j.create(arraySyn0[i]));
+            if (jsonObject.get(SYN1_FIELD) != null) {
+                float[][] arraySyn0 = mapper.readValue(jsonObject.get(SYN1_FIELD).getAsString(), float[][].class);
+                for (int i = 0; i < 10; ++i) {
+                    syn1.putRow(i, Nd4j.create(arraySyn0[i]));
+                }
             }
-        }
 
-        if (jsonObject.get(SYN1_NEG_FIELD) != null) {
-            float[][] arraySyn0 = mapper.readValue(jsonObject.get(SYN1_NEG_FIELD).getAsString(), float[][].class);
-            for (int i = 0; i < 10; ++i) {
-                syn1Neg.putRow(i, Nd4j.create(arraySyn0[i]));
+            if (jsonObject.get(SYN1_NEG_FIELD) != null) {
+                float[][] arraySyn0 = mapper.readValue(jsonObject.get(SYN1_NEG_FIELD).getAsString(), float[][].class);
+                for (int i = 0; i < 10; ++i) {
+                    syn1Neg.putRow(i, Nd4j.create(arraySyn0[i]));
+                }
             }
+            WeightLookupTable<T> lookupTable = new InMemoryLookupTable<>();
+            ((InMemoryLookupTable<T>) lookupTable).setSyn0(syn0);
+            ((InMemoryLookupTable<T>) lookupTable).setSyn1(syn1);
+            ((InMemoryLookupTable<T>) lookupTable).setSyn1Neg(syn1Neg);
+            vectors = new SequenceVectors.Builder<T>(configuration).
+                    //lookupTable(lookupTable).
+                            vocabCache(vocabCache).
+                            build();
         }
-        WeightLookupTable<T> lookupTable = new InMemoryLookupTable<>();
-        ((InMemoryLookupTable<T>) lookupTable).setSyn0(syn0);
-        ((InMemoryLookupTable<T>) lookupTable).setSyn1(syn1);
-        ((InMemoryLookupTable<T>) lookupTable).setSyn1Neg(syn1Neg);
-        SequenceVectors<T> vectors = new SequenceVectors.Builder<T>(configuration).
-                //lookupTable(lookupTable).
-                vocabCache(vocabCache).
-                build();
-
         return vectors;
     }
 
