@@ -25,7 +25,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void reduceDotBP(NDArray* inputX, NDArray* inputY, NDArray* epsilon, NDArray* outputX, NDArray* outputY, std::vector<int> const& axes) {
+    void reduceDotBP(graph::LaunchContext* context, NDArray* inputX, NDArray* inputY, NDArray* epsilon, NDArray* outputX, NDArray* outputY, std::vector<int> const& axes) {
 //                std::unique_ptr<ResultSet<T>> outList(output->allTensorsAlongDimension(dimensions));
         std::vector<int> dimensions; //(input->rankOf() - axes.size());
         for (Nd4jLong e = 0; e < inputX->rankOf(); e++) {

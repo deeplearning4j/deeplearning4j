@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    Nd4jStatus bdsFunctor(NDArray* x_shape, NDArray* y_shape, NDArray* output) {
+    Nd4jStatus bdsFunctor(graph::LaunchContext* context, NDArray* x_shape, NDArray* y_shape, NDArray* output) {
         int e = 0, x = 0, y = 0;
 //#pragma omp parallel for
         if (x_shape->lengthOf() == 1 || y_shape->lengthOf() == 1) {// except case
@@ -54,7 +54,7 @@ namespace helpers {
             }
             if (e)
                 if (val != output->e<Nd4jLong>(e - 1)) {
-                    nd4j_printf("broadcast_dynamic_shape: Input shapes should be compatible, but %f and %f were given.", val, output->e<float>(e - 1));
+                    nd4j_printf("broadcast_dynamic_shape: Input shapes should be compatible, but %i and %i were given.", val, output->e<Nd4jLong>(e - 1));
                     return Status::CODE(ND4J_STATUS_VALIDATION, "BDS validation failed!");
                 }
             output->p(e, val);

@@ -39,7 +39,7 @@ static void _diagFunctor(const NDArray* input, NDArray* output) {
         (*output).p<T>(i * (inLength + 1), (*input).e<T>(i));
 }
 
-    void diagFunctor(const NDArray* input, NDArray* output) {
+    void diagFunctor(graph::LaunchContext* context, const NDArray* input, NDArray* output) {
         auto xType = input->dataType();
 
         BUILD_SINGLE_SELECTOR(xType, _diagFunctor, (input, output), LIBND4J_TYPES);
@@ -47,7 +47,7 @@ static void _diagFunctor(const NDArray* input, NDArray* output) {
 
 BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (const NDArray* input, NDArray* output);, LIBND4J_TYPES);
 
-void diagPartFunctor(NDArray* input, NDArray* output) {
+void diagPartFunctor(graph::LaunchContext* context, NDArray* input, NDArray* output) {
     const int outLen = output->lengthOf();
     const int inLen = input->lengthOf();
     int i(0), j(0);

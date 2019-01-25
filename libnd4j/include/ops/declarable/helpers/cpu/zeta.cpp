@@ -125,7 +125,7 @@ static NDArray zeta_(const NDArray& x, const NDArray& q) {
 	return result;
 }
 
-	NDArray zeta(const NDArray& x, const NDArray& q) {
+	NDArray zeta(graph::LaunchContext* context, const NDArray& x, const NDArray& q) {
 		BUILD_SINGLE_SELECTOR(x.dataType(), return zeta_, (x, q), FLOAT_TYPES);
 	}
 

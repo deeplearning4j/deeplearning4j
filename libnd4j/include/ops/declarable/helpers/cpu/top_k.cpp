@@ -150,7 +150,7 @@ namespace helpers {
 // ----------------------------------------------------------------------------------------------- //
 
     template <typename T>
-    static int inTopKFunctor_(NDArray* input, NDArray* target, NDArray* result, int k) {
+    static int inTopKFunctor_(graph::LaunchContext* context, NDArray* input, NDArray* target, NDArray* result, int k) {
 
             std::vector<Nd4jLong> shapeI(input->rankOf());
             for (int i = 0; i < input->rankOf() - 1; i++)
@@ -158,7 +158,7 @@ namespace helpers {
             shapeI[input->rankOf() - 1] = k;
             std::unique_ptr<NDArray> indices(NDArrayFactory::create_<Nd4jLong>(input->ordering(), shapeI));
             NDArray* values = nullptr;
-            int status = topKFunctor(input, values, indices.get(), k, true);
+            int status = topKFunctor(context, input, values, indices.get(), k, true);
 
             if (status == ND4J_STATUS_OK) {
 #pragma omp parallel for if(target->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
@@ -178,16 +178,16 @@ namespace helpers {
 
     }
 
-        int topKFunctor(NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort) {
+        int topKFunctor(graph::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort) {
             BUILD_SINGLE_SELECTOR(input->dataType(), return topKFunctor_, (input, values, indeces, k, needSort), NUMERIC_TYPES);
         }
 
-        int inTopKFunctor(NDArray* input, NDArray* target, NDArray* result, int k) {
-            BUILD_SINGLE_SELECTOR(input->dataType(), return inTopKFunctor_, (input, target, result, k), NUMERIC_TYPES);
+        int inTopKFunctor(graph::LaunchContext* context, NDArray* input, NDArray* target, NDArray* result, int k) {
+            BUILD_SINGLE_SELECTOR(input->dataType(), return inTopKFunctor_, (context, input, target, result, k), NUMERIC_TYPES);
         }
 
         BUILD_SINGLE_TEMPLATE(template int topKFunctor_, (NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort), NUMERIC_TYPES);
-        BUILD_SINGLE_TEMPLATE(template int inTopKFunctor_, (NDArray* input, NDArray* target, NDArray* result, int k), NUMERIC_TYPES);
+        BUILD_SINGLE_TEMPLATE(template int inTopKFunctor_, (graph::LaunchContext* context, NDArray* input, NDArray* target, NDArray* result, int k), NUMERIC_TYPES);
 }
 }
 }

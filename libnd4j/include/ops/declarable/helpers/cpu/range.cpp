@@ -42,7 +42,7 @@ static void _range(const NDArray& start, const NDArray& delta, NDArray& outVecto
         
 }
 
-    void range(const NDArray& start, const NDArray& delta, NDArray& outVector) {
+    void range(graph::LaunchContext* context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
         BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (start, delta, outVector), LIBND4J_TYPES);
     }
 

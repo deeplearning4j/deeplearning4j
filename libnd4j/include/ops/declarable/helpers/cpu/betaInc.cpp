@@ -196,7 +196,7 @@ static T betaIncTA(T a, T b, T x) {
 }
 
 template<typename T>
-NDArray betaIncT(const NDArray& a, const NDArray& b, const NDArray& x) {
+NDArray betaIncT(graph::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x) {
 	auto result = NDArray(&x, false, x.getContext());
 
 #pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
@@ -210,9 +210,9 @@ NDArray betaIncT(const NDArray& a, const NDArray& b, const NDArray& x) {
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
-NDArray betaInc(const NDArray& a, const NDArray& b, const NDArray& x) {
+NDArray betaInc(graph::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x) {
 	auto xType = a.dataType();
-	BUILD_SINGLE_SELECTOR(xType, return betaIncT, (a, b, x), FLOAT_TYPES);
+	BUILD_SINGLE_SELECTOR(xType, return betaIncT, (context,a, b, x), FLOAT_TYPES);
 	return a;
 }
 
@@ -232,10 +232,10 @@ template float16 betaIncTA<float16>(const float16 a, const float16 b, const floa
 template bfloat16 betaIncTA<bfloat16>(const bfloat16 a, const bfloat16 b, const bfloat16 x);
 template double  betaIncTA<double> (const double  a, const double  b, const double  x);
 
-template NDArray betaIncT<float>  (const NDArray&   a, const NDArray&   b, const NDArray&  x);
-template NDArray betaIncT<float16>(const NDArray& a, const NDArray& b, const NDArray& x);
-template NDArray betaIncT<bfloat16>(const NDArray& a, const NDArray& b, const NDArray& x);
-template NDArray betaIncT<double> (const NDArray&  a, const NDArray&  b, const NDArray& x);
+template NDArray betaIncT<float>  (graph::LaunchContext* context, const NDArray&   a, const NDArray&   b, const NDArray&  x);
+template NDArray betaIncT<float16>(graph::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x);
+template NDArray betaIncT<bfloat16>(graph::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x);
+template NDArray betaIncT<double> (graph::LaunchContext* context, const NDArray&  a, const NDArray&  b, const NDArray& x);
 
 
 }

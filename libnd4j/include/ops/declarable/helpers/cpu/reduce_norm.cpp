@@ -38,13 +38,13 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template void reduceNorm2BP_scalar_, (NDArray *input, NDArray *epsilon, NDArray *tempNorm, NDArray *output), FLOAT_TYPES);
 
 
-    void reduceNorm2BP_scalar(NDArray *input, NDArray *epsilon, NDArray *tempNorm, NDArray *output) {
+    void reduceNorm2BP_scalar(graph::LaunchContext* context, NDArray *input, NDArray *epsilon, NDArray *tempNorm, NDArray *output) {
         auto xType = epsilon->dataType();
 
         BUILD_SINGLE_SELECTOR(xType, reduceNorm2BP_scalar_, (input, epsilon, tempNorm, output), FLOAT_TYPES);
     }
 
-    void reduceNorm1BP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims) {
+    void reduceNorm1BP(graph::LaunchContext* context, NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims) {
 
         if (epsilon->isScalar()) {
 #pragma omp parallel for
@@ -70,7 +70,7 @@ namespace helpers {
         }
     }
 
-    void reduceNorm2BP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims) {
+    void reduceNorm2BP(graph::LaunchContext* context, NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims) {
 
         std::vector<int> dimensions; //(input->rankOf() - axes.size());
         for (Nd4jLong e = 0; e < input->rankOf(); e++) {
@@ -86,7 +86,7 @@ namespace helpers {
         }
     }
 
-    void reduceSquareNormBP(NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims) {
+    void reduceSquareNormBP(graph::LaunchContext* context, NDArray* input, NDArray* epsilon, NDArray* tempNorm, NDArray* output, std::vector<int> const& axes, bool keepDims) {
 
         std::vector<int> dimensions; //(input->rankOf() - axes.size());
         for (Nd4jLong e = 0; e < input->rankOf(); e++) {

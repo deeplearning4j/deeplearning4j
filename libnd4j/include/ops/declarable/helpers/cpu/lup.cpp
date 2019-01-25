@@ -69,7 +69,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template void _invertLowerMatrix, (NDArray* inputMatrix, NDArray* invertedMatrix);, FLOAT_TYPES);
 
-    void invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
+    void invertLowerMatrix(graph::LaunchContext* context, NDArray* inputMatrix, NDArray* invertedMatrix) {
         BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), _invertLowerMatrix, (inputMatrix, invertedMatrix), FLOAT_TYPES);
     }
 
@@ -100,7 +100,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template void _invertUpperMatrix, (NDArray* inputMatrix, NDArray* invertedMatrix);, FLOAT_TYPES);
 
-    void invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
+    void invertUpperMatrix(graph::LaunchContext* context, NDArray* inputMatrix, NDArray* invertedMatrix) {
         BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), _invertUpperMatrix, (inputMatrix, invertedMatrix), FLOAT_TYPES);
     }
 
@@ -212,7 +212,7 @@ template <typename T>
 
     BUILD_SINGLE_TEMPLATE(template int log_abs_determinant_, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
-    int log_abs_determinant(NDArray* input, NDArray* output) {
+    int log_abs_determinant(graph::LaunchContext* context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return log_abs_determinant_, (input, output), FLOAT_TYPES);
     }
 
@@ -269,7 +269,7 @@ template <typename T>
         return Status::OK();
     }
 
-    int inverse(NDArray* input, NDArray* output) {
+    int inverse(graph::LaunchContext* context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _inverse, (input, output), FLOAT_TYPES);
     }
 
@@ -316,7 +316,7 @@ template <typename T>
         return ND4J_STATUS_OK;
     }
 
-    int cholesky(NDArray* input, NDArray* output, bool inplace) {
+    int cholesky(graph::LaunchContext* context, NDArray* input, NDArray* output, bool inplace) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (input, output, inplace), FLOAT_TYPES);
     }    
     BUILD_SINGLE_TEMPLATE(template int cholesky_, (NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);

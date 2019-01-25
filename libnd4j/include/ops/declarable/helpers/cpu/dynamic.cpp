@@ -175,30 +175,30 @@ namespace nd4j {
                 outputList[1]->assign(indices);
             }
 
-            void dynamicPartitionFunctor(NDArray const* input, NDArray const* indices, std::vector<NDArray*>& outputList) {
+            void dynamicPartitionFunctor(graph::LaunchContext* context, NDArray const* input, NDArray const* indices, std::vector<NDArray*>& outputList) {
                 auto xType = input->dataType();
 
                 BUILD_SINGLE_SELECTOR(xType, _dynamicPartitionFunctor, (input, indices, outputList), LIBND4J_TYPES);
             }
 
             template <typename T>
-            static int _dynamicStitchFunctorBP(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradInput, std::vector<NDArray*>& outputList){
+            static int _dynamicStitchFunctorBP(graph::LaunchContext* context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradInput, std::vector<NDArray*>& outputList){
                 throw std::runtime_error("Not umplemented yet");
             }
 
-            int dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output){
+            int dynamicStitchFunctor(graph::LaunchContext* context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output){
                 auto xType = inputs.at(0)->dataType();
 
                 BUILD_SINGLE_SELECTOR(xType, return _dynamicStitchFunctor, (inputs, indices, output), LIBND4J_TYPES);
             }
 
-            int dynamicStitchFunctorBP(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradInput, std::vector<NDArray*>& outputList) {
+            int dynamicStitchFunctorBP(graph::LaunchContext* context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradInput, std::vector<NDArray*>& outputList) {
                 auto xType = inputs.at(0)->dataType();
 
                 BUILD_SINGLE_SELECTOR(xType, return _dynamicStitchFunctorBP, (inputs, indices, gradInput, outputList), LIBND4J_TYPES);
             }
 
-            void dynamicPartitionFunctorBP(NDArray const* input, NDArray const* indices, std::vector<NDArray*> const& inputGradientList, std::vector<NDArray*>& outputList) {
+            void dynamicPartitionFunctorBP(graph::LaunchContext* context, NDArray const* input, NDArray const* indices, std::vector<NDArray*> const& inputGradientList, std::vector<NDArray*>& outputList) {
                 auto xType = input->dataType();
 
                 BUILD_SINGLE_SELECTOR(xType, _dynamicPartitionFunctorBP, (input, indices, inputGradientList, outputList), LIBND4J_TYPES);

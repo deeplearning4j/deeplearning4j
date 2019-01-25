@@ -43,7 +43,7 @@ static FORCEINLINE NDArray activation(const NDArray& arr) {
 
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
+void gruCell(graph::LaunchContext* context, const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
 
     // x    input [bS, iS], bS - batch size, iS - input size
     // h0   previous cell output [bS, nU],  that is at previous time step t-1
@@ -73,7 +73,7 @@ void gruCell(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArr
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruTimeLoop(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
+void gruTimeLoop(graph::LaunchContext* context, const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
 
     // x   input [time, bS, iS]
     // h0  initial cell output (at time step = 0) [bS, nU]
@@ -99,7 +99,7 @@ void gruTimeLoop(const NDArray* x, const NDArray* h0, const NDArray* Wx, const N
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCellBP(const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* dLdh, const NDArray* dLdWx0,
+void gruCellBP(graph::LaunchContext* context, const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* dLdh, const NDArray* dLdWx0,
                const NDArray* dLdWh0, const NDArray* dLdb0, NDArray* dLdx, NDArray* dLdh0, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
 
     // x                        input [bS, iS]

@@ -25,7 +25,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    static void _adjust_hue_single(NDArray *array, NDArray *output, float delta, bool isNHWC) {
+    static void _adjust_hue_single(graph::LaunchContext* context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
         // we're 100% sure it's 3
         const int numChannels = 3;
         int tuples = array->lengthOf() /  numChannels;
@@ -93,7 +93,7 @@ namespace helpers {
         }
     }
 
-    void _adjust_hue(NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
+    void _adjust_hue(graph::LaunchContext* context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
         auto xType = array->dataType();
 
         float d = delta->e<float>(0);
@@ -111,11 +111,11 @@ namespace helpers {
             delete tadsIn;
             delete tadsOut;
         } else {
-            BUILD_SINGLE_SELECTOR(xType, _adjust_hue_single, (array, output, d, isNHWC);, FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR(xType, _adjust_hue_single, (context, array, output, d, isNHWC);, FLOAT_TYPES);
         }
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _adjust_hue_single, (NDArray *array, NDArray *output, float delta, bool isNHWC);, FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _adjust_hue_single, (graph::LaunchContext* context, NDArray *array, NDArray *output, float delta, bool isNHWC);, FLOAT_TYPES);
 
 }
 }
