@@ -38,11 +38,11 @@ namespace helpers {
     }
 
     int topKFunctor(graph::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return topKFunctor_, (input, values, indeces, k, needSort), NUMERIC_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return topKFunctor_, (context, input, values, indeces, k, needSort), NUMERIC_TYPES);
     }
 
     int inTopKFunctor(graph::LaunchContext* context, NDArray* input, NDArray* target, NDArray* result, int k) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return inTopKFunctor_, (input, target, result, k), NUMERIC_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return inTopKFunctor_, (context, input, target, result, k), NUMERIC_TYPES);
     }
 
     BUILD_SINGLE_TEMPLATE(template int topKFunctor_, (graph::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indeces, int k, bool needSort), NUMERIC_TYPES);

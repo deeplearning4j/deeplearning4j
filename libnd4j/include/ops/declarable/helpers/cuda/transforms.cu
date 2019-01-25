@@ -112,7 +112,7 @@ namespace helpers {
         BUILD_SINGLE_SELECTOR(input->dataType(), gather_, (context, input, indices, output, intArgs), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void gather_, (NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void gather_, (graph::LaunchContext* context, NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs), LIBND4J_TYPES);
 
     //////////////////////////////////////////////////////////////////////////
     void eye(graph::LaunchContext* context, NDArray& output) {

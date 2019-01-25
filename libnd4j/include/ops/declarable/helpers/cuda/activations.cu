@@ -66,7 +66,7 @@ namespace helpers {
         if(input.isVector()) {
         
             if(rank == 1 || input.sizeAt(dimension) != 1)
-                softMaxForVector(input, output);
+                softMaxForVector(context, input, output);
             else
                 output = 1.;
         }
@@ -93,7 +93,7 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template void _softMaxForVector, (void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo), FLOAT_TYPES);
     BUILD_SINGLE_TEMPLATE(template void _logSoftMaxForVector, (void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo), FLOAT_TYPES);
 
-    bool checkAlphaShapeLen(std::vector<Nd4jLong> const& expectedShape, Nd4jLong shapeLen) {
+    bool checkAlphaShapeLen(graph::LaunchContext* context, std::vector<Nd4jLong> const& expectedShape, Nd4jLong shapeLen) {
         Nd4jLong expectedAlphaLen = std::accumulate(expectedShape.cbegin(), expectedShape.cend(), 1, std::multiplies<Nd4jLong>());
         return expectedAlphaLen == shapeLen;
     }

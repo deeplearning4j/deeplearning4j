@@ -42,7 +42,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (const NDArray* input, NDArray* output);, LIBND4J_TYPES);
 
-    void diagPartFunctor(NDArray* input, NDArray* output) {
+    void diagPartFunctor(graph::LaunchContext* context, NDArray* input, NDArray* output) {
 
     }
 
