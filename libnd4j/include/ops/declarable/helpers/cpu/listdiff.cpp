@@ -29,9 +29,9 @@ namespace helpers {
     static Nd4jLong listDiffCount_(NDArray* values, NDArray* keep) {
         Nd4jLong saved = 0L;
         for (Nd4jLong e = 0; e < values->lengthOf(); e++) {
-            T v = values->e<T>(e);
-            T extras[] = {v, (T) 0.0f, (T) 10.0f};
-            NDArray idx = keep->indexReduceNumber(indexreduce::FirstIndex, extras);
+            auto v = values->e<double>(e);
+            ExtraArguments extras({v, 0.0, 10.0});
+            NDArray idx = keep->indexReduceNumber(indexreduce::FirstIndex, &extras);
             Nd4jLong index = idx.e<Nd4jLong>(0);
             if (index < 0)
                 saved++;
@@ -54,9 +54,9 @@ namespace helpers {
         std::vector<Nd4jLong> indices;
 
         for (Nd4jLong e = 0; e < values->lengthOf(); e++) {
-            T v = values->e<T>(e);
-            T extras[] = {v, (T) 0.0f, (T) 10.0f};
-            NDArray idxScalar = keep->indexReduceNumber(indexreduce::FirstIndex, extras);
+            auto v = values->e<double>(e);
+            ExtraArguments extras({v, 0.0, 10.0});
+            NDArray idxScalar = keep->indexReduceNumber(indexreduce::FirstIndex, &extras);
             Nd4jLong idx = idxScalar.e<Nd4jLong>(0);
 
             if (idx < 0) {

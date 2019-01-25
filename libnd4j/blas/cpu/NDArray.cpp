@@ -2060,6 +2060,9 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         // void NDArray::templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, void *value)
     }
 
+    void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
+        // no-op
+    }
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 2D matrix to position i, j
