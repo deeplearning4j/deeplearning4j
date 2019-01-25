@@ -2576,6 +2576,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         for (int idx = 0; idx < numTads; idx++ ) {
 
             #ifdef __CUDABLAS__
+                lazyAllocateBuffer();
                 makeBothBuffersActual();
                 auto array = new NDArray(bufferWithOffset(tad->tadOffsets[idx]), specialBufferWithOffset(tad->tadOffsets[idx]), tad->tadOnlyShapeInfo, _context, false, false, false);
             #else
