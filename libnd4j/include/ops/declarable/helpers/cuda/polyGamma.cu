@@ -69,7 +69,7 @@ namespace helpers {
 
 	}
 
-	void polyGamma(const NDArray& n, const NDArray& x, NDArray& output) {
+	void polyGamma(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output) {
 		BUILD_SINGLE_SELECTOR(x.dataType(), _polyGamma, (n, x, output), FLOAT_TYPES);
 	}
 

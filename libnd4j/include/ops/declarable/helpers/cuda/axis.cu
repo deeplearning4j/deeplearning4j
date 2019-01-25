@@ -25,7 +25,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void adjustAxis(NDArray* input, NDArray* axisVector, std::vector<int>& output) {
+    void adjustAxis(graph::LaunchContext* context, NDArray* input, NDArray* axisVector, std::vector<int>& output) {
         output.resize(axisVector->lengthOf());
         for (int e = 0; e < axisVector->lengthOf(); e++) {
                 auto ca = axisVector->e<int>(e);
@@ -36,7 +36,7 @@ namespace helpers {
         }
     }
 
-    void adjustAxis(Nd4jLong *inputShape, std::vector<int> &axisVector) {
+    void adjustAxis(graph::LaunchContext* context, Nd4jLong *inputShape, std::vector<int> &axisVector) {
         auto rank = shape::rank(inputShape);
         for (int e = 0; e < axisVector.size(); e++) {
             auto a = axisVector[e];

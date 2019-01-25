@@ -780,7 +780,7 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
         REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU_BI operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str());
     }
 
-    helpers::sruBI(x, w, b, c0, mask, ht, ct);
+    helpers::sruBI(block.launchContext(), x, w, b, c0, mask, ht, ct);
     
     return Status::OK();
 }
@@ -903,7 +903,7 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
     auto gradB  = OUTPUT_VARIABLE(2);              // [1 x 4*inSize]
     auto gradC0 = OUTPUT_VARIABLE(3);              // [bS x 2*inSize]
 
-    helpers::sruBIBP(x, w, b, c0, ct, inGradC0, inGradHt, mask, gradI, gradW, gradB, gradC0);
+    helpers::sruBIBP(block.launchContext(), x, w, b, c0, ct, inGradC0, inGradHt, mask, gradI, gradW, gradB, gradC0);
 
     return Status::OK();
 }

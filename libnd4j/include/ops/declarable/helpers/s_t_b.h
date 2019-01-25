@@ -69,7 +69,7 @@ namespace helpers {
 
             auto xType = space->dataType();
             //_execute<T, NUM_BLOCK_DIMS, B2S>(space->buffer() + space_offset, space_shape, &space_strides[1], block_shape, pad_start, block_offsets, batch->buffer() + batch_offset, batch_shape, &batch_strides[1]);
-            BUILD_SINGLE_PARTIAL_SELECTOR(xType, _execute<, (NUM_BLOCK_DIMS, B2S>(space->bufferWithOffset(space_offset), space_shape, &space_strides[1], block_shape, pad_start, block_offsets, batch->bufferWithOffset(batch_offset), batch_shape, &batch_strides[1])), LIBND4J_TYPES);
+            BUILD_SINGLE_PARTIAL_SELECTOR(xType, _execute<, (NUM_BLOCK_DIMS, B2S>(context, space->bufferWithOffset(space_offset), space_shape, &space_strides[1], block_shape, pad_start, block_offsets, batch->bufferWithOffset(batch_offset), batch_shape, &batch_strides[1])), LIBND4J_TYPES);
         }
     };
 
@@ -78,16 +78,16 @@ namespace helpers {
         auto out = output->reshape('c', internal_output_shape);
         switch (internal_block_dims) {
             case 1:
-                _prepare<1, false>(in, out, block_shape, paddings);
+                _prepare<1, false>(context, in, out, block_shape, paddings);
                 break;
             case 2:
-                _prepare<2, false>(in, out, block_shape, paddings);
+                _prepare<2, false>(context, in, out, block_shape, paddings);
                 break;
             case 3:
-                _prepare<3, false>(in, out, block_shape, paddings);
+                _prepare<3, false>(context, in, out, block_shape, paddings);
                 break;
             case 4:
-                _prepare<4, false>(in, out, block_shape, paddings);
+                _prepare<4, false>(context, in, out, block_shape, paddings);
                 break;
             default: {
                 return Status::THROW("SpaceToBatch: Wrong number of internal_block_dims");
@@ -106,16 +106,16 @@ namespace helpers {
         auto out = output->reshape('c', internal_output_shape);
         switch (internal_block_dims) {
             case 1:
-                _prepare<1, true>(in, out, block_shape, crops);
+                _prepare<1, true>(context, in, out, block_shape, crops);
                 break;
             case 2:
-                _prepare<2, true>(in, out, block_shape, crops);
+                _prepare<2, true>(context, in, out, block_shape, crops);
                 break;
             case 3:
-                _prepare<3, true>(in, out, block_shape, crops);
+                _prepare<3, true>(context, in, out, block_shape, crops);
                 break;
             case 4:
-                _prepare<4, true>(in, out, block_shape, crops);
+                _prepare<4, true>(context, in, out, block_shape, crops);
                 break;
             default: {
                 return Status::THROW("BatchToSpace: Wrong number of internal_block_dims");

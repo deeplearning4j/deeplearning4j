@@ -75,7 +75,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template int _determinant, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
-    int determinant(NDArray* input, NDArray* output) {
+    int determinant(graph::LaunchContext* context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _determinant, (input, output), FLOAT_TYPES);
     }
 
@@ -86,7 +86,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template int log_abs_determinant_, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
-    int log_abs_determinant(NDArray* input, NDArray* output) {
+    int log_abs_determinant(graph::LaunchContext* context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return log_abs_determinant_, (input, output), FLOAT_TYPES);
     }
 
@@ -95,7 +95,7 @@ namespace helpers {
         return Status::OK();
     }
 
-    int inverse(NDArray* input, NDArray* output) {
+    int inverse(graph::LaunchContext* context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _inverse, (input, output), FLOAT_TYPES);
     }
 
@@ -104,7 +104,7 @@ namespace helpers {
         return Status::OK();
     }
 
-    int cholesky(NDArray* input, NDArray* output, bool inplace) {
+    int cholesky(graph::LaunchContext* context, NDArray* input, NDArray* output, bool inplace) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (input, output, inplace), FLOAT_TYPES);
     }    
     BUILD_SINGLE_TEMPLATE(template int cholesky_, (NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);

@@ -157,7 +157,7 @@ void lstmTimeLoop(graph::LaunchContext* context, const NDArray* x, const NDArray
         auto ht = (*h)({t,t+1, 0,0, 0,0});
         auto ct = (*c)({t,t+1, 0,0, 0,0});
 
-        helpers::lstmCell(&xt,&currentH,&currentC, Wx,Wh,Wc,Wp, b,   &ht, &ct,   params);
+        helpers::lstmCell(context, &xt,&currentH,&currentC, Wx,Wh,Wc,Wp, b,   &ht, &ct,   params);
         currentH.assign(ht);
         currentC.assign(ct);
     }    

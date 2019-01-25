@@ -35,7 +35,7 @@ namespace helpers {
         return Status::OK();
     }
 
-    int matrixDiag(const NDArray* input, NDArray* output) {
+    int matrixDiag(graph::LaunchContext* context, const NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiag, (input, output), LIBND4J_TYPES);
     }
 

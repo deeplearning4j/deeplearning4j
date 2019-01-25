@@ -149,7 +149,7 @@ namespace helpers {
         if(input.isVector()) {
         
             if(rank == 1 || input.sizeAt(dimension) != 1)
-                softMaxForVector(input, output);
+                softMaxForVector(context, input, output);
             else
                 output = 1.;
         }
@@ -195,7 +195,7 @@ namespace helpers {
             // FIXME: double
             auto x   = input.e(i);
             auto grO = dLdO.e(i);
-            if(x < 0.0) {
+            if(x.e<double>(0) < 0.0) {
                 Nd4jLong alphaInd = ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i);
                 dLdI.p(i, grO * alpha.e(alphaInd));
                 auto prevVal = dLdA.e(alphaInd);
@@ -215,7 +215,7 @@ namespace helpers {
         return expectedAlphaLen == shapeLen;
     }
     template <typename T>
-    static void thresholdRelu_(graph::LaunchContext* context, NDArray const& input, double threshold, NDArray& output) {
+    static void thresholdRelu_(NDArray const& input, double threshold, NDArray& output) {
         auto routine = LAMBDA_T(_x, threshold) {
             return _x > (T)threshold? _x: (T)0.f;
         };
@@ -223,7 +223,7 @@ namespace helpers {
     }
 
     void thresholdRelu(graph::LaunchContext* context, NDArray const& input, double threshold, NDArray& output) {
-        BUILD_SINGLE_SELECTOR(context, input.dataType(), thresholdRelu_, (input, threshold, output), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), FLOAT_TYPES);
     }
 
     template <typename T>

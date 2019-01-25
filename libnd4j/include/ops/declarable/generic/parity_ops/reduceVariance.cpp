@@ -36,7 +36,7 @@ CUSTOM_OP_IMPL(reduce_variance, 1, 1, false, 0, 0) {
     auto dimensions = *block.getIArguments();
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxisblock.launchContext(), (input, axesVector, dimensions);
+        helpers::adjustAxis(block.launchContext(), input, axesVector, dimensions);
     }
 //            else if (block.getIArguments()->size())
     if (block.getBArguments()->size()) {

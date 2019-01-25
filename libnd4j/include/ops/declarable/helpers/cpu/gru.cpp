@@ -93,7 +93,7 @@ void gruTimeLoop(graph::LaunchContext* context, const NDArray* x, const NDArray*
         auto xt = (*x)({t,t+1, 0,0, 0,0});
         auto ht = (*h)({t,t+1, 0,0, 0,0});
 
-        helpers::gruCell(&xt, &ht_1, Wx, Wh, b, &ht);
+        helpers::gruCell(context, &xt, &ht_1, Wx, Wh, b, &ht);
         ht_1.assign(ht);    
     }
 }

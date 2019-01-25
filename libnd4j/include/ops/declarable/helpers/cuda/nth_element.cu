@@ -28,7 +28,7 @@ namespace helpers {
     void nthElementFunctor_(NDArray* input, NDArray* nVal, NDArray* output) {
 
     }
-    void nthElementFunctor(NDArray* input, NDArray* n, NDArray* output) {
+    void nthElementFunctor(graph::LaunchContext* context, NDArray* input, NDArray* n, NDArray* output) {
     BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output), LIBND4J_TYPES);
 
     }

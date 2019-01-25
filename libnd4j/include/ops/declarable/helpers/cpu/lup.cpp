@@ -69,7 +69,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template void _invertLowerMatrix, (NDArray* inputMatrix, NDArray* invertedMatrix);, FLOAT_TYPES);
 
-    void invertLowerMatrix(graph::LaunchContext* context, NDArray* inputMatrix, NDArray* invertedMatrix) {
+    void invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
         BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), _invertLowerMatrix, (inputMatrix, invertedMatrix), FLOAT_TYPES);
     }
 
@@ -100,7 +100,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template void _invertUpperMatrix, (NDArray* inputMatrix, NDArray* invertedMatrix);, FLOAT_TYPES);
 
-    void invertUpperMatrix(graph::LaunchContext* context, NDArray* inputMatrix, NDArray* invertedMatrix) {
+    void invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
         BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), _invertUpperMatrix, (inputMatrix, invertedMatrix), FLOAT_TYPES);
     }
 
@@ -186,7 +186,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template int _determinant, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
-    int determinant(NDArray* input, NDArray* output) {
+    int determinant(graph::LaunchContext* context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _determinant, (input, output), FLOAT_TYPES);
     }
 

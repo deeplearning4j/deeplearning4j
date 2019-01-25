@@ -657,14 +657,13 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     // Sorted backpropagate ops
     //
-
     // segment max
     template <typename T>
-    int segmentMaxFunctorBP_(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentMaxFunctorBP_(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         int numOfClasses = gradOut->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         auto tempRes = gradOut->dup();
-        segmentMaxFunctor(input, indices, tempRes);
+        segmentMaxFunctor(context, input, indices, tempRes);
         if (input->isVector()) {
 #pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
@@ -706,14 +705,14 @@ namespace helpers {
     }
 
     int segmentMaxFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(output->dataType(), return segmentMaxFunctorBP_, (input, indices, gradOut, output), NUMERIC_TYPES);
+        BUILD_SINGLE_SELECTOR(output->dataType(), return segmentMaxFunctorBP_, (context, input, indices, gradOut, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int segmentMaxFunctorBP_, (NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int segmentMaxFunctorBP_, (graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output), NUMERIC_TYPES);
 
     // segmen min
-    int segmentMinFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentMinFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         std::unique_ptr<NDArray> tempRes(gradOut->dup());
-        segmentMinFunctor(input, indices, tempRes.get());
+        segmentMinFunctor(context, input, indices, tempRes.get());
         if (input->isVector()) {
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
@@ -752,7 +751,7 @@ namespace helpers {
     }
 
     // segmen mean
-    int segmentMeanFunctorBP(NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentMeanFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         int numClasses = output->sizeAt(0);
         std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
@@ -835,7 +834,7 @@ namespace helpers {
 
     int segmentProdFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         auto tempRes = gradOut->dup();
-        segmentProdFunctor(input, indices, tempRes);
+        segmentProdFunctor(context, input, indices, tempRes);
         if (input->isVector()) {
             for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
@@ -877,11 +876,11 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
 
     template <typename T>
-    static int unsortedSegmentMaxFunctorBP_(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    static int unsortedSegmentMaxFunctorBP_(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
 //        int numOfClasses = gradOut->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         auto tempRes = gradOut->dup();
-        unsortedSegmentMaxFunctor(input, indices, numOfClasses, tempRes);
+        unsortedSegmentMaxFunctor(context, input, indices, numOfClasses, tempRes);
         if (input->isVector()) {
 #pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
@@ -922,14 +921,14 @@ namespace helpers {
     }
 
     int unsortedSegmentMaxFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(output->dataType(), return unsortedSegmentMaxFunctorBP_, (input, indices, gradOut, numOfClasses, output), NUMERIC_TYPES);
+        BUILD_SINGLE_SELECTOR(output->dataType(), return unsortedSegmentMaxFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int unsortedSegmentMaxFunctorBP_, (NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int unsortedSegmentMaxFunctorBP_, (graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
 
     template <typename T>
-    static int unsortedSegmentMinFunctorBP_(NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    static int unsortedSegmentMinFunctorBP_(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         auto tempRes = gradOut->dup();
-        unsortedSegmentMinFunctor(input, indices, numOfClasses, tempRes);
+        unsortedSegmentMinFunctor(context, input, indices, numOfClasses, tempRes);
         if (input->isVector()) {
 #pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
@@ -971,9 +970,9 @@ namespace helpers {
     }
 
     int unsortedSegmentMinFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(output->dataType(), return unsortedSegmentMinFunctorBP_, (input, indices, gradOut, numOfClasses, output), NUMERIC_TYPES);
+        BUILD_SINGLE_SELECTOR(output->dataType(), return unsortedSegmentMinFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), NUMERIC_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int unsortedSegmentMinFunctorBP_, (NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int unsortedSegmentMinFunctorBP_, (graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
 
     int unsortedSegmentMeanFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
 
@@ -1060,7 +1059,7 @@ namespace helpers {
     int unsortedSegmentProdFunctorBP(graph::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         auto tempRes = gradOut->dup();
 
-        unsortedSegmentProdFunctor(input, indices, numOfClasses, tempRes);
+        unsortedSegmentProdFunctor(context, input, indices, numOfClasses, tempRes);
         if (input->isVector()) {
 #pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
             for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {

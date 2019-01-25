@@ -91,7 +91,7 @@ void rnnTimeLoop(graph::LaunchContext* context, const NDArray* x, const NDArray*
                     ht_1.assign((*h)({maxStep-1,maxStep, e,e+1, 0,0}));
             }
             else {
-                helpers::rnnCell(&xt, Wx, Wh, b, &ht_1, &ht);
+                helpers::rnnCell(context, &xt, Wx, Wh, b, &ht_1, &ht);
                 ht_1.assign(ht);
             }
         }

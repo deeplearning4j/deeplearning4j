@@ -70,7 +70,7 @@ namespace helpers {
             auto b_ = tadsB->at(e);
             auto o_ = tadsO->at(e);
 
-            helpers::_cross(a_, b_, o_);
+            helpers::_cross(context, a_, b_, o_);
         }
 
         delete tadsA;
@@ -81,7 +81,7 @@ namespace helpers {
         delete _o;
     }
 
-    void weightedCrossEntropyWithLogitsFunctor(NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output);
+    void weightedCrossEntropyWithLogitsFunctor(graph::LaunchContext* context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output);
 }
 }
 }

@@ -131,7 +131,7 @@ void reverseArray(graph::LaunchContext* context, void *vinArr, Nd4jLong *inShape
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void _reverseSequence(const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
+static void _reverseSequence(graph::LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
 
     int posOfNonUnityDim = -1;
     if(input->isVector() || shape::isLikeVector(input->getShapeInfo(), posOfNonUnityDim)) {
@@ -139,7 +139,7 @@ static void _reverseSequence(const NDArray* input, const NDArray* seqLengths, ND
         if((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
             output->assign(input);
         else
-            helpers::reverseArray<T>(const_cast<NDArray*>(input)->getBuffer(), const_cast<NDArray*>(input)->getShapeInfo(), output->getBuffer(), output->getShapeInfo(), seqLengths->e<int>(0));
+            helpers::reverseArray<T>(context, const_cast<NDArray*>(input)->getBuffer(), const_cast<NDArray*>(input)->getShapeInfo(), output->getBuffer(), output->getShapeInfo(), seqLengths->e<int>(0));
     }
     else {
             
@@ -163,7 +163,7 @@ static void _reverseSequence(const NDArray* input, const NDArray* seqLengths, ND
                 auto inInnerSet  = inSubArrsSet->at(i)->allTensorsAlongDimension({seqDim});
                 auto outInnerSet = outSubArrsSet->at(i)->allTensorsAlongDimension({seqDim});
                 for(int j = 0; j < inInnerSet->size(); ++j)
-                    helpers::reverseArray<T>(inInnerSet->at(j)->getBuffer(), inInnerSet->at(j)->getShapeInfo(), outInnerSet->at(j)->getBuffer(), outInnerSet->at(j)->getShapeInfo(), numOfElemsToReverse);
+                    helpers::reverseArray<T>(context, inInnerSet->at(j)->getBuffer(), inInnerSet->at(j)->getShapeInfo(), outInnerSet->at(j)->getBuffer(), outInnerSet->at(j)->getShapeInfo(), numOfElemsToReverse);
             
                 delete inInnerSet;
                 delete outInnerSet;
@@ -176,7 +176,7 @@ static void _reverseSequence(const NDArray* input, const NDArray* seqLengths, ND
 }
 
     void reverseSequence(graph::LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), _reverseSequence, (input, seqLengths, output, seqDim, batchDim), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), _reverseSequence, (context, input, seqLengths, output, seqDim, batchDim), LIBND4J_TYPES);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -194,13 +194,14 @@ void reverse(graph::LaunchContext* context, const NDArray* input, NDArray* outpu
     for(int i = 0; i < listIn->size(); ++i) {               // listIn->size() = listOut->size()
         subArrIn   = listIn->at(i);
         subArrOut  = listOut->at(i);        
-        BUILD_SINGLE_SELECTOR(input->dataType(), helpers::reverseArray, (subArrIn->getBuffer(), subArrIn->getShapeInfo(), subArrOut->getBuffer(), subArrOut->getShapeInfo()), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), helpers::reverseArray, (context, subArrIn->getBuffer(), subArrIn->getShapeInfo(), subArrOut->getBuffer(), subArrOut->getShapeInfo()), LIBND4J_TYPES);
     }
 
     delete listOut;
     delete listIn;
 }
 
+BUILD_SINGLE_TEMPLATE(template void _reverseSequence, (graph::LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void reverseArray, (graph::LaunchContext* context, void *inArr, Nd4jLong *inShapeBuffer, void *outArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse), LIBND4J_TYPES);
 
 

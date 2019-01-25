@@ -38,7 +38,7 @@ namespace helpers {
     }
 
     ///////////////////////////////////////////////////////////////////
-    void softMaxForVector(const NDArray& input, NDArray& output) {
+    void softMaxForVector(graph::LaunchContext* context, const NDArray& input, NDArray& output) {
 
         if(!input.isVector() || !output.isVector())
             throw std::runtime_error("ops::helpers::softMaxForVector function: input and output arrays must be vectors !");
@@ -49,7 +49,7 @@ namespace helpers {
 
 
     ///////////////////////////////////////////////////////////////////
-    void logSoftMaxForVector(const NDArray& input, NDArray& output) {
+    void logSoftMaxForVector(graph::LaunchContext* context, const NDArray& input, NDArray& output) {
 
         if(!input.isVector() || !output.isVector())
             throw std::runtime_error("ops::helpers::logSoftMaxForVector function input and output arrays must be vectors !");
@@ -59,7 +59,7 @@ namespace helpers {
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void softmax(const NDArray& input, NDArray& output, const int dimension) {
+    void softmax(graph::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
 
         const int rank = input.rankOf();
 
@@ -81,12 +81,12 @@ namespace helpers {
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void prelu(const NDArray& input, const NDArray& alpha, NDArray& output) {
+    void prelu(graph::LaunchContext* context, const NDArray& input, const NDArray& alpha, NDArray& output) {
 
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void preluBP(const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
+    void preluBP(graph::LaunchContext* context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
 
     }
 
@@ -106,7 +106,7 @@ namespace helpers {
         const_cast<NDArray&>(input).applyLambda<T>(routine, &output);
     }
 
-    void thresholdRelu(NDArray const& input, double threshold, NDArray& output) {
+    void thresholdRelu(graph::LaunchContext* context, NDArray const& input, double threshold, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), FLOAT_TYPES);
     }
 
@@ -115,7 +115,7 @@ namespace helpers {
 
     }
 
-    void thresholdReluDerivative(NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
+    void thresholdReluDerivative(graph::LaunchContext* context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (input, threshold, dLdO, output), FLOAT_TYPES);
     }
 

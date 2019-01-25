@@ -30,7 +30,7 @@ namespace helpers {
 
     }
 
-    void _adjust_saturation(NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
+    void _adjust_saturation(graph::LaunchContext* context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
         auto xType = array->dataType();
 
         float d = delta->e<float>(0);

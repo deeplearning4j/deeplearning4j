@@ -34,7 +34,7 @@ namespace helpers {
 
     }
 
-    void diagFunctor(const NDArray* input, NDArray* output) {
+    void diagFunctor(graph::LaunchContext* context, const NDArray* input, NDArray* output) {
         auto xType = input->dataType();
 
         BUILD_SINGLE_SELECTOR(xType, _diagFunctor, (input, output), LIBND4J_TYPES);

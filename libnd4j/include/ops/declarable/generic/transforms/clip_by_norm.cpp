@@ -47,7 +47,7 @@ namespace ops  {
         auto gradI = OUTPUT_VARIABLE(0);
         const auto clipNorm = NDArrayFactory::create(T_ARG(0));
 
-        helpers::clipByNormBP(*input, *gradO, *gradI, *block.getIArguments(), clipNorm); 
+        helpers::clipByNormBP(block.launchContext(), *input, *gradO, *gradI, *block.getIArguments(), clipNorm);
 
         return Status::OK();
     }

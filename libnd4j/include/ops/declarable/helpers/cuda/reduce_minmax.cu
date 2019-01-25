@@ -29,7 +29,7 @@ namespace helpers {
 
     }
 
-    void minMaxReduceFunctor(NDArray* input, NDArray* gradOut, NDArray* tempVals, NDArray* output, bool normalize) {
+    void minMaxReduceFunctor(graph::LaunchContext* context, NDArray* input, NDArray* gradOut, NDArray* tempVals, NDArray* output, bool normalize) {
         BUILD_SINGLE_SELECTOR(gradOut->dataType(), _minMaxReduceFunctor, (input, gradOut, tempVals, output, normalize), FLOAT_TYPES);
     }
 

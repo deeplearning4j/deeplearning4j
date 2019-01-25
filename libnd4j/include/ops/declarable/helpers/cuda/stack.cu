@@ -34,7 +34,7 @@ namespace helpers {
 
 	}
 
-	void stack(const std::vector<NDArray*>& inArrs, NDArray& outArr, const int dim) {
+	void stack(graph::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& outArr, const int dim) {
 		BUILD_SINGLE_SELECTOR(outArr.dataType(), stack_, (inArrs, outArr, dim), LIBND4J_TYPES);
 	}
 

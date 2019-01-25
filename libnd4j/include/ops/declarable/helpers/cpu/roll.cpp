@@ -104,7 +104,7 @@ namespace helpers {
                         theShift -= fullLen * (theShift / fullLen - 1);
                 }
                 for (int k = 0; k < fullLen; k++) {
-                    rollFunctorLinear(listOfTensors->at(k), listOfOutTensors->at(k), theShift, true);
+                    rollFunctorLinear(context, listOfTensors->at(k), listOfOutTensors->at(k), theShift, true);
                 }
             }
             else {

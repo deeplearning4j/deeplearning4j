@@ -1423,7 +1423,7 @@ TEST_F(HelpersTests1, reverseArray_test1) {
     auto outArr = NDArrayFactory::create<float>('c', {2,5});
 
 
-    ops::helpers::reverseArray<float>(inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo());    
+    ops::helpers::reverseArray<float>(graph::LaunchContext::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo());
 
     ASSERT_TRUE(outArr.equalsTo(&exp));    
     ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
@@ -1437,7 +1437,7 @@ TEST_F(HelpersTests1, reverseArray_test2) {
     auto exp = NDArrayFactory::create<float>('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});
 
 
-    ops::helpers::reverseArray<float>(inArr.getBuffer(), inArr.getShapeInfo(), inArr.getBuffer(), inArr.getShapeInfo());    
+    ops::helpers::reverseArray<float>(graph::LaunchContext::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), inArr.getBuffer(), inArr.getShapeInfo());
 
     ASSERT_TRUE(inArr.equalsTo(&exp));    
     ASSERT_TRUE(inArr.isSameShapeStrict(&exp));
@@ -1451,7 +1451,7 @@ TEST_F(HelpersTests1, reverseArray_test3) {
     auto exp = NDArrayFactory::create<float>('c', {2,5}, {5,4,3,2,1,6,7,8,9,10});
     auto outArr = NDArrayFactory::create<float>('c', {2,5});
 
-    ops::helpers::reverseArray<float>(inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo(), 5);
+    ops::helpers::reverseArray<float>(graph::LaunchContext::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo(), 5);
 
     ASSERT_TRUE(outArr.equalsTo(&exp));    
     ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
@@ -1464,7 +1464,7 @@ TEST_F(HelpersTests1, softMaxForVector_test1) {
     auto output = NDArrayFactory::create<double>('c', {1,5});
     auto expOutput = NDArrayFactory::create<double>('c', {1,5}, {0.01165623,  0.03168492,  0.08612854,  0.23412166,  0.63640865});
 
-    ops::helpers::softMaxForVector(input, output);
+    ops::helpers::softMaxForVector(graph::LaunchContext::defaultContext(), input, output);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -1476,7 +1476,7 @@ TEST_F(HelpersTests1, softMaxForVector_test2) {
     auto output = NDArrayFactory::create<double>('c', {5,1});
     auto expOutput = NDArrayFactory::create<double>('c', {5,1}, {0.01165623,  0.03168492,  0.08612854,  0.23412166,  0.63640865});
 
-    ops::helpers::softMaxForVector(input, output);
+    ops::helpers::softMaxForVector(graph::LaunchContext::defaultContext(), input, output);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -1488,7 +1488,7 @@ TEST_F(HelpersTests1, softMaxForVector_test3) {
     auto output = NDArrayFactory::create<double>('c', {5});
     auto expOutput = NDArrayFactory::create<double>('c', {5}, {0.01165623,  0.03168492,  0.08612854,  0.23412166,  0.63640865});
 
-    ops::helpers::softMaxForVector(input, output);
+    ops::helpers::softMaxForVector(graph::LaunchContext::defaultContext(), input, output);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -1500,7 +1500,7 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test1) {
     auto output = NDArrayFactory::create<double>('c', {1,5});
     auto expOutput = NDArrayFactory::create<double>('c', {1,5}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
 
-    ops::helpers::logSoftMaxForVector(input, output);
+    ops::helpers::logSoftMaxForVector(graph::LaunchContext::defaultContext(), input, output);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -1512,7 +1512,7 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test2) {
     auto output = NDArrayFactory::create<double>('c', {5,1});
     auto expOutput = NDArrayFactory::create<double>('c', {5,1}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
 
-    ops::helpers::logSoftMaxForVector(input, output);
+    ops::helpers::logSoftMaxForVector(graph::LaunchContext::defaultContext(), input, output);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -1524,7 +1524,7 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test3) {
     auto output = NDArrayFactory::create<double>('c', {5});
     auto expOutput = NDArrayFactory::create<double>('c', {5}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
 
-    ops::helpers::logSoftMaxForVector(input, output);
+    ops::helpers::logSoftMaxForVector(graph::LaunchContext::defaultContext(), input, output);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -1550,7 +1550,7 @@ TEST_F(HelpersTests1, rnnCell_test1) {
 
     NDArray expHt('c', {bS, numUnits}, {0.492988, 0.56489956, 0.6291452 , 0.6858091,0.492988, 0.56489956, 0.6291452 , 0.6858091});
 
-    ops::helpers::rnnCell(&xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(graph::LaunchContext::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1579,7 +1579,7 @@ TEST_F(HelpersTests1, rnnCell_test2) {
 
     auto expHt = NDArrayFactory::create<double>('c', {bS, numUnits}, {0.6169093,0.67506987,0.72589741,0.76986654,0.6169093,0.67506987,0.72589741,0.76986654});
 
-    ops::helpers::rnnCell(&xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(graph::LaunchContext::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1607,7 +1607,7 @@ TEST_F(HelpersTests1, rnnCell_test3) {
 
     auto expHt = NDArrayFactory::create<double>('c', {bS, numUnits}, {0.5915195, 0.6043678, 0.6169093, 0.6291452,0.5915195, 0.6043678, 0.6169093, 0.6291452});
 
-    ops::helpers::rnnCell(&xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(graph::LaunchContext::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1636,7 +1636,7 @@ TEST_F(HelpersTests1, rnnCell_test4) {
 
     auto expHt = NDArrayFactory::create<double>('c', {bS, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0.69882484, 0.69882484, 0.69882484, 0.69882484});
 
-    ops::helpers::rnnCell(&xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(graph::LaunchContext::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
     
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));

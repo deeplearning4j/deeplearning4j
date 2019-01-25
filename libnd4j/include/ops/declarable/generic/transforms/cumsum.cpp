@@ -57,7 +57,7 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
             if (dims[e] < 0)
                 dims[e] += input->rankOf();
         
-        nd4j::ops::helpers::_prefix(scalar::Add, input, output, dims, exclusive, reverse);
+        nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, input, output, dims, exclusive, reverse);
     }
     
     return Status::OK();
@@ -93,28 +93,28 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
     }
     if (!exclusive && !reverse) {
         if (dims.size())
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, dims, false, true);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, true);
         else
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, false, true);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, false, true);
 
     }
     else if (!exclusive && reverse){
         if (dims.size())
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, dims, false, false);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, false);
         else
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, false, false);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, false, false);
     }
     else if (exclusive && !reverse) {
         if (dims.size())
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, dims, true, true);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, dims, true, true);
         else
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, true, true);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, true, true);
     }
     else {
         if (dims.size())
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, dims, true, false);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, dims, true, false);
         else
-            nd4j::ops::helpers::_prefix(scalar::Add, gradOut, output, true, false);
+            nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, gradOut, output, true, false);
     }
         
     return Status::OK();

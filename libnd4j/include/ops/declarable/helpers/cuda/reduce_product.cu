@@ -25,7 +25,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void reduceProductBP(NDArray *input, NDArray *epsilon, NDArray *tempProd, NDArray *output,
+    void reduceProductBP(graph::LaunchContext* context, NDArray *input, NDArray *epsilon, NDArray *tempProd, NDArray *output,
                          std::vector<int> const &axes) {
         //
     }
@@ -35,7 +35,7 @@ namespace helpers {
 
     }
 
-    void reduceProductBPScalar(NDArray *input, NDArray *epsilon, NDArray *tempProd, NDArray *output) {
+    void reduceProductBPScalar(graph::LaunchContext* context, NDArray *input, NDArray *epsilon, NDArray *tempProd, NDArray *output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), reduceProductBPScalar_, (input, epsilon, tempProd, output),
                               FLOAT_TYPES);
     }

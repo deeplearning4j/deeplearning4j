@@ -30,7 +30,7 @@ namespace helpers {
     /////////////////////////////////////////////////////////////////////////////////////
     // this legacy op is written by raver119@gmail.com
     template<typename T>
-    void reverseArray(void *vinArr, Nd4jLong *inShapeBuffer, void *voutArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse) {
+    void reverseArray(graph::LaunchContext* context, void *vinArr, Nd4jLong *inShapeBuffer, void *voutArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse) {
 
     }
 
@@ -41,16 +41,16 @@ namespace helpers {
 
     }
 
-    void reverseSequence(const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
+    void reverseSequence(graph::LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
         BUILD_SINGLE_SELECTOR(input->dataType(), _reverseSequence, (input, seqLengths, output, seqDim, batchDim), LIBND4J_TYPES);
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void reverse(const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isLegacy) {
+    void reverse(graph::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isLegacy) {
 
     }
 
-BUILD_SINGLE_TEMPLATE(template void reverseArray, (void *inArr, Nd4jLong *inShapeBuffer, void *outArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void reverseArray, (graph::LaunchContext* context, void *inArr, Nd4jLong *inShapeBuffer, void *outArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse), LIBND4J_TYPES);
 
 }
 }

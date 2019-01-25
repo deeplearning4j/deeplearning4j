@@ -66,7 +66,7 @@ namespace helpers {
         std::unique_ptr<ResultSet> inList(input->allTensorsAlongDimension(dimensions));
         for (int e = 0; e < outList->size(); ++e) {
             //inList->at(e)->applyPairwiseTransform(pairwise::ReduceNorm1E, epsilon, outList->at(e), nullptr);
-            helpers::reduceNorm1(inList->at(e), epsilon, outList->at(e));
+            helpers::reduceNorm1(context, inList->at(e), epsilon, outList->at(e));
         }
     }
 

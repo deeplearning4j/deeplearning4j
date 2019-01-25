@@ -170,7 +170,7 @@ void sruTimeLoop(graph::LaunchContext* context, const NDArray* x, const NDArray*
         auto ht = (*h)({0,0, 0,0, t,t+1});
         auto ct = (*c)({0,0, 0,0, t,t+1});
 
-        helpers::sruCell(&xt, &ct_1, w, b,  &ht, &ct);
+        helpers::sruCell(context, &xt, &ct_1, w, b,  &ht, &ct);
         ct_1.assign(ct);
     }    
 

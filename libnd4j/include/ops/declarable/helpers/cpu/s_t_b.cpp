@@ -72,7 +72,7 @@ namespace helpers {
 #define STB_BOOL (0, false),\
                  (1, true)
 
-    BUILD_TRIPLE_TEMPLATE(template void _execute, (void *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, void *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides), LIBND4J_TYPES, STB_DIM, STB_BOOL);
+    BUILD_TRIPLE_TEMPLATE(template void _execute, (graph::LaunchContext* context, void *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, void *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides), LIBND4J_TYPES, STB_DIM, STB_BOOL);
 
 #undef STB_BOOL
 #undef STB_DIM

@@ -69,10 +69,10 @@ void triu(graph::LaunchContext* context, const NDArray& input, NDArray& output, 
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void triuBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
+static void triuBP_(graph::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
 
     auto dOdI = NDArray(&gradO);                // dO/dI
-    helpers::triu(input, dOdI, diagonal);
+    helpers::triu(context, input, dOdI, diagonal);
 
 #pragma omp parallel for if(dOdI.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
     for(int i = 0; i < dOdI.lengthOf(); ++i) {
@@ -84,11 +84,11 @@ static void triuBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, 
 }
 
     void triuBP(graph::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
-        BUILD_SINGLE_SELECTOR(gradO.dataType(), triuBP_, (input, gradO, gradI, diagonal), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(gradO.dataType(), triuBP_, (context, input, gradO, gradI, diagonal), LIBND4J_TYPES);
     }
 
 
-BUILD_SINGLE_TEMPLATE(template void triuBP_, (const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void triuBP_, (graph::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>

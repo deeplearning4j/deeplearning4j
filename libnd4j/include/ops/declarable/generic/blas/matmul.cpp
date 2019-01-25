@@ -78,7 +78,7 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
     }
     // ******* end of input validation ******* //
     
-    MmulHelper::matmul(block.launchContext(), x, y, z, transX, transY);
+    MmulHelper::matmul(x, y, z, transX, transY);
 
     return Status::OK();
 }

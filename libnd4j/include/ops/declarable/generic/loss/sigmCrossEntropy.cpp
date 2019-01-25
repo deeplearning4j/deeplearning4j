@@ -192,10 +192,10 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 	NDArray E(labels, false, block.getVariableSpace()->launchContext());
 
 	// logits - labels * logits + log(1 + exp(-logits)) -> take into account numerical stability at large logits
-	helpers::sigmCrossEntropy(logits, newLabels, &E);
+	helpers::sigmCrossEntropy(block.launchContext(), logits, newLabels, &E);
 
 	// dLdp = 1 - labels - 1 / (1 + exp(logits))
-	helpers::sigmCrossEntropyGrad(logits, newLabels, dLdp);
+	helpers::sigmCrossEntropyGrad(block.launchContext(), logits, newLabels, dLdp);
 	
 	// dLdl = -logits
 	labelsSmoothing -= 1.f;

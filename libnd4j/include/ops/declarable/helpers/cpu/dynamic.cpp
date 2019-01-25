@@ -182,7 +182,7 @@ namespace nd4j {
             }
 
             template <typename T>
-            static int _dynamicStitchFunctorBP(graph::LaunchContext* context, std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradInput, std::vector<NDArray*>& outputList){
+            static int _dynamicStitchFunctorBP(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray const* gradInput, std::vector<NDArray*>& outputList){
                 throw std::runtime_error("Not umplemented yet");
             }
 

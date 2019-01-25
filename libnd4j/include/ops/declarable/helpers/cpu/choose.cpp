@@ -102,21 +102,21 @@ namespace helpers {
     void chooseFunctorArray(graph::LaunchContext* context, NDArray* arg, NDArray* comp, int mode, NDArray* result, NDArray* numResults) {
         if(arg->isScalar() || comp->isScalar()) {
             if(arg->isScalar()) {
-                processCondition(mode,comp,nullptr,result,numResults, *arg);
+                processCondition(context, mode,comp,nullptr,result,numResults, *arg);
             }
             else {
-                processCondition(mode,arg,nullptr,result,numResults, *comp);
+                processCondition(context, mode,arg,nullptr,result,numResults, *comp);
             }
         }
         else {
             auto zero = NDArrayFactory::create<float>(0);
-            processCondition(mode,arg,comp,result,numResults, zero);
+            processCondition(context, mode,arg,comp,result,numResults, zero);
         }
     }
 
     void chooseFunctorScalar(graph::LaunchContext* context, NDArray* arg, double scalar, int mode, NDArray* result, NDArray* numResults) {
         NDArray scalarA = NDArrayFactory::create(scalar);
-        processCondition(mode, arg, nullptr,result, numResults, scalarA);
+        processCondition(context, mode, arg, nullptr,result, numResults, scalarA);
     }
 
 }

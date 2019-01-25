@@ -75,7 +75,7 @@ namespace helpers {
                 helpers::rgb_to_hsv(context, _ri[0], _gi[0], _bi[0], &h, &s, &v);
                 s = nd4j::math::nd4j_min<T>((T) 1.0f, nd4j::math::nd4j_max<T>((T) 0.0f, s * delta));
                 // Convert the hue and v-range back into RGB.
-                helpers::hsv_to_rgb(h, s, v, _ro, _go, _bo);
+                helpers::hsv_to_rgb(context, h, s, v, _ro, _go, _bo);
             }
 
             delete tadsChannelsIn;

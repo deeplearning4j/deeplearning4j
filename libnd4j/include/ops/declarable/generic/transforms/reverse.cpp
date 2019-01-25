@@ -95,7 +95,7 @@ namespace ops  {
                 axis[e] += input->rankOf();
 
         // we just reverse back original array
-        helpers::reverse(eps, output, &axis, false);
+        helpers::reverse(block.launchContext(), eps, output, &axis, false);
 
         return Status::OK();
     }

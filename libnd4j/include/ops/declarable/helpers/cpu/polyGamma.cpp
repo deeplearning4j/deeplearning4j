@@ -50,7 +50,7 @@ static FORCEINLINE T getFactorial(const int n) {
 //////////////////////////////////////////////////////////////////////////
 // implementation is based on serial representation written in terms of the Hurwitz zeta function as polygamma = (-1)^{n+1} * n! * zeta(n+1, x)
 template <typename T>
-static FORCEINLINE T polyGamma(const int n, const T x) {
+static FORCEINLINE T polyGammaScalar(graph::LaunchContext* context, const int n, const T x) {
 	
 	// if (n < 0) 
 	// 	throw("polyGamma function: n must be >= 0 !");
@@ -63,29 +63,29 @@ static FORCEINLINE T polyGamma(const int n, const T x) {
 	int sign = (n + 1) % 2  ?  -1 : 1;
 	// T factorial = (T)std::tgamma(n + 1);		
 
-	return sign * getFactorial<T>(n) * zeta<T>((T)(n + 1), x);	
+	return sign * getFactorial<T>(n) * zeta<T>(context, (T)(n + 1), x);
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 // calculate polygamma function for arrays
 template <typename T>
-static void _polyGamma(const NDArray& n, const NDArray& x, NDArray& output) {
+static void _polyGamma(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output) {
 
 	NDArray& result = output; //NDArray(&x, false, x.getWorkspace());
 
 #pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
 	for(int i = 0; i < x.lengthOf(); ++i)
-		result.p(i, polyGamma<T>(n.e<int>(i), x.e<T>(i)));
+		result.p(i, polyGammaScalar<T>(context, n.e<int>(i), x.e<T>(i)));
 
 //	return result;
 }
 
 	void polyGamma(graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output) {
-		BUILD_SINGLE_SELECTOR(x.dataType(), _polyGamma, (n, x, output), FLOAT_TYPES);
+		BUILD_SINGLE_SELECTOR(x.dataType(), _polyGamma, (context, n, x, output), FLOAT_TYPES);
 	}
 
-BUILD_SINGLE_TEMPLATE(template void _polyGamma, (const NDArray& n, const NDArray& x, NDArray& output), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void _polyGamma, (graph::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& output), FLOAT_TYPES);
 
 
 
