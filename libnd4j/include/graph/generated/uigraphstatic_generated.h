@@ -248,11 +248,14 @@ struct UIVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_TYPE = 8,
     VT_DATATYPE = 10,
     VT_SHAPE = 12,
-    VT_OUTPUTOFOP = 14,
-    VT_INPUTSFOROP = 16,
-    VT_CONTROLDEPSFOROP = 18,
-    VT_CONTROLDEPSFORVAR = 20,
-    VT_GRADIENTVARIABLE = 22
+    VT_CONTROLDEPS = 14,
+    VT_OUTPUTOFOP = 16,
+    VT_INPUTSFOROP = 18,
+    VT_CONTROLDEPSFOROP = 20,
+    VT_CONTROLDEPSFORVAR = 22,
+    VT_GRADIENTVARIABLE = 24,
+    VT_UILABELEXTRA = 26,
+    VT_CONSTANTVALUE = 28
   };
   const IntPair *id() const {
     return GetPointer<const IntPair *>(VT_ID);
@@ -269,6 +272,9 @@ struct UIVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<int64_t> *shape() const {
     return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_SHAPE);
   }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_CONTROLDEPS);
+  }
   const flatbuffers::String *outputOfOp() const {
     return GetPointer<const flatbuffers::String *>(VT_OUTPUTOFOP);
   }
@@ -284,6 +290,12 @@ struct UIVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *gradientVariable() const {
     return GetPointer<const flatbuffers::String *>(VT_GRADIENTVARIABLE);
   }
+  const flatbuffers::String *uiLabelExtra() const {
+    return GetPointer<const flatbuffers::String *>(VT_UILABELEXTRA);
+  }
+  const FlatArray *constantValue() const {
+    return GetPointer<const FlatArray *>(VT_CONSTANTVALUE);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_ID) &&
@@ -294,6 +306,9 @@ struct UIVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<int8_t>(verifier, VT_DATATYPE) &&
            VerifyOffset(verifier, VT_SHAPE) &&
            verifier.VerifyVector(shape()) &&
+           VerifyOffset(verifier, VT_CONTROLDEPS) &&
+           verifier.VerifyVector(controlDeps()) &&
+           verifier.VerifyVectorOfStrings(controlDeps()) &&
            VerifyOffset(verifier, VT_OUTPUTOFOP) &&
            verifier.VerifyString(outputOfOp()) &&
            VerifyOffset(verifier, VT_INPUTSFOROP) &&
@@ -307,6 +322,10 @@ struct UIVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVectorOfStrings(controlDepsForVar()) &&
            VerifyOffset(verifier, VT_GRADIENTVARIABLE) &&
            verifier.VerifyString(gradientVariable()) &&
+           VerifyOffset(verifier, VT_UILABELEXTRA) &&
+           verifier.VerifyString(uiLabelExtra()) &&
+           VerifyOffset(verifier, VT_CONSTANTVALUE) &&
+           verifier.VerifyTable(constantValue()) &&
            verifier.EndTable();
   }
 };
@@ -329,6 +348,9 @@ struct UIVariableBuilder {
   void add_shape(flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape) {
     fbb_.AddOffset(UIVariable::VT_SHAPE, shape);
   }
+  void add_controlDeps(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps) {
+    fbb_.AddOffset(UIVariable::VT_CONTROLDEPS, controlDeps);
+  }
   void add_outputOfOp(flatbuffers::Offset<flatbuffers::String> outputOfOp) {
     fbb_.AddOffset(UIVariable::VT_OUTPUTOFOP, outputOfOp);
   }
@@ -343,6 +365,12 @@ struct UIVariableBuilder {
   }
   void add_gradientVariable(flatbuffers::Offset<flatbuffers::String> gradientVariable) {
     fbb_.AddOffset(UIVariable::VT_GRADIENTVARIABLE, gradientVariable);
+  }
+  void add_uiLabelExtra(flatbuffers::Offset<flatbuffers::String> uiLabelExtra) {
+    fbb_.AddOffset(UIVariable::VT_UILABELEXTRA, uiLabelExtra);
+  }
+  void add_constantValue(flatbuffers::Offset<FlatArray> constantValue) {
+    fbb_.AddOffset(UIVariable::VT_CONSTANTVALUE, constantValue);
   }
   explicit UIVariableBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -363,17 +391,23 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariable(
     VarType type = VarType_VARIABLE,
     DataType datatype = DataType_INHERIT,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps = 0,
     flatbuffers::Offset<flatbuffers::String> outputOfOp = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> inputsForOp = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepsForOp = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepsForVar = 0,
-    flatbuffers::Offset<flatbuffers::String> gradientVariable = 0) {
+    flatbuffers::Offset<flatbuffers::String> gradientVariable = 0,
+    flatbuffers::Offset<flatbuffers::String> uiLabelExtra = 0,
+    flatbuffers::Offset<FlatArray> constantValue = 0) {
   UIVariableBuilder builder_(_fbb);
+  builder_.add_constantValue(constantValue);
+  builder_.add_uiLabelExtra(uiLabelExtra);
   builder_.add_gradientVariable(gradientVariable);
   builder_.add_controlDepsForVar(controlDepsForVar);
   builder_.add_controlDepsForOp(controlDepsForOp);
   builder_.add_inputsForOp(inputsForOp);
   builder_.add_outputOfOp(outputOfOp);
+  builder_.add_controlDeps(controlDeps);
   builder_.add_shape(shape);
   builder_.add_name(name);
   builder_.add_id(id);
@@ -389,11 +423,14 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariableDirect(
     VarType type = VarType_VARIABLE,
     DataType datatype = DataType_INHERIT,
     const std::vector<int64_t> *shape = nullptr,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps = nullptr,
     const char *outputOfOp = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *inputsForOp = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepsForOp = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepsForVar = nullptr,
-    const char *gradientVariable = nullptr) {
+    const char *gradientVariable = nullptr,
+    const char *uiLabelExtra = nullptr,
+    flatbuffers::Offset<FlatArray> constantValue = 0) {
   return nd4j::graph::CreateUIVariable(
       _fbb,
       id,
@@ -401,11 +438,14 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariableDirect(
       type,
       datatype,
       shape ? _fbb.CreateVector<int64_t>(*shape) : 0,
+      controlDeps ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDeps) : 0,
       outputOfOp ? _fbb.CreateString(outputOfOp) : 0,
       inputsForOp ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*inputsForOp) : 0,
       controlDepsForOp ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDepsForOp) : 0,
       controlDepsForVar ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDepsForVar) : 0,
-      gradientVariable ? _fbb.CreateString(gradientVariable) : 0);
+      gradientVariable ? _fbb.CreateString(gradientVariable) : 0,
+      uiLabelExtra ? _fbb.CreateString(uiLabelExtra) : 0,
+      constantValue);
 }
 
 struct UIOp FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -414,7 +454,8 @@ struct UIOp FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_OPNAME = 6,
     VT_INPUTS = 8,
     VT_OUTPUTS = 10,
-    VT_CONTROLDEPS = 12
+    VT_CONTROLDEPS = 12,
+    VT_UILABELEXTRA = 14
   };
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -431,6 +472,9 @@ struct UIOp FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_CONTROLDEPS);
   }
+  const flatbuffers::String *uiLabelExtra() const {
+    return GetPointer<const flatbuffers::String *>(VT_UILABELEXTRA);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
@@ -446,6 +490,8 @@ struct UIOp FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_CONTROLDEPS) &&
            verifier.VerifyVector(controlDeps()) &&
            verifier.VerifyVectorOfStrings(controlDeps()) &&
+           VerifyOffset(verifier, VT_UILABELEXTRA) &&
+           verifier.VerifyString(uiLabelExtra()) &&
            verifier.EndTable();
   }
 };
@@ -468,6 +514,9 @@ struct UIOpBuilder {
   void add_controlDeps(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps) {
     fbb_.AddOffset(UIOp::VT_CONTROLDEPS, controlDeps);
   }
+  void add_uiLabelExtra(flatbuffers::Offset<flatbuffers::String> uiLabelExtra) {
+    fbb_.AddOffset(UIOp::VT_UILABELEXTRA, uiLabelExtra);
+  }
   explicit UIOpBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -486,8 +535,10 @@ inline flatbuffers::Offset<UIOp> CreateUIOp(
     flatbuffers::Offset<flatbuffers::String> opName = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> inputs = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> outputs = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps = 0,
+    flatbuffers::Offset<flatbuffers::String> uiLabelExtra = 0) {
   UIOpBuilder builder_(_fbb);
+  builder_.add_uiLabelExtra(uiLabelExtra);
   builder_.add_controlDeps(controlDeps);
   builder_.add_outputs(outputs);
   builder_.add_inputs(inputs);
@@ -502,14 +553,16 @@ inline flatbuffers::Offset<UIOp> CreateUIOpDirect(
     const char *opName = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *inputs = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *outputs = nullptr,
-    const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps = nullptr) {
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps = nullptr,
+    const char *uiLabelExtra = nullptr) {
   return nd4j::graph::CreateUIOp(
       _fbb,
       name ? _fbb.CreateString(name) : 0,
       opName ? _fbb.CreateString(opName) : 0,
       inputs ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*inputs) : 0,
       outputs ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*outputs) : 0,
-      controlDeps ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDeps) : 0);
+      controlDeps ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDeps) : 0,
+      uiLabelExtra ? _fbb.CreateString(uiLabelExtra) : 0);
 }
 
 }  // namespace graph

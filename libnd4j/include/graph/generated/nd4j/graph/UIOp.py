@@ -77,7 +77,14 @@ class UIOp(object):
             return self._tab.VectorLen(o)
         return 0
 
-def UIOpStart(builder): builder.StartObject(5)
+    # UIOp
+    def UiLabelExtra(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
+        if o != 0:
+            return self._tab.String(o + self._tab.Pos)
+        return None
+
+def UIOpStart(builder): builder.StartObject(6)
 def UIOpAddName(builder, name): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(name), 0)
 def UIOpAddOpName(builder, opName): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(opName), 0)
 def UIOpAddInputs(builder, inputs): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(inputs), 0)
@@ -86,4 +93,5 @@ def UIOpAddOutputs(builder, outputs): builder.PrependUOffsetTRelativeSlot(3, fla
 def UIOpStartOutputsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def UIOpAddControlDeps(builder, controlDeps): builder.PrependUOffsetTRelativeSlot(4, flatbuffers.number_types.UOffsetTFlags.py_type(controlDeps), 0)
 def UIOpStartControlDepsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def UIOpAddUiLabelExtra(builder, uiLabelExtra): builder.PrependUOffsetTRelativeSlot(5, flatbuffers.number_types.UOffsetTFlags.py_type(uiLabelExtra), 0)
 def UIOpEnd(builder): return builder.EndObject()

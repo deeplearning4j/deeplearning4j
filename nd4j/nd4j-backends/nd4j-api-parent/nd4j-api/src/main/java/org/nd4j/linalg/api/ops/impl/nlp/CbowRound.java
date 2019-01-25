@@ -26,6 +26,8 @@ import org.nd4j.linalg.factory.Nd4j;
 
 public class CbowRound extends DynamicCustomOp {
 
+    public CbowRound(){ }
+
     /**
      * hs round
      *
