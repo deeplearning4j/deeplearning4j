@@ -38,7 +38,7 @@ namespace ops  {
     		for(int i = 0; i < inRank-1; ++i)
     			REQUIRE_TRUE(input->sizeAt(i) == input->sizeAt(i+1), 0, "DIAG_PART op: wrong shape of input array %s ! All dimensions must be equal !", ShapeUtils::shapeAsString(input).c_str());
 
-	 	 	helpers::diagPartFunctor(input, output);
+	 	 	helpers::diagPartFunctor(block.launchContext(), input, output);
 
 		    return Status::OK();
 		}

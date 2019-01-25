@@ -44,7 +44,7 @@ namespace ops {
             indices[e] = index;
         }
 
-        return helpers::dynamicStitchFunctor(inputs, indices, output);
+        return helpers::dynamicStitchFunctor(block.launchContext(), inputs, indices, output);
     }
 
     DECLARE_TYPES(dynamic_stitch) {

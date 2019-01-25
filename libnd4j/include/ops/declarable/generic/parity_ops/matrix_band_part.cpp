@@ -41,7 +41,7 @@ namespace nd4j {
             REQUIRE_TRUE(maxUpper > -M && maxUpper < M, 0, "matrix_band_part: upper diagonal count %i should be less than %i.",
                     maxUpper, M);
 
-            helpers::matrixBandPart(input, output, minLower, maxUpper);
+            helpers::matrixBandPart(block.launchContext(), input, output, minLower, maxUpper);
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(band_part, matrix_band_part);

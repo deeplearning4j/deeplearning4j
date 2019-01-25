@@ -32,7 +32,7 @@ namespace ops {
         std::vector<int> axes;
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(input, axesVector, axes);
+            helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
         }
         else
            axes = *block.getIArguments();
@@ -61,7 +61,7 @@ namespace ops {
         auto axes = *block.getIArguments();
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, axes);
+            helpers::adjustAxis(block.launchContext(), INPUT_VARIABLE(0), axesVector, axes);
         }
 
         Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), axes, inputShape->at(0), keepDims, false, block.getWorkspace());
@@ -108,7 +108,7 @@ namespace ops {
 
             if (block.width() > 2) {
                 auto axesVector = INPUT_VARIABLE(2);
-                helpers::adjustAxis(input, axesVector, axes);
+                helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
             }
             else
                 axes = *block.getIArguments();
@@ -135,7 +135,7 @@ namespace ops {
 
             auto tempMax = tmpResult->at(0);
             REQUIRE_TRUE(tempMax->isSameShape(epsilon), 0, "reduce_max_bp: The second param shape should be an equal with reduce_max output.");
-            helpers::minMaxReduceFunctor(input, epsilon, tempMax, output);
+            helpers::minMaxReduceFunctor(block.launchContext(), input, epsilon, tempMax, output);
             return Status::OK();
     }
 #endif

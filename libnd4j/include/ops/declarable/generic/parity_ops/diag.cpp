@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(diag, 1, 1, false, 0, 0) {
     // TODO: still not sure if we really want this
     output->assign(0);
 
-    helpers::diagFunctor(input, output);    
+    helpers::diagFunctor(block.launchContext(), input, output);
     
     return Status::OK();
 }

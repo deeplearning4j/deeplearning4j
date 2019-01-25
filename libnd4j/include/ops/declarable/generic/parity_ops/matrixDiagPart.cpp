@@ -31,7 +31,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(inRank >= 2, 0, "CUSTOM_OP matrix_diag_part: input array must have rank >= 2, but %i given!", inRank);
 
-            return helpers::matrixDiagPart(input, output);
+            return helpers::matrixDiagPart(block.launchContext(), input, output);
         }
 
         DECLARE_SHAPE_FN(matrix_diag_part) {

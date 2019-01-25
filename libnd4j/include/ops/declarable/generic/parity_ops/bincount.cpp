@@ -55,7 +55,7 @@ namespace nd4j {
             auto result = OUTPUT_VARIABLE(0);
             result->assign(0.0f);
              
-            helpers::adjustWeights(values, weights, result, minLength, maxLength);
+            helpers::adjustWeights(block.launchContext(), values, weights, result, minLength, maxLength);
 
             return Status::OK();
         }

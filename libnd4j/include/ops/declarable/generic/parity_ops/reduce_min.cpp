@@ -31,7 +31,7 @@ namespace ops {
             std::vector<int> axes;
             if (block.width() > 1) {
                 auto axesVector = INPUT_VARIABLE(1);
-                helpers::adjustAxis(input, axesVector, axes);
+                helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
             }
             else
                 axes = *block.getIArguments();
@@ -66,7 +66,7 @@ namespace ops {
         std::vector<int> axes;
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, axes);
+            helpers::adjustAxis(block.launchContext(), INPUT_VARIABLE(0), axesVector, axes);
         }
         else if (block.getIArguments()->size())
             axes = *block.getIArguments();
@@ -112,7 +112,7 @@ namespace ops {
             std::vector<int> axesInt;
             if (block.width() > 2) {
                 auto axesVector = INPUT_VARIABLE(2);
-                helpers::adjustAxis(input, axesVector, axesInt);
+                helpers::adjustAxis(block.launchContext(), input, axesVector, axesInt);
             }
             else
                 axesInt = *block.getIArguments();
@@ -127,7 +127,7 @@ namespace ops {
        
             auto tempMin = tmpResult->at(0); // out
             REQUIRE_TRUE(tempMin->isSameShape(epsilon), 0, "reduce_min_bp: The second param shape should be an equal with reduce_min output.");
-            helpers::minMaxReduceFunctor(input, epsilon, tempMin, output);
+            helpers::minMaxReduceFunctor(block.launchContext(), input, epsilon, tempMin, output);
 
             return Status::OK();
     }

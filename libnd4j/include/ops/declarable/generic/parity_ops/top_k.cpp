@@ -49,7 +49,7 @@ namespace nd4j {
             REQUIRE_TRUE(k <= x->sizeAt(-1), 0, "top_k: k should not be greater than last dimension");
             REQUIRE_TRUE(k > 0, 0, "top_k: k should be positive, but %i given.", k);
 
-            int res =  helpers::topKFunctor(x, values, indices, k, needSort);
+            int res =  helpers::topKFunctor(block.launchContext(), x, values, indices, k, needSort);
             return res;
         }
 

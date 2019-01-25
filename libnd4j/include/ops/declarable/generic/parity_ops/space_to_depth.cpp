@@ -51,7 +51,7 @@ namespace ops {
 
         auto output = OUTPUT_VARIABLE(0);
 
-        helpers::_spaceTodepth(input, output, block_size, isNHWC);        
+        helpers::_spaceTodepth(block.launchContext(), input, output, block_size, isNHWC);
 
         return Status::OK();
     }

@@ -32,7 +32,7 @@ namespace ops {
         auto axes = *block.getIArguments();
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(input, axesVector, axes);
+            helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
         }
 //            else if (block.getIArguments()->size())
         bool keepDims = false;
@@ -54,7 +54,7 @@ namespace ops {
         auto axes = *block.getIArguments();
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, axes);
+            helpers::adjustAxis(block.launchContext(), INPUT_VARIABLE(0), axesVector, axes);
         }
 //            else if (block.getIArguments()->size())
         bool keepDims = false;
@@ -101,7 +101,7 @@ namespace ops {
             auto axes = *block.getIArguments();
             if (block.width() > 2) {
                 auto axesVector = INPUT_VARIABLE(2);
-                helpers::adjustAxis(input, axesVector, axes);
+                helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
             }
 //            else if (block.getIArguments()->size())
             bool keepDims = false;
@@ -124,10 +124,10 @@ namespace ops {
 
 
             if (tempNorm2->isScalar()) {
-                helpers::reduceNorm2BP_scalar(input, epsilon, tempNorm2, output);
+                helpers::reduceNorm2BP_scalar(block.launchContext(), input, epsilon, tempNorm2, output);
             }
             else {
-                helpers::reduceNorm2BP(input, epsilon, tempNorm2, output, axes, keepDims);
+                helpers::reduceNorm2BP(block.launchContext(), input, epsilon, tempNorm2, output, axes, keepDims);
             }
             return Status::OK();
     }

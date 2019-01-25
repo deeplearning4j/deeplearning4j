@@ -33,7 +33,7 @@ namespace ops {
 
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(input, axesVector, axes);
+            helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
         }
 //            else if (block.getIArguments()->size())
         bool keepDims = false;
@@ -55,7 +55,7 @@ namespace ops {
         auto axes = *block.getIArguments();
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, axes);
+            helpers::adjustAxis(block.launchContext(), INPUT_VARIABLE(0), axesVector, axes);
         }
 //            else if (block.getIArguments()->size())
         bool keepDims = false;
@@ -105,7 +105,7 @@ namespace ops {
             auto axes = *block.getIArguments();
             if (block.width() > 2) {
                 auto axesVector = INPUT_VARIABLE(2);
-                helpers::adjustAxis(input, axesVector, axes);
+                helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
             }
 //            else if (block.getIArguments()->size())
             bool keepDims = false;
@@ -124,7 +124,7 @@ namespace ops {
 
             auto normMax = tmpResult->at(0);
 
-            helpers::minMaxReduceFunctor(input, epsilon, normMax, output, true);
+            helpers::minMaxReduceFunctor(block.launchContext(), input, epsilon, normMax, output, true);
 
             return Status::OK();
     }

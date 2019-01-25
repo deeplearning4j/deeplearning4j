@@ -33,9 +33,9 @@ namespace nd4j {
             auto expected = NDArrayFactory::create(input->dataType(), 0.f, block.getVariableSpace()->launchContext());
             auto wrong = NDArrayFactory::create(input->dataType(), 0.f, block.getVariableSpace()->launchContext());
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_sum: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
+            REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), idxSegments, expected, wrong), 0, "segment_sum: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
 
-            helpers::segmentSumFunctor(input, idxSegments, segmentedOutput);
+            helpers::segmentSumFunctor(block.launchContext(), input, idxSegments, segmentedOutput);
 
             return ND4J_STATUS_OK;
         }
@@ -64,7 +64,7 @@ namespace nd4j {
 
         CUSTOM_OP_IMPL(segment_sum_bp, 3, 2, false, 0, 0) {
 
-            return helpers::segmentSumFunctorBP(INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), OUTPUT_VARIABLE(0));
+            return helpers::segmentSumFunctorBP(block.launchContext(), INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), OUTPUT_VARIABLE(0));
         }
         DECLARE_SHAPE_FN(segment_sum_bp){
             Nd4jLong* in = inputShape->at(0);

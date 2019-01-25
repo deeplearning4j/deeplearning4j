@@ -46,7 +46,7 @@ namespace nd4j {
             if (block.getTArguments()->size() > 0)
                 threshold = T_ARG(0);
 
-            helpers::nonMaxSuppressionV2(boxes, scales, maxOutputSize, threshold, output);
+            helpers::nonMaxSuppressionV2(block.launchContext(), boxes, scales, maxOutputSize, threshold, output);
             return Status::OK();
         }
 

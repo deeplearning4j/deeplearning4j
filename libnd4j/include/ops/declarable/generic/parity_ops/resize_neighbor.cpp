@@ -52,7 +52,7 @@ namespace nd4j {
                     center = 0 != INT_ARG(2);
             }
 
-            return helpers::resizeNeighborFunctor(image, width, height, center, output);
+            return helpers::resizeNeighborFunctor(block.launchContext(), image, width, height, center, output);
         }
 
         DECLARE_SHAPE_FN(resize_nearest_neighbor) {

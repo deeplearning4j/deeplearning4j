@@ -44,7 +44,7 @@ CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
     REQUIRE_TRUE(nPositiveFlag, 0, "POLYGAMMA op: all elements of n array must be > 0 !");
     REQUIRE_TRUE(xPositiveFlag, 0, "POLYGAMMA op: all elements of x array must be > 0 !");
 
-    helpers::polyGamma(*n, *x, *output);
+    helpers::polyGamma(block.launchContext(), *n, *x, *output);
     return Status::OK();
 }
 

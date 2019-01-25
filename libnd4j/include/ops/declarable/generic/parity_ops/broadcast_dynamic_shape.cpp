@@ -43,7 +43,7 @@ namespace nd4j {
 
             auto output = OUTPUT_VARIABLE(0);
      
-            return helpers::bdsFunctor(x_shape, y_shape, output);
+            return helpers::bdsFunctor(block.launchContext(), x_shape, y_shape, output);
         }
 
         DECLARE_SHAPE_FN(broadcast_dynamic_shape) {

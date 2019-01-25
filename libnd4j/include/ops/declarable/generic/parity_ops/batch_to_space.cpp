@@ -177,7 +177,7 @@ namespace ops {
         auto internal_crops = &crops_shape.data()[2 * removed_prefix_block_dims];
         auto internal_block_shape = &block_shape.data()[removed_prefix_block_dims];
 
-        helpers::_batchToSpace(internal_block_dims, output, input, internal_output_shape, internal_input_shape, internal_block_shape, internal_crops);
+        helpers::_batchToSpace(block.launchContext(), internal_block_dims, output, input, internal_output_shape, internal_input_shape, internal_block_shape, internal_crops);
 
         if (order_changed)
             delete input;

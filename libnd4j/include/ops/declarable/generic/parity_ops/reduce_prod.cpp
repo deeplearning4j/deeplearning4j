@@ -33,7 +33,7 @@ namespace ops {
         auto axes = *block.getIArguments();
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(input, axesVector, axes);
+            helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
         }
 //            else if (block.getIArguments()->size())
         bool keepDims = false;
@@ -61,7 +61,7 @@ namespace ops {
         auto axes = *block.getIArguments();
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, axes);
+            helpers::adjustAxis(block.launchContext(), INPUT_VARIABLE(0), axesVector, axes);
         }
 //            else if (block.getIArguments()->size())
         bool keepDims = false;
@@ -101,7 +101,7 @@ namespace ops {
         auto axes = *block.getIArguments();
         if (block.width() > 2) {
             auto axesVector = INPUT_VARIABLE(2);
-            helpers::adjustAxis(input, axesVector, axes);
+            helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
         }
 //            else if (block.getIArguments()->size())
         bool keepDims = false;
@@ -122,11 +122,11 @@ namespace ops {
     
         // tempProd has equal shape with epsilon
         if (epsilon->isScalar()) {
-            helpers::reduceProductBPScalar(input, epsilon, tempProd, output);
+            helpers::reduceProductBPScalar(block.launchContext(), input, epsilon, tempProd, output);
         }
         else { // result 
 
-            helpers::reduceProductBP(input, epsilon, tempProd, output, axes);
+            helpers::reduceProductBP(block.launchContext(), input, epsilon, tempProd, output, axes);
         }
 
         return Status::OK();

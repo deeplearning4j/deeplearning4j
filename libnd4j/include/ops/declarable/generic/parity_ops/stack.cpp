@@ -46,7 +46,7 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
  	for(int i = 0; i < block.width(); ++i)
 		inArrs[i] = INPUT_VARIABLE(i);
 	
-	helpers::stack(inArrs, *output, dim);
+	helpers::stack(block.launchContext(), inArrs, *output, dim);
 	
 	// remove unity from output shape if input arrays are vectors 
 	// if(input->isVector())	{

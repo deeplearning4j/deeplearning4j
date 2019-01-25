@@ -46,7 +46,7 @@ namespace ops {
         if (block.numI() > 1)
             shiftIsLinear = false;
         if (shiftIsLinear) {
-            helpers::rollFunctorLinear(input, output, shift, block.isInplace());
+            helpers::rollFunctorLinear(block.launchContext(), input, output, shift, block.isInplace());
         }
         else {
             std::vector<int> axes(block.numI() - 1);
@@ -56,7 +56,7 @@ namespace ops {
                     input->rankOf(), input->rankOf() - 1, axe);
                 axes[e] = (axe < 0? (input->rankOf() + axe) : axe);
             }
-            helpers::rollFunctorFull(input, output, shift, axes, block.isInplace());
+            helpers::rollFunctorFull(block.launchContext(), input, output, shift, axes, block.isInplace());
         }
 
         return Status::OK();

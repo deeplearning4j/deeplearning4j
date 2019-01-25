@@ -166,7 +166,7 @@ namespace ops {
         Nd4jLong* internal_paddings = &padding_shape.data()[2 * removed_prefix_block_dims];
         Nd4jLong* internal_block_shape = &block_shape.data()[removed_prefix_block_dims];
 
-        helpers::_spaceToBatch(internal_block_dims, input, output, internal_input_shape, internal_output_shape, internal_block_shape, internal_paddings);
+        helpers::_spaceToBatch(block.launchContext(), internal_block_dims, input, output, internal_input_shape, internal_output_shape, internal_block_shape, internal_paddings);
 
         if (order_changed)
             delete input;

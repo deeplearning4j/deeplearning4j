@@ -36,7 +36,7 @@ CUSTOM_OP_IMPL(reduce_variance, 1, 1, false, 0, 0) {
     auto dimensions = *block.getIArguments();
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(input, axesVector, dimensions);
+        helpers::adjustAxisblock.launchContext(), (input, axesVector, dimensions);
     }
 //            else if (block.getIArguments()->size())
     if (block.getBArguments()->size()) {
@@ -73,7 +73,7 @@ DECLARE_SHAPE_FN(reduce_variance) {
     auto dimensions = *block.getIArguments();
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+        helpers::adjustAxis(block.launchContext(), INPUT_VARIABLE(0), axesVector, dimensions);
     }
 //            else if (block.getIArguments()->size())
     if (block.getBArguments()->size()) {
@@ -114,7 +114,7 @@ CUSTOM_OP_IMPL(reduce_variance_bp, 2, 1, false, 0, 0) {
     auto dimensions = *block.getIArguments();
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
-        helpers::adjustAxis(input, axesVector, dimensions);
+        helpers::adjustAxis(block.launchContext(), input, axesVector, dimensions);
     }
 //            else if (block.getIArguments()->size())
     if (block.getBArguments()->size()) {
@@ -163,7 +163,7 @@ DECLARE_SHAPE_FN(reduce_variance_bp) {
     auto dimensions = *block.getIArguments();
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
-        helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+        helpers::adjustAxis(block.launchContext(), INPUT_VARIABLE(0), axesVector, dimensions);
     }
 //            else if (block.getIArguments()->size())
 

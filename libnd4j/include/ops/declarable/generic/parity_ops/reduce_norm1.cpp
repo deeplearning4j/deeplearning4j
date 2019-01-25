@@ -32,7 +32,7 @@ namespace ops {
             std::vector<int> axes;
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(input, axesVector, axes);
+            helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
         }
         else if (block.getIArguments()->size())
             axes = *block.getIArguments();
@@ -62,7 +62,7 @@ namespace ops {
         std::vector<int> dimensions;
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, dimensions);
+            helpers::adjustAxis(block.launchContext(), INPUT_VARIABLE(0), axesVector, dimensions);
         }
         else if (block.getIArguments()->size())
             dimensions = *block.getIArguments();
@@ -111,7 +111,7 @@ namespace ops {
             auto axes = *block.getIArguments();
             if (block.width() > 2) {
                 auto axesVector = INPUT_VARIABLE(2);
-                helpers::adjustAxis(input, axesVector, axes);
+                helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
             }
 //            else if (block.getIArguments()->size())
             bool keepDims = false;
@@ -120,7 +120,7 @@ namespace ops {
             else if (block.getTArguments()->size())
                 keepDims = (bool)T_ARG(0);
 
-            helpers::reduceNorm1BP(input, epsilon, (NDArray*)nullptr, output, axes, keepDims);
+            helpers::reduceNorm1BP(block.launchContext(), input, epsilon, (NDArray*)nullptr, output, axes, keepDims);
 
             //delete tmpResult;
             return Status::OK();

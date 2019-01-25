@@ -48,7 +48,7 @@ namespace ops {
         for (int o = 0; o < numPartition; ++o) {
             outputList[o] = OUTPUT_VARIABLE(o);
         }
-        helpers::dynamicPartitionFunctor(input, indices, outputList);
+        helpers::dynamicPartitionFunctor(block.launchContext(), input, indices, outputList);
 
         return Status::OK();
     }
@@ -110,7 +110,7 @@ namespace ops {
         outputList[0] = OUTPUT_VARIABLE(0);
         outputList[1] = OUTPUT_VARIABLE(1);
 
-        helpers::dynamicPartitionFunctorBP(input, indices, gradOutList, outputList);
+        helpers::dynamicPartitionFunctorBP(block.launchContext(), input, indices, gradOutList, outputList);
 
         return ND4J_STATUS_OK;
     }

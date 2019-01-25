@@ -33,9 +33,9 @@ namespace nd4j {
             auto expected = NDArrayFactory::create(input->dataType(), 0.f, block.getVariableSpace()->launchContext());
             auto wrong = NDArrayFactory::create(input->dataType(), 0.f, block.getVariableSpace()->launchContext());
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_min: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
+            REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), idxSegments, expected, wrong), 0, "segment_min: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
 
-            helpers::segmentMinFunctor(input, idxSegments, segmentedOutput);
+            helpers::segmentMinFunctor(block.launchContext(), input, idxSegments, segmentedOutput);
 
             return Status::OK();
         }
@@ -68,7 +68,7 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
             auto outIndices = OUTPUT_VARIABLE(1);
             outIndices->assign(indices);
-            return helpers::segmentMinFunctorBP(input, indices, gradOut, output);
+            return helpers::segmentMinFunctorBP(block.launchContext(), input, indices, gradOut, output);
         }
         DECLARE_SHAPE_FN(segment_min_bp){
             Nd4jLong* in = inputShape->at(0);

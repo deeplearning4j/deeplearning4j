@@ -64,7 +64,7 @@ namespace ops {
 
         auto ts = NDArrayFactory::create(delta, block.getVariableSpace()->launchContext());
         // FIXME: delta should be NDArray scalar
-        helpers::_adjust_hue(input, output, &ts, isNHWC);
+        helpers::_adjust_hue(block.launchContext(), input, output, &ts, isNHWC);
 
         return Status::OK();
     }

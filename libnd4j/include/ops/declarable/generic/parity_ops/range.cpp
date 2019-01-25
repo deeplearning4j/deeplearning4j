@@ -112,7 +112,7 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
         REQUIRE_TRUE(false, 0, "CUSTOM RANGE OP: op should have inputs defined in any possible way: T_args, INT_args, or INPUT variables!");
     }
 
-    helpers::range(*s, *d, *output);
+    helpers::range(block.launchContext(), *s, *d, *output);
 
     if (localS)
         delete s;

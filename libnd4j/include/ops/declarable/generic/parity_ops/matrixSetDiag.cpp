@@ -41,7 +41,7 @@ CONFIGURABLE_OP_IMPL(matrix_set_diag, 2, 1, false, 0, 0) {
     REQUIRE_TRUE(diagonal->sizeAt(-1) == (int)nd4j::math::nd4j_min<Nd4jLong>(input->sizeAt(-1), input->sizeAt(-2)),
         0, "MATRIX_SET_DIAG op: the value of last dimension of diagonal array must be equal to min(input_last_shape=%i, input_last_but_one_shape=%i), but got %i instead !", input->sizeAt(-1), input->sizeAt(-2), diagonal->sizeAt(-1));
 
-    helpers::matrixSetDiag(input, diagonal, output);
+    helpers::matrixSetDiag(block.launchContext(), input, diagonal, output);
 
     return Status::OK();
 }

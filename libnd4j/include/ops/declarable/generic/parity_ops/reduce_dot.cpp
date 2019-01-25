@@ -57,11 +57,11 @@ namespace ops {
                 std::vector<int> axes; // = *block.getIArguments();
                 if (block.width() > 3) { // axes as last array
                     auto axesArr = INPUT_VARIABLE(3);
-                    helpers::adjustAxis(inputX, axesArr, axes);
+                    helpers::adjustAxis(block.launchContext(), inputX, axesArr, axes);
                 } else
                     axes = *block.getIArguments();
 
-                helpers::reduceDotBP(inputX, inputY, epsilon, output1, output2, axes);
+                helpers::reduceDotBP(block.launchContext(), inputX, inputY, epsilon, output1, output2, axes);
             }
 
             return Status::OK();

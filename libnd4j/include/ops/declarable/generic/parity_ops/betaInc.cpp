@@ -51,7 +51,7 @@ CONFIGURABLE_OP_IMPL(betainc, 3, 1, false, 0, 0) {
         REQUIRE_TRUE(0.f <= x->e<float>(i) && x->e<float>(i) <= 1.f, 0, "BETAINC op: all elements of x array must be within [0, 1] range!");
     }
 
-    *output = helpers::betaInc(*a, *b, *x);
+    *output = helpers::betaInc(block.launchContext(), *a, *b, *x);
 
     return Status::OK();
 }

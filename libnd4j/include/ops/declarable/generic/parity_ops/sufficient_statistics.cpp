@@ -36,7 +36,7 @@ namespace nd4j {
             std::vector<int> axis(axisVector->lengthOf());//*block.getIArguments();
 
             // axis might be dynamic (i.e. tf mode)
-            helpers::adjustAxis(input, axisVector, axis);
+            helpers::adjustAxis(block.launchContext(), input, axisVector, axis);
 
             input->reduceAlongDimension(reduce::SquaredNorm, squares, axis);
             input->reduceAlongDimension(reduce::Sum, sum, axis);

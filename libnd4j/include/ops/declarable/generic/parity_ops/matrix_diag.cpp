@@ -29,7 +29,7 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
 
             REQUIRE_TRUE(!input->isScalar(), 0, "CUSTOM_OP matrix_diag: input array must be at list a vector, but scalar was given!");
-            return helpers::matrixDiag(input, output);
+            return helpers::matrixDiag(block.launchContext(), input, output);
         }
 
         DECLARE_SHAPE_FN(matrix_diag) {

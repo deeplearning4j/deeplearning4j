@@ -42,11 +42,11 @@ namespace nd4j {
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
                 auto axisVector = INPUT_VARIABLE(1);
-                helpers::adjustAxis(input, axisVector, axis);
+                helpers::adjustAxis(block.launchContext(), input, axisVector, axis);
 
                 input->applyIndexReduce(indexreduce::IndexMin, output, axis);
             } else {
-                helpers::adjustAxis(input->shapeInfo(), axis);
+                helpers::adjustAxis(block.launchContext(), input->shapeInfo(), axis);
 
                 input->applyIndexReduce(indexreduce::IndexMin, output, axis);
             }
@@ -67,7 +67,7 @@ namespace nd4j {
             }
 
             // we're resolving negative axis here
-            helpers::adjustAxis(inputShape->at(0), dims);
+            helpers::adjustAxis(block.launchContext(), inputShape->at(0), dims);
 
             if (dims.size() > 1)
                 std::sort(dims.begin(), dims.end());

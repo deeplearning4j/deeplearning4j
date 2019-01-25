@@ -38,7 +38,7 @@ namespace nd4j {
             if (block.width() > 1 && axis.size() == 0) {
                 auto axisVector = INPUT_VARIABLE(1);
                 axis.resize(axisVector->lengthOf());
-                helpers::adjustAxis(input, axisVector, axis);
+                helpers::adjustAxis(block.launchContext(), input, axisVector, axis);
 //                for (int e = 0; e < axisVector->lengthOf(); e++) {
 //                    int ca = (int) axisVector->e(e);
 //                    if (ca < 0)

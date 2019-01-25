@@ -33,7 +33,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(x->dataType() == values->dataType(), 0, "Unique: input and output data types must be the same");
 
-            return helpers::uniqueFunctor(x, values, indices,  (NDArray*)nullptr);
+            return helpers::uniqueFunctor(block.launchContext(), x, values, indices,  (NDArray*)nullptr);
         }
 
         DECLARE_SHAPE_FN(unique) {
@@ -43,7 +43,7 @@ namespace nd4j {
             Nd4jLong* valuesShape;
             Nd4jLong* indicesShape;
 
-            int uniqueCount = helpers::uniqueCount(source);
+            int uniqueCount = helpers::uniqueCount(block.launchContext(), source);
 
             // all output shapes are 1D arrays (vectors)
             valuesShape = ShapeBuilders::createVectorShapeInfo(block.dataType(), uniqueCount, block.workspace());
@@ -64,14 +64,14 @@ namespace nd4j {
             auto indices = OUTPUT_VARIABLE(1);
             auto counts = OUTPUT_VARIABLE(2);
 
-            return helpers::uniqueFunctor(input, values, indices, counts);
+            return helpers::uniqueFunctor(block.launchContext(), input, values, indices, counts);
         }
 
         DECLARE_SHAPE_FN(unique_with_counts) {
             auto in = inputShape->at(0);
             auto source = INPUT_VARIABLE(0);
 
-            int uniqueCount = helpers::uniqueCount(source);
+            int uniqueCount = helpers::uniqueCount(block.launchContext(), source);
             // all output shapes are 1D arrays (vectors)
             // all output shapes are 1D arrays (vectors)
             auto valuesShape = ShapeBuilders::createVectorShapeInfo(source->dataType(), uniqueCount, block.workspace());

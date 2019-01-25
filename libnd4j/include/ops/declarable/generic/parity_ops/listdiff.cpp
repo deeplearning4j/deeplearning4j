@@ -37,7 +37,7 @@ namespace nd4j {
             REQUIRE_TRUE(keep->rankOf() == 1, 0, "ListDiff: rank of keep should be 1D, but got %iD instead", keep->rankOf());
             REQUIRE_TRUE(keep->dataType() == values->dataType(), 0, "ListDiff: both inputs must have same data type");
 
-            return helpers::listDiffFunctor(values, keep, output1, output2);
+            return helpers::listDiffFunctor(block.launchContext(), values, keep, output1, output2);
         };
 
         DECLARE_SHAPE_FN(listdiff) {
@@ -50,7 +50,7 @@ namespace nd4j {
             auto k = keep->dataType();
             REQUIRE_TRUE(k == v, 0, "ListDiff: both inputs must have same data type");
 
-            auto saved = helpers::listDiffCount(values, keep);
+            auto saved = helpers::listDiffCount(block.launchContext(), values, keep);
 
             REQUIRE_TRUE(saved > 0, 0, "ListDiff: no matches found");
 

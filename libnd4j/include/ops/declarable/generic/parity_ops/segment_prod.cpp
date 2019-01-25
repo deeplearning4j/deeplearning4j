@@ -33,9 +33,9 @@ namespace nd4j {
             auto expected = NDArrayFactory::create(input->dataType(), 0.f, block.getVariableSpace()->launchContext());
             auto wrong = NDArrayFactory::create(input->dataType(), 0.f, block.getVariableSpace()->launchContext());
 
-            REQUIRE_TRUE(helpers::segmentIndicesValidate(idxSegments, expected, wrong), 0, "segment_prod: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
+            REQUIRE_TRUE(helpers::segmentIndicesValidate(block.launchContext(), idxSegments, expected, wrong), 0, "segment_prod: segment indices should be arranged, but %2.1f > %2.1f", expected.e<float>(0), wrong.e<float>(0));
 
-            helpers::segmentProdFunctor(input, idxSegments, segmentedOutput);
+            helpers::segmentProdFunctor(block.launchContext(), input, idxSegments, segmentedOutput);
 
             return Status::OK();
         }
@@ -70,7 +70,7 @@ namespace nd4j {
             auto outIndices = OUTPUT_VARIABLE(1);
             outIndices->assign(indices);
             #ifndef __CUDABLAS__
-            helpers::segmentProdFunctorBP(input, indices, gradOut, output);
+            helpers::segmentProdFunctorBP(block.launchContext(), input, indices, gradOut, output);
             #endif
 
             return Status::OK();
