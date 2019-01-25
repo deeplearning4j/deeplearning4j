@@ -104,13 +104,13 @@ Seq[Any](format.raw/*1.4*/("""
                     <button onclick="setLayout('dagre')">Dagre</button>
                     <button onclick="setLayout('klay_down')">Klay (Down)</button>
                     <button onclick="setLayout('klay_lr')">Klay (Right)</button>
-                    <button onclick="setLayout('euler')">Euler</button>
-                    <button onclick="setLayout('spread')">Spread</button>
-                    <button onclick="setLayout('cola')">Cola</button>
-                    <button onclick="setLayout('cose-bilkent')">CoSE Bilkent</button>
+                    """),format.raw/*83.76*/("""
+                    """),format.raw/*84.78*/("""
+                    """),format.raw/*85.74*/("""
+                    """),format.raw/*86.21*/("""<button onclick="setLayout('cose-bilkent')">CoSE Bilkent</button>
                     <button onclick="setLayout('breadthfirst')">Breadth First</button>
-                    <button onclick="setLayout('grid')">Grid</button>
-                </div>
+                    """),format.raw/*88.74*/("""
+                """),format.raw/*89.17*/("""</div>
             </div>
         </div>
         <div id="graphdiv" style="height: calc(100% - 60px);
@@ -149,11 +149,11 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Fri Jan 25 00:11:55 AEDT 2019
+                  DATE: Fri Jan 25 15:01:30 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
-                  HASH: e600b40b62deb946d4e4607ca2bda0e34006927e
-                  MATRIX: 561->1|657->3|685->5|4595->3948|4641->3966|5835->5131|5865->5132|5916->5154|5985->5194|6015->5195
-                  LINES: 20->1|25->1|26->2|101->77|102->78|126->102|126->102|127->103|128->104|128->104
+                  HASH: 5bbca606352004bcd370a7bff06c376141f0d082
+                  MATRIX: 561->1|657->3|685->5|4595->3948|4641->3966|4981->4333|5031->4412|5081->4487|5131->4509|5334->4737|5380->4755|5801->5147|5831->5148|5882->5170|5951->5210|5981->5211
+                  LINES: 20->1|25->1|26->2|101->77|102->78|107->83|108->84|109->85|110->86|112->88|113->89|126->102|126->102|127->103|128->104|128->104
                   -- GENERATED --
               */
           
