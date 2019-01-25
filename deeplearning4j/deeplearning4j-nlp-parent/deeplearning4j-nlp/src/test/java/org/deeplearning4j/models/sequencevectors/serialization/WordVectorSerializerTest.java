@@ -64,11 +64,11 @@ public class WordVectorSerializerTest {
         String json = StringUtils.EMPTY;
         try {
             //ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            FileOutputStream fos = new FileOutputStream("test.zip");
+            FileOutputStream fos = new FileOutputStream("test1.zip");
             WordVectorSerializer.writeSequenceVectors(vectors, fos);
             //byte[] bytesResult = baos.toByteArray();
             //deser = WordVectorSerializer.readSequenceVectors(new ByteArrayInputStream(bytesResult));
-            deser = WordVectorSerializer.readSequenceVectors(new FileInputStream("test.zip"));
+            deser = WordVectorSerializer.readSequenceVectors(new FileInputStream("test1.zip"));
         } catch (Exception e) {
             e.printStackTrace();
             fail();

@@ -59,6 +59,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.util.SerializationUtils;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -68,6 +69,7 @@ import org.nd4j.util.OneTimeLogger;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1992,39 +1994,42 @@ public class WordVectorSerializer {
         InMemoryLookupTable<VocabWord> lookupTable = (InMemoryLookupTable<VocabWord>)vectors.getLookupTable();
         AbstractCache<T> vocabCache = (AbstractCache<T>)vectors.getVocab();
 
+        File tempFileConfig = DL4JFileUtils.createTempFile("config", "0");
+        tempFileConfig.deleteOnExit();
+
         try (ZipOutputStream zipfile = new ZipOutputStream(new BufferedOutputStream(new CloseShieldOutputStream(stream)))) {
 
             ZipEntry config = new ZipEntry("configuration.json");
             zipfile.putNextEntry(config);
+            VectorsConfiguration configuration = vectors.getConfiguration();
 
-            try (ObjectOutputStream oos = new ObjectOutputStream(zipfile)) {
+            String json = configuration.toJson().trim();
+            zipfile.write(json.getBytes("UTF-8"));
 
-                VectorsConfiguration configuration = vectors.getConfiguration();
-                zipfile.write(configuration.toJson().getBytes("UTF-8"));
+            ZipEntry vocab = new ZipEntry("vocabulary.json");
+            zipfile.putNextEntry(vocab);
+            zipfile.write(vocabCache.toJson().getBytes("UTF-8"));
 
-                ZipEntry vocab = new ZipEntry("vocabulary.json");
-                zipfile.putNextEntry(vocab);
-                oos.write(vocabCache.toJson().getBytes());
+            INDArray syn0Data = lookupTable.getSyn0();
+            ZipEntry syn0 = new ZipEntry("syn0.bin");
+            zipfile.putNextEntry(syn0);
+            byte[] syn0AsBytes = SerializationUtils.toByteArray(syn0Data);
+            zipfile.write(syn0AsBytes);
 
-                ZipEntry syn0 = new ZipEntry("syn0.bin");
-                zipfile.putNextEntry(syn0);
+            INDArray syn1Data = lookupTable.getSyn1();
+            if (syn1Data != null) {
+                ZipEntry syn1 = new ZipEntry("syn1.bin");
+                zipfile.putNextEntry(syn1);
+                byte[] syn1AsBytes = SerializationUtils.toByteArray(syn1Data);
+                zipfile.write(syn1AsBytes);
+            }
 
-                INDArray syn0Data = lookupTable.getSyn0();
-                oos.writeObject(syn0Data);
-
-                INDArray syn1Data = lookupTable.getSyn1();
-                if (syn1Data != null) {
-                    ZipEntry syn1 = new ZipEntry("syn1.bin");
-                    zipfile.putNextEntry(syn1);
-                    oos.writeObject(syn1Data);
-                }
-
-                INDArray syn1NegData = lookupTable.getSyn1Neg();
-                if (syn1NegData != null) {
-                    ZipEntry syn1Neg = new ZipEntry("syn1neg.bin");
-                    zipfile.putNextEntry(syn1Neg);
-                    oos.writeObject(syn1NegData);
-                }
+            INDArray syn1NegData = lookupTable.getSyn1Neg();
+            if (syn1NegData != null) {
+                ZipEntry syn1neg = new ZipEntry("syn1neg.bin");
+                zipfile.putNextEntry(syn1neg);
+                byte[] syn1NegAsBytes = SerializationUtils.toByteArray(syn1NegData);
+                zipfile.write(syn1NegAsBytes);
             }
         }
     }
@@ -2041,18 +2046,29 @@ public class WordVectorSerializer {
 
         //vocabCache.words().size()
 
+        //try (ZipFile zipfile = new ZipFile(zipPath)) {
         try (ZipInputStream zipfile = new ZipInputStream(new BufferedInputStream(stream))) {
-            ZipEntry entry;
+
+            /*ZipEntry config = zipfile.getEntry("configuration.json");
+            zipfile.getInputStream(config);
+            configuration = VectorsConfiguration.fromJson(new String(bytes, "UTF-8"));*/
+
+            ZipEntry entry = null;
             while ((entry = zipfile.getNextEntry()) != null) {
+
                 String name = entry.getName();
                 byte[] bytes = IOUtils.toByteArray(zipfile);
+
                 if (name.equals("configuration.json")) {
-                    configuration = VectorsConfiguration.fromJson(new String(bytes, "UTF-8"));
+                    String content = new String(bytes, "UTF-8");
+                    configuration = VectorsConfiguration.fromJson(content);
                 }
                 else if (name.equals("vocabulary.json")) {
-                    vocabCache = AbstractCache.fromJson(bytes.toString());
+                    String content = new String(bytes, "UTF-8");
+                    vocabCache = AbstractCache.fromJson(content);
                 }
                 else if (name.equals("syn0.bin")) {
+
 
                 }
                 else if (name.equals("syn1.bin")) {
@@ -2062,7 +2078,6 @@ public class WordVectorSerializer {
 
                 }
 
-            }
 
             /*INDArray syn0 = Nd4j.create(10, 2),
                     syn1 = Nd4j.create(10, 2),
@@ -2088,15 +2103,18 @@ public class WordVectorSerializer {
                     syn1Neg.putRow(i, Nd4j.create(arraySyn0[i]));
                 }
             }*/
-            WeightLookupTable<T> lookupTable = new InMemoryLookupTable<>();
+
+            }
+
+        }
+        WeightLookupTable<T> lookupTable = new InMemoryLookupTable<>();
             /*((InMemoryLookupTable<T>) lookupTable).setSyn0(syn0);
             ((InMemoryLookupTable<T>) lookupTable).setSyn1(syn1);
             ((InMemoryLookupTable<T>) lookupTable).setSyn1Neg(syn1Neg);*/
-            vectors = new SequenceVectors.Builder<T>(configuration).
-                            lookupTable(lookupTable).
-                            vocabCache(vocabCache).
-                            build();
-        }
+        vectors = new SequenceVectors.Builder<T>(configuration).
+                lookupTable(lookupTable).
+                vocabCache(vocabCache).
+                build();
         return vectors;
     }
 
