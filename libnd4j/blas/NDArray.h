@@ -253,6 +253,8 @@ namespace nd4j {
          */
         static void registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList);
 
+        static void prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables = false);
+
         /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type
          * @param offset

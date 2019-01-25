@@ -1071,24 +1071,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("Synchronization failed");
     }
 
-    void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
-        // no-op
-        for (auto p:writeList) {
-            if (!p->isActualOnDeviceSide())
-                p->syncToDevice();
-
-            p->tickWriteDevice();
-        }
-
-        for (auto p:readList) {
-            if (!p->isActualOnDeviceSide())
-                p->syncToDevice();
-
-            p->tickReadDevice();
-        }
-    }
-    
-
 //////////////////////////////////////////////////////////////////////////
     template <>
     utf8string NDArray::e(const Nd4jLong i) const {
@@ -2179,6 +2161,8 @@ NDArray NDArray::e(const Nd4jLong i) const {
         // create output array
         auto result = new NDArray(newShape, true, _context, true);
 
+        NDArray::prepareSpecialUse({result}, {const_cast<NDArray*>(this), const_cast<NDArray*>(other)});
+
         // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
         void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentAsT(this->dataType()) : nullptr;
 
@@ -2219,6 +2203,36 @@ NDArray NDArray::e(const Nd4jLong i) const {
         return result;
     }
 
+    void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
+        for (auto a:writeList) {
+            if (synchronizeWritables && !a->isActualOnDeviceSide())
+                a->syncToDevice();
+
+            a->tickWriteDevice();
+        }
+
+        for (auto a:readList) {
+            if (!a->isActualOnDeviceSide())
+                a->syncToDevice();
+        }
+    }
+
+    void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
+        // no-op
+        for (auto p:writeList) {
+            //if (!p->isActualOnDeviceSide())
+            //    p->syncToDevice();
+
+            p->tickWriteDevice();
+        }
+
+        for (auto p:readList) {
+            //if (!p->isActualOnDeviceSide())
+            //    p->syncToDevice();
+
+            p->tickReadDevice();
+        }
+    }
     
 ////////////////////////////////////////////////////////////////////////
 // default destructor
@@ -2319,25 +2333,21 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
         } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
             return false;
 
-        NDArray tmp = NDArrayFactory::create<double>(0LL, _context); // scalar = 0
-        tmp.tickWriteDevice();
-
-        if(!isActualOnDeviceSide()) {
-            syncToDevice();
-        }
-
-        if(!other->isActualOnDeviceSide()) {
-            other->syncToDevice();
-        }
+        NDArray tmp = NDArrayFactory::create<float>(0LL, _context); // scalar = 0
+        NDArray::prepareSpecialUse({&tmp}, {this, other});
 
         ExtraArguments extras({eps}); 
         NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extras.argumentAsT(DataType::FLOAT32), other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
+
+        NDArray::registerSpecialUse({&tmp}, {this, other});
 
         auto res = cudaStreamSynchronize(*_context->getCudaStream());
         if (res != 0)
             throw cuda_exception::build("NDArray::equalsTo failed", res);
 
-        if (tmp.e<Nd4jLong>(0) > 0LL)
+        auto r = tmp.e<Nd4jLong>(0);
+        //nd4j_printf("equalsTo result: [%lld]\n", r);
+        if (r > 0LL)
             return false;
 
         return true;

@@ -1136,7 +1136,9 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
     void NDArray::printIndexedBuffer(const char* msg, Nd4jLong limit) const {
-        syncToHost();
+        lazyAllocateBuffer();
+        if (!isActualOnHostSide())
+            syncToHost();
 
         Nd4jLong rank = this->rankOf();
 

@@ -153,6 +153,7 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
             if (xEws == 1 && yEws == 1) {
                 for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
 					sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i], y[i], extraZ), extraZ);
+					//printf("X: %f; Y: %f; Z: %f;\n", (float) x[i], (float) y[i], (float) tzf);
                 }
             }
             else {
@@ -231,6 +232,7 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
                 auto tc = reinterpret_cast<unsigned int*>(reductionBuffer);
                 tc[16384] = 0;
                 z[0] = OpType::postProcess(sPartials[0], length, extraZ);
+                //printf("Z: [%f]\n", (float) z[0]);
             }
         }
 }
@@ -321,6 +323,7 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
                     for (int f = threadIdx.x + (t * maxBlock); f < xTadLength && f < threadIdx.x + ((t + 1) * maxBlock); f += blockDim.x * gridDim.x) {                                        
                     	auto y0 = shape::getIndexOffset(f, yTadShapeInfo, yTadLength);
                     	sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(tempX[threadIdx.x], y[y0], extraZ), extraZ);
+                    	//printf("X: %f; Y: %f;\n", (float) tempX[threadIdx.x], (float) y[y0]);
                     }
 
                     // we MUST step through this block altogether
@@ -332,6 +335,7 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 
             if (threadIdx.x == 0) {
                 z[ri] = OpType::postProcess(sPartials[threadIdx.x], xTadLength, extraZ);
+                //printf("Z: %f\n", (float) z[ri]);
             }
 				
 			__syncthreads();

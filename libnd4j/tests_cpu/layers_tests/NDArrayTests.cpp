@@ -1622,9 +1622,12 @@ TEST_F(NDArrayTest, applyAllReduce3EuclideanDistance) {
         
     NDArray x(xBuff, xShapeInfo);
     NDArray y(yBuff, xShapeInfo);
-    NDArray exp(expBuff, expShapeInfo);
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {1.414214f, 1.414214f, 5.385165f, 5.385165f});
     
     auto result = x.applyAllReduce3(reduce3::EuclideanDistance, &y,{1});
+
+    result->printIndexedBuffer("result");
+
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
     
