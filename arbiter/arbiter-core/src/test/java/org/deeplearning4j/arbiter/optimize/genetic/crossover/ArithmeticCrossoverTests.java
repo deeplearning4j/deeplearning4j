@@ -1,0 +1,34 @@
+package org.deeplearning4j.arbiter.optimize.genetic.crossover;
+
+import main.java.org.ab2002.genetic.tests.TestParentSelection;
+import main.java.org.ab2002.genetic.tests.TestRandomGenerator;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.ArithmeticCrossover;
+import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.CrossoverResult;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class ArithmeticCrossoverTests {
+
+    @Test
+    public void ArithmeticCrossover_Crossover_ShouldReturnParent0() {
+        double[][] parents = new double[2][];
+        parents[0] = new double[] { 1.0 };
+        parents[1] = new double[] { 2.0 };
+
+        TestParentSelection parentSelection = new TestParentSelection(parents);
+
+        RandomGenerator rng = new TestRandomGenerator(null, new double[] { 0.1 });
+
+        ArithmeticCrossover sut = new ArithmeticCrossover.Builder()
+                .parentSelection(parentSelection)
+                .randomGenerator(rng)
+                .build();
+        CrossoverResult result = sut.crossover();
+
+        Assert.assertTrue(result.hasModification);
+        Assert.assertEquals(1, result.genes.length);
+        Assert.assertEquals(1.9, result.genes[0], 0.001);
+    }
+
+}
