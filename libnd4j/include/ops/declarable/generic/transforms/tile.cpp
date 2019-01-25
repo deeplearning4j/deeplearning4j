@@ -133,7 +133,7 @@ CUSTOM_OP_IMPL(tile_bp, 2, 1, false, 0, -2) {
     for (int i = 0; i < inRank; ++i)
         REQUIRE_TRUE(gradO->sizeAt(i) == gradI->sizeAt(i) * reps[i], 0, "TILE_BP op: shapes of input array and output's gradients array (next epsilon) are inconsistent !");
             
-    helpers::tileBP(*gradO, *gradI, reps);
+    helpers::tileBP(block.launchContext(), *gradO, *gradI, reps);
 
     return Status::OK();
 }

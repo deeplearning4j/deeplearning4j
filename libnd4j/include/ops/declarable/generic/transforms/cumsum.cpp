@@ -38,7 +38,7 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
 
     if (block.getIArguments()->size() == 2 && block.width() == 1) {
         // all at once case
-        nd4j::ops::helpers::_prefix(scalar::Add, input, output, exclusive, reverse);
+        nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Add, input, output, exclusive, reverse);
     } 
     else {
         std::vector<int> dims(block.numI() - 2);

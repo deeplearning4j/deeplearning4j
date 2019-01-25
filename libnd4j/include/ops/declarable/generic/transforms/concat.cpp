@@ -80,7 +80,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
     if(numOfArrs == 1) 
         output->assign(nonEmptyArrs[0]);
     else 
-        helpers::concat(nonEmptyArrs, *output, axis);
+        helpers::concat(block.launchContext(), nonEmptyArrs, *output, axis);
 
     // delete dynamically allocated vectors with length=1
     for(int index : arrsToDelete)

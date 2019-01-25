@@ -43,7 +43,7 @@ namespace nd4j {
             auto operand = INPUT_VARIABLE(0);
             auto updates = INPUT_VARIABLE(1);
             
-            helpers::scatterUpdate(*operand, *updates, block.getIArguments());
+            helpers::scatterUpdate(block.launchContext(), *operand, *updates, block.getIArguments());
             
             return Status::OK();
         }

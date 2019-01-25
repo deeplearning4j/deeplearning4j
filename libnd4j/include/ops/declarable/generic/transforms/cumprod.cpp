@@ -37,7 +37,7 @@ namespace nd4j {
 
             if (block.getIArguments()->size() == 2 && block.width() == 1) {
                 // all at once case
-                nd4j::ops::helpers::_prefix(scalar::Multiply, input, output, exclusive, reverse);
+                nd4j::ops::helpers::_prefix(block.launchContext(), scalar::Multiply, input, output, exclusive, reverse);
             } else {
                 std::vector<int> dims(block.numI() - 2);
 

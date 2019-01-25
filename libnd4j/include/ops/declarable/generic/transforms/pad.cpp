@@ -69,7 +69,7 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
     std::iota(dimensions.begin(), dimensions.end(), 0);   			// fill with 0, 1, ... rank-1
     
 	// helpers::recursiveLoopForPad(INT_ARG(0), *input, *paddings, *output, dimensions, 0, 0, 0, padValue);
-	helpers::pad(INT_ARG(0), *input, *paddings, *output, padValue);
+	helpers::pad(block.launchContext(), INT_ARG(0), *input, *paddings, *output, padValue);
 	
     return Status::OK();
 }

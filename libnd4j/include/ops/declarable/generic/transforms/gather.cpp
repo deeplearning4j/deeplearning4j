@@ -57,7 +57,7 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
     REQUIRE_TRUE(intArgs[0] < inputRank, 0, "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", intArgs[0], inputRank);
     REQUIRE_TRUE(indices || numOfIntArgs > 1, 0, "GATHER op: indices should be provided either as additional input array or as IntArguments !");
 
-	helpers::gather(input, indices, output, intArgs);
+	helpers::gather(block.launchContext(), input, indices, output, intArgs);
 
     return Status::OK();
 }

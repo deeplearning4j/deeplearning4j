@@ -63,7 +63,7 @@ namespace ops  {
         if (input->rankOf() == 1) // there are no axis can be used for 1D tensor
             axis.clear();
             
-        helpers::reverse(input, output, &axis, isLegacy);
+        helpers::reverse(block.launchContext(), input, output, &axis, isLegacy);
    
         return Status::OK();
     }

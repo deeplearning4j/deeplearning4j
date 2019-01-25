@@ -38,7 +38,7 @@ OP_IMPL(mergeadd, -1, 1, false) {
     for(int i = 0; i < block.width(); ++i)
         inArrs[i] = INPUT_VARIABLE(i);
 
-    helpers::mergeAdd(inArrs, *output);
+    helpers::mergeAdd(block.launchContext(), inArrs, *output);
 
     return Status::OK();
 }

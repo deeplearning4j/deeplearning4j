@@ -34,7 +34,7 @@ namespace ops  {
         const auto clipNorm = NDArrayFactory::create(input->dataType(), T_ARG(0), block.getVariableSpace()->launchContext());
         const bool isInplace = block.isInplace();
         
-        helpers::clipByNorm(*input, *output, *block.getIArguments(), clipNorm, isInplace);
+        helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), clipNorm, isInplace);
 
         return Status::OK();
     }

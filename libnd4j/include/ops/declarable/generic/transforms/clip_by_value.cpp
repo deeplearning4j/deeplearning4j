@@ -36,7 +36,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(left < right, 0, "clip_by_value: left bound should be lesser than right. But %f >= %f given.", left, right);
             //input->applyTransform(transform::ClipByValue, output, block.getTArguments()->data());
-            helpers::clipByValue(*input, left, right, *output);
+            helpers::clipByValue(block.launchContext(), *input, left, right, *output);
             //STORE_RESULT(*output);
 
             return Status::OK();

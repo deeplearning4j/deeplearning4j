@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(trace, 1, 1, false, 0, 0) {
     
     REQUIRE_TRUE(input->rankOf() >= 2, 0, "TRACE op: the rank of input array must be >=2, but got %i instead!", input->rankOf());
 
-    helpers::trace(*input, *output);
+    helpers::trace(block.launchContext(), *input, *output);
 
     return Status::OK();
 }

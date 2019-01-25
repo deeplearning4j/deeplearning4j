@@ -36,7 +36,7 @@ CUSTOM_OP_IMPL(triu, 1, 1, false, 0, 0) {
 
     const int diag = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
     
-    helpers::triu(*input, *output, diag);
+    helpers::triu(block.launchContext(), *input, *output, diag);
 
     return Status::OK();
 }
@@ -83,7 +83,7 @@ CUSTOM_OP_IMPL(triu_bp, 2, 1, false, 0, 0) {
 
     const int diag = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
 
-    helpers::triuBP(*input, *gradO, *gradI, diag);
+    helpers::triuBP(block.launchContext(), *input, *gradO, *gradI, diag);
 
     return Status::OK();
 }

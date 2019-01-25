@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(clip_by_global_norm, 1, 2, true, 1, 0) {
     outputs[inputs.size()] = OUTPUT_VARIABLE(inputs.size());
     double clipNorm = T_ARG(0);
     bool isInplace = block.isInplace();
-    helpers::clipByGlobalNorm(inputs, clipNorm, block.workspace(), outputs, isInplace);
+    helpers::clipByGlobalNorm(block.launchContext(), inputs, clipNorm, block.workspace(), outputs, isInplace);
 
     return Status::OK();
 }
