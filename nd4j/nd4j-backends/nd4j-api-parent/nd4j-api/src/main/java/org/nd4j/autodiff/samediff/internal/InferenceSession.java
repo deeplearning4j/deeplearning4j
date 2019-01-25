@@ -91,7 +91,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             VarId inputVarId;
             if(constPhInput) {
                 //Constant or placeholder
-                inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0);
+                inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0, null);
             } else if(allIterInputs != null && allIterInputs.size() > 0){
                 inputVarId = allIterInputs.iterator().next();
             } else {
@@ -107,7 +107,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             VarId inputVarId;
             if(constPhInput){
                 //Constant or placeholder
-                inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0);
+                inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0, null);
             } else if(allIterInputs != null && allIterInputs.size() > 0){
                 inputVarId = allIterInputs.iterator().next();
             } else {

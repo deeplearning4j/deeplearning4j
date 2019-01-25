@@ -78,25 +78,25 @@ public abstract class AbstractSession<T, O> {
         this.sameDiff = sameDiff;
     }
 
-    public boolean contains(String variable, String frame, int iteration){
-        VarId varId = newVarId(variable, frame, iteration);
+    public boolean contains(String variable, String frame, int iteration, FrameIter parentFrameIter){
+        VarId varId = newVarId(variable, frame, iteration, parentFrameIter);
         return nodeOutputs.containsKey(varId);
     }
 
     /**
      * Get a previously calculated output; throws an exception if the output does not exist
      */
-    public T get(String variable, String frame, int iteration) {
-        return get(variable, frame, iteration, true);
+    public T get(String variable, String frame, int iteration, FrameIter parentFrameIter) {
+        return get(variable, frame, iteration, parentFrameIter, true);
     }
 
     /**
      * Get a previously calculated output
      * @param enforceExistence If true: throw an exception if the array does not exist
      */
-    public T get(String variable, String frame, int iteration, boolean enforceExistence) {
+    public T get(String variable, String frame, int iteration, FrameIter parentFrameIter, boolean enforceExistence) {
         //TODO eventually we'll cache and reuse VarId objects here to avoid garbage generation on lookup etc
-        VarId varId = newVarId(variable, frame, iteration);
+        VarId varId = newVarId(variable, frame, iteration, parentFrameIter);
         T out = nodeOutputs.get(varId);
         if(enforceExistence) {
             Preconditions.checkNotNull(out, "No output found for variable %s (frame %s, iteration %s)", variable, frame, iteration);
@@ -104,13 +104,13 @@ public abstract class AbstractSession<T, O> {
         return out;
     }
 
-    public VarId newVarId(String variable, String frame, int iteration) {
+    public VarId newVarId(String variable, String frame, int iteration, FrameIter parentFrameIter) {
         //TODO eventually we'll cache and reuse VarId objects here to avoid garbage generation on lookup
-        return new VarId(variable, frame, iteration);
+        return new VarId(variable, frame, iteration, parentFrameIter);
     }
 
     public VarId newVarId(String variable, FrameIter frameIter) {
-        return newVarId(variable, frameIter.getFrame(), frameIter.getIteration());
+        return newVarId(variable, frameIter.getFrame(), frameIter.getIteration(), frameIter.getParentFrame());
     }
 
     /**
@@ -205,7 +205,7 @@ public abstract class AbstractSession<T, O> {
 
             //Get inputs to this variable. May be actual op inputs, or just control dependencies
             Set<VarId> inputsToVar = execInputs.get(varToExec);
-            Set<VarId> inputsToVarAllIter = execInputsAllIter.get(newVarId(varToExec.getVariable(), varToExec.getFrame(), 0));
+            Set<VarId> inputsToVarAllIter = execInputsAllIter.get(newVarId(varToExec.getVariable(), varToExec.getFrame(), 0, varToExec.getParentFrame()));
             Set<String> constPhForVar = execConstInputs.get(varToExec.getVariable());
 
             log.trace("Beginning execution step {}: variable {}", (step++), varToExec);
@@ -258,22 +258,22 @@ public abstract class AbstractSession<T, O> {
 
                     VarId outputVarId;
                     if (parameterizedOp instanceof Enter) {
-                        //Enter op: output is variable in a new (specified) frame, iteration 0
+                        //Enter op: output is variable in a new (specified) frame, iteration 0.
                         String frame = ((Enter) parameterizedOp).getFrameName();
-                        outputVarId = newVarId(opOutputVarNames[i], frame, varToExec.getIteration());
+                        outputVarId = newVarId(opOutputVarNames[i], frame, varToExec.getIteration(), varToExec.getParentFrame());
                     } else if (parameterizedOp instanceof Exit) {
                         //Exit node forwards input to parent frame (which is already reflected in varToExec)
-                        outputVarId = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration());
+                        outputVarId = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration(), varToExec.getParentFrame());
                     } else if (parameterizedOp instanceof NextIteration) {
                         //NextIteration op: forwards its single input to its output varible in the current frame, but increments the iteration number
                         //Note that varToExec has already had its iteration number incremented by 1 (relative to its input) in updateDescendentsForExec... so don't increment here
-                        outputVarId = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration());
+                        outputVarId = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration(), varToExec.getParentFrame());
                     } else if (parameterizedOp instanceof LoopCond) {
                         //LoopCond just forwards input to output
-                        outputVarId = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration());
+                        outputVarId = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration(), varToExec.getParentFrame());
                     } else {
                         //Standard ops - output variable has same frame and iteration number as the input(s)
-                        outputVarId = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration());
+                        outputVarId = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration(), varToExec.getParentFrame());
                     }
 
                     nodeOutputs.put(outputVarId, opOutputValues[i]);
@@ -315,7 +315,7 @@ public abstract class AbstractSession<T, O> {
                     numInputs += controlDeps.size();
                 }
                 if (numInputs == 0) {
-                    VarId vid = newVarId(varName, OUTER_FRAME, 0);
+                    VarId vid = newVarId(varName, OUTER_FRAME, 0, null);
                     availableForExec.add(vid);
                     execInputs.put(vid, new HashSet<VarId>());
                 }
@@ -382,7 +382,7 @@ public abstract class AbstractSession<T, O> {
                     //Merge op: available for execution when *any* of its inputs are available. But only mark it for exec once...
                     List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
                     Preconditions.checkState(opOutputs.size() == 1, "Expected only 1 output variable for merge op, got %s", opOutputs);
-                    VarId outVarId = newVarId(opOutputs.get(0), executedVar.getFrame(), executedVar.getIteration());
+                    VarId outVarId = newVarId(opOutputs.get(0), executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
                     if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable())) {
                         availableForExec.add(outVarId);
                         log.trace("Marked merge op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
@@ -397,7 +397,7 @@ public abstract class AbstractSession<T, O> {
                     List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
                     Preconditions.checkState(opOutputs.size() == 1, "Expected only 1 output variable for enter op, got %s", opOutputs);
                     Enter e = (Enter) fn;
-                    VarId outVarId = newVarId(opOutputs.get(0), e.getFrameName(), 0);
+                    VarId outVarId = newVarId(opOutputs.get(0), e.getFrameName(), 0, executedVar.toFrameIter());     //Note: parent frame of output op is enter var's *current* frame
                     if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable())) {
                         availableForExec.add(outVarId);
                         log.trace("Marked enter op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
@@ -415,7 +415,7 @@ public abstract class AbstractSession<T, O> {
                     FrameIter parentFrame = frameParents.get(executedVar.getFrame());
                     Preconditions.checkNotNull(parentFrame, "Parent frame must not be null for exit op: variable to exec is %s", executedVar);
 
-                    VarId outVarId = new VarId(opOutputs.get(0), parentFrame.getFrame(), parentFrame.getIteration());
+                    VarId outVarId = new VarId(opOutputs.get(0), parentFrame.getFrame(), parentFrame.getIteration(), executedVar.getParentFrame().getParentFrame());    //Parent frame of output is parent of current parent
                     if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable())) {
                         availableForExec.add(outVarId);
                         log.trace("Marked Exit op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
@@ -428,7 +428,7 @@ public abstract class AbstractSession<T, O> {
                     //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
                     List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
                     Preconditions.checkState(opOutputs.size() == 1, "Expected exactly 1 output for NextIteration op: got %s", opOutputs);
-                    VarId outVarId = newVarId(opOutputs.get(0), executedVar.getFrame(), executedVar.getIteration() + 1);
+                    VarId outVarId = newVarId(opOutputs.get(0), executedVar.getFrame(), executedVar.getIteration() + 1, executedVar.getParentFrame());
 
                     if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable())) {
                         availableForExec.add(outVarId);
@@ -453,7 +453,7 @@ public abstract class AbstractSession<T, O> {
                 List<String> opControlDeps = sameDiff.getOps().get(opName).getControlDeps();
                 if (opControlDeps != null && allInputsAvailable) {
                     for (String cd : opControlDeps) {
-                        VarId vcd = newVarId(cd, executedVar.getFrame(), executedVar.getIteration());
+                        VarId vcd = newVarId(cd, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
                         if (!nodeOutputs.containsKey(vcd)) {
                             allInputsAvailable = false;
                             break;
@@ -475,15 +475,15 @@ public abstract class AbstractSession<T, O> {
                             //Constant
                             if(variable.getControlDeps() == null || var.getControlDeps().isEmpty()){
                                 //Standard case - do a lookup of placeholder/constant
-                                outVarId = newVarId(s, OUTER_FRAME, 0);
+                                outVarId = newVarId(s, OUTER_FRAME, 0, null);
                             } else {
                                 //Edge case: control dependency x -> constant exists
                                 //We should look up based on x's frame/iteration
-                                outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
+                                outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
                             }
                         } else {
                             //Normal (non-constant)
-                            outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
+                            outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
                         }
 
                         //Mark that we need the specified input to calculate this output
@@ -501,15 +501,15 @@ public abstract class AbstractSession<T, O> {
                                     //Constant
                                     if(variable.getControlDeps() == null || var.getControlDeps().isEmpty()){
                                         //Standard case - do a lookup of placeholder/constant
-                                        cdVarId = newVarId(cd, OUTER_FRAME, 0);
+                                        cdVarId = newVarId(cd, OUTER_FRAME, 0, null);
                                     } else {
                                         //Edge case: control dependency x -> constant -> thisOutput exists
                                         //We should look up based on x's frame/iteration
-                                        cdVarId = newVarId(cd, executedVar.getFrame(), executedVar.getIteration());
+                                        cdVarId = newVarId(cd, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
                                     }
                                 } else {
                                     //Normal (non-constant)
-                                    cdVarId = newVarId(cd, executedVar.getFrame(), executedVar.getIteration());
+                                    cdVarId = newVarId(cd, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
                                 }
                                 allInputsAvailable &= nodeOutputs.containsKey(cdVarId);
                                 if(!allInputsAvailable)
@@ -524,7 +524,7 @@ public abstract class AbstractSession<T, O> {
                         for (String s : opOutputs) {
                             if (!subgraph.contains(s))
                                 continue;       //Don't need this variable to calculate requested outputs - so don't mark as available for execution
-                            VarId vid = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
+                            VarId vid = newVarId(s, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
                             availableForExec.add(vid);      //TODO let's avoid adding and logging duplicates... result is same (checks if already executed) but logged multiple times here...
                             log.trace("Marked variable as available for execution: {} - output of op {} ({}) with op inputs {}", vid, opName,
                                     fn.getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
@@ -547,7 +547,7 @@ public abstract class AbstractSession<T, O> {
                     //Control dependency executedVar -> s exists, where "s" is not the output of an op
                     //Even thought this is a constant, we'll inherit the frame and iteration from the control dependency
                     // otherwise, we lose this frame/iteration information for any downstream variables using the constant within a frame
-                    VarId outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
+                    VarId outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
                     availableForExec.add(outVarId);
                     log.trace("Marked variable as available for execution: {} - control dependency {} -> {} exists", outVarId, executedVar.getVariable(), s);
                 } else {
@@ -566,7 +566,7 @@ public abstract class AbstractSession<T, O> {
 
                         if(allInputsAvailable && op.getControlDeps() != null){
                             for(String cd : op.getControlDeps()){
-                                VarId vid = newVarId(cd, executedVar.getFrame(), executedVar.getIteration());     //Note: is array type, therefore has same frame/iter as parent
+                                VarId vid = newVarId(cd, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());     //Note: is array type, therefore has same frame/iter as parent
                                 allInputsAvailable &= nodeOutputs.containsKey(vid);
                                 if(!allInputsAvailable)
                                     break;
@@ -577,7 +577,7 @@ public abstract class AbstractSession<T, O> {
                                 Variable v2 = sameDiff.getVariables().get(opOutput);
                                 if(v2.getControlDeps() != null){
                                     for(String s2 : v2.getControlDeps()){
-                                        VarId vid = newVarId(s2, executedVar.getFrame(), executedVar.getIteration());     //Note: is array type, therefore has same frame/iter as parent
+                                        VarId vid = newVarId(s2, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());     //Note: is array type, therefore has same frame/iter as parent
                                         allInputsAvailable &= nodeOutputs.containsKey(vid);
                                         if(!allInputsAvailable)
                                             break;
@@ -587,7 +587,7 @@ public abstract class AbstractSession<T, O> {
                         }
 
                         if(allInputsAvailable){
-                            VarId outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration());
+                            VarId outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
                             availableForExec.add(outVarId);
                             log.trace("Marked variable as available for execution: {} - is output of op {} with no inputs (but has control dependencies)", outVarId, op.getName());
                         }
@@ -608,7 +608,7 @@ public abstract class AbstractSession<T, O> {
                             continue;       //Don't need this variable to calculate requested outputs - so don't mark as available for execution
 
                         //TODO is it possible to have both variable and op control dependencies??
-                        VarId outVarId = newVarId(out, OUTER_FRAME, 0);
+                        VarId outVarId = newVarId(out, OUTER_FRAME, 0, null);
                         availableForExec.add(outVarId);
                         log.trace("Marked variable as available for execution: {} - op control dependency variable {} -> op {} exists", outVarId, executedVar.getVariable(), opName);
                     }
@@ -630,11 +630,11 @@ public abstract class AbstractSession<T, O> {
                 //Constant
                 if(variable.getControlDeps() == null || variable.getControlDeps().isEmpty()){
                     //Standard case - do a lookup of placeholder/constant
-                    vid = newVarId(in, OUTER_FRAME, 0);
+                    vid = newVarId(in, OUTER_FRAME, 0, null);
                 } else {
                     //Edge case: control dependency x -> constant exists
                     //We should look up based on x's frame/iteration
-                    vid = newVarId(in, executedVar.getFrame(), executedVar.getIteration());
+                    vid = newVarId(in, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
                 }
             } else {
                 //Normal (non-constant)
@@ -644,7 +644,7 @@ public abstract class AbstractSession<T, O> {
                 if(sdv.getVariableType() == VariableType.ARRAY && sameDiff.getOps().get(variable.getOutputOfOp()).getOp() instanceof Enter){
                     iter = 0;
                 }
-                vid = newVarId(in, executedVar.getFrame(), iter);
+                vid = newVarId(in, executedVar.getFrame(), iter, executedVar.getParentFrame());
             }
 
             if (!nodeOutputs.containsKey(vid)) {
@@ -726,7 +726,7 @@ public abstract class AbstractSession<T, O> {
             if(isEnter){
                 VarId iter0 = forVariable;
                 if(iter0.getIteration() != 0){
-                    iter0 = newVarId(iter0.getVariable(), iter0.getFrame(), 0);
+                    iter0 = newVarId(iter0.getVariable(), iter0.getFrame(), 0, forVariable.getParentFrame());
                 }
                 if(!execInputsAllIter.containsKey(iter0))
                     execInputsAllIter.put(iter0, new HashSet<VarId>());
@@ -765,14 +765,15 @@ public abstract class AbstractSession<T, O> {
         private String variable;
         private String frame;
         private int iteration;
+        private FrameIter parentFrame;
 
         @Override
         public String toString() {
-            return "VarId(\"" + variable + "\",\"" + frame + "\"," + iteration + ")";
+            return "VarId(\"" + variable + "\",\"" + frame + "\"," + iteration + ",parent=" + parentFrame + ")";
         }
 
         public FrameIter toFrameIter() {
-            return new FrameIter(frame, iteration);
+            return new FrameIter(frame, iteration, parentFrame);
         }
     }
 
@@ -784,6 +785,7 @@ public abstract class AbstractSession<T, O> {
     public static class FrameIter {
         private String frame;
         private int iteration;
+        private FrameIter parentFrame;
     }
 
 }
