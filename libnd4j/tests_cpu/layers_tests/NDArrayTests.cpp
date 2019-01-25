@@ -782,7 +782,6 @@ TEST_F(NDArrayTest, TestTile6)
     x.linspace(10);    
 
     auto result = x.tile({1,4,1});
-//    result.printBuffer();
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));

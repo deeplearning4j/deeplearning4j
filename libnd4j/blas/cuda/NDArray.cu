@@ -3098,6 +3098,9 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if(product == 0)
             throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
 
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
         int rankOld = rankOf();
         int diff = rankOld - dim;
         if(product==1) {        // in this case 2 possibilities are present: just reshape or nothing to do
