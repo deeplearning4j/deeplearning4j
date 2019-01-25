@@ -973,7 +973,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         }
 
          if (ews() != 1) {
-            #pragma parallel for schedule(guided)
             for (Nd4jLong i = 0; i < _length; i++) {
                 auto offset = getOffset(i) * sizeOfT();
                 cudaMemcpy(_bufferD + offset, _buffer + offset, sizeOfT(), cudaMemcpyHostToDevice);
@@ -2321,19 +2320,23 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
             return false;
 
         NDArray tmp = NDArrayFactory::create<double>(0LL, _context); // scalar = 0
+        tmp.tickWriteDevice();
 
-        if(!isActualOnDeviceSide()) 
+        if(!isActualOnDeviceSide()) {
             syncToDevice();
+        }
 
-        if(!other->isActualOnDeviceSide())
+        if(!other->isActualOnDeviceSide()) {
             other->syncToDevice();
+        }
 
         ExtraArguments extras({eps}); 
         NativeOpExecutioner::execReduce3Scalar(_context, reduce3::EqualsWithEps, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extras.argumentAsT(DataType::FLOAT32), other->_buffer, other->_shapeInfo, other->_bufferD, other->_shapeInfoD, tmp.buffer(), tmp.shapeInfo(), tmp._bufferD, tmp._shapeInfoD);
+
         auto res = cudaStreamSynchronize(*_context->getCudaStream());
         if (res != 0)
             throw cuda_exception::build("NDArray::equalsTo failed", res);
-        
+
         if (tmp.e<Nd4jLong>(0) > 0LL)
             return false;
 
@@ -2618,9 +2621,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 // This method sets value in linear buffer to position i
     template <typename T>
     void NDArray::p(const Nd4jLong i, const T value) {
-        
-        //if (!isActualOnHostSide())
-        //    syncToHost();
         lazyAllocateBuffer();
         if (!isActualOnHostSide())
             syncToHost();
@@ -2668,7 +2668,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         //(*this)(i,j) = value;
         if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
             throw std::invalid_argument("NDArray:pe(i,j, value): one of input indexes is out of array length or rank!=2 !");
-        
+
+        lazyAllocateBuffer();
         if (!isActualOnHostSide())
             syncToHost();
 
@@ -2697,7 +2698,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         //(*this)(i,j,k) = value;
         if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
             throw std::invalid_argument("NDArray:pe(i,j,k, value): one of input indexes is out of array length or rank!=3 !");
-        
+
+        lazyAllocateBuffer();
         if (!isActualOnHostSide())
             syncToHost();
         
@@ -2724,6 +2726,8 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         //(*this)(i,j,k) = value;
         if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
             throw std::invalid_argument("NDArray::p(i,j,k,l, value): one of input indexes is out of array length or rank!=4 !");
+
+        lazyAllocateBuffer();
         if(!isActualOnHostSide())
             syncToHost();
         

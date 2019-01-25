@@ -179,12 +179,16 @@ TEST_F(NDArrayTest, EqualityTest1) {
     arrayB->printBuffer("B =");
     arrayC->printBuffer("C =");
 
+    //nd4j_printf("A B\n","");
     ASSERT_TRUE(arrayA->equalsTo(arrayB, 1e-5));
 
+    //nd4j_printf("C B\n","");
     ASSERT_FALSE(arrayC->equalsTo(arrayB, 1e-5));
 
+    //nd4j_printf("D B\n","");
     ASSERT_FALSE(arrayD->equalsTo(arrayB, 1e-5));
 
+    //nd4j_printf("E B\n","");
     ASSERT_FALSE(arrayE->equalsTo(arrayB, 1e-5));
 
     delete arrayA;
