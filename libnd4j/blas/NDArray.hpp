@@ -2719,7 +2719,8 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         }
 
         #ifdef __CUDABLAS__
-            makeBothBuffersActual();        
+            const_cast<NDArray*>(this)->lazyAllocateBuffer();
+            makeBothBuffersActual();
             NDArray result(bufferWithOffset(offset), specialBufferWithOffset(offset), newShape, _context, false, false, true);
         
         #else            
