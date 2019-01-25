@@ -57,7 +57,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.SerializationUtils;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -77,6 +76,7 @@ import java.util.zip.*;
  *
  * @author Adam Gibson
  * @author raver119
+ * @author alexander@skymind.io
  */
 @Slf4j
 public class WordVectorSerializer {
@@ -1977,12 +1977,12 @@ public class WordVectorSerializer {
         }
     }
 
-    private static final String CLASS_FIELD = "@class";
-    private static final String VOCAB_FIELD = "Vocabulary";
-    private static final String CONFIG_FIELD = "Configuration";
-    private static final String SYN0_FIELD = "Syn0";
-    private static final String SYN1_FIELD = "Syn1";
-    private static final String SYN1_NEG_FIELD = "Syn1Neg";
+    private static final String CONFIG_ENTRY = "config.json";
+    private static final String VOCAB_ENTRY = "vocabulary.json";
+    private static final String SYN0_ENTRY = "syn0.bin";
+    private static final String SYN1_ENTRY = "syn1.bin";
+    private static final String SYN1_NEG_ENTRY = "syn1neg.bin";
+
 
     public static <T extends  SequenceElement> void writeSequenceVectors(@NonNull SequenceVectors<T> vectors,
                                                                          @NonNull OutputStream stream)
@@ -1991,32 +1991,29 @@ public class WordVectorSerializer {
         InMemoryLookupTable<VocabWord> lookupTable = (InMemoryLookupTable<VocabWord>)vectors.getLookupTable();
         AbstractCache<T> vocabCache = (AbstractCache<T>)vectors.getVocab();
 
-        File tempFileConfig = DL4JFileUtils.createTempFile("config", "0");
-        tempFileConfig.deleteOnExit();
-
         try (ZipOutputStream zipfile = new ZipOutputStream(new BufferedOutputStream(new CloseShieldOutputStream(stream)));
              DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile))) {
 
-            ZipEntry config = new ZipEntry("configuration.json");
+            ZipEntry config = new ZipEntry(CONFIG_ENTRY);
             zipfile.putNextEntry(config);
             VectorsConfiguration configuration = vectors.getConfiguration();
 
             String json = configuration.toJson().trim();
             zipfile.write(json.getBytes("UTF-8"));
 
-            ZipEntry vocab = new ZipEntry("vocabulary.json");
+            ZipEntry vocab = new ZipEntry(VOCAB_ENTRY);
             zipfile.putNextEntry(vocab);
             zipfile.write(vocabCache.toJson().getBytes("UTF-8"));
 
             INDArray syn0Data = lookupTable.getSyn0();
-            ZipEntry syn0 = new ZipEntry("syn0.bin");
+            ZipEntry syn0 = new ZipEntry(SYN0_ENTRY);
             zipfile.putNextEntry(syn0);
             Nd4j.write(syn0Data, dos);
             dos.flush();
 
             INDArray syn1Data = lookupTable.getSyn1();
             if (syn1Data != null) {
-                ZipEntry syn1 = new ZipEntry("syn1.bin");
+                ZipEntry syn1 = new ZipEntry(SYN1_ENTRY);
                 zipfile.putNextEntry(syn1);
                 Nd4j.write(syn1Data, dos);
                 dos.flush();
@@ -2024,7 +2021,7 @@ public class WordVectorSerializer {
 
             INDArray syn1NegData = lookupTable.getSyn1Neg();
             if (syn1NegData != null) {
-                ZipEntry syn1neg = new ZipEntry("syn1neg.bin");
+                ZipEntry syn1neg = new ZipEntry(SYN1_NEG_ENTRY);
                 zipfile.putNextEntry(syn1neg);
                 Nd4j.write(syn1NegData, dos);
                 dos.flush();
@@ -2033,23 +2030,34 @@ public class WordVectorSerializer {
     }
 
 
-    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(@NonNull InputStream stream)
+    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(@NonNull String path,
+                                                                                     boolean readExtendedTables)
+        throws  IOException {
+
+        File file = new File(path);
+        SequenceVectors<T> vectors = readSequenceVectors(file, readExtendedTables);
+        return vectors;
+    }
+
+    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(@NonNull File file,
+                                                                                     boolean readExtendedTables)
             throws IOException {
 
-        ObjectMapper mapper = getModelMapper();
-        SequenceVectors<T> vectors = null;
+        SequenceVectors<T> vectors = readSequenceVectors(new FileInputStream(file), readExtendedTables);
+        return vectors;
+    }
 
+    public static <T extends SequenceElement> SequenceVectors<T> readSequenceVectors(@NonNull InputStream stream,
+                                                                                     boolean readExtendedTables)
+            throws IOException {
+
+        SequenceVectors<T> vectors = null;
         AbstractCache<T> vocabCache = null;
         VectorsConfiguration configuration = null;
 
         INDArray syn0 = null, syn1 = null, syn1neg = null;
 
-        //try (ZipFile zipfile = new ZipFile(zipPath)) {
         try (ZipInputStream zipfile = new ZipInputStream(new BufferedInputStream(stream))) {
-
-            /*ZipEntry config = zipfile.getEntry("configuration.json");
-            InputStream is = zipfile.getInputStream(config);
-            configuration = VectorsConfiguration.fromJson(new String(new ByteArrayInputStream(is), "UTF-8"));*/
 
             ZipEntry entry = null;
             while ((entry = zipfile.getNextEntry()) != null) {
@@ -2057,23 +2065,25 @@ public class WordVectorSerializer {
                 String name = entry.getName();
                 byte[] bytes = IOUtils.toByteArray(zipfile);
 
-                if (name.equals("configuration.json")) {
+                if (name.equals(CONFIG_ENTRY)) {
                     String content = new String(bytes, "UTF-8");
                     configuration = VectorsConfiguration.fromJson(content);
+                    continue;
                 }
-                else if (name.equals("vocabulary.json")) {
+                else if (name.equals(VOCAB_ENTRY)) {
                     String content = new String(bytes, "UTF-8");
                     vocabCache = AbstractCache.fromJson(content);
+                    continue;
                 }
-                else if (name.equals("syn0.bin")) {
-                    syn0 = Nd4j.read(new ByteArrayInputStream(bytes));
+                if (readExtendedTables) {
+                    if (name.equals(SYN0_ENTRY)) {
+                        syn0 = Nd4j.read(new ByteArrayInputStream(bytes));
 
-                }
-                else if (name.equals("syn1.bin")) {
-                    syn1 = Nd4j.read(new ByteArrayInputStream(bytes));
-                }
-                else if (name.equals("syn1neg.bin")) {
-                    syn1neg = Nd4j.read(new ByteArrayInputStream(bytes));
+                    } else if (name.equals(SYN1_ENTRY)) {
+                        syn1 = Nd4j.read(new ByteArrayInputStream(bytes));
+                    } else if (name.equals(SYN1_NEG_ENTRY)) {
+                        syn1neg = Nd4j.read(new ByteArrayInputStream(bytes));
+                    }
                 }
             }
 
