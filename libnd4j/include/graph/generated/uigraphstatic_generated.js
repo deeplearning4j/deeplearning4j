@@ -528,11 +528,29 @@ nd4j.graph.UIVariable.prototype.shapeLength = function() {
 };
 
 /**
+ * @param {number} index
+ * @param {flatbuffers.Encoding=} optionalEncoding
+ * @returns {string|Uint8Array}
+ */
+nd4j.graph.UIVariable.prototype.controlDeps = function(index, optionalEncoding) {
+  var offset = this.bb.__offset(this.bb_pos, 14);
+  return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.UIVariable.prototype.controlDepsLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 14);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
  * @param {flatbuffers.Encoding=} optionalEncoding
  * @returns {string|Uint8Array|null}
  */
 nd4j.graph.UIVariable.prototype.outputOfOp = function(optionalEncoding) {
-  var offset = this.bb.__offset(this.bb_pos, 14);
+  var offset = this.bb.__offset(this.bb_pos, 16);
   return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
 };
 
@@ -542,7 +560,7 @@ nd4j.graph.UIVariable.prototype.outputOfOp = function(optionalEncoding) {
  * @returns {string|Uint8Array}
  */
 nd4j.graph.UIVariable.prototype.inputsForOp = function(index, optionalEncoding) {
-  var offset = this.bb.__offset(this.bb_pos, 16);
+  var offset = this.bb.__offset(this.bb_pos, 18);
   return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
 };
 
@@ -550,7 +568,7 @@ nd4j.graph.UIVariable.prototype.inputsForOp = function(index, optionalEncoding) 
  * @returns {number}
  */
 nd4j.graph.UIVariable.prototype.inputsForOpLength = function() {
-  var offset = this.bb.__offset(this.bb_pos, 16);
+  var offset = this.bb.__offset(this.bb_pos, 18);
   return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -560,7 +578,7 @@ nd4j.graph.UIVariable.prototype.inputsForOpLength = function() {
  * @returns {string|Uint8Array}
  */
 nd4j.graph.UIVariable.prototype.controlDepsForOp = function(index, optionalEncoding) {
-  var offset = this.bb.__offset(this.bb_pos, 18);
+  var offset = this.bb.__offset(this.bb_pos, 20);
   return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
 };
 
@@ -568,7 +586,7 @@ nd4j.graph.UIVariable.prototype.controlDepsForOp = function(index, optionalEncod
  * @returns {number}
  */
 nd4j.graph.UIVariable.prototype.controlDepsForOpLength = function() {
-  var offset = this.bb.__offset(this.bb_pos, 18);
+  var offset = this.bb.__offset(this.bb_pos, 20);
   return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -578,7 +596,7 @@ nd4j.graph.UIVariable.prototype.controlDepsForOpLength = function() {
  * @returns {string|Uint8Array}
  */
 nd4j.graph.UIVariable.prototype.controlDepsForVar = function(index, optionalEncoding) {
-  var offset = this.bb.__offset(this.bb_pos, 20);
+  var offset = this.bb.__offset(this.bb_pos, 22);
   return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
 };
 
@@ -586,7 +604,7 @@ nd4j.graph.UIVariable.prototype.controlDepsForVar = function(index, optionalEnco
  * @returns {number}
  */
 nd4j.graph.UIVariable.prototype.controlDepsForVarLength = function() {
-  var offset = this.bb.__offset(this.bb_pos, 20);
+  var offset = this.bb.__offset(this.bb_pos, 22);
   return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -595,15 +613,33 @@ nd4j.graph.UIVariable.prototype.controlDepsForVarLength = function() {
  * @returns {string|Uint8Array|null}
  */
 nd4j.graph.UIVariable.prototype.gradientVariable = function(optionalEncoding) {
-  var offset = this.bb.__offset(this.bb_pos, 22);
+  var offset = this.bb.__offset(this.bb_pos, 24);
   return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @param {flatbuffers.Encoding=} optionalEncoding
+ * @returns {string|Uint8Array|null}
+ */
+nd4j.graph.UIVariable.prototype.uiLabelExtra = function(optionalEncoding) {
+  var offset = this.bb.__offset(this.bb_pos, 26);
+  return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @param {nd4j.graph.FlatArray=} obj
+ * @returns {nd4j.graph.FlatArray|null}
+ */
+nd4j.graph.UIVariable.prototype.constantValue = function(obj) {
+  var offset = this.bb.__offset(this.bb_pos, 28);
+  return offset ? (obj || new nd4j.graph.FlatArray).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
 };
 
 /**
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.UIVariable.startUIVariable = function(builder) {
-  builder.startObject(10);
+  builder.startObject(13);
 };
 
 /**
@@ -669,10 +705,39 @@ nd4j.graph.UIVariable.startShapeVector = function(builder, numElems) {
 
 /**
  * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} controlDepsOffset
+ */
+nd4j.graph.UIVariable.addControlDeps = function(builder, controlDepsOffset) {
+  builder.addFieldOffset(5, controlDepsOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<flatbuffers.Offset>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.UIVariable.createControlDepsVector = function(builder, data) {
+  builder.startVector(4, data.length, 4);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.UIVariable.startControlDepsVector = function(builder, numElems) {
+  builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
  * @param {flatbuffers.Offset} outputOfOpOffset
  */
 nd4j.graph.UIVariable.addOutputOfOp = function(builder, outputOfOpOffset) {
-  builder.addFieldOffset(5, outputOfOpOffset, 0);
+  builder.addFieldOffset(6, outputOfOpOffset, 0);
 };
 
 /**
@@ -680,7 +745,7 @@ nd4j.graph.UIVariable.addOutputOfOp = function(builder, outputOfOpOffset) {
  * @param {flatbuffers.Offset} inputsForOpOffset
  */
 nd4j.graph.UIVariable.addInputsForOp = function(builder, inputsForOpOffset) {
-  builder.addFieldOffset(6, inputsForOpOffset, 0);
+  builder.addFieldOffset(7, inputsForOpOffset, 0);
 };
 
 /**
@@ -709,7 +774,7 @@ nd4j.graph.UIVariable.startInputsForOpVector = function(builder, numElems) {
  * @param {flatbuffers.Offset} controlDepsForOpOffset
  */
 nd4j.graph.UIVariable.addControlDepsForOp = function(builder, controlDepsForOpOffset) {
-  builder.addFieldOffset(7, controlDepsForOpOffset, 0);
+  builder.addFieldOffset(8, controlDepsForOpOffset, 0);
 };
 
 /**
@@ -738,7 +803,7 @@ nd4j.graph.UIVariable.startControlDepsForOpVector = function(builder, numElems) 
  * @param {flatbuffers.Offset} controlDepsForVarOffset
  */
 nd4j.graph.UIVariable.addControlDepsForVar = function(builder, controlDepsForVarOffset) {
-  builder.addFieldOffset(8, controlDepsForVarOffset, 0);
+  builder.addFieldOffset(9, controlDepsForVarOffset, 0);
 };
 
 /**
@@ -767,7 +832,23 @@ nd4j.graph.UIVariable.startControlDepsForVarVector = function(builder, numElems)
  * @param {flatbuffers.Offset} gradientVariableOffset
  */
 nd4j.graph.UIVariable.addGradientVariable = function(builder, gradientVariableOffset) {
-  builder.addFieldOffset(9, gradientVariableOffset, 0);
+  builder.addFieldOffset(10, gradientVariableOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} uiLabelExtraOffset
+ */
+nd4j.graph.UIVariable.addUiLabelExtra = function(builder, uiLabelExtraOffset) {
+  builder.addFieldOffset(11, uiLabelExtraOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} constantValueOffset
+ */
+nd4j.graph.UIVariable.addConstantValue = function(builder, constantValueOffset) {
+  builder.addFieldOffset(12, constantValueOffset, 0);
 };
 
 /**
@@ -887,10 +968,19 @@ nd4j.graph.UIOp.prototype.controlDepsLength = function() {
 };
 
 /**
+ * @param {flatbuffers.Encoding=} optionalEncoding
+ * @returns {string|Uint8Array|null}
+ */
+nd4j.graph.UIOp.prototype.uiLabelExtra = function(optionalEncoding) {
+  var offset = this.bb.__offset(this.bb_pos, 14);
+  return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.UIOp.startUIOp = function(builder) {
-  builder.startObject(5);
+  builder.startObject(6);
 };
 
 /**
@@ -994,6 +1084,14 @@ nd4j.graph.UIOp.createControlDepsVector = function(builder, data) {
  */
 nd4j.graph.UIOp.startControlDepsVector = function(builder, numElems) {
   builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} uiLabelExtraOffset
+ */
+nd4j.graph.UIOp.addUiLabelExtra = function(builder, uiLabelExtraOffset) {
+  builder.addFieldOffset(5, uiLabelExtraOffset, 0);
 };
 
 /**

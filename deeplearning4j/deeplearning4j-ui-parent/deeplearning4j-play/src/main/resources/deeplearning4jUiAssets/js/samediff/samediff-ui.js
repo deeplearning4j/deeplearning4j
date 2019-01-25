@@ -112,6 +112,20 @@ function fileSelect(evt) {
                                 edges.push({data: edgeObj, classes:"opoutputedge"});
                             }
                         }
+
+                        //Add variable control dependencies:
+                        var vcdCount = v.controlDepsLength();
+                        if(vcdCount > 0){
+                            for(var j=0; j<vcdCount; j++ ){
+                                var vcd = v.controlDeps(j);
+                                var edgeObj = {
+                                    source: "var-" + name,
+                                    target: "var-" + vcd.name(),
+                                    label: ""
+                                };
+                                edges.push({data: edgeObj, classes:"controldepedge"});
+                            }
+                        }
                     }
 
                     count += 1;
@@ -160,6 +174,36 @@ function fileSelect(evt) {
                                     edges.push({data: edgeObj, classes:"opoutputedge"});
                                 }
                             }
+                        }
+                    }
+
+                    //Add control dependencies:
+                    var cdLength = o.controlDepsLength();
+                    if(cdLength > 0){
+                        for( var j=0; j<cdLength; j++ ) {
+                            var varName = o.controlDeps(j);
+                            //If placeholder, variable or constant, make edge from variable node
+                            //If array, make edge from op node
+
+                            var variable = mapVars.get(varName);
+                            var dt = dataTypeToString(variable.datatype());
+                            var vType = variable.type();
+                            var edgeObj;
+                            if(vType === nd4j.graph.VarType.CONSTANT || vType === nd4j.graph.VarType.PLACEHOLDER || vType === nd4j.graph.VarType.VARIABLE ){
+                                edgeObj = {
+                                    source: "var-" + varName,
+                                    target: opName,
+                                    label: ""
+                                }
+                            } else {
+                                var inOpName = variable.outputOfOp();
+                                edgeObj = {
+                                    source: inOpName,
+                                    target: opName,
+                                    label: "CD: " + varName + " (" + dt + ")"
+                                };
+                            }
+                            edges.push({data: edgeObj, classes:"controldepedge"});
                         }
                     }
 

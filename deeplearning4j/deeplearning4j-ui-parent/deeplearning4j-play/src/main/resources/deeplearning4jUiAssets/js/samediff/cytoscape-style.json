@@ -70,5 +70,24 @@
       "border-width": 1,
       "border-color": "#000000"
     }
+  },
+  {
+    "selector": ".controldepedge",
+    "style": {
+      "label": "data(label)",
+      "curve-style": "bezier",
+      "width": 1.5,
+      "line-color": "#cce6ff",
+      "line-style": "dashed",
+      "target-arrow-shape": "triangle",
+      "source-arrow-shape": "none",
+      "source-arrow-color": "#cce6ff",
+      "target-arrow-color": "#cce6ff",
+      "arrow-scale": 0.7,
+      "text-wrap": "wrap",
+      "font-size":5,
+      "text-margin-x": -4,
+      "edge-text-rotation": "autorotate"
+    }
   }
 ]
