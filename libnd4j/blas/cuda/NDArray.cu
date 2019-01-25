@@ -948,7 +948,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         }
 
         if (ews() != 1) {
-            #pragma parallel for schedule(guided)
+            // FIXME: ^$%@#$%@#$!@#!!!!!!!!!!!
             for (Nd4jLong i = 0; i < _length; i++) {
                 auto offset = getOffset(i) * sizeOfT();
                 cudaMemcpy(_buffer + offset, _bufferD + offset, sizeOfT(), cudaMemcpyDeviceToHost);
@@ -1098,7 +1098,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
         if (!isS())
             throw std::runtime_error("This method is available for String arrays only");
-        
+
+        lazyAllocateBuffer();
         if(!isActualOnHostSide()) 
             syncToHost();
 
@@ -1111,7 +1112,8 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 //////////////////////////////////////////////////////////////////////////
     template <>
     std::string NDArray::e(const Nd4jLong i) const {
-        
+
+        const_cast<NDArray*>(this)->lazyAllocateBuffer();
         if(!isActualOnHostSide())
             syncToHost();
 
@@ -1151,6 +1153,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
             throw std::invalid_argument("NDArray::e(i,j): one of input indexes is out of array length or rank!=2 !");
 
+        const_cast<NDArray*>(this)->lazyAllocateBuffer();
         if(!isActualOnHostSide()) 
             syncToHost();
 
@@ -1173,6 +1176,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
             throw std::invalid_argument("NDArray::e(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
+        const_cast<NDArray*>(this)->lazyAllocateBuffer();
         if(!isActualOnHostSide()) 
             syncToHost();
 
@@ -1194,6 +1198,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
             throw std::invalid_argument("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
 
+        const_cast<NDArray*>(this)->lazyAllocateBuffer();
         if(!isActualOnHostSide()) 
             syncToHost();
 
@@ -1211,7 +1216,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 NDArray NDArray::e(const Nd4jLong i) const {
     if (i >= _length)
         throw std::invalid_argument("scalar NDArray::e(i): input index is out of array length !");
-    
+
     NDArray scalar(_dataType, _context);
     
     if(isActualOnHostSide()) {

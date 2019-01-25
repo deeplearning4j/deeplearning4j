@@ -122,26 +122,26 @@ TEST_F(NDArrayTest, NDArrayOrder1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestGetScalar1) {
-    float *c = new float[4] {1, 2, 3, 4};
+    auto c = new float[4] {1, 2, 3, 4};
     auto cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 8192, 1, 99};
 
     auto arrayC = new NDArray(c, cShape);
 
-    ASSERT_EQ(3.0f, arrayC->e<float>(1, 0));
-    ASSERT_EQ(4.0f, arrayC->e<float>(1, 1));
+    ASSERT_NEAR(3.0f, arrayC->e<float>(1, 0), 1e-5f);
+    ASSERT_NEAR(4.0f, arrayC->e<float>(1, 1), 1e-5f);
 
     auto arrayF = arrayC->dup('f');
 
-    ASSERT_EQ(3.0f, arrayF->e<float>(1, 0));
-    ASSERT_EQ(4.0f, arrayF->e<float>(1, 1));
+    ASSERT_NEAR(3.0f, arrayF->e<float>(1, 0), 1e-5f);
+    ASSERT_NEAR(4.0f, arrayF->e<float>(1, 1), 1e-5f);
 
 
     arrayF->p(1, 0, 7.0f);
-    ASSERT_EQ(7.0f, arrayF->e<float>(1, 0));
+    ASSERT_NEAR(7.0f, arrayF->e<float>(1, 0), 1e-5f);
 
 
     arrayC->p(1, 1, 9.0f);
-    ASSERT_EQ(9.0f, arrayC->e<float>(1, 1));
+    ASSERT_NEAR(9.0f, arrayC->e<float>(1, 1), 1e-5f);
 
     delete[] c;
     delete[] cShape;
