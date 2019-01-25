@@ -1920,7 +1920,7 @@ TEST_F(NDArrayTest, Operator_Plus_Test_1)
 
     auto result = x + y;
 
-    result.printIndexedBuffer("result");
+    //result.printIndexedBuffer("result");
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));

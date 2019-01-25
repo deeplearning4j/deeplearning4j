@@ -2649,7 +2649,11 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
         auto result = new NDArray(_buffer, outShapeInfo, _context, false, true);
         result->_bufferD = _bufferD;
         result->_isBuffDAlloc = false;
-        result->tickWriteDevice();
+
+        if (isActualOnDeviceSide())
+            result->tickWriteDevice();
+        else if (isActualOnHostSide())
+            result->tickWriteHost();
 
         return result;
     }
