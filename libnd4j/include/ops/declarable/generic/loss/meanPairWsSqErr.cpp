@@ -101,8 +101,7 @@ namespace nd4j {
                          "MEAN_PAIRWSSQERR_LOSS OP: shapes of weights and labels arrays should be broadcastable, but got weights = %s and labels = %s instead!",
                          ShapeUtils::shapeAsString(weights).c_str(), ShapeUtils::shapeAsString(labels).c_str());
 
-            if (labels->rankOf() ==
-                1) { // If labels and predictions are of rank 1, it means that all data entries are 0-tensor (scalar) so that the result of becomes always zero.
+            if (labels->rankOf() == 1) { // If labels and predictions are of rank 1, it means that all data entries are 0-tensor (scalar) so that the result of becomes always zero.
                 *output = 0.;
                 return Status::OK();
             }
@@ -115,15 +114,15 @@ namespace nd4j {
             std::vector<int> reductionIdx = ShapeUtils::evalDimsToExclude(labels->rankOf(), {0});
 
             auto n = double(labels->sizeAt(1));
-            NDArray diffs = *predictions - *labels;
+            auto diffs = *predictions - *labels;
 
-            NDArray sumOfSquares = *(diffs * diffs).reduceAlongDimension(reduce::Sum, reductionIdx, true);
+            auto sumOfSquares = (diffs * diffs).reduceAlongDims(reduce::Sum, reductionIdx, true);
 
-            NDArray squareOfSum  = *diffs.reduceAlongDimension(reduce::Sum, reductionIdx, true);
+            auto squareOfSum  = diffs.reduceAlongDims(reduce::Sum, reductionIdx, true);
             squareOfSum.applyScalar(scalar::Pow, 2);
 
 
-            NDArray E = ((sumOfSquares * n) - squareOfSum) * (4/(n*(n-1)));
+            auto E = ((sumOfSquares * n) - squareOfSum) * (4/(n*(n-1)));
 
             E *= *weightsBroad;
 
@@ -172,6 +171,91 @@ namespace nd4j {
         }
 
 
+        //////////////////////////////////////////////////////////////////////////
+        CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 0) {
+
+            auto predictions = INPUT_VARIABLE(0);
+            auto weights 	 = INPUT_VARIABLE(1);
+            auto labels  	 = INPUT_VARIABLE(2);
+
+            auto dLdp = OUTPUT_VARIABLE(0);		// dL/dpredictions
+            auto dLdw = OUTPUT_VARIABLE(1);		// dL/dweights
+            auto dLdl = OUTPUT_VARIABLE(2);		// dL/dlabels
+
+
+            // inputs validation
+            REQUIRE_TRUE(labels->isSameShape(predictions), 0, "MEAN_PAIRWSSQERR_LOSS_GRAD OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(labels).c_str(), ShapeUtils::shapeAsString(predictions).c_str());
+            // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
+            REQUIRE_TRUE(weights->isScalar() || weights->rankOf() == labels->rankOf(), 0, "MEAN_PAIRWSSQERR_LOSS_GRAD OP: weights array should be scalar or have the same rank as labels array, but got %i and %i correspondingly!", weights->rankOf(), labels->rankOf());
+            // check whether broadcast operation is possible for weights array
+            REQUIRE_TRUE(weights->isScalar() || ShapeUtils::areShapesBroadcastable(*weights, *labels), 0, "MEAN_PAIRWSSQERR_LOSS_GRAD OP: shapes of weights and labels arrays should be broadcastable, but got weights = %s and labels = %s instead!", ShapeUtils::shapeAsString(weights).c_str(), ShapeUtils::shapeAsString(labels).c_str());
+
+
+            // perform weights broadcasting/tile to labels if needed
+            auto weightsBroad = weights;
+            if(!weights->isScalar() && !weights->isSameShape(predictions))
+                weightsBroad = new NDArray(weights->tileToShape(predictions->getShapeInfo()));
+
+            auto n = double(labels->sizeAt(1));
+            auto diffs = *predictions - *labels;
+
+            std::vector<int> reductionIdx = ShapeUtils::evalDimsToExclude(labels->rankOf(), {0});
+            auto sumOfSquares = (diffs * diffs).reduceAlongDims(reduce::Sum, reductionIdx, true);
+
+            auto squareOfSum  = diffs.reduceAlongDims(reduce::Sum, reductionIdx, true);
+            squareOfSum.applyScalar(scalar::Pow, 2);
+
+            auto E = ((sumOfSquares * n) - squareOfSum) * (4/(n*(n-1)));
+
+            auto sumPred = predictions->reduceAlongDims(reduce::Sum, reductionIdx, true);
+            auto sumLabel = labels->reduceAlongDims(reduce::Sum, reductionIdx, true);
+
+            dLdp->assign(((diffs * n) - sumPred + sumLabel)*(8/(n*(n-1))));
+
+            *dLdp *= *weightsBroad;
+
+            dLdl->assign(-*dLdp);
+
+            if(weights->isScalar())
+                dLdw->assign(E.reduceNumber(reduce::Sum));
+            else if(weights != weightsBroad) {
+                std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+                E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+            }
+            else
+                dLdw->assign(E);
+
+            if(weightsBroad != weights)
+                delete weightsBroad;
+
+            return Status::OK();
+        }
+
+        DECLARE_TYPES(mean_pairwssqerr_loss_grad) {
+            getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+        }
+
+        DECLARE_SHAPE_FN(mean_pairwssqerr_loss_grad) {
+
+            auto predictionsShapeInfo = inputShape->at(0);
+            auto weightsShapeInfo 	  = inputShape->at(1);
+            auto labelsShapeInfo  	  = inputShape->at(2);
+
+            // labels and predictions must have the same shapes
+            REQUIRE_TRUE(shape::shapeEquals(labelsShapeInfo, predictionsShapeInfo), 0, "MEAN_PAIRWSSQERR_LOSS_GRAD OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils::shapeAsString(predictionsShapeInfo).c_str());
+            // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
+            REQUIRE_TRUE(shape::isScalar(weightsShapeInfo) || shape::rank(weightsShapeInfo) == shape::rank(labelsShapeInfo), 0, "MEAN_PAIRWSSQERR_LOSS_GRAD OP: weights array should be scalar or have the same rank as labels array, but got %i and %i correspondingly!", shape::rank(weightsShapeInfo), shape::rank(labelsShapeInfo));
+            // check whether broadcast operation is possible for weights array
+            REQUIRE_TRUE(shape::isScalar(weightsShapeInfo) || ShapeUtils::areShapesBroadcastable(weightsShapeInfo, labelsShapeInfo), 0, "MEAN_PAIRWSSQERR_LOSS_GRAD OP: shapes of weights and labels arrays should be broadcastable, but got weights = %s and labels = %s instead!", ShapeUtils::shapeAsString(weightsShapeInfo).c_str(), ShapeUtils::shapeAsString(labelsShapeInfo).c_str());
+
+            DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
+
+            Nd4jLong *dLdpShapeInfo = ShapeBuilders::copyShapeInfoAndType(predictionsShapeInfo, outType, false, block.getWorkspace());
+            Nd4jLong *dLdwShapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, outType, false, block.getWorkspace());
+            Nd4jLong *dLdlShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
+
+            return SHAPELIST(dLdpShapeInfo, dLdwShapeInfo, dLdlShapeInfo);
+        }
     }
 }
 

@@ -1398,6 +1398,10 @@ public class DifferentialFunctionFactory {
         return new MeanPairwiseSquaredErrorLoss(sameDiff(), predictions, weights, label).outputVariable();
     }
 
+    public SDVariable[] lossMeanPairwiseSquaredErrorBp(SDVariable label, SDVariable predictions, SDVariable weights){
+        return new MeanPairwiseSquaredErrorLossBp(sameDiff(), predictions, weights, label).outputVariables();
+    }
+
     public SDVariable lossMeanSquaredError(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
         return new MeanSquaredErrorLoss(sameDiff(), lossReduce, predictions, weights, label).outputVariable();
     }

@@ -171,6 +171,7 @@ namespace ops {
        */     
         #if NOT_EXCLUDED(OP_mean_pairwssqerr_loss)
         DECLARE_CUSTOM_OP(mean_pairwssqerr_loss, 3, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 0);
         #endif
 
     

@@ -46,7 +46,7 @@ public class LossOpValidation extends BaseOpValidation {
 
     public static final Set<String> NO_BP_YET = new HashSet<>();
     static {
-        NO_BP_YET.addAll(Arrays.asList("l2_loss", "mpwse"));
+        NO_BP_YET.addAll(Arrays.asList("l2_loss"));
     }
 
     @Test
@@ -75,7 +75,7 @@ public class LossOpValidation extends BaseOpValidation {
 
                 for (LossReduce reduction : LossReduce.values()) {
 
-                    if(fn.equals("mpwse") && (reduction != LossReduce.MEAN_BY_WEIGHT || weights.equals("perOutput"))) //LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT)
+                    if(fn.equals("mpwse") && (reduction != LossReduce.NONE || weights.equals("perOutput"))) //LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT)
                         continue;   //MPWSE only provides scalar output - i.e., no other reduction modes. And only none/scalar/per-example weights
 
                     if((fn.equals("softmaxxent") || fn.equals("softmaxxent_smooth")) && reduction == LossReduce.NONE)
