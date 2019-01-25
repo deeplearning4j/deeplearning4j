@@ -648,9 +648,9 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
     NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
 
     //----- calculation of output -----//
-    graph::LaunchContext ctx;
-    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-    MmulHelper::tensorDot(&columns, weights, output, {1,2,3}, {indWiC, indWkH, indWkH+1}, permutForOutput); // [bS, iC, kH, kW, oH, oW] x [kH, kW, iC, oC]/[oC, iC, kH, kW] = [bS, oH, oW, oC]
+    graph::LaunchContext* ctx = block.launchContext();
+    helpers::im2col(*ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+    MmulHelper::tensorDot(ctx, &columns, weights, output, {1,2,3}, {indWiC, indWkH, indWkH+1}, permutForOutput); // [bS, iC, kH, kW, oH, oW] x [kH, kW, iC, oC]/[oC, iC, kH, kW] = [bS, oH, oW, oC]
 
     //----- add biases if required -----//
     if(bias)
@@ -785,9 +785,9 @@ static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const N
 
     // ----- calculation of gradW ----- //
     if(gradW) {
-        graph::LaunchContext ctx;
-        helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));   // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-        nd4j::MmulHelper::tensorDot(&columns, gradO, gradW, {0,4,5}, gradOaxesForDot, {2, 0, 1, 3});       // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
+        graph::LaunchContext* ctx = block.launchContext();
+        helpers::im2col(*ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));   // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+        nd4j::MmulHelper::tensorDot(ctx, &columns, gradO, gradW, {0,4,5}, gradOaxesForDot, {2, 0, 1, 3});       // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
     }
 
     // ----- calculation of gradB ----- //
@@ -802,8 +802,8 @@ static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const N
 
     //----- calculation of gradI -----//
     nd4j::MmulHelper::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, {2, 3, 1, 0, 4, 5});  // [kH, kW, iC, oC]/[oC, iC, kH, kW]] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
-    graph::LaunchContext ctx;
-    helpers::col2im(ctx, columns, *gradI, sH, sW, pH, pW, iH, iW, dH, dW);                          // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
+    graph::LaunchContext* ctx = block.launchContext();
+    helpers::col2im(*ctx, columns, *gradI, sH, sW, pH, pW, iH, iW, dH, dW);                          // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
     if(!isNCHW) {
         delete input;
@@ -813,7 +813,7 @@ static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const N
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+static void depthwiseConv2d_(graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
 
     // input     [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights   [kH, kW, iC, mC] always
@@ -856,9 +856,9 @@ static void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const
     NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
     NDArray* outputReshaped = output->reshape(output->ordering(), outReShape);
 
-    graph::LaunchContext ctx;
-    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-    MmulHelper::tensorDot(&columns, weights, outputReshaped, modifColumns, {{2,0,1,3},{iC,kH*kW,mC}}, modifOutput);              // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
+    graph::LaunchContext* ctx = block.launchContext();
+    helpers::im2col(*ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+    MmulHelper::tensorDot(ctx, &columns, weights, outputReshaped, modifColumns, {{2,0,1,3},{iC,kH*kW,mC}}, modifOutput);              // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
 
     if(bias)
         output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
@@ -871,7 +871,7 @@ static void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+static void depthwiseConv2dBP_(graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
 
     // input    [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
     // weights  [kH, kW, iC, mC] always
@@ -894,7 +894,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
 
     int bS, iC, iH, iW, mC, oC, oH, oW;                     // batch size, input channels, input height/width, channels multiplier(oC = iC*mC), output channels, output height/width
     int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;   // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(block, isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
     mC = weights->sizeAt(indWmC);                           // channels multiplier
 
     std::vector<std::vector<Nd4jLong>> modifColumns = {{1,2,3,0,4,5}, {iC, kH*kW, bS*oH*oW}};      // [bS,iC,kH,kW,oH,oW] -> [iC, kH*kW, bS*oH*oW]
@@ -922,9 +922,9 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
 
     // ----- calculation of gradW and gradB ----- //
 
-    graph::LaunchContext ctx;
-    helpers::im2col(ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-    nd4j::MmulHelper::tensorDot(&columns, gradOreshaped, gradW, modifColumns, modifGradO1, {{2,0,1,3},{iC,kH*kW,mC}});  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
+    graph::LaunchContext* ctx = block.launchContext();
+    helpers::im2col(*ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+    nd4j::MmulHelper::tensorDot(ctx, &columns, gradOreshaped, gradW, modifColumns, modifGradO1, {{2,0,1,3},{iC,kH*kW,mC}});  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
 
     // ----- calculation of gradB ----- //
     if(gradB) {
@@ -938,7 +938,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
 
     //----- calculation of gradI -----//
     nd4j::MmulHelper::tensorDot(weights, gradO, &columns, {{2,0,1,3},{iC,kH*kW,mC}}, modifGradO2, modifColumns); // [iC, kH*kW, mC] x [iC, mC, bS*oH*oW] = [iC, kW*kH, bS*oH*oW]
-    helpers::col2im(ctx, columns, *gradI, sH, sW, pH, pW, iH, iW, dH, dW);                                       // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
+    helpers::col2im(*ctx, columns, *gradI, sH, sW, pH, pW, iH, iW, dH, dW);                                       // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
     if(!isNCHW) {
         delete input;
