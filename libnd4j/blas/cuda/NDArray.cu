@@ -876,7 +876,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             _shapeInfo = newShape;
             setSpecialBuffers(newBufferD, newShapeD);
             //this->_buffer = newBuffer;
-            this->_isBuffAlloc = true;
+            this->_isBuffAlloc = false;
             this->_isBuffDAlloc = true;
             this->_isShapeDAlloc = true;
             this->_isShapeAlloc = true;
@@ -896,11 +896,14 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             //setBuffer(newBuffer);
             _shapeInfo = newShape;
             setSpecialBuffers(newBufferD, newShapeD);
-            this->_isBuffAlloc = true;
+            this->_isBuffAlloc = false;
             this->_isShapeAlloc = true;
             this->_isBuffDAlloc = true;
             this->_isShapeDAlloc = true;
         }
+
+        nd4j_printf("WOOOOW\n", "");
+
         //tickReadHost();
         tickWriteDevice();
     }

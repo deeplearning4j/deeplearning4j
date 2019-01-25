@@ -275,10 +275,19 @@ TEST_F(NDArrayTest2, Test_Streamline_1) {
 
     y.streamline();
 
+    nd4j_printf("Step %i\n", 0)
+
     ASSERT_TRUE(x.isSameShape(&y));
+
+    nd4j_printf("Step %i\n", 1)
+
     ASSERT_TRUE(x.equalsTo(&y));
 
+    nd4j_printf("Step %i\n", 2)
+
     ASSERT_FALSE(x.isSameShapeStrict(&y));
+
+    nd4j_printf("Step %i\n", 3)
 }
 
 
