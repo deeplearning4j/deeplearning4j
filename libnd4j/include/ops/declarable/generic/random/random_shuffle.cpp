@@ -37,7 +37,7 @@ OP_IMPL(random_shuffle, 1, 1, true) {
     
     REQUIRE_TRUE(rng != nullptr, 0, "RANDOM_SHUFFLE op: RNG should be defined in Graph !");
 
-    helpers::randomShuffle(*input, *output, *rng, isInplace);
+    helpers::randomShuffle(block.launchContext(), *input, *output, *rng, isInplace);
     
     return Status::OK();
 }
