@@ -827,7 +827,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if(lengthOf() != other.lengthOf())
             throw std::runtime_error("NDArray::swapUnsafe method: input arrays should have the same length!");
 
-        BUILD_SINGLE_SELECTOR(xType, templatedSwapH, (this->_bufferD, this->_shapeInfoD, other.specialBuffer(), other.specialShapeInfo(), _context->getCudaStream()), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, templatedSwapUnsafe, (this->_bufferD, this->_shapeInfoD, other.specialBuffer(), other.specialShapeInfo(), _context->getCudaStream()), LIBND4J_TYPES);
     }
 
     void NDArray::streamline(char o) {
