@@ -292,7 +292,7 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
     }
 
     // time loop
-    helpers::sruTimeLoop(xm, c0, w, b, h, c);
+    helpers::sruTimeLoop(block.launchContext(), xm, c0, w, b, h, c);
 
     if(mask)
         delete xm;

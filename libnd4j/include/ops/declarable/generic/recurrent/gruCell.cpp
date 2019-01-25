@@ -58,7 +58,7 @@ CUSTOM_OP_IMPL(gruCell, 5, 1, false, 0, 0) {
     REQUIRE_TRUE(whShape == whCorrectShape, 0, "GRUCELL operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", whCorrectShape.c_str(), whShape.c_str());
     REQUIRE_TRUE(bShape  == bCorrectShape,  0, "GRUCELL operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
 
-    helpers::gruCell(x, h0, Wx, Wh, b, h);
+    helpers::gruCell(block.launchContext(), x, h0, Wx, Wh, b, h);
 
     return Status::OK();
 }
@@ -172,7 +172,7 @@ CUSTOM_OP_IMPL(gruCell_bp, 6, 5, false, 0, 0) {
         REQUIRE_TRUE(dLdbiShape == dLdbiCorrectShape,  0, "GRU_CELL_BP op: wrong shape of dLdbi array (gradient wrt biases at previous time step), expected is %s, but got %s instead !", dLdbiCorrectShape.c_str(), dLdbiShape.c_str());
     }
 
-    helpers::gruCellBP(x,  hi, Wx, Wh, b, dLdh, dLdWxi, dLdWhi, dLdbi, dLdx, dLdhi, dLdWx, dLdWh, dLdb);
+    helpers::gruCellBP(block.launchContext(), x,  hi, Wx, Wh, b, dLdh, dLdWxi, dLdWhi, dLdbi, dLdx, dLdhi, dLdWx, dLdWh, dLdb);
 
     return Status::OK();
 }

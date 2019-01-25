@@ -83,7 +83,7 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
 
     // forward steps 
     auto hFW = new NDArray(x->ordering(), {time, bS, numUnitsFW}, x->dataType(), block.getVariableSpace()->launchContext());
-    helpers::rnnTimeLoop(x, WxFW, WhFW, bFW, h0FW, maxTimeStep, hFW, hFWFinal);    
+    helpers::rnnTimeLoop(block.launchContext(), x, WxFW, WhFW, bFW, h0FW, maxTimeStep, hFW, hFWFinal);
 
     auto seqLen = maxTimeStep;    
     if(seqLen == nullptr) {    	        
@@ -93,20 +93,20 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     
     // reverse x 
     auto revOut = new NDArray(x, false, block.getVariableSpace()->launchContext());
-    helpers::reverseSequence(x, seqLen, revOut, 0, 1);    
+    helpers::reverseSequence(block.launchContext(), x, seqLen, revOut, 0, 1);
 
     // backward steps    
     auto hBW = new NDArray(x->ordering(), {time, bS, numUnitsBW}, x->dataType(), block.getVariableSpace()->launchContext());
     
-    helpers::rnnTimeLoop(revOut, WxBW, WhBW, bBW, h0BW, maxTimeStep, hBW, hBWFinal);
+    helpers::rnnTimeLoop(block.launchContext(), revOut, WxBW, WhBW, bBW, h0BW, maxTimeStep, hBW, hBWFinal);
 
     // reverse hBW     
     auto hBWcopy = new NDArray(*hBW);  
-    helpers::reverseSequence(hBWcopy, seqLen, hBW, 0, 1);
+    helpers::reverseSequence(block.launchContext(), hBWcopy, seqLen, hBW, 0, 1);
 
     // concatenate hFW and hBW along last third dimension
     // NDArrayFactory<T>::concat({hFW, hBW}, 2, h);
-    helpers::concat({hFW, hBW}, *h, 2);    
+    helpers::concat(block.launchContext(), {hFW, hBW}, *h, 2);
 
     delete hBW;
     delete hFW;
