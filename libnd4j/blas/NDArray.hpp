@@ -941,7 +941,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
     }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::indexReduceNumber(nd4j::indexreduce::Ops op, void *extraParams) {
+    NDArray NDArray::indexReduceNumber(nd4j::indexreduce::Ops op, ExtraArguments *extraParams) {
         if (isS())
             throw std::runtime_error("NDArray::indexReduceNumber: you can't use this method on String array!");
 
@@ -951,7 +951,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
 
         res.tickWriteDevice();
 
-        NativeOpExecutioner::execIndexReduceScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
+        NativeOpExecutioner::execIndexReduceScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams == nullptr ? nullptr : extraParams->argumentsAsT(this->dataType()), res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
         return res;
     }
 

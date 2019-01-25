@@ -563,7 +563,7 @@ namespace nd4j {
         *  returns element index which corresponds to some condition imposed by operation
         *  extraParams - extra parameters for operation
         */ 
-        NDArray indexReduceNumber(nd4j::indexreduce::Ops op, void *extraParams = nullptr);
+        NDArray indexReduceNumber(nd4j::indexreduce::Ops op, ExtraArguments *extraParams = nullptr);
 
         /**
         *  returns index of max element in a given array (optionally: along given dimension(s))

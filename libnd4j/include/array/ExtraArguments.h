@@ -48,7 +48,7 @@ namespace nd4j {
         template <typename T>
         void* argumentsAsT();
 
-        void* argumentAsT(nd4j::DataType dataType);
+        void* argumentsAsT(nd4j::DataType dataType);
 
         size_t length();
     };

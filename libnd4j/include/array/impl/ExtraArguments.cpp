@@ -104,12 +104,12 @@ namespace nd4j {
 
     template <typename T>
     void* ExtraArguments::argumentsAsT() {
-        return argumentAsT(DataTypeUtils::fromT<T>());
+        return argumentsAsT(DataTypeUtils::fromT<T>());
     }
     BUILD_SINGLE_TEMPLATE(template void *ExtraArguments::argumentsAsT, (), LIBND4J_TYPES);
 
 
-    void* ExtraArguments::argumentAsT(nd4j::DataType dataType) {
+    void* ExtraArguments::argumentsAsT(nd4j::DataType dataType) {
         if (_fpArgs.empty() && _intArgs.empty())
             return nullptr;
 

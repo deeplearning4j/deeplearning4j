@@ -2124,7 +2124,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_diagonal_1) {
 
     ExtraArguments extras({eps});
     NativeOpExecutioner::execReduce3Scalar(diag->getContext(), reduce3::EqualsWithEps, diag->getBuffer(),
-            diag->getShapeInfo(), diag->getSpecialBuffer(), diag->getSpecialShapeInfo(), extras.argumentAsT(nd4j::DataType::FLOAT32),
+            diag->getShapeInfo(), diag->getSpecialBuffer(), diag->getSpecialShapeInfo(), extras.argumentsAsT(nd4j::DataType::FLOAT32),
             exp.getBuffer(), exp.getShapeInfo(), exp.getSpecialBuffer(), exp.getSpecialShapeInfo(),
             tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo());
     cudaStream_t* stream = x.getContext()->getCudaStream();
