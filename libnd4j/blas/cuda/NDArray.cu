@@ -953,6 +953,10 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             return;
         }
 
+        auto res = cudaStreamSynchronize(*_context->getCudaStream());
+        if (res != 0)
+            throw cuda_exception::build("syncToHost failed to to some previous kernel failre", res);
+
         if (ews() != 1) {
             // FIXME: ^$%@#$%@#$!@#!!!!!!!!!!!
             for (Nd4jLong i = 0; i < _length; i++) {
