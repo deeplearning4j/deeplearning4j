@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(svd, 1, 1, false, 0, 3) {
     const int switchNum = INT_ARG(2);    
     
     #ifndef __CUDABLAS__
-    helpers::svd(x, {OUTPUT_VARIABLE(0), calcUV ? OUTPUT_VARIABLE(1) : nullptr, calcUV ? OUTPUT_VARIABLE(2) : nullptr}, fullUV, calcUV, switchNum);
+    helpers::svd(block.launchContext(), x, {OUTPUT_VARIABLE(0), calcUV ? OUTPUT_VARIABLE(1) : nullptr, calcUV ? OUTPUT_VARIABLE(2) : nullptr}, fullUV, calcUV, switchNum);
     #endif
          
     return Status::OK();;
