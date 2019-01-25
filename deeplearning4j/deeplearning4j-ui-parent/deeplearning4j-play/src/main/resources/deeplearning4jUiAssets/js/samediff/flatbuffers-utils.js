@@ -167,3 +167,104 @@ function dataTypeToString(dataTypeByte){
     }
 }
 
+function dataTypeBytesPerElement(dataTypeByte){
+    switch (dataTypeByte){
+        case nd4j.graph.DataType.BOOL:
+        case nd4j.graph.DataType.FLOAT8:
+        case nd4j.graph.DataType.INT8:
+        case nd4j.graph.DataType.UINT8:
+        case nd4j.graph.DataType.QINT8:
+            return 1;
+        case nd4j.graph.DataType.HALF:
+        case nd4j.graph.DataType.HALF2:
+        case nd4j.graph.DataType.INT16:
+        case nd4j.graph.DataType.UINT16:
+        case nd4j.graph.DataType.QINT16:
+        case nd4j.graph.DataType.BFLOAT16:
+            return 2;
+        case nd4j.graph.DataType.FLOAT:
+        case nd4j.graph.DataType.INT32:
+        case nd4j.graph.DataType.UINT32:
+            return 4;
+        case nd4j.graph.DataType.DOUBLE:
+        case nd4j.graph.DataType.INT64:
+        case nd4j.graph.DataType.UINT64:
+            return 8;
+        case nd4j.graph.DataType.UTF8:
+            return 0;   //TODO
+        default:
+            return "" + dataTypeByte;
+    }
+}
+
+function scalarFromFlatArray(/*FlatArray*/ flatArray){
+
+    //TODO check if actually scalar...
+    var dt = flatArray.dtype();
+    switch (dataTypeByte){
+        //Skip hard to decode types for now
+        case nd4j.graph.DataType.FLOAT8:
+        case nd4j.graph.DataType.QINT8:
+        case nd4j.graph.DataType.HALF:
+        case nd4j.graph.DataType.HALF2:
+        case nd4j.graph.DataType.QINT16:
+        case nd4j.graph.DataType.BFLOAT16:
+            return null;
+    }
+
+    var numBytes = dataTypeBytesPerElement(dt);
+    // var array = new Uint8Array(numBytes);
+    var dv = new DataView(new ArrayBuffer(numBytes));
+    for(var i=0; i<numBytes; i++ ){
+        var signedByte = flatArray.buffer(i);
+        // array[i] = signedByte;      //TODO do we need to convert here???
+        dv.setInt8(i, signedByte);
+    }
+
+    var out;
+    switch (dataTypeByte){
+        case nd4j.graph.DataType.BOOL:
+            out = (dv.getUint8(0) === 0 ? "false" : "true");
+            break;
+        case nd4j.graph.DataType.INT8:
+            out = dv.getInt8(0);
+            break;
+        case nd4j.graph.DataType.UINT8:
+            out = dv.getUint8(0);
+            break;
+        case nd4j.graph.DataType.INT16:
+            out = dv.getInt16(0);
+            break;
+        case nd4j.graph.DataType.UINT16:
+            out = dv.getUint16(0);
+            break;
+        case nd4j.graph.DataType.INT32:
+            out = dv.getInt32(0);
+            break;
+        case nd4j.graph.DataType.UINT32:
+            out = dv.getUint32(0);
+            break;
+        case nd4j.graph.DataType.INT64:
+            //No getInt64 method... :/
+            //TODO Need a solution to this!
+            out = "<int64>";
+            break;
+        case nd4j.graph.DataType.UINT64:
+            out = "<uint64>";
+            break;
+        case nd4j.graph.DataType.FLOAT:
+            out = dv.getFloat32(0);
+            break;
+        case nd4j.graph.DataType.DOUBLE:
+            out = dv.getFloat64(0);
+            break;
+        case nd4j.graph.DataType.UTF8:
+            //TODO need to decode from bytes here
+            out = "<utf8>";
+            break;
+        default:
+            return "";
+    }
+    return "" + out;
+}
+

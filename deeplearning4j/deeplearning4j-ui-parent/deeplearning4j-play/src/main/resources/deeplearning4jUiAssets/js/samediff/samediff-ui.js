@@ -74,13 +74,36 @@ function fileSelect(evt) {
                     var name = v.name();
                     mapVarNameInteger.set(count, name);
                     mapVars.set(name, v);
+                }
 
+                for (var i = 0; i < variables.length; i++) {
+                    var v = variables[i];
+                    var name = v.name();
                     //Add variables/constants/placeholders as a node
                     var vType = v.type();
                     if(vType === nd4j.graph.VarType.CONSTANT || vType === nd4j.graph.VarType.PLACEHOLDER || vType === nd4j.graph.VarType.VARIABLE ){
                         var dt = dataTypeToString(v.datatype());
                         var shape = varShapeToString(v);
                         var n = "\"" + name + "\"\n" + varTypeToString(vType) + "\n" + dt + " " + shape;
+
+                        var extraLabel = v.uiLabelExtra();
+                        if(extraLabel != null && extraLabel !== ""){
+                            n = n + "\n" + extraLabel;
+                        }
+
+
+                        if(vType === nd4j.graph.VarType.CONSTANT){
+                            var constArr = v.constantValue();
+                            if(constArr != null){
+                                if(constArr.shapeLength() === 0 && constArr.bufferLength() > 0){
+                                    var scalar = scalarFromFlatArray(constArr);
+                                    if(scalar != null && scalar !== ""){
+                                        n = n + "\nScalar val: " + scalar;
+                                    }
+                                }
+                            }
+                        }
+
 
                         var nodeObj = {
                             label: n,
@@ -118,10 +141,26 @@ function fileSelect(evt) {
                         if(vcdCount > 0){
                             for(var j=0; j<vcdCount; j++ ){
                                 var vcd = v.controlDeps(j);
+
+                                //2 possibilities: variable is a variable/constant/placeholder: source is from variable node
+                                //Or variable is output of an op: source is from an op node
+                                var vcdVariable = mapVars.get(vcd);
+                                var sourceName;
+                                var edgeLabel;
+                                if(vcdVariable.type() === nd4j.graph.VarType.ARRAY){
+                                    //Control dependency: array -> variable/const/placeholder
+                                    sourceName = vcdVariable.outputOfOp();
+                                    edgeLabel = vcd;    //Don't need to report datatype here, data is not actually used
+                                } else {
+                                    //Control dependency: variable/const/placeholder -> variable/const/placeholder
+                                    sourceName = "var-" + vcd;
+                                    edgeLabel = "";
+                                }
+
                                 var edgeObj = {
-                                    source: "var-" + name,
-                                    target: "var-" + vcd.name(),
-                                    label: ""
+                                    source: sourceName,
+                                    target: "var-" + name,
+                                    label: edgeLabel
                                 };
                                 edges.push({data: edgeObj, classes:"controldepedge"});
                             }
@@ -142,12 +181,31 @@ function fileSelect(evt) {
                     mapOpNameInteger.set(count, name);
                     mapOp.set(name, o);
 
+                    var label = "\"" + name + "\"\n(" + opName + ")";
+                    var e = o.uiLabelExtra();
+                    if(e != null && e !== ""){
+                        label = label + "\n" + e;
+                    }
+
+                    var opclasses = "uiop";
+                    if(opName === "enter"){
+                        opclasses = opclasses + " openter";
+                    } else if(opName === "exit"){
+                        opclasses = opclasses + " opexit";
+                    } else if(opName === "next_iteration"){
+                        opclasses = opclasses + " opnextiter";
+                    } else if(opName === "switch"){
+                        opclasses = opclasses + " opswitch";
+                    } else if(opName === "merge"){
+                        opclasses = opclasses + " opmerge";
+                    }
+
                     var nodeObj = {
-                        label: name + "\n(" + opName + ")",
+                        label: label,
                         id: name,
                         name: name
                     };
-                    nodes.push({data: nodeObj, classes:"uiop"});
+                    nodes.push({data: nodeObj, classes:opclasses});
 
 
                     //Add edges between ops:

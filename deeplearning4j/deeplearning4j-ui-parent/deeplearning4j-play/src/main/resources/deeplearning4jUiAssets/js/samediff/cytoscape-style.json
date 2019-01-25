@@ -72,6 +72,51 @@
     }
   },
   {
+    "selector": ".openter",
+    "style": {
+      "background-color": "#8cd98c",
+      "border-width": 1,
+      "border-color": "#808080",
+      "border-style": "solid"
+    }
+  },
+  {
+    "selector": ".opexit",
+    "style": {
+      "background-color": "#ffcc99",
+      "border-width": 1,
+      "border-color": "#808080",
+      "border-style": "solid"
+    }
+  },
+  {
+    "selector": ".opnextiter",
+    "style": {
+      "background-color": "#ffff66",
+      "border-width": 1,
+      "border-color": "#808080",
+      "border-style": "solid"
+    }
+  },
+  {
+    "selector": ".opswitch",
+    "style": {
+      "background-color": "#ff6666",
+      "border-width": 1,
+      "border-color": "#808080",
+      "border-style": "solid"
+    }
+  },
+  {
+    "selector": ".opmerge",
+    "style": {
+      "background-color": "#d98cd9",
+      "border-width": 1,
+      "border-color": "#808080",
+      "border-style": "solid"
+    }
+  },
+  {
     "selector": ".controldepedge",
     "style": {
       "label": "data(label)",
