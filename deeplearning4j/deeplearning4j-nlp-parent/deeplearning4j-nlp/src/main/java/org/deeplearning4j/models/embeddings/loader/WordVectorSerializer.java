@@ -1989,52 +1989,48 @@ public class WordVectorSerializer {
     private static final String SYN1_FIELD = "Syn1";
     private static final String SYN1_NEG_FIELD = "Syn1Neg";
 
-    public static <T extends  SequenceElement> String writeSequenceVectors(@NonNull SequenceVectors<T> vectors,
-                                                                           @NonNull OutputStream stream)
-            throws JsonProcessingException, IOException {
+    public static <T extends  SequenceElement> void writeSequenceVectors(@NonNull SequenceVectors<T> vectors,
+                                                                         @NonNull OutputStream stream)
+            throws IOException {
 
         WeightLookupTable<T> lookupTable = vectors.getLookupTable();
         AbstractCache<T> vocabCache = (AbstractCache<T>)vectors.getVocab();
-        ObjectMapper mapper = getModelMapper();
-        JsonObject retVal = new JsonObject();
 
-        try (PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8)))) {
+        try (ZipOutputStream zipfile = new ZipOutputStream(new BufferedOutputStream(new CloseShieldOutputStream(stream)))) {
 
-            //writer.write(vectors.getConfiguration().toEncodedJson());
-            //writer.write(((AbstractCache<T>) vocabCache).toJson());
-            //writer.write(((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn0());
+            ZipEntry config = new ZipEntry("configuration.txt");
+            zipfile.putNextEntry(config);
 
-            retVal.addProperty(CLASS_FIELD, mapper.writeValueAsString(vectors.getClass().getName()));
-            retVal.addProperty(VOCAB_FIELD, vocabCache.toJson());
+            try (ObjectOutputStream oos = new ObjectOutputStream(zipfile)) {
 
-            VectorsConfiguration configuration = vectors.getConfiguration();
-            retVal.addProperty(CLASS_FIELD, VectorsConfiguration.class.getName());
-            retVal.addProperty(CONFIG_FIELD, configuration.toJson());
+                VectorsConfiguration configuration = vectors.getConfiguration();
+                zipfile.write(configuration.toEncodedJson().getBytes());
 
-            writer.write(retVal.toString());
+                ZipEntry vocab = new ZipEntry("vocabulary.txt");
+                zipfile.putNextEntry(vocab);
+                oos.write(vocabCache.toJson().getBytes());
 
-            INDArray syn0 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn0();
-            INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
-            INDArray syn1Neg = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1Neg();
+                ZipEntry syn0 = new ZipEntry("syn0.txt");
+                zipfile.putNextEntry(syn0);
 
-            String classInfo = CLASS_FIELD + INDArray.class.getName();
+                INDArray syn0Data = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn0();
+                oos.writeObject(syn0Data);
 
-            if (syn0 != null) {
-                writer.write(classInfo);
-                //writer.write(syn0);
-                /*retVal.addProperty(CLASS_FIELD, INDArray.class.getName());
-                retVal.addProperty(SYN0_FIELD, syn0.toString());*/
-            }
-            if (syn1 != null) {
-                /*retVal.addProperty(CLASS_FIELD, INDArray.class.getName());
-                retVal.addProperty(SYN1_FIELD, syn1.toString());*/
-            }
-            if (syn1Neg != null) {
-                /*retVal.addProperty(CLASS_FIELD, INDArray.class.getName());
-                retVal.addProperty(SYN1_NEG_FIELD, syn1Neg.toString());*/
+                INDArray syn1Data = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
+                if (syn1Data != null) {
+                    ZipEntry syn1 = new ZipEntry("syn1.txt");
+                    zipfile.putNextEntry(syn1);
+                    oos.writeObject(syn1Data);
+                }
+
+                INDArray syn1NegData = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1Neg();
+                if (syn1NegData != null) {
+                    ZipEntry syn1Neg = new ZipEntry("syn1neg.txt");
+                    zipfile.putNextEntry(syn1Neg);
+                    oos.writeObject(syn1NegData);
+                }
             }
         }
-        return retVal.toString();
     }
 
 

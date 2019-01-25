@@ -1,6 +1,8 @@
 package org.deeplearning4j.models.sequencevectors.serialization;
 
+import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import lombok.val;
+import org.apache.commons.lang.StringUtils;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
@@ -11,6 +13,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.StringWriter;
 
 import static org.junit.Assert.*;
 
@@ -57,9 +63,13 @@ public class WordVectorSerializerTest {
                 lookupTable(lookupTable).
                 build();
         SequenceVectors<VocabWord> deser = null;
+        String json = StringUtils.EMPTY;
         try {
-            String json = WordVectorSerializer.writeSequenceVectors(vectors);
-            deser = WordVectorSerializer.readSequenceVectors(json);
+            //ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            FileOutputStream fos = new FileOutputStream("test.zip");
+            WordVectorSerializer.writeSequenceVectors(vectors, fos);
+            //byte[] bytesResult = baos.toByteArray();
+            //        deser = WordVectorSerializer.readSequenceVectors(json, );
         } catch (Exception e) {
             e.printStackTrace();
             fail();
