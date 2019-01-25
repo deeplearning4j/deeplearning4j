@@ -594,6 +594,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
 
     NDArray NDArray::varianceNumber(nd4j::variance::Ops op, bool biasCorrected) {
         NDArray res(DataTypeUtils::pickFloatingType(dataType()), _context);
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
+        res.tickWriteDevice();
         NativeOpExecutioner::execSummaryStatsScalar(_context, op,this->getBuffer(), this->getShapeInfo(), this->getSpecialBuffer(), this->getSpecialShapeInfo(), nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo(), biasCorrected);
         return res;
     }
@@ -604,6 +608,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         if (isS())
             throw std::runtime_error("NDArray::sumNumber: you can't use this method on String array!");
         NDArray res(_dataType, _context);
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
+        res.tickWriteDevice();
         NativeOpExecutioner::execReduceSameScalar(_context, nd4j::reduce::SameOps::Sum, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
         return res;
     }
@@ -614,6 +622,10 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         if (isS())
             throw std::runtime_error("NDArray::meanNumber: you can't use this method on String array!");
         NDArray res(DataTypeUtils::pickFloatingType(dataType()), _context);
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
+        res.tickWriteDevice();
         NativeOpExecutioner::execReduceFloatScalar(_context, nd4j::reduce::FloatOps::Mean, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
         return res;
     }
@@ -715,7 +727,11 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<in
     if(!isR())
         ArrayOptions::setDataType(newShape, Environment::getInstance()->defaultFloatDataType());
 
-    NDArray result(newShape, true, _context, true);    
+    NDArray result(newShape, true, _context, true);
+    if (!isActualOnDeviceSide())
+        syncToDevice();
+
+    result.tickWriteDevice();
 
     reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
@@ -730,6 +746,10 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::SameOps op, const std::vector<int
     auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _context->getWorkspace());
 
     NDArray result(newShape, true, _context, true);
+    if (!isActualOnDeviceSide())
+        syncToDevice();
+
+    result.tickWriteDevice();
 
     reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
@@ -746,6 +766,10 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int
         ArrayOptions::setDataType(newShape, DataType::BOOL);
 
     NDArray result(newShape, true, _context, true);
+    if (!isActualOnDeviceSide())
+        syncToDevice();
+
+    result.tickWriteDevice();
 
     reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
@@ -761,7 +785,11 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::LongOps op, const std::vector<int
     if(_dataType != DataType::INT64)
         ArrayOptions::setDataType(newShape, DataType::INT64);
 
-    NDArray result(newShape, true, _context, true);    
+    NDArray result(newShape, true, _context, true);
+    if (!isActualOnDeviceSide())
+        syncToDevice();
+
+    result.tickWriteDevice();
 
     reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
 
@@ -796,6 +824,11 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         NDArray result(shape, true, this->_context);
         RELEASE(shape, this->_context->getWorkspace());
 
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
+        result.tickWriteDevice();
+
         NativeOpExecutioner::execReduceFloatScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams, result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo());
         return result;
     }
@@ -805,6 +838,11 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
             throw std::runtime_error("NDArray::reduceNumber SameOps: you can't use this method on String array!");
 
         NDArray result(_dataType, _context);
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
+        result.tickWriteDevice();
+
         NativeOpExecutioner::execReduceSameScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams, result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo());
         return result;
     }
@@ -816,6 +854,10 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         auto shape = ShapeBuilders::createScalarShapeInfo(DataType::BOOL, this->_context->getWorkspace());
         NDArray result(shape, true, this->_context);
         RELEASE(shape, this->_context->getWorkspace());
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
+        result.tickWriteDevice();
 
         NativeOpExecutioner::execReduceBoolScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams, result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo());
         return result;
@@ -829,6 +871,11 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         NDArray result(shape, true, this->_context);
         RELEASE(shape, this->_context->getWorkspace());
 
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
+        result.tickWriteDevice();
+
         NativeOpExecutioner::execReduceLongScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams, result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo());
         return result;
     }
@@ -840,6 +887,10 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
             throw std::runtime_error("NDArray::reduceNumber FloatOps: you can't use this method on String array!");
         if(!target.isScalar() || target._dataType != DataTypeUtils::pickFloatingType(_dataType))
             throw std::invalid_argument("NDArray::reduceNumber FloatOps: target array should be scalar and have corresponding float type!");
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
+        target.tickWriteDevice();
 
         NativeOpExecutioner::execReduceFloatScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     }
@@ -851,6 +902,11 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         if(!target.isScalar() || target._dataType != _dataType)
             throw std::invalid_argument("NDArray::reduceNumber SameOps: target array should be scalar and have same type as this array!");
 
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
+        target.tickWriteDevice();
+
         NativeOpExecutioner::execReduceSameScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams, target._buffer, target._shapeInfo, target._bufferD, target._shapeInfoD);
     }
 
@@ -860,6 +916,11 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
             throw std::runtime_error("NDArray::reduceNumber BoolOps: you can't use this method on String array!");
         if(!target.isScalar() || target._dataType != DataType::BOOL)
             throw std::invalid_argument("NDArray::reduceNumber BoolOps: target array should be scalar and have bool type!");
+
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
+        target.tickWriteDevice();
 
         NativeOpExecutioner::execReduceBoolScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams, target._buffer, target._shapeInfo, target._bufferD, target._shapeInfoD);
     }
@@ -871,6 +932,11 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
         if(!target.isScalar() || target._dataType != DataType::INT64)
             throw std::invalid_argument("NDArray::reduceNumber LongOps: target array should be scalar and have long type!");
 
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
+        target.tickWriteDevice();
+
         NativeOpExecutioner::execReduceLongScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     }
 
@@ -880,6 +946,11 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
             throw std::runtime_error("NDArray::indexReduceNumber: you can't use this method on String array!");
 
         auto res = NDArrayFactory::create<Nd4jLong>(0);
+        if (!isActualOnDeviceSide())
+            syncToDevice();
+
+        res.tickWriteDevice();
+
         NativeOpExecutioner::execIndexReduceScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
         return res;
     }
