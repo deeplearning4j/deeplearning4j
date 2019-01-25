@@ -2012,12 +2012,14 @@ public class WordVectorSerializer {
             ZipEntry syn0 = new ZipEntry("syn0.bin");
             zipfile.putNextEntry(syn0);
             Nd4j.write(syn0Data, dos);
+            dos.flush();
 
             INDArray syn1Data = lookupTable.getSyn1();
             if (syn1Data != null) {
                 ZipEntry syn1 = new ZipEntry("syn1.bin");
                 zipfile.putNextEntry(syn1);
                 Nd4j.write(syn1Data, dos);
+                dos.flush();
             }
 
             INDArray syn1NegData = lookupTable.getSyn1Neg();
@@ -2025,6 +2027,7 @@ public class WordVectorSerializer {
                 ZipEntry syn1neg = new ZipEntry("syn1neg.bin");
                 zipfile.putNextEntry(syn1neg);
                 Nd4j.write(syn1NegData, dos);
+                dos.flush();
             }
         }
     }
