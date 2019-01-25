@@ -608,10 +608,8 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         if (isS())
             throw std::runtime_error("NDArray::sumNumber: you can't use this method on String array!");
         NDArray res(_dataType, _context);
-        if (!isActualOnDeviceSide())
-            syncToDevice();
+        NDArray::prepareSpecialUse({&res}, {this});
 
-        res.tickWriteDevice();
         NativeOpExecutioner::execReduceSameScalar(_context, nd4j::reduce::SameOps::Sum, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
         return res;
     }
@@ -622,10 +620,8 @@ void NDArray::replacePointers(void *buffer, Nd4jLong *shapeInfo, const bool rele
         if (isS())
             throw std::runtime_error("NDArray::meanNumber: you can't use this method on String array!");
         NDArray res(DataTypeUtils::pickFloatingType(dataType()), _context);
-        if (!isActualOnDeviceSide())
-            syncToDevice();
+        NDArray::prepareSpecialUse({&res}, {this});
 
-        res.tickWriteDevice();
         NativeOpExecutioner::execReduceFloatScalar(_context, nd4j::reduce::FloatOps::Mean, _buffer, _shapeInfo, _bufferD, _shapeInfoD, nullptr, res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
         return res;
     }
