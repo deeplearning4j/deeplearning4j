@@ -946,10 +946,7 @@ NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::init
             throw std::runtime_error("NDArray::indexReduceNumber: you can't use this method on String array!");
 
         auto res = NDArrayFactory::create<Nd4jLong>(0);
-        if (!isActualOnDeviceSide())
-            syncToDevice();
-
-        res.tickWriteDevice();
+        NDArray::prepareSpecialUse({&res}, {this});
 
         NativeOpExecutioner::execIndexReduceScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, extraParams == nullptr ? nullptr : extraParams->argumentsAsT(this->dataType()), res.buffer(), res.shapeInfo(), res.specialBuffer(), res.specialShapeInfo());
         return res;

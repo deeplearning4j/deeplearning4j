@@ -94,7 +94,7 @@ TEST_F(NDArrayTest2, Test_Reshape_Scalar_2) {
 TEST_F(NDArrayTest2, Test_IndexReduce_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 3, 4, 5});
 
-    ExtraArguments extras({3.0, 0.0, 1.0});
+    ExtraArguments extras({3.0, 0.0, 10.0});
     int idx = x.indexReduceNumber(indexreduce::FirstIndex, &extras).e<int>(0);
 
     ASSERT_EQ(2, idx);
