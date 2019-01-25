@@ -16,16 +16,13 @@
 
 package org.deeplearning4j.models.word2vec;
 
-import com.google.common.cache.AbstractCache;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 
 import java.io.Serializable;
 
@@ -50,11 +47,9 @@ public class VocabWord extends SequenceElement implements Serializable {
      */
     @Getter
     @Setter
-    @JsonProperty
     protected Long vocabId;
     @Getter
     @Setter
-    @JsonProperty
     protected Long affinityId;
 
     public static VocabWord none() {

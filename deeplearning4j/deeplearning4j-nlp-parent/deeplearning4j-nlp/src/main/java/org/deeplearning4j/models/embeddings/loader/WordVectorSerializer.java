@@ -2663,7 +2663,7 @@ public class WordVectorSerializer {
         } catch (Exception e) {
             //
             try {
-                    // try to load file as text csv
+                // try to load file as text csv
                 vocabCache = new AbstractCache.Builder<VocabWord>().build();
                 storage.clear();
                 log.debug("Trying CSVReader...");
