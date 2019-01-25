@@ -107,6 +107,9 @@ namespace nd4j {
     template <typename T>
     _CUDA_H void setDiagonalValueLower(void* buffer, Nd4jLong* shape, NDArray const& value, int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream);
 
+    template <typename T>
+    _CUDA_H void templatedSwapUnsafe(void* theFirstBuffer, Nd4jLong* theFirstShape, void* theSecondBuffer, Nd4jLong* theSecondShape, cudaStream_t* theStream);
+
 }
 
 #endif
