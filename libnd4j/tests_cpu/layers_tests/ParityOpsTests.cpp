@@ -602,7 +602,7 @@ TEST_F(ParityOpsTests, Test_Select_2) {
 }
 
 TEST_F(ParityOpsTests, Test_Select_3) {
-    auto mask = NDArrayFactory::create<bool>('c', {1, 1}, {false});
+    auto mask = NDArrayFactory::create<bool>('c', {1, 1}, {false}, nullptr);
     auto x = NDArrayFactory::create<float>('c', {1, 1}, {1});
     auto y = NDArrayFactory::create<float>('c', {1, 1}, {2});
     auto exp = NDArrayFactory::create<float>('c', {1, 1}, {2});

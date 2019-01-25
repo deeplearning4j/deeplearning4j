@@ -31,13 +31,13 @@ public final class FlatVariable extends Table {
   public byte variabletype() { int o = __offset(16); return o != 0 ? bb.get(o + bb_pos) : 0; }
 
   public static int createFlatVariable(FlatBufferBuilder builder,
-                                       int idOffset,
-                                       int nameOffset,
-                                       byte dtype,
-                                       int shapeOffset,
-                                       int ndarrayOffset,
-                                       int device,
-                                       byte variabletype) {
+      int idOffset,
+      int nameOffset,
+      byte dtype,
+      int shapeOffset,
+      int ndarrayOffset,
+      int device,
+      byte variabletype) {
     builder.startObject(7);
     FlatVariable.addDevice(builder, device);
     FlatVariable.addNdarray(builder, ndarrayOffset);
