@@ -902,8 +902,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             this->_isShapeDAlloc = true;
         }
 
-        nd4j_printf("WOOOOW\n", "");
-
         //tickReadHost();
         tickWriteDevice();
     }
