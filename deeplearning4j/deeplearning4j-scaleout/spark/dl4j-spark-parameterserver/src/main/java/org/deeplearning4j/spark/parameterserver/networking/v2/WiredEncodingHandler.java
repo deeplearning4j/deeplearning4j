@@ -20,11 +20,11 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
-import org.deeplearning4j.spark.parameterserver.networking.v1.messages.SilentUpdatesMessage;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,61 +40,12 @@ public class WiredEncodingHandler extends EncodingHandler {
     protected AtomicLong updatesCounter = new AtomicLong(0);
 
     /**
-     * This method builds new WiredEncodingHandler instance with initial encoding of 1e-3
-     *
-     */
-    public WiredEncodingHandler() {
-        super(1e-3);
-    }
-
-    /**
      * This method builds new WiredEncodingHandler instance
      *
-     * @param threshold Initial encoding threshold
+     * @param thresholdAlgorithm The threshold algorithm to use
      */
-    public WiredEncodingHandler(double threshold) {
-        super(threshold);
-    }
-
-    /**
-     * This method builds new WiredEncodingHandler instance
-     *
-     * @param threshold Initial encoding threshold
-     * @param boundary
-     */
-    public WiredEncodingHandler(double threshold, Double boundary) {
-        super(threshold, boundary);
-    }
-
-    /**
-     * This method builds new WiredEncodingHandler instance
-     *
-     * @param threshold Initial encoding threshold
-     * @param minThreshold Minimal encoding threshold (for threshold decay)
-     * @param thresholdStep Decay step for threshold decay
-     * @param stepTrigger Sparse/Dense ratio that will trigger decay step. In range 0..100
-     * @param stepDelay Minimal number of iterations between decay steps
-     * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
-     */
-    public WiredEncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                                int stepDelay, int shakeFrequency) {
-        this(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, null);
-    }
-
-    /**
-     * This method builds new WiredEncodingHandler instance
-     *
-     * @param threshold Initial encoding threshold
-     * @param minThreshold Minimal encoding threshold (for threshold decay)
-     * @param thresholdStep Decay step for threshold decay
-     * @param stepTrigger Sparse/Dense ratio that will trigger decay step. In range 0..100
-     * @param stepDelay Minimal number of iterations between decay steps
-     * @param shakeFrequency How ofter we'll be sending dense updates with lower threshold
-     * @param boundary
-     */
-    public WiredEncodingHandler(double threshold, double minThreshold, double thresholdStep, double stepTrigger,
-                                int stepDelay, int shakeFrequency, Double boundary) {
-        super(threshold, minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, boundary);
+    public WiredEncodingHandler(ThresholdAlgorithm thresholdAlgorithm, ResidualPostProcessor residualPostProcessor, Double boundary, boolean encodingDebugMode) {
+        super(thresholdAlgorithm, residualPostProcessor, boundary, encodingDebugMode);
     }
 
     /**

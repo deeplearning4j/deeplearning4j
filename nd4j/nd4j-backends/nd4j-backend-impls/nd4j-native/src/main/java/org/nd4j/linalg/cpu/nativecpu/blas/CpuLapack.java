@@ -17,6 +17,7 @@
 package org.nd4j.linalg.cpu.nativecpu.blas;
 
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -68,7 +69,7 @@ public class CpuLapack extends BaseLapack {
 // Q R DECOMP
     @Override
     public void sgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO) {
-        INDArray tau = Nd4j.create( N ) ;
+        INDArray tau = Nd4j.create(DataType.FLOAT, N ) ;
 
         int status = LAPACKE_sgeqrf(getColumnOrder(A), M, N, 
              (FloatPointer)A.data().addressPointer(), getLda(A),
@@ -101,7 +102,7 @@ public class CpuLapack extends BaseLapack {
 
     @Override
     public void dgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO)  {
-        INDArray tau = Nd4j.create( N ) ;
+        INDArray tau = Nd4j.create(DataType.DOUBLE, N ) ;
 
         int status = LAPACKE_dgeqrf(getColumnOrder(A), M, N,
              (DoublePointer)A.data().addressPointer(), getLda(A),
@@ -190,7 +191,7 @@ public class CpuLapack extends BaseLapack {
     @Override
     public void sgesvd(byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT,
                     INDArray INFO) {
-        INDArray superb = Nd4j.create( M < N ? M : N ) ;
+        INDArray superb = Nd4j.create(DataType.FLOAT, M < N ? M : N ) ;
         int status = LAPACKE_sgesvd(getColumnOrder(A), jobu, jobvt, M, N, 
                         (FloatPointer)A.data().addressPointer(), getLda(A),
                         (FloatPointer)S.data().addressPointer(), 
@@ -206,7 +207,7 @@ public class CpuLapack extends BaseLapack {
     @Override
     public void dgesvd(byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT,
                     INDArray INFO) {
-        INDArray superb = Nd4j.create( M < N ? M : N ) ;
+        INDArray superb = Nd4j.create(DataType.DOUBLE, M < N ? M : N ) ;
         int status = LAPACKE_dgesvd(getColumnOrder(A), jobu, jobvt, M, N, 
                         (DoublePointer)A.data().addressPointer(), getLda(A),
                         (DoublePointer)S.data().addressPointer(), 
@@ -232,7 +233,7 @@ public class CpuLapack extends BaseLapack {
 	if( status == 0 ) {
 		int lwork = (int)fp.get() ;
 		INDArray work = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createFloat(lwork),
-		                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, lwork}).getFirst());
+		                Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, lwork}, A.dataType()).getFirst());
 
 		status = LAPACKE_ssyev( getColumnOrder(A), (byte)jobz, (byte)uplo, N, 
 		            (FloatPointer)A.data().addressPointer(), getLda(A),
@@ -254,7 +255,7 @@ public class CpuLapack extends BaseLapack {
 	if( status == 0 ) {
 		int lwork = (int)dp.get() ;
 		INDArray work = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createDouble(lwork),
-		                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, lwork}).getFirst());
+		                Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, lwork}, A.dataType()).getFirst());
 
 		status = LAPACKE_dsyev( getColumnOrder(A), (byte)jobz, (byte)uplo, N, 
 		            (DoublePointer)A.data().addressPointer(), getLda(A),

@@ -50,11 +50,11 @@ The implementation allows the user to choose between two modes of network organi
 2. Two encoding schemes:
 	DL4J uses two encoding schemes, dynamically switching between the two depending on which will provide less network communication. Refer to the section on [encoding](#encoding) for more details.
 3. Quantization thresholds adjusted:
-	The quantization threshold is stepped up or down by a predetermined fixed value depending on the distribution of the updates after each iteration. This is done on each node independently to make sure that updates are indeed sparse.
-4. Optional “Shake-up” messages:
-	DL4J allows user to specify a frequency at which the workers send out encoded dense updates with a smaller threshold. Refer to shakeFrequency in the [API guide](deeplearning4j-scaleout-apiref) for more details.
+	The quantization threshold is stepped up or down depending on the distribution of the updates after each iteration. This is done on each node independently to make sure that updates are indeed sparse. In practice, this is implemented via the [ThresholdAlgorithm](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/ThresholdAlgorithm.java) interface and the [implementations](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/threshold) there-of.
+4. Residual clipping
+	As noted earlier, the "left over" parts of the updates (i.e., those parts not communicated) are store in the residual vector. If the updates are much larger than the threshold, we can have a phenomenon we have termed "residual explosion" - that is, the residual values can continue to grow to many times the threshold (hence would take many steps to communicate the gradient). To avoid this, DL4J has a [ResidualPostProcessor](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/ResidualPostProcessor.java) interface, with the default implementation being [ResidualClippingPostProcessor](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/residual/ResidualClippingPostProcessor.java) which clips the residual vector to a maximum of 5x the current threshold, every 5 steps.
 5. Local parallelism via ParallelWrapper: 
-This enables multi-CPU/GPU nodes to share information faster
+  This enables multi-CPU/GPU nodes to share information faster
 
 
 As is evident from the description, an implementation of ASGD requires updates to be transferred with every iteration of training. Further communication between workers within the cluster is a requirement in mesh mode.
@@ -74,7 +74,7 @@ In plain mode, quantized encoded updates are relayed by each node to the master 
 Below is an image describing how mesh mode is organized:
 ![Mesh Mode](/images/guide/meshmode.png)
 
-Mesh mode is a non-binary tree with Spark master at its root. By default each node can have a maximum of eight nodes and the tree can be a maximum of five levels deep. In mesh mode each node node relays encoded updates to all nodes connected to it and each node aggregates updates received from all other nodes connected to it. In mesh mode, the master is no longer a bottleneck as the amount of communication it recieves directly is reduced. As the writing of this document, the implementation has been tested with unicast as well as multicast (available in 1.0.0-beta3). Future support is planned for RDMA.
+Mesh mode is a non-binary tree with Spark master at its root. By default each node can have a maximum of eight nodes and the tree can be a maximum of five levels deep. In mesh mode each node relays encoded updates to all nodes connected to it and each node aggregates updates received from all other nodes connected to it. In mesh mode, the master is no longer a bottleneck as the amount of communication it recieves directly is reduced. As the writing of this document, the implementation has been tested with unicast as well as multicast (available in 1.0.0-beta3). Future support is planned for RDMA.
 
 #### <a name="encoding">Encoding Schemes</a>
 Updates are send using one of two schemes as described below.

@@ -168,7 +168,7 @@
                                 <configuration>
                                     <!-- Configures the source directory of our integration tests -->
                                     <sources>
-                                        <source>src/gputest/java</source>
+                                        <source>src/test/gpujava</source>
                                     </sources>
                                 </configuration>
                             </execution>

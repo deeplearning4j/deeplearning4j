@@ -32,6 +32,7 @@ import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -59,7 +60,7 @@ public class OCNNOutputLayerTest {
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
 
@@ -126,15 +127,15 @@ public class OCNNOutputLayerTest {
         }
 
         DataSet anomalies = next.filterBy(new int[] {2});
-        INDArray output = network.labelProbabilities(anomalies.getFeatures());
+        INDArray output = network.output(anomalies.getFeatures());
         INDArray normalOutput = network.output(anomalies.getFeatures(),false);
-        assertEquals(output.lt(0.0).sumNumber().doubleValue(),normalOutput.eq(0.0).sumNumber().doubleValue(),1e-1);
+        assertEquals(output.lt(0.0).castTo(Nd4j.defaultFloatingPointType()).sumNumber().doubleValue(), normalOutput.eq(0.0).castTo(Nd4j.defaultFloatingPointType()).sumNumber().doubleValue(),1e-1);
 
         System.out.println("Labels " + anomalies.getLabels());
         System.out.println("Anomaly output " + normalOutput);
         System.out.println(output);
 
-        INDArray normalProbs = network.labelProbabilities(filtered.getFeatures());
+        INDArray normalProbs = network.output(filtered.getFeatures());
         INDArray outputForNormalSamples = network.output(filtered.getFeatures(),false);
         System.out.println("Normal probabilities " + normalProbs);
         System.out.println("Normal raw output " + outputForNormalSamples);

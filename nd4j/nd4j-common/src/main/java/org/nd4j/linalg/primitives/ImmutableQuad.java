@@ -36,10 +36,10 @@ public class ImmutableQuad<F, S, T, O> implements Serializable {
     @Setter(AccessLevel.NONE) protected O fourth;
 
     public static <F, S, T, O> ImmutableQuad<F, S, T, O> quadOf(F first, S second, T third, O fourth) {
-        return new ImmutableQuad(first, second, third, fourth);
+        return new ImmutableQuad<F,S,T,O>(first, second, third, fourth);
     }
 
     public static <F, S, T, O> ImmutableQuad<F, S,T, O> of(F first, S second, T third, O fourth) {
-        return new ImmutableQuad(first, second, third, fourth);
+        return new ImmutableQuad<F,S,T,O>(first, second, third, fourth);
     }
 }

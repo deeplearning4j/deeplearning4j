@@ -96,12 +96,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-base64</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <!-- Shaded version of Jackson -->
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -114,13 +108,13 @@
             <artifactId>nd4j-native</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-       <!-- <dependency>
+<!--
+        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-cuda-10.0</artifactId>
             <version>${project.version}</version>
-        </dependency>-->
-
+        </dependency>
+-->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>

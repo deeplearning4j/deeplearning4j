@@ -92,6 +92,14 @@ public class CudaPointer extends Pointer {
         return new ShortPointer(this);
     }
 
+    public BytePointer asBytePointer() {
+        return new BytePointer(this);
+    }
+
+    public BooleanPointer asBooleanPointer() {
+        return new BooleanPointer(this);
+    }
+
     public long getNativePointer() {
         return address();
     }

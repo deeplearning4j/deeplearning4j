@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
@@ -50,6 +51,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.*;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
@@ -100,11 +102,13 @@ public class MultiLayerTest extends BaseDL4JTest {
         Nd4j.getExecutioner().setProfilingMode(origMode);
     }
 
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
+
     @Test
     public void testSetParams() {
-        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
-        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
-
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder()
                                         .list().layer(0,
@@ -261,7 +265,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .layer(8, new DenseLayer.Builder().nIn(500).nOut(1000).build())
                         .layer(9, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(1000)
                                         .nOut(numRows * numColumns).activation(Activation.SOFTMAX).build())
-                        .pretrain(true).build();
+                        .build();
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
@@ -271,7 +275,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         log.info("Train model....");
         int cnt = 0;
         while (cnt < numSamples) {
-            INDArray input = Nd4j.create(trainingData[cnt]);
+            INDArray input = Nd4j.create(trainingData[cnt]).reshape(1, -1);
             model.fit(new DataSet(input, input));
             cnt++;
         }
@@ -279,9 +283,9 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         log.info("Testing full cycle...");
 
-        List<INDArray> comparableResult = model.feedForward(Nd4j.create(trainingData[0]));
+        List<INDArray> comparableResult = model.feedForward(Nd4j.create(trainingData[0], new long[]{1, trainingData[0].length}));
 
-        INDArray encodeResult = model.activateSelectedLayers(0, 4, Nd4j.create(trainingData[0]));
+        INDArray encodeResult = model.activateSelectedLayers(0, 4, Nd4j.create(trainingData[0], new long[]{1, trainingData[0].length}));
 
         log.info("Compare feedForward results with selectedActivation");
 
@@ -301,13 +305,13 @@ public class MultiLayerTest extends BaseDL4JTest {
                 new NeuralNetConfiguration.Builder().seed(12345L)
                         .list().layer(0,
                         new DenseLayer.Builder().nIn(4).nOut(3)
-                                .weightInit(WeightInit.DISTRIBUTION)
+
                                 .dist(new NormalDistribution(0,1))
                                 .build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
                                 LossFunctions.LossFunction.MCXENT)
                                 .activation(Activation.SOFTMAX).nIn(3).nOut(3)
-                                .weightInit(WeightInit.DISTRIBUTION)
+
                                 .dist(new NormalDistribution(0, 1)).build())
                         .build();
         return conf;
@@ -334,15 +338,15 @@ public class MultiLayerTest extends BaseDL4JTest {
                         .updater(new Sgd(1e-3))
                         .list().layer(
                         0, new DenseLayer.Builder().nIn(nIn).nOut(600)
-                                .weightInit(WeightInit.DISTRIBUTION)
+
                                 .dist(new NormalDistribution(0,1e-5))
                                 .build())
                         .layer(1, new DenseLayer.Builder()
-                                .nIn(600).nOut(250).weightInit(WeightInit.DISTRIBUTION)
+                                .nIn(600).nOut(250)
                                 .dist(new NormalDistribution(0, 1e-5))
                                 .build())
                         .layer(2, new DenseLayer.Builder()
-                                .nIn(250).nOut(100).weightInit(WeightInit.DISTRIBUTION)
+                                .nIn(250).nOut(100)
                                 .dist(new NormalDistribution(0, 1e-5))
                                 .build())
                         .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
@@ -533,8 +537,8 @@ public class MultiLayerTest extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        INDArray in = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0});
-        INDArray out = Nd4j.create(new double[] {1, 0, 0});
+        INDArray in = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0}, new long[]{1, 4});
+        INDArray out = Nd4j.create(new double[] {1, 0, 0}, new long[]{1,3});
 
         double score = net.score(new DataSet(in, out));
     }
@@ -603,7 +607,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         Environment environment = EnvironmentUtils.buildEnvironment();
         environment.setSerialVersionID(EnvironmentUtils.buildCId());
 
-        Task task = TaskUtils.buildTask(Nd4j.create(new double[] {1, 2, 3, 4, 5, 6}));
+        Task task = TaskUtils.buildTask(Nd4j.create(new double[] {1, 2, 3, 4, 5, 6}, new long[]{1,6}));
 
         Heartbeat.getInstance().reportEvent(Event.STANDALONE, environment, task);
 
@@ -714,10 +718,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         // Test pretrain true
         MultiLayerNetwork aePre = getAeModel(true, nIn, nOut);
-        assertTrue(aePre.conf().isPretrain()); // check on the network
-        assertTrue(aePre.getLayer(0).conf().isPretrain()); // check pretrain layer
-        assertFalse(aePre.getLayer(1).conf().isPretrain()); // check none pretrain layer
-        int actualNP = aePre.numParams();
+        int actualNP = (int)aePre.numParams();
         assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
         INDArray params = aePre.params();
         assertEquals(params.length(), actualNP); // check num params
@@ -730,10 +731,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         // Test pretrain false, expect same for true because its not changed when applying update
         MultiLayerNetwork aeNoPre = getAeModel(false, nIn, nOut);
-        assertFalse(aeNoPre.conf().isPretrain());
-        assertFalse(aeNoPre.getLayer(0).conf().isPretrain());
-        assertFalse(aePre.getLayer(1).conf().isPretrain());
-        actualNP = aeNoPre.numParams();
+        actualNP = (int)aeNoPre.numParams();
         assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
         params = aeNoPre.params();
         assertEquals(params.length(), actualNP);
@@ -751,7 +749,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                                 LossFunctions.LossFunction.COSINE_PROXIMITY)
                                 .activation(Activation.IDENTITY).nOut(nOut)
                                 .build())
-                .pretrain(preTrain).setInputType(InputType.feedForward(nOut)).build();
+                .setInputType(InputType.feedForward(nOut)).build();
         MultiLayerNetwork network = new MultiLayerNetwork(vae);
         network.init();
         return network;
@@ -856,7 +854,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         double s1 = net1.score();
         double s2 = net2.score();
-        assertEquals(s1, s2, 1e-8); //Biases initialized to 0 -> should initially have same score
+        assertEquals(s1, s2, 1e-6); //Biases initialized to 0 -> should initially have same score
 
         for (int i = 0; i < 10; i++) {
             net1.fit(features, labels);
@@ -1181,7 +1179,7 @@ public class MultiLayerTest extends BaseDL4JTest {
             final int minibatch = 5;
             final int seqLen = 6;
 
-            INDArray param = Nd4j.create(new double[]{0.54, 0.31, 0.98, -0.30, -0.66, -0.19, -0.29, -0.62, 0.13, -0.32, 0.01, -0.03, 0.00, 0.00, 0.00});
+            INDArray param = Nd4j.create(new double[]{0.54, 0.31, 0.98, -0.30, -0.66, -0.19, -0.29, -0.62, 0.13, -0.32, 0.01, -0.03, 0.00, 0.00, 0.00}).reshape(1, -1);
             graph.setParams(param);
 
             INDArray input = Nd4j.rand(new int[]{minibatch, nIn, seqLen}, 12);
@@ -1263,6 +1261,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
     @Test
     public void testInputActivationGradient(){
+        Nd4j.setDataType(DataType.DOUBLE);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
@@ -1360,7 +1359,7 @@ public class MultiLayerTest extends BaseDL4JTest {
                 .layer(new VariationalAutoencoder.Builder()
                         .nIn(10).nOut(10).encoderLayerSizes(10).decoderLayerSizes(10).build())
                 .layer(new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build())
-                .pretrain(true)
+
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -1395,6 +1394,38 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         net.fit(new SingletonMultiDataSetIterator(mds));
         assertEquals(exp, listener.getModelClasses());
+    }
+
+    @Test
+    public void testINDArrayConfigCloning(){
+        //INDArrays in config should be cloned to avoid threading issues
+
+        int mb = 3;
+        int b = 4;
+        int c = 3;
+        int depth = b * (5 + c);
+        int w = 6;
+        int h = 6;
+
+        INDArray bbPrior = Nd4j.rand(b, 2).muliRowVector(Nd4j.create(new double[]{w, h}).castTo(Nd4j.defaultFloatingPointType()));
+
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .l2(0.01)
+                .list()
+                .layer(new ConvolutionLayer.Builder().nIn(depth).nOut(depth).kernelSize(1,1).build())
+                .layer(new Yolo2OutputLayer.Builder()
+                        .boundingBoxPriors(bbPrior)
+                        .build())
+                .build();
+
+        MultiLayerConfiguration conf2 = conf.clone();
+
+        INDArray bb1 = ((Yolo2OutputLayer)conf.getConf(1).getLayer()).getBoundingBoxes();
+        INDArray bb2 = ((Yolo2OutputLayer)conf2.getConf(1).getLayer()).getBoundingBoxes();
+        assertFalse(bb1 == bb2);
+
+        assertEquals(bb1, bb2);
     }
 
     @Data

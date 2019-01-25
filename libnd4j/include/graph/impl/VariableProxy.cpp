@@ -23,85 +23,85 @@
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
-        VariableProxy<T>::VariableProxy(VariableSpace<T>* ref) {
+        
+        VariableProxy::VariableProxy(VariableSpace* ref) {
             if (ref == nullptr)
-                _backed = new VariableSpace<T>();
+                _backed = new VariableSpace();
 
             _backed = ref;
-            _current = new VariableSpace<T>();
+            _current = new VariableSpace();
         }
 
-        template <typename T>
-        VariableProxy<T>::~VariableProxy() {
+        
+        VariableProxy::~VariableProxy() {
             delete _current;
         }
 
-        template <typename T>
-        int VariableProxy<T>::numberOfPlaceholders() {
+        
+        int VariableProxy::numberOfPlaceholders() {
             return _backed->numberOfPlaceholders();
         }
 
-        template <typename T>
-        std::vector<Variable<T>*>* VariableProxy<T>::getPlaceholders() {
+        
+        std::vector<Variable*>* VariableProxy::getPlaceholders() {
             return _backed->getPlaceholders();
         }
 
-        template <typename T>
-        nd4j::random::RandomBuffer* VariableProxy<T>::getRNG() {
+        
+        nd4j::random::RandomBuffer* VariableProxy::getRNG() {
             return _current->getRNG();
         }
 
-        template <typename T>
-        void VariableProxy<T>::setRNG(nd4j::random::RandomBuffer* rng) {
+        
+        void VariableProxy::setRNG(nd4j::random::RandomBuffer* rng) {
             _current->setRNG(rng);
         }
         
-        template <typename T>
-        bool VariableProxy<T>::hasExternalVariable(int it) {
+        
+        bool VariableProxy::hasExternalVariable(int it) {
             return _backed->hasExternalVariable(it);
         }
 
-        template <typename T>
-        bool VariableProxy<T>::hasExternalVariable(std::pair<int,int>& pair) {
+        
+        bool VariableProxy::hasExternalVariable(std::pair<int,int>& pair) {
             return _backed->hasExternalVariable(pair);
         }
 
-        template <typename T>
-        bool VariableProxy<T>::hasExternalVariable(std::string *symbol) {
+        
+        bool VariableProxy::hasExternalVariable(std::string *symbol) {
             return _backed->hasExternalVariable(symbol);
         }
 
-        template <typename T>
-        bool VariableProxy<T>::hasVariable(int id) {
+        
+        bool VariableProxy::hasVariable(int id) {
             return _current->hasVariable(id) || _backed->hasVariable(id);
         }
         
-        template <typename T>
-        bool VariableProxy<T>::hasVariable(int id, int idx) {
+        
+        bool VariableProxy::hasVariable(int id, int idx) {
             return _current->hasVariable(id, idx) || _backed->hasVariable(id, idx);
         }
         
-        template <typename T>
-        bool VariableProxy<T>::hasVariable(std::pair<int,int>& pair) {
+        
+        bool VariableProxy::hasVariable(std::pair<int,int>& pair) {
             return _current->hasVariable(pair) || _backed->hasVariable(pair);
         }
 
-        template <typename T>
-        void VariableProxy<T>::dropVariable(std::pair<int,int> &pair) {
+        
+        void VariableProxy::dropVariable(std::pair<int,int> &pair) {
             dropVariable(pair.first, pair.second);
         }
 
-        template <typename T>
-        void VariableProxy<T>::dropVariable(int id, int idx) {
+        
+        void VariableProxy::dropVariable(int id, int idx) {
             assert(_current->hasVariable(id, idx));
 
             _current->dropVariable(id, idx);
         }
 
-        template <typename T>
-        std::vector<Variable<T>*> VariableProxy<T>::getVariables() {
-            std::vector<Variable<T>*> result;
+        
+        std::vector<Variable*> VariableProxy::getVariables() {
+            std::vector<Variable*> result;
 
             auto b = _backed->getVariables();
             auto c = _current->getVariables();
@@ -115,13 +115,13 @@ namespace nd4j {
             return result;
         }
 
-        template <typename T>
-        bool VariableProxy<T>::hasVariable(std::string *symbol) {
+        
+        bool VariableProxy::hasVariable(std::string *symbol) {
             return _current->hasVariable(symbol) || _backed->hasVariable(symbol);
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T> *VariableProxy<T>::getVariable(int id) {
+        
+        nd4j::graph::Variable *VariableProxy::getVariable(int id) {
             if (_current->hasVariable(id))
                 return _current->getVariable(id);
             
@@ -132,8 +132,8 @@ namespace nd4j {
             throw std::runtime_error("Bad arguments");
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T> *VariableProxy<T>::getVariable(int id, int idx) {
+        
+        nd4j::graph::Variable *VariableProxy::getVariable(int id, int idx) {
             if (_current->hasVariable(id, idx))
                 return _current->getVariable(id, idx);
             
@@ -144,8 +144,8 @@ namespace nd4j {
             throw std::runtime_error("Bad arguments");
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T> *VariableProxy<T>::getVariable(std::pair<int,int>& pair) {
+        
+        nd4j::graph::Variable *VariableProxy::getVariable(std::pair<int,int>& pair) {
             if (_current->hasVariable(pair))
                 return _current->getVariable(pair);
             
@@ -156,8 +156,8 @@ namespace nd4j {
             throw std::runtime_error("Bad arguments");
         }
 
-        template <typename T>
-        nd4j::graph::Variable<T> *VariableProxy<T>::getVariable(std::string *symbol) {
+        
+        nd4j::graph::Variable *VariableProxy::getVariable(std::string *symbol) {
             if (_current->hasVariable(symbol))
                 return _current->getVariable(symbol);
             
@@ -168,8 +168,8 @@ namespace nd4j {
             throw std::runtime_error("Bad arguments");
         }
 
-        template <typename T>
-        void VariableProxy<T>::replaceVariable(Variable<T> *variable) {
+        
+        void VariableProxy::replaceVariable(Variable *variable) {
             if (variable->getName() != nullptr && !variable->getName()->empty()) {
                 // if variable has name defined - we should resolve it via backing var space
                 if (_backed->hasVariable(variable->getName())) {
@@ -182,93 +182,93 @@ namespace nd4j {
                 _current->replaceVariable(variable);
         }
 
-        template <typename T>
-        void VariableProxy<T>::putVariable(std::pair<int,int>& pair, NDArray<T> *array) {
+        
+        void VariableProxy::putVariable(std::pair<int,int>& pair, NDArray *array) {
             _current->putVariable(pair, array);
         }
 
-        template <typename T>
-        void VariableProxy<T>::putVariable(std::pair<int,int>& pair, Variable<T> *variable) {
+        
+        void VariableProxy::putVariable(std::pair<int,int>& pair, Variable *variable) {
             _current->putVariable(pair, variable);
         }
 
-        template <typename T>
-        void VariableProxy<T>::putVariable(int id, Variable<T> *variable) {
+        
+        void VariableProxy::putVariable(int id, Variable *variable) {
             _current->putVariable(id, variable);
         }
 
-        template <typename T>
-        void VariableProxy<T>::putVariable(int id, NDArray<T> *array) {
+        
+        void VariableProxy::putVariable(int id, NDArray *array) {
             _current->putVariable(id, array);
         }
 
-        template <typename T>
-        void VariableProxy<T>::putVariable(int id, int idx, NDArray<T> *array) {
+        
+        void VariableProxy::putVariable(int id, int idx, NDArray *array) {
             _current->putVariable(id, idx, array);
         }
 
-        template <typename T>
-        void VariableProxy<T>::putVariable(int id, int idx, Variable<T> *array) {
+        
+        void VariableProxy::putVariable(int id, int idx, Variable *array) {
             _current->putVariable(id, idx, array);
         }
 
-        template <typename T>
-        void VariableProxy<T>::trackList(nd4j::NDArrayList<T>* list) {
+        
+        void VariableProxy::trackList(nd4j::NDArrayList* list) {
             _current->trackList(list);
         }
 
-        template <typename T>
-        nd4j::graph::Stash<T>* VariableProxy<T>::getStash() {
+        
+        nd4j::graph::Stash* VariableProxy::getStash() {
             return _current->getStash();
         }
 
-        template <typename T>
-        void VariableProxy<T>::setFlowPath(FlowPath* timers) {
+        
+        void VariableProxy::setFlowPath(FlowPath* timers) {
             _current->setFlowPath(timers);
         }
 
-        template <typename T>
-        FlowPath* VariableProxy<T>::flowPath() {
+        
+        FlowPath* VariableProxy::flowPath() {
             return _current->flowPath();
         }
 
-        template <typename T>
-        void VariableProxy<T>::putOutputVariable(Variable<T> *variable) {
+        
+        void VariableProxy::putOutputVariable(Variable *variable) {
             _current->putOutputVariable(variable);
         }
 
-        template <typename T>
-        Nd4jLong VariableProxy<T>::externalMemory() {
+        
+        Nd4jLong VariableProxy::externalMemory() {
             return _backed->externalMemory() + _current->externalMemory();
         }
 
-        template <typename T>
-        Nd4jLong VariableProxy<T>::internalMemory() {
+        
+        Nd4jLong VariableProxy::internalMemory() {
             return _backed->internalMemory() + _current->internalMemory();
         }
 
-        template <typename T>
-        Nd4jLong VariableProxy<T>::totalMemory() {
+        
+        Nd4jLong VariableProxy::totalMemory() {
             return _backed->totalMemory() + _current->totalMemory();
         }
 
-        template <typename T>
-        int VariableProxy<T>::externalEntries() {
+        
+        int VariableProxy::externalEntries() {
             return _backed->externalEntries() + _current->externalEntries();
         }
 
-        template <typename T>
-        int VariableProxy<T>::internalEntries() {
+        
+        int VariableProxy::internalEntries() {
             return _backed->internalEntries() + _current->internalEntries();
         }
 
-        template <typename T>
-        int VariableProxy<T>::totalEntries() {
+        
+        int VariableProxy::totalEntries() {
             return _backed->totalEntries() + _current->totalEntries();
         }
 
-        template <typename T>
-        nd4j::graph::VariableSpace<T>* VariableProxy<T>::clone() {
+        
+        nd4j::graph::VariableSpace* VariableProxy::clone() {
             auto clone = new VariableProxy(_backed);
 
             delete clone->_current;
@@ -277,8 +277,8 @@ namespace nd4j {
             return clone;
         }
 
-        template <typename T>
-        VariableSpace<T>& VariableProxy<T>::operator=(const VariableSpace<T>& other) {
+        
+        VariableSpace& VariableProxy::operator=(const VariableSpace& other) {
             if (this == &other) return *this;
 
             nd4j_printf("VariableProxy = not implemented\n","");
@@ -286,13 +286,9 @@ namespace nd4j {
             return *this;
         }  
 
-        template <typename T>
-        nd4j::memory::Workspace * nd4j::graph::VariableProxy<T>::workspace() {
+        
+        nd4j::memory::Workspace * nd4j::graph::VariableProxy::workspace() {
             return &this->_workspace;
         }
-
-        template class ND4J_EXPORT VariableProxy<float>;
-        template class ND4J_EXPORT VariableProxy<float16>;
-        template class ND4J_EXPORT VariableProxy<double>;
     }
 }

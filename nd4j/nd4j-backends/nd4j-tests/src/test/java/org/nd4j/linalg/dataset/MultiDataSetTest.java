@@ -21,9 +21,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
-import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -51,8 +51,8 @@ public class MultiDataSetTest extends BaseNd4jTest {
         //Simple test: single input/output arrays; 5 MultiDataSets to merge
         int nCols = 3;
         int nRows = 5;
-        INDArray expIn = Nd4j.linspace(0, nCols * nRows - 1, nCols * nRows).reshape(nRows, nCols);
-        INDArray expOut = Nd4j.linspace(100, 100 + nCols * nRows - 1, nCols * nRows).reshape(nRows, nCols);
+        INDArray expIn = Nd4j.linspace(0, nCols * nRows - 1, nCols * nRows, DataType.DOUBLE).reshape(nRows, nCols);
+        INDArray expOut = Nd4j.linspace(100, 100 + nCols * nRows - 1, nCols * nRows, DataType.DOUBLE).reshape(nRows, nCols);
 
         INDArray[] in = new INDArray[nRows];
         INDArray[] out = new INDArray[nRows];
@@ -84,10 +84,10 @@ public class MultiDataSetTest extends BaseNd4jTest {
         int nColsOut0 = 5;
         int nColsOut1 = 6;
 
-        INDArray expIn0 = Nd4j.linspace(0, nRows * nColsIn0 - 1, nRows * nColsIn0).reshape(nRows, nColsIn0);
-        INDArray expIn1 = Nd4j.linspace(0, nRows * nColsIn1 - 1, nRows * nColsIn1).reshape(nRows, nColsIn1);
-        INDArray expOut0 = Nd4j.linspace(0, nRows * nColsOut0 - 1, nRows * nColsOut0).reshape(nRows, nColsOut0);
-        INDArray expOut1 = Nd4j.linspace(0, nRows * nColsOut1 - 1, nRows * nColsOut1).reshape(nRows, nColsOut1);
+        INDArray expIn0 = Nd4j.linspace(0, nRows * nColsIn0 - 1, nRows * nColsIn0, DataType.DOUBLE).reshape(nRows, nColsIn0);
+        INDArray expIn1 = Nd4j.linspace(0, nRows * nColsIn1 - 1, nRows * nColsIn1, DataType.DOUBLE).reshape(nRows, nColsIn1);
+        INDArray expOut0 = Nd4j.linspace(0, nRows * nColsOut0 - 1, nRows * nColsOut0, DataType.DOUBLE).reshape(nRows, nColsOut0);
+        INDArray expOut1 = Nd4j.linspace(0, nRows * nColsOut1 - 1, nRows * nColsOut1, DataType.DOUBLE).reshape(nRows, nColsOut1);
 
         List<MultiDataSet> list = new ArrayList<>(nRows);
         for (int i = 0; i < nRows; i++) {
@@ -130,12 +130,12 @@ public class MultiDataSetTest extends BaseNd4jTest {
         int nColsOut1 = 7;
         int nColsOut2 = 8;
 
-        INDArray expIn0 = Nd4j.linspace(0, nRows * nColsIn0 - 1, nRows * nColsIn0).reshape(nRows, nColsIn0);
-        INDArray expIn1 = Nd4j.linspace(0, nRows * nColsIn1 - 1, nRows * nColsIn1).reshape(nRows, nColsIn1);
-        INDArray expIn2 = Nd4j.linspace(0, nRows * nColsIn2 - 1, nRows * nColsIn2).reshape(nRows, nColsIn2);
-        INDArray expOut0 = Nd4j.linspace(0, nRows * nColsOut0 - 1, nRows * nColsOut0).reshape(nRows, nColsOut0);
-        INDArray expOut1 = Nd4j.linspace(0, nRows * nColsOut1 - 1, nRows * nColsOut1).reshape(nRows, nColsOut1);
-        INDArray expOut2 = Nd4j.linspace(0, nRows * nColsOut2 - 1, nRows * nColsOut2).reshape(nRows, nColsOut2);
+        INDArray expIn0 = Nd4j.linspace(0, nRows * nColsIn0 - 1, nRows * nColsIn0, DataType.DOUBLE).reshape(nRows, nColsIn0);
+        INDArray expIn1 = Nd4j.linspace(0, nRows * nColsIn1 - 1, nRows * nColsIn1, DataType.DOUBLE).reshape(nRows, nColsIn1);
+        INDArray expIn2 = Nd4j.linspace(0, nRows * nColsIn2 - 1, nRows * nColsIn2, DataType.DOUBLE).reshape(nRows, nColsIn2);
+        INDArray expOut0 = Nd4j.linspace(0, nRows * nColsOut0 - 1, nRows * nColsOut0, DataType.DOUBLE).reshape(nRows, nColsOut0);
+        INDArray expOut1 = Nd4j.linspace(0, nRows * nColsOut1 - 1, nRows * nColsOut1, DataType.DOUBLE).reshape(nRows, nColsOut1);
+        INDArray expOut2 = Nd4j.linspace(0, nRows * nColsOut2 - 1, nRows * nColsOut2, DataType.DOUBLE).reshape(nRows, nColsOut2);
 
         List<MultiDataSet> list = new ArrayList<>(nRows);
         for (int i = 0; i < nRows; i++) {
@@ -184,12 +184,12 @@ public class MultiDataSetTest extends BaseNd4jTest {
         int nColsOut1 = 7;
         int nColsOut2 = 8;
 
-        INDArray expIn0 = Nd4j.linspace(0, nRows * nColsIn0 - 1, nRows * nColsIn0).reshape(nRows, nColsIn0);
-        INDArray expIn1 = Nd4j.linspace(0, nRows * nColsIn1 - 1, nRows * nColsIn1).reshape(nRows, nColsIn1);
-        INDArray expIn2 = Nd4j.linspace(0, nRows * nColsIn2 - 1, nRows * nColsIn2).reshape(nRows, nColsIn2);
-        INDArray expOut0 = Nd4j.linspace(0, nRows * nColsOut0 - 1, nRows * nColsOut0).reshape(nRows, nColsOut0);
-        INDArray expOut1 = Nd4j.linspace(0, nRows * nColsOut1 - 1, nRows * nColsOut1).reshape(nRows, nColsOut1);
-        INDArray expOut2 = Nd4j.linspace(0, nRows * nColsOut2 - 1, nRows * nColsOut2).reshape(nRows, nColsOut2);
+        INDArray expIn0 = Nd4j.linspace(0, nRows * nColsIn0 - 1, nRows * nColsIn0, DataType.DOUBLE).reshape(nRows, nColsIn0);
+        INDArray expIn1 = Nd4j.linspace(0, nRows * nColsIn1 - 1, nRows * nColsIn1, DataType.DOUBLE).reshape(nRows, nColsIn1);
+        INDArray expIn2 = Nd4j.linspace(0, nRows * nColsIn2 - 1, nRows * nColsIn2, DataType.DOUBLE).reshape(nRows, nColsIn2);
+        INDArray expOut0 = Nd4j.linspace(0, nRows * nColsOut0 - 1, nRows * nColsOut0, DataType.DOUBLE).reshape(nRows, nColsOut0);
+        INDArray expOut1 = Nd4j.linspace(0, nRows * nColsOut1 - 1, nRows * nColsOut1, DataType.DOUBLE).reshape(nRows, nColsOut1);
+        INDArray expOut2 = Nd4j.linspace(0, nRows * nColsOut2 - 1, nRows * nColsOut2, DataType.DOUBLE).reshape(nRows, nColsOut2);
 
         List<MultiDataSet> list = new ArrayList<>(nRows);
         for (int i = 0; i < nRows; i++) {
@@ -230,10 +230,10 @@ public class MultiDataSetTest extends BaseNd4jTest {
 
         int lengthIn0 = nRows * depthIn0 * widthIn0 * heightIn0;
         int lengthIn1 = nRows * depthIn1 * widthIn1 * heightIn1;
-        INDArray expIn0 = Nd4j.linspace(0, lengthIn0 - 1, lengthIn0).reshape(nRows, depthIn0, widthIn0, heightIn0);
-        INDArray expIn1 = Nd4j.linspace(0, lengthIn1 - 1, lengthIn1).reshape(nRows, depthIn1, widthIn1, heightIn1);
-        INDArray expOut0 = Nd4j.linspace(0, nRows * nColsOut0 - 1, nRows * nColsOut0).reshape(nRows, nColsOut0);
-        INDArray expOut1 = Nd4j.linspace(0, nRows * nColsOut1 - 1, nRows * nColsOut1).reshape(nRows, nColsOut1);
+        INDArray expIn0 = Nd4j.linspace(0, lengthIn0 - 1, lengthIn0, DataType.DOUBLE).reshape(nRows, depthIn0, widthIn0, heightIn0);
+        INDArray expIn1 = Nd4j.linspace(0, lengthIn1 - 1, lengthIn1, DataType.DOUBLE).reshape(nRows, depthIn1, widthIn1, heightIn1);
+        INDArray expOut0 = Nd4j.linspace(0, nRows * nColsOut0 - 1, nRows * nColsOut0, DataType.DOUBLE).reshape(nRows, nColsOut0);
+        INDArray expOut1 = Nd4j.linspace(0, nRows * nColsOut1 - 1, nRows * nColsOut1, DataType.DOUBLE).reshape(nRows, nColsOut1);
 
         List<MultiDataSet> list = new ArrayList<>(nRows);
         for (int i = 0; i < nRows; i++) {
@@ -281,10 +281,10 @@ public class MultiDataSetTest extends BaseNd4jTest {
         int n1 = nRows * nColsIn1 * tsLength;
         int nOut0 = nRows * nColsOut0 * tsLength;
         int nOut1 = nRows * nColsOut1 * tsLength;
-        INDArray expIn0 = Nd4j.linspace(0, n0 - 1, n0).reshape(nRows, nColsIn0, tsLength);
-        INDArray expIn1 = Nd4j.linspace(0, n1 - 1, n1).reshape(nRows, nColsIn1, tsLength);
-        INDArray expOut0 = Nd4j.linspace(0, nOut0 - 1, nOut0).reshape(nRows, nColsOut0, tsLength);
-        INDArray expOut1 = Nd4j.linspace(0, nOut1 - 1, nOut1).reshape(nRows, nColsOut1, tsLength);
+        INDArray expIn0 = Nd4j.linspace(0, n0 - 1, n0, DataType.DOUBLE).reshape(nRows, nColsIn0, tsLength);
+        INDArray expIn1 = Nd4j.linspace(0, n1 - 1, n1, DataType.DOUBLE).reshape(nRows, nColsIn1, tsLength);
+        INDArray expOut0 = Nd4j.linspace(0, nOut0 - 1, nOut0, DataType.DOUBLE).reshape(nRows, nColsOut0, tsLength);
+        INDArray expOut1 = Nd4j.linspace(0, nOut1 - 1, nOut1, DataType.DOUBLE).reshape(nRows, nColsOut1, tsLength);
 
         List<MultiDataSet> list = new ArrayList<>(nRows);
         for (int i = 0; i < nRows; i++) {
@@ -338,15 +338,15 @@ public class MultiDataSetTest extends BaseNd4jTest {
         int nColsOut0 = 5;
         int nColsOut1 = 6;
 
-        INDArray expectedIn0 = Nd4j.zeros(nRows, nColsIn0, tsLengthIn0);
-        INDArray expectedIn1 = Nd4j.zeros(nRows, nColsIn1, tsLengthIn1);
-        INDArray expectedOut0 = Nd4j.zeros(nRows, nColsOut0, tsLengthOut0);
-        INDArray expectedOut1 = Nd4j.zeros(nRows, nColsOut1, tsLengthOut1);
+        INDArray expectedIn0 = Nd4j.create(DataType.DOUBLE, nRows, nColsIn0, tsLengthIn0);
+        INDArray expectedIn1 = Nd4j.create(DataType.DOUBLE, nRows, nColsIn1, tsLengthIn1);
+        INDArray expectedOut0 = Nd4j.create(DataType.DOUBLE, nRows, nColsOut0, tsLengthOut0);
+        INDArray expectedOut1 = Nd4j.create(DataType.DOUBLE, nRows, nColsOut1, tsLengthOut1);
 
-        INDArray expectedMaskIn0 = Nd4j.zeros(nRows, tsLengthIn0);
-        INDArray expectedMaskIn1 = Nd4j.zeros(nRows, tsLengthIn1);
-        INDArray expectedMaskOut0 = Nd4j.zeros(nRows, tsLengthOut0);
-        INDArray expectedMaskOut1 = Nd4j.zeros(nRows, tsLengthOut1);
+        INDArray expectedMaskIn0 = Nd4j.create(DataType.DOUBLE, nRows, tsLengthIn0);
+        INDArray expectedMaskIn1 = Nd4j.create(DataType.DOUBLE, nRows, tsLengthIn1);
+        INDArray expectedMaskOut0 = Nd4j.create(DataType.DOUBLE, nRows, tsLengthOut0);
+        INDArray expectedMaskOut1 = Nd4j.create(DataType.DOUBLE, nRows, tsLengthOut1);
 
 
         Random r = new Random(12345);
@@ -358,16 +358,16 @@ public class MultiDataSetTest extends BaseNd4jTest {
             int thisRowOut1Length = tsLengthOut1 - i;
 
             int in0NumElem = thisRowIn0Length * nColsIn0;
-            INDArray in0 = Nd4j.linspace(0, in0NumElem - 1, in0NumElem).reshape(1, nColsIn0, thisRowIn0Length);
+            INDArray in0 = Nd4j.linspace(0, in0NumElem - 1, in0NumElem, DataType.DOUBLE).reshape(1, nColsIn0, thisRowIn0Length);
 
             int in1NumElem = thisRowIn1Length * nColsIn1;
-            INDArray in1 = Nd4j.linspace(0, in1NumElem - 1, in1NumElem).reshape(1, nColsIn1, thisRowIn1Length);
+            INDArray in1 = Nd4j.linspace(0, in1NumElem - 1, in1NumElem, DataType.DOUBLE).reshape(1, nColsIn1, thisRowIn1Length);
 
             int out0NumElem = thisRowOut0Length * nColsOut0;
-            INDArray out0 = Nd4j.linspace(0, out0NumElem - 1, out0NumElem).reshape(1, nColsOut0, thisRowOut0Length);
+            INDArray out0 = Nd4j.linspace(0, out0NumElem - 1, out0NumElem, DataType.DOUBLE).reshape(1, nColsOut0, thisRowOut0Length);
 
             int out1NumElem = thisRowOut1Length * nColsOut1;
-            INDArray out1 = Nd4j.linspace(0, out1NumElem - 1, out1NumElem).reshape(1, nColsOut1, thisRowOut1Length);
+            INDArray out1 = Nd4j.linspace(0, out1NumElem - 1, out1NumElem, DataType.DOUBLE).reshape(1, nColsOut1, thisRowOut1Length);
 
             INDArray maskIn0 = null;
             INDArray maskIn1 = Nd4j.zeros(1, thisRowIn1Length);
@@ -429,16 +429,16 @@ public class MultiDataSetTest extends BaseNd4jTest {
 
         //Test 2d mask merging, 2d data
         //features
-        INDArray f2d1 = Nd4j.create(new double[] {1, 2, 3});
+        INDArray f2d1 = Nd4j.create(new double[] {1, 2, 3}).reshape(1, -1);
         INDArray f2d2 = Nd4j.create(new double[][] {{4, 5, 6}, {7, 8, 9}});
         //labels
-        INDArray l2d1 = Nd4j.create(new double[] {1.5, 2.5, 3.5});
+        INDArray l2d1 = Nd4j.create(new double[] {1.5, 2.5, 3.5}).reshape(1, -1);
         INDArray l2d2 = Nd4j.create(new double[][] {{4.5, 5.5, 6.5}, {7.5, 8.5, 9.5}});
         //feature masks
-        INDArray fm2d1 = Nd4j.create(new double[] {0, 1, 1});
+        INDArray fm2d1 = Nd4j.create(new double[] {0, 1, 1}).reshape(1, -1);
         INDArray fm2d2 = Nd4j.create(new double[][] {{1, 0, 1}, {0, 1, 0}});
         //label masks
-        INDArray lm2d1 = Nd4j.create(new double[] {1, 1, 0});
+        INDArray lm2d1 = Nd4j.create(new double[] {1, 1, 0}).reshape(1, -1);
         INDArray lm2d2 = Nd4j.create(new double[][] {{1, 0, 0}, {0, 1, 1}});
 
         MultiDataSet mds2d1 = new MultiDataSet(f2d1, l2d1, fm2d1, lm2d1);
@@ -501,20 +501,20 @@ public class MultiDataSetTest extends BaseNd4jTest {
     public void testSplit() {
 
         INDArray[] features = new INDArray[3];
-        features[0] = Nd4j.linspace(1, 30, 30).reshape('c', 3, 10);
-        features[1] = Nd4j.linspace(1, 300, 300).reshape('c', 3, 10, 10);
-        features[2] = Nd4j.linspace(1, 3 * 5 * 10 * 10, 3 * 5 * 10 * 10).reshape('c', 3, 5, 10, 10);
+        features[0] = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape('c', 3, 10);
+        features[1] = Nd4j.linspace(1, 300, 300, DataType.DOUBLE).reshape('c', 3, 10, 10);
+        features[2] = Nd4j.linspace(1, 3 * 5 * 10 * 10, 3 * 5 * 10 * 10, DataType.DOUBLE).reshape('c', 3, 5, 10, 10);
 
         INDArray[] labels = new INDArray[3];
-        labels[0] = Nd4j.linspace(1, 30, 30).reshape('c', 3, 10).addi(0.5);
-        labels[1] = Nd4j.linspace(1, 300, 300).reshape('c', 3, 10, 10).addi(0.3);
-        labels[2] = Nd4j.linspace(1, 3 * 5 * 10 * 10, 3 * 5 * 10 * 10).reshape('c', 3, 5, 10, 10).addi(0.1);
+        labels[0] = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape('c', 3, 10).addi(0.5);
+        labels[1] = Nd4j.linspace(1, 300, 300, DataType.DOUBLE).reshape('c', 3, 10, 10).addi(0.3);
+        labels[2] = Nd4j.linspace(1, 3 * 5 * 10 * 10, 3 * 5 * 10 * 10, DataType.DOUBLE).reshape('c', 3, 5, 10, 10).addi(0.1);
 
         INDArray[] fMask = new INDArray[3];
-        fMask[1] = Nd4j.linspace(1, 30, 30).reshape('f', 3, 10);
+        fMask[1] = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape('f', 3, 10);
 
         INDArray[] lMask = new INDArray[3];
-        lMask[1] = Nd4j.linspace(1, 30, 30).reshape('f', 3, 10).addi(0.5);
+        lMask[1] = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape('f', 3, 10).addi(0.5);
 
         MultiDataSet mds = new MultiDataSet(features, labels, fMask, lMask);
 
@@ -594,16 +594,16 @@ public class MultiDataSetTest extends BaseNd4jTest {
             int thisRowOut1Length = tsLengthOut1 - i;
 
             int in0NumElem = thisRowIn0Length * nColsIn0;
-            INDArray in0 = Nd4j.linspace(0, in0NumElem - 1, in0NumElem).reshape(1, nColsIn0, thisRowIn0Length);
+            INDArray in0 = Nd4j.linspace(0, in0NumElem - 1, in0NumElem, DataType.DOUBLE).reshape(1, nColsIn0, thisRowIn0Length);
 
             int in1NumElem = thisRowIn1Length * nColsIn1;
-            INDArray in1 = Nd4j.linspace(0, in1NumElem - 1, in1NumElem).reshape(1, nColsIn1, thisRowIn1Length);
+            INDArray in1 = Nd4j.linspace(0, in1NumElem - 1, in1NumElem, DataType.DOUBLE).reshape(1, nColsIn1, thisRowIn1Length);
 
             int out0NumElem = thisRowOut0Length * nColsOut0;
-            INDArray out0 = Nd4j.linspace(0, out0NumElem - 1, out0NumElem).reshape(1, nColsOut0, thisRowOut0Length);
+            INDArray out0 = Nd4j.linspace(0, out0NumElem - 1, out0NumElem, DataType.DOUBLE).reshape(1, nColsOut0, thisRowOut0Length);
 
             int out1NumElem = thisRowOut1Length * nColsOut1;
-            INDArray out1 = Nd4j.linspace(0, out1NumElem - 1, out1NumElem).reshape(1, nColsOut1, thisRowOut1Length);
+            INDArray out1 = Nd4j.linspace(0, out1NumElem - 1, out1NumElem, DataType.DOUBLE).reshape(1, nColsOut1, thisRowOut1Length);
 
             INDArray maskIn0 = null;
             INDArray maskIn1 = Nd4j.zeros(1, thisRowIn1Length);
@@ -717,9 +717,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
             int length1 = width * height * depth * nExamples1;
             int length2 = width * height * depth * nExamples2;
 
-            INDArray first = Nd4j.linspace(1, length1, length1).reshape('c', nExamples1, depth, height, width);
-            INDArray second = Nd4j.linspace(1, length2, length2).reshape('c', nExamples2, depth, height, width).addi(0.1);
-            INDArray third = Nd4j.linspace(1, length2, length2).reshape('c', nExamples2, depth, height, width).addi(0.2);
+            INDArray first = Nd4j.linspace(1, length1, length1, DataType.DOUBLE).reshape('c', nExamples1, depth, height, width);
+            INDArray second = Nd4j.linspace(1, length2, length2, DataType.DOUBLE).reshape('c', nExamples2, depth, height, width).addi(0.1);
+            INDArray third = Nd4j.linspace(1, length2, length2, DataType.DOUBLE).reshape('c', nExamples2, depth, height, width).addi(0.2);
 
             INDArray fm1 = null;
             INDArray fm2;
@@ -746,9 +746,9 @@ public class MultiDataSetTest extends BaseNd4jTest {
 
             INDArray fmExpected = Nd4j.concat(0, Nd4j.ones(2, 1, (t == 1 ? 1 : height), (t == 0 ? 1 : width)), fm2, fm3);
 
-            INDArray labels1 = Nd4j.linspace(1, nExamples1 * nOut, nExamples1 * nOut).reshape('c', nExamples1, nOut);
-            INDArray labels2 = Nd4j.linspace(1, nExamples2 * nOut, nExamples2 * nOut).reshape('c', nExamples2, nOut).addi(0.1);
-            INDArray labels3 = Nd4j.linspace(1, nExamples2 * nOut, nExamples2 * nOut).reshape('c', nExamples2, nOut).addi(0.2);
+            INDArray labels1 = Nd4j.linspace(1, nExamples1 * nOut, nExamples1 * nOut, DataType.DOUBLE).reshape('c', nExamples1, nOut);
+            INDArray labels2 = Nd4j.linspace(1, nExamples2 * nOut, nExamples2 * nOut, DataType.DOUBLE).reshape('c', nExamples2, nOut).addi(0.1);
+            INDArray labels3 = Nd4j.linspace(1, nExamples2 * nOut, nExamples2 * nOut, DataType.DOUBLE).reshape('c', nExamples2, nOut).addi(0.2);
 
             MultiDataSet ds1 = new MultiDataSet(first, labels1, fm1, null);
             MultiDataSet ds2 = new MultiDataSet(second, labels2, fm2, null);

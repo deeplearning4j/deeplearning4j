@@ -36,7 +36,7 @@ public class ProbablisticMerge extends BaseRandomOp {
     }
 
     public ProbablisticMerge(@NonNull INDArray x, @NonNull INDArray y, @NonNull INDArray z, double probability) {
-        init(x, y, z, x.lengthLong());
+        super(x,y,z);
         this.probability = probability;
         this.extraArgs = new Object[] {probability};
     }
@@ -64,8 +64,6 @@ public class ProbablisticMerge extends BaseRandomOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

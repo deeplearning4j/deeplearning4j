@@ -108,8 +108,8 @@ public class BidirectionalTest extends BaseDL4JTest {
 
             assertEquals(net1.numParams(), net2.numParams());
             for (int i = 0; i < 3; i++) {
-                int n1 = net1.getLayer(i).numParams();
-                int n2 = net2.getLayer(i).numParams();
+                int n1 = (int)net1.getLayer(i).numParams();
+                int n2 = (int)net2.getLayer(i).numParams();
                 assertEquals(n1, n2);
             }
 
@@ -207,8 +207,8 @@ public class BidirectionalTest extends BaseDL4JTest {
 
             assertEquals(net1.numParams(), net2.numParams());
             for (int i = 0; i < 3; i++) {
-                int n1 = net1.getLayer(i).numParams();
-                int n2 = net2.getLayer(i).numParams();
+                int n1 = (int)net1.getLayer(i).numParams();
+                int n2 = (int)net2.getLayer(i).numParams();
                 assertEquals(n1, n2);
             }
 
@@ -653,7 +653,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                         .activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "RNN")
                 .setOutputs("OUT")
-                .pretrain(true)
+
                 ;
 
         ComputationGraph net = new ComputationGraph(builder.build());

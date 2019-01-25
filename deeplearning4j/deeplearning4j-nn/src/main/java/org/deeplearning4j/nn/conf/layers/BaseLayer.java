@@ -16,14 +16,14 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -37,10 +37,10 @@ import java.io.Serializable;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 public abstract class BaseLayer extends Layer implements Serializable, Cloneable {
+
     protected IActivation activationFn;
-    protected WeightInit weightInit;
+    protected IWeightInit weightInitFn;
     protected double biasInit;
-    protected Distribution dist;
     protected double l1;
     protected double l2;
     protected double l1Bias;
@@ -56,9 +56,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         super(builder);
         this.layerName = builder.layerName;
         this.activationFn = builder.activationFn;
-        this.weightInit = builder.weightInit;
+        this.weightInitFn = builder.weightInitFn;
         this.biasInit = builder.biasInit;
-        this.dist = builder.dist;
         this.l1 = builder.l1;
         this.l2 = builder.l2;
         this.l1Bias = builder.l1Bias;
@@ -71,16 +70,15 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     }
 
     /**
-     * Reset the learning related configs of the layer to default. When instantiated with a global neural network configuration
-     * the parameters specified in the neural network configuration will be used.
-     * For internal use with the transfer learning API. Users should not have to call this method directly.
+     * Reset the learning related configs of the layer to default. When instantiated with a global neural network
+     * configuration the parameters specified in the neural network configuration will be used. For internal use with
+     * the transfer learning API. Users should not have to call this method directly.
      */
     public void resetLayerDefaultConfig() {
         //clear the learning related params for all layers in the origConf and set to defaults
         this.setIUpdater(null);
-        this.setWeightInit(null);
+        this.setWeightInitFn(null);
         this.setBiasInit(Double.NaN);
-        this.setDist(null);
         this.setL1(Double.NaN);
         this.setL2(Double.NaN);
         this.setGradientNormalization(GradientNormalization.None);
@@ -92,49 +90,118 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     @Override
     public BaseLayer clone() {
         BaseLayer clone = (BaseLayer) super.clone();
-        if (clone.dist != null)
-            clone.dist = clone.dist.clone();
+        if (clone.iDropout != null) {
+            clone.iDropout = clone.iDropout.clone();
+        }
         return clone;
     }
 
     /**
-     * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this
-     * is not necessarily the case
+     * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this is
+     * not necessarily the case
      *
-     * @param paramName    Parameter name
-     * @return             IUpdater for the parameter
+     * @param paramName Parameter name
+     * @return IUpdater for the parameter
      */
     @Override
     public IUpdater getUpdaterByParam(String paramName) {
-        if(biasUpdater != null && initializer().isBiasParam(this, paramName)){
+        if (biasUpdater != null && initializer().isBiasParam(this, paramName)) {
             return biasUpdater;
         }
         return iUpdater;
     }
 
     @Override
-    public GradientNormalization getGradientNormalization(){
+    public GradientNormalization getGradientNormalization() {
         return gradientNormalization;
     }
 
     @SuppressWarnings("unchecked")
+    @Getter
+    @Setter
     public abstract static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
+
+        /**
+         * Set the activation function for the layer. This overload can be used for custom {@link IActivation}
+         * instances
+         *
+         */
         protected IActivation activationFn = null;
-        protected WeightInit weightInit = null;
+
+        /**
+         * Weight initialization scheme to use, for initial weight values
+         *
+         * @see IWeightInit
+         */
+        protected IWeightInit weightInitFn = null;
+
+        /**
+         * Bias initialization value, for layers with biases. Defaults to 0
+         *
+         */
         protected double biasInit = Double.NaN;
-        protected Distribution dist = null;
+
+        /**
+         * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
+         * coefficient for the bias.
+         */
         protected double l1 = Double.NaN;
+
+        /**
+         * L2 regularization coefficient (weights only). Use {@link #l2Bias(double)} to configure the l2 regularization
+         * coefficient for the bias.
+         */
         protected double l2 = Double.NaN;
+
+        /**
+         * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
+         */
         protected double l1Bias = Double.NaN;
+
+        /**
+         * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
+         */
         protected double l2Bias = Double.NaN;
+
+        /**
+         * Gradient updater. For example, {@link org.nd4j.linalg.learning.config.Adam} or {@link
+         * org.nd4j.linalg.learning.config.Nesterovs}
+         *
+         */
         protected IUpdater iupdater = null;
+
+        /**
+         * Gradient updater configuration, for the biases only. If not set, biases will use the updater as set by {@link
+         * #updater(IUpdater)}
+         *
+         */
         protected IUpdater biasUpdater = null;
+
+        /**
+         * Gradient normalization strategy. Used to specify gradient renormalization, gradient clipping etc.
+         *
+         * @see GradientNormalization
+         */
         protected GradientNormalization gradientNormalization = null;
+
+        /**
+         * Threshold for gradient normalization, only used for GradientNormalization.ClipL2PerLayer,
+         * GradientNormalization.ClipL2PerParamType, and GradientNormalization.ClipElementWiseAbsoluteValue<br> Not used
+         * otherwise.<br> L2 threshold for first two types of clipping, or absolute value threshold for last type of
+         * clipping.
+         */
         protected double gradientNormalizationThreshold = Double.NaN;
+
+        /**
+         * Set the weight noise (such as {@link org.deeplearning4j.nn.conf.weightnoise.DropConnect} and {@link
+         * org.deeplearning4j.nn.conf.weightnoise.WeightNoise}) for this layer
+         *
+         */
         protected IWeightNoise weightNoise;
 
         /**
-         * Set the activation function for the layer. This overload can be used for custom {@link IActivation} instances
+         * Set the activation function for the layer. This overload can be used for custom {@link IActivation}
+         * instances
          *
          * @param activationFunction Activation function to use for the layer
          */
@@ -155,22 +222,36 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         /**
          * Weight initialization scheme to use, for initial weight values
          *
-         * @see WeightInit
+         * @see IWeightInit
          */
-        public T weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
+        public T weightInit(IWeightInit weightInit) {
+            this.weightInitFn = weightInit;
             return (T) this;
         }
 
         /**
-         * Set weight initialization scheme to random sampling via the specified distribution.
-         * Equivalent to: {@code .weightInit(WeightInit.DISTRIBUTION).dist(distribution)}
+         * Weight initialization scheme to use, for initial weight values
+         *
+         * @see WeightInit
+         */
+        public T weightInit(WeightInit weightInit) {
+            if (weightInit == WeightInit.DISTRIBUTION) {
+                throw new UnsupportedOperationException(
+                                "Not supported!, Use weightInit(Distribution distribution) instead!");
+            }
+
+            this.weightInitFn = weightInit.getWeightInitFunction();
+            return (T) this;
+        }
+
+        /**
+         * Set weight initialization scheme to random sampling via the specified distribution. Equivalent to: {@code
+         * .weightInit(new WeightInitDistribution(distribution))}
          *
          * @param distribution Distribution to use for weight initialization
          */
-        public T weightInit(Distribution distribution){
-            weightInit(WeightInit.DISTRIBUTION);
-            return dist(distribution);
+        public T weightInit(Distribution distribution) {
+            return weightInit(new WeightInitDistribution(distribution));
         }
 
         /**
@@ -184,12 +265,12 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         }
 
         /**
-         * Distribution to sample initial weights from. Used in conjunction with
-         * .weightInit(WeightInit.DISTRIBUTION).
+         * Distribution to sample initial weights from. Equivalent to: {@code .weightInit(new
+         * WeightInitDistribution(distribution))}
          */
+        @Deprecated
         public T dist(Distribution dist) {
-            this.dist = dist;
-            return (T) this;
+            return weightInit(dist);
         }
 
         /**
@@ -238,8 +319,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         }
 
         /**
-         * Gradient updater. For example, {@link org.nd4j.linalg.learning.config.Adam}
-         * or {@link org.nd4j.linalg.learning.config.Nesterovs}
+         * Gradient updater. For example, {@link org.nd4j.linalg.learning.config.Adam} or {@link
+         * org.nd4j.linalg.learning.config.Nesterovs}
          *
          * @param updater Updater to use
          */
@@ -249,12 +330,12 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         }
 
         /**
-         * Gradient updater configuration, for the biases only. If not set, biases will use the updater as
-         * set by {@link #updater(IUpdater)}
+         * Gradient updater configuration, for the biases only. If not set, biases will use the updater as set by {@link
+         * #updater(IUpdater)}
          *
          * @param biasUpdater Updater to use for bias parameters
          */
-        public T biasUpdater(IUpdater biasUpdater){
+        public T biasUpdater(IUpdater biasUpdater) {
             this.biasUpdater = biasUpdater;
             return (T) this;
         }
@@ -272,9 +353,9 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
 
         /**
          * Threshold for gradient normalization, only used for GradientNormalization.ClipL2PerLayer,
-         * GradientNormalization.ClipL2PerParamType, and GradientNormalization.ClipElementWiseAbsoluteValue<br>
-         * Not used otherwise.<br>
-         * L2 threshold for first two types of clipping, or absolute value threshold for last type of clipping.
+         * GradientNormalization.ClipL2PerParamType, and GradientNormalization.ClipElementWiseAbsoluteValue<br> Not used
+         * otherwise.<br> L2 threshold for first two types of clipping, or absolute value threshold for last type of
+         * clipping.
          */
         public T gradientNormalizationThreshold(double threshold) {
             this.gradientNormalizationThreshold = threshold;
@@ -282,14 +363,14 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         }
 
         /**
-         * Set the weight noise (such as {@link org.deeplearning4j.nn.conf.weightnoise.DropConnect} and
-         * {@link org.deeplearning4j.nn.conf.weightnoise.WeightNoise}) for this layer
+         * Set the weight noise (such as {@link org.deeplearning4j.nn.conf.weightnoise.DropConnect} and {@link
+         * org.deeplearning4j.nn.conf.weightnoise.WeightNoise}) for this layer
          *
          * @param weightNoise Weight noise instance to use
          */
-        public T weightNoise(IWeightNoise weightNoise){
+        public T weightNoise(IWeightNoise weightNoise) {
             this.weightNoise = weightNoise;
-            return (T)this;
+            return (T) this;
         }
     }
 }

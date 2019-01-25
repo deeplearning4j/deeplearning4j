@@ -18,11 +18,13 @@ Before Training Guides
 * [How to use GPUs for training on Spark](#gpus)
 * [How to use CPUs on master, GPUs on the workers](#cpusgpus)
 * [How to configure memory settings for Spark](#memory)
+* [How to Configure Garbage Collection for Workers](#gc)
 * [How to use Kryo Serialization with DL4J and ND4J](#kryo)
 * [How to use YARN and GPUs](#yarngpus)
 * [How to configure Spark Locality Configuration](#locality)
 
 During and After Training Guides
+* [How to configure encoding thresholds](#threshold)
 * [How to perform distributed test set evaluation](#evaluation)
 * [How to save (and load) neural networks trained on Spark](#saveload)
 * [How to perform distributed inference](#inference)
@@ -220,7 +222,7 @@ You should set 4 things:
 
 
 Some notes:
-* On YARN, it is generally necessary to set the ```spark.driver.memoryOverhead``` and ```spark.executor.memoryOverhead``` properties. The default settings are much too small for DL4J training.
+* On YARN, it is generally necessary to set the ```spark.yarn.driver.memoryOverhead``` and ```spark.yarn.executor.memoryOverhead``` properties. The default settings are much too small for DL4J training.
 * On Spark standalone, you can also configure memory by modifying the ```conf/spark-env.sh``` file on each node, as described in the [Spark configuration docs](https://spark.apache.org/docs/latest/configuration.html#environment-variables). For example, you could add the following lines to set 8GB heap for the driver, 12 GB off-heap for the driver, 12GB heap for the workers, and 18GB off-heap for the workers:
     * ```SPARK_DRIVER_OPTS=-Dorg.bytedeco.javacpp.maxbytes=12G```
     * ```SPARK_DRIVER_MEMORY=8G```
@@ -231,6 +233,34 @@ All up, this might look like (for YARN, with 4GB on-heap, 5GB off-heap, 6GB YARN
 ```
 --class my.class.name.here --num-executors 4 --executor-cores 8 --executor-memory 4G --driver-memory 4G --conf "spark.executor.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5G" --conf "spark.driver.extraJavaOptions=-Dorg.bytedeco.javacpp.maxbytes=5G" --conf spark.yarn.executor.memoryOverhead=6144
 ```
+
+<br><br>
+
+## <a name="gc">How to Configure Garbage Collection for Workers</a>
+
+One determinant of the performance of training is the frequency of garbage colection.
+When using [Workspaces](https://deeplearning4j.org/docs/latest/deeplearning4j-config-memory) (see also [this](https://deeplearning4j.org/docs/latest/deeplearning4j-config-workspaces)), which are enabled by default, it can be helpful to reduce the frequency of garbage collection.
+For simple machine training (and on the driver) this is easy:
+```
+// this will limit frequency of gc calls to 5000 milliseconds
+Nd4j.getMemoryManager().setAutoGcWindow(5000)
+
+// OR you could totally disable it
+Nd4j.getMemoryManager().togglePeriodicGc(false);
+```
+
+However, setting this on the driver will not change the settings on the workers.
+Instead, it can be set for the workers as follows:
+```
+new SharedTrainingMaster.Builder(voidConfiguration, minibatch)
+    <other configuration>
+    .workerTogglePeriodicGC(true)       //Periodic garbage collection is enabled...
+    .workerPeriodicGCFrequency(5000)    //...and is configured to be performed every 5 seconds (every 5000ms)
+    .build();
+```
+
+
+The default (as of 1.0.0-beta3) is to perform periodic garbage collection every 5 seconds on the workers.
 
 <br><br>
 
@@ -272,7 +302,7 @@ Note that YARN-specific memory configuration (see [memory how-to](deeplearning4j
 
 <br><br>
 
-## <a name="locality">How to configure Spark Locality Configuration</a>
+## <a name="locality">How to Configure Spark Locality Configuration</a>
 
 Configuring Spark locality settings is an optional configuration option that can improve training performance.
 
@@ -283,6 +313,49 @@ For more details, see [link 1](https://spark.apache.org/docs/latest/tuning.html#
 <br><br>
 
 # During and After Training Guides
+
+## <a name="threshold">How to Configure Encoding Thresholds</a>
+
+Deeplearning4j's Spark implementation uses a threshold encoding scheme for sending parameter updates between nodes. This encoding scheme results in a small quantized message, which significantly reduces the network cost of communicating updates. See the [technical explanation page](./deeplearning4j-scaleout-technicalref) for more details on this encoding process.
+
+This threshold encoding process introduces a "distributed training specific" hyperparameter - the encoding threshold.
+Both too large thresholds and too small thresholds can result in sub-optimal performance:
+
+* Large thresholds mean infrequent communication - too infrequent and convergence can suffer
+* Small thresholds mean more frequent communication - but smaller changes are communicated at each step
+
+The encoding threshold to be used is controlled by the [ThresholdAlgorithm](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/ThresholdAlgorithm.java). The specific implementation of the ThresholdAlgorithm determines what threshold should be used.
+
+The default behaviour for DL4J is to use [AdaptiveThresholdAlgorithm](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/threshold/AdaptiveThresholdAlgorithm.java) which tries to keep the sparsity ratio in a certain range.
+* The sparsity ratio is defined as numValues(encodedUpdate)/numParameters - 1.0 means fully dense (all values communicated), 0.0 means fully sparse (no values communicated)
+* Larger thresholds mean more sparse values (less network communication), and a smaller threshold means less sparse values (more network communication)
+* The AdaptiveThresholdAlgorithm tries to keep the sparsity ratio between 0.01 and 0.0001 by default. If the sparsity of the updates falls outside of this range, the threshold is either increased or decreased until it is within this range.
+* An initial threshold value still needs to be set - we have found the
+
+In practice, we have seen that this adaptive threshold process to work well.
+The built-in implementations for threshold algorithms include:
+
+* AdaptiveThresholdAlgorithm
+* [FixedThresholdAlgorithm](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/threshold/FixedThresholdAlgorithm.java): a fixed, non-adaptive threshold using the specified encoding threshold.
+* [TargetSparsityThresholdAlgorithm](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/threshold/TargetSparsityThresholdAlgorithm.java): an adaptive threshold algorithm that targets a specific sparsity, and increases or decreases the threshold to try to match the target.
+
+In addition, DL4J has a [ResidualPostProcessor](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/ResidualPostProcessor.java) interface, with the default implementation being [ResidualClippingPostProcessor](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/residual/ResidualClippingPostProcessor.java) which clips the residual vector to a maximum of 5x the current threshold, every 5 steps.
+The motivation for this is that the "left over" parts of the updates (i.e., those parts not communicated) are store in the residual vector. If the updates are much larger than the threshold, we can have a phenomenon we have termed "residual explosion" - that is, the residual values can continue to grow to many times the threshold (hence would take many steps to communicate the gradient). The residual post processor is used to avoid this phenomenon.
+
+The threshold algorithm (and initial threshold) and the residual post processor can be set as follows:
+```
+TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, minibatch)
+    .thresholdAlgorithm(new AdaptiveThresholdAlgorithm(this.gradientThreshold))
+    .residualPostProcessor(new ResidualClippingPostProcessor(5, 5))
+    <other config>
+    .build();
+```
+
+Finally, DL4J's SharedTrainingMaster also has an encoding debug mode, enabled by setting ```.encodingDebugMode(true)``` in the SharedTrainingmaster builder.
+When this is enabled, each of the workers will log the current threshold, sparsity, and various other statistics about the encoding.
+These statistics can be used to determine if the threshold is appropriately set: for example, many updates that are tens or hundreds of times the threshold may indicate the threshold is too low and should be increased; at the other end of the spectrum, very sparse updates (less than one in 10000 values being communicated) may indicate that the threshold should be decreased.
+
+<br><br>
 
 ## <a name="evaluation">How to perform distributed test set evaluation</a>
 
@@ -399,7 +472,7 @@ try(BufferedInputStream is = new BufferedInputStream(fileSystem.open(new Path(ou
 ## <a name="inference">How to perform distributed inference</a>
 
 Deeplearning4j's Spark implementation supports distributed inference. That is, we can easily generate predictions on an RDD of inputs using a cluster of machines.
-This distributed inference can also be used for networks trained on a single machine and loaded for Spark (see the the [saving/loading section](#saveload) for details on how to load a saved network for use with Spark).
+This distributed inference can also be used for networks trained on a single machine and loaded for Spark (see the [saving/loading section](#saveload) for details on how to load a saved network for use with Spark).
 
 Note: If you want to perform evaluation (i.e., calculate accuracy, F1, MSE, etc), refer to the [evaluation how-to](#evaluation) instead.
 

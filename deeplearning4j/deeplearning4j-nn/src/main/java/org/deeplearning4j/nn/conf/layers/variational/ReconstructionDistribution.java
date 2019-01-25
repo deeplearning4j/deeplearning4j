@@ -33,7 +33,7 @@ import java.io.Serializable;
  * @author Alex Black
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
-        defaultImpl = LegacyReconstructionDistributionDeserializerHelper.class)
+                defaultImpl = LegacyReconstructionDistributionDeserializerHelper.class)
 public interface ReconstructionDistribution extends Serializable {
 
     /**

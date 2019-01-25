@@ -18,7 +18,6 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -27,7 +26,6 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.ModelMetaData;
 import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
@@ -160,7 +158,7 @@ public class AlexNet extends ZooModel {
                 .layer(11, new DenseLayer.Builder()
                         .name("ffn2")
                         .nOut(4096)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new GaussianDistribution(0, 0.005))
+                        .dist(new GaussianDistribution(0, 0.005))
                         .biasInit(nonZeroBias)
                         .dropOut(0.5)
                         .build())
@@ -168,7 +166,7 @@ public class AlexNet extends ZooModel {
                         .name("output")
                         .nOut(numClasses)
                         .activation(Activation.SOFTMAX)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new GaussianDistribution(0, 0.005))
+                        .dist(new GaussianDistribution(0, 0.005))
                         .biasInit(0.1)
                         .build())
 

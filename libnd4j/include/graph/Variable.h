@@ -31,13 +31,14 @@
 
 namespace nd4j {
     namespace graph {
-        template <typename T>
-        class Variable {
+        class ND4J_EXPORT Variable {
         protected:
             int _id = 0;
             int _index = 0;
-            nd4j::NDArray<T> * _ndarray = nullptr;
+            nd4j::NDArray *_ndarray = nullptr;
             std::string _name;
+
+            std::vector<Nd4jLong> _shape;
 
             bool _external = false;
             bool _readOnly = false;
@@ -47,31 +48,31 @@ namespace nd4j {
             // for now we're setting default to numeric
             // in future we'll be fetching it right from the array, 
             //InputType _variableType = InputType_UNDEFINED;
-            //DataType _dataType = DataType_INHERIT;
+            //DataType _dataType = INHERIT;
 
-            nd4j::NDArrayList<T>* _list = nullptr;
+            nd4j::NDArrayList *_list = nullptr;
 
             VariableType _variableType = VariableType::NDARRAY;
             
         public:
             Variable(bool placeHolder);
-            Variable(nd4j::NDArray<T> *arrayw, const char *name, int id, int idx = 0);
-            Variable(nd4j::NDArray<T> *array = nullptr, const char *name = nullptr);
+            Variable(nd4j::NDArray *arrayw, const char *name, int id, int idx = 0);
+            Variable(nd4j::NDArray *array = nullptr, const char *name = nullptr);
             Variable(const nd4j::graph::FlatVariable *flatVariable);
             ~Variable();
 
-            Variable<T>* clone();
+            Variable* clone();
 
             template <typename N>
-            Variable<N>* asT();
+            Variable* asT();
 
             bool hasNDArray();
-            nd4j::NDArray<T>* getNDArray();
-            void setNDArray(nd4j::NDArray<T> * array);
+            nd4j::NDArray* getNDArray();
+            void setNDArray(nd4j::NDArray *array);
 
             bool hasNDArrayList();
-            nd4j::NDArrayList<T>* getNDArrayList();
-            void setNDArrayList(nd4j::NDArrayList<T>* list);
+            nd4j::NDArrayList* getNDArrayList();
+            void setNDArrayList(nd4j::NDArrayList* list);
 
             bool isExternal();
             bool isReadOnly();
@@ -102,6 +103,8 @@ namespace nd4j {
 
             std::string *getName();
             void setName(std::string *name);
+
+            std::vector<Nd4jLong>& shape();
 
 #ifndef __JAVACPP_HACK__
             /**

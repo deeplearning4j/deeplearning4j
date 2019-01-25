@@ -88,7 +88,7 @@ public class TestJson {
                                         .build(), new IntegerParameterSpace(0, 1), true) //0 to 1 layers
                         .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                                         .iLossFunction(LossFunctions.LossFunction.MCXENT.getILossFunction()).build())
-                        .setInputType(InputType.convolutional(28, 28, 1)).pretrain(false).backprop(true).build();
+                        .setInputType(InputType.convolutional(28, 28, 1)).build();
 
         String asJson = mls.toJson();
         //        System.out.println(asJson);
@@ -123,7 +123,7 @@ public class TestJson {
                                         "in") //1-2 identical layers (except nIn)
                         .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "first")
-                        .setOutputs("out").earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
+                        .setOutputs("out").earlyStoppingConfiguration(esConf).build();
 
         //Define configuration:
         Map<String, Object> commands = new HashMap<>();
@@ -162,7 +162,7 @@ public class TestJson {
                             "in") //1-2 identical layers (except nIn)
                     .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                             .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "first")
-                    .setOutputs("out").pretrain(false).backprop(true).build();
+                    .setOutputs("out").build();
 
             //Define configuration:
             Map<String, Object> commands = new HashMap<>();

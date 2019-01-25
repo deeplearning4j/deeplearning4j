@@ -203,7 +203,7 @@ public class TestInstantiation extends BaseDL4JTest {
         initializedModel = (ComputationGraph) model.initPretrained();
         log.info(initializedModel.summary());
         result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 227, 227}));
-        assertArrayEquals(result[0].shape(), new long[] {1, 1000, 1, 1});
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
     }
 
 
@@ -212,6 +212,7 @@ public class TestInstantiation extends BaseDL4JTest {
         //Test initialization of NON-PRETRAINED models
         ZooModel model = ResNet50.builder().numClasses(1000).build(); //num labels doesn't matter since we're getting pretrained imagenet
 
+        log.info("Testing {}", model.getClass().getSimpleName());
         ComputationGraph initializedModel = model.init();
         INDArray f = Nd4j.rand(new int[] {1, 3, 224, 224});
         INDArray[] result = initializedModel.output(f);
@@ -233,6 +234,7 @@ public class TestInstantiation extends BaseDL4JTest {
 
 
         model = VGG19.builder().numClasses(1000).build();
+        log.info("Testing {}", model.getClass().getSimpleName());
         initializedModel = model.init();
         result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
         assertArrayEquals(result[0].shape(), new long[] {1, 1000});
@@ -243,6 +245,7 @@ public class TestInstantiation extends BaseDL4JTest {
 
         model = Darknet19.builder().numClasses(1000).build(); //num labels doesn't matter since we're getting pretrained imagenet
 
+        log.info("Testing {}", model.getClass().getSimpleName());
         initializedModel = model.init();
         result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 224, 224}));
         assertArrayEquals(result[0].shape(), new long[] {1, 1000});
@@ -251,6 +254,7 @@ public class TestInstantiation extends BaseDL4JTest {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
 
+        log.info("Testing {}", model.getClass().getSimpleName());
         model = Darknet19.builder().numClasses(1000).build();
         model.setInputShape(new int[][] {{3, 448, 448}});
 
@@ -281,6 +285,7 @@ public class TestInstantiation extends BaseDL4JTest {
         System.gc();
 
         model = Xception.builder().numClasses(1000).build();
+        log.info("Testing {}", model.getClass().getSimpleName());
         initializedModel = model.init();
         result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 299, 299}));
         assertArrayEquals(result[0].shape(), new long[] {1, 1000});
@@ -290,6 +295,7 @@ public class TestInstantiation extends BaseDL4JTest {
         System.gc();
 
         model = SqueezeNet.builder().numClasses(1000).build();
+        log.info("Testing {}", model.getClass().getSimpleName());
         initializedModel = model.init();
         log.info(initializedModel.summary());
         result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 227, 227}));
@@ -308,27 +314,28 @@ public class TestInstantiation extends BaseDL4JTest {
     }
 
     @Test
-    public void testInitNotPretrained(){
-        //Sanity check on the non-pretrained versions:
+    public void testInitNotPretrained() throws Exception {
+        // Sanity check on the non-pretrained versions:
         ZooModel[] models = new ZooModel[]{
                 VGG16.builder().numClasses(10).build(),
                 VGG19.builder().numClasses(10).build(),
-                FaceNetNN4Small2.builder().embeddingSize(100).numClasses(10).build()
+                FaceNetNN4Small2.builder().embeddingSize(100).numClasses(10).build(),
+                UNet.builder().build()
         };
 
         int[][] inputSizes = new int[][]{
                 {1,3,224,224},
                 {1,3,224,224},
-                {1,3,64,64}
+                {1,3,64,64},
+                {1,3,512,512}
         };
 
-//        for(ZooModel zm : models){
-        for( int i=0; i<models.length; i++ ){
+        for (int i = 0; i < models.length; i++) {
             ZooModel zm = models[i];
             INDArray in = Nd4j.create(inputSizes[i]);
             Model m = zm.init();
 
-            if(m instanceof MultiLayerNetwork){
+            if (m instanceof MultiLayerNetwork) {
                 MultiLayerNetwork mln = (MultiLayerNetwork)m;
                 mln.output(in);
             } else {

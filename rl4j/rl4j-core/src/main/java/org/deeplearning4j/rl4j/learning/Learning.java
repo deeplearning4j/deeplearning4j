@@ -65,7 +65,7 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
         INDArray arr = Nd4j.create(obs.toArray());
         int[] shape = mdp.getObservationSpace().getShape();
         if (shape.length == 1)
-            return arr;
+            return arr.reshape(new long[] {1, arr.length()});
         else
             return arr.reshape(shape);
     }
@@ -110,9 +110,7 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
     public static int[] makeShape(int size, int[] shape) {
         int[] nshape = new int[shape.length + 1];
         nshape[0] = size;
-        for (int i = 0; i < shape.length; i++) {
-            nshape[i + 1] = shape[i];
-        }
+        System.arraycopy(shape, 0, nshape, 1, shape.length);
         return nshape;
     }
 

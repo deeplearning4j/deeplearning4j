@@ -48,9 +48,6 @@
 #endif
 
 
-#define MAX_UINT 18446744073709551615LLU
-
-
 namespace nd4j {
     namespace random {
 
@@ -234,7 +231,7 @@ namespace nd4j {
 
             uint64_t _CUDA_HD next64(uint64_t shiftedSeed) {
                 const auto s0 = static_cast<uint64_t>(shiftedSeed);
-                auto s1 = static_cast<uint64_t>(shiftedSeed) % MAX_INT + 11;
+                auto s1 = static_cast<uint64_t>(shiftedSeed) % nd4j::DataTypeUtils::max<int>() + 11;
                 uint64_t r0, r1;
 
                 s1 ^= s0;
@@ -249,7 +246,7 @@ namespace nd4j {
             }
 
             uint64_t static _CUDA_HD inline safeShift(uint64_t x, uint64_t y) {
-                if (y != 0 && x > MAX_UINT / y) {
+                if (y != 0 && x > nd4j::DataTypeUtils::max<uint64_t>() / y) {
                     return x / y + 11;
                 } else return (x * y) + 11;
             }

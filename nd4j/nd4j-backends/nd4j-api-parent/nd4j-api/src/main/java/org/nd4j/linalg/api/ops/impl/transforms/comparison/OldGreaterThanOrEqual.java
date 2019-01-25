@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.List;
@@ -30,7 +31,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class OldGreaterThanOrEqual extends BaseTransformOp {
+public class OldGreaterThanOrEqual extends BaseTransformBoolOp {
     public OldGreaterThanOrEqual(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
@@ -43,34 +44,14 @@ public class OldGreaterThanOrEqual extends BaseTransformOp {
         super(sameDiff);
     }
 
-    public OldGreaterThanOrEqual(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
     public OldGreaterThanOrEqual(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public OldGreaterThanOrEqual(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public OldGreaterThanOrEqual(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public OldGreaterThanOrEqual() {}
 
-    public OldGreaterThanOrEqual(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public OldGreaterThanOrEqual(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public OldGreaterThanOrEqual(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public OldGreaterThanOrEqual(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
     }
 
     public OldGreaterThanOrEqual(INDArray x) {
@@ -79,7 +60,7 @@ public class OldGreaterThanOrEqual extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 11;
+        return 4;
     }
 
     @Override

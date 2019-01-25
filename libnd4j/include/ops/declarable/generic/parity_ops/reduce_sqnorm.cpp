@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/reduce_norm.h>
+#include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -26,40 +27,69 @@ namespace ops {
 #if NOT_EXCLUDED(OP_reduce_sqnorm)
 
     CUSTOM_OP_IMPL(reduce_sqnorm, 1, 1, false, 0, 0) {
-        NDArray<T>* input = INPUT_VARIABLE(0);
-        NDArray<T>* output = OUTPUT_VARIABLE(0);
-        std::vector<int> axes = *block.getIArguments();
+        auto input = INPUT_VARIABLE(0);
+        auto output = OUTPUT_VARIABLE(0);
+        auto axes = *block.getIArguments();
+        if (block.width() > 1) {
+            auto axesVector = INPUT_VARIABLE(1);
+            helpers::adjustAxis(input, axesVector, axes);
+        }
+//            else if (block.getIArguments()->size())
+        bool keepDims = false;
+        if (block.getBArguments()->size())
+            keepDims = B_ARG(0);
+        else if (block.getTArguments()->size())
+            keepDims = (bool)T_ARG(0);
 
         for(const auto& item : axes)
             REQUIRE_TRUE(item > -input->shapeInfo()[0] || item <input->shapeInfo()[0], 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-        input->template reduceAlongDimension<simdOps::SquaredNorm<T>>(output, axes, keepDims);
+        input->reduceAlongDimension(reduce::SquaredNorm, output, axes, keepDims);
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 
-    DECLARE_SHAPE_FN(reduce_sqnorm) {    
+    DECLARE_SHAPE_FN(reduce_sqnorm) {
 
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    
-        std::vector<int> dimensions = *block.getIArguments();
-        Nd4jLong* outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
+        auto axes = *block.getIArguments();
+        if (block.width() > 1) {
+            auto axesVector = INPUT_VARIABLE(1);
+            helpers::adjustAxis(INPUT_VARIABLE(0), axesVector, axes);
+        }
+//            else if (block.getIArguments()->size())
+        bool keepDims = false;
+        if (block.getBArguments()->size())
+            keepDims = B_ARG(0);
+        else if (block.getTArguments()->size())
+            keepDims = (bool)T_ARG(0);
+
+        Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), axes, inputShape->at(0), keepDims, false, block.getWorkspace());
+        //ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
 
         return SHAPELIST(outShapeInfo);
     }
+
+        DECLARE_TYPES(reduce_sqnorm) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 #endif 
 #if NOT_EXCLUDED(OP_reduce_sqnorm_bp)
 
     DECLARE_SHAPE_FN(reduce_sqnorm_bp) {    
 
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    
-        Nd4jLong* outShapeInfo;// = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
+        Nd4jLong* outShapeInfo;// = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
         COPY_SHAPE(inputShape->at(0), outShapeInfo);
 
         return SHAPELIST(outShapeInfo);
     }
+
+        DECLARE_TYPES(reduce_sqnorm_bp) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_FLOATS});
+        }
 
     CUSTOM_OP_IMPL(reduce_sqnorm_bp, 2, 1, false, 0, 0) {
 
@@ -68,14 +98,26 @@ namespace ops {
             auto output = OUTPUT_VARIABLE(0);
 
             if (epsilon->isScalar()) {
-                output->assign(epsilon->getScalar(0) * T(2.f));
-                output->template applyPairwiseTransform<simdOps::Multiply<T>>(input, output, nullptr);
+                output->assign(epsilon->e<double>(0) * 2.);
+                *output *= *input;
+                //output->applyPairwiseTransform(pairwise::Multiply, input, output, nullptr);
             }
             else {
                 auto axes = *block.getIArguments();
-                helpers::reduceSquareNormBP(input, epsilon, (NDArray<T>*)nullptr, output, axes);
+                if (block.width() > 2) {
+                    auto axesVector = INPUT_VARIABLE(2);
+                    helpers::adjustAxis(input, axesVector, axes);
+                }
+//            else if (block.getIArguments()->size())
+                bool keepDims = false;
+                if (block.getBArguments()->size())
+                    keepDims = B_ARG(0);
+                else if (block.getTArguments()->size())
+                    keepDims = (bool)T_ARG(0);
+
+                helpers::reduceSquareNormBP(input, epsilon, (NDArray*)nullptr, output, axes, keepDims);
             }
-            return ND4J_STATUS_OK;
+            return Status::OK();
     }
 #endif
 

@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
@@ -31,7 +32,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class OldGreaterThan extends BaseTransformOp {
+public class OldGreaterThan extends BaseTransformBoolOp {
     public OldGreaterThan(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
@@ -44,20 +45,8 @@ public class OldGreaterThan extends BaseTransformOp {
         super(sameDiff);
     }
 
-    public OldGreaterThan(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
     public OldGreaterThan(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
-    }
-
-    public OldGreaterThan(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public OldGreaterThan(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
     }
 
     public OldGreaterThan() {}
@@ -66,12 +55,8 @@ public class OldGreaterThan extends BaseTransformOp {
         super(x, z);
     }
 
-    public OldGreaterThan(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public OldGreaterThan(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public OldGreaterThan(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
     }
 
     public OldGreaterThan(INDArray x) {
@@ -80,7 +65,7 @@ public class OldGreaterThan extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 4;
+        return 1;
     }
 
     @Override

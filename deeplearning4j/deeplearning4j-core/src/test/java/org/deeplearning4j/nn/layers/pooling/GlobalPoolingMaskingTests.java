@@ -17,7 +17,6 @@
 package org.deeplearning4j.nn.layers.pooling;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -28,7 +27,6 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,14 +36,11 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.nd4j.linalg.indexing.NDArrayIndex.all;
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
-import static org.nd4j.linalg.indexing.NDArrayIndex.point;
+import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
  * Created by Alex on 18/01/2017.
@@ -65,7 +60,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
         for (int miniBatchSize : minibatchSizes) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                            .updater(new NoOp())
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                             .build())
@@ -83,7 +78,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
             INDArray mask;
             if (miniBatchSize == 1) {
-                mask = Nd4j.create(new double[] {1, 1, 1, 1, 0});
+                mask = Nd4j.create(new double[] {1, 1, 1, 1, 0}).reshape(1,5);
             } else {
                 mask = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 0}, {1, 1, 1, 0, 0}});
             }
@@ -169,7 +164,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
             //Finally: check gradient calc for exceptions
             net.setLayerMaskArrays(maskArray, null);
             net.setInput(inToBeMasked);
-            INDArray labels = Nd4j.create(new double[] {0, 1});
+            INDArray labels = Nd4j.create(new double[] {0, 1}, new long[]{1,2});
             net.setLabels(labels);
 
             net.computeGradientAndScore();
@@ -232,7 +227,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
             //Finally: check gradient calc for exceptions
             net.setLayerMaskArrays(maskArray, null);
             net.setInput(inToBeMasked);
-            INDArray labels = Nd4j.create(new double[] {0, 1});
+            INDArray labels = Nd4j.create(new double[] {0, 1}, new long[]{1,2});
             net.setLabels(labels);
 
             net.computeGradientAndScore();

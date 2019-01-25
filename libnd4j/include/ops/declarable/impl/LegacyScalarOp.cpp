@@ -19,32 +19,29 @@
 //
 
 #include <ops/declarable/LegacyScalarOp.h>
+#include <NDArrayFactory.h>
+#include <Status.h>
 
 
 namespace nd4j {
     namespace ops {
-        template <typename T>
-        LegacyScalarOp<T>::LegacyScalarOp() : LegacyOp<T>::LegacyOp(1) {
+        LegacyScalarOp::LegacyScalarOp() : LegacyOp::LegacyOp(1) {
             // no-op
         }
 
-        template <typename T>
-        LegacyScalarOp<T>::LegacyScalarOp(int opNum)  : LegacyOp<T>::LegacyOp(1, opNum){
+        LegacyScalarOp::LegacyScalarOp(int opNum)  : LegacyOp::LegacyOp(1, opNum){
             // no-op
         }
 
-        template <typename T>
-        LegacyOp<T>* LegacyScalarOp<T>::clone() {
+        LegacyOp* LegacyScalarOp::clone() {
             return new LegacyScalarOp(this->_opNum, this->_scalar);
         }
 
-        template <typename T>
-        LegacyScalarOp<T>::LegacyScalarOp(int opNum, T scalar)  : LegacyOp<T>::LegacyOp(1, opNum){
+        LegacyScalarOp::LegacyScalarOp(int opNum, NDArray &scalar)  : LegacyOp::LegacyOp(1, opNum){
             _scalar = scalar;
         }
 
-        template <typename T>
-        ShapeList *LegacyScalarOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
+        ShapeList *LegacyScalarOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;
@@ -53,35 +50,33 @@ namespace nd4j {
             return SHAPELIST(newShape);
         }
 
-
-        template <typename T>
-        Nd4jStatus LegacyScalarOp<T>::validateAndExecute(Context<T> &block) {
+        Nd4jStatus LegacyScalarOp::validateAndExecute(Context &block) {
             auto x = INPUT_VARIABLE(0);
-            T scalar = (T) 0.0f;
             int offset = 0;
-            if (block.width() > 1) {
-                auto y = INPUT_VARIABLE(1);
-                scalar = y->getScalar(0);
-            } else if (block.getTArguments()->size() > 0) {
-                scalar = T_ARG(0);
-                offset++;
-            } else {
-                scalar = _scalar;
-            }
-
             auto z = OUTPUT_VARIABLE(0);
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExcutioner<T>::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), scalar, block.getTArguments()->data() + offset);
+            if (block.width() > 1) {
+                auto y = INPUT_VARIABLE(1);
+
+                y->printIndexedBuffer("scalar");
+
+                // FIXME
+                NativeOpExcutioner::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y->buffer(), y->shapeInfo(), block.getTArguments()->data());
+            } else if (block.getTArguments()->size() > 0) {
+                auto y = NDArrayFactory::create(x->dataType(), T_ARG(0), block.getWorkspace());
+                offset++;
+                // FIXME
+                NativeOpExcutioner::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), y.buffer(), y.shapeInfo(), block.getTArguments()->data() + offset);
+            } else {
+                // FIXME
+                NativeOpExcutioner::execScalar(opNum, x->getBuffer(), x->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), _scalar.buffer(), _scalar.shapeInfo(), block.getTArguments()->data());
+            }
 
             STORE_RESULT(*z);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
-
-        template class ND4J_EXPORT LegacyScalarOp<float>;
-        template class ND4J_EXPORT LegacyScalarOp<float16>;
-        template class ND4J_EXPORT LegacyScalarOp<double>;
     }
 }

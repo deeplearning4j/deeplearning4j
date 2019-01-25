@@ -17,14 +17,14 @@
 package org.deeplearning4j.ui;
 
 import org.apache.commons.io.IOUtils;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.plot.BarnesHutTsne;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.util.List;
@@ -36,8 +36,7 @@ public class ApiTest {
     @Test
     @Ignore
     public void testUpdateCoords() throws Exception {
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
-        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
+        Nd4j.factory().setDType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
         BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(250).theta(0.5).learningRate(500)
                         .useAdaGrad(false).numDimension(2).build();

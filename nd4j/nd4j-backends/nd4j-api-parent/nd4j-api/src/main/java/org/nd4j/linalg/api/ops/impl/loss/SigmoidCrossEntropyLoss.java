@@ -54,16 +54,9 @@ public class SigmoidCrossEntropyLoss extends BaseLoss {
         this(sameDiff, reductionMode, logits, weights, labels, 0.0);
     }
 
-
     public void addArgs() {
         super.addArgs();
         addTArgument(labelSmoothing);
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-        addArgs();
     }
 
     @Override
@@ -72,17 +65,15 @@ public class SigmoidCrossEntropyLoss extends BaseLoss {
     }
 
     @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
-    }
-
-    @Override
     public String tensorflowName() {
         return "sigmoid_cross_entropy";
     }
 
     @Override
-    public Op.Type opType() {
-        return Op.Type.CUSTOM;
+    public List<SDVariable> doDiff(List<SDVariable> grad){
+        //No external gradient
+        //Args are: predictions, weights, label
+        SDVariable[] grads = f().lossSigmoidCrossEntropyBp(arg(2), arg(0), arg(1), lossReduce, labelSmoothing);
+        return Arrays.asList(grads);
     }
 }

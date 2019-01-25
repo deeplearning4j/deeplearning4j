@@ -23,12 +23,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.Sqrt;
+import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftMaxDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -121,7 +121,7 @@ public class CrashTest extends BaseNd4jTest {
         float sum = x.sumNumber().floatValue();
 
         // index reduction
-        Nd4j.getExecutioner().exec(new IMax(x), Integer.MAX_VALUE);
+        Nd4j.getExecutioner().exec(new IMax(x));
 
         // casual transform
         Nd4j.getExecutioner().exec(new Sqrt(x, x));

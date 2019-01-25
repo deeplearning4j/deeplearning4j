@@ -16,13 +16,19 @@
 
 package org.deeplearning4j.optimize.solvers.accumulation;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.residual.ResidualClippingPostProcessor;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.AdaptiveThresholdAlgorithm;
 import org.deeplearning4j.util.ThreadUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -31,11 +37,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.AtomicThrowable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -51,9 +57,11 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Slf4j
 public class EncodedGradientsAccumulator implements GradientsAccumulator, Registerable {
+    public static final long DEFAULT_INITIAL_MEMORY = 100 * 1024 * 1024L;
     protected ThreadLocal<INDArray> accumulator = new ThreadLocal<>();
 
     protected int parties;
+    @Getter
     protected MessageHandler handler;
     protected List<BlockingQueue<INDArray>> messages = new ArrayList<>();
     protected List<MemoryWorkspace> workspaces = new ArrayList<>();
@@ -64,8 +72,9 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
     protected long initialMemory = 100 * 1024 * 1024L;
     protected int queueSize = 5;
     protected Double boundary = 1.0;
+    protected boolean encodingDebugMode;
 
-    protected Queue<INDArray> externalSource;
+    protected IndexedTail externalSource;
 
     protected AtomicBoolean isFirst = new AtomicBoolean(false);
     protected AtomicBoolean isDone = new AtomicBoolean(true);
@@ -83,30 +92,28 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
     protected ThreadLocal<AtomicLong> updatesApplied = new ThreadLocal<>();
 
+    protected AtomicBoolean externalUpdatesAvailable = new AtomicBoolean(false);
+
     protected WorkspaceConfiguration appliedConfiguration = WorkspaceConfiguration.builder().minSize(5 * 1024 * 1024L)
                     .overallocationLimit(0.3).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
                     .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
 
-    public EncodedGradientsAccumulator(double parties) {
-        this(Nd4j.getAffinityManager().getNumberOfDevices(), 1e-3);
-    }
-
-    // TODO: delete this one maybe?
-    public EncodedGradientsAccumulator(int parties) {
-        this(parties, 1e-3);
-    }
-
     public EncodedGradientsAccumulator(int parties, double threshold) {
-        this(parties, new EncodingHandler(threshold), 100 * 1024 * 1024L, 10, 1.0);
+        this(parties, new AdaptiveThresholdAlgorithm(threshold), new ResidualClippingPostProcessor(5, 5), false);
+    }
+
+    public EncodedGradientsAccumulator(int parties, ThresholdAlgorithm thresholdAlgorithm, ResidualPostProcessor residualPostProcessor, boolean encodingDebugMode) {
+        this(parties, new EncodingHandler(thresholdAlgorithm, residualPostProcessor, 1.0, encodingDebugMode), DEFAULT_INITIAL_MEMORY, 10, 1.0, encodingDebugMode);
     }
 
     protected EncodedGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory,
-                    int queueSize, Double boundary) {
+                    int queueSize, Double boundary, boolean encodingDebugMode) {
         this.parties = parties;
         this.handler = handler;
         this.initialMemory = initialMemory;
         this.queueSize = queueSize;
         this.boundary = boundary;
+        this.encodingDebugMode = encodingDebugMode;
 
         // maybe not the best idea in the world, but we'll use cyclic workspace of 25MB to receive updates
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(initialMemory)
@@ -197,11 +204,24 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         }
 
         // we're passing number of consumers for current session to externalSource, if applicable
-        if (externalSource != null && externalSource instanceof Registerable)
+        if (externalSource != null && externalSource instanceof Registerable) {
+            //externalUpdatesAvailable.set(!externalSource.isEmpty());
+
             ((Registerable) externalSource).registerConsumers(numConsumers);
+        }
 
         currentConsumers.set(numConsumers);
         registered.set(true);
+    }
+
+    @Override
+    public IndexedTail getExternalSource() {
+        return externalSource;
+    }
+
+    @Override
+    public void markExternalUpdates(boolean updatesAvailable) {
+        externalUpdatesAvailable.set(updatesAvailable);
     }
 
     protected void synchronize(int consumers) {
@@ -263,7 +283,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
      * @param params
      */
     @Override
-    public void applyUpdate(StepFunction function, INDArray params, INDArray updates) {
+    public void applyUpdate(StepFunction function, INDArray params, INDArray updates, boolean isFinalStep) {
         if (updatesApplied.get() == null)
             updatesApplied.set(new AtomicLong(0));
         try {
@@ -291,41 +311,9 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
             if (externalSource != null) {
                 int ent = 0;
-                while (!externalSource.isEmpty()) {
-                    INDArray compressed = externalSource.poll();
+                if (externalSource.hasAnything()) {
+                    externalSource.drainTo(updates);
 
-                    // if we have multiple devices without p2p support - just duplicate messages right from host side
-                    if (relocatable) {
-                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                                        .getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
-                            if (compressed.isCompressed() || compressed.data().dataType() == DataBuffer.Type.INT) {
-                                INDArray compressed_copy = compressed.unsafeDuplication(true);
-
-                                int encoding = compressed.data().getInt(3);
-                                if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
-                                    Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
-                                else if (encoding == ThresholdCompression.BITMAP_ENCODING)
-                                    Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
-                                else
-                                    throw new DL4JInvalidConfigException(
-                                            "Unknown compression header received: " + encoding);
-                            } else {
-                                updates.addi(compressed);
-                            }
-                        }
-                    } else {
-                        if (compressed.isCompressed() || compressed.data().dataType() == DataBuffer.Type.INT) {
-                            int encoding = compressed.data().getInt(3);
-                            if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
-                                Nd4j.getExecutioner().thresholdDecode(compressed, updates);
-                            else if (encoding == ThresholdCompression.BITMAP_ENCODING)
-                                Nd4j.getExecutioner().bitmapDecode(compressed, updates);
-                            else
-                                throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
-                        } else {
-                            updates.addi(compressed);
-                        }
-                    }
                     cnt++;
                     ent++;
                 }
@@ -337,7 +325,8 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                     log.info("External updates to be applied: {}", ent);
             }
 
-            synchronize(currentConsumers.get(), true);
+            if (isFinalStep)
+                synchronize(currentConsumers.get(), isFinalStep);
 
             // TODO: average updates probably?
 
@@ -387,33 +376,9 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
             if (externalSource != null) {
                 int ent = 0;
-                while (!externalSource.isEmpty()) {
-                    INDArray compressed = externalSource.poll();
+                if (externalSource.hasAnything()) {
+                    externalSource.drainTo(updates);
 
-
-                    // if we have multiple devices without p2p support - just duplicate messages right from host side
-                    if (relocatable) {
-                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                                        .getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
-                            INDArray compressed_copy = compressed.unsafeDuplication(true);
-                            int encoding = compressed.data().getInt(3);
-                            if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
-                                Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
-                            else if (encoding == ThresholdCompression.BITMAP_ENCODING)
-                                Nd4j.getExecutioner().bitmapDecode(compressed_copy, updates);
-                            else
-                                throw new DL4JInvalidConfigException(
-                                                "Unknown compression header received: " + encoding);
-                        }
-                    } else {
-                        int encoding = compressed.data().getInt(3);
-                        if (encoding == ThresholdCompression.FLEXIBLE_ENCODING)
-                            Nd4j.getExecutioner().thresholdDecode(compressed, updates);
-                        else if (encoding == ThresholdCompression.BITMAP_ENCODING)
-                            Nd4j.getExecutioner().bitmapDecode(compressed, updates);
-                        else
-                            throw new DL4JInvalidConfigException("Unknown compression header received: " + encoding);
-                    }
                     cnt++;
                     ent++;
                 }
@@ -440,7 +405,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
      * @param source
      */
     @Override
-    public void setExternalSource(Queue<INDArray> source) {
+    public void setExternalSource(IndexedTail source) {
         this.externalSource = source;
     }
 
@@ -578,16 +543,18 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
     @Override
     public boolean hasAnything() {
-        return !externalSource.isEmpty();
+        return externalSource != null && externalSource.hasAnything(); //externalUpdatesAvailable.get();
     }
 
     public static class Builder {
         protected int parties;
-        protected double threshold = 1e-3;
-        protected long initialMemory = 100 * 1024 * 1024L;
+        protected ThresholdAlgorithm thresholdAlgorithm;
+        protected ResidualPostProcessor residualPostProcessor;
+        protected long initialMemory = DEFAULT_INITIAL_MEMORY;
         protected int queueSize = 5;
         protected MessageHandler handler;
         protected Double boundary = null;
+        protected boolean encodingDebugMode;
 
         /**
          * This
@@ -614,14 +581,19 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         }
 
         /**
-         * This method allows to set encoding threshold for this accumulator instance
-         *
-         * Default value: 1e-3
-         * @param threshold
+         * This method allows to set the ThresholdAlgorithm to be used for determining the threshold
          * @return
          */
-        public Builder encodingThreshold(double threshold) {
-            this.threshold = threshold;
+        public Builder thresholdAlgorithm(ThresholdAlgorithm thresholdAlgorithm) {
+            this.thresholdAlgorithm = thresholdAlgorithm;
+            return this;
+        }
+
+        /**
+         * Set the residual post processor
+         */
+        public Builder residualPostProcessor(ResidualPostProcessor residualPostProcessor){
+            this.residualPostProcessor = residualPostProcessor;
             return this;
         }
 
@@ -658,16 +630,18 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
             return this;
         }
 
+        public Builder encodingDebugMode(boolean enable){
+            this.encodingDebugMode = enable;
+            return this;
+        }
+
         public EncodedGradientsAccumulator build() {
             if (handler == null) {
-                if (boundary == null)
-                    handler = new EncodingHandler(threshold);
-                else
-                    handler = new EncodingHandler(threshold, boundary);
+                Preconditions.checkNotNull(thresholdAlgorithm, "Both threshold algorithm and handler are null - one or the other must be set");
+                handler = new EncodingHandler(thresholdAlgorithm, residualPostProcessor, boundary, encodingDebugMode);
             }
 
-            EncodedGradientsAccumulator accumulator =
-                            new EncodedGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary);
+            EncodedGradientsAccumulator accumulator = new EncodedGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary, encodingDebugMode);
 
             return accumulator;
         }

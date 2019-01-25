@@ -25,6 +25,7 @@ import org.datavec.api.records.reader.impl.LineRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.base.Preconditions;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;
@@ -189,6 +190,7 @@ public class CSVRecordReader extends LineRecordReader {
     }
 
     protected String readStringLine(){
+        Preconditions.checkState(initialized, "RecordReader has not been initialized before use");
         Text t = (Text) super.next().iterator().next();
         return t.toString();
     }

@@ -24,7 +24,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.random.impl.AlphaDropOut;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -43,7 +43,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * {@link org.deeplearning4j.nn.weights.WeightInit#NORMAL}<br>
  * <br>
  * In conjuction with the aforementioned activation function and weight initialization, AlphaDropout attempts to keep
- * both the mean and variance of the post-dropout activations to the the same (in expectation) as before alpha
+ * both the mean and variance of the post-dropout activations to the same (in expectation) as before alpha
  * dropout was applied.<br>
  * Specifically, AlphaDropout implements a * (x * d + alphaPrime * (1-d)) + b, where d ~ Bernoulli(p), i.e., d \in {0,1}.
  * Where x is the input activations, a, b, alphaPrime are constants determined from the SELU alpha/lambda parameters.
@@ -137,7 +137,8 @@ public class AlphaDropout implements IDropout {
         Nd4j.getExecutioner().exec(new BernoulliDistribution(mask, pValue));
 
         //a * (x * d + alphaPrime * (1-d)) + b
-        INDArray aPOneMinusD = Transforms.not(mask).muli(alphaPrime);
+        INDArray inverseMask = mask.rsub(1.0);
+        INDArray aPOneMinusD = inverseMask.muli(alphaPrime);
         Nd4j.getExecutioner().exec(new OldMulOp(inputActivations, mask, output));   //out = x * d
         output.addi(aPOneMinusD).muli(a).addi(b);
 

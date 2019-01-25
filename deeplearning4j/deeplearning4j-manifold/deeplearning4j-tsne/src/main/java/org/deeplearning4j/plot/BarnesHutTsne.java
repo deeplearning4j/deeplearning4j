@@ -39,7 +39,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.learning.legacy.AdaGrad;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
@@ -582,11 +581,10 @@ public class BarnesHutTsne implements Model {
 
             INDArray yGrads = gradient;
 
-            gains = gains.add(.2).muli(sign(yGrads)).neqi(sign(yIncs))
-                    .addi(gains.mul(0.8).muli(sign(yGrads)).neqi(sign(yIncs)));
+            gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(Nd4j.defaultFloatingPointType())
+                    .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)));
 
-            BooleanIndexing.applyWhere(gains, Conditions.lessThan(minGain), new Value(minGain));
-
+            BooleanIndexing.replaceWhere(gains, minGain, Conditions.lessThan(minGain));
 
             INDArray gradChange = gains.mul(yGrads);
 
@@ -636,8 +634,6 @@ public class BarnesHutTsne implements Model {
 
                 sb.append(",");
                 sb.append(word);
-                sb.append(" ");
-
                 sb.append("\n");
                 write.write(sb.toString());
 
@@ -722,12 +718,12 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
-    public int numParams() {
+    public long numParams() {
         return 0;
     }
 
     @Override
-    public int numParams(boolean backwards) {
+    public long numParams(boolean backwards) {
         return 0;
     }
 

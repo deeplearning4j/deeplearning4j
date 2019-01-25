@@ -31,10 +31,10 @@ namespace nd4j {
                 auto z = OUTPUT_VARIABLE(e);
 
                 for (int i = 0; i < x->rankOf(); i++)
-                    z->putIndexedScalar(i, x->sizeAt(i));
+                    z->p(i, x->sizeAt(i));
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         };
         DECLARE_SYN(shape_n, shapes_of);
 
@@ -43,16 +43,17 @@ namespace nd4j {
 
             for (int e = 0; e < inputShape->size(); e++) {
                 auto inShape = inputShape->at(e);
-
-                Nd4jLong *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
-                shape::shapeVector(shape::rank(inShape), newshape);
-
-                shapeList->push_back(newshape);
+                shapeList->push_back(ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT64, shape::rank(inShape), block.workspace()));
             }
 
             return shapeList;
         };
+
+        DECLARE_TYPES(shapes_of) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes({ALL_INTS});
+        }
     }
 }
 

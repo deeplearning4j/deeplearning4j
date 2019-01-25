@@ -19,9 +19,11 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
@@ -38,7 +40,7 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class ExpandDims extends DynamicCustomOp {
-    private int axis;
+    private int jaxis;
 
 
     public ExpandDims() {
@@ -49,8 +51,8 @@ public class ExpandDims extends DynamicCustomOp {
         if (axis == Integer.MAX_VALUE) {
             throw new ND4JIllegalArgumentException("Cannot perform ExpandDims with axis == Integer.MAX_VALUE");
         }
-        this.axis = axis;
-        addIArgument(this.axis);
+        this.jaxis = axis;
+        addIArgument(this.jaxis);
     }
 
     public ExpandDims(SameDiff sameDiff, SDVariable[] args) {
@@ -72,11 +74,11 @@ public class ExpandDims extends DynamicCustomOp {
 
         if (dimArr != null) {
             int axis = dimArr.data().asInt()[0];
-            this.axis = axis;
-            addIArgument(this.axis);
+            this.jaxis = axis;
+            addIArgument(this.jaxis);
         } else {
-            this.axis = Integer.MAX_VALUE;
-            addIArgument(this.axis);
+            this.jaxis = Integer.MAX_VALUE;
+            addIArgument(this.jaxis);
         }
     }
 
@@ -139,8 +141,16 @@ public class ExpandDims extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //Simply need a reshape to remove the dimension...
-        SDVariable ret = sameDiff.squeeze(i_v.get(0), axis);
+        SDVariable ret = sameDiff.squeeze(i_v.get(0), jaxis);
         return Arrays.asList(ret);
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //Axis may be defined either as integer or as an array
+        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2), "Expected list with 1 or 2 datatype for %s, got %s", getClass(), dataTypes);
+        //Output type is same as input type
+        return Collections.singletonList(dataTypes.get(0));
     }
 
 }

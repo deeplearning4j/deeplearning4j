@@ -19,14 +19,12 @@ package org.deeplearning4j.clustering.randomprojection;
 import com.google.common.primitives.Doubles;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.BaseAccumulation;
-import org.nd4j.linalg.api.ops.impl.accum.distances.*;
+import org.nd4j.linalg.api.ops.ReduceFloatOp;
+import org.nd4j.linalg.api.ops.ReduceOp;
+import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
@@ -55,7 +53,7 @@ public class RPUtils {
 
         switch(name) {
             case "cosinedistance":
-                if(!ops.containsKey(name) || ((BaseAccumulation)ops.get(name)).isComplexAccumulation() != allDistances) {
+                if(!ops.containsKey(name) || ((CosineDistance)ops.get(name)).isComplexAccumulation() != allDistances) {
                     CosineDistance cosineDistance = new CosineDistance(x,y,result,allDistances);
                     ops.put(name,cosineDistance);
                     return cosineDistance;
@@ -65,7 +63,7 @@ public class RPUtils {
                     return cosineDistance;
                 }
             case "cosinesimilarity":
-                if(!ops.containsKey(name) || ((BaseAccumulation)ops.get(name)).isComplexAccumulation() != allDistances) {
+                if(!ops.containsKey(name) || ((CosineSimilarity)ops.get(name)).isComplexAccumulation() != allDistances) {
                     CosineSimilarity cosineSimilarity = new CosineSimilarity(x,y,result,allDistances);
                     ops.put(name,cosineSimilarity);
                     return cosineSimilarity;
@@ -75,12 +73,11 @@ public class RPUtils {
                     cosineSimilarity.setX(x);
                     cosineSimilarity.setY(y);
                     cosineSimilarity.setZ(result);
-                    cosineSimilarity.setN(x.length());
                     return cosineSimilarity;
 
                 }
             case "manhattan":
-                if(!ops.containsKey(name) || ((BaseAccumulation)ops.get(name)).isComplexAccumulation() != allDistances) {
+                if(!ops.containsKey(name) || ((ManhattanDistance)ops.get(name)).isComplexAccumulation() != allDistances) {
                     ManhattanDistance manhattanDistance = new ManhattanDistance(x,y,result,allDistances);
                     ops.put(name,manhattanDistance);
                     return manhattanDistance;
@@ -90,11 +87,10 @@ public class RPUtils {
                     manhattanDistance.setX(x);
                     manhattanDistance.setY(y);
                     manhattanDistance.setZ(result);
-                    manhattanDistance.setN(x.length());
                     return  manhattanDistance;
                 }
             case "jaccard":
-                if(!ops.containsKey(name) || ((BaseAccumulation)ops.get(name)).isComplexAccumulation() != allDistances) {
+                if(!ops.containsKey(name) || ((JaccardDistance)ops.get(name)).isComplexAccumulation() != allDistances) {
                     JaccardDistance jaccardDistance = new JaccardDistance(x,y,result,allDistances);
                     ops.put(name,jaccardDistance);
                     return jaccardDistance;
@@ -104,11 +100,10 @@ public class RPUtils {
                     jaccardDistance.setX(x);
                     jaccardDistance.setY(y);
                     jaccardDistance.setZ(result);
-                    jaccardDistance.setN(x.length());
                     return jaccardDistance;
                 }
             case "hamming":
-                if(!ops.containsKey(name) || ((BaseAccumulation)ops.get(name)).isComplexAccumulation() != allDistances) {
+                if(!ops.containsKey(name) || ((HammingDistance)ops.get(name)).isComplexAccumulation() != allDistances) {
                     HammingDistance hammingDistance = new HammingDistance(x,y,result,allDistances);
                     ops.put(name,hammingDistance);
                     return hammingDistance;
@@ -118,12 +113,11 @@ public class RPUtils {
                     hammingDistance.setX(x);
                     hammingDistance.setY(y);
                     hammingDistance.setZ(result);
-                    hammingDistance.setN(x.length());
                     return hammingDistance;
                 }
                 //euclidean
             default:
-                if(!ops.containsKey(name) || ((BaseAccumulation)ops.get(name)).isComplexAccumulation() != allDistances) {
+                if(!ops.containsKey(name) || ((EuclideanDistance)ops.get(name)).isComplexAccumulation() != allDistances) {
                     EuclideanDistance euclideanDistance = new EuclideanDistance(x,y,result,allDistances);
                     ops.put(name,euclideanDistance);
                     return euclideanDistance;
@@ -133,7 +127,6 @@ public class RPUtils {
                     euclideanDistance.setX(x);
                     euclideanDistance.setY(y);
                     euclideanDistance.setZ(result);
-                    euclideanDistance.setN(x.length());
                     return euclideanDistance;
                 }
         }
@@ -329,8 +322,8 @@ public class RPUtils {
      * @return the distance between the 2 vectors given the inputs
      */
     public static INDArray computeDistanceMulti(String function,INDArray x,INDArray y,INDArray result) {
-        Accumulation op = (Accumulation) getOp(function, x, y, result);
-        Nd4j.getExecutioner().exec(op,-1);
+        ReduceOp op = (ReduceOp) getOp(function, x, y, result);
+        Nd4j.getExecutioner().exec(op);
         return op.z();
     }
 
@@ -351,7 +344,7 @@ public class RPUtils {
      * @return the distance between the 2 vectors given the inputs
      */
     public static double computeDistance(String function,INDArray x,INDArray y,INDArray result) {
-        Accumulation op = (Accumulation) getOp(function, x, y, result);
+        ReduceOp op = (ReduceOp) getOp(function, x, y, result);
         Nd4j.getExecutioner().exec(op);
         return op.z().getDouble(0);
     }

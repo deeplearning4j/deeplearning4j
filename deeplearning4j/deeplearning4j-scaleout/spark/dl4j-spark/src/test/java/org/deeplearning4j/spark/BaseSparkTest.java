@@ -16,9 +16,11 @@
 
 package org.deeplearning4j.spark;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;

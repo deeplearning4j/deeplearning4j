@@ -21,7 +21,7 @@ import lombok.Getter;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.RectifiedTanh;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.RectifiedTanh;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.RectifiedTanhDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -45,7 +45,7 @@ public class ActivationRectifiedTanh extends BaseActivationFunction {
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
-        INDArray dLdz = Nd4j.getExecutioner().execAndReturn(new RectifiedTanhDerivative(in));
+        INDArray dLdz = Nd4j.getExecutioner().exec(new RectifiedTanhDerivative(in));
         dLdz.muli(epsilon);
         return new Pair<>(dLdz, null);
     }

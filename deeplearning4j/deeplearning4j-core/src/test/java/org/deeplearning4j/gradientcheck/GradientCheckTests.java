@@ -33,12 +33,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
-import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
-import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
@@ -46,7 +42,6 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
-import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -54,8 +49,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.Random;
 
 import static org.deeplearning4j.gradientcheck.GradientCheckUtil.checkGradients;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author Alex Black 14 Aug 2015
@@ -70,7 +64,7 @@ public class GradientCheckTests extends BaseDL4JTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @Test
@@ -82,7 +76,6 @@ public class GradientCheckTests extends BaseDL4JTest {
                 .list()
                 .layer(0,
                         new DenseLayer.Builder().nIn(4).nOut(3)
-                                .weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new NormalDistribution(0, 1))
                                 .activation(Activation.TANH)
                                 .build())
@@ -172,12 +165,10 @@ public class GradientCheckTests extends BaseDL4JTest {
                                     .seed(12345L)
                                     .list().layer(0,
                                                     new DenseLayer.Builder().nIn(4).nOut(3)
-                                                                    .weightInit(WeightInit.DISTRIBUTION)
                                                                     .dist(new NormalDistribution(0, 1))
                                                                     .activation(afn)
                                                                     .build())
                                     .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nIn(3).nOut(3)
-                                                    .weightInit(WeightInit.DISTRIBUTION)
                                                     .dist(new NormalDistribution(0, 1)).build())
                                     .build();
 
@@ -264,13 +255,11 @@ public class GradientCheckTests extends BaseDL4JTest {
                                                         .seed(12345L)
                                                         .list().layer(0,
                                                                         new DenseLayer.Builder().nIn(4).nOut(3)
-                                                                                        .weightInit(WeightInit.DISTRIBUTION)
                                                                                         .dist(new NormalDistribution(0,
                                                                                                         1))
                                                                                         .updater(new NoOp())
                                                                                         .activation(afn).build())
                                                         .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp())
                                                                         .activation(outputActivation).build())
@@ -333,7 +322,6 @@ public class GradientCheckTests extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(0.2).l1(0.1)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
                 .list().layer(new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
-                                .dist(new NormalDistribution(0, 1))
                                 .updater(new NoOp()).build())
                 .layer(new PReLULayer.Builder().inputShape(3).sharedAxes(1).updater(new NoOp()).build())
                 .layer(new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
@@ -372,12 +360,11 @@ public class GradientCheckTests extends BaseDL4JTest {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
                         .list().layer(0,
                                         new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
-                                                        .dist(new NormalDistribution(0, 1))
                                                         .updater(new NoOp()).activation(
                                                                         Activation.TANH)
                                                         .build())
                         .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).nIn(3).nOut(3)
-                                        .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+                                        .weightInit(WeightInit.XAVIER)
                                         .updater(new NoOp()).activation(Activation.SOFTMAX).build())
                         .build();
 
@@ -439,14 +426,14 @@ public class GradientCheckTests extends BaseDL4JTest {
                                                         .updater(new NoOp())
                                                         .l2(l2).l1(l1)
                                                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                                                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                                                        .seed(12345L)
                                                         .dist(new NormalDistribution(0, 1))
                                                         .list().layer(0,
                                                                         new AutoEncoder.Builder().nIn(4).nOut(3)
                                                                                         .activation(afn).build())
                                                         .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
                                                                         .activation(outputActivation).build())
-                                                        .pretrain(true).build();
+                                                        .build();
 
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();
@@ -631,6 +618,111 @@ public class GradientCheckTests extends BaseDL4JTest {
                 }
             }
         }
+    }
 
+
+    @Test
+    public void testGradientLegacyL2() {
+
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.THRESHOLDEDRELU};
+        boolean[] characteristic = {false, true}; //If true: run some backprop steps first
+
+        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
+        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
+
+        DataNormalization scaler = new NormalizerMinMaxScaler();
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        scaler.fit(iter);
+        iter.setPreProcessor(scaler);
+        DataSet ds = iter.next();
+
+        INDArray input = ds.getFeatures();
+        INDArray labels = ds.getLabels();
+
+        //use l2vals[i] with l1vals[i]
+        double[] l2vals = {0.4, 0.0, 0.4, 0.4};
+        double[] l1vals = {0.0, 0.0, 0.5, 0.0};
+        double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
+        double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
+
+        for (Activation afn : activFns) {
+                for (int i = 0; i < lossFunctions.length; i++) {
+                    for (int k = 0; k < l2vals.length; k++) {
+                        LossFunction lf = lossFunctions[i];
+                        Activation outputActivation = outputActivations[i];
+                        double l2 = l2vals[k];
+                        double l1 = l1vals[k];
+
+                        MultiLayerConfiguration conf =
+                                new NeuralNetConfiguration.Builder().l2(l2).l1(l1)
+                                        .l2Bias(biasL2[k]).l1Bias(biasL1[k])
+                                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                                        .seed(12345L)
+                                        .legacyBatchScaledL2(false)
+                                        .list().layer(0,
+                                        new DenseLayer.Builder().nIn(4).nOut(3)
+                                                .dist(new NormalDistribution(0,
+                                                        1))
+                                                .updater(new NoOp())
+                                                .activation(afn).build())
+                                        .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
+                                                .dist(new NormalDistribution(0, 1))
+                                                .updater(new NoOp())
+                                                .activation(outputActivation).build())
+                                        .build();
+
+                        MultiLayerConfiguration conf2 =
+                                new NeuralNetConfiguration.Builder().l2(l2).l1(l1)
+                                        .l2Bias(biasL2[k]).l1Bias(biasL1[k])
+                                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                                        .seed(12345L)
+                                        .legacyBatchScaledL2(true)
+                                        .list().layer(0,
+                                        new DenseLayer.Builder().nIn(4).nOut(3)
+                                                .dist(new NormalDistribution(0,
+                                                        1))
+                                                .updater(new NoOp())
+                                                .activation(afn).build())
+                                        .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
+                                                .dist(new NormalDistribution(0, 1))
+                                                .updater(new NoOp())
+                                                .activation(outputActivation).build())
+                                        .build();
+
+                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                        mln.init();
+
+                        MultiLayerNetwork mlnLegacy = new MultiLayerNetwork(conf2);
+                        mlnLegacy.init();
+
+                        mlnLegacy.params().assign(mln.params());
+
+                        boolean gradOK1 = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                        boolean gradOKLegacy = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                        String msg = "testGradientLegacyL2() - activationFn=" + afn + ", lossFn=" + lf
+                                + ", outputActivation=" + outputActivation + ", l2=" + l2 + ", l1=" + l1;
+                        assertTrue(msg, gradOK1);
+
+                        assertTrue(msg, gradOKLegacy);
+
+                        TestUtils.testModelSerialization(mln);
+                        TestUtils.testModelSerialization(mlnLegacy);
+
+                        double score = mln.score(new DataSet(input, labels));
+                        double scoreLegacy = mlnLegacy.score(new DataSet(input, labels));
+                        if(l1 > 0 || l2 > 0){
+                            //If l1/l2 are non-zero, scores should be different for the 2 models
+                            assertNotEquals(score, scoreLegacy, 1e-6);
+                            assertTrue(score > scoreLegacy);    //Legacy L1/L2 component is divided by minibatch
+                        } else {
+                            assertEquals(score, scoreLegacy, 1e-6);
+                        }
+                    }
+                }
+        }
     }
 }

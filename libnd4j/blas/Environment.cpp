@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <string>
 #include "Environment.h"
+#include <helpers/StringUtils.h>
 
 namespace nd4j {
 
@@ -32,6 +33,8 @@ namespace nd4j {
         _verbose.store(false);
         _debug.store(false);
         _profile.store(false);
+        _precBoost.store(false);
+        _dataType.store(nd4j::DataType::FLOAT32);
 
 #ifndef ANDROID
         const char* omp_threads = std::getenv("OMP_NUM_THREADS");
@@ -62,6 +65,21 @@ namespace nd4j {
 
     bool Environment::isVerbose() {
         return _verbose.load();
+    }
+
+    bool Environment::isExperimentalBuild() {
+        return _experimental;
+    }
+
+    nd4j::DataType Environment::defaultFloatDataType() {
+        return _dataType.load();
+    }
+
+    void Environment::setDefaultFloatDataType(nd4j::DataType dtype) {
+        if (dtype != nd4j::DataType::FLOAT32 && dtype != nd4j::DataType::DOUBLE && dtype != nd4j::DataType::FLOAT8 && dtype != nd4j::DataType::HALF)
+            throw std::runtime_error("Default Float data type must be one of [FLOAT8, FLOAT16, FLOAT32, DOUBLE]");
+
+        _dataType.store(dtype);
     }
 
     void Environment::setVerbose(bool reallyVerbose) {
@@ -110,6 +128,14 @@ namespace nd4j {
 
     void Environment::setMaxThreads(int max) {
         _maxThreads.store(max);
+    }
+
+    bool Environment::precisionBoostAllowed() {
+        return _precBoost.load();
+    }
+
+    void Environment::allowPrecisionBoost(bool reallyAllow) {
+        _precBoost.store(reallyAllow);
     }
 
     nd4j::Environment *nd4j::Environment::_instance = 0;

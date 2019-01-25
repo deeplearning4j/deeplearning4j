@@ -49,12 +49,11 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "losses/absdiff_rank2"
-
+            "losses/softmax_ce"
     };
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -90,6 +89,7 @@ public class TFGraphTestList {
 
     @Test
     public void testOutputOnly() throws IOException {
+        //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.newFolder();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
         Map<String, INDArray> predictions = TFGraphTestAllHelper.outputVars(modelName, MODEL_DIR, dir);
@@ -101,8 +101,9 @@ public class TFGraphTestList {
                 TFGraphTestAllHelper.LOADER, maxRE, minAbs);
     }
 
-    @Test
+    @Test @Ignore
     public void testAlsoIntermediate() throws IOException {
+        //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.newFolder();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
         TFGraphTestAllHelper.checkIntermediate(inputs, modelName, MODEL_DIR, MODEL_FILENAME, executeWith, dir);

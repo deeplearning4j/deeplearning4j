@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.OpValidationSuite;
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
@@ -28,27 +27,28 @@ import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.accum.CumProd;
-import org.nd4j.linalg.api.ops.impl.accum.CumSum;
-import org.nd4j.linalg.api.ops.impl.accum.Mmul;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.ZerosLike;
-import org.nd4j.linalg.api.ops.impl.transforms.Fill;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeNotNull;
 
 @Slf4j
@@ -57,7 +57,6 @@ public class MiscOpValidation extends BaseOpValidation {
     public MiscOpValidation(Nd4jBackend backend) {
         super(backend);
     }
-
 
 
     @Test
@@ -153,7 +152,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
         for (int[] dim_sz1s : new int[][]{{0, 1}, {0, 2}, {1, 2}, {0, 1, 2}}) {
 
-            int[] otherShape = {3, 4, 5};
+            long[] otherShape = {3, 4, 5};
             otherShape[dim_sz1s[0]] = 1;
             otherShape[dim_sz1s[1]] = 1;
             if (dim_sz1s.length == 3) {
@@ -164,8 +163,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
                 SameDiff sd = SameDiff.create();
 
-                SDVariable in3 = sd.var("in3", new int[]{3, 4, 5});
-                SDVariable in2 = sd.var("inToBc", otherShape);
+                SDVariable in3 = sd.var("in3", DataType.DOUBLE, 3, 4, 5);
+                SDVariable in2 = sd.var("inToBc", DataType.DOUBLE, otherShape);
 
                 String name;
                 SDVariable bcOp;
@@ -215,8 +214,8 @@ public class MiscOpValidation extends BaseOpValidation {
                 String msg = "(test " + i + ": " + name + ", dimensions=" + Arrays.toString(dim_sz1s) + ")";
                 log.info("*** Starting test: " + msg);
 
-                INDArray in3Arr = Nd4j.randn(new int[]{3, 4, 5}).muli(100);
-                INDArray in2Arr = Nd4j.randn(otherShape).muli(100);
+                INDArray in3Arr = Nd4j.randn(DataType.DOUBLE, 3, 4, 5).muli(100);
+                INDArray in2Arr = Nd4j.randn(DataType.DOUBLE, otherShape).muli(100);
 
                 sd.associateArrayWithVariable(in3Arr, in3);
                 sd.associateArrayWithVariable(in2Arr, in2);
@@ -263,8 +262,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
                 SameDiff sd = SameDiff.create();
 
-                SDVariable in3 = sd.var("in1", p.getFirst());
-                SDVariable in2 = sd.var("in2", p.getSecond());
+                SDVariable in3 = sd.var("in1", DataType.DOUBLE, p.getFirst());
+                SDVariable in2 = sd.var("in2", DataType.DOUBLE, p.getSecond());
 
                 String name;
                 SDVariable bcOp;
@@ -315,8 +314,8 @@ public class MiscOpValidation extends BaseOpValidation {
                         + ", array 2 size = " + Arrays.toString(p.getSecond()) + ")";
                 log.info("*** Starting test: " + msg);
 
-                INDArray in3Arr = Nd4j.randn(p.getFirst()).muli(100);
-                INDArray in2Arr = Nd4j.randn(p.getSecond()).muli(100);
+                INDArray in3Arr = Nd4j.rand(DataType.DOUBLE, p.getFirst()).muli(100);
+                INDArray in2Arr = Nd4j.rand(DataType.DOUBLE, p.getSecond()).muli(100);
 
                 sd.associateArrayWithVariable(in3Arr, in3);
                 sd.associateArrayWithVariable(in2Arr, in2);
@@ -343,14 +342,14 @@ public class MiscOpValidation extends BaseOpValidation {
 
             SameDiff sd = SameDiff.create();
 
-            SDVariable in = sd.var("in", new int[]{20, 10});
-            SDVariable indices = sd.var("indices", new long[]{5});
-            SDVariable updates = sd.var("updates", new int[]{5, 10});
+            SDVariable in = sd.var("in", DataType.DOUBLE, 20, 10);
+            SDVariable indices = sd.var("indices", DataType.INT, new long[]{5});
+            SDVariable updates = sd.var("updates", DataType.DOUBLE, 5, 10);
 
 
-            in.setArray(Nd4j.rand(20, 10));
-            indices.setArray(Nd4j.create(new double[]{3, 4, 5, 10, 18}));
-            updates.setArray(Nd4j.rand(5, 10).muli(2).subi(1));
+            in.setArray(Nd4j.rand(DataType.DOUBLE, 20, 10));
+            indices.setArray(Nd4j.create(new double[]{3, 4, 5, 10, 18}).castTo(DataType.INT));
+            updates.setArray(Nd4j.rand(DataType.DOUBLE, 5, 10).muli(2).subi(1));
 
             SDVariable scatter;
             String name;
@@ -452,8 +451,8 @@ public class MiscOpValidation extends BaseOpValidation {
                     inShape = new int[]{10, 10, 10};
                 }
 
-                SDVariable in = sd.var("in", Nd4j.rand(inShape));
-                SDVariable indices = sd.var("indices", Nd4j.create(new double[]{0, 3, 7}));
+                SDVariable in = sd.var("in", Nd4j.rand(DataType.DOUBLE, inShape));
+                SDVariable indices = sd.var("indices", Nd4j.create(new double[]{0, 3, 7}).castTo(DataType.INT));
 
                 INDArray gatherExp = null;
                 if(rank == 2){
@@ -462,7 +461,6 @@ public class MiscOpValidation extends BaseOpValidation {
                 }
 
                 SDVariable gather = sd.gather(in, indices, dim);
-                sd.execAndEndResult();  //TODO REMOVE THIS
 
                 SDVariable loss = sd.standardDeviation("loss", gather, true, Integer.MAX_VALUE);
 
@@ -533,8 +531,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMulGradient() {
-        INDArray arr1 = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray arr2 = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray arr1 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
+        INDArray arr2 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
 
         INDArray gradAssertion = Nd4j.ones(arr1.shape());
         INDArray scalar = Nd4j.scalar(1.0);
@@ -563,7 +561,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable varMul = varMulPre.mul("d", sdVariable1);
         SDVariable sum = sameDiff.sum("ret", varMul, Integer.MAX_VALUE);
 
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> mapListPair = sameDiff.execBackwards();
+        sameDiff.execBackwards(Collections.emptyMap());
 
         SDVariable finalResult = sameDiff.grad(sum.getVarName());
 
@@ -598,7 +596,7 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testMmulGradientManual() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray sumInput = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
         inputs.put("x", sumInput);
         inputs.put("y", sumInput.dup());
@@ -613,8 +611,6 @@ public class MiscOpValidation extends BaseOpValidation {
                 return new SDVariable[]{sum};
             }
         }, inputs);
-
-        List<DifferentialFunction> ops = sameDiff.getFunction("mmulGradient").execBackwards().getRight();
 
 
         assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad"));
@@ -654,8 +650,8 @@ public class MiscOpValidation extends BaseOpValidation {
                         for (boolean transposeResult : new boolean[]{false, true}) {    //https://github.com/deeplearning4j/deeplearning4j/issues/5648
                             Nd4j.getRandom().setSeed(12345);
 
-                            INDArray aArr = Nd4j.rand(t(transposeA, aShape)).dup(aOrder);
-                            INDArray bArr = Nd4j.rand(t(transposeB, bShape)).dup(bOrder);
+                            INDArray aArr = Nd4j.rand(DataType.DOUBLE, t(transposeA, aShape)).dup(aOrder);
+                            INDArray bArr = Nd4j.rand(DataType.DOUBLE, t(transposeB, bShape)).dup(bOrder);
 
                             SameDiff sd = SameDiff.create();
                             SDVariable a = sd.var("a", aArr);
@@ -700,14 +696,13 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testBatchMmulBasic() {
-        //OpValidationSuite.ignoreFailing();
-
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/6873
         int M = 5;
         int N = 3;
         int K = 4;
 
-        INDArray A = Nd4j.create(new float[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}).reshape(M, N);
-        INDArray B = Nd4j.create(new float[]{1,2,3,4,5,6,7,8,9,10,11,12}).reshape(N, K);
+        INDArray A = Nd4j.create(new float[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}).reshape(M, N).castTo(DataType.DOUBLE);
+        INDArray B = Nd4j.create(new float[]{1,2,3,4,5,6,7,8,9,10,11,12}).reshape(N, K).castTo(DataType.DOUBLE);
 
         SameDiff sd = SameDiff.create();
 
@@ -717,7 +712,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable B2 = sd.var("B2", B);
 
         SDVariable[] batchMul = sd.batchMmul(new SDVariable[] {A1, A2}, new SDVariable[] {B1, B2});
-        sd.exec();
+        sd.exec(Collections.emptyMap(), sd.outputs());
 
         INDArray resultingMatrix = batchMul[0].getArr();
         System.out.print(resultingMatrix);
@@ -732,8 +727,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
         for (int i : new int[]{2, 1}) {
             System.out.println("i = " + i);
-            INDArray first = Nd4j.linspace(1, 3 * i, 3 * i).reshape('c', i, 3);      //To [1,3] or [2,3]
-            INDArray second = Nd4j.linspace(4, 4 + 4 * i, 4 * i).reshape('c', i, 4);  //To [1,4] or [2,4]
+            INDArray first = Nd4j.linspace(1, 3 * i, 3 * i, DataType.DOUBLE).reshape('c', i, 3);      //To [1,3] or [2,3]
+            INDArray second = Nd4j.linspace(4, 4 + 4 * i, 4 * i, DataType.DOUBLE).reshape('c', i, 4);  //To [1,4] or [2,4]
 
             System.out.println("Shapes: " + Arrays.toString(first.shape()) + "\t" + Arrays.toString(second.shape()));
 
@@ -774,8 +769,8 @@ public class MiscOpValidation extends BaseOpValidation {
                 .transposeResult(true)
         .build());
 
-        List<long[]> outShapes = Nd4j.getExecutioner().calculateOutputShape(m);
-        assertArrayEquals(new long[]{4,3}, outShapes.get(0));
+        val outShapes = Nd4j.getExecutioner().calculateOutputShape(m);
+        assertArrayEquals(new long[]{4,3}, outShapes.get(0).getShape());
         Nd4j.getExecutioner().exec(m);
 
         //Another case: ([3,4]*[2,4]T)T = [2,3]     -   tA=false, tB=true, tR=true
@@ -788,8 +783,8 @@ public class MiscOpValidation extends BaseOpValidation {
                 .transposeResult(true)
                 .build());
 
-        outShapes = Nd4j.getExecutioner().calculateOutputShape(m);
-        assertArrayEquals(new long[]{2,3}, outShapes.get(0));
+        val outShapes2 = Nd4j.getExecutioner().calculateOutputShape(m);
+        assertArrayEquals(new long[]{2,3}, outShapes2.get(0).getShape());
         Nd4j.getExecutioner().exec(m);
 
     }
@@ -797,11 +792,11 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testFillOp(){
 
-        INDArray ia = Nd4j.trueVector(new double[]{2,2});
+        INDArray ia = Nd4j.trueVector(new double[]{2,2}).castTo(DataType.INT);
         double value = 42;
-        INDArray out = Nd4j.create(2,2);
+        INDArray out = Nd4j.create(DataType.FLOAT, 2,2);
         OpTestCase op = new OpTestCase(new Fill(ia, out, value));
-        INDArray expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42);
+        INDArray expOut = Nd4j.valueArrayOf(new long[]{2,2}, 42.0f);
 
         op.expectedOutput(0, expOut);
         String err = OpValidation.validate(op);
@@ -959,7 +954,7 @@ public class MiscOpValidation extends BaseOpValidation {
         for(char order : new char[]{'c','f'}) {
 
             Nd4j.getRandom().setSeed(12345);
-            INDArray arr = Nd4j.linspace(1, 15, 15).reshape(3, 5).dup(order);
+            INDArray arr = Nd4j.linspace(1, 15, 15, DataType.DOUBLE).reshape(3, 5).dup(order);
 //            System.out.println(arr);
 
             INDArray expFF = Nd4j.create(new double[][]{
@@ -1026,7 +1021,12 @@ public class MiscOpValidation extends BaseOpValidation {
         for(char order : new char[]{'c','f'}) {
 
             Nd4j.getRandom().setSeed(12345);
-            INDArray arr = Nd4j.linspace(1, 15, 15).reshape(3, 5).dup(order);
+//            INDArray arr = Nd4j.linspace(1, 15, 15, DataType.DOUBLE).reshape('c',3, 5).dup(order);
+
+            INDArray arr = Nd4j.create(new double[][]{
+                    { 1,  2,  3,  4,  5},
+                    { 6,  7,  8,  9, 10},
+                    {11, 12, 13, 14, 15}});
 
             INDArray expFF = Nd4j.create(new double[][]{
                     {1, 2, 6, 24, 120},
@@ -1057,7 +1057,7 @@ public class MiscOpValidation extends BaseOpValidation {
             for (boolean exclusive : new boolean[]{false, true}) {
                 for (boolean reverse : new boolean[]{false, true}) {
 
-                    INDArray out = Nd4j.create(3, 5);
+                    INDArray out = Nd4j.create(DataType.DOUBLE, 3, 5);
                     OpTestCase op = new OpTestCase(new CumProd(arr, out, exclusive, reverse, 1));
                     String msg = order + ", exclusive=" + exclusive + ", reverse=" + reverse;
 
@@ -1073,7 +1073,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
                     String err = OpValidation.validate(op);
                     if(err != null){
-                        failing.add(msg);
+                        failing.add(msg + " - " + err);
                     }
                 }
             }
@@ -1088,14 +1088,14 @@ public class MiscOpValidation extends BaseOpValidation {
 
         //Because it's on the diagonal, should be the same for all axis args...
         for( int i=-1; i<=0; i++ ) {
-            INDArray indicesArr = Nd4j.trueVector(new double[]{0, 1, 2});
+            INDArray indicesArr = Nd4j.create(new double[]{0, 1, 2});
             int depth = 3;
 
             SameDiff sd = SameDiff.create();
             SDVariable indices = sd.var(indicesArr);
             SDVariable oneHot = sd.oneHot(indices, depth, i, 1.0, 0.0);
 
-            INDArray exp = Nd4j.eye(3);
+            INDArray exp = Nd4j.eye(3).castTo(DataType.DOUBLE);
 
             String msg = "Axis: " + i;
             log.info("Test case: " + msg);
@@ -1118,9 +1118,9 @@ public class MiscOpValidation extends BaseOpValidation {
         //https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/parity_ops/onehot.cpp
 
         for( int axis=-1; axis<=0; axis++ ) {
-            String err = OpValidation.validate(new OpTestCase(new OneHot(Nd4j.trueVector(new double[]{0, 1, 2}),
-                    Nd4j.create(3,3), 3, axis, 1.0, 0.0))
-                    .expectedOutput(0, Nd4j.eye(3)));
+            String err = OpValidation.validate(new OpTestCase(new OneHot(Nd4j.create(new double[]{0, 1, 2}),
+                    Nd4j.create(DataType.FLOAT,3,3), 3, axis, 1.0, 0.0))
+                    .expectedOutput(0, Nd4j.eye(3).castTo(DataType.FLOAT)));
 
             assertNull(err);
         }
@@ -1129,7 +1129,7 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testOneHot2() {
 
-        INDArray indicesArr = Nd4j.trueVector(new double[]{0, 2, -1, 1});
+        INDArray indicesArr = Nd4j.create(new double[]{0, 2, -1, 1});
 
         SameDiff sd = SameDiff.create();
         SDVariable indices = sd.var("indices", indicesArr);
@@ -1148,10 +1148,12 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testOneHot3() {
+        //https://github.com/deeplearning4j/deeplearning4j/issues/6872
+
         //https://www.tensorflow.org/api_docs/python/tf/one_hot
         //indices = [[0, 2], [1, -1]]
-        INDArray indicesArr = Nd4j.create(new double[][]{{0, 2}, {1, -1}});
-        INDArray expectedOut = Nd4j.zeros(new long[]{2, 2, 3});
+        INDArray indicesArr = Nd4j.create(new double[][]{{0, 2}, {1, -1}}).castTo(DataType.INT);
+        INDArray expectedOut = Nd4j.zeros(DataType.DOUBLE, 2, 2, 3);
         /*
         # output: [2 x 2 x 3]
         # [[[1.0, 0.0, 0.0],   # one_hot(0)
@@ -1163,14 +1165,12 @@ public class MiscOpValidation extends BaseOpValidation {
         expectedOut.putScalar(0, 1, 2, 1.0);
         expectedOut.putScalar(1, 0, 1, 1.0);
 
-        System.out.println(expectedOut);
-
         SameDiff sd = SameDiff.create();
         SDVariable indices = sd.var("indices", indicesArr);
 
         int depth = 3;
         int axis = -1;
-        SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 1.0, 0.0);
+        SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 1.0, 0.0).castTo(DataType.DOUBLE);
 
         SDVariable loss = oneHot.std(true);
 
@@ -1186,11 +1186,24 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testLinspace(){
         SameDiff sd = SameDiff.create();
-        SDVariable out = sd.linspace("linspace", 1,10,10);
+        SDVariable out = sd.linspace("linspace", 1,10,10).castTo(DataType.DOUBLE);
         SDVariable loss = out.std(true);
 
         String err = OpValidation.validate(new TestCase(sd)
-                .expected(out, Nd4j.linspace(1,10,10)));
+                .expected(out, Nd4j.linspace(1,10,10, DataType.DOUBLE)));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testLinspace2(){
+        OpValidationSuite.ignoreFailing();  //TODO 2019/01/18
+        SameDiff sd = SameDiff.create();
+        SDVariable out = sd.linspace("linspace", sd.constant(Nd4j.scalar(1)), sd.constant(Nd4j.scalar(10)), sd.constant(Nd4j.scalar(10)), DataType.DOUBLE);
+        SDVariable loss = out.std(true);
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expected(out, Nd4j.linspace(1,10,10, DataType.DOUBLE)));
 
         assertNull(err);
     }
@@ -1201,13 +1214,13 @@ public class MiscOpValidation extends BaseOpValidation {
 
         INDArray in = Nd4j.create(new long[]{1, 2});
 
-        List<long[]> shapes = Nd4j.getExecutioner().calculateOutputShape(DynamicCustomOp.builder("shape")
+        val shapes = Nd4j.getExecutioner().calculateOutputShape(DynamicCustomOp.builder("shape")
                 .addInputs(in)
                 .build());
 
         assertEquals(1, shapes.size());
 
-        assertArrayEquals(new long[]{2}, shapes.get(0));
+        assertArrayEquals(new long[]{2}, shapes.get(0).getShape());
     }
 
     @Test
@@ -1218,10 +1231,10 @@ public class MiscOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", i);
         SDVariable shape = sd.shape(var);
-        SDVariable sum = sd.sum(shape);
+        SDVariable sum = shape.castTo(DataType.DOUBLE).sum();
 
         sd.execAndEndResult();
-        sd.execBackwards();
+        sd.execBackwards(Collections.emptyMap());
     }
 
 
@@ -1234,7 +1247,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable sum = sd.sum(merged);
 
         sd.execAndEndResult();
-        sd.execBackwards();
+        sd.execBackwards(Collections.emptyMap());
 
         INDArray out = merged.getArr();
         assertEquals(1, out.rank());
@@ -1261,10 +1274,10 @@ public class MiscOpValidation extends BaseOpValidation {
 
         CustomOp op = new DiagPart(i, null);
 
-        List<long[]> outShape = Nd4j.getExecutioner().calculateOutputShape(op);
+        val outShape = Nd4j.getExecutioner().calculateOutputShape(op);
 
         assertEquals(1, outShape.size());
-        assertArrayEquals(new long[]{5}, outShape.get(0));
+        assertArrayEquals(new long[]{5}, outShape.get(0).getShape());
     }
 
 
@@ -1313,9 +1326,9 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testZerosLikeOp(){
 
-        INDArray arr = Nd4j.trueScalar(1.0);
-        INDArray out = Nd4j.trueScalar(-1);
-        INDArray exp = Nd4j.trueScalar(0);
+        INDArray arr = Nd4j.scalar(DataType.DOUBLE, 1.0);
+        INDArray out = Nd4j.scalar(DataType.DOUBLE, -1);
+        INDArray exp = Nd4j.scalar(DataType.DOUBLE, 0);
 
         OpTestCase op = new OpTestCase(new ZerosLike(arr, out));
         op.expectedOutput(0, exp);
@@ -1327,20 +1340,21 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testConfusionMatrix(){
+        DataType dt = DataType.DOUBLE;
 
         for(boolean withMax : new boolean[]{true, false}){
 
             SameDiff sd = SameDiff.create();
 
-            SDVariable labels = sd.var("labels", Nd4j.trueVector(new double[]{1, 2, 4}));
-            SDVariable predictions = sd.var("predictions", Nd4j.trueVector(new double[]{2, 2, 4}));
+            SDVariable labels = sd.var("labels", Nd4j.create(new double[]{1, 2, 4}).castTo(dt));
+            SDVariable predictions = sd.var("predictions", Nd4j.create(new double[]{2, 2, 4}).castTo(dt));
 
             INDArray exp = Nd4j.create(new double[][]{
                     {0, 0, 0, 0, 0},
                     {0, 0, 1, 0, 0},
                     {0, 0, 1, 0, 0},
                     {0, 0, 0, 0, 0},
-                    {0, 0, 0, 0, 1}});
+                    {0, 0, 0, 0, 1}}).castTo(DataType.FLOAT);
 
             SDVariable confMatrix;
             if(withMax){
@@ -1349,7 +1363,7 @@ public class MiscOpValidation extends BaseOpValidation {
                 confMatrix = sd.confusionMatrix(labels, predictions);
             }
 
-            SDVariable loss = confMatrix.std(true);
+            SDVariable loss = confMatrix.castTo(DataType.DOUBLE).std(true);
 
 
             String err = OpValidation.validate(new TestCase(sd)
@@ -1375,7 +1389,7 @@ public class MiscOpValidation extends BaseOpValidation {
                     if (shape == null) {
                         inArr = Nd4j.trueScalar(1.0);
                     } else {
-                        inArr = Nd4j.linspace(1, 12, 12).reshape(shape);
+                        inArr = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(shape);
                     }
 
                     if(nonDec && !expTrue) {
@@ -1388,9 +1402,9 @@ public class MiscOpValidation extends BaseOpValidation {
                     SDVariable in = sd.var("in", inArr);
                     SDVariable out;
                     if(nonDec){
-                        out = sd.isNonDecreasing(in);
+                        out = sd.isNonDecreasing(in).castTo(DataType.DOUBLE);
                     } else {
-                        out = sd.isStrictlyIncreasing(in);
+                        out = sd.isStrictlyIncreasing(in).castTo(DataType.DOUBLE);
                     }
 
                     if (shape == null) {
@@ -1420,23 +1434,5 @@ public class MiscOpValidation extends BaseOpValidation {
         }
 
         assertEquals(failed.toString(), 0, failed.size());
-    }
-
-    @Test
-    public void testInplaceSubi() {
-        OpValidationSuite.ignoreFailing();
-        SameDiff sameDiffOuter = SameDiff.create();
-        Map<String, INDArray> params = new HashMap<>();
-        params.put("x", Nd4j.ones(4));
-        sameDiffOuter.defineFunction("inplacesubi", new SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable inplace = sameDiff.var("x", inputs.get("x"));
-                return new SDVariable[]{inplace.subi(1.0)};
-            }
-        }, params);
-
-        sameDiffOuter.getFunction("inplacesubi").eval(params);
-        assertEquals(Nd4j.zeros(4), params.get("x"));
     }
 }

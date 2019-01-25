@@ -19,7 +19,11 @@ package org.nd4j.linalg.api.ops.impl.loss;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,13 +34,13 @@ import java.util.List;
 @NoArgsConstructor
 public class L2Loss extends DynamicCustomOp {
 
-    public L2Loss(SameDiff sameDiff, SDVariable[] args) {
-        super(null, sameDiff, args);
+    public L2Loss(SameDiff sameDiff, SDVariable var) {
+        super(sameDiff, new SDVariable[]{var});
     }
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        return Collections.singletonList(new long[0]);
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], Nd4j.defaultFloatingPointType()));
     }
 
     @Override
@@ -47,5 +51,19 @@ public class L2Loss extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "L2Loss";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected 1 input type for %s, got %s", getClass(), inputDataTypes);
+        Preconditions.checkState(inputDataTypes.get(0).isFPType(), "Input datatype must be floating point for %s, got %s", getClass(), inputDataTypes);
+        return inputDataTypes;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grad){
+        //L2 loss: L = 1/2 * sum(x_i^2)
+        //dL/dxi = xi
+        return Collections.singletonList(f().identity(arg()));
     }
 }

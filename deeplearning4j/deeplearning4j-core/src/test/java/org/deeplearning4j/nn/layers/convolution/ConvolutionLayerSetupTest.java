@@ -37,6 +37,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -59,6 +60,11 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
 
     @Test
     public void testConvolutionLayerSetup() {
@@ -425,7 +431,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         network.init();
 
         network.setInput(next.getFeatures());
-        INDArray activationsActual = network.activate(next.getFeatures());
+        INDArray activationsActual = network.output(next.getFeatures());
         assertEquals(10, activationsActual.shape()[1], 1e-2);
 
         network.fit(next);

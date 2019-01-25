@@ -17,6 +17,7 @@
 package org.nd4j.linalg.cache;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 
 /**
  * This interface describes
@@ -60,7 +61,9 @@ public interface ConstantHandler {
      * @param array
      * @return
      */
-    DataBuffer getConstantBuffer(int[] array);
+    DataBuffer getConstantBuffer(boolean[] array, DataType dataType);
+
+    DataBuffer getConstantBuffer(int[] array, DataType dataType);
 
     /**
      * This method returns DataBuffer with
@@ -73,19 +76,7 @@ public interface ConstantHandler {
      * @param array
      * @return
      */
-    DataBuffer getConstantBuffer(long[] array);
-
-    /**
-     * This method returns DataBuffer
-     * with constant equal to input array.
-     *
-     * PLEASE NOTE: This method assumes that you'll
-     * never ever change values within result DataBuffer
-     *
-     * @param array
-     * @return
-     */
-    DataBuffer getConstantBuffer(float[] array);
+    DataBuffer getConstantBuffer(long[] array, DataType dataType);
 
     /**
      * This method returns DataBuffer with contant equal to input array.
@@ -95,7 +86,17 @@ public interface ConstantHandler {
      * @param array
      * @return
      */
-    DataBuffer getConstantBuffer(double[] array);
+    DataBuffer getConstantBuffer(double[] array, DataType dataType);
+
+    /**
+     * This method returns DataBuffer with contant equal to input array.
+     *
+     * PLEASE NOTE: This method assumes that you'll never ever change values within result DataBuffer
+     *
+     * @param array
+     * @return
+     */
+    DataBuffer getConstantBuffer(float[] array, DataType dataType);
 
     /**
      * This method removes all cached constants

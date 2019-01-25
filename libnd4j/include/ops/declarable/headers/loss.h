@@ -112,8 +112,31 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_log_loss)
         DECLARE_CUSTOM_OP(log_loss, 3, 1, false, 1, 1);
+        DECLARE_CUSTOM_OP(log_loss_grad, 3, 3, false, 1, 1);
         #endif
-    
+
+        /**
+         * l2_loss op.
+         * compute a l2 norm for given array.
+         *
+         * input param - an array (tensor)
+         * output value - a real number with given type (e.g. float or double)
+         */
+        #if NOT_EXCLUDED(OP_l2_loss)
+        DECLARE_CUSTOM_OP(l2_loss, 1, 1, false, 0, 0);
+        #endif
+
+
+        /**
+         * This op calculates logarithmic loss of poison distributed input
+         * Input arguments
+         *  0 - target
+         *  1 - input
+         *  optional int - boolean value compute_full_loss: 0 (default) or 1 (compute)
+         */
+        #if NOT_EXCLUDED(OP_log_poison_loss)
+        DECLARE_CONFIGURABLE_OP(log_poison_loss, 2, 1, true, 0, 0);
+        #endif
 
     //////////////////////////////////////////////////////////////////////////
     /**
@@ -158,6 +181,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_mean_sqerr_loss)
         DECLARE_CUSTOM_OP(mean_sqerr_loss, 3, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(mean_sqerr_loss_grad, 3, 3, false, 0, 1);
         #endif
 
 
@@ -188,6 +212,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_sigm_cross_entropy_loss)
         DECLARE_CUSTOM_OP(sigm_cross_entropy_loss, 3, 1, false, 1, 1);
+        DECLARE_CUSTOM_OP(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1);
         #endif
     
 
@@ -218,6 +243,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_softmax_cross_entropy_loss)
         DECLARE_CUSTOM_OP(softmax_cross_entropy_loss, 3, 1, false, 1, 1);  
+        DECLARE_CUSTOM_OP(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1);  
         #endif
 
 
@@ -245,6 +271,7 @@ namespace ops {
        */      
         #if NOT_EXCLUDED(OP_absolute_difference_loss)
         DECLARE_CUSTOM_OP(absolute_difference_loss, 3, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(absolute_difference_loss_grad, 3, 3, false, 0, 1);
         #endif
 
 
@@ -273,6 +300,7 @@ namespace ops {
        */         
         #if NOT_EXCLUDED(OP_cosine_distance_loss)
         DECLARE_CUSTOM_OP(cosine_distance_loss, 3, 1, false, 0, 2);
+        DECLARE_CUSTOM_OP(cosine_distance_loss_grad, 3, 3, false, 0, 2);
         #endif
 
         //////////////////////////////////////////////////////////////////////////
@@ -291,7 +319,8 @@ namespace ops {
        *    0: loss values, type float. An array with shape resulting from reducing of logits shape along dimension with classes
        */      
         #if NOT_EXCLUDED(OP_softmax_cross_entropy_loss_with_logits)
-        DECLARE_CUSTOM_OP(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0);  
+        DECLARE_CUSTOM_OP(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0);
         #endif
 
         //////////////////////////////////////////////////////////////////////////
@@ -307,7 +336,8 @@ namespace ops {
        *    0: loss values, type float. Has the same shape as labels
        */      
         #if NOT_EXCLUDED(OP_sparse_softmax_cross_entropy_loss_with_logits)
-        DECLARE_OP(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false);  
+        DECLARE_CUSTOM_OP(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 0, 0);
         #endif
 
 

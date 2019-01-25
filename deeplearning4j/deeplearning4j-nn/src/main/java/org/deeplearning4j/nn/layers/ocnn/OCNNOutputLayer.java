@@ -230,20 +230,6 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public INDArray labelProbabilities(INDArray examples) {
-        float[] decision = examples.data().asFloat();
-        for(int i = 0; i < decision.length; i++) {
-            if(decision[i] < 0) {
-                decision[i] = 0.0f;
-            }
-            else {
-                decision[i] = 1.0f;
-            }
-        }
-        return Nd4j.create(decision);
-    }
-
 
     @Override
     public Layer.Type type() {

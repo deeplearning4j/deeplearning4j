@@ -190,7 +190,7 @@ public class OpProfiler {
             return "BroadcastOp";
         } else if (op instanceof RandomOp) {
             return "RandomOp";
-        } else if (op instanceof Accumulation) {
+        } else if (op instanceof ReduceOp) {
             return "AccumulationOp";
         } else if (op instanceof TransformOp) {
             if (op.y() == null) {
@@ -247,7 +247,7 @@ public class OpProfiler {
             }
 
         }
-        lastZ = op.z().data().address();
+        lastZ = op.z() != null ? op.z().data().address() : 0L;
         prevOpMatching = opClass;
         prevOpMatchingDetailed = opClass + " " + op.opName();
         prevOpMatchingInverted = opClass + " " + op.opName();

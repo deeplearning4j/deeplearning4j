@@ -24,21 +24,19 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
 public class DebugModeTests extends BaseNd4jTest {
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public DebugModeTests(Nd4jBackend backend) {
         super(backend);
@@ -53,6 +51,8 @@ public class DebugModeTests extends BaseNd4jTest {
     @After
     public void turnMeDown() {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.DISABLED);
+        Nd4j.getMemoryManager().setCurrentWorkspace(null);
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
     }
 
     @Override
@@ -83,7 +83,7 @@ public class DebugModeTests extends BaseNd4jTest {
             assertEquals(0, ws.getDeviceOffset());
             assertEquals(0, ws.getHostOffset());
 
-            val array = Nd4j.create(10, 10).assign(1.0f);
+            val array = Nd4j.create(DataType.DOUBLE, 10, 10).assign(1.0f);
             assertTrue(array.isAttached());
 
             // nothing should get into workspace
@@ -91,7 +91,7 @@ public class DebugModeTests extends BaseNd4jTest {
             assertEquals(0, ws.getDeviceOffset());
 
             // array buffer should be spilled now
-            assertEquals(10 * 10 * Nd4j.sizeOfDataType(), ws.getSpilledSize());
+            assertEquals(10 * 10 * Nd4j.sizeOfDataType(DataType.DOUBLE) + Nd4j.sizeOfDataType(DataType.DOUBLE), ws.getSpilledSize());
         }
     }
 
@@ -109,7 +109,7 @@ public class DebugModeTests extends BaseNd4jTest {
             assertEquals(0, ws.getDeviceOffset());
             assertEquals(0, ws.getHostOffset());
 
-            val array = Nd4j.create(10, 10).assign(1.0f);
+            val array = Nd4j.create(DataType.DOUBLE, 10, 10).assign(1.0f);
 
             assertTrue(array.isAttached());
 
@@ -118,7 +118,7 @@ public class DebugModeTests extends BaseNd4jTest {
             assertEquals(0, ws.getDeviceOffset());
 
             // array buffer should be spilled now
-            assertEquals(10 * 10 * Nd4j.sizeOfDataType(), ws.getSpilledSize());
+            assertEquals(10 * 10 * Nd4j.sizeOfDataType(DataType.DOUBLE) + Nd4j.sizeOfDataType(DataType.DOUBLE), ws.getSpilledSize());
         }
 
         try (val ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1992")) {

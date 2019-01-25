@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,7 +38,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Map;
 import java.util.Random;
@@ -146,13 +146,14 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
 
         int[] miniBatchSizes = {1, 2, 5};
         int nIn = 2;
-        Random r = new Random(12345);
+        Random r = new Random(1234);
 
         for (int nExamples : miniBatchSizes) {
             Nd4j.getRandom().setSeed(12345);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .weightInit(new NormalDistribution(0,2))
                             .updater(new Sgd(0.1)).seed(12345).graphBuilder().addInputs("in")
                             .addLayer("0", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
                                             "in")
@@ -206,7 +207,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
             Map<String, INDArray> activations2 = net.feedForward();
 
             //Scores should differ here: masking the input, not the output. Therefore 4 vs. 5 time step outputs
-            assertNotEquals(score1, score2, 0.01);
+            assertNotEquals(score1, score2, 0.001);
 
             Map<String, INDArray> g1map = g1.gradientForVariable();
             Map<String, INDArray> g2map = g2.gradientForVariable();
@@ -294,7 +295,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                                         .graphBuilder()
                                                         .addInputs("in").addLayer("0",
                                                                         new GravesLSTM.Builder().nIn(nIn).nOut(5)
-                                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                                         .dist(new NormalDistribution(0,
                                                                                                         1))
                                                                                         .updater(new NoOp()).build(),
@@ -362,7 +363,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                                         .graphBuilder()
                                                         .addInputs("in").addLayer("0",
                                                                         new GravesLSTM.Builder().nIn(nIn).nOut(5)
-                                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                                         .dist(new NormalDistribution(0,
                                                                                                         1))
                                                                                         .updater(new NoOp()).build(),
@@ -383,7 +384,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                                         .graphBuilder()
                                                         .addInputs("in").addLayer("0",
                                                                         new GravesLSTM.Builder().nIn(nIn).nOut(5)
-                                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                                         .dist(new NormalDistribution(0,
                                                                                                         1))
                                                                                         .updater(new NoOp()).build(),

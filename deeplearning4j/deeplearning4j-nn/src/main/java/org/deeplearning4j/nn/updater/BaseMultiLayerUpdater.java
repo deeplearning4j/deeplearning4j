@@ -21,7 +21,6 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Trainable;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.base.Preconditions;
@@ -29,17 +28,15 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.accum.Norm2;
+
+import org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.learning.config.IUpdater;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * BaseMultiLayerUpdater - core functionality for applying updaters to MultiLayerNetwork and ComputationGraph.
@@ -60,9 +57,12 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     protected Map<String, Trainable> layersByName;
     protected final List<UpdaterBlock> updaterBlocks;
     protected INDArray updaterStateViewArray;
+    protected boolean legacyBatchScaledL2;
+    protected boolean initializedMinibatchDivision;
+    protected List<INDArray> gradientsForMinibatchDivision;
 
-    public BaseMultiLayerUpdater(T network) {
-        this(network, null);
+    public BaseMultiLayerUpdater(T network, boolean legacyBatchScaledL2) {
+        this(network, null, legacyBatchScaledL2);
     }
 
     /**
@@ -70,8 +70,9 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * @param network      Network to create the updater for
      * @param updaterState The updater state to use. Note: This array is used *directly* and isn't copied/cloned
      */
-    public BaseMultiLayerUpdater(T network, INDArray updaterState) {
+    public BaseMultiLayerUpdater(T network, INDArray updaterState, boolean legacyBatchScaledL2) {
         this.network = network;
+        this.legacyBatchScaledL2 = legacyBatchScaledL2;
         Trainable[] layers = getOrderedLayers();    //May also include vertices
 
         int updaterStateSize = 0;
@@ -294,6 +295,10 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             }
         }
 
+        if(!legacyBatchScaledL2 && isMiniBatch()){
+            divideByMinibatch(isExternal, gradient, batchSize);
+        }
+
         //PRE apply (gradient clipping, etc): done on a per-layer basis
         for (Map.Entry<String, Gradient> entry : layerGradients.entrySet()) {
             String layerName = entry.getKey();
@@ -302,14 +307,13 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             preApply(layer, layerGradients.get(layerName), iteration);
         }
 
-
         //Apply the updaters in blocks. This also applies LR and momentum schedules, L1 and L2
         if(getClass() != LayerUpdater.class){
             //OK for LayerUpdater as this is part of layerwise pretraining
             workspaceMgr.assertNotOpen(ArrayType.UPDATER_WORKING_MEM, "Updater working memory");
         }
         for (UpdaterBlock ub : updaterBlocks) {
-            if (ub.skipDueToPretrainConfig()) {
+            if (ub.skipDueToPretrainConfig(this instanceof LayerUpdater)) {
                 //Should skip some updater blocks sometimes
                 //For example, VAE decoder params while doing supervised backprop
                 continue;
@@ -325,20 +329,62 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             }
         }
 
-        //Divide by minibatch size if necessary
-        if (isMiniBatch()) {
-            //OK even with pretrain layers: their gradients will get modified during next backprop iteration
-            if (isExternal) {
-                gradient.gradient().divi(batchSize);
-            } else {
-                //Standard case
-                INDArray grad = getFlattenedGradientsView();
-                if(grad != null) {
-                    //May be null for nets with no parameters
-                    grad.divi(batchSize);
+        if(legacyBatchScaledL2 && isMiniBatch()){
+            divideByMinibatch(isExternal, gradient, batchSize);
+        }
+    }
+
+    protected void divideByMinibatch(boolean isExternal, Gradient gradient, int batchSize){
+        //Challenge here: most gradients are actual gradients, and should be divided by the minibatch to get the average
+        //However, some 'gradients' are actually updates - an example being BatchNorm mean/variance estimates... these
+        // shouldn't be modified
+
+        if(!initializedMinibatchDivision){
+            gradientsForMinibatchDivision = getMinibatchDivisionSubsets(getFlattenedGradientsView());
+            initializedMinibatchDivision = true;
+        }
+
+        List<INDArray> toDivide;
+        if(isExternal){
+            toDivide = getMinibatchDivisionSubsets(gradient.gradient());
+        } else {
+            toDivide = gradientsForMinibatchDivision;
+        }
+        for(INDArray arr : toDivide){
+            arr.divi(batchSize);
+        }
+    }
+
+    protected List<INDArray> getMinibatchDivisionSubsets(INDArray from){
+        List<INDArray> out = new ArrayList<>();
+        long paramsSoFar = 0;
+        long currentStart = 0;
+        long currentEnd = 0;
+        for(Trainable t : getOrderedLayers()){
+            Set<String> layerParams = t.paramTable(false).keySet();
+            Map<String,INDArray> paramTable = t.paramTable(false);
+            for(String s : layerParams) {
+                if(t.updaterDivideByMinibatch(s)){
+                    currentEnd += paramTable.get(s).length();
+                } else {
+                    //This param/gradient subset should be excluded
+                    if(currentEnd > currentStart){
+                        INDArray subset = from.get(NDArrayIndex.point(0), NDArrayIndex.interval(currentStart, currentEnd));
+                        out.add(subset);
+                    }
+                    currentStart = paramsSoFar + paramTable.get(s).length();
+                    currentEnd = currentStart;
                 }
+                paramsSoFar += paramTable.get(s).length();
             }
         }
+
+        if(currentEnd > currentStart && currentStart < from.length()){
+            //Process last part of the gradient view array
+            INDArray subset = from.get(NDArrayIndex.point(0), NDArrayIndex.interval(currentStart, currentEnd));
+            out.add(subset);
+        }
+        return out;
     }
 
     protected boolean isSingleLayerUpdater() {
@@ -360,7 +406,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         }
 
         GradientNormalization normalization = layer.getConfig().getGradientNormalization();
-        if (normalization == null || normalization == GradientNormalization.None || layer.getConfig().isPretrain())
+        if (normalization == null || normalization == GradientNormalization.None)
             return; //no op
 
         final double threshold = layer.getConfig().getGradientNormalizationThreshold();

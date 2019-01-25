@@ -26,6 +26,7 @@ import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.config.DL4JSystemProperties;
+import org.deeplearning4j.ui.SameDiffModule;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
@@ -126,6 +127,11 @@ public class PlayUIServer extends UIServer {
         }
 
         if(((DefaultI18N)I18NProvider.getInstance()).noI18NData()){
+            Throwable t = ((DefaultI18N)I18NProvider.getInstance()).getLanguageLoadingException();
+            if(t != null){
+                throw new RuntimeException("Exception encountered during loading UI Language (Internationalization) data", t);
+            }
+
             log.error("Error loading UI Language (Internationalization) data: no language resource data files were" +
                     "found on the classpath. This usually occurs when running DL4J's UI from an uber-jar, which was " +
                     "built incorrectly (without language resource files). See https://deeplearning4j.org/visualization#issues" +
@@ -148,6 +154,7 @@ public class PlayUIServer extends UIServer {
         uiModules.add(new TrainModule());
         uiModules.add(new ConvolutionalListenerModule());
         uiModules.add(new TsneModule());
+        uiModules.add(new SameDiffModule());
         remoteReceiverModule = new RemoteReceiverModule();
         uiModules.add(remoteReceiverModule);
 
@@ -321,10 +328,11 @@ public class PlayUIServer extends UIServer {
             Pair<StatsStorage, StatsStorageListener> p = iterator.next();
             if (p.getFirst() == statsStorage) { //Same object, not equality
                 statsStorage.deregisterStatsStorageListener(p.getSecond());
-                iterator.remove();
+                listeners.remove(p);
                 found = true;
             }
         }
+        statsStorageInstances.remove(statsStorage);
         for (UIModule uiModule : uiModules) {
             uiModule.onDetach(statsStorage);
         }

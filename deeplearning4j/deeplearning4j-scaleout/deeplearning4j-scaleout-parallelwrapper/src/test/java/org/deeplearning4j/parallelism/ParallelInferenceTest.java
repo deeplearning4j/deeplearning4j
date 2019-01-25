@@ -20,6 +20,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -207,8 +208,8 @@ public class ParallelInferenceTest {
         ParallelInference.ObservablesProvider provider =
                         new ParallelInference.ObservablesProvider(10000000L, 100, queue);
 
-        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(100));
-        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(100));
+        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(1,100));
+        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(1,100));
 
         assertNotEquals(null, observable1);
 
@@ -222,8 +223,8 @@ public class ParallelInferenceTest {
         ParallelInference.ObservablesProvider provider =
                         new ParallelInference.ObservablesProvider(10000000L, 100, queue);
 
-        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(100).assign(1.0));
-        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(100).assign(2.0));
+        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(1,100).assign(1.0));
+        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(1,100).assign(2.0));
 
         assertNotEquals(null, observable1);
 
@@ -246,10 +247,10 @@ public class ParallelInferenceTest {
         BasicInferenceObserver observer = new BasicInferenceObserver();
         ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, 2, queue);
 
-        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(100).assign(1.0));
-        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(100).assign(2.0));
+        InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(1,100).assign(1.0));
+        InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(1,100).assign(2.0));
 
-        InferenceObservable observable3 = provider.setInput(observer, Nd4j.create(100).assign(3.0));
+        InferenceObservable observable3 = provider.setInput(observer, Nd4j.create(1,100).assign(3.0));
 
 
         assertNotEquals(null, observable1);
@@ -281,11 +282,11 @@ public class ParallelInferenceTest {
         ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, 4, queue);
 
         BatchedInferenceObservable observable1 =
-                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(1.0));
+                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(1.0));
         BatchedInferenceObservable observable2 =
-                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(2.0));
+                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(2.0));
         BatchedInferenceObservable observable3 =
-                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(3.0));
+                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(3.0));
 
         INDArray bigOutput = Nd4j.create(3, 10);
         for (int i = 0; i < bigOutput.rows(); i++)
@@ -616,6 +617,7 @@ public class ParallelInferenceTest {
 
         for( InferenceMode m : InferenceMode.values()) {
             for (int w : new int[]{1, 2}) {
+                log.info("Starting: m={}, w={}", m, w);
 
                 final ParallelInference inf =
                         new ParallelInference.Builder(net)
@@ -751,14 +753,15 @@ public class ParallelInferenceTest {
             assertNotEquals(0, output.length);
         }
 
-        val modelsBefore = inf.getCurrentModelsFromWorkers();
+        Model[] modelsBefore = inf.getCurrentModelsFromWorkers();
         assertEquals(4, modelsBefore.length);
 
         boolean passed = false;
         int cnt0 = 0;
-        for (val m : modelsBefore) {
+        for (Model m : modelsBefore) {
             // model can be null for some of the workers yet, due to race condition
             if (m != null) {
+                Thread.sleep(500);
                 assertEquals("Failed at model [" + cnt0 + "]", net.params(), m.params());
                 passed = true;
             }

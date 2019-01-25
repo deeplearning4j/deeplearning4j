@@ -83,15 +83,15 @@ public class ActorCriticTest {
 
         for (double i = eps; i < n; i++) {
             for (double j = eps; j < n; j++) {
-                INDArray labels = Nd4j.create(new double[] {i / n, 1 - i / n});
-                INDArray output = Nd4j.create(new double[] {j / n, 1 - j / n});
+                INDArray labels = Nd4j.create(new double[] {i / n, 1 - i / n}, new long[]{1,2});
+                INDArray output = Nd4j.create(new double[] {j / n, 1 - j / n}, new long[]{1,2});
                 INDArray gradient = loss.computeGradient(labels, output, activation, null);
 
-                output = Nd4j.create(new double[] {j / n, 1 - j / n});
+                output = Nd4j.create(new double[] {j / n, 1 - j / n}, new long[]{1,2});
                 double score = loss.computeScore(labels, output, activation, null, false);
-                INDArray output1 = Nd4j.create(new double[] {j / n + eps, 1 - j / n});
+                INDArray output1 = Nd4j.create(new double[] {j / n + eps, 1 - j / n}, new long[]{1,2});
                 double score1 = loss.computeScore(labels, output1, activation, null, false);
-                INDArray output2 = Nd4j.create(new double[] {j / n, 1 - j / n + eps});
+                INDArray output2 = Nd4j.create(new double[] {j / n, 1 - j / n + eps}, new long[]{1,2});
                 double score2 = loss.computeScore(labels, output2, activation, null, false);
 
                 double gradient1 = (score1 - score) / eps;

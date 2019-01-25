@@ -27,6 +27,9 @@ import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
+import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.cache.ArrayDescriptor;
 import org.nd4j.linalg.cache.ConstantHandler;
@@ -123,8 +126,17 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(dataBuffer);
 
         long requiredMemoryBytes = AllocationUtils.getRequiredMemory(point.getShape());
+        val originalBytes = requiredMemoryBytes;
+        requiredMemoryBytes += 8 - (requiredMemoryBytes % 8);
+
+        val div = requiredMemoryBytes / 4;
+        if (div % 2 != 0)
+            requiredMemoryBytes += 4;
+
         //logger.info("shape: " + point.getShape());
         // and release device memory :)
+
+        AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, deviceId, requiredMemoryBytes);
 
         long currentOffset = constantOffsets.get(deviceId).get();
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
@@ -137,8 +149,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
             val profD = PerformanceTracker.getInstance().helperStartTransaction();
 
-            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(),
-                            requiredMemoryBytes, 1, context.getSpecialStream()) == 0) {
+            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(), originalBytes, 1, context.getSpecialStream()) == 0) {
                 throw new ND4JIllegalStateException("memcpyAsync failed");
             }
             flowController.commitTransfer(context.getSpecialStream());
@@ -157,11 +168,16 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         long bytes = requiredMemoryBytes;
         // hack for misalignment avoidance for 16bit data opType
-        if (dataBuffer.dataType() == DataBuffer.Type.HALF) {
+        /*
+        if (dataBuffer.dataType() == DataType.UBYTE || dataBuffer.dataType() == DataType.BYTE || dataBuffer.dataType() == DataType.BOOL) {
+            if (bytes % 4 != 0) {
+                bytes += bytes % 4;
+            }
+        } else if (dataBuffer.dataType() == DataType.HALF || dataBuffer.dataType() == DataType.SHORT) {
             if (bytes % 4 != 0) {
                 bytes += 2;
             }
-        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE || dataBuffer.dataType() == DataBuffer.Type.LONG) {
+        } else if (dataBuffer.dataType() == DataType.DOUBLE || dataBuffer.dataType() == DataType.LONG) {
             // for double data opType, we must be assured, that all DOUBLE pointers are starting from even addresses, to avoid banks spills
             long div = bytes / 4;
             if (div % 2 != 0)
@@ -178,6 +194,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
                     break;
             }
         }
+        */
 
         currentOffset = constantOffsets.get(deviceId).getAndAdd(bytes);
 
@@ -191,7 +208,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
             val profD = PerformanceTracker.getInstance().helperStartTransaction();
 
             if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(),
-                            requiredMemoryBytes, 1, context.getSpecialStream()) == 0) {
+                    originalBytes, 1, context.getSpecialStream()) == 0) {
                 throw new ND4JIllegalStateException("memcpyAsync failed");
             }
             flowController.commitTransfer(context.getSpecialStream());
@@ -210,7 +227,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
 
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer(), requiredMemoryBytes, 1,
+        NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer(), originalBytes, 1,
                         context.getSpecialStream());
         flowController.commitTransfer(context.getSpecialStream());
 
@@ -247,19 +264,19 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         if (dataBuffer instanceof CudaIntDataBuffer) {
             int[] data = dataBuffer.asInt();
-            return getConstantBuffer(data);
+            return getConstantBuffer(data, DataType.INT);
         } else if (dataBuffer instanceof CudaFloatDataBuffer) {
             float[] data = dataBuffer.asFloat();
-            return getConstantBuffer(data);
+            return getConstantBuffer(data, DataType.FLOAT);
         } else if (dataBuffer instanceof CudaDoubleDataBuffer) {
             double[] data = dataBuffer.asDouble();
-            return getConstantBuffer(data);
+            return getConstantBuffer(data, DataType.DOUBLE);
         } else if (dataBuffer instanceof CudaHalfDataBuffer) {
             float[] data = dataBuffer.asFloat();
-            return getConstantBuffer(data);
+            return getConstantBuffer(data, DataType.HALF);
         } else if (dataBuffer instanceof CudaLongDataBuffer) {
             long[] data = dataBuffer.asLong();
-            return getConstantBuffer(data);
+            return getConstantBuffer(data, DataType.LONG);
         }
 
         throw new IllegalStateException("Unknown CudaDataBuffer opType");
@@ -302,9 +319,9 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
      * @return
      */
     @Override
-    public DataBuffer getConstantBuffer(int[] array) {
+    public DataBuffer getConstantBuffer(int[] array, DataType type) {
         //  logger.info("getConstantBuffer(int[]) called");
-        ArrayDescriptor descriptor = new ArrayDescriptor(array);
+        ArrayDescriptor descriptor = new ArrayDescriptor(array, type);
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
 
@@ -313,7 +330,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
             //logger.info("Creating new constant buffer...");
-            DataBuffer buffer = Nd4j.createBufferDetached(array);
+            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, type);
 
             if (constantOffsets.get(deviceId).get() + (array.length * 4) < MAX_CONSTANT_LENGTH) {
                 buffer.setConstant(true);
@@ -331,9 +348,9 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
     }
 
     @Override
-    public DataBuffer getConstantBuffer(long[] array) {
+    public DataBuffer getConstantBuffer(long[] array, DataType type) {
         //  logger.info("getConstantBuffer(int[]) called");
-        ArrayDescriptor descriptor = new ArrayDescriptor(array);
+        ArrayDescriptor descriptor = new ArrayDescriptor(array, type);
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
 
@@ -342,7 +359,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
             //logger.info("Creating new constant buffer...");
-            DataBuffer buffer = Nd4j.createBufferDetached(array);
+            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, type);
 
             if (constantOffsets.get(deviceId).get() + (array.length * 8) < MAX_CONSTANT_LENGTH) {
                 buffer.setConstant(true);
@@ -368,9 +385,9 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
      * @return
      */
     @Override
-    public DataBuffer getConstantBuffer(float[] array) {
+    public DataBuffer getConstantBuffer(float[] array, DataType type) {
         //   logger.info("getConstantBuffer(float[]) called");
-        ArrayDescriptor descriptor = new ArrayDescriptor(array);
+        ArrayDescriptor descriptor = new ArrayDescriptor(array, type);
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
 
@@ -379,7 +396,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
                  //logger.info("Creating new constant buffer...");
-            DataBuffer buffer = Nd4j.createBufferDetached(array);
+            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, type);
 
             if (constantOffsets.get(deviceId).get() + (array.length * Nd4j.sizeOfDataType()) < MAX_CONSTANT_LENGTH) {
                 buffer.setConstant(true);
@@ -405,9 +422,9 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
      * @return
      */
     @Override
-    public DataBuffer getConstantBuffer(double[] array) {
+    public DataBuffer getConstantBuffer(double[] array, DataType type) {
                 //logger.info("getConstantBuffer(double[]) called: {}", Arrays.toString(array));
-        ArrayDescriptor descriptor = new ArrayDescriptor(array);
+        ArrayDescriptor descriptor = new ArrayDescriptor(array, type);
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
 
@@ -416,7 +433,35 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
             //logger.info("Creating new constant buffer...");
-            DataBuffer buffer = Nd4j.createBufferDetached(array);
+            DataBuffer buffer = Nd4j.createTypedBufferDetached(array, type);
+
+            if (constantOffsets.get(deviceId).get() + (array.length * Nd4j.sizeOfDataType()) < MAX_CONSTANT_LENGTH) {
+                buffer.setConstant(true);
+                // now we move data to constant memory, and keep happy
+                moveToConstantSpace(buffer);
+
+                buffersCache.get(deviceId).put(descriptor, buffer);
+
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
+            }
+            return buffer;
+        } //else logger.info("Reusing constant buffer...");
+
+        return buffersCache.get(deviceId).get(descriptor);
+    }
+
+    @Override
+    public DataBuffer getConstantBuffer(boolean[] array, DataType dataType) {
+        ArrayDescriptor descriptor = new ArrayDescriptor(array, dataType);
+
+        Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
+
+        ensureMaps(deviceId);
+
+        if (!buffersCache.get(deviceId).containsKey(descriptor)) {
+            // we create new databuffer
+            //logger.info("Creating new constant buffer...");
+            DataBuffer buffer = Nd4j.createTypedBuffer(array, dataType);
 
             if (constantOffsets.get(deviceId).get() + (array.length * Nd4j.sizeOfDataType()) < MAX_CONSTANT_LENGTH) {
                 buffer.setConstant(true);

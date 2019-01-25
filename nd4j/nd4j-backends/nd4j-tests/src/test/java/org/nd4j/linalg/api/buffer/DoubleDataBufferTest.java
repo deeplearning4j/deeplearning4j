@@ -32,15 +32,13 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.SerializationUtils;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 
 import java.io.*;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -54,7 +52,7 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(Parameterized.class)
 public class DoubleDataBufferTest extends BaseNd4jTest {
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public DoubleDataBufferTest(Nd4jBackend backend) {
         super(backend);
@@ -66,7 +64,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     @Before
     public void before() {
 
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
     @After
@@ -78,13 +76,13 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     public void testPointerCreation() {
         DoublePointer floatPointer = new DoublePointer(1, 2, 3, 4);
         Indexer indexer = DoubleIndexer.create(floatPointer);
-        DataBuffer buffer = Nd4j.createBuffer(floatPointer, DataBuffer.Type.DOUBLE, 4, indexer);
+        DataBuffer buffer = Nd4j.createBuffer(floatPointer, DataType.DOUBLE, 4, indexer);
         DataBuffer other = Nd4j.createBuffer(new double[] {1, 2, 3, 4});
         assertArrayEquals(other.asDouble(), buffer.asDouble(), 0.001);
     }
 
     @Test
-    public void testGetSet() throws Exception {
+    public void testGetSet() {
         double[] d1 = new double[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         double[] d2 = d.asDouble();
@@ -144,7 +142,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testDup() throws Exception {
+    public void testDup() {
         double[] d1 = new double[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
@@ -154,7 +152,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testPut() throws Exception {
+    public void testPut() {
         double[] d1 = new double[] {1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         d.put(0, 0.0);
@@ -165,8 +163,8 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
 
     @Test
-    public void testGetRange() throws Exception {
-        DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
+    public void testGetRange() {
+        DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).data();
         double[] get = buffer.getDoublesAt(0, 3);
         double[] data = new double[] {1, 2, 3};
         assertArrayEquals(get, data, 1e-1f);
@@ -180,8 +178,8 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testGetOffsetRange() throws Exception {
-        DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
+    public void testGetOffsetRange() {
+        DataBuffer buffer = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).data();
         double[] get = buffer.getDoublesAt(1, 3);
         double[] data = new double[] {2, 3, 4};
         assertArrayEquals(get, data, 1e-1f);
@@ -209,8 +207,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
     public void testOffset() {
         DataBuffer create = Nd4j.createBuffer(new double[] {1, 2, 3, 4}, 2);
         assertEquals(2, create.length());
-        assertEquals(4, create.underlyingLength());
-        assertEquals(2, create.offset());
+        assertEquals(0, create.offset());
         assertEquals(3, create.getDouble(0), 1e-1);
         assertEquals(4, create.getDouble(1), 1e-1);
 

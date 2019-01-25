@@ -34,8 +34,8 @@ public class ScalarMultiplication extends BaseScalarOp {
 
     public ScalarMultiplication() {}
 
-    public ScalarMultiplication(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarMultiplication(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
     }
 
     public ScalarMultiplication(INDArray x, Number num) {
@@ -54,14 +54,6 @@ public class ScalarMultiplication extends BaseScalarOp {
 
     public ScalarMultiplication(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
-    }
-
-    public ScalarMultiplication(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, inPlace, extraArgs);
-    }
-
-    public ScalarMultiplication(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, extraArgs);
     }
 
     @Override
@@ -83,11 +75,8 @@ public class ScalarMultiplication extends BaseScalarOp {
         return "RealMul";
     }
 
-
-
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        return Collections.singletonList(i_v1.get(0).mul(scalarValue.doubleValue()));
+        return Collections.singletonList(i_v1.get(0).mul(scalarValue.getDouble(0)));
     }
 }

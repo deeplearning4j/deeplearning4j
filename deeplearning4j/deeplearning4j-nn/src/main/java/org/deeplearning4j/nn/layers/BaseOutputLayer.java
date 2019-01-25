@@ -16,24 +16,22 @@
 
 package org.deeplearning4j.nn.layers;
 
-import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
-import org.nd4j.base.Preconditions;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.FeatureUtil;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -89,9 +87,18 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         double score = lossFunction.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
                 layerConf().getActivationFn(), maskArray,false);
-        score += fullNetworkL1 + fullNetworkL2;
+
+        boolean legacy = layerConf().isLegacyBatchScaledL2();
+        if(legacy){
+            score += fullNetworkL1 + fullNetworkL2;
+        }
+
         if(conf().isMiniBatch())
             score /= getInputMiniBatchSize();
+
+        if(!legacy){
+            score += fullNetworkL1 + fullNetworkL2;
+        }
 
         this.score = score;
 
@@ -184,7 +191,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         Gradient gradient = new DefaultGradient();
 
         INDArray weightGradView = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
-        Nd4j.gemm(input, delta, weightGradView, true, false, 1.0, 0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
+        Nd4j.gemm(input.castTo(weightGradView.dataType()), delta, weightGradView, true, false, 1.0, 0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));         //TODO can we avoid cast?
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradView);
 
         if(hasBias()){
@@ -219,9 +226,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     /**
      * Returns the f1 score for the given examples.
-     * Think of this to be like a percentage right.
-     * The higher the number the more it got right.
-     * This is on a scale from 0 to 1.
      *
      * @param examples te the examples to classify (one example in each row)
      * @param labels   the true labels
@@ -230,7 +234,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     public double f1Score(INDArray examples, INDArray labels) {
         Evaluation eval = new Evaluation();
-        eval.eval(labels, labelProbabilities(examples));
+        eval.eval(labels, activate(examples, false, LayerWorkspaceMgr.noWorkspacesImmutable()));
         return eval.f1();
     }
 
@@ -279,18 +283,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             ret.add(i, dataSet.getLabelName(i));
         }
         return ret;
-    }
-
-    /**
-     * Returns the probabilities for each label
-     * for each example row wise
-     *
-     * @param examples the examples to classify (one example in each row)
-     * @return the likelihoods of each example and each label
-     */
-    @Override
-    public INDArray labelProbabilities(INDArray examples) {
-        return activate(examples, false, LayerWorkspaceMgr.noWorkspacesImmutable());
     }
 
     /**

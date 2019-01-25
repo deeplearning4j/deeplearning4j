@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -51,7 +52,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @Test
@@ -291,62 +292,65 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
             for (int miniBatchSize : minibatchSizes) {
                 for (Subsampling3DLayer.PoolingType pool : poolModes) {
                     for (ConvolutionMode mode : modes) {
+                        for (Convolution3D.DataFormat df : Convolution3D.DataFormat.values()) {
 
-                        int outDepth = depth / kernel[0];
-                        int outHeight = height / kernel[1];
-                        int outWidth = width / kernel[2];
+                            int outDepth = depth / kernel[0];
+                            int outHeight = height / kernel[1];
+                            int outWidth = width / kernel[2];
 
-                        INDArray input = Nd4j.rand(new int[]{miniBatchSize, convNIn, depth, height, width});
-                        INDArray labels = Nd4j.zeros(miniBatchSize, finalNOut);
-                        for (int i = 0; i < miniBatchSize; i++) {
-                            labels.putScalar(new int[]{i, i % finalNOut}, 1.0);
-                        }
-
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                .updater(new NoOp())
-                                .weightInit(WeightInit.XAVIER)
-                                .dist(new NormalDistribution(0, 1))
-                                .list()
-                                .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(1, 1, 1)
-                                        .nIn(convNIn).nOut(convNOut).hasBias(false)
-                                        .convolutionMode(mode).dataFormat(Convolution3D.DataFormat.NCDHW)
-                                        .build())
-                                .layer(1, new Subsampling3DLayer.Builder(kernel)
-                                        .poolingType(pool).convolutionMode(mode).build())
-                                .layer(2, new DenseLayer.Builder().nOut(denseNOut).build())
-                                .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                        .activation(Activation.SOFTMAX).nOut(finalNOut).build())
-                                .inputPreProcessor(2,
-                                        new Cnn3DToFeedForwardPreProcessor(outDepth, outHeight, outWidth,
-                                                convNOut, true))
-                                .setInputType(InputType.convolutional3D(depth, height, width, convNIn)).build();
-
-                        String json = conf.toJson();
-                        MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
-                        assertEquals(conf, c2);
-
-                        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                        net.init();
-
-                        String msg = "Minibatch size = " + miniBatchSize + ", activationFn=" + afn
-                                + ", kernel = " + Arrays.toString(kernel) + ", mode = " + mode.toString()
-                                + ", input depth " + depth + ", input height " + height
-                                + ", input width " + width;
-
-                        if (PRINT_RESULTS) {
-                            log.info(msg);
-                            for (int j = 0; j < net.getnLayers(); j++) {
-                                log.info("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                            INDArray input = Nd4j.rand(
+                                    df == Convolution3D.DataFormat.NCDHW ? new int[]{miniBatchSize, convNIn, depth, height, width}
+                                            : new int[]{miniBatchSize, depth, height, width, convNIn});
+                            INDArray labels = Nd4j.zeros(miniBatchSize, finalNOut);
+                            for (int i = 0; i < miniBatchSize; i++) {
+                                labels.putScalar(new int[]{i, i % finalNOut}, 1.0);
                             }
+
+                            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                    .updater(new NoOp())
+                                    .weightInit(WeightInit.XAVIER)
+                                    .dist(new NormalDistribution(0, 1))
+                                    .list()
+                                    .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(1, 1, 1)
+                                            .nIn(convNIn).nOut(convNOut).hasBias(false)
+                                            .convolutionMode(mode).dataFormat(df)
+                                            .build())
+                                    .layer(1, new Subsampling3DLayer.Builder(kernel)
+                                            .poolingType(pool).convolutionMode(mode).dataFormat(df).build())
+                                    .layer(2, new DenseLayer.Builder().nOut(denseNOut).build())
+                                    .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                            .activation(Activation.SOFTMAX).nOut(finalNOut).build())
+                                    .inputPreProcessor(2,
+                                            new Cnn3DToFeedForwardPreProcessor(outDepth, outHeight, outWidth,convNOut, df))
+                                    .setInputType(InputType.convolutional3D(df, depth, height, width, convNIn)).build();
+
+                            String json = conf.toJson();
+                            MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
+                            assertEquals(conf, c2);
+
+                            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                            net.init();
+
+                            String msg = "Minibatch size = " + miniBatchSize + ", activationFn=" + afn
+                                    + ", kernel = " + Arrays.toString(kernel) + ", mode = " + mode.toString()
+                                    + ", input depth " + depth + ", input height " + height
+                                    + ", input width " + width + ", dataFormat=" + df;
+
+                            if (PRINT_RESULTS) {
+                                log.info(msg);
+                                for (int j = 0; j < net.getnLayers(); j++) {
+                                    log.info("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                                }
+                            }
+
+                            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS,
+                                    DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS,
+                                    RETURN_ON_FIRST_FAILURE, input, labels);
+
+                            assertTrue(msg, gradOK);
+
+                            TestUtils.testModelSerialization(net);
                         }
-
-                        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS,
-                                DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS,
-                                RETURN_ON_FIRST_FAILURE, input, labels);
-
-                        assertTrue(msg, gradOK);
-
-                        TestUtils.testModelSerialization(net);
                     }
                 }
             }

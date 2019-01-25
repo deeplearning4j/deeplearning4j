@@ -23,6 +23,7 @@
 
 #ifndef SCALAR_H_
 #define SCALAR_H_
+#include <OmpLaunchHelper.h>
 #include <dll.h>
 
 #ifdef __JNI__
@@ -48,73 +49,37 @@ namespace functions {
  * Apply a scalar
  *  operation to an array
  */
-        template<typename T>
+        template<typename X, typename Y, typename Z>
         class ScalarTransform {
 
         public:
 
 #ifdef __CUDACC__
 
+            template <typename OpType>
             __host__
-            static void executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, T *x, Nd4jLong xStride, T *result, Nd4jLong resultStride, T scalar, T *extraParams, Nd4jLong n);
+            static void intermediateShaped(dim3& launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, void* vscalar, void *vextraParams, int *allocPointer);
+
+            template <typename OpType>
+            __host__
+            static void intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
             __host__
-            static void executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams);
+            static void executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *result, Nd4jLong *resultShapeInfo, Nd4jLong *hzShapeInfo, void* scalar, void *extraParams);
 
             __host__
-            static void executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, T *x, Nd4jLong *xShapeInfo, T *z, Nd4jLong *zShapeInfo, T *scalars, T *extraParams, int *dimension, int dimensionLength);
+            static void executeCudaAlongDimension(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
-
-            template<typename OpType>
-            __device__
-            static void transformCuda(T *x, Nd4jLong *xShapeInfo, T *extraParams, T *z, Nd4jLong *zShapeInfo, T *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
-
-            template<typename OpType>
-            __device__
-            static void transformCuda(T scalar, T *dy, Nd4jLong *shapeInfo, T *params, T *result,Nd4jLong *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
-
-
-            template<typename OpType>
-            __device__
-            static void transform(Nd4jLong n, T scalar, T *dy, T *params, T *result, Nd4jLong *indexes, int *allocationBuffer, UnifiedSharedMemory *manager);
-
-
-            template<typename OpType>
-            __device__
-	        static void transformCuda(Nd4jLong n, T dx, T *dy, Nd4jLong incy, T *params, T *result, Nd4jLong resultStride, int *allocationBuffer, UnifiedSharedMemory *manager);
-
-/*
-#include "cuda/scalar_temp.cu"
-*/
 #endif
             template <typename OpType>
-            static void transform(T *x, Nd4jLong *xShapeInfo, T *extraParams, T *z, Nd4jLong *zShapeInfo, T *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static void transform(void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, void *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
-            static void transform(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *z, Nd4jLong *zShapeInfo, T *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static void transform(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, void *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
-            static void transform(const int opNum, T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
+            static void transform(const int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo,  void *scalar,  void *extraParams);
 
-            static void transform(const int opNum, T *x, Nd4jLong xStride, T *result, Nd4jLong resultStride, T scalar, T *extraParams, const Nd4jLong n);
+            static void transform(const int opNum, void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *scalar, void *extraParams, const Nd4jLong len);
 
-            static void transform(const int opNum, T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams);
-
-
-
-
-            /**
-         * CPU implementation of scalar operation
-         * @param x the input
-         * @param xStride the stride for the input
-         * @param result the result buffer
-         * @param resultStride the stride for the result
-         * @param scalar the scalar to apply
-         * @param extraParams the extra parameters where
-         * neccssary
-         * @param n the number of elements to loop over
-         */
-
-            template <typename OpType>
-            static void transform(T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
 
 
 
@@ -132,11 +97,11 @@ namespace functions {
          * @param scalar the scalar to apply
          * @param extraParams the extra parameters where
          * neccssary
-         * @param n the number of elements to loop over
+         * @param len the number of elements to loop over
          */
 
             template<typename OpType>
-            static  void transform(T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams);
+            static  void transform(void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *scalar, void *extraParams);
 
 
             /**
@@ -148,11 +113,11 @@ namespace functions {
              * @param scalar the scalar to apply
              * @param extraParams the extra parameters where
              * neccssary
-             * @param n the number of elements to loop over
+             * @param len the number of elements to loop over
              */
 
             template<typename OpType>
-            static void transform(T *x, Nd4jLong xStride, T *result, Nd4jLong resultStride, T scalar, T *extraParams, const Nd4jLong n);
+            static void transform(void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *scalar, void *extraParams, const Nd4jLong len);
         };
     }
 }

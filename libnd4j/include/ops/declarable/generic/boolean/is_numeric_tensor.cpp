@@ -30,7 +30,13 @@ namespace nd4j {
 
             auto input = INPUT_VARIABLE(0);
 
-            return ND4J_STATUS_TRUE;
+            return input->isR() || input->isZ() ? ND4J_STATUS_TRUE : ND4J_STATUS_FALSE;
+        }
+
+        DECLARE_TYPES(is_numeric_tensor) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, DataType::ANY)
+                    ->setAllowedOutputTypes(0, DataType::BOOL);
         }
     }
 }

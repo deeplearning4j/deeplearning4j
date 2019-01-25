@@ -26,17 +26,22 @@
 #include <cfloat>
 #include <iosfwd>
 #include <iostream>
+#include <pointercast.h>
+#if defined(__INTEL_COMPILER) || defined(__F16C__)
+    #include <immintrin.h>
+#endif
 
 // support for half precision conversion
 #ifdef __INTEL_COMPILER
 #include <emmintrin.h>
 #endif
 
+struct bfloat16;
 
 #ifdef __CUDACC__
 #include <fp16_conversion.hpp>
 
-#ifdef CUDA_9
+#ifndef CUDA_8
 
 struct ihalf : public __half {
     public:
@@ -114,7 +119,7 @@ typedef __half ihalf;
 #include <fp16_emu.h>
 
 
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) || defined(__F16C__)
 //_Pragma("omp declare simd") inline
 local_def  float cpu_ihalf2float(ihalf h) {
     return _cvtsh_ss(h.getX());
@@ -149,11 +154,12 @@ local_def float cpu_ihalf2float(ihalf h) {
 }
 #endif
 
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) || defined(__F16C__)
 //_Pragma("omp declare simd") inline
 local_def ihalf cpu_float2ihalf_rn(float f) {
     ihalf ret;
     ret.x = _cvtss_sh(f, 0);
+
     return ret;
 }
 
@@ -246,6 +252,38 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 #endif
     }
 
+    local_def explicit operator double() const {
+        return static_cast<double>(static_cast<float>(*this));
+    }
+
+    local_def explicit operator Nd4jLong() const {
+        return static_cast<Nd4jLong>(static_cast<float>(*this));
+    }
+
+    local_def explicit operator int() const {
+        return static_cast<int>(static_cast<float>(*this));
+    }
+
+    local_def explicit operator bool() const {
+        return static_cast<float>(*this) > 0.0f;
+    }
+
+    local_def explicit operator int16_t() const {
+        return static_cast<int16_t>(static_cast<float>(*this));
+    }
+
+    local_def explicit operator uint16_t() const {
+        return static_cast<uint16_t>(static_cast<float>(*this));
+    }
+
+    local_def explicit operator uint8_t() const {
+        return static_cast<uint8_t>(static_cast<float>(*this));
+    }
+
+    local_def explicit operator int8_t() const {
+        return static_cast<int8_t>(static_cast<float>(*this));
+    }
+
     //    local_def operator double() const { return (float)*this; }
 
     local_def operator half() const { return data; }
@@ -278,6 +316,10 @@ local_def ihalf cpu_float2ihalf_rn(float f)
         assign((float)rhs);
     }
 
+    local_def void assign(const bool rhs) {
+        assign(rhs ? 1.0f : 0.0f);
+    }
+
     local_def void assign(long unsigned int rhs) {
         assign((float)rhs);
     }
@@ -295,10 +337,10 @@ local_def ihalf cpu_float2ihalf_rn(float f)
       auto t = __float2half_rn(rhs);
       auto b = *(data.getXP());
 
-#ifdef CUDA_9
-      data.assign(t);
-#else
+#ifdef CUDA_8
       *(data.getXP()) = t;
+#else
+      data.assign(t);
 #endif
 
 #else
@@ -316,6 +358,8 @@ local_def ihalf cpu_float2ihalf_rn(float f)
     local_def void assign(const ihalf& rhs) {
         *data.getXP() = ((ihalf) rhs).getX();
     }
+
+    local_def void assign(const bfloat16& rhs);
 
 #ifdef __CUDACC__
     local_def void assign(const half& rhs) {
@@ -422,59 +466,263 @@ local_def ihalf cpu_float2ihalf_rn(float f)
         #endif
     }
 #else
-    local_def float16 operator+(const float16& a, const float16& b) { return float16((float)a + (float)b); }
+    local_def float16 operator+(const float16& a, const float16& b) { return float16((float)a + (float)b); }    
     local_def float16 operator-(const float16& a, const float16& b) { return float16((float)a - (float)b); }
     local_def float16 operator*(const float16& a, const float16& b) { return float16((float)a * (float)b); }
-    local_def float16 operator/(const float16& a, const float16& b) { return float16((float)a / (float)b); }
+    local_def float16 operator/(const float16& a, const float16& b) { return float16((float)a / (float)b); }    
 #endif
 //
 
-    local_def float16 operator+(const float16& a, const double& b) { return float16((float)a + (float)b); }
-    local_def float16 operator+(const float16& a, const float& b) { return float16((float)a + b); }
-    // local_def float16 operator+(const float16& a, const int& b) { return float16((float)a + (float)b); }
-    local_def float16 operator+(const float16& a, const long long& b) { return float16((float)a + (float)b); }
-    local_def float16 operator+(const float16& a, const long int& b) { return float16((float)a + (float)b); }
-    local_def float16 operator+(const int& a, const float16& b) { return float16((float)a + (float)b); }
-    local_def float16 operator+(const long long& a, const float16& b) { return float16((float)a + (float)b); }
-    local_def float16 operator+(const long int& a, const float16& b) { return float16((float)a + (float)b); }
-    local_def float16 operator+(const float& a, const float16& b) { return float16((float)a + (float)b); }
-    local_def float16 operator+(const double& a, const float16& b) { return float16((float)a + (float)b); }
+    local_def float16 operator+(const float16& a,            const double& b)             { return a + static_cast<float16>(b); }
+    local_def float16 operator+(const float16& a,            const float& b)              { return a + static_cast<float16>(b); }
+    local_def float16 operator+(const float16& a,            const int& b)                { return a + static_cast<float16>(b); }
+    local_def float16 operator+(const float16& a,            const unsigned int& b)       { return a + static_cast<float16>(b); }
+    local_def float16 operator+(const float16& a,            const long long& b)          { return a + static_cast<float16>(b); }
+    local_def float16 operator+(const float16& a,            const unsigned long long& b) { return a + static_cast<float16>(b); }
+    local_def float16 operator+(const float16& a,            const long int& b)           { return a + static_cast<float16>(b); }
+    local_def float16 operator+(const float16& a,            const bool& b)               { return a + static_cast<float16>(b); }
+    local_def float16 operator+(const float16& a,            const int8_t& b)             { return a + static_cast<float16>(b); }
+    local_def float16 operator+(const float16& a,            const uint8_t& b)            { return a + static_cast<float16>(b); }
+    local_def float16 operator+(const float16& a,            const int16_t& b)            { return a + static_cast<float16>(b); }
+    local_def float16 operator+(const float16& a,            const long unsigned int& b)  { return a + static_cast<float16>(b); }
+    local_def float16 operator+(const int8_t&  a,            const float16& b)            { return static_cast<float16>(a) + b; }
+    local_def float16 operator+(const uint8_t& a,            const float16& b)            { return static_cast<float16>(a) + b; }
+    local_def float16 operator+(const int16_t& a,            const float16& b)            { return static_cast<float16>(a) + b; }
+    local_def float16 operator+(const bool& a,               const float16& b)            { return static_cast<float16>(a) + b; }
+    local_def float16 operator+(const int& a,                const float16& b)            { return static_cast<float16>(a) + b; }
+    local_def float16 operator+(const unsigned int& a,       const float16& b)            { return static_cast<float16>(a) + b; }
+    local_def float16 operator+(const long long& a,          const float16& b)            { return static_cast<float16>(a) + b; }
+    local_def float16 operator+(const unsigned long long& a, const float16& b)            { return static_cast<float16>(a) + b; }
+    local_def float16 operator+(const long int& a,           const float16& b)            { return static_cast<float16>(a) + b; }
+    local_def float16 operator+(const float& a,              const float16& b)            { return static_cast<float16>(a) + b; }
+    local_def float16 operator+(const double& a,             const float16& b)            { return static_cast<float16>(a) + b; }
+    local_def float16 operator+(const long unsigned int& a,  const float16& b)            { return static_cast<float16>(a) + b; }
 
+    local_def float16 operator-(const float16& a,            const double& b)             { return a - static_cast<float16>(b); }
+    local_def float16 operator-(const float16& a,            const float& b)              { return a - static_cast<float16>(b); }
+    local_def float16 operator-(const float16& a,            const int& b)                { return a - static_cast<float16>(b); }
+    local_def float16 operator-(const float16& a,            const unsigned int& b)       { return a - static_cast<float16>(b); }
+    local_def float16 operator-(const float16& a,            const long long& b)          { return a - static_cast<float16>(b); }
+    local_def float16 operator-(const float16& a,            const unsigned long long& b) { return a - static_cast<float16>(b); }
+    local_def float16 operator-(const float16& a,            const long int& b)           { return a - static_cast<float16>(b); }
+    local_def float16 operator-(const float16& a,            const bool& b)               { return a - static_cast<float16>(b); }
+    local_def float16 operator-(const float16& a,            const int8_t& b)             { return a - static_cast<float16>(b); }
+    local_def float16 operator-(const float16& a,            const uint8_t& b)            { return a - static_cast<float16>(b); }
+    local_def float16 operator-(const float16& a,            const int16_t& b)            { return a - static_cast<float16>(b); }
+    local_def float16 operator-(const float16& a,            const long unsigned int& b)  { return a - static_cast<float16>(b); }
+    local_def float16 operator-(const int8_t&  a,            const float16& b)            { return static_cast<float16>(a) - b; }
+    local_def float16 operator-(const uint8_t& a,            const float16& b)            { return static_cast<float16>(a) - b; }
+    local_def float16 operator-(const int16_t& a,            const float16& b)            { return static_cast<float16>(a) - b; }
+    local_def float16 operator-(const bool& a,               const float16& b)            { return static_cast<float16>(a) - b; }
+    local_def float16 operator-(const int& a,                const float16& b)            { return static_cast<float16>(a) - b; }
+    local_def float16 operator-(const unsigned int& a,       const float16& b)            { return static_cast<float16>(a) - b; }
+    local_def float16 operator-(const long long& a,          const float16& b)            { return static_cast<float16>(a) - b; }
+    local_def float16 operator-(const unsigned long long& a, const float16& b)            { return static_cast<float16>(a) - b; }
+    local_def float16 operator-(const long int& a,           const float16& b)            { return static_cast<float16>(a) - b; }
+    local_def float16 operator-(const float& a,              const float16& b)            { return static_cast<float16>(a) - b; }
+    local_def float16 operator-(const double& a,             const float16& b)            { return static_cast<float16>(a) - b; }
+    local_def float16 operator-(const long unsigned int& a,  const float16& b)            { return static_cast<float16>(a) - b; }
 
-    local_def float16 operator-(const float16& a, const double& b) { return float16((float)a - (float)b); }
-    local_def float16 operator-(const float16& a, const float& b) { return float16((float)a - b); }
-    // local_def float16 operator-(const float16& a, const int& b) { return float16((float)a - (float)b); }
-    local_def float16 operator-(const float16& a, const long long& b) { return float16((float)a - (float)b); }
-    local_def float16 operator-(const float16& a, const long int& b) { return float16((float)a - (float)b); }
-    local_def float16 operator-(const int& a, const float16& b) { return float16((float)a - (float)b); }
-    local_def float16 operator-(const long long& a, const float16& b) { return float16((float)a - (float)b); }
-    local_def float16 operator-(const long int& a, const float16& b) { return float16((float)a - (float)b); }
-    local_def float16 operator-(const float& a, const float16& b) { return float16((float)a - (float)b); }
-    local_def float16 operator-(const double& a, const float16& b) { return float16((float)a - (float)b); }
+    local_def float16 operator/(const float16& a,            const double& b)             { return a / static_cast<float16>(b); }
+    local_def float16 operator/(const float16& a,            const float& b)              { return a / static_cast<float16>(b); }
+    local_def float16 operator/(const float16& a,            const int& b)                { return a / static_cast<float16>(b); }
+    local_def float16 operator/(const float16& a,            const unsigned int& b)       { return a / static_cast<float16>(b); }
+    local_def float16 operator/(const float16& a,            const long long& b)          { return a / static_cast<float16>(b); }
+    local_def float16 operator/(const float16& a,            const unsigned long long& b) { return a / static_cast<float16>(b); }
+    local_def float16 operator/(const float16& a,            const long int& b)           { return a / static_cast<float16>(b); }
+    local_def float16 operator/(const float16& a,            const bool& b)               { return a / static_cast<float16>(b); }
+    local_def float16 operator/(const float16& a,            const int8_t& b)             { return a / static_cast<float16>(b); }
+    local_def float16 operator/(const float16& a,            const uint8_t& b)            { return a / static_cast<float16>(b); }
+    local_def float16 operator/(const float16& a,            const int16_t& b)            { return a / static_cast<float16>(b); }
+    local_def float16 operator/(const float16& a,            const long unsigned int& b)  { return a / static_cast<float16>(b); }
+    local_def float16 operator/(const int8_t&  a,            const float16& b)            { return static_cast<float16>(a) / b; }
+    local_def float16 operator/(const uint8_t& a,            const float16& b)            { return static_cast<float16>(a) / b; }
+    local_def float16 operator/(const int16_t& a,            const float16& b)            { return static_cast<float16>(a) / b; }
+    local_def float16 operator/(const bool& a,               const float16& b)            { return static_cast<float16>(a) / b; }
+    local_def float16 operator/(const int& a,                const float16& b)            { return static_cast<float16>(a) / b; }
+    local_def float16 operator/(const unsigned int& a,       const float16& b)            { return static_cast<float16>(a) / b; }
+    local_def float16 operator/(const long long& a,          const float16& b)            { return static_cast<float16>(a) / b; }
+    local_def float16 operator/(const unsigned long long& a, const float16& b)            { return static_cast<float16>(a) / b; }
+    local_def float16 operator/(const long int& a,           const float16& b)            { return static_cast<float16>(a) / b; }
+    local_def float16 operator/(const float& a,              const float16& b)            { return static_cast<float16>(a) / b; }
+    local_def float16 operator/(const double& a,             const float16& b)            { return static_cast<float16>(a) / b; }
+    local_def float16 operator/(const long unsigned int& a,  const float16& b)            { return static_cast<float16>(a) / b; }
+  
+    local_def float16 operator*(const float16& a,            const double& b)             { return a * static_cast<float16>(b); }
+    local_def float16 operator*(const float16& a,            const float& b)              { return a * static_cast<float16>(b); }
+    local_def float16 operator*(const float16& a,            const int& b)                { return a * static_cast<float16>(b); }
+    local_def float16 operator*(const float16& a,            const unsigned int& b)       { return a * static_cast<float16>(b); }
+    local_def float16 operator*(const float16& a,            const long long& b)          { return a * static_cast<float16>(b); }
+    local_def float16 operator*(const float16& a,            const unsigned long long& b) { return a * static_cast<float16>(b); }
+    local_def float16 operator*(const float16& a,            const long int& b)           { return a * static_cast<float16>(b); }
+    local_def float16 operator*(const float16& a,            const bool& b)               { return a * static_cast<float16>(b); }
+    local_def float16 operator*(const float16& a,            const int8_t& b)             { return a * static_cast<float16>(b); }
+    local_def float16 operator*(const float16& a,            const uint8_t& b)            { return a * static_cast<float16>(b); }
+    local_def float16 operator*(const float16& a,            const int16_t& b)            { return a * static_cast<float16>(b); }
+    local_def float16 operator*(const float16& a,            const long unsigned int& b)  { return a * static_cast<float16>(b); }
+    local_def float16 operator*(const int8_t&  a,            const float16& b)            { return static_cast<float16>(a) * b; }
+    local_def float16 operator*(const uint8_t& a,            const float16& b)            { return static_cast<float16>(a) * b; }
+    local_def float16 operator*(const int16_t& a,            const float16& b)            { return static_cast<float16>(a) * b; }
+    local_def float16 operator*(const bool& a,               const float16& b)            { return static_cast<float16>(a) * b; }
+    local_def float16 operator*(const int& a,                const float16& b)            { return static_cast<float16>(a) * b; }
+    local_def float16 operator*(const unsigned int& a,       const float16& b)            { return static_cast<float16>(a) * b; }
+    local_def float16 operator*(const long long& a,          const float16& b)            { return static_cast<float16>(a) * b; }
+    local_def float16 operator*(const unsigned long long& a, const float16& b)            { return static_cast<float16>(a) * b; }
+    local_def float16 operator*(const long int& a,           const float16& b)            { return static_cast<float16>(a) * b; }
+    local_def float16 operator*(const float& a,              const float16& b)            { return static_cast<float16>(a) * b; }
+    local_def float16 operator*(const double& a,             const float16& b)            { return static_cast<float16>(a) * b; }
+    local_def float16 operator*(const long unsigned int& a,  const float16& b)            { return static_cast<float16>(a) * b; }    
 
+    local_def bool operator==(const float16& a,            const float& b)              { return a == static_cast<float16>(b); }
+    local_def bool operator==(const float16& a,            const double& b)             { return a == static_cast<float16>(b); }
+    local_def bool operator==(const float16& a,            const int& b)                { return a == static_cast<float16>(b); }
+    local_def bool operator==(const float16& a,            const unsigned int& b)       { return a == static_cast<float16>(b); }
+    local_def bool operator==(const float16& a,            const long long& b)          { return a == static_cast<float16>(b); }
+    local_def bool operator==(const float16& a,            const unsigned long long& b) { return a == static_cast<float16>(b); }
+    local_def bool operator==(const float16& a,            const long int& b)           { return a == static_cast<float16>(b); }
+    local_def bool operator==(const float16& a,            const int8_t& b)             { return a == static_cast<float16>(b); }
+    local_def bool operator==(const float16& a,            const uint8_t& b)            { return a == static_cast<float16>(b); }
+    local_def bool operator==(const float16& a,            const int16_t& b)            { return a == static_cast<float16>(b); }
+    local_def bool operator==(const float16& a,            const bool& b)               { return a == static_cast<float16>(b); }
+    local_def bool operator==(const float16& a,            const long unsigned int& b)  { return a == static_cast<float16>(b); }
+    local_def bool operator==(const bool&    a,            const float16& b)            { return static_cast<float16>(a) == b; }
+    local_def bool operator==(const int8_t&  a,            const float16& b)            { return static_cast<float16>(a) == b; }
+    local_def bool operator==(const uint8_t& a,            const float16& b)            { return static_cast<float16>(a) == b; }
+    local_def bool operator==(const int16_t& a,            const float16& b)            { return static_cast<float16>(a) == b; }
+    local_def bool operator==(const int& a,                const float16& b)            { return static_cast<float16>(a) == b; }
+    local_def bool operator==(const unsigned int& a,       const float16& b)            { return static_cast<float16>(a) == b; }
+    local_def bool operator==(const long long& a,          const float16& b)            { return static_cast<float16>(a) == b; }
+    local_def bool operator==(const unsigned long long& a, const float16& b)            { return static_cast<float16>(a) == b; }
+    local_def bool operator==(const long int& a,           const float16& b)            { return static_cast<float16>(a) == b; }
+    local_def bool operator==(const float& a,              const float16& b)            { return static_cast<float16>(a) == b; }
+    local_def bool operator==(const double& a,             const float16& b)            { return static_cast<float16>(a) == b; }
+    local_def bool operator==(const long unsigned int& a,  const float16& b)            { return static_cast<float16>(a) == b; }
 
-    local_def float16 operator/(const float16& a, const double& b) { return float16((float)a / (float)b); }
-    local_def float16 operator/(const float16& a, const float& b) { return float16((float)a / b); }
-    local_def float16 operator/(const float16& a, const int& b) { return float16((float)a / (float)b); }
-    local_def float16 operator/(const float16& a, const long long& b) { return float16((float)a / (float)b); }
-    local_def float16 operator/(const float16& a, const long int& b) { return float16((float)a / (float)b); }
-    local_def float16 operator/(const int& a, const float16& b) { return float16((float)a / (float)b); }
-    local_def float16 operator/(const long long& a, const float16& b) { return float16((float)a / (float)b); }
-    local_def float16 operator/(const long int& a, const float16& b) { return float16((float)a / (float)b); }
-    local_def float16 operator/(const float& a, const float16& b) { return float16((float)a / (float)b); }
-    local_def float16 operator/(const double& a, const float16& b) { return float16((float)a / (float)b); }
+    local_def bool operator!=(const float16& a,            const float& b)              { return a != static_cast<float16>(b); }
+    local_def bool operator!=(const float16& a,            const double& b)             { return a != static_cast<float16>(b); }
+    local_def bool operator!=(const float16& a,            const int& b)                { return a != static_cast<float16>(b); }
+    local_def bool operator!=(const float16& a,            const unsigned int& b)       { return a != static_cast<float16>(b); }
+    local_def bool operator!=(const float16& a,            const long long& b)          { return a != static_cast<float16>(b); }
+    local_def bool operator!=(const float16& a,            const unsigned long long& b) { return a != static_cast<float16>(b); }
+    local_def bool operator!=(const float16& a,            const long int& b)           { return a != static_cast<float16>(b); }
+    local_def bool operator!=(const float16& a,            const int8_t& b)             { return a != static_cast<float16>(b); }
+    local_def bool operator!=(const float16& a,            const uint8_t& b)            { return a != static_cast<float16>(b); }
+    local_def bool operator!=(const float16& a,            const int16_t& b)            { return a != static_cast<float16>(b); }
+    local_def bool operator!=(const float16& a,            const bool& b)               { return a != static_cast<float16>(b); }
+    local_def bool operator!=(const float16& a,            const long unsigned int& b)  { return a != static_cast<float16>(b); }
+    local_def bool operator!=(const bool&    a,            const float16& b)            { return static_cast<float16>(a) != b; }
+    local_def bool operator!=(const int8_t&  a,            const float16& b)            { return static_cast<float16>(a) != b; }
+    local_def bool operator!=(const uint8_t& a,            const float16& b)            { return static_cast<float16>(a) != b; }
+    local_def bool operator!=(const int16_t& a,            const float16& b)            { return static_cast<float16>(a) != b; }
+    local_def bool operator!=(const int& a,                const float16& b)            { return static_cast<float16>(a) != b; }
+    local_def bool operator!=(const unsigned int& a,       const float16& b)            { return static_cast<float16>(a) != b; }
+    local_def bool operator!=(const long long& a,          const float16& b)            { return static_cast<float16>(a) != b; }
+    local_def bool operator!=(const unsigned long long& a, const float16& b)            { return static_cast<float16>(a) != b; }
+    local_def bool operator!=(const long int& a,           const float16& b)            { return static_cast<float16>(a) != b; }
+    local_def bool operator!=(const float& a,              const float16& b)            { return static_cast<float16>(a) != b; }
+    local_def bool operator!=(const double& a,             const float16& b)            { return static_cast<float16>(a) != b; }
+    local_def bool operator!=(const long unsigned int& a,  const float16& b)            { return static_cast<float16>(a) != b; }
 
+    local_def bool operator<(const float16& a,            const float& b)              { return a < static_cast<float16>(b); }
+    local_def bool operator<(const float16& a,            const double& b)             { return a < static_cast<float16>(b); }
+    local_def bool operator<(const float16& a,            const int& b)                { return a < static_cast<float16>(b); }
+    local_def bool operator<(const float16& a,            const unsigned int& b)       { return a < static_cast<float16>(b); }
+    local_def bool operator<(const float16& a,            const long long& b)          { return a < static_cast<float16>(b); }
+    local_def bool operator<(const float16& a,            const unsigned long long& b) { return a < static_cast<float16>(b); }
+    local_def bool operator<(const float16& a,            const long int& b)           { return a < static_cast<float16>(b); }
+    local_def bool operator<(const float16& a,            const int8_t& b)             { return a < static_cast<float16>(b); }
+    local_def bool operator<(const float16& a,            const uint8_t& b)            { return a < static_cast<float16>(b); }
+    local_def bool operator<(const float16& a,            const int16_t& b)            { return a < static_cast<float16>(b); }
+    local_def bool operator<(const float16& a,            const bool& b)               { return a < static_cast<float16>(b); }
+    local_def bool operator<(const float16& a,            const long unsigned int& b)  { return a < static_cast<float16>(b); }
+    local_def bool operator<(const bool&    a,            const float16& b)            { return static_cast<float16>(a) < b; }
+    local_def bool operator<(const int8_t&  a,            const float16& b)            { return static_cast<float16>(a) < b; }
+    local_def bool operator<(const uint8_t& a,            const float16& b)            { return static_cast<float16>(a) < b; }
+    local_def bool operator<(const int16_t& a,            const float16& b)            { return static_cast<float16>(a) < b; }
+    local_def bool operator<(const int& a,                const float16& b)            { return static_cast<float16>(a) < b; }
+    local_def bool operator<(const unsigned int& a,       const float16& b)            { return static_cast<float16>(a) < b; }
+    local_def bool operator<(const long long& a,          const float16& b)            { return static_cast<float16>(a) < b; }
+    local_def bool operator<(const unsigned long long& a, const float16& b)            { return static_cast<float16>(a) < b; }
+    local_def bool operator<(const long int& a,           const float16& b)            { return static_cast<float16>(a) < b; }
+    local_def bool operator<(const float& a,              const float16& b)            { return static_cast<float16>(a) < b; }
+    local_def bool operator<(const double& a,             const float16& b)            { return static_cast<float16>(a) < b; }
+    local_def bool operator<(const long unsigned int& a,  const float16& b)            { return static_cast<float16>(a) < b; }
 
-    local_def float16 operator*(const float16& a, const double& b) { return float16((float)a * (float)b); }
-    local_def float16 operator*(const float16& a, const float& b) { return float16((float)a * b); }
-    local_def float16 operator*(const float16& a, const int& b) { return float16((float)a * (float)b); }
-    local_def float16 operator*(const float16& a, const long long& b) { return float16((float)a * (float)b); }
-    local_def float16 operator*(const float16& a, const long int& b) { return float16((float)a * (float)b); }
-    local_def float16 operator*(const int& a, const float16& b) { return float16((float)a * (float)b); }
-    local_def float16 operator*(const long long& a, const float16& b) { return float16((float)a * (float)b); }
-    local_def float16 operator*(const long int& a, const float16& b) { return float16((float)a * (float)b); }
-    local_def float16 operator*(const float& a, const float16& b) { return float16((float)a * (float)b); }
-    local_def float16 operator*(const double& a, const float16& b) { return float16((float)a * (float)b); }
+    local_def bool operator>(const float16& a,            const float& b)              { return a > static_cast<float16>(b); }
+    local_def bool operator>(const float16& a,            const double& b)             { return a > static_cast<float16>(b); }
+    local_def bool operator>(const float16& a,            const int& b)                { return a > static_cast<float16>(b); }
+    local_def bool operator>(const float16& a,            const unsigned int& b)       { return a > static_cast<float16>(b); }
+    local_def bool operator>(const float16& a,            const long long& b)          { return a > static_cast<float16>(b); }
+    local_def bool operator>(const float16& a,            const unsigned long long& b) { return a > static_cast<float16>(b); }
+    local_def bool operator>(const float16& a,            const long int& b)           { return a > static_cast<float16>(b); }
+    local_def bool operator>(const float16& a,            const int8_t& b)             { return a > static_cast<float16>(b); }
+    local_def bool operator>(const float16& a,            const uint8_t& b)            { return a > static_cast<float16>(b); }
+    local_def bool operator>(const float16& a,            const int16_t& b)            { return a > static_cast<float16>(b); }
+    local_def bool operator>(const float16& a,            const bool& b)               { return a > static_cast<float16>(b); }
+    local_def bool operator>(const float16& a,            const long unsigned int& b)  { return a > static_cast<float16>(b); }
+    local_def bool operator>(const bool&    a,            const float16& b)            { return static_cast<float16>(a) > b; }
+    local_def bool operator>(const int8_t&  a,            const float16& b)            { return static_cast<float16>(a) > b; }
+    local_def bool operator>(const uint8_t& a,            const float16& b)            { return static_cast<float16>(a) > b; }
+    local_def bool operator>(const int16_t& a,            const float16& b)            { return static_cast<float16>(a) > b; }
+    local_def bool operator>(const int& a,                const float16& b)            { return static_cast<float16>(a) > b; }
+    local_def bool operator>(const unsigned int& a,       const float16& b)            { return static_cast<float16>(a) > b; }
+    local_def bool operator>(const long long& a,          const float16& b)            { return static_cast<float16>(a) > b; }
+    local_def bool operator>(const unsigned long long& a, const float16& b)            { return static_cast<float16>(a) > b; }
+    local_def bool operator>(const long int& a,           const float16& b)            { return static_cast<float16>(a) > b; }
+    local_def bool operator>(const float& a,              const float16& b)            { return static_cast<float16>(a) > b; }
+    local_def bool operator>(const double& a,             const float16& b)            { return static_cast<float16>(a) > b; }
+    local_def bool operator>(const long unsigned int& a,  const float16& b)            { return static_cast<float16>(a) > b; }
+    
+    local_def bool operator<=(const float16& a,            const float& b)              { return a <= static_cast<float16>(b); }
+    local_def bool operator<=(const float16& a,            const double& b)             { return a <= static_cast<float16>(b); }
+    local_def bool operator<=(const float16& a,            const int& b)                { return a <= static_cast<float16>(b); }
+    local_def bool operator<=(const float16& a,            const unsigned int& b)       { return a <= static_cast<float16>(b); }
+    local_def bool operator<=(const float16& a,            const long long& b)          { return a <= static_cast<float16>(b); }
+    local_def bool operator<=(const float16& a,            const unsigned long long& b) { return a <= static_cast<float16>(b); }
+    local_def bool operator<=(const float16& a,            const long int& b)           { return a <= static_cast<float16>(b); }
+    local_def bool operator<=(const float16& a,            const int8_t& b)             { return a <= static_cast<float16>(b); }
+    local_def bool operator<=(const float16& a,            const uint8_t& b)            { return a <= static_cast<float16>(b); }
+    local_def bool operator<=(const float16& a,            const int16_t& b)            { return a <= static_cast<float16>(b); }
+    local_def bool operator<=(const float16& a,            const bool& b)               { return a <= static_cast<float16>(b); }
+    local_def bool operator<=(const float16& a,            const long unsigned int& b)  { return a <= static_cast<float16>(b); }
+    local_def bool operator<=(const bool&    a,            const float16& b)            { return static_cast<float16>(a) <= b; }
+    local_def bool operator<=(const int8_t&  a,            const float16& b)            { return static_cast<float16>(a) <= b; }
+    local_def bool operator<=(const uint8_t& a,            const float16& b)            { return static_cast<float16>(a) <= b; }
+    local_def bool operator<=(const int16_t& a,            const float16& b)            { return static_cast<float16>(a) <= b; }
+    local_def bool operator<=(const int& a,                const float16& b)            { return static_cast<float16>(a) <= b; }
+    local_def bool operator<=(const unsigned int& a,       const float16& b)            { return static_cast<float16>(a) <= b; }
+    local_def bool operator<=(const long long& a,          const float16& b)            { return static_cast<float16>(a) <= b; }
+    local_def bool operator<=(const unsigned long long& a, const float16& b)            { return static_cast<float16>(a) <= b; }
+    local_def bool operator<=(const long int& a,           const float16& b)            { return static_cast<float16>(a) <= b; }
+    local_def bool operator<=(const float& a,              const float16& b)            { return static_cast<float16>(a) <= b; }
+    local_def bool operator<=(const double& a,             const float16& b)            { return static_cast<float16>(a) <= b; }
+    local_def bool operator<=(const long unsigned int& a,  const float16& b)            { return static_cast<float16>(a) <= b; }
+
+    local_def bool operator>=(const float16& a,            const float& b)              { return a >= static_cast<float16>(b); }
+    local_def bool operator>=(const float16& a,            const double& b)             { return a >= static_cast<float16>(b); }
+    local_def bool operator>=(const float16& a,            const int& b)                { return a >= static_cast<float16>(b); }
+    local_def bool operator>=(const float16& a,            const unsigned int& b)       { return a >= static_cast<float16>(b); }
+    local_def bool operator>=(const float16& a,            const long long& b)          { return a >= static_cast<float16>(b); }
+    local_def bool operator>=(const float16& a,            const unsigned long long& b) { return a >= static_cast<float16>(b); }
+    local_def bool operator>=(const float16& a,            const long int& b)           { return a >= static_cast<float16>(b); }
+    local_def bool operator>=(const float16& a,            const int8_t& b)             { return a >= static_cast<float16>(b); }
+    local_def bool operator>=(const float16& a,            const uint8_t& b)            { return a >= static_cast<float16>(b); }
+    local_def bool operator>=(const float16& a,            const int16_t& b)            { return a >= static_cast<float16>(b); }
+    local_def bool operator>=(const float16& a,            const bool& b)               { return a >= static_cast<float16>(b); }
+    local_def bool operator>=(const float16& a,            const long unsigned int& b)  { return a >= static_cast<float16>(b); }
+    local_def bool operator>=(const bool&    a,            const float16& b)            { return static_cast<float16>(a) >= b; }
+    local_def bool operator>=(const int8_t&  a,            const float16& b)            { return static_cast<float16>(a) >= b; }
+    local_def bool operator>=(const uint8_t& a,            const float16& b)            { return static_cast<float16>(a) >= b; }
+    local_def bool operator>=(const int16_t& a,            const float16& b)            { return static_cast<float16>(a) >= b; }
+    local_def bool operator>=(const int& a,                const float16& b)            { return static_cast<float16>(a) >= b; }
+    local_def bool operator>=(const unsigned int& a,       const float16& b)            { return static_cast<float16>(a) >= b; }
+    local_def bool operator>=(const long long& a,          const float16& b)            { return static_cast<float16>(a) >= b; }
+    local_def bool operator>=(const unsigned long long& a, const float16& b)            { return static_cast<float16>(a) >= b; }
+    local_def bool operator>=(const long int& a,           const float16& b)            { return static_cast<float16>(a) >= b; }
+    local_def bool operator>=(const float& a,              const float16& b)            { return static_cast<float16>(a) >= b; }
+    local_def bool operator>=(const double& a,             const float16& b)            { return static_cast<float16>(a) >= b; }
+    local_def bool operator>=(const long unsigned int& a,  const float16& b)            { return static_cast<float16>(a) >= b; }
+   
 
     local_def std::ostream& operator<<(std::ostream &os, const float16 &f) {
         os << static_cast<float>(f);

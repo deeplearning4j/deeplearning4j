@@ -28,10 +28,8 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingIdleStrategy;
-import org.jetbrains.annotations.NotNull;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JSystemProperties;
@@ -44,7 +42,6 @@ import org.nd4j.parameterserver.distributed.v2.enums.TransmissionStatus;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 import org.nd4j.parameterserver.distributed.v2.transport.MessageCallable;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
@@ -103,7 +100,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     protected final AtomicBoolean connectedFlag = new AtomicBoolean(false);
 
     public AeronUdpTransport(@NonNull String ownIp, @NonNull String rootIp, @NonNull VoidConfiguration configuration) {
-        this(ownIp, configuration.getUnicastPort(), rootIp, configuration.getUnicastPort(), configuration);
+        this(ownIp, configuration.getPortSupplier().getPort(), rootIp, configuration.getUnicastControllerPort(), configuration);
     }
 
     /**
@@ -153,7 +150,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     // this executor service han
     protected ExecutorService messagesExecutorService = Executors.newFixedThreadPool(SENDER_THREADS + MESSAGE_THREADS + SUBSCRIPTION_THREADS, new ThreadFactory() {
         @Override
-        public Thread newThread(@NotNull Runnable r) {
+        public Thread newThread(@NonNull Runnable r) {
             val t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
             //TODO implement support for multi-GPU masters
@@ -324,7 +321,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
             val rc = RemoteConnection.builder()
                     .ip(ipAndPort)
-                    .port(voidConfiguration.getUnicastPort())
+                    .port(0)
                     .longHash(hash)
                     .publication(v)
                     .build();

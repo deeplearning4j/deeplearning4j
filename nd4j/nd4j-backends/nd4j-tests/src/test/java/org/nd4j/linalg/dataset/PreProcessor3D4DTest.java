@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
@@ -64,24 +65,24 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
         Construct3dDataSet caseB = new Construct3dDataSet(featureScaleB, timeSteps, samples, 1);
 
         myNormalizer.fit(caseA.sampleDataSet);
-        assertEquals(caseA.expectedMean, myNormalizer.getMean());
+        assertEquals(caseA.expectedMean.castTo(DataType.FLOAT), myNormalizer.getMean().castTo(DataType.FLOAT));
         assertTrue(Transforms.abs(myNormalizer.getStd().div(caseA.expectedStd).sub(1)).maxNumber().floatValue() < 0.01);
 
         myMinMaxScaler.fit(caseB.sampleDataSet);
-        assertEquals(caseB.expectedMin, myMinMaxScaler.getMin());
-        assertEquals(caseB.expectedMax, myMinMaxScaler.getMax());
+        assertEquals(caseB.expectedMin.castTo(DataType.FLOAT), myMinMaxScaler.getMin().castTo(DataType.FLOAT));
+        assertEquals(caseB.expectedMax.castTo(DataType.FLOAT), myMinMaxScaler.getMax().castTo(DataType.FLOAT));
 
         //Same Test with an Iterator, values should be close for std, exact for everything else
         DataSetIterator sampleIterA = new TestDataSetIterator(caseA.sampleDataSet, 5);
         DataSetIterator sampleIterB = new TestDataSetIterator(caseB.sampleDataSet, 5);
 
         myNormalizer.fit(sampleIterA);
-        assertEquals(myNormalizer.getMean(), caseA.expectedMean);
+        assertEquals(myNormalizer.getMean().castTo(DataType.FLOAT), caseA.expectedMean.castTo(DataType.FLOAT));
         assertTrue(Transforms.abs(myNormalizer.getStd().div(caseA.expectedStd).sub(1)).maxNumber().floatValue() < 0.01);
 
         myMinMaxScaler.fit(sampleIterB);
-        assertEquals(myMinMaxScaler.getMin(), caseB.expectedMin);
-        assertEquals(myMinMaxScaler.getMax(), caseB.expectedMax);
+        assertEquals(myMinMaxScaler.getMin().castTo(DataType.FLOAT), caseB.expectedMin.castTo(DataType.FLOAT));
+        assertEquals(myMinMaxScaler.getMax().castTo(DataType.FLOAT), caseB.expectedMax.castTo(DataType.FLOAT));
 
     }
 
@@ -95,7 +96,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
 
         //generating a dataset with consecutive numbers as feature values. Dataset also has masks
         int samples = 100;
-        INDArray featureScale = Nd4j.create(new float[] {1, 2, 10}).reshape(3, 1);
+        INDArray featureScale = Nd4j.create(new double[] {1, 2, 10}).reshape(3, 1);
         int timeStepsU = 5;
         Construct3dDataSet sampleU = new Construct3dDataSet(featureScale, timeStepsU, samples, 1);
         int timeStepsV = 3;
@@ -112,16 +113,16 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
 
         //preprocessors - label and feature values are the same
         myNormalizer.fit(fullDataSetA);
-        assertEquals(myNormalizer.getMean(), fullDataSetNoMask.expectedMean);
-        assertEquals(myNormalizer.getStd(), fullDataSetNoMask.expectedStd);
-        assertEquals(myNormalizer.getLabelMean(), fullDataSetNoMask.expectedMean);
-        assertEquals(myNormalizer.getLabelStd(), fullDataSetNoMask.expectedStd);
+        assertEquals(myNormalizer.getMean().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMean.castTo(DataType.FLOAT));
+        assertEquals(myNormalizer.getStd().castTo(DataType.FLOAT), fullDataSetNoMask.expectedStd.castTo(DataType.FLOAT));
+        assertEquals(myNormalizer.getLabelMean().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMean.castTo(DataType.FLOAT));
+        assertEquals(myNormalizer.getLabelStd().castTo(DataType.FLOAT), fullDataSetNoMask.expectedStd.castTo(DataType.FLOAT));
 
         myMinMaxScaler.fit(fullDataSetAA);
-        assertEquals(myMinMaxScaler.getMin(), fullDataSetNoMask.expectedMin);
-        assertEquals(myMinMaxScaler.getMax(), fullDataSetNoMask.expectedMax);
-        assertEquals(myMinMaxScaler.getLabelMin(), fullDataSetNoMask.expectedMin);
-        assertEquals(myMinMaxScaler.getLabelMax(), fullDataSetNoMask.expectedMax);
+        assertEquals(myMinMaxScaler.getMin().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMin.castTo(DataType.FLOAT));
+        assertEquals(myMinMaxScaler.getMax().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMax.castTo(DataType.FLOAT));
+        assertEquals(myMinMaxScaler.getLabelMin().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMin.castTo(DataType.FLOAT));
+        assertEquals(myMinMaxScaler.getLabelMax().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMax.castTo(DataType.FLOAT));
 
 
         //Same Test with an Iterator, values should be close for std, exact for everything else
@@ -129,22 +130,22 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
         DataSetIterator sampleIterB = new TestDataSetIterator(fullDataSetAA, 5);
 
         myNormalizer.fit(sampleIterA);
-        assertEquals(myNormalizer.getMean(), fullDataSetNoMask.expectedMean);
-        assertEquals(myNormalizer.getLabelMean(), fullDataSetNoMask.expectedMean);
+        assertEquals(myNormalizer.getMean().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMean.castTo(DataType.FLOAT));
+        assertEquals(myNormalizer.getLabelMean().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMean.castTo(DataType.FLOAT));
         assertTrue(Transforms.abs(myNormalizer.getStd().div(fullDataSetNoMask.expectedStd).sub(1)).maxNumber()
                         .floatValue() < 0.01);
         assertTrue(Transforms.abs(myNormalizer.getLabelStd().div(fullDataSetNoMask.expectedStd).sub(1)).maxNumber()
                         .floatValue() < 0.01);
 
         myMinMaxScaler.fit(sampleIterB);
-        assertEquals(myMinMaxScaler.getMin(), fullDataSetNoMask.expectedMin);
-        assertEquals(myMinMaxScaler.getMax(), fullDataSetNoMask.expectedMax);
-        assertEquals(myMinMaxScaler.getLabelMin(), fullDataSetNoMask.expectedMin);
-        assertEquals(myMinMaxScaler.getLabelMax(), fullDataSetNoMask.expectedMax);
+        assertEquals(myMinMaxScaler.getMin().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMin.castTo(DataType.FLOAT));
+        assertEquals(myMinMaxScaler.getMax().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMax.castTo(DataType.FLOAT));
+        assertEquals(myMinMaxScaler.getLabelMin().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMin.castTo(DataType.FLOAT));
+        assertEquals(myMinMaxScaler.getLabelMax().castTo(DataType.FLOAT), fullDataSetNoMask.expectedMax.castTo(DataType.FLOAT));
     }
 
     @Test
-    public void testStdX() throws Exception {
+    public void testStdX() {
         INDArray array = Nd4j.create(new double[] {11.10, 22.20, 33.30, 44.40, 55.50, 66.60, 77.70, 88.80, 99.90,
                         111.00, 122.10, 133.20, 144.30, 155.40, 166.50, 177.60, 188.70, 199.80, 210.90, 222.00, 233.10,
                         244.20, 255.30, 266.40, 277.50, 288.60, 299.70, 310.80, 321.90, 333.00, 344.10, 355.20, 366.30,
@@ -230,9 +231,9 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
                         1, 098.00, 1, 107.00, 1, 116.00, 1, 125.00, 1, 134.00, 1, 143.00, 1, 152.00, 1, 161.00, 1,
                         170.00, 1, 179.00, 1, 188.00, 1, 197.00, 1, 206.00, 1, 215.00, 1, 224.00, 1, 233.00, 1, 242.00,
                         1, 251.00, 1, 260.00, 1, 269.00, 1, 278.00, 1, 287.00, 1, 296.00, 1, 305.00, 1, 314.00, 1,
-                        323.00, 1, 332.00, 1, 341.00, 1, 350.00});
+                        323.00, 1, 332.00, 1, 341.00, 1, 350.00}).reshape(1, -1);
 
-        float templateStd = array.std(1).getFloat(0, 0);
+        float templateStd = array.std(1).getFloat(0);
 
         assertEquals(301.22601, templateStd, 0.01);
     }
@@ -325,9 +326,9 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             // FIXME: int cast
             numFeatures = (int) featureScale.size(0);
             maxN = samples * timeSteps;
-            INDArray template = Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps);
-            template = Nd4j.concat(0, Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps), template);
-            template = Nd4j.concat(0, Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps), template);
+            INDArray template = Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps).reshape(1, -1);
+            template = Nd4j.concat(0, Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps).reshape(1, -1), template);
+            template = Nd4j.concat(0, Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps).reshape(1, -1), template);
             template.muliColumnVector(featureScale);
             template = template.reshape(1, numFeatures, timeSteps);
             INDArray featureMatrix = template.dup();
@@ -336,9 +337,9 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             int newEnd;
             for (int i = 1; i < samples; i++) {
                 newEnd = newStart + timeSteps - 1;
-                template = Nd4j.linspace(newStart, newEnd, timeSteps);
-                template = Nd4j.concat(0, Nd4j.linspace(newStart, newEnd, timeSteps), template);
-                template = Nd4j.concat(0, Nd4j.linspace(newStart, newEnd, timeSteps), template);
+                template = Nd4j.linspace(newStart, newEnd, timeSteps).reshape(1, -1);
+                template = Nd4j.concat(0, Nd4j.linspace(newStart, newEnd, timeSteps).reshape(1, -1), template);
+                template = Nd4j.concat(0, Nd4j.linspace(newStart, newEnd, timeSteps).reshape(1, -1), template);
                 template.muliColumnVector(featureScale);
                 template = template.reshape(1, numFeatures, timeSteps);
                 newStart = newEnd + 1;
@@ -351,18 +352,18 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             //calculating stats
             // The theoretical mean should be the mean of 1,..samples*timesteps
             float theoreticalMean = origin - 1 + (samples * timeSteps + 1) / 2.0f;
-            expectedMean = Nd4j.create(new double[] {theoreticalMean, theoreticalMean, theoreticalMean}).reshape(3, 1);
+            expectedMean = Nd4j.create(new double[] {theoreticalMean, theoreticalMean, theoreticalMean}).reshape(3, 1).castTo(featureScale.dataType());
             expectedMean.muliColumnVector(featureScale);
 
             float stdNaturalNums = (float) Math.sqrt((samples * samples * timeSteps * timeSteps - 1) / 12);
-            expectedStd = Nd4j.create(new float[] {stdNaturalNums, stdNaturalNums, stdNaturalNums}).reshape(3, 1);
+            expectedStd = Nd4j.create(new double[] {stdNaturalNums, stdNaturalNums, stdNaturalNums}).reshape(3, 1).castTo(Nd4j.defaultFloatingPointType());
             expectedStd.muliColumnVector(Transforms.abs(featureScale, true));
             //preprocessors use the population std so divides by n not (n-1)
             expectedStd = expectedStd.dup().muli(Math.sqrt(maxN)).divi(Math.sqrt(maxN)).transpose();
 
             //min max assumes all scaling values are +ve
-            expectedMin = Nd4j.ones(3, 1).muliColumnVector(featureScale);
-            expectedMax = Nd4j.ones(3, 1).muli(samples * timeSteps).muliColumnVector(featureScale);
+            expectedMin = Nd4j.ones(Nd4j.defaultFloatingPointType(), 3, 1).muliColumnVector(featureScale);
+            expectedMax = Nd4j.ones(Nd4j.defaultFloatingPointType(),3, 1).muli(samples * timeSteps).muliColumnVector(featureScale);
         }
 
     }

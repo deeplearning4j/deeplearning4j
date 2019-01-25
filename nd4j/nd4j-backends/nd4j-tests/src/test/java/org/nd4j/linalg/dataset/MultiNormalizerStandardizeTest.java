@@ -56,7 +56,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
         // Prepare test data
         int nSamples = 5120;
 
-        INDArray values = Nd4j.linspace(1, nSamples, nSamples).transpose();
+        INDArray values = Nd4j.linspace(1, nSamples, nSamples).reshape(1, -1).transpose();
         INDArray input1 = values.mul(INPUT1_SCALE);
         INDArray input2 = values.mul(INPUT2_SCALE);
         INDArray output1 = values.mul(OUTPUT1_SCALE);
@@ -154,7 +154,7 @@ public class MultiNormalizerStandardizeTest extends BaseNd4jTest {
             INDArray inputA = a.getFeatures()[i];
             INDArray inputB = b.getFeatures()[i];
             INDArray delta = Transforms.abs(inputA.sub(inputB)).div(inputB);
-            double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0, 0);
+            double maxdeltaPerc = delta.max(0, 1).mul(100).getDouble(0);
             if (maxdeltaPerc > max) {
                 max = maxdeltaPerc;
             }

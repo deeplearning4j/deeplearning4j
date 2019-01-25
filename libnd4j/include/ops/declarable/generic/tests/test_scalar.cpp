@@ -29,8 +29,8 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            T val = input->getIndexedScalar(0) + 2.0;
-            output->putIndexedScalar(0, val);
+            double val = input->e<double>(0) + 2.0;
+            output->p(0, val);
 
             return Status::OK();
         }
@@ -48,8 +48,15 @@ namespace nd4j {
             newShape[6] = 1;
             newShape[7] = 99;
 
+            ArrayOptions::setDataType(newShape, ArrayOptions::dataType(inputShape->at(0)));
 
             return SHAPELIST(newShape);
+        }
+
+        DECLARE_TYPES(test_scalar) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setSameMode(true);
         }
     }
 }

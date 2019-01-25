@@ -104,7 +104,9 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD bool strideEquals(Nd4jLong *stride1,int rank1,Nd4jLong *stride2,int rank2);
 
-    ND4J_EXPORT _CUDA_HD bool equalsSoft(Nd4jLong *shapeA, Nd4jLong *shapeB);
+    ND4J_EXPORT _CUDA_HD bool equalsSoft(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
+
+    ND4J_EXPORT _CUDA_HD bool equalsTypesAndShapesSoft(const Nd4jLong *shapeA, const Nd4jLong *shapeB);
 
     ND4J_EXPORT _CUDA_HD bool equalsStrict(Nd4jLong *shapeA, Nd4jLong *shapeB);
 
@@ -128,17 +130,17 @@ namespace shape {
     * Get the shape info buffer
     * for the given rank and shape.
     */
-    ND4J_EXPORT _CUDA_HD Nd4jLong *shapeBuffer(int rank, Nd4jLong *shape);
+    ND4J_EXPORT _CUDA_HD Nd4jLong *shapeBuffer(int rank, nd4j::DataType dtype, Nd4jLong *shape);
 
-    ND4J_EXPORT _CUDA_HD Nd4jLong *shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *buffer);
+    ND4J_EXPORT _CUDA_HD Nd4jLong *shapeBuffer(int rank, nd4j::DataType dtype, Nd4jLong *shape, Nd4jLong *buffer);
 
     /**
     * Get the shape info buffer
     * for the given rank and shape.
      */
-    ND4J_EXPORT _CUDA_HD Nd4jLong *shapeBufferFortran(int rank, Nd4jLong *shape);
+    ND4J_EXPORT _CUDA_HD Nd4jLong *shapeBufferFortran(int rank, nd4j::DataType dtype, Nd4jLong *shape);
 
-    ND4J_EXPORT _CUDA_HD Nd4jLong *shapeBufferFortran(int rank, Nd4jLong *shape, Nd4jLong *output);
+    ND4J_EXPORT _CUDA_HD Nd4jLong *shapeBufferFortran(int rank, nd4j::DataType dtype, Nd4jLong *shape, Nd4jLong *output);
 
     //ND4J_EXPORT _CUDA_HD void doPermuteShapeBuffer(Nd4jLong *shapeBuffer, int* rearrange, Nd4jLong *tmpBuffer);
 
@@ -214,6 +216,8 @@ namespace shape {
 
 
     ND4J_EXPORT _CUDA_HD bool strideDescendingCAscendingF(const Nd4jLong *shapeBuffer);
+
+    ND4J_EXPORT _CUDA_HD bool isStrideSimple(const Nd4jLong* shapeInfo);
 
 
 /**
@@ -439,7 +443,11 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD int shapeInfoLength(Nd4jLong* shapeInfo);
 
+    ND4J_EXPORT _CUDA_HD int shapeInfoLength(const Nd4jLong* shapeInfo);
+
     ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(int rank);
+
+    ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(const Nd4jLong* shapeInfo);
 
     ND4J_EXPORT _CUDA_HD size_t shapeInfoByteLength(const Nd4jLong* shapeInfo);
 
@@ -495,7 +503,7 @@ namespace shape {
  * Returns the element wise stride for this information
  * buffer
  */
-   ND4J_EXPORT _CUDA_HD Nd4jLong elementWiseStride(Nd4jLong *buffer);
+   ND4J_EXPORT _CUDA_HD Nd4jLong elementWiseStride(const Nd4jLong *buffer);
 
 
     /**
@@ -955,6 +963,20 @@ namespace shape {
   */
     ND4J_EXPORT _CUDA_HD int sub2Ind(int rank, Nd4jLong *shape, Nd4jLong *indices);
 
+   /**
+   * increment n-dimensional array by one iteration by changing coord appropriately  
+   * for example we have array with shape {2, 3}:
+   * - if input coord = {0,1}, then output coord = {0,2}
+   * - if input coord = {0,2}, then output coord = {1,0}
+   * so the aim is to produce following subsequence of coord: {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2}   
+   */
+   
+   /* calculates an array buffer offset for given "index" using following formula: offset = coord_0*stride_0 + coord_1*stride_1 + ... + coord_{rank-1}*stride_{rank-1}
+    * arrLen - array length
+   */
+    ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen);
+    ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOrderOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen, const char order);
+    
     /**
    * Compute the real linear indices for the given shape and stride
    */
@@ -1015,14 +1037,9 @@ namespace shape {
 
 
     // return absolute index of array min, min is sub-array of max, index to be returned is min index and corresponds to maxIdx of max array
-    ND4J_EXPORT _CUDA_HD Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx);
+    ND4J_EXPORT _CUDA_H Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx);
 
-    ND4J_EXPORT _CUDA_HD void shapeScalar(Nd4jLong* const buffer);
-
-    ND4J_EXPORT _CUDA_HD void shapeVector(const Nd4jLong length, Nd4jLong* const buffer);
-
-
-    ND4J_EXPORT _CUDA_HD void shapeOldScalar(Nd4jLong* const buffer, const char order);
+    ND4J_EXPORT _CUDA_HD void shapeOldScalar(nd4j::DataType dtype, Nd4jLong* const buffer, const char order);
 
 
 
@@ -1197,7 +1214,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
             retShapeLength = 2;
         }
 
-        auto ret = shape::shapeBuffer(retShapeLength,retShape);
+        auto ret = shape::shapeBuffer(retShapeLength, nd4j::ArrayOptions::dataType(originalShapeBuffer), retShape);
         delete[] retShape;
 
         return ret;
@@ -1434,19 +1451,20 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         int rank = shape[0];
         int doubleRank = 2*rank;
         
-        if (rank > 0)
-            if(order == 'c') {            
+        if (rank > 0) {
+            if (order == 'c') {
                 shape[doubleRank] = 1;          // set unity as last stride for c order
-                for(int j=1; j<rank; ++j)
-                    shape[doubleRank-j] = shape[doubleRank-j+1]*shape[rank+1-j];
+                for (int j = 1; j < rank; ++j) {
+                    shape[doubleRank - j] = shape[doubleRank - j + 1] * shape[rank + 1 - j];
+                }
+            } else {
+                shape[rank + 1] = 1;             // set unity as first stride for f order
+                for (int j = rank + 1; j < doubleRank; ++j) {
+                    shape[j + 1] = shape[j] * shape[j - rank];
+                }
             }
-            else {            
-                shape[rank+1] = 1;             // set unity as first stride for f order
-                for(int j=rank+1; j<doubleRank; ++j)
-                    shape[j+1] = shape[j]*shape[j-rank];            
-            }
-        // set last 3 elements in shape
-        shape[doubleRank + 1] = 0;
+        }
+        // set last 2 elements in shape
         shape[doubleRank + 2] = 1;
         shape[doubleRank + 3] = (int)order;
     }
@@ -1651,7 +1669,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
  * Get the shape info buffer
  * for the given rank and shape.
  */
-    INLINEDEF _CUDA_HD Nd4jLong *shapeBuffer(int rank, Nd4jLong *shape) {
+    INLINEDEF _CUDA_HD Nd4jLong *shapeBuffer(int rank, nd4j::DataType dtype, Nd4jLong *shape) {
         Nd4jLong *stride = shape::calcStrides(shape, rank);
 
         traceNew(11);
@@ -1667,6 +1685,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         auto shapeInfoBuffer = shape::toShapeBuffer(shapeInfo);
         delete[] stride;
         delete shapeInfo;
+        nd4j::ArrayOptions::setDataType(shapeInfoBuffer, dtype);
         return shapeInfoBuffer;
     }
 
@@ -1675,7 +1694,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
      *
      * This method is used only for SoftMax
      */
-    INLINEDEF _CUDA_HD Nd4jLong *shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *buffer) {
+    INLINEDEF _CUDA_HD Nd4jLong *shapeBuffer(int rank, nd4j::DataType dtype, Nd4jLong *shape, Nd4jLong *buffer) {
         Nd4jLong stride[MAX_RANK];
         shape::calcStrides(shape,rank, stride);
 
@@ -1690,6 +1709,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         shapeInfo.order = 'c';
         shapeInfo.elementWiseStride = elementWiseStride;
         shape::toShapeBuffer(&shapeInfo, buffer);
+        nd4j::ArrayOptions::setDataType(buffer, dtype);
         return buffer;
     }
 
@@ -1697,7 +1717,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
 * Get the shape info buffer
 * for the given rank and shape.
 */
-    INLINEDEF _CUDA_HD Nd4jLong *shapeBufferFortran(int rank, Nd4jLong *shape) {
+    INLINEDEF _CUDA_HD Nd4jLong *shapeBufferFortran(int rank, nd4j::DataType dtype, Nd4jLong *shape) {
         auto stride = shape::calcStridesFortran(shape,rank);
 
         traceNew(12);
@@ -1714,10 +1734,11 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         auto shapeInfoBuffer = shape::toShapeBuffer(shapeInfo);
         delete[] stride;
         delete shapeInfo;
+        nd4j::ArrayOptions::setDataType(shapeInfoBuffer, dtype);
         return shapeInfoBuffer;
     }
 
-    INLINEDEF _CUDA_HD Nd4jLong *shapeBufferFortran(int rank, Nd4jLong *shape, Nd4jLong *output) {
+    INLINEDEF _CUDA_HD Nd4jLong *shapeBufferFortran(int rank, nd4j::DataType dtype, Nd4jLong *shape, Nd4jLong *output) {
         Nd4jLong stride[MAX_RANK];
         shape::calcStridesFortran(shape,rank, stride);
 
@@ -1732,6 +1753,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         shapeInfo.order = 'f';
         shapeInfo.elementWiseStride = elementWiseStride;
         shape::toShapeBuffer(&shapeInfo, output);
+        nd4j::ArrayOptions::setDataType(output, dtype);
         return output;
     }
 
@@ -1906,6 +1928,46 @@ template <typename T>
      */
     INLINEDEF _CUDA_HD void ind2subC(int rank, Nd4jLong *shape, Nd4jLong index, Nd4jLong *out) {
         ind2subC(rank,shape, index,shape::prodLong(shape,rank),out);
+    }
+
+//////////////////////////////////////////////////////////////////////    
+    INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen) {
+        
+        Nd4jLong offset = 0;
+
+        for(int i = 1; i <= *shapeInfo; ++i) {
+            arrLen /= shapeInfo[i];
+            if(arrLen > 0 && shapeInfo[i] > 1) {                
+                offset += (index / arrLen) * shapeInfo[i + *shapeInfo];
+                index %= arrLen;
+            }
+        }
+        return offset;
+    }
+
+//////////////////////////////////////////////////////////////////////    
+    INLINEDEF _CUDA_HD Nd4jLong getIndexOrderOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen, const char order) {
+
+        Nd4jLong offset = 0;
+        if(order == 'c') {
+            for(int i = 1; i <= *shapeInfo; ++i) {
+                arrLen /= shapeInfo[i];
+                if(arrLen > 0 && shapeInfo[i] > 1) {
+                    offset += (index / arrLen) * shapeInfo[i + *shapeInfo];
+                    index %= arrLen;
+                }
+            }
+        }
+        else {
+            for(int i = *shapeInfo; i >= 1 ; --i) {
+                arrLen /= shapeInfo[i];
+                if(arrLen > 0 && shapeInfo[i] > 1) {
+                    offset += (index / arrLen) * shapeInfo[i + *shapeInfo];
+                    index %= arrLen;
+                }
+            }
+        }
+        return offset;
     }
 
 /**
@@ -2586,7 +2648,11 @@ template <typename T>
     }
 
     INLINEDEF _CUDA_HD int shapeInfoLength(Nd4jLong* shape) {
-        return shapeInfoLength(shape[0]);
+        return shapeInfoLength(static_cast<int>(shape[0]));
+    }
+
+    INLINEDEF _CUDA_HD int shapeInfoLength(const Nd4jLong* shape) {
+        return shapeInfoLength(static_cast<int>(shape[0]));
     }
 
     INLINEDEF _CUDA_HD size_t shapeInfoByteLength(int rank) {
@@ -2710,8 +2776,8 @@ template <typename T>
  * Returns the element wise stride for this information
  * buffer
  */
-    INLINEDEF _CUDA_HD Nd4jLong elementWiseStride(Nd4jLong *buffer) {
-        return buffer[shapeInfoLength(buffer[0]) - 2];
+    INLINEDEF _CUDA_HD Nd4jLong elementWiseStride(const Nd4jLong *buffer) {
+        return buffer[shapeInfoLength(static_cast<int>(buffer[0])) - 2];
     }
 
 /**
@@ -2999,7 +3065,7 @@ template <typename T>
      * @param shape
      * @return
      */
-    INLINEDEF _CUDA_HD bool equalsSoft(Nd4jLong *shapeA, Nd4jLong *shapeB) {
+    INLINEDEF _CUDA_HD bool equalsSoft(const Nd4jLong *shapeA, const Nd4jLong *shapeB) {
         if (shapeA[0] != shapeB[0])
             return false;
 
@@ -3014,6 +3080,11 @@ template <typename T>
                 return false;
 
         return true;
+    }
+
+    INLINEDEF _CUDA_HD bool equalsTypesAndShapesSoft(const Nd4jLong *shapeA, const Nd4jLong *shapeB) {
+
+        return equalsSoft(shapeA, shapeB) && shapeA[shapeInfoLength(shapeA) - 3] == shapeB[shapeInfoLength(shapeB) - 3];
     }
 
 /**
@@ -3345,7 +3416,7 @@ template <typename T>
  *
  */
     INLINEDEF _CUDA_HD int tadsPerBlock(int blockSize, int tads) {
-        return (int) nd4j::math::nd4j_ceil<double>(tads / (double) blockSize);
+        return  nd4j::math::nd4j_ceil<double, int>(tads / (double) blockSize);
     }
 
 /**
@@ -3491,7 +3562,8 @@ template <typename T>
     }
 
     template <typename T>
-    INLINEDEF _CUDA_HD void printArray(T *arr,int length, const char * message) {
+    INLINEDEF _CUDA_HD void printArray(void *varr,int length, const char * message) {
+        auto arr = reinterpret_cast<T*>(varr);
         if (message != nullptr)
             printf("%s: [", message);
         else
@@ -3760,7 +3832,7 @@ template <typename T>
 
     INLINEDEF _CUDA_HD Nd4jLong *shapeBufferOfNpy(int rank, unsigned int* shape,bool fortranOrder) {
         if(fortranOrder) {
-            Nd4jLong *shapeBufferRet = shape::shapeBufferFortran(rank,(Nd4jLong *) shape);
+            Nd4jLong *shapeBufferRet = shape::shapeBufferFortran(rank, nd4j::FLOAT32,(Nd4jLong *) shape);
             return shapeBufferRet;
         }
         else {
@@ -3769,7 +3841,7 @@ template <typename T>
                 newShape[i] = shape[i];
             }
 
-            Nd4jLong *shapeBufferRet = shape::shapeBuffer(rank,newShape);
+            Nd4jLong *shapeBufferRet = shape::shapeBuffer(rank, nd4j::FLOAT32, newShape);
             delete[] newShape;
             return shapeBufferRet;
 
@@ -3798,6 +3870,11 @@ template <typename T>
             printf("Unknown order for array!\n");
             return false;
         }
+    }
+
+    INLINEDEF _CUDA_HD bool isStrideSimple(const Nd4jLong* shapeInfo) {
+
+        return (order(shapeInfo) == 'c') && (elementWiseStride(shapeInfo) > 0);
     }
 
 ////////////////////////////////////////////////////////////////////////// 
@@ -3955,6 +4032,7 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
         target[shape::shapeInfoLength(newRank) - 3] = 0;
         target[shape::shapeInfoLength(newRank) - 2] = -1;
         target[shape::shapeInfoLength(newRank) - 1] = isFOrder ? 102 : 99;
+        nd4j::ArrayOptions::setDataType(target, nd4j::ArrayOptions::dataType(oldShape));
 
         delete[] olddims;
         delete[] oldstrides;
@@ -4101,62 +4179,41 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
         // check if min dimension is still negative and whether max dimension is bigger then rank-1
         if(dimensions[0] < 0 || dimensions.back() > (rank-1))
             throw std::runtime_error("shape::checkDimensions method: the negative dimension is still present in input array after transform or the too big dimension is present ( > rank of array) !");
-
     }
 
 
 
-// return absolute index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array 
-INLINEDEF _CUDA_H Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx) {
+    // return absolute index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array
+    INLINEDEF _CUDA_H Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx) {
+        const auto rankMax = shape::rank(maxShapeInfo);
+        const auto rankMin = shape::rank(minShapeInfo);
 
-    const int rankMax = maxShapeInfo[0];
-    const int rankMin = minShapeInfo[0];
+        Nd4jLong idxPerRank[MAX_RANK];
+        ind2subC(rankMax, const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<int&>(maxIdx), idxPerRank);
 
-    auto* idxPerRank = new Nd4jLong[rankMax];
-    ind2subC(rankMax, const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<int&>(maxIdx), idxPerRank);
+        Nd4jLong minIdx = 0;
+        for(int i = 0; i < rankMin; ++i) {
+            if(minShapeInfo[rankMin - i] == 1 || idxPerRank[rankMax - i - 1] == 0)
+                continue;
+            if(idxPerRank[rankMax - i - 1] >= minShapeInfo[rankMin - i])
+                idxPerRank[rankMax - i - 1] %= minShapeInfo[rankMin - i];
+            minIdx += idxPerRank[rankMax - i - 1] * stride(const_cast<Nd4jLong*>(minShapeInfo))[rankMin - i - 1];
+        }
 
-    Nd4jLong minIdx = 0;
-    for(int i = 0; i < rankMin; ++i) {
-        if(minShapeInfo[rankMin - i] == 1 || idxPerRank[rankMax - i - 1] == 0)
-            continue;
-        if(idxPerRank[rankMax - i - 1] >= minShapeInfo[rankMin - i])
-            idxPerRank[rankMax - i - 1] %= minShapeInfo[rankMin - i];
-        minIdx += idxPerRank[rankMax - i - 1] * stride(const_cast<Nd4jLong*>(minShapeInfo))[rankMin - i - 1];
+        return minIdx;
     }
 
-    delete[] idxPerRank;
+    INLINEDEF _CUDA_HD void shapeOldScalar(nd4j::DataType dataType, Nd4jLong* const buffer, const char order) {
 
-    return minIdx;
-}
-
-
-    INLINEDEF _CUDA_HD void shapeScalar(Nd4jLong* const buffer) {
-        
-        buffer[0] = 0;
-        buffer[1] = 0;        
-        buffer[2] = 1;        
-        buffer[3] = 99;
-    }
-
-    INLINEDEF _CUDA_HD void shapeOldScalar(Nd4jLong* const buffer, const char order) {
-        
         buffer[0] = 2;
         buffer[1] = 1;
         buffer[2] = 1;
         buffer[3] = 1;
         buffer[4] = 1;
-        buffer[5] = 0;
         buffer[6] = 1;
         buffer[7] = (int)order;
-    }
 
-    INLINEDEF _CUDA_HD void shapeVector(const Nd4jLong length, Nd4jLong* const buffer) {
-        buffer[0] = 1;
-        buffer[1] = length;
-        buffer[2] = 1;
-        buffer[3] = 0;
-        buffer[4] = 1;
-        buffer[5] = 99;
+        nd4j::ArrayOptions::setDataType(buffer, dataType);
     }
 
     template <typename T1, typename T2>

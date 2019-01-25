@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
 import java.util.List;
 
@@ -57,12 +58,17 @@ public interface CustomOp {
 
     double[] tArgs();
 
+    boolean[] bArgs();
+
     void addIArgument(int... arg);
 
     void addIArgument(long... arg);
 
+    void addBArgument(boolean... arg);
 
     void removeIArgument(Integer arg);
+
+    Boolean getBArgument(int index);
 
     Long getIArgument(int index);
 
@@ -76,6 +82,7 @@ public interface CustomOp {
 
     int numTArguments();
 
+    int numBArguments();
 
     void addInputArgument(INDArray... arg);
 
@@ -99,7 +106,7 @@ public interface CustomOp {
      * Calculate the output shape for this op
      * @return
      */
-    List<long[]> calculateOutputShape();
+    List<LongShapeDescriptor> calculateOutputShape();
 
     /**
      * Get the custom op descriptor if one is available.
@@ -112,11 +119,4 @@ public interface CustomOp {
      * otherwise throws an {@link org.nd4j.linalg.exception.ND4JIllegalStateException}
      */
     void assertValidForExecution();
-
-    /**
-     * Attempt to populate inputs and outputs from samediff.
-     * This method will not attempt to fill in integer or double aruguments.
-     */
-    void populateInputsAndOutputsFromSameDiff();
-
 }

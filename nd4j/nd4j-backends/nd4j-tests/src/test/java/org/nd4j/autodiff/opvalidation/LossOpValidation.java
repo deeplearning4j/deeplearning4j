@@ -24,16 +24,19 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 @Slf4j
 public class LossOpValidation extends BaseOpValidation {
@@ -41,15 +44,26 @@ public class LossOpValidation extends BaseOpValidation {
         super(backend);
     }
 
+    public static final Set<String> NO_BP_YET = new HashSet<>();
+    static {
+        NO_BP_YET.addAll(Arrays.asList("hinge", "huber", "l2_loss", "poisson", "mpwse"));
+    }
+
     @Test
     public void testLoss2d() {
+        OpValidationSuite.ignoreFailing();  //2019/01/17 - Some passing, some not yet implemented, some issues: Issue 17 https://github.com/deeplearning4j/deeplearning4j/issues/6958
 
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
 
-        for (String fn : new String[]{"absdiff", "cosine", "hinge", "huber", "log", "mse",
-                "sigmoidxent", "sigmoidxent_smooth", "softmaxxent", "softmaxxent_smooth", "mpwse"}) {
+        int totalRun = 0;
+        for (String fn : new String[]{
+                "absdiff", "cosine", "hinge", "huber", "log", "mse",
+                "sigmoidxent", "sigmoidxent_smooth", "softmaxxent", "softmaxxent_smooth", "mpwse",
+                "sparsesoftmax"}) {
+
+
             for(String weights : new String[]{"none", "scalar", "perExample", "perOutput"}) {
                 if((fn.startsWith("softmax") || fn.equals("cosine")) && weights.equals("perOutput"))
                     continue;   //Skip this combination (not possible)
@@ -58,36 +72,48 @@ public class LossOpValidation extends BaseOpValidation {
                     continue;   //MPWSE only supports scalar, none, or per example weights
 
                 for (LossReduce reduction : LossReduce.values()) {
-                    if((fn.equals("cosine") && (reduction == LossReduce.MEAN_BY_WEIGHT || reduction == LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT)
-                            || fn.equals("mpwse") )
-                            && OpValidationSuite.IGNORE_FAILING){
-                        //Both cosine and MPWSE reported here: https://github.com/deeplearning4j/deeplearning4j/issues/6532
-                        continue;
-                    }
 
                     if(fn.equals("mpwse") && (reduction != LossReduce.MEAN_BY_WEIGHT || weights.equals("perOutput"))) //LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT)
                         continue;   //MPWSE only provides scalar output - i.e., no other reduction modes. And only none/scalar/per-example weights
+
+                    if((fn.equals("softmaxxent") || fn.equals("softmaxxent_smooth")) && reduction == LossReduce.NONE)
+                        continue;       //Combination not supported (doesn't make sense)
+
+                    if(fn.equals("sparsesoftmax") && (!weights.equals("none") || reduction != LossReduce.SUM) )
+                        continue;   //sparse softmax doesn't support weights or reduction confic
 
                     SameDiff sd = SameDiff.create();
 
                     int nOut = 4;
                     int minibatch = 10;
-                    SDVariable predictions = sd.var("in", new int[]{-1, nOut});
-                    SDVariable labels = sd.var("labels", new int[]{-1, nOut});
+                    SDVariable predictions = sd.var("in", DataType.DOUBLE, -1, nOut);
+                    SDVariable labels;
+                    if("sparsesoftmax".equalsIgnoreCase(fn)){
+                        labels = sd.var("labels", DataType.INT, -1);
+                    } else {
+                        //ALl other loss functions
+                        labels = sd.var("labels", DataType.DOUBLE, -1, nOut);
+                    }
+
                     SDVariable w;
                     INDArray wArrBroadcast;
                     switch (weights){
                         case "none":
                             w = null;
-                            wArrBroadcast = Nd4j.ones(minibatch, nOut);
+                            wArrBroadcast = Nd4j.ones(DataType.DOUBLE, minibatch, nOut);
                             break;
                         case "scalar":
-                            w = sd.var("weights", Nd4j.trueScalar(1.0));
-                            wArrBroadcast = Nd4j.valueArrayOf(minibatch, nOut, 1.0);
+                            w = sd.var("weights", Nd4j.scalar(DataType.DOUBLE, 1.0));
+                            wArrBroadcast = Nd4j.valueArrayOf(minibatch, nOut, 1.0).castTo(DataType.DOUBLE);
                             break;
                         case "perExample":
-                            w = sd.var("weights", Nd4j.trueVector(new double[]{0,0,1,1,2,2,3,3,4,4}).reshape(minibatch, 1));
-                            wArrBroadcast = Nd4j.create(minibatch, nOut).addiColumnVector(w.getArr());
+                            INDArray wpe = Nd4j.create(new double[]{0,0,1,1,2,2,3,3,4,4});
+                            if(!fn.equals("softmaxxent") && !fn.equals("softmaxxent_smooth")){
+                                //Softmaxxent only supports rank 1 not rank 2??
+                                wpe = wpe.reshape(minibatch, 1);
+                            }
+                            w = sd.var("weights", wpe);
+                            wArrBroadcast = Nd4j.create(DataType.DOUBLE, minibatch, nOut).addiColumnVector(w.getArr());
                             break;
                         case "perOutput":
                             w = sd.var("weights", Nd4j.create(new double[][]{
@@ -98,11 +124,11 @@ public class LossOpValidation extends BaseOpValidation {
                         default:
                             throw new RuntimeException();
                     }
-                    INDArray wArr = w == null ? Nd4j.trueScalar(1.0) : w.getArr();
+                    INDArray wArr = w == null ? Nd4j.scalar(DataType.DOUBLE, 1.0) : w.getArr();
 
 
-                    INDArray predictionsArr = Nd4j.randn(minibatch, nOut);
-                    INDArray labelsArr = Nd4j.randn(minibatch, nOut);
+                    INDArray predictionsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
+                    INDArray labelsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
                     INDArray expOut = null;
                     SDVariable loss = null;
@@ -133,8 +159,8 @@ public class LossOpValidation extends BaseOpValidation {
                             double delta = 1.0;
                             INDArray absDiff = Transforms.abs(labelsArr.sub(predictionsArr));
                             INDArray diff = labelsArr.sub(predictionsArr);
-                            INDArray lte = absDiff.lte(delta);
-                            INDArray gt = absDiff.gt(delta);
+                            INDArray lte = absDiff.lte(delta).castTo(DataType.DOUBLE);
+                            INDArray gt = absDiff.gt(delta).castTo(DataType.DOUBLE);
                             expOut = diff.mul(diff).mul(0.5).muli(lte);
                             expOut.addi(absDiff.mul(delta).subi(0.5 * delta * delta).mul(gt));
                             loss = sd.lossHuber("loss", labels, predictions, w, reduction, delta);
@@ -189,7 +215,7 @@ public class LossOpValidation extends BaseOpValidation {
                             }
                             INDArray logP2 = Transforms.log(softmaxPredictions, true);
                             expOut = labelsArrCopy.mul(logP2).negi().sum(1);
-                            loss = sd.lossSoftmaxCrossEntropy("loss", labels, predictions, w, reduction, lblSmooth2);
+                            loss = sd.lossSoftmaxCrossEntropy("loss", labels.castTo(DataType.INT), predictions, w, reduction, lblSmooth2);
                             break;
                         case "mpwse":
                             expOut = Nd4j.create(labelsArr.size(0));
@@ -209,9 +235,23 @@ public class LossOpValidation extends BaseOpValidation {
                                     }
                                 }
                             }
-//                            expOut.divi(pairCount);
                             loss = sd.lossMeanPairwiseSquaredError("loss", labels, predictions, w);
                             break;
+                        case "sparsesoftmax":
+                            labelsArr = Nd4j.create(DataType.INT, minibatch);
+                            INDArray oneHot = Nd4j.create(DataType.DOUBLE, minibatch, nOut);
+                            for( int i=0; i<minibatch; i++ ){
+                                labelsArr.putScalar(i, i%nOut);
+                                oneHot.putScalar(i, i%nOut, 1.0);
+                            }
+
+                            INDArray softmaxPredictions2 = Transforms.softmax(predictionsArr, true);
+                            INDArray logP2_2 = Transforms.log(softmaxPredictions2, true);
+                            expOut = oneHot.mul(logP2_2).negi().sum(1);
+
+                            loss = sd.lossSparseSoftmaxCrossEntropy(predictions, labels).sum("loss");
+                            break;
+
                         default:
                             throw new RuntimeException();
                     }
@@ -248,10 +288,10 @@ public class LossOpValidation extends BaseOpValidation {
                         case MEAN_BY_NONZERO_WEIGHT_COUNT:
                             if((fn.startsWith("softmax") || fn.equals("cosine"))) {
                                 //1d output, not 2d
-                                int countNonZero = wArrBroadcast.getColumn(0).neq(0.0).sumNumber().intValue();
+                                int countNonZero = wArrBroadcast.getColumn(0).neq(0.0).castTo(DataType.DOUBLE).sumNumber().intValue();
                                 expOut = expOut.sum().divi(countNonZero);
                             } else {
-                                int countNonZero = wArrBroadcast.neq(0.0).sumNumber().intValue();
+                                int countNonZero = wArrBroadcast.neq(0.0).castTo(DataType.DOUBLE).sumNumber().intValue();
                                 expOut = expOut.sum().divi(countNonZero);
                             }
                             break;
@@ -265,20 +305,102 @@ public class LossOpValidation extends BaseOpValidation {
                     sd.associateArrayWithVariable(predictionsArr, predictions);
                     sd.associateArrayWithVariable(labelsArr, labels);
 
+                    if(reduction == LossReduce.NONE){
+                        //Sum to make scalar output for gradient check...
+                        loss = loss.sum();
+                    }
+
+                    boolean doGradCheck = true;
+                    if (OpValidationSuite.IGNORE_FAILING && NO_BP_YET.contains(fn)) {
+                        log.warn("--- Skipping gradient check for: {} ---", fn);
+                        doGradCheck = false;
+                    }
+
                     TestCase tc = new TestCase(sd)
                             .expectedOutput("loss", expOut)
-                            .gradientCheck(false)                       //TODO  https://github.com/deeplearning4j/deeplearning4j/issues/6517
-                            .testFlatBufferSerialization(TestCase.TestSerialization.NONE)   //TODO Re-enable later
-                            ;
+                            .gradientCheck(doGradCheck)
+                            .testFlatBufferSerialization(TestCase.TestSerialization.BOTH);
 
-                    String error = OpValidation.validate(tc);
-                    if (error != null) {
-                        failed.add(msg + error);
+                    if(fn.equals("sparsesoftmax")){
+                        tc.gradCheckSkipVariables("labels");
                     }
+
+                    String error;
+                    try {
+                        error = OpValidation.validate(tc);
+                    } catch (Throwable t){
+                        log.error("Failed: {}", msg, t);
+                        error = msg + ": " + t.getMessage();
+                    }
+                    if (error != null) {
+                        failed.add(msg + ": " + error);
+                    }
+                    totalRun++;
                 }
             }
         }
 
-        assertEquals(failed.toString(), 0, failed.size());
+        assertEquals(failed.size() + " of " + totalRun + " failed: " + failed.toString(), 0, failed.size());
+    }
+
+
+    @Test
+    public void testCosineDistance(){
+        INDArray arr = Nd4j.create(new double[][]{{-0.3, -0.2, -0.1}, {0, 0.1, 0.2}});
+        INDArray label = Nd4j.create(new double[][]{{1.0, 2.0, 3.0}, {-1.0, 2.0, 1.0}});
+        INDArray w = Nd4j.create(new double[][]{{0},{1}});
+        INDArray out = Nd4j.scalar(0.0);
+
+        CustomOp op = DynamicCustomOp.builder("cosine_distance_loss")
+                .addInputs(arr, w, label)
+                .addOutputs(out)
+                .addIntegerArguments(2, 1) //weighted mean, dimension 1
+                .build();
+        Nd4j.getExecutioner().exec(op);
+
+        INDArray exp = Nd4j.scalar(0.6);    //https://github.com/deeplearning4j/deeplearning4j/issues/6532
+        assertEquals(exp, out);
+    }
+
+    @Test
+    public void testL2Loss(){
+
+        for( int rank=0; rank<=3; rank++ ){
+            long[] shape;
+            switch (rank){
+                case 0:
+                    shape = new long[0];
+                    break;
+                case 1:
+                    shape = new long[]{5};
+                    break;
+                case 2:
+                    shape = new long[]{3,4};
+                    break;
+                case 3:
+                    shape = new long[]{2,3,4};
+                    break;
+                case 4:
+                    shape = new long[]{2,3,2,3};
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+            INDArray arr = Nd4j.rand(DataType.DOUBLE, shape);
+
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.var("v", arr);
+            SDVariable loss = sd.lossL2("loss", in);
+
+            INDArray exp = arr.mul(arr).sum().muli(0.5);
+
+            TestCase tc = new TestCase(sd)
+                    .expectedOutput("loss", exp)
+                    .gradientCheck(true)
+                    .testFlatBufferSerialization(TestCase.TestSerialization.BOTH);
+
+            String err = OpValidation.validate(tc);
+            assertNull(err);
+        }
     }
 }

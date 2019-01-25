@@ -20,19 +20,18 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Stack operation. Stacks n input tensors along provided axis.
@@ -40,25 +39,25 @@ import java.util.Map;
  * @author raver119@gmail.com
  */
 public class Stack extends DynamicCustomOp {
-    protected int axis;
+    protected int jaxis;
 
     public Stack() {
     }
 
     public Stack(INDArray[] inputs, INDArray output, int axis){
         super(null, inputs, output == null ? null : new INDArray[]{output}, null, (List<Integer>)null);
-        this.axis = axis;
+        this.jaxis = axis;
         addArgs();
     }
 
     public Stack(SameDiff sameDiff, SDVariable[] values, int axis) {
         super(null, sameDiff, values, false);
-        this.axis = axis;
+        this.jaxis = axis;
         addArgs();
     }
 
     public void addArgs() {
-        addIArgument(axis);
+        addIArgument(jaxis);
     }
 
     @Override
@@ -107,10 +106,10 @@ public class Stack extends DynamicCustomOp {
         val axisMapping = PropertyMapping.builder()
                 .onnxAttrName("axis")
                 .tfAttrName("axis")
-                .propertyNames(new String[]{"axis"})
+                .propertyNames(new String[]{"jaxis"})
                 .build();
 
-        map.put("axis", axisMapping);
+        map.put("jaxis", axisMapping);
 
         for (val name : tensorflowNames())
             ret.put(name, map);
@@ -120,7 +119,17 @@ public class Stack extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Arrays.asList(f().unstack(f1.get(0), axis, args().length));
+        return Arrays.asList(f().unstack(f1.get(0), jaxis, args().length));
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        DataType first = dataTypes.get(0);
+        for( int i=1; i<dataTypes.size(); i++ ){
+            DataType dt = dataTypes.get(i);
+            Preconditions.checkState(first == dt, "All inputs must have same datatype - got %s and %s for inputs 0 and %s respectively", first, dt, i);
+        }
+        //Output type is same as input types
+        return Collections.singletonList(first);
+    }
 }

@@ -58,7 +58,7 @@ class RnnOutputLayerTest extends WordSpec with Matchers {
       rnnOutputLayer.output.isOutput shouldBe true
     }
 
-    "become an output layer when when converted to ouput layer with proper loss" in {
+    "become an output layer when converted to ouput layer with proper loss" in {
       val rnnOutputLayer = RnnOutputLayer(10, 100, Activation.SOFTMAX)
       val compiledLayer = rnnOutputLayer.toOutputLayer(LossFunction.MCXENT)
       compiledLayer.isInstanceOf[OutputLayer] shouldBe true

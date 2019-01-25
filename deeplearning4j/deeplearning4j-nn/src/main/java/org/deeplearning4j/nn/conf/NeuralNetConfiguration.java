@@ -28,21 +28,24 @@ import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
-import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
-import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
-import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
+import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyGraphVertexDeserializer;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializer;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyPreprocessorDeserializer;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyReconstructionDistributionDeserializer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitDistribution;
+import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -86,7 +89,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected StepFunction stepFunction;
     //minimize or maximize objective
     protected boolean minimize = true;
-    protected boolean pretrain;
 
     // this field defines preOutput cache
     protected CacheMode cacheMode;
@@ -141,13 +143,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         variables.clear();
     }
 
-    public void setPretrain(boolean pretrain){
-        this.pretrain = pretrain;
-        if(layer != null){
-            layer.setPretrain(pretrain);
-        }
-    }
-
     /**
      * Fluent interface for building a list of configurations
      */
@@ -164,18 +159,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         public ListBuilder(Builder globalConfig) {
             this(globalConfig, new HashMap<Integer, Builder>());
-        }
-
-        @Deprecated
-        public ListBuilder backprop(boolean backprop) {
-            this.backprop = backprop;
-            return this;
-        }
-
-        @Deprecated
-        public ListBuilder pretrain(boolean pretrain) {
-            this.pretrain = pretrain;
-            return this;
         }
 
         public ListBuilder layer(int ind, @NonNull Layer layer) {
@@ -268,11 +251,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             WorkspaceMode wsmTest = (globalConfig.setIWM ? globalConfig.inferenceWorkspaceMode : inferenceWorkspaceMode);
 
 
-            return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
-                            .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
+            return new MultiLayerConfiguration.Builder().inputPreProcessors(inputPreProcessors)
+                            .backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
                             .trainingWorkspaceMode(wsmTrain).cacheMode(globalConfig.cacheMode)
-                            .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputLayerConfig(validateOutputConfig).build();
+                            .inferenceWorkspaceMode(wsmTest).confs(list).validateOutputLayerConfig(validateOutputConfig)
+                            .legacyBatchScaledL2(legacyBatchScaledL2).build();
         }
 
         /** Helper class for setting input types */
@@ -480,9 +464,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     @Data
     public static class Builder implements Cloneable {
         protected IActivation activationFn = new ActivationSigmoid();
-        protected WeightInit weightInit = WeightInit.XAVIER;
+        protected IWeightInit weightInitFn = new WeightInitXavier();
         protected double biasInit = 0.0;
-        protected Distribution dist = null;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
         protected double l1Bias = Double.NaN;
@@ -500,10 +483,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected boolean minimize = true;
         protected GradientNormalization gradientNormalization = GradientNormalization.None;
         protected double gradientNormalizationThreshold = 1.0;
-        protected boolean pretrain = false;
         protected List<LayerConstraint> allParamConstraints;
         protected List<LayerConstraint> weightConstraints;
         protected List<LayerConstraint> biasConstraints;
+        protected boolean legacyBatchScaledL2 = false;
 
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.ENABLED;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.ENABLED;
@@ -527,7 +510,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 seed = newConf.seed;
                 stepFunction = newConf.stepFunction;
                 miniBatch = newConf.miniBatch;
-                pretrain = newConf.pretrain;
             }
         }
 
@@ -731,22 +713,40 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return activation(activation.getActivationFunction());
         }
 
+
         /**
-         * Weight initialization scheme.<br>
+         * Weight initialization scheme to use, for initial weight values
          * Note: values set by this method will be applied to all applicable layers in the network, unless a different
          * value is explicitly set on a given layer. In other words: values set via this method are used as the default
          * value, and can be overridden on a per-layer basis.
          *
-         * @see org.deeplearning4j.nn.weights.WeightInit
+         * @see IWeightInit
+         */
+        public Builder weightInit(IWeightInit weightInit) {
+            this.weightInitFn = weightInit;
+            return this;
+        }
+
+        /**
+         * Weight initialization scheme to use, for initial weight values
+         * Note: values set by this method will be applied to all applicable layers in the network, unless a different
+         * value is explicitly set on a given layer. In other words: values set via this method are used as the default
+         * value, and can be overridden on a per-layer basis.
+         *
+         * @see WeightInit
          */
         public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
+            if(weightInit == WeightInit.DISTRIBUTION) {
+             //   throw new UnsupportedOperationException("Not supported!, Use weightInit(Distribution distribution) instead!");
+            }
+
+            this.weightInitFn = weightInit.getWeightInitFunction();
             return this;
         }
 
         /**
          * Set weight initialization scheme to random sampling via the specified distribution.
-         * Equivalent to: {@code .weightInit(WeightInit.DISTRIBUTION).dist(distribution)}<br>
+         * Equivalent to: {@code .weightInit(new WeightInitDistribution(distribution))}
          * Note: values set by this method will be applied to all applicable layers in the network, unless a different
          * value is explicitly set on a given layer. In other words: values set via this method are used as the default
          * value, and can be overridden on a per-layer basis.
@@ -754,8 +754,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param distribution Distribution to use for weight initialization
          */
         public Builder weightInit(Distribution distribution){
-            weightInit(WeightInit.DISTRIBUTION);
-            return dist(distribution);
+            return weightInit(new WeightInitDistribution(distribution));
         }
 
         /**
@@ -772,17 +771,17 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Distribution to sample initial weights from. Used in conjunction with
-         * .weightInit(WeightInit.DISTRIBUTION).<br>
+         * Distribution to sample initial weights from.
+         * Equivalent to: {@code .weightInit(new WeightInitDistribution(distribution))}.<br>
          * Note: values set by this method will be applied to all applicable layers in the network, unless a different
          * value is explicitly set on a given layer. In other words: values set via this method are used as the default
          * value, and can be overridden on a per-layer basis.
          *
          * @see #weightInit(Distribution)
          */
+        @Deprecated
         public Builder dist(Distribution dist) {
-            this.dist = dist;
-            return this;
+            return weightInit(dist);
         }
 
         /**
@@ -1030,6 +1029,19 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Not recommended for use. Disabled (false) by default, provided for backward compatibility for mainining same
+         * behaviour as nets trained in 1.0.0-beta2 and earlier.<br>
+         * When disabled (default): Use {@code loss = average(example_loss) + lambda * l2(weights) )<br>
+         * When enabled: Use {@code loss = average(example_loss) + 1/N * lambda * l2(weights) ) where N is minibatch size<br>
+         * Impacts how both L1 and L2 regularization is applied
+         * @param legacyBatchScaledL2 False: default - use standard l1/l2 calculation. True: use l1/l2 as per DL4J 1.0.0-beta2 and earlier.
+         */
+        public Builder legacyBatchScaledL2(boolean legacyBatchScaledL2){
+            this.legacyBatchScaledL2 = legacyBatchScaledL2;
+            return this;
+        }
+
+        /**
          * Return a configuration based on this builder
          *
          * @return
@@ -1044,7 +1056,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.seed = seed;
             conf.stepFunction = stepFunction;
             conf.miniBatch = miniBatch;
-            conf.pretrain = pretrain;
             conf.cacheMode = this.cacheMode;
 
             configureLayer(layer);
@@ -1109,7 +1120,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     sl.setConvolutionMode(convolutionMode);
                 }
             }
-            LayerValidation.generalValidation(layerName, layer, idropOut, l2, l2Bias, l1, l1Bias, dist,
+            LayerValidation.generalValidation(layerName, layer, idropOut, l2, l2Bias, l1, l1Bias,
                     allParamConstraints, weightConstraints, biasConstraints);
         }
 
@@ -1128,8 +1139,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     bLayer.setL2(l2);
                 if (bLayer.getActivationFn() == null)
                     bLayer.setActivationFn(activationFn);
-                if (bLayer.getWeightInit() == null)
-                    bLayer.setWeightInit(weightInit);
+                if (bLayer.getWeightInitFn() == null)
+                    bLayer.setWeightInitFn(weightInitFn);
                 if (Double.isNaN(bLayer.getBiasInit()))
                     bLayer.setBiasInit(biasInit);
 
@@ -1163,6 +1174,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 ActivationLayer al = (ActivationLayer)layer;
                 if(al.getActivationFn() == null)
                     al.setActivationFn(activationFn);
+            }
+
+            if(layer instanceof BaseOutputLayer){
+                BaseOutputLayer bol = (BaseOutputLayer)layer;
+                bol.setLegacyBatchScaledL2(legacyBatchScaledL2);
             }
         }
     }

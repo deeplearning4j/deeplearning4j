@@ -27,25 +27,30 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(top_k, 1, 2, false, 0, -2) {
-            NDArray<T>* x = INPUT_VARIABLE(0);
+        CUSTOM_OP_IMPL(top_k, 1, 2, false, 0, -1) {
+            auto x = INPUT_VARIABLE(0);
             int k = 1;// from params
             bool needSort = true;
-            NDArray<T>* values = OUTPUT_VARIABLE(0);
-            NDArray<T>* indeces = OUTPUT_VARIABLE(1);
-            if (block.numI() > 0) {
-                if (block.numI() > 1) {
-                k = INT_ARG(0);
-                needSort = INT_ARG(1);
-                }
-                else 
+
+            auto values = OUTPUT_VARIABLE(0);
+            auto indices = OUTPUT_VARIABLE(1);
+
+            if (block.numB() == 1)
+                needSort = B_ARG(0);
+
+            if (block.width() == 1) {
+                if (block.numI() > 0) {
                     k = INT_ARG(0);
+                }
+            } else {
+                k = INPUT_VARIABLE(1)->e<int>(0);
             }
 
             REQUIRE_TRUE(k <= x->sizeAt(-1), 0, "top_k: k should not be greater than last dimension");
-            REQUIRE_TRUE(k >=0, 0, "top_k: k should be non-negative");
+            REQUIRE_TRUE(k > 0, 0, "top_k: k should be positive, but %i given.", k);
 
-            return helpers::topKFunctor(x, values, indeces, k, needSort);
+            int res =  helpers::topKFunctor(x, values, indices, k, needSort);
+            return res;
         }
 
         DECLARE_SHAPE_FN(top_k) {
@@ -54,26 +59,34 @@ namespace nd4j {
             int shapeRank = shape::rank(in);
             int k = 1; // default output shape is size 1
 
-            if (block.numI() > 0) {
+            if (block.width() == 2) {
+                k = INPUT_VARIABLE(1)->e<int>(0);
+            } else if (block.numI() > 0) {
                 k = INT_ARG(0);
             }
 
+            REQUIRE_TRUE(k > 0, 0, "top_k: k should be positive, but %i given.", k);
+
             for (int e = 0; e < 2; e++) { // 2 element tuple at output
-                Nd4jLong* newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), Nd4jLong);
-                std::vector<Nd4jLong> internalShape(shapeRank);
-                for (int e = 0 ; e < shapeRank - 1; ++e)
-                    internalShape[e] = shape::sizeAt(in, e);
-                internalShape[shapeRank - 1] = k;
+                Nd4jLong* aShape;
+                ALLOCATE(aShape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), Nd4jLong);
+                aShape[0] = shapeRank;
+                for (int i = 1 ; i < shapeRank; ++i)
+                    aShape[i] = shape::sizeAt(in, i - 1);
+                aShape[shapeRank] = k;
 
-                if (shape::order(in) == 'c')
-                    shape::shapeBuffer(shapeRank, internalShape.data(),  newshape);
-                else
-                    shape::shapeBufferFortran(shapeRank, internalShape.data(),  newshape);
-
-                shapeList->push_back(newshape); 
+                shape::updateStrides(aShape, shape::order(in));
+                ArrayOptions::setDataType(aShape, (e == 0?ArrayOptions::dataType(in):nd4j::DataType::INT64));
+                shapeList->push_back(aShape);
             }
             return shapeList;
+        }
+
+        DECLARE_TYPES(top_k) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedOutputTypes(1, {ALL_INTS});
         }
     }
 }

@@ -21,6 +21,7 @@ import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -78,7 +79,7 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
      */
     @Override
     protected void initTypeAndSize() {
-        type = Type.LONG;
+        type = DataType.LONG;
         elementSize = 8;
     }
 
@@ -150,74 +151,22 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
     }
 
     public CudaLongDataBuffer(byte[] data, long length) {
-        super(data, length);
+        super(data, length, DataType.LONG);
     }
 
     public CudaLongDataBuffer(ByteBuffer buffer, long length) {
-        super(buffer, (int) length);
+        super(buffer, (int) length, DataType.LONG);
     }
 
     public CudaLongDataBuffer(ByteBuffer buffer, long length, long offset) {
-        super(buffer, length, offset);
+        super(buffer, length, offset, DataType.LONG);
     }
 
-
-    @Override
-    public void assign(long[] indices, float[] data, boolean contiguous, long inc) {
-
-        if (indices.length != data.length)
-            throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
-
-        if (contiguous) {
-            /*long offset = indices[0];
-            Pointer p = Pointer.to(data);
-            set(offset, data.length, p, inc);
-            */
-            throw new UnsupportedOperationException();
-        } else
-            throw new UnsupportedOperationException("Non contiguous is not supported");
-
-    }
-
-    @Override
-    public void assign(long[] indices, double[] data, boolean contiguous, long inc) {
-        if (indices.length != data.length)
-            throw new IllegalArgumentException("Indices and data length must be the same");
-        if (indices.length > length())
-            throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
-
-        if (contiguous) {
-            /*long offset = indices[0];
-            Pointer p = Pointer.to(data);
-            set(offset, data.length, p, inc);
-            */
-            throw new UnsupportedOperationException();
-        } else
-            throw new UnsupportedOperationException("Non contiguous is not supported");
-
-    }
 
     @Override
     protected DataBuffer create(long length) {
         return new CudaLongDataBuffer(length);
     }
-
-
-
-    @Override
-    public void setData(int[] data) {
-        setData(ArrayUtil.toDoubles(data));
-    }
-
-    @Override
-    public void setData(float[] data) {
-        setData(ArrayUtil.toDoubles(data));
-    }
-
 
 
     @Override
@@ -267,7 +216,7 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         //wrappedBuffer.order(ByteOrder.nativeOrder());
 
         this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                        new AllocationShape(length, elementSize, Type.DOUBLE), false);
+                        new AllocationShape(length, elementSize, DataType.LONG), false);
         this.trackingPoint = allocationPoint.getObjectId();
         //this.wrappedBuffer = allocationPoint.getPointers().getHostPointer().asByteBuffer();
         //this.wrappedBuffer.order(ByteOrder.nativeOrder());

@@ -17,21 +17,23 @@
 package org.deeplearning4j.nn.conf;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.nn.weights.IWeightInit;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -76,6 +78,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     @Setter
     protected CacheMode cacheMode;
 
+    protected boolean validateOutputLayerConfig = true;     //Default for 10.0.-beta3 and earlier nets
+
     /**
      * List of inputs to the network, by name
      */
@@ -85,9 +89,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * List of network outputs, by name
      */
     protected List<String> networkOutputs;
-
-    protected boolean pretrain = false;
-    protected boolean backprop = true;
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
@@ -105,8 +106,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected int[] topologicalOrder;
     protected List<String> topologicalOrderStr;
 
+    @Getter @Setter
+    protected boolean legacyBatchScaledL2 = true;   //Default to legacy for pre 1.0.0-beta3 networks on deserialization
+
     /**
-     * @return JSON representation of configuration
+     * @return YAML representation of configuration
      */
     public String toYaml() {
         ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
@@ -120,9 +124,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     }
 
     /**
-     * Create a neural net configuration from json
+     * Create a neural net configuration from YAML
      *
-     * @param json the neural net configuration from json
+     * @param json the neural net configuration from YAML
      * @return {@link ComputationGraphConfiguration}
      */
     public static ComputationGraphConfiguration fromYaml(String json) {
@@ -164,7 +168,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         try {
             conf = mapper.readValue(json, ComputationGraphConfiguration.class);
         } catch (Exception e) {
-            //Check if this exception came from legacy legacy deserializer...
+            //Check if this exception came from legacy deserializer...
             String msg = e.getMessage();
             if(msg != null && msg.contains("legacy")){
                 throw new RuntimeException("Error deserializing ComputationGraphConfiguration - configuration may have a custom " +
@@ -222,10 +226,60 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                                         e);
                     }
                 }
+
+                handleLegacyWeightInitFromJson(json, layer, mapper, vertices);
             }
         }
 
         return conf;
+    }
+
+    /**
+     * Handle {@link WeightInit} and {@link Distribution} from legacy configs in Json format. Copied from handling of {@link Activation}
+     * above.
+     * @return True if all is well and layer iteration shall continue. False else-wise.
+     */
+    private static void handleLegacyWeightInitFromJson(String json, Layer layer, ObjectMapper mapper, JsonNode vertices) {
+        if (layer instanceof BaseLayer && ((BaseLayer) layer).getWeightInitFn() == null) {
+            String layerName = layer.getLayerName();
+
+            try {
+                if (vertices == null) {
+                    JsonNode jsonNode = mapper.readTree(json);
+                    vertices = jsonNode.get("vertices");
+                }
+
+                JsonNode vertexNode = vertices.get(layerName);
+                JsonNode layerVertexNode = vertexNode.get("LayerVertex");
+                if (layerVertexNode == null || !layerVertexNode.has("layerConf")
+                        || !layerVertexNode.get("layerConf").has("layer")) {
+                    return;
+                }
+                JsonNode layerWrapperNode = layerVertexNode.get("layerConf").get("layer");
+
+                if (layerWrapperNode == null || layerWrapperNode.size() != 1) {
+                    return;
+                }
+
+                JsonNode layerNode = layerWrapperNode.elements().next();
+                JsonNode weightInit = layerNode.get("weightInit"); //Should only have 1 element: "dense", "output", etc
+                JsonNode distribution = layerNode.get("dist");
+
+                Distribution dist = null;
+                if(distribution != null) {
+                    dist = mapper.treeToValue(distribution, Distribution.class);
+                }
+
+                if (weightInit != null) {
+                    final IWeightInit wi = WeightInit.valueOf(weightInit.asText()).getWeightInitFunction(dist);
+                    ((BaseLayer) layer).setWeightInitFn(wi);
+                }
+
+            } catch (IOException e) {
+                log.warn("Layer with null ActivationFn field or pre-0.7.2 activation function detected: could not parse JSON",
+                        e);
+            }
+        }
     }
 
     @Override
@@ -252,8 +306,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.networkInputs = new ArrayList<>(this.networkInputs);
         conf.networkOutputs = new ArrayList<>(this.networkOutputs);
 
-        conf.pretrain = pretrain;
-        conf.backprop = backprop;
         conf.backpropType = backpropType;
         conf.tbpttFwdLength = tbpttFwdLength;
         conf.tbpttBackLength = tbpttBackLength;
@@ -262,6 +314,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
         conf.cacheMode = this.cacheMode;
         conf.defaultConfiguration.cacheMode = this.cacheMode;
+        conf.legacyBatchScaledL2 = this.legacyBatchScaledL2;
+        conf.validateOutputLayerConfig = this.validateOutputLayerConfig;
 
         return conf;
     }
@@ -596,11 +650,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected List<String> networkInputs = new ArrayList<>();
         protected List<InputType> networkInputTypes = new ArrayList<>();
         protected List<String> networkOutputs = new ArrayList<>();
-
-        @Deprecated
-        protected boolean pretrain = false;
-        @Deprecated
-        protected boolean backprop = true;
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = DEFAULT_TBPTT_LENGTH;
         protected int tbpttBackLength = DEFAULT_TBPTT_LENGTH;
@@ -626,9 +675,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             this.networkInputs = clonedConf.getNetworkInputs();
             this.networkOutputs = clonedConf.getNetworkOutputs();
-
-            this.pretrain = clonedConf.isPretrain();
-            this.backprop = clonedConf.isBackprop();
             this.backpropType = clonedConf.getBackpropType();
             this.tbpttFwdLength = clonedConf.getTbpttFwdLength();
             this.tbpttBackLength = clonedConf.getTbpttBackLength();
@@ -646,32 +692,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder inputPreProcessor(String layer, InputPreProcessor processor) {
             inputPreProcessors.put(layer, processor);
-            return this;
-        }
-
-        /**
-         * Whether to do back prop (standard supervised learning) or not
-         *
-         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.graph.ComputationGraph#fit(MultiDataSet)} when training for backprop.
-         *
-         * @param backprop whether to do back prop or not
-         */
-        @Deprecated
-        public GraphBuilder backprop(boolean backprop) {
-            this.backprop = backprop;
-            return this;
-        }
-
-        /**
-         * Whether to do layerwise pre training or not
-         *
-         * @deprecated doesn't affect training any more. Use {@link org.deeplearning4j.nn.graph.ComputationGraph#pretrain(MultiDataSetIterator)} when training for layerwise pretraining.
-         *
-         * @param pretrain whether to do pre train or not
-         */
-        @Deprecated
-        public GraphBuilder pretrain(boolean pretrain) {
-            this.pretrain = pretrain;
             return this;
         }
 
@@ -1016,8 +1036,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             }
 
             ComputationGraphConfiguration conf = new ComputationGraphConfiguration();
-            conf.backprop = backprop;
-            conf.pretrain = pretrain;
             conf.backpropType = backpropType;
             conf.tbpttBackLength = tbpttBackLength;
             conf.tbpttFwdLength = tbpttFwdLength;
@@ -1030,9 +1048,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.trainingWorkspaceMode = globalConfiguration.trainingWorkspaceMode;
             conf.inferenceWorkspaceMode = globalConfiguration.inferenceWorkspaceMode;
             conf.cacheMode = globalConfiguration.cacheMode;
+            conf.validateOutputLayerConfig = validateOutputConfig;
 
             conf.defaultConfiguration = globalConfiguration.build();
-            conf.getDefaultConfiguration().setPretrain(pretrain);
+            conf.setLegacyBatchScaledL2(globalConfiguration.isLegacyBatchScaledL2());
 
             //Add preprocessors that were defined separately to the Layers to which they belong
             for (Map.Entry<String, InputPreProcessor> entry : inputPreProcessors.entrySet()) {
@@ -1052,8 +1071,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 if (gv.getValue() instanceof LayerVertex) {
                     LayerVertex lv = (LayerVertex) gv.getValue();
                     Layer l = lv.getLayerConf().getLayer();
-                    if (l instanceof BasePretrainNetwork)
-                        lv.getLayerConf().setPretrain(pretrain);
                 }
                 if (gv.getValue() instanceof SameDiffVertex)
                     ((SameDiffVertex) gv.getValue()).applyGlobalConfig(globalConfiguration);

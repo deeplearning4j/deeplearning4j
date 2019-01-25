@@ -31,7 +31,7 @@ namespace ops  {
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
 
-        const T clipNorm = T_ARG(0);
+        const auto clipNorm = NDArrayFactory::create(input->dataType(), T_ARG(0), block.getWorkspace());
         const bool isInplace = block.isInplace();
         
         helpers::clipByNorm(*input, *output, *block.getIArguments(), clipNorm, isInplace);
@@ -45,7 +45,7 @@ namespace ops  {
         auto gradO = INPUT_VARIABLE(1);
 
         auto gradI = OUTPUT_VARIABLE(0);
-        const T clipNorm = T_ARG(0);
+        const auto clipNorm = NDArrayFactory::create(T_ARG(0));
 
         helpers::clipByNormBP(*input, *gradO, *gradI, *block.getIArguments(), clipNorm); 
 
@@ -61,7 +61,17 @@ namespace ops  {
         return SHAPELIST(newShape);
     }
 
+    DECLARE_TYPES(clipbynorm) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 
+    DECLARE_TYPES(clipbynorm_bp) {
+        getOpDescriptor()
+                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS});
+    }
 }
 }
 

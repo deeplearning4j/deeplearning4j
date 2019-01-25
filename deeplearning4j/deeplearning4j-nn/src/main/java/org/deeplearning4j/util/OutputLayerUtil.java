@@ -1,8 +1,26 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.util;
 
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer;
+import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -142,5 +160,35 @@ public class OutputLayerUtil {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Validates if the output layer configuration is valid for classifier evaluation.
+     * This is used to try and catch invalid evaluation - i.e., trying to use classifier evaluation on a regression model.
+     * This method won't catch all possible invalid cases, but should catch some common problems.
+     *
+     * @param outputLayer          Output layer
+     * @param classifierEval       Class for the classifier evaluation
+     */
+    public static void validateOutputLayerForClassifierEvaluation(Layer outputLayer, Class<? extends IEvaluation> classifierEval){
+        if(outputLayer instanceof Yolo2OutputLayer){
+            throw new IllegalStateException("Classifier evaluation using " + classifierEval.getSimpleName() + " class cannot be applied for object" +
+                    " detection evaluation using Yolo2OutputLayer: " + classifierEval.getSimpleName() + "  class is for classifier evaluation only.");
+        }
+
+        //Check that the activation function provides probabilities. This can't catch everything, but should catch a few
+        // of the common mistakes users make
+        if(outputLayer instanceof BaseLayer){
+            BaseLayer bl = (BaseLayer)outputLayer;
+            boolean isOutputLayer = outputLayer instanceof OutputLayer || outputLayer instanceof RnnOutputLayer || outputLayer instanceof CenterLossOutputLayer;
+
+            if(activationExceedsZeroOneRange(bl.getActivationFn(), !isOutputLayer)){
+                throw new IllegalStateException("Classifier evaluation using " + classifierEval.getSimpleName() + " class cannot be applied to output" +
+                        " layers with activation functions that are not probabilities (in range 0 to 1). Output layer type: " +
+                        outputLayer.getClass().getSimpleName() + " has activation function " + bl.getActivationFn().getClass().getSimpleName() +
+                        ". This check can be disabled using MultiLayerNetwork.getLayerWiseConfigurations().setValidateOutputLayerConfig(false)" +
+                        " or ComputationGraph.getConfiguration().setValidateOutputLayerConfig(false)");
+            }
+        }
     }
 }

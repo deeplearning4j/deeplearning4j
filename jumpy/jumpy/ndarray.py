@@ -18,13 +18,78 @@
 from .java_classes import *
 import numpy as np
 import ctypes
+import warnings
 
 
-# Java instance initializations
 native_ops = NativeOpsHolder.getInstance().getDeviceNativeOps()
 
 
 # DATA TYPE MANAGEMENT
+
+
+DOUBLE = DataType.DOUBLE
+FLOAT = DataType.FLOAT
+HALF = DataType.HALF
+LONG = DataType.LONG
+INT = DataType.INT
+SHORT = DataType.SHORT
+UBYTE = DataType.UBYTE
+BYTE = DataType.BYTE
+BOOL = DataType.BOOL
+UTF8 = DataType.UTF8
+COMPRESSED = DataType.COMPRESSED
+UNKNOWN = DataType.UNKNOWN
+
+SUPPORTED_JAVA_DTYPES = [
+    DOUBLE,
+    FLOAT,
+    HALF,
+
+    LONG,
+    INT,
+    SHORT,
+
+    BOOL
+    #UTF8
+]
+
+SUPPORTED_PYTHON_DTYPES = [
+    np.float64,
+    np.float32,
+    np.float16,
+
+    np.int64,
+    np.int32,
+    np.int16,
+
+    np.bool_
+    #np.str_
+]
+
+
+
+
+_PY2J = {SUPPORTED_PYTHON_DTYPES[i] : SUPPORTED_JAVA_DTYPES[i] for i in range(len(SUPPORTED_JAVA_DTYPES))}
+_J2PY = {SUPPORTED_JAVA_DTYPES[i] : SUPPORTED_PYTHON_DTYPES[i] for i in range(len(SUPPORTED_JAVA_DTYPES))}
+
+
+def _dtype_py2j(dtype):
+    if isinstance(dtype, str):
+        dtype = np.dtype(dtype).type
+    elif isinstance(dtype, np.dtype):
+        dtype = dtype.type
+    jtype = _PY2J.get(dtype)
+    if jtype is None:
+        raise NotImplementedError("Unsupported type: " + dtype.name)
+    return jtype
+
+
+def _dtype_j2py(dtype):
+    pytype = _J2PY.get(dtype)
+    if pytype is None:
+        raise NotImplementedError("Unsupported type: " + (str(dtype)))
+    return pytype
+
 
 def set_context_dtype(dtype):
     '''
@@ -42,7 +107,7 @@ def set_context_dtype(dtype):
     dtype_ = DataTypeUtil.getDtypeFromContext(dtype)
     DataTypeUtil.setDTypeForContext(dtype_)
     if get_context_dtype() != dtype:
-        raise RuntimeError("Can not set context dtype now. Set it at the beginning of your program.")
+        warnings.warn("Can not set context dtype now. Set it at the beginning of your program.")
 
 
 def get_context_dtype():
@@ -52,52 +117,6 @@ def get_context_dtype():
     dtype = DataTypeUtil.getDtypeFromContext()
     return DataTypeUtil.getDTypeForName(dtype)
 
-
-def get_nd4j_dtype(np_dtype):
-    '''
-    Gets the equivalent nd4j data type
-    for a given numpy data type.
-    # Arguments
-        np_dtype: Numpy data type. One of
-            ['float64', 'float32', 'float16']
-    '''
-    if type(np_dtype) == type:
-        np_dtype = np_dtype.__name__
-    elif type(np_dtype) == np.dtype:
-        np_dtype = np_dtype.name
-    mapping = {
-        'float64': 'double',
-        'float32': 'float',
-        'float16': 'half'
-    }
-    nd4j_dtype = mapping.get(np_dtype)
-    if not nd4j_dtype:
-        raise Exception('Invalid numpy data type : ' + np_dtype)
-    return nd4j_dtype
-
-
-def get_np_dtype(nd4j_dtype):
-    '''
-    Gets the equivalent numpy data type
-    for a given nd4j data type.
-    # Arguments:
-        nd4j_dtype : Nd4j data type. One of 
-        ['double', 'float', 'half']
-    '''
-    mapping = {
-        'double': np.float64,
-        'float': np.float32,
-        'half': np.float16
-    }
-    np_dtype = mapping.get(nd4j_dtype)
-    if not np_dtype:
-        raise Exception('Invalid nd4j data type : ' + nd4j_dtype)
-    return np_dtype
-
-
-set_context_dtype('double')
-
-
 _refs = []
 
 
@@ -105,54 +124,33 @@ def _from_numpy(np_array):
     '''
     Convert numpy array to nd4j array
     '''
-
-    # Convert the numpy array to nd4j context dtype
-    required_dtype = get_np_dtype(get_context_dtype())
-    if np_array.dtype != required_dtype:
-        raise Exception("{} is required. Got {} instead.".format(repr(required_dtype), np_array.dtype))
-
-    # Nd4j does not have 1-d vectors.
-    # So we add a dummy dimension.
-    if np_array.ndim == 1:
-        np_array = np.expand_dims(np_array, 0)
-
-    # We have to maintain references to all incoming
-    # numpy arrays. Else they will get GCed
-
-    # creates a Nd4j array from a numpy array
-    # To create an Nd4j array, we need 3 things:
-    # buffer, strides, and shape
-
-    # Get the buffer
-    # A buffer is basically an array. To get the buffer object
-    # we need a pointer to the first element and the size.
     pointer_address, _ = np_array.__array_interface__['data']
     _refs.append(np_array)
     pointer = native_ops.pointerForAddress(pointer_address)
     size = np_array.size
+    pointer.limit(size)
+    jdtype = _dtype_py2j(np_array.dtype)
+    '''
     mapping = {
-        np.float64: DoublePointer,
-        np.float32: FloatPointer,
-    }
-    pointer = mapping[required_dtype](pointer)
-    buff = Nd4j.createBuffer(pointer, size)
+        DOUBLE: DoublePointer,
+        FLOAT: FloatPointer,
+        HALF: HalfPointer,
+        LONG: LongPointer,
+        INT: IntPointer,
+        SHORT: ShortPointer,
+        BOOL: BoolPointer
+        }
+    pc = mapping[jdtype]
+    #pointer = pc(pointer)
+    '''
+    buff = Nd4j.createBuffer(pointer, size, jdtype)
     assert buff.address() == pointer_address
     _refs.append(buff)
-    # Get the strides
-    # strides = tuple of bytes to step in each
-    # dimension when traversing an array.
     elem_size = buff.getElementSize()
-    # Make sure word size is same in both python
-    # and java worlds
     assert elem_size == np_array.dtype.itemsize
     strides = np_array.strides
-    # numpy uses byte wise strides. We have to
-    # convert it to word wise strides.
     strides = [dim / elem_size for dim in strides]
-
-    # Finally, shape:
     shape = np_array.shape
-
     nd4j_array = Nd4j.create(buff, shape, strides, 0)
     assert buff.address() == nd4j_array.data().address()
     return nd4j_array
@@ -164,10 +162,15 @@ def _to_numpy(nd4j_array):
     '''
     buff = nd4j_array.data()
     address = buff.pointer().address()
-    dtype = get_context_dtype()
+    dtype = nd4j_array.dataType().toString()
     mapping = {
-        'double': ctypes.c_double,
-        'float': ctypes.c_float
+        'DOUBLE': ctypes.c_double,
+        'FLOAT': ctypes.c_float,
+        'HALF': ctypes.c_short,
+        'LONG': ctypes.c_long,
+        'INT': ctypes.c_int,
+        'SHORT': ctypes.c_short,
+        'BOOL': ctypes.c_bool
     }
     Pointer = ctypes.POINTER(mapping[dtype])
     pointer = ctypes.cast(address, Pointer)
@@ -176,18 +179,35 @@ def _to_numpy(nd4j_array):
 
 
 def _indarray(x):
-    if type(x) is INDArray:
+    typ = type(x)
+    if typ is INDArray:
         return x
-    elif type(x) is ndarray:
+    elif typ is ndarray:
         return x.array
-    elif 'numpy' in str(type(x)):
+    elif 'numpy' in str(typ):
         return _from_numpy(x)
-    elif type(x) in (list, tuple):
+    elif typ in (list, tuple):
         return _from_numpy(np.array(x))
-    elif type(x) in (int, float):
+    elif typ in (int, float):
         return Nd4j.scalar(x)
     else:
-        raise Exception('Data type not understood :' + str(type(x)))
+        raise Exception('Data type not understood :' + str(typ))
+
+
+def _nparray(x):
+    typ = type(x)
+    if typ is INDArray:
+        return ndarray(x).numpy()
+    elif typ is ndarray:
+        return x.numpy()
+    elif 'numpy' in str(typ):
+        return x
+    elif typ in (list, tuple):
+        return np.array(x)
+    elif typ in (int, float):
+        return np.array(x)
+    else:
+        raise Exception('Data type not understood :' + str(typ))
 
 
 def broadcast_like(y, x):
@@ -267,7 +287,10 @@ def broadcast(x, y):
     if rep_x:
         x = Nd4j.tile(x, *xt)
     if rep_y:
-        y = Nd4j.tile(y, *yt)
+        try:
+            y = Nd4j.tile(y, *yt)
+        except:
+            y = Nd4j.tile(y, *yt)
     return x, y
 
 
@@ -276,7 +299,7 @@ class ndarray(object):
     def __init__(self, data, dtype=None):
         # we ignore dtype for now
         typ = type(data)
-        if typ is INDArray:
+        if 'nd4j' in typ.__name__:
             # Note that we don't make a copy here
             self.array = data
         elif typ is ndarray:
@@ -287,9 +310,11 @@ class ndarray(object):
             self.array = _from_numpy(data)
 
     def numpy(self):
-        # TODO: Too expensive. Make it cheaper.
-        np_array = _to_numpy(self.array)
-        return np_array
+        try:
+            return self.np_array
+        except AttributeError:
+            self.np_array = _to_numpy(self.array)
+            return self.np_array
 
     @property
     def size(self):
@@ -308,8 +333,8 @@ class ndarray(object):
     def ndim(self):
         return len(self.array.shape())
 
-
     def __getitem__(self, key):
+        return ndarray(self.numpy()[key])
         if type(key) is int:
             return ndarray(self.array.get(NDArrayIndex.point(key)))
         if type(key) is slice:
@@ -367,6 +392,8 @@ class ndarray(object):
             return ndarray(self.array.get(*args))
 
     def __setitem__(self, key, other):
+        self.numpy()[key] = _nparray(other)
+        return
         other = _indarray(other)
         view = self[key]
         if view is None:
@@ -376,31 +403,38 @@ class ndarray(object):
         view.assign(other)
 
     def __add__(self, other):
+        return ndarray(self.numpy() + _nparray(other))
         other = _indarray(other)
         x, y = broadcast(self.array, other)
         return ndarray(x.add(y))
 
     def __sub__(self, other):
+        return ndarray(self.numpy() - _nparray(other))
         other = _indarray(other)
         x, y = broadcast(self.array, other)
         return ndarray(x.sub(y))
 
     def __mul__(self, other):
+        return ndarray(self.numpy() * _nparray(other))
         other = _indarray(other)
         x, y = broadcast(self.array, other)
         return ndarray(x.mul(y))
 
     def __div__(self, other):
+        return ndarray(self.numpy() / _nparray(other))
         other = _indarray(other)
         x, y = broadcast(self.array, other)
         return ndarray(x.div(y))
 
     def __pow__(self, other):
+        return ndarray(self.numpy() ** _nparray(other))
         other = _indarray(other)
         x, y = broadcast(self.array, other)
         return ndarray(Transforms.pow(x, y))
 
     def __iadd__(self, other):
+        self.numpy().__iadd__(_nparray(other))
+        return self
         other = _indarray(other)
         if self.array.shape() == other.shape():
             self.array = self.array.addi(other)
@@ -410,6 +444,8 @@ class ndarray(object):
         return self
 
     def __isub__(self, other):
+        self.numpy().__isub__(_nparray(other))
+        return self
         other = _indarray(other)
         if self.array.shape() == other.shape():
             self.array = self.array.subi(other)
@@ -419,6 +455,8 @@ class ndarray(object):
         return self
 
     def __imul__(self, other):
+        self.numpy().__imul__(_nparray(other))
+        return self
         other = _indarray(other)
         if self.array.shape() == other.shape():
             self.array = self.array.muli(other)
@@ -428,6 +466,8 @@ class ndarray(object):
         return self
 
     def __idiv__(self, other):
+        self.numpy().__idiv__(_nparray(other))
+        return self
         other = _indarray(other)
         if self.array.shape() == other.shape():
             self.array = self.array.divi(other)
@@ -437,6 +477,8 @@ class ndarray(object):
         return self
 
     def __ipow__(self, other):
+        self.numpy().__ipow__(_nparray(other))
+        return self
         other = _indarray(other)
         if self.array.shape() == other.shape():
             self.array = self.array.divi(other)
@@ -444,7 +486,7 @@ class ndarray(object):
             x, y = broadcast(self.array, other)
             self.array = Transforms.pow(x, y)
         return self
-    
+
     def __getattr__(self, attr):
         import ops
         f = getattr(ops, attr)

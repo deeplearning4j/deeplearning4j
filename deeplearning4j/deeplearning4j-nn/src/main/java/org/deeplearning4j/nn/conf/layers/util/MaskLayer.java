@@ -40,8 +40,9 @@ import java.util.Map;
 @NoArgsConstructor
 public class MaskLayer extends NoParamLayer {
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                                                       int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
         org.deeplearning4j.nn.layers.util.MaskLayer ret = new org.deeplearning4j.nn.layers.util.MaskLayer(conf);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -68,17 +69,17 @@ public class MaskLayer extends NoParamLayer {
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        return null;    //No op
+        return null; //No op
     }
 
     @Override
     public double getL1ByParam(String paramName) {
-        return 0;   //No params
+        return 0; //No params
     }
 
     @Override
     public double getL2ByParam(String paramName) {
-        return 0;   //No params
+        return 0; //No params
     }
 
     @Override
@@ -92,7 +93,7 @@ public class MaskLayer extends NoParamLayer {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "MaskLayer()";
     }
 }

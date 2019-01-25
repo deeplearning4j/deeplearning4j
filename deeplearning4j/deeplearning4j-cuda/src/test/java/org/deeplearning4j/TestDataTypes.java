@@ -34,7 +34,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -49,7 +51,7 @@ import static org.junit.Assert.*;
 @Slf4j
 public class TestDataTypes extends BaseDL4JTest {
 
-    private static DataBuffer.Type typeBefore;
+    private static DataType typeBefore;
 
     @BeforeClass
     public static void beforeClass(){
@@ -64,15 +66,20 @@ public class TestDataTypes extends BaseDL4JTest {
     @Override
     public void beforeTest(){
         Nd4j.getExecutioner().setProfilingMode(getProfilingMode());
-        Nd4j.setDataType(DataBuffer.Type.HALF);
+        Nd4j.setDataType(DataType.HALF);
+    }
+
+    @Override
+    public OpExecutioner.ProfilingMode getProfilingMode(){
+        return OpExecutioner.ProfilingMode.NAN_PANIC;
     }
 
     @Test
     public void testDataTypesSimple() throws Exception {
 
-        Map<DataBuffer.Type, INDArray> outMapTrain = new HashMap<>();
-        Map<DataBuffer.Type, INDArray> outMapTest = new HashMap<>();
-        for(DataBuffer.Type type : new DataBuffer.Type[]{DataBuffer.Type.HALF, DataBuffer.Type.FLOAT, DataBuffer.Type.DOUBLE}) {
+        Map<DataType, INDArray> outMapTrain = new HashMap<>();
+        Map<DataType, INDArray> outMapTest = new HashMap<>();
+        for(DataType type : new DataType[]{DataType.HALF, DataType.FLOAT, DataType.DOUBLE}) {
             log.info("Starting test: {}", type);
             Nd4j.setDataType(type);
             assertEquals(type, Nd4j.dataType());
@@ -120,17 +127,17 @@ public class TestDataTypes extends BaseDL4JTest {
             INDArray outTrain = net.output(ds.getFeatures(), false);
             INDArray outTest = net.output(ds.getFeatures(), true);
 
-            outMapTrain.put(type, outTrain.convertToDoubles());
-            outMapTest.put(type, outTest.convertToDoubles());
+            outMapTrain.put(type, outTrain.castTo(DataType.DOUBLE));
+            outMapTest.put(type, outTest.castTo(DataType.DOUBLE));
         }
 
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
-        INDArray fp64Train = outMapTrain.get(DataBuffer.Type.DOUBLE);
-        INDArray fp32Train = outMapTrain.get(DataBuffer.Type.FLOAT);
-        INDArray fp16Train = outMapTrain.get(DataBuffer.Type.HALF);
+        Nd4j.setDataType(DataType.DOUBLE);
+        INDArray fp64Train = outMapTrain.get(DataType.DOUBLE);
+        INDArray fp32Train = outMapTrain.get(DataType.FLOAT).castTo(DataType.DOUBLE);
+        INDArray fp16Train = outMapTrain.get(DataType.HALF).castTo(DataType.DOUBLE);
 
         assertTrue(fp64Train.equalsWithEps(fp32Train, 1e-3));
-        assertTrue(fp64Train.equalsWithEps(fp16Train, 1e-3));
+        assertTrue(fp64Train.equalsWithEps(fp16Train, 1e-2));
 
 
     }

@@ -21,9 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
@@ -160,5 +162,13 @@ public class Slice extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         return Collections.singletonList(f().sliceBp(arg(), grad.get(0), begin, size));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null & (dataTypes.size() == 1 || dataTypes.size() == 3),
+                "Expected list with 1 or 3 datatypes for %s, got %s", getClass(), dataTypes);
+        //Output type is same as input type. 3 inputs for import case
+        return Collections.singletonList(dataTypes.get(0));
     }
 }

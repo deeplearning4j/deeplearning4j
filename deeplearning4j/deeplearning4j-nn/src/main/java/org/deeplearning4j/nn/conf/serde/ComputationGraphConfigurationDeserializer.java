@@ -22,8 +22,10 @@ import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
+import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.nd4j.shade.jackson.core.JsonLocation;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
@@ -68,11 +70,13 @@ public class ComputationGraphConfigurationDeserializer
         Layer[] layers = layerList.toArray(new Layer[layerList.size()]);
         //Now, check if we need to manually handle IUpdater deserialization from legacy format
         boolean attemptIUpdaterFromLegacy = requiresIUpdaterFromLegacy(layers);
-
+        Long charOffsetEnd = null;
+        JsonLocation endLocation = null;
+        String jsonSubString = null;
         if(attemptIUpdaterFromLegacy) {
-            JsonLocation endLocation = jp.getCurrentLocation();
-            long charOffsetEnd = endLocation.getCharOffset();
-            String jsonSubString = endLocation.getSourceRef().toString().substring((int) charOffsetStart - 1, (int) charOffsetEnd);
+            endLocation = jp.getCurrentLocation();
+            charOffsetEnd = endLocation.getCharOffset();
+            jsonSubString = endLocation.getSourceRef().toString().substring((int) charOffsetStart - 1, charOffsetEnd.intValue());
 
             ObjectMapper om = NeuralNetConfiguration.mapper();
             JsonNode rootNode = om.readTree(jsonSubString);
@@ -114,6 +118,19 @@ public class ComputationGraphConfigurationDeserializer
 
                     layerIdx++;
                 }
+            }
+        }
+
+        //After 1.0.0-beta3, batchnorm reparameterized to support both variance and log10stdev
+        //JSON deserialization uses public BatchNormalization() constructor which defaults to log10stdev now
+        // but, as there is no useLogStdev=false property for legacy batchnorm JSON, the 'real' value (useLogStdev=false)
+        // is not set to override the default, unless we do it manually here
+        for(GraphVertex gv : conf.getVertices().values()){
+            if(gv instanceof LayerVertex && ((LayerVertex) gv).getLayerConf().getLayer() instanceof BatchNormalization){
+                BatchNormalization bn = (BatchNormalization) ((LayerVertex) gv).getLayerConf().getLayer();
+                List<String> vars = ((LayerVertex) gv).getLayerConf().getVariables();
+                boolean isVariance = vars.contains(BatchNormalizationParamInitializer.GLOBAL_VAR);
+                bn.setUseLogStd(!isVariance);
             }
         }
 

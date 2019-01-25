@@ -70,13 +70,25 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
 
     @AllArgsConstructor
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static abstract class Builder<T extends Builder<T>> extends BaseRecurrentLayer.Builder<T> {
 
+        /**
+         * Set forget gate bias initalizations. Values in range 1-5 can potentially help with learning or longer-term
+         * dependencies.
+         */
         protected double forgetGateBiasInit = 1.0;
+
+        /**
+         * Activation function for the LSTM gates. Note: This should be bounded to range 0-1: sigmoid or hard sigmoid,
+         * for example
+         */
         protected IActivation gateActivationFn = new ActivationSigmoid();
 
-        /** Set forget gate bias initalizations. Values in range 1-5 can potentially
-         * help with learning or longer-term dependencies.
+        /**
+         * Set forget gate bias initalizations. Values in range 1-5 can potentially help with learning or longer-term
+         * dependencies.
          */
         public T forgetGateBiasInit(double biasInit) {
             this.forgetGateBiasInit = biasInit;
@@ -84,8 +96,8 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
         }
 
         /**
-         * Activation function for the LSTM gates.
-         * Note: This should be bounded to range 0-1: sigmoid or hard sigmoid, for example
+         * Activation function for the LSTM gates. Note: This should be bounded to range 0-1: sigmoid or hard sigmoid,
+         * for example
          *
          * @param gateActivationFn Activation function for the LSTM gates
          */
@@ -94,8 +106,8 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
         }
 
         /**
-         * Activation function for the LSTM gates.
-         * Note: This should be bounded to range 0-1: sigmoid or hard sigmoid, for example
+         * Activation function for the LSTM gates. Note: This should be bounded to range 0-1: sigmoid or hard sigmoid,
+         * for example
          *
          * @param gateActivationFn Activation function for the LSTM gates
          */
@@ -104,8 +116,8 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
         }
 
         /**
-         * Activation function for the LSTM gates.
-         * Note: This should be bounded to range 0-1: sigmoid or hard sigmoid, for example
+         * Activation function for the LSTM gates. Note: This should be bounded to range 0-1: sigmoid or hard sigmoid,
+         * for example
          *
          * @param gateActivationFn Activation function for the LSTM gates
          */

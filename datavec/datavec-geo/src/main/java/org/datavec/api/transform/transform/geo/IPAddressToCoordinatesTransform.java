@@ -22,7 +22,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.io.IOException;
 
 /**
- * Uses GeoIP2 from from <a href="http://www.maxmind.com">http://www.maxmind.com</a>
+ * Uses GeoIP2 from <a href="http://www.maxmind.com">http://www.maxmind.com</a>
  * to convert IP addresses to (approximate) coordinates (latitude:longitude).
  * For example, "128.101.101.101" becomes something like "44.9733:-93.2323".
  *

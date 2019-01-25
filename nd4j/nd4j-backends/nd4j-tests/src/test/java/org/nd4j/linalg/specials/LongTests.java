@@ -17,20 +17,19 @@
 package org.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.primitives.Pair;
-import org.bytedeco.javacpp.IntPointer;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +47,7 @@ import static org.junit.Assert.assertNotEquals;
 @RunWith(Parameterized.class)
 public class LongTests extends BaseNd4jTest {
 
-    DataBuffer.Type initialType;
+    DataType initialType;
 
     public LongTests(Nd4jBackend backend) {
         super(backend);
@@ -128,7 +127,7 @@ public class LongTests extends BaseNd4jTest {
             assertEquals("Failed at row " + x, 1000, hugeX.getRow(x).sumNumber().intValue());
         }
 
-        INDArray result = Nd4j.getExecutioner().exec(new ManhattanDistance(hugeX, hugeY, hugeX.lengthLong()), 1);
+        INDArray result = Nd4j.getExecutioner().exec(new ManhattanDistance(hugeX, hugeY, 1));
         for (int x = 0; x < hugeX.rows(); x++) {
             assertEquals(exp, result.getDouble(x), 1e-5);
         }

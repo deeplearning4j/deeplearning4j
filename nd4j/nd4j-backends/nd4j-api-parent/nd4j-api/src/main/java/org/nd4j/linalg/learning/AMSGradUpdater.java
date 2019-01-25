@@ -20,7 +20,7 @@ import lombok.Data;
 import lombok.val;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.Sqrt;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -95,7 +95,7 @@ public class AMSGradUpdater implements GradientUpdater<AMSGrad> {
             alphat = epsilon;
 
         //gradient array contains: sqrt(vHat) + eps
-        Nd4j.getExecutioner().execAndReturn(new Sqrt(vHat, gradient)).addi(epsilon);
+        Nd4j.getExecutioner().exec(new Sqrt(vHat, gradient)).addi(epsilon);
 
         //gradient = alphat * m_t / (sqrt(vHat) + eps)
         gradient.rdivi(m).muli(alphat);

@@ -79,6 +79,14 @@
             <version>${mkl-dnn.javacpp.version}</version>
             <classifier>${dependency.platform2}</classifier>
         </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>libnd4j</artifactId>
+            <version>${project.version}</version>
+            <type>zip</type>
+            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+            <scope>provided</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -93,12 +101,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-base64</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -313,8 +315,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>8</source>
+                    <target>8</target>
                 </configuration>
             </plugin>
         </plugins>
@@ -328,7 +330,7 @@
             <id>avx2</id>
             <activation>
                 <property>
-                    <name>javacpp.extension</name>
+                    <name>libnd4j.extension</name>
                     <value>avx2</value>
                 </property>
             </activation>
@@ -340,7 +342,7 @@
             <id>avx512</id>
             <activation>
                 <property>
-                    <name>javacpp.extension</name>
+                    <name>libnd4j.extension</name>
                     <value>avx512</value>
                 </property>
             </activation>

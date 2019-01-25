@@ -19,7 +19,7 @@ package org.nd4j.linalg.cpu.nativecpu.ops;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.reduce.MatchCondition;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;

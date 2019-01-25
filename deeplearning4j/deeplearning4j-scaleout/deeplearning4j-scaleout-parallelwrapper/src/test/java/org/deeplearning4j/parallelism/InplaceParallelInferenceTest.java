@@ -109,8 +109,8 @@ public class InplaceParallelInferenceTest {
                 .workers(2)
                 .build();
 
-        val result0 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0})}, null)[0];
-        val result1 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0})}, null)[0];
+        val result0 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1,5})}, null)[0];
+        val result1 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1,5})}, null)[0];
 
         assertNotNull(result0);
         assertEquals(result0, result1);
@@ -137,8 +137,8 @@ public class InplaceParallelInferenceTest {
                 .workers(2)
                 .build();
 
-        val result0 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0})}, null)[0];
-        val result1 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0})}, null)[0];
+        val result0 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1,5})}, null)[0];
+        val result1 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1,5})}, null)[0];
 
         assertNotNull(result0);
         assertEquals(result0, result1);

@@ -38,7 +38,7 @@ namespace nd4j {
                 int e = 1;
                 char order = (char) -(*arguments)[0];
                 if (order != 'c' && order != 'f') {
-                    order = x->ordering();
+                    order = 'c'; //x->ordering();
                     e = 0;
                 }
 
@@ -94,15 +94,15 @@ namespace nd4j {
                 std::vector<Nd4jLong> shapeNew(s->lengthOf());
 
                 for (int e = 0; e < (int) s->lengthOf(); e++) {
-                    auto dim = static_cast<Nd4jLong>(s->getScalar(e));
+                    auto dim = s->e<Nd4jLong >(e);
                     if (dim == -1){
                         long shapeLength = 1;
                         for(int e2 = 0; e2 < e; e2++){
-                            shapeLength *= static_cast<Nd4jLong>(s->getScalar(e2));
+                            shapeLength *= s->e<Nd4jLong>(e2);
                         }
                         for(int e2 = e + 1; e2 < (int) s->lengthOf(); e2++){
-                            REQUIRE_TRUE(static_cast<Nd4jLong>(s->getScalar(e2)) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
-                            shapeLength *= static_cast<Nd4jLong>(s->getScalar(e2));
+                            REQUIRE_TRUE(s->e<Nd4jLong>(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
+                            shapeLength *= s->e<Nd4jLong>(e2);
                         }
                         long realShape = x->lengthOf() / shapeLength;
                         shapeNew[e] = realShape;
@@ -138,6 +138,15 @@ namespace nd4j {
 
             return ND4J_STATUS_BAD_INPUT;
         }
+
+
+        DECLARE_TYPES(reshape) {
+            getOpDescriptor()
+                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(1, {ALL_INTS})
+                    ->setSameMode(true);
+        }
+
         DECLARE_SHAPE_FN(reshape) {
             auto inp = inputShape->at(0);
 
@@ -185,6 +194,7 @@ namespace nd4j {
                     newShape[cnt++] = v;
 
                 shape::updateStrides(newShape, order);
+                ArrayOptions::setDataType(newShape, ArrayOptions::dataType(inp));
 
                 return SHAPELIST(newShape);
             } else {
@@ -197,21 +207,21 @@ namespace nd4j {
                     REQUIRE_TRUE(x->lengthOf() == 1, 0, "Reshape: new length doesn't match existing array");
 
 
-                    return SHAPELIST(ShapeUtils<T>::createScalarShapeInfo(block.getWorkspace()));
+                    return SHAPELIST(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inp),block.getWorkspace()));
                 }
 
                 std::vector<Nd4jLong> shapeNew(y->lengthOf());
 
                 for (int e = 0; e < (int) y->lengthOf(); e++) {
-                    auto dim = (long)y->getIndexedScalar(e);
+                    auto dim = y->e<Nd4jLong>(e);
                     if (dim == -1){
                         long shapeLength = 1;
                         for(int e2 = 0; e2 < e; e2++){
-                            shapeLength *= (long)y->getIndexedScalar(e2);
+                            shapeLength *= y->e<Nd4jLong>(e2);
                         }
                         for(int e2 = e + 1; e2 < (int)y->lengthOf(); e2++){
-                            REQUIRE_TRUE((int)y->getIndexedScalar(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
-                            shapeLength *= (long)y->getIndexedScalar(e2);
+                            REQUIRE_TRUE(y->e<Nd4jLong>(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
+                            shapeLength *= y->e<Nd4jLong>(e2);
                         }
                         long realShape = shape::length(inp) / shapeLength;
                         shapeNew[e] = realShape;
@@ -224,7 +234,7 @@ namespace nd4j {
                 Nd4jLong *newShape;
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shapeNew.size()), Nd4jLong);
 
-                shape::shapeBuffer(shapeNew.size(), shapeNew.data(), newShape);
+                shape::shapeBuffer(shapeNew.size(), ArrayOptions::dataType(inp), shapeNew.data(), newShape);
 
                 return SHAPELIST(newShape);
             }

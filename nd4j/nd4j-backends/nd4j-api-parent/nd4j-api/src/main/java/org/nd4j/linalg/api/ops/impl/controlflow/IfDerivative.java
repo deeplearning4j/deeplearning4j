@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SameDiffConditional;
 import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
 import java.util.List;
 
@@ -76,7 +77,7 @@ public class IfDerivative extends If {
     }
 
     @Override
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
         return super.calculateOutputShape();
     }
 

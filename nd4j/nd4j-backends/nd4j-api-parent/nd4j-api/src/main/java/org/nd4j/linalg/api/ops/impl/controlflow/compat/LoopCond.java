@@ -19,7 +19,10 @@ package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -35,9 +38,9 @@ public class LoopCond extends BaseCompatOp {
     }
 
     @Override
-    public List<long[]> calculateOutputShape() {
+    public List<LongShapeDescriptor> calculateOutputShape() {
         if(arg().getArr() != null) {
-            return Collections.singletonList(arg().getShape());
+            return Collections.singletonList(LongShapeDescriptor.fromShape(arg().getShape(), arg().dataType()));
         }
         else
             return Collections.emptyList();
@@ -66,5 +69,11 @@ public class LoopCond extends BaseCompatOp {
     @Override
     public int getNumOutputs(){
         return 1;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected 1 input datatype for %s, got %s", getClass(), inputDataTypes);
+        return inputDataTypes;
     }
 }

@@ -30,25 +30,30 @@ import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class CrashReportingUtilTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @Override
+    public DataType getDataType(){
+        return DataType.FLOAT;
+    }
 
     @After
     public void after(){
@@ -72,7 +77,7 @@ public class CrashReportingUtilTest extends BaseDL4JTest {
 
         MultiLayerConfiguration conf =
                 new NeuralNetConfiguration.Builder().updater(new NoOp())
-                        .weightInit(WeightInit.DISTRIBUTION)
+
                         .dist(new NormalDistribution(0, 1))
                         .list().layer(0,
                         new ConvolutionLayer.Builder()

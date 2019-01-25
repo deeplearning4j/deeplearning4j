@@ -20,7 +20,9 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -39,14 +41,14 @@ public class Unstack extends DynamicCustomOp {
 
     // TODO: libnd4j currently doesn't support "num", number of outputs is inferred.
     private int num = -1;
-    private int axis;
+    private int jaxis;
 
     public Unstack() {
     }
 
     public Unstack(SameDiff sameDiff, SDVariable value, int axis) {
         super(null, sameDiff, new SDVariable[]{value}, false);
-        this.axis = axis;
+        this.jaxis = axis;
         if (value.getShape() != null){
             if (value.getShape()[axis] != -1){
                 num = (int)value.getShape()[axis];
@@ -60,19 +62,19 @@ public class Unstack extends DynamicCustomOp {
 
     public Unstack(SameDiff sameDiff, SDVariable value, int axis, int num) {
         super(null, sameDiff, new SDVariable[]{value}, false);
-        this.axis = axis;
+        this.jaxis = axis;
         this.num = num;
         addArgs();
     }
 
     public Unstack(INDArray in, INDArray[] out, int axis){
         super(null, new INDArray[]{in}, out, null, (int[])null);
-        this.axis = axis;
+        this.jaxis = axis;
         addArgs();
     }
 
     public void addArgs() {
-        addIArgument(axis);
+        addIArgument(jaxis);
     }
 
     @Override
@@ -95,7 +97,7 @@ public class Unstack extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val attrAxis = nodeDef.getAttrOrThrow("axis");
         int axis = (int) attrAxis.getI();
-        this.axis = axis;
+        this.jaxis = axis;
         val attrNum = nodeDef.getAttrOrDefault("num", null);
         if(attrNum != null){
             this.num = (int) attrNum.getI();
@@ -134,7 +136,18 @@ public class Unstack extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(sameDiff.stack(axis, f1.toArray(new SDVariable[f1.size()])));
+        return Collections.singletonList(sameDiff.stack(jaxis, f1.toArray(new SDVariable[f1.size()])));
+    }
+
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
+        //Output types are same as input type - i.e., just unpack rank R array into N rank R-1 arrays
+        List<DataType> out = new ArrayList<>();
+        for( int i=0; i<num; i++ ){
+            out.add(dataTypes.get(0));
+        }
+        return out;
     }
 
 }

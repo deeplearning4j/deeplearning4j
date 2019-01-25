@@ -24,17 +24,18 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_PROPERTIES = 12,
     VT_INPUT = 14,
     VT_INPUTPAIRED = 16,
-    VT_DATATYPE = 18,
-    VT_OUTPUT = 20,
-    VT_EXTRAPARAMS = 22,
-    VT_EXTRAINTEGER = 24,
+    VT_OUTPUT = 18,
+    VT_EXTRAPARAMS = 20,
+    VT_EXTRAINTEGER = 22,
+    VT_EXTRABOOLS = 24,
     VT_DIMENSIONS = 26,
     VT_DEVICE = 28,
-    VT_SCALAR = 30,
-    VT_SCOPE_ID = 32,
-    VT_SCOPE_NAME = 34,
-    VT_OUTPUTNAMES = 36,
-    VT_OPNAME = 38
+    VT_SCOPE_ID = 30,
+    VT_SCOPE_NAME = 32,
+    VT_OUTPUTNAMES = 34,
+    VT_OPNAME = 36,
+    VT_OUTPUTTYPES = 38,
+    VT_SCALAR = 40
   };
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
@@ -57,9 +58,6 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<IntPair>> *inputPaired() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<IntPair>> *>(VT_INPUTPAIRED);
   }
-  DataType dataType() const {
-    return static_cast<DataType>(GetField<int8_t>(VT_DATATYPE, 0));
-  }
   const flatbuffers::Vector<int32_t> *output() const {
     return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_OUTPUT);
   }
@@ -69,14 +67,14 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<int64_t> *extraInteger() const {
     return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_EXTRAINTEGER);
   }
+  const flatbuffers::Vector<uint8_t> *extraBools() const {
+    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_EXTRABOOLS);
+  }
   const flatbuffers::Vector<int32_t> *dimensions() const {
     return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_DIMENSIONS);
   }
   int32_t device() const {
     return GetField<int32_t>(VT_DEVICE, 0);
-  }
-  float scalar() const {
-    return GetField<float>(VT_SCALAR, 0.0f);
   }
   int32_t scope_id() const {
     return GetField<int32_t>(VT_SCOPE_ID, 0);
@@ -90,40 +88,50 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *opName() const {
     return GetPointer<const flatbuffers::String *>(VT_OPNAME);
   }
+  const flatbuffers::Vector<int8_t> *outputTypes() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_OUTPUTTYPES);
+  }
+  const FlatArray *scalar() const {
+    return GetPointer<const FlatArray *>(VT_SCALAR);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
            VerifyOffset(verifier, VT_NAME) &&
-           verifier.Verify(name()) &&
+           verifier.VerifyString(name()) &&
            VerifyField<int8_t>(verifier, VT_OPTYPE) &&
            VerifyField<int64_t>(verifier, VT_OPNUM) &&
            VerifyOffset(verifier, VT_PROPERTIES) &&
-           verifier.Verify(properties()) &&
+           verifier.VerifyVector(properties()) &&
            verifier.VerifyVectorOfTables(properties()) &&
            VerifyOffset(verifier, VT_INPUT) &&
-           verifier.Verify(input()) &&
+           verifier.VerifyVector(input()) &&
            VerifyOffset(verifier, VT_INPUTPAIRED) &&
-           verifier.Verify(inputPaired()) &&
+           verifier.VerifyVector(inputPaired()) &&
            verifier.VerifyVectorOfTables(inputPaired()) &&
-           VerifyField<int8_t>(verifier, VT_DATATYPE) &&
            VerifyOffset(verifier, VT_OUTPUT) &&
-           verifier.Verify(output()) &&
+           verifier.VerifyVector(output()) &&
            VerifyOffset(verifier, VT_EXTRAPARAMS) &&
-           verifier.Verify(extraParams()) &&
+           verifier.VerifyVector(extraParams()) &&
            VerifyOffset(verifier, VT_EXTRAINTEGER) &&
-           verifier.Verify(extraInteger()) &&
+           verifier.VerifyVector(extraInteger()) &&
+           VerifyOffset(verifier, VT_EXTRABOOLS) &&
+           verifier.VerifyVector(extraBools()) &&
            VerifyOffset(verifier, VT_DIMENSIONS) &&
-           verifier.Verify(dimensions()) &&
+           verifier.VerifyVector(dimensions()) &&
            VerifyField<int32_t>(verifier, VT_DEVICE) &&
-           VerifyField<float>(verifier, VT_SCALAR) &&
            VerifyField<int32_t>(verifier, VT_SCOPE_ID) &&
            VerifyOffset(verifier, VT_SCOPE_NAME) &&
-           verifier.Verify(scope_name()) &&
+           verifier.VerifyString(scope_name()) &&
            VerifyOffset(verifier, VT_OUTPUTNAMES) &&
-           verifier.Verify(outputNames()) &&
+           verifier.VerifyVector(outputNames()) &&
            verifier.VerifyVectorOfStrings(outputNames()) &&
            VerifyOffset(verifier, VT_OPNAME) &&
-           verifier.Verify(opName()) &&
+           verifier.VerifyString(opName()) &&
+           VerifyOffset(verifier, VT_OUTPUTTYPES) &&
+           verifier.VerifyVector(outputTypes()) &&
+           VerifyOffset(verifier, VT_SCALAR) &&
+           verifier.VerifyTable(scalar()) &&
            verifier.EndTable();
   }
 };
@@ -152,9 +160,6 @@ struct FlatNodeBuilder {
   void add_inputPaired(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IntPair>>> inputPaired) {
     fbb_.AddOffset(FlatNode::VT_INPUTPAIRED, inputPaired);
   }
-  void add_dataType(DataType dataType) {
-    fbb_.AddElement<int8_t>(FlatNode::VT_DATATYPE, static_cast<int8_t>(dataType), 0);
-  }
   void add_output(flatbuffers::Offset<flatbuffers::Vector<int32_t>> output) {
     fbb_.AddOffset(FlatNode::VT_OUTPUT, output);
   }
@@ -164,14 +169,14 @@ struct FlatNodeBuilder {
   void add_extraInteger(flatbuffers::Offset<flatbuffers::Vector<int64_t>> extraInteger) {
     fbb_.AddOffset(FlatNode::VT_EXTRAINTEGER, extraInteger);
   }
+  void add_extraBools(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> extraBools) {
+    fbb_.AddOffset(FlatNode::VT_EXTRABOOLS, extraBools);
+  }
   void add_dimensions(flatbuffers::Offset<flatbuffers::Vector<int32_t>> dimensions) {
     fbb_.AddOffset(FlatNode::VT_DIMENSIONS, dimensions);
   }
   void add_device(int32_t device) {
     fbb_.AddElement<int32_t>(FlatNode::VT_DEVICE, device, 0);
-  }
-  void add_scalar(float scalar) {
-    fbb_.AddElement<float>(FlatNode::VT_SCALAR, scalar, 0.0f);
   }
   void add_scope_id(int32_t scope_id) {
     fbb_.AddElement<int32_t>(FlatNode::VT_SCOPE_ID, scope_id, 0);
@@ -184,6 +189,12 @@ struct FlatNodeBuilder {
   }
   void add_opName(flatbuffers::Offset<flatbuffers::String> opName) {
     fbb_.AddOffset(FlatNode::VT_OPNAME, opName);
+  }
+  void add_outputTypes(flatbuffers::Offset<flatbuffers::Vector<int8_t>> outputTypes) {
+    fbb_.AddOffset(FlatNode::VT_OUTPUTTYPES, outputTypes);
+  }
+  void add_scalar(flatbuffers::Offset<FlatArray> scalar) {
+    fbb_.AddOffset(FlatNode::VT_SCALAR, scalar);
   }
   explicit FlatNodeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -201,31 +212,34 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
-    OpType opType = OpType_TRANSFORM,
+    OpType opType = OpType_TRANSFORM_FLOAT,
     int64_t opNum = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatProperties>>> properties = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> input = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IntPair>>> inputPaired = 0,
-    DataType dataType = DataType_INHERIT,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> output = 0,
     flatbuffers::Offset<flatbuffers::Vector<double>> extraParams = 0,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> extraInteger = 0,
+    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> extraBools = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> dimensions = 0,
     int32_t device = 0,
-    float scalar = 0.0f,
     int32_t scope_id = 0,
     flatbuffers::Offset<flatbuffers::String> scope_name = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> outputNames = 0,
-    flatbuffers::Offset<flatbuffers::String> opName = 0) {
+    flatbuffers::Offset<flatbuffers::String> opName = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> outputTypes = 0,
+    flatbuffers::Offset<FlatArray> scalar = 0) {
   FlatNodeBuilder builder_(_fbb);
   builder_.add_opNum(opNum);
+  builder_.add_scalar(scalar);
+  builder_.add_outputTypes(outputTypes);
   builder_.add_opName(opName);
   builder_.add_outputNames(outputNames);
   builder_.add_scope_name(scope_name);
   builder_.add_scope_id(scope_id);
-  builder_.add_scalar(scalar);
   builder_.add_device(device);
   builder_.add_dimensions(dimensions);
+  builder_.add_extraBools(extraBools);
   builder_.add_extraInteger(extraInteger);
   builder_.add_extraParams(extraParams);
   builder_.add_output(output);
@@ -234,7 +248,6 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
   builder_.add_properties(properties);
   builder_.add_name(name);
   builder_.add_id(id);
-  builder_.add_dataType(dataType);
   builder_.add_opType(opType);
   return builder_.Finish();
 }
@@ -243,22 +256,23 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t id = 0,
     const char *name = nullptr,
-    OpType opType = OpType_TRANSFORM,
+    OpType opType = OpType_TRANSFORM_FLOAT,
     int64_t opNum = 0,
     const std::vector<flatbuffers::Offset<FlatProperties>> *properties = nullptr,
     const std::vector<int32_t> *input = nullptr,
     const std::vector<flatbuffers::Offset<IntPair>> *inputPaired = nullptr,
-    DataType dataType = DataType_INHERIT,
     const std::vector<int32_t> *output = nullptr,
     const std::vector<double> *extraParams = nullptr,
     const std::vector<int64_t> *extraInteger = nullptr,
+    const std::vector<uint8_t> *extraBools = nullptr,
     const std::vector<int32_t> *dimensions = nullptr,
     int32_t device = 0,
-    float scalar = 0.0f,
     int32_t scope_id = 0,
     const char *scope_name = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *outputNames = nullptr,
-    const char *opName = nullptr) {
+    const char *opName = nullptr,
+    const std::vector<int8_t> *outputTypes = nullptr,
+    flatbuffers::Offset<FlatArray> scalar = 0) {
   return nd4j::graph::CreateFlatNode(
       _fbb,
       id,
@@ -268,17 +282,18 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
       properties ? _fbb.CreateVector<flatbuffers::Offset<FlatProperties>>(*properties) : 0,
       input ? _fbb.CreateVector<int32_t>(*input) : 0,
       inputPaired ? _fbb.CreateVector<flatbuffers::Offset<IntPair>>(*inputPaired) : 0,
-      dataType,
       output ? _fbb.CreateVector<int32_t>(*output) : 0,
       extraParams ? _fbb.CreateVector<double>(*extraParams) : 0,
       extraInteger ? _fbb.CreateVector<int64_t>(*extraInteger) : 0,
+      extraBools ? _fbb.CreateVector<uint8_t>(*extraBools) : 0,
       dimensions ? _fbb.CreateVector<int32_t>(*dimensions) : 0,
       device,
-      scalar,
       scope_id,
       scope_name ? _fbb.CreateString(scope_name) : 0,
       outputNames ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*outputNames) : 0,
-      opName ? _fbb.CreateString(opName) : 0);
+      opName ? _fbb.CreateString(opName) : 0,
+      outputTypes ? _fbb.CreateVector<int8_t>(*outputTypes) : 0,
+      scalar);
 }
 
 inline const nd4j::graph::FlatNode *GetFlatNode(const void *buf) {

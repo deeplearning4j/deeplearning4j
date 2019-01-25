@@ -43,6 +43,7 @@ import org.datavec.api.writable.*;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.datavec.arrow.recordreader.ArrowWritableRecordTimeSeriesBatch;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -176,16 +177,16 @@ public class ArrowConverter {
         direct.rewind();
         switch(type) {
             case Integer:
-                buffer = Nd4j.createBuffer(direct, DataBuffer.Type.INT,cols,0);
+                buffer = Nd4j.createBuffer(direct, DataType.INT,cols,0);
                 break;
             case Float:
-                buffer = Nd4j.createBuffer(direct, DataBuffer.Type.FLOAT,cols);
+                buffer = Nd4j.createBuffer(direct, DataType.FLOAT,cols);
                 break;
             case Double:
-                buffer = Nd4j.createBuffer(direct, DataBuffer.Type.DOUBLE,cols);
+                buffer = Nd4j.createBuffer(direct, DataType.DOUBLE,cols);
                 break;
             case Long:
-                buffer =  Nd4j.createBuffer(direct, DataBuffer.Type.LONG,cols);
+                buffer =  Nd4j.createBuffer(direct, DataType.LONG,cols);
                 break;
         }
 

@@ -297,11 +297,10 @@ public interface Random extends AutoCloseable {
     Pointer getStatePointer();
 
     /**
-     * This method returns pointer to RNG buffer
-     *
+     * This method returns number of elements consumed
      * @return
      */
-    DataBuffer getStateBuffer();
+    long getPosition();
 
     /**
      * This method is similar to setSeed() but it doesn't really touches underlying buffer, if any. So it acts as additional modifier to current RNG state. System.currentTimeMillis() will be used as modifier.
@@ -319,6 +318,10 @@ public interface Random extends AutoCloseable {
      * @param seed
      */
     void reSeed(long seed);
+
+    long rootState();
+
+    long nodeState();
 }
 
 

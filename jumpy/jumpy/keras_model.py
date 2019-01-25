@@ -1,17 +1,32 @@
-from .java_classes import  KerasModelImport
+################################################################################
+# Copyright (c) 2015-2018 Skymind, Inc.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License, Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+################################################################################
+
+from .java_classes import KerasModelImport
 from .ndarray import array
+
 
 class KerasModel(object):
     def __init__(self, filepath):
-        if KerasModelImport is None:
-            raise ImportError('DL4J Core not installed.')
+        KerasModelImport = KerasModelImport()
         try:
             self.model = KerasModelImport.importKerasModelAndWeights(filepath)
             self.is_sequential = False
         except Exception:
             self.model = KerasModelImport.importKerasSequentialModelAndWeights(filepath)
             self.is_sequential = True
-
 
     def __call__(self, input):
         if self.is_sequential:
@@ -22,7 +37,7 @@ class KerasModel(object):
                     raise ValueError(err)
                 input = input[0]
             input = array(input).array
-            out = self.model.output(input,  False)
+            out = self.model.output(input, False)
             out = array(out)
             return out
         else:

@@ -61,7 +61,7 @@ public class RecordReaderFunction implements Function<String, DataSet> {
         List<Writable> currList = recordReader.next();
 
         INDArray label = null;
-        INDArray featureVector = Nd4j.create(labelIndex >= 0 ? currList.size() - 1 : currList.size());
+        INDArray featureVector = Nd4j.create(1, labelIndex >= 0 ? currList.size() - 1 : currList.size());
         int count = 0;
         for (int j = 0; j < currList.size(); j++) {
             if (labelIndex >= 0 && j == labelIndex) {

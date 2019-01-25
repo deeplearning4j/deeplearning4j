@@ -14,3 +14,7 @@ flatc -o ./include/graph/generated -I ./include/graph/scheme -j -b -t -c -n --js
     ./include/graph/scheme/utils.fbs \
     ./include/graph/scheme/variable.fbs \
     ./include/graph/scheme/properties.fbs
+	
+flatc -o ./include/graph/generated -I ./include/graph/scheme -j -b -t -c -n --js --grpc -p \
+    ./include/graph/scheme/uigraphstatic.fbs \
+    ./include/graph/scheme/uigraphevents.fbs

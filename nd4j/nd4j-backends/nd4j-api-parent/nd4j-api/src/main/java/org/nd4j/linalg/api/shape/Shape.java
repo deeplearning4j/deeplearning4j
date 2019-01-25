@@ -23,6 +23,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -599,8 +600,8 @@ public class Shape {
      */
     public static INDArray toOffsetZero(INDArray arr) {
         if (arr.offset() < 1 && arr.data().length() == arr.length())
-            if (arr.ordering() == 'f' && arr.stride(-1) != arr.elementStride()
-                    || arr.ordering() == 'c' && arr.stride(0) != arr.elementStride())
+            if (arr.ordering() == 'f' && arr.stride(-1) != 1
+                    || arr.ordering() == 'c' && arr.stride(0) != 1)
                 return arr;
 
         if (arr.isRowVector()) {
@@ -651,11 +652,14 @@ public class Shape {
     }
 
     private static INDArray toOffsetZeroCopyHelper(final INDArray arr, char order, boolean anyOrder) {
+        if(arr.isEmpty())
+            return arr; //Empty arrays are immutable, return as-is
+
         //Use CopyOp:
         char outOrder = (anyOrder ? arr.ordering() : order);
         if (outOrder == 'a')
             outOrder = Nd4j.order();
-        INDArray z = Nd4j.createUninitialized(arr.shape(), outOrder);
+        INDArray z = Nd4j.createUninitialized(arr.dataType(), arr.shape(), outOrder);
         z.assign(arr);
         return z;
     }
@@ -676,6 +680,11 @@ public class Shape {
     public static double getDouble(INDArray arr, long... indices) {
         long offset = getOffset(arr.shapeInfo(), indices);
         return arr.data().getDouble(offset);
+    }
+
+    public static long getLong(INDArray arr, long... indices) {
+        long offset = getOffset(arr.shapeInfo(), indices);
+        return arr.data().getLong(offset);
     }
 
     /**
@@ -868,8 +877,8 @@ public class Shape {
 
     public static long getOffset(LongBuffer shapeInformation, long... indices) {
         int rank = rank(shapeInformation);
-        if (indices.length != rank)
-            throw new IllegalArgumentException("Indexes must be same length as array rank");
+        Preconditions.checkState(indices.length == rank, "Number of indices (got %s) must be same as array rank (%s) - indices %s",
+                indices.length, rank, indices);
         long offset = 0;
         for (int i = 0; i < rank; i++) {
             int size_dimi = (int) size(shapeInformation, i);
@@ -2034,7 +2043,7 @@ public class Shape {
         if (ni >= 1) {
             last_stride = newStrides[ni - 1];
         } else {
-            last_stride = arr.elementStride();
+            last_stride = 1;
         }
         if (isFOrder && ni >= 1) {
             last_stride *= newShape[ni - 1];
@@ -2213,7 +2222,7 @@ public class Shape {
      * @return the ordering for the given array
      */
     public static char getOrder(INDArray arr) {
-        return getOrder(arr.shape(), arr.stride(), arr.elementStride());
+        return getOrder(arr.shape(), arr.stride(), 1);
     }
 
     /**
@@ -2435,9 +2444,7 @@ public class Shape {
     public static int[] newStrides(int[] strides, int newLength, INDArrayIndex[] indexes) {
         if (strides.length > newLength) {
             int[] newStrides = new int[strides.length - 1];
-            for (int i = 0; i < newStrides.length; i++) {
-                newStrides[i] = strides[i + 1];
-            }
+            System.arraycopy(strides, 1, newStrides, 0, newStrides.length);
             strides = newStrides;
         }
 
@@ -2662,15 +2669,13 @@ public class Shape {
      */
     public static int[] shape(int[] buffer) {
         int[] ret = new int[rank(buffer)];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = buffer[1 + i];
+        System.arraycopy(buffer, 1, ret, 0, ret.length);
         return ret;
     }
 
     public static long[] shape(long[] buffer) {
         long[] ret = new long[rank(buffer)];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = buffer[1 + i];
+        System.arraycopy(buffer, 1, ret, 0, ret.length);
         return ret;
     }
 
@@ -2949,14 +2954,17 @@ public class Shape {
     }
 
     public static String shapeToString(LongBuffer buffer) {
+        int length = buffer.capacity();
+        long options = buffer.get(length -3);
         val shapeBuff = shapeOf(buffer);
         int rank = Shape.rank(buffer);
         val strideBuff = stride(buffer);
         StringBuilder sb = new StringBuilder();
-        sb.append("Rank: " + rank + ",");
-        sb.append("Offset: " + Shape.offset(buffer) + "\n");
-        sb.append(" Order: " + Shape.order(buffer));
-        sb.append(" Shape: [");
+        sb.append("Rank: ").append(rank).append(",")
+                .append(" DataType: ").append(ArrayOptionsHelper.dataType(options)).append(",")
+                .append(" Offset: ").append(Shape.offset(buffer)).append(",")
+                .append(" Order: ").append(Shape.order(buffer)).append(",")
+                .append(" Shape: [");
         for (int i = 0; i < rank; i++) {
             sb.append(shapeBuff.get(i));
             if (i < rank - 1)
@@ -2964,7 +2972,7 @@ public class Shape {
         }
         sb.append("], ");
 
-        sb.append(" stride: [");
+        sb.append(" Stride: [");
         for (int i = 0; i < rank; i++) {
             sb.append(strideBuff.get(i));
             if (i < rank - 1)
@@ -2972,6 +2980,11 @@ public class Shape {
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    public static String shapeToStringShort(INDArray arr){
+        long[] s = arr.shape();
+        return arr.dataType() + "," + (s == null ? "[]" : Arrays.toString(s).replace(" ","")) + "," + arr.ordering();
     }
 
 
@@ -3200,14 +3213,16 @@ public class Shape {
         return ret;
     }
 
-    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order) {
-        offset = 0;
+    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType) {
+        long offset = 0;
+
+        ArrayOptionsHelper.setOptionBit(offset, dataType);
 
         if (shape.length != stride.length)
             throw new IllegalStateException("Shape and stride must be the same length");
 
         int rank = shape.length;
-        long shapeBuffer[] = new long[rank * 2 + 4];
+        long shapeBuffer[] = new long[Shape.shapeInfoLength(rank)];
         shapeBuffer[0] = rank;
         int count = 1;
         for (int e = 0; e < shape.length; e++)
@@ -3216,7 +3231,32 @@ public class Shape {
         for (int e = 0; e < stride.length; e++)
             shapeBuffer[count++] = stride[e];
 
-        shapeBuffer[count++] = (int) offset;
+        shapeBuffer[count++] = offset;
+        shapeBuffer[count++] = elementWiseStride;
+        shapeBuffer[count] = (int) order;
+
+        DataBuffer ret = Nd4j.createBufferDetached(shapeBuffer);
+        ret.setConstant(true);
+
+        return ret;
+    }
+
+    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras) {
+
+        if (shape.length != stride.length)
+            throw new IllegalStateException("Shape and stride must be the same length");
+
+        int rank = shape.length;
+        long shapeBuffer[] = new long[Shape.shapeInfoLength(rank)];
+        shapeBuffer[0] = rank;
+        int count = 1;
+        for (int e = 0; e < shape.length; e++)
+            shapeBuffer[count++] = shape[e];
+
+        for (int e = 0; e < stride.length; e++)
+            shapeBuffer[count++] = stride[e];
+
+        shapeBuffer[count++] = extras;
         shapeBuffer[count++] = elementWiseStride;
         shapeBuffer[count] = (int) order;
 
@@ -3320,6 +3360,15 @@ public class Shape {
         if (axis == null || axis.length == 0)
             return new int[] {Integer.MAX_VALUE};
 
+        if(rank == 0){
+            if(axis.length != 1 || (axis[0] != 0 && axis[0] != Integer.MAX_VALUE)){
+                throw new ND4JIllegalStateException("Array axis for scalar (rank 0) array invalid: rank " + Arrays.toString(axis));
+            }
+            if(axis[0] == Integer.MAX_VALUE)
+                return axis;
+            return new int[]{Integer.MAX_VALUE};
+        }
+
         // first we should get rid of all negative axis
         int[] tmp = new int[axis.length];
 
@@ -3327,14 +3376,16 @@ public class Shape {
         for (val v: axis) {
             val t = v < 0 ? v + rank : v;
 
-            if ((t >= rank && t != Integer.MAX_VALUE)|| t < 0)
-                throw new ND4JIllegalStateException("Axis array " + Arrays.toString(axis) + " contains values above rank " + rank);
+            if ((t >= rank && t != Integer.MAX_VALUE)|| t < 0) {
+                throw new ND4JIllegalStateException("Axis array " + Arrays.toString(axis) + " contains values above array rank (rank=" + rank + ")");
+            }
 
             tmp[cnt++] = t;
         }
 
         // now we're sorting array
-        Arrays.sort(tmp);
+        if (tmp.length > 1)
+            Arrays.sort(tmp);
 
         // and getting rid of possible duplicates
         return uniquify(tmp);
@@ -3575,6 +3626,89 @@ public class Shape {
         return Arrays.equals(input.stride(), defaultStrides);
     }
 
+    public static boolean isS(@NonNull DataType x) {
+        return x == DataType.UTF8;
+    }
+
+    public static boolean isB(@NonNull DataType x) {
+        return x == DataType.BOOL;
+    }
+
+    public static boolean isZ(@NonNull DataType x) {
+        return !isR(x) && !isS(x) && !isB(x);
+    }
+
+    public static boolean isR(@NonNull DataType x) {
+        return x == DataType.FLOAT || x == DataType.HALF || x == DataType.DOUBLE;
+    }
+
+    private static DataType max(@NonNull DataType typeX, @NonNull DataType typeY) {
+        return DataType.values()[Math.max(typeX.ordinal(), typeY.ordinal())];
+    }
+
+    public static DataType pickPairwiseDataType(@NonNull DataType typeX, @NonNull Number number) {
+        if (!Nd4j.isExperimentalMode())
+            return typeX;
+
+        if (number instanceof Double) {
+            return pickPairwiseDataType(typeX, DataType.DOUBLE);
+        } else if (number instanceof Float) {
+            return pickPairwiseDataType(typeX, DataType.FLOAT);
+        } else if (number instanceof Long) {
+            return pickPairwiseDataType(typeX, DataType.LONG);
+        } else if (number instanceof Integer) {
+            return pickPairwiseDataType(typeX, DataType.INT);
+        } else if (number instanceof Short) {
+            return pickPairwiseDataType(typeX, DataType.SHORT);
+        } else if (number instanceof Byte) {
+            return pickPairwiseDataType(typeX, DataType.BYTE);
+        } else {
+            throw new UnsupportedOperationException("Unknown Number used: [" + number.getClass().getCanonicalName() + "]");
+        }
+    }
+
+    public static DataType pickPairwiseDataType(@NonNull DataType typeX, @NonNull DataType typeY) {
+        if (!Nd4j.isExperimentalMode())
+            return typeX;
+
+        if (typeX == typeY)
+            return typeX;
+
+        val rX = isR(typeX);
+        val rY = isR(typeY);
+
+        // if X is float - use it
+        if (rX && !rY)
+            return typeX;
+
+        // if Y is float - use it
+        if (!rX && rY)
+            return typeY;
+
+        // if both data types are float - return biggest one
+        if (rX && rY) {
+            // if we allow precision boost, then we pick bigger data type
+            if (Nd4j.isPrecisionBoostAllowed()) {
+                return max(typeX, typeY);
+            } else {
+                // and we return first operand otherwise
+                return typeX;
+            }
+
+        }
+
+        // if that's not real type, we apply same rules
+        if (!rX && !rY) {
+            if (Nd4j.isPrecisionBoostAllowed()) {
+                return max(typeX, typeY);
+            } else {
+                // and we return first operand otherwise
+                return typeX;
+            }
+        }
+
+        return typeX;
+    }
 
     public static boolean isEmpty(long[] shapeInfo) {
         return ArrayOptionsHelper.arrayType(shapeInfo) == ArrayType.EMPTY;
@@ -3584,5 +3718,18 @@ public class Shape {
         if(order != 'c' && order != 'f' && order != 'a'){
             throw new IllegalArgumentException("Invalid order arg: must be 'c' or 'f' (or 'a' for vectors), got '" + order + "'");
         }
+    }
+
+    /**
+     * Create an INDArray to represent the (possibly null) int[] dimensions.
+     * If null or length 0, returns an empty INT array. Otherwise, returns a 1d INT NDArray
+     * @param dimensions Dimensions to convert
+     * @return Dimenions as an INDArray
+     */
+    public static INDArray ndArrayDimFromInt(int... dimensions){
+        if (dimensions == null || dimensions.length == 0)
+            return Nd4j.empty(DataType.INT);
+        else
+            return Nd4j.createFromArray(dimensions);
     }
 }

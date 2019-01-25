@@ -28,7 +28,9 @@ import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -54,9 +56,8 @@ import java.util.List;
 public class FineTuneConfiguration {
 
     protected IActivation activationFn;
-    protected WeightInit weightInit;
+    protected IWeightInit weightInitFn;
     protected Double biasInit;
-    protected Distribution dist;
     protected Double l1;
     protected Double l2;
     protected Double l1Bias;
@@ -103,9 +104,8 @@ public class FineTuneConfiguration {
      */
     public static class Builder {
         private IActivation activation;
-        private WeightInit weightInit;
+        private IWeightInit weightInitFn;
         private Double biasInit;
-        private Distribution dist;
         private Double l1;
         private Double l2;
         private Double l1Bias;
@@ -154,24 +154,38 @@ public class FineTuneConfiguration {
         }
 
         /**
-         * Weight initialization scheme
+         * Weight initialization scheme to use, for initial weight values
          *
-         * @see org.deeplearning4j.nn.weights.WeightInit
+         * @see IWeightInit
          */
-        public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
+        public Builder weightInit(IWeightInit weightInit) {
+            this.weightInitFn = weightInit;
             return this;
         }
 
         /**
-         * Set weight initialization scheme to random sampling via the specified distribution.<br>
-         * Equivalent to: {@code .weightInit(WeightInit.DISTRIBUTION).dist(distribution)}
+         * Weight initialization scheme to use, for initial weight values
+         *
+         * @see WeightInit
+         */
+        public Builder weightInit(WeightInit weightInit) {
+            if(weightInit == WeightInit.DISTRIBUTION) {
+                throw new UnsupportedOperationException("Not supported!, User weightInit(Distribution distribution) instead!");
+            }
+
+            this.weightInitFn = weightInit.getWeightInitFunction();
+            return this;
+        }
+
+
+        /**
+         * Set weight initialization scheme to random sampling via the specified distribution.
+         * Equivalent to: {@code .weightInit(new WeightInitDistribution(distribution))}
          *
          * @param distribution Distribution to use for weight initialization
          */
         public Builder weightInit(Distribution distribution){
-            weightInit(WeightInit.DISTRIBUTION);
-            return dist(distribution);
+            return weightInit(new WeightInitDistribution(distribution));
         }
 
         /**
@@ -185,13 +199,12 @@ public class FineTuneConfiguration {
         }
 
         /**
-         * Distribution to sample initial weights from. Used in conjunction with .weightInit(WeightInit.DISTRIBUTION)
-         *
-         * @see #weightInit(Distribution)
+         * Distribution to sample initial weights from.
+         * Equivalent to: {@code .weightInit(new WeightInitDistribution(distribution))}
          */
+        @Deprecated
         public Builder dist(Distribution dist) {
-            this.dist = dist;
-            return this;
+            return weightInit(dist);
         }
 
         /**
@@ -485,11 +498,11 @@ public class FineTuneConfiguration {
         }
 
         public FineTuneConfiguration build() {
-            return new FineTuneConfiguration(activation, weightInit, biasInit, dist, l1, l2, l1Bias, l2Bias, dropout, weightNoise, updater, biasUpdater, miniBatch, maxNumLineSearchIterations, seed, optimizationAlgo, stepFunction, minimize, gradientNormalization, gradientNormalizationThreshold, convolutionMode, cudnnAlgoMode, constraints, pretrain, backprop, backpropType, tbpttFwdLength, tbpttBackLength, trainingWorkspaceMode, inferenceWorkspaceMode);
+            return new FineTuneConfiguration(activation, weightInitFn, biasInit, l1, l2, l1Bias, l2Bias, dropout, weightNoise, updater, biasUpdater, miniBatch, maxNumLineSearchIterations, seed, optimizationAlgo, stepFunction, minimize, gradientNormalization, gradientNormalizationThreshold, convolutionMode, cudnnAlgoMode, constraints, pretrain, backprop, backpropType, tbpttFwdLength, tbpttBackLength, trainingWorkspaceMode, inferenceWorkspaceMode);
         }
 
         public String toString() {
-            return "FineTuneConfiguration.Builder(activation=" + this.activation + ", weightInit=" + this.weightInit + ", biasInit=" + this.biasInit + ", dist=" + this.dist + ", l1=" + this.l1 + ", l2=" + this.l2 + ", l1Bias=" + this.l1Bias + ", l2Bias=" + this.l2Bias + ", dropout=" + this.dropout + ", weightNoise=" + this.weightNoise + ", updater=" + this.updater + ", biasUpdater=" + this.biasUpdater + ", miniBatch=" + this.miniBatch + ", maxNumLineSearchIterations=" + this.maxNumLineSearchIterations + ", seed=" + this.seed + ", optimizationAlgo=" + this.optimizationAlgo + ", stepFunction=" + this.stepFunction + ", minimize=" + this.minimize + ", gradientNormalization=" + this.gradientNormalization + ", gradientNormalizationThreshold=" + this.gradientNormalizationThreshold + ", convolutionMode=" + this.convolutionMode + ", cudnnAlgoMode=" + this.cudnnAlgoMode + ", constraints=" + this.constraints + ", pretrain=" + this.pretrain + ", backprop=" + this.backprop + ", backpropType=" + this.backpropType + ", tbpttFwdLength=" + this.tbpttFwdLength + ", tbpttBackLength=" + this.tbpttBackLength + ", trainingWorkspaceMode=" + this.trainingWorkspaceMode + ", inferenceWorkspaceMode=" + this.inferenceWorkspaceMode + ")";
+            return "FineTuneConfiguration.Builder(activation=" + this.activation + ", weightInit=" + this.weightInitFn + ", biasInit=" + this.biasInit + ", l1=" + this.l1 + ", l2=" + this.l2 + ", l1Bias=" + this.l1Bias + ", l2Bias=" + this.l2Bias + ", dropout=" + this.dropout + ", weightNoise=" + this.weightNoise + ", updater=" + this.updater + ", biasUpdater=" + this.biasUpdater + ", miniBatch=" + this.miniBatch + ", maxNumLineSearchIterations=" + this.maxNumLineSearchIterations + ", seed=" + this.seed + ", optimizationAlgo=" + this.optimizationAlgo + ", stepFunction=" + this.stepFunction + ", minimize=" + this.minimize + ", gradientNormalization=" + this.gradientNormalization + ", gradientNormalizationThreshold=" + this.gradientNormalizationThreshold + ", convolutionMode=" + this.convolutionMode + ", cudnnAlgoMode=" + this.cudnnAlgoMode + ", constraints=" + this.constraints + ", pretrain=" + this.pretrain + ", backprop=" + this.backprop + ", backpropType=" + this.backpropType + ", tbpttFwdLength=" + this.tbpttFwdLength + ", tbpttBackLength=" + this.tbpttBackLength + ", trainingWorkspaceMode=" + this.trainingWorkspaceMode + ", inferenceWorkspaceMode=" + this.inferenceWorkspaceMode + ")";
         }
     }
 
@@ -507,23 +520,26 @@ public class FineTuneConfiguration {
         WeightInit origWeightInit = null;
 
         if (l != null) {
-            if (dropout != null)
-                l.setIDropout(dropout.orElse(null));
+            //As per NeuralNetConfiguration.configureLayer and LayerValidation.configureBaseLayer: only copy dropout to base layers
+            // this excludes things like subsampling and activation layers
+            if (dropout != null && l instanceof BaseLayer) {
+                IDropout d = dropout.orElse(null);
+                if(d != null)
+                    d = d.clone();  //Clone to avoid shared state between layers
+                l.setIDropout(d);
+            }
             if(constraints != null)
                 l.setConstraints(constraints.orElse(null));
         }
 
         if (l != null && l instanceof BaseLayer) {
             BaseLayer bl = (BaseLayer) l;
-            origWeightInit = bl.getWeightInit();
             if (activationFn != null)
                 bl.setActivationFn(activationFn);
-            if (weightInit != null)
-                bl.setWeightInit(weightInit);
+            if (weightInitFn != null)
+                bl.setWeightInitFn(weightInitFn);
             if (biasInit != null)
                 bl.setBiasInit(biasInit);
-            if (dist != null)
-                bl.setDist(dist);
             if (l1 != null)
                 bl.setL1(l1);
             if (l2 != null)
@@ -569,16 +585,10 @@ public class FineTuneConfiguration {
             ((SubsamplingLayer) l).setConvolutionMode(convolutionMode);
         }
 
-        //Check weight init. Remove dist if originally was DISTRIBUTION, and isn't now -> remove no longer needed distribution
-        if (l != null && l instanceof BaseLayer && origWeightInit == WeightInit.DISTRIBUTION && weightInit != null
-                        && weightInit != WeightInit.DISTRIBUTION) {
-            ((BaseLayer) l).setDist(null);
-        }
-
         //Perform validation
         if (l != null) {
             LayerValidation.generalValidation(l.getLayerName(), l, get(dropout), l2, l2Bias, l1, l1Bias,
-                    dist, get(constraints), null, null);
+                    get(constraints), null, null);
         }
     }
 
@@ -590,10 +600,6 @@ public class FineTuneConfiguration {
     }
 
     public void applyToMultiLayerConfiguration(MultiLayerConfiguration conf) {
-        if (pretrain != null)
-            conf.setPretrain(pretrain);
-        if (backprop != null)
-            conf.setBackprop(backprop);
         if (backpropType != null)
             conf.setBackpropType(backpropType);
         if (tbpttFwdLength != null)
@@ -603,10 +609,6 @@ public class FineTuneConfiguration {
     }
 
     public void applyToComputationGraphConfiguration(ComputationGraphConfiguration conf) {
-        if (pretrain != null)
-            conf.setPretrain(pretrain);
-        if (backprop != null)
-            conf.setBackprop(backprop);
         if (backpropType != null)
             conf.setBackpropType(backpropType);
         if (tbpttFwdLength != null)
@@ -619,12 +621,10 @@ public class FineTuneConfiguration {
         NeuralNetConfiguration.Builder confBuilder = new NeuralNetConfiguration.Builder();
         if (activationFn != null)
             confBuilder.setActivationFn(activationFn);
-        if (weightInit != null)
-            confBuilder.setWeightInit(weightInit);
+        if (weightInitFn != null)
+            confBuilder.setWeightInitFn(weightInitFn);
         if (biasInit != null)
             confBuilder.setBiasInit(biasInit);
-        if (dist != null)
-            confBuilder.setDist(dist);
         if (l1 != null)
             confBuilder.setL1(l1);
         if (l2 != null)

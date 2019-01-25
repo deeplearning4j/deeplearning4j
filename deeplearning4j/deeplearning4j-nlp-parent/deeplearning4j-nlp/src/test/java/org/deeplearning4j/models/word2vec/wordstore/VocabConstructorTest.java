@@ -17,6 +17,8 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.val;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
@@ -51,6 +53,9 @@ public class VocabConstructorTest {
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructorTest.class);
 
     TokenizerFactory t = new DefaultTokenizerFactory();
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
 
     @Before
@@ -303,8 +308,12 @@ public class VocabConstructorTest {
         int sourceSize = cacheSource.numWords();
         log.info("Source Vocab size: " + sourceSize);
 
+        val dir = testDir.newFolder();
+        new ClassPathResource("/paravec/labeled").copyDirectory(dir);
+
+
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
-                        .addSourceFolder(new ClassPathResource("/paravec/labeled").getFile()).build();
+                        .addSourceFolder(dir).build();
 
         transformer = new SentenceTransformer.Builder().iterator(labelAwareIterator).tokenizerFactory(t).build();
 
@@ -380,5 +389,22 @@ public class VocabConstructorTest {
         assertEquals("gamma", result.wordAtIndex(10));
         assertEquals("beta", result.wordAtIndex(5));
         assertEquals("alpha", result.wordAtIndex(0));
+    }
+
+    @Test(timeout=5000)		// 5s timeout
+    public void testParallelTokenizationDisabled_Completes() throws Exception {
+        File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
+        SentenceIterator iter = new BasicLineIterator(inputFile);
+
+        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iter).tokenizerFactory(t).build();
+
+        AbstractSequenceIterator<VocabWord> sequenceIterator =
+                new AbstractSequenceIterator.Builder<>(transformer).build();
+
+        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>().addSource(sequenceIterator, 5)
+                .allowParallelTokenization( false)
+                .build();
+
+        constructor.buildJointVocabulary(false, true);
     }
 }

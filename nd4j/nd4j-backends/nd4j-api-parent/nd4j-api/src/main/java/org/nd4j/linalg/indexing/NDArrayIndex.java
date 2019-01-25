@@ -40,9 +40,8 @@ import java.util.List;
 @Slf4j
 public class NDArrayIndex implements INDArrayIndex {
 
-    private long[] indices = new long[1];
+    private long[] indices;
     private boolean isInterval = false;
-    private static NDArrayIndexEmpty EMPTY = new NDArrayIndexEmpty();
     private static NewAxis NEW_AXIS = new NewAxis();
 
 
@@ -220,17 +219,6 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     /**
-     * Represents collecting no elements
-     *
-     * @return an ndarray index
-     * meaning collect
-     * no elements
-     */
-    public static INDArrayIndex empty() {
-        return EMPTY;
-    }
-
-    /**
      * Represents collecting all elements
      *
      * @return an ndarray index
@@ -319,8 +307,6 @@ public class NDArrayIndex implements INDArrayIndex {
                         // FIXME: LONG
                         SpecifiedIndex specifiedIndex = new SpecifiedIndex(ArrayUtil.range(0L, (long) shape.getInt(i)));
                         ret[i] = specifiedIndex;
-                    } else if (intendedIndexes[i] instanceof NDArrayIndexEmpty) {
-                        ret[i] = new SpecifiedIndex(new long[0]);
                     } else if (intendedIndexes[i] instanceof IntervalIndex) {
                         IntervalIndex intervalIndex = (IntervalIndex) intendedIndexes[i];
                         ret[i] = new SpecifiedIndex(ArrayUtil.range(intervalIndex.begin, intervalIndex.end(),
@@ -350,18 +336,18 @@ public class NDArrayIndex implements INDArrayIndex {
             if (Shape.isRowVectorShape(shapeInfo) && intendedIndexes.length == 1) {
                 INDArrayIndex[] ret = new INDArrayIndex[2];
                 ret[0] = NDArrayIndex.point(0);
-                int size;
-                if (1 == shape.getInt(0) && rank == 2)
-                    size = shape.getInt(1);
+                long size;
+                if (1 == shape.getLong(0) && rank == 2)
+                    size = shape.getLong(1);
                 else
-                    size = shape.getInt(0);
+                    size = shape.getLong(0);
                 ret[1] = validate(size, intendedIndexes[0]);
                 return ret;
             }
             List<INDArrayIndex> retList = new ArrayList<>(intendedIndexes.length);
             for (int i = 0; i < intendedIndexes.length; i++) {
                 if (i < rank)
-                    retList.add(validate(shape.getInt(i), intendedIndexes[i]));
+                    retList.add(validate(shape.getLong(i), intendedIndexes[i]));
                 else
                     retList.add(intendedIndexes[i]);
             }
@@ -372,11 +358,11 @@ public class NDArrayIndex implements INDArrayIndex {
         int numNewAxes = 0;
 
         if (Shape.isMatrix(shape) && intendedIndexes.length == 1) {
-            retList.add(validate(shape.getInt(0), intendedIndexes[0]));
+            retList.add(validate(shape.getLong(0), intendedIndexes[0]));
             retList.add(NDArrayIndex.all());
         } else {
             for (int i = 0; i < intendedIndexes.length; i++) {
-                retList.add(validate(shape.getInt(i), intendedIndexes[i]));
+                retList.add(validate(shape.getLong(i), intendedIndexes[i]));
                 if (intendedIndexes[i] instanceof NewAxis)
                     numNewAxes++;
             }

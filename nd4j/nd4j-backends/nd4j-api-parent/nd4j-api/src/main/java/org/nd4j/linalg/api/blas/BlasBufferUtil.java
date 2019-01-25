@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.blas;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
 
@@ -57,14 +58,14 @@ public class BlasBufferUtil {
      * @return the float data for this ndarray
      */
     public static float[] getFloatData(INDArray buf) {
-        if (buf.data().dataType() != DataBuffer.Type.FLOAT)
+        if (buf.data().dataType() != DataType.FLOAT)
             throw new IllegalArgumentException("Float data must be obtained from a float buffer");
 
         if (buf.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
             return buf.data().asFloat();
         } else {
             float[] ret = new float[(int) buf.length()];
-            INDArray linear = buf.linearView();
+            INDArray linear = buf.reshape(-1);
 
             for (int i = 0; i < buf.length(); i++)
                 ret[i] = linear.getFloat(i);
@@ -81,7 +82,7 @@ public class BlasBufferUtil {
      * @return the double data for this ndarray
      */
     public static double[] getDoubleData(INDArray buf) {
-        if (buf.data().dataType() != DataBuffer.Type.DOUBLE)
+        if (buf.data().dataType() != DataType.DOUBLE)
             throw new IllegalArgumentException("Double data must be obtained from a double buffer");
 
         if (buf.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
@@ -89,7 +90,7 @@ public class BlasBufferUtil {
 
         } else {
             double[] ret = new double[(int) buf.length()];
-            INDArray linear = buf.linearView();
+            INDArray linear = buf.reshape(-1);
             for (int i = 0; i < buf.length(); i++)
                 ret[i] = linear.getDouble(i);
             return ret;
@@ -235,7 +236,7 @@ public class BlasBufferUtil {
      * @param toSet the array to set the data to
      */
     public static void setData(float[] data, INDArray toSet) {
-        if (toSet.data().dataType() != DataBuffer.Type.FLOAT) {
+        if (toSet.data().dataType() != DataType.FLOAT) {
             throw new IllegalArgumentException("Unable to set double data for opType " + toSet.data().dataType());
         }
 
@@ -255,7 +256,7 @@ public class BlasBufferUtil {
                     //need to do strided access with offset
                     for (int i = 0; i < data.length; i++) {
                         // FIXME: LONG
-                        int dIndex = (int) toSet.offset() + (i * toSet.majorStride());
+                        int dIndex = (int) toSet.offset() + (i * toSet.stride(-1));
                         d[dIndex] = data[count++];
                     }
                 }
@@ -272,7 +273,7 @@ public class BlasBufferUtil {
                 //need to do strided access with offset
                 for (int i = 0; i < data.length; i++) {
                     // FIXME: LONG
-                    int dIndex = (int) toSet.offset() + (i * toSet.majorStride());
+                    int dIndex = (int) toSet.offset() + (i * toSet.stride(-1));
                     underlyingData.put(dIndex, data[count++]);
                 }
             }
@@ -300,7 +301,7 @@ public class BlasBufferUtil {
      * @param toSet the array to set the data to
      */
     public static void setData(double[] data, INDArray toSet) {
-        if (toSet.data().dataType() != DataBuffer.Type.DOUBLE) {
+        if (toSet.data().dataType() != DataType.DOUBLE) {
             throw new IllegalArgumentException("Unable to set double data for opType " + toSet.data().dataType());
         }
 
@@ -320,7 +321,7 @@ public class BlasBufferUtil {
                     //need to do strided access with offset
                     for (int i = 0; i < data.length; i++) {
                         // FIXME: LONG
-                        int dIndex = (int) toSet.offset() + (i * toSet.majorStride());
+                        int dIndex = (int) toSet.offset() + (i * toSet.stride(-1));
                         d[dIndex] = data[count++];
                     }
                 }
@@ -337,7 +338,7 @@ public class BlasBufferUtil {
                 //need to do strided access with offset
                 for (int i = 0; i < data.length; i++) {
                     // FIXME: LONG
-                    int dIndex = (int) toSet.offset() + (i * toSet.majorStride());
+                    int dIndex = (int) toSet.offset() + (i * toSet.stride(-1));
                     underlyingData.put(dIndex, data[count++]);
                 }
             }

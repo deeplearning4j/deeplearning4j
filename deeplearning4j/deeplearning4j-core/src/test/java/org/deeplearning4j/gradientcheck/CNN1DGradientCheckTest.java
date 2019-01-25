@@ -27,14 +27,10 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -43,7 +39,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 @Slf4j
 public class CNN1DGradientCheckTest extends BaseDL4JTest {
@@ -54,7 +49,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     @Test
@@ -86,7 +81,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                     }
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                            .updater(new NoOp())
                             .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                             .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
                                     .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
@@ -164,7 +159,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                                .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                                 .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
                                         .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
@@ -244,7 +239,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                                .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                                 .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
                                         .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
@@ -322,7 +317,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                                .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                                 .layer(0, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
                                         .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
@@ -384,7 +379,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                     Nd4j.getRandom().setSeed(12345);
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                            .updater(new NoOp())
                             .activation(Activation.TANH)
                             .dist(new NormalDistribution(0, 1)).convolutionMode(cm)
                             .seed(12345)

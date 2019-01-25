@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.CenterLossParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -35,13 +36,12 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Center loss is similar to triplet loss except that it enforces
- * intraclass consistency and doesn't require feed forward of multiple
- * examples. Center loss typically converges faster for training
- * ImageNet-based convolutional networks.
+ * Center loss is similar to triplet loss except that it enforces intraclass consistency and doesn't require feed
+ * forward of multiple examples. Center loss typically converges faster for training ImageNet-based convolutional
+ * networks.
  *
- * "If example x is in class Y, ensure that embedding(x) is close to
- * {@code average(embedding(y))} for all examples y in Y"
+ * "If example x is in class Y, ensure that embedding(x) is close to {@code average(embedding(y))} for all examples y in
+ * Y"
  *
  * @author Justin Long (@crockpotveggies)
  * @author Alex Black (@AlexDBlack)
@@ -51,6 +51,7 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class CenterLossOutputLayer extends BaseOutputLayer {
+
     protected double alpha;
     protected double lambda;
     protected boolean gradientCheck;
@@ -173,11 +174,17 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
                         .build();
     }
 
-    @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
+
         protected double alpha = 0.05;
         protected double lambda = 2e-4;
         protected boolean gradientCheck = false;
+
+        public Builder(){
+            this.activationFn = new ActivationSoftmax();
+        }
 
         public Builder(LossFunction lossFunction) {
             super.lossFunction(lossFunction);

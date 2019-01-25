@@ -19,6 +19,7 @@ package org.deeplearning4j.spark.parameterserver.accumulation;
 import org.apache.spark.api.java.function.Function2;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StorageMetaData;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithmReducer;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,12 +39,19 @@ public class SharedTrainingAggregateFunction implements
     public SharedTrainingAccumulationTuple call(SharedTrainingAccumulationTuple tuple, SharedTrainingResult result)
                     throws Exception {
         if (tuple == null) {
+            ThresholdAlgorithmReducer tar = null;
+            if(result.getThresholdAlgorithm() != null){
+                tar = result.getThresholdAlgorithm().newReducer();
+                tar.add(result.getThresholdAlgorithm());
+            }
+
             return SharedTrainingAccumulationTuple.builder().updaterStateArray(result.getUpdaterStateArray())
                             .scoreSum(result.getScoreSum()).listenerStaticInfo(result.getListenerStaticInfo())
                             .listenerUpdates(result.getListenerUpdates()).listenerMetaData(result.getListenerMetaData())
                             .sparkTrainingStats(result.getSparkTrainingStats())
                             .aggregationsCount(result.getAggregationsCount())
                             .minibatchesPerExecutor(result.getMinibatchesPerExecutor())
+                            .thresholdAlgorithmReducer(tar)
                     .build();
         }
 
@@ -118,10 +126,20 @@ public class SharedTrainingAggregateFunction implements
             }
         }
 
+        ThresholdAlgorithmReducer thresholdAlgorithmReducer = tuple.getThresholdAlgorithmReducer();
+        if(thresholdAlgorithmReducer == null && result.getThresholdAlgorithm() != null){
+            thresholdAlgorithmReducer = result.getThresholdAlgorithm().newReducer();
+        }
+        if(thresholdAlgorithmReducer != null){
+            thresholdAlgorithmReducer.add(result.getThresholdAlgorithm());
+        }
+
         return SharedTrainingAccumulationTuple.builder().scoreSum(score).updaterStateArray(updaterStateSum)
-                        .aggregationsCount(aggregationsCount).sparkTrainingStats(stats)
-                        .listenerMetaData(listenerMetaData).listenerUpdates(listenerUpdates)
-                        .listenerStaticInfo(listenerStaticInfo)
-                        .minibatchesPerExecutor(minibatchesPerExecutor).build();
+                .aggregationsCount(aggregationsCount).sparkTrainingStats(stats)
+                .listenerMetaData(listenerMetaData).listenerUpdates(listenerUpdates)
+                .listenerStaticInfo(listenerStaticInfo)
+                .minibatchesPerExecutor(minibatchesPerExecutor)
+                .thresholdAlgorithmReducer(thresholdAlgorithmReducer)
+                .build();
     }
 }

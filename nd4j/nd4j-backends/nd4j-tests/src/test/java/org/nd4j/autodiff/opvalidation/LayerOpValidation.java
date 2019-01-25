@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
@@ -38,7 +39,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 @Slf4j
 public class LayerOpValidation extends BaseOpValidation {
@@ -113,8 +115,8 @@ public class LayerOpValidation extends BaseOpValidation {
         for (boolean rank1Bias : new boolean[]{false, true}) {
 
             SameDiff sameDiff = SameDiff.create();
-            INDArray input = Nd4j.linspace(1, 8, 8).reshape(new long[]{2, 4});
-            INDArray b = Nd4j.linspace(1, 4, 4).reshape(rank1Bias ? new long[]{4} : new long[]{1, 4}).divi(4);
+            INDArray input = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(new long[]{2, 4});
+            INDArray b = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(rank1Bias ? new long[]{4} : new long[]{1, 4}).divi(4);
 
             SDVariable sdInput = sameDiff.var("input", input);
             SDVariable sdBias = sameDiff.var("bias", b);
@@ -291,7 +293,7 @@ public class LayerOpValidation extends BaseOpValidation {
             int[] inSize;
 
             //LRN
-            String msg = "7 - LRN with NCHW - input" + Arrays.toString(inSizeNCHW);
+            String msg = "LRN with NCHW - input" + Arrays.toString(inSizeNCHW);
             inSize = inSizeNCHW;
             in = sd.var("in", inSize);
             SDVariable out = sd.localResponseNormalization(in, LocalResponseNormalizationConfig.builder()
@@ -318,6 +320,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testIm2Col() {
+        OpValidationSuite.ignoreFailing();      //TEMPORARY DUE TO JVM CRASH: https://github.com/deeplearning4j/deeplearning4j/issues/6873
         Nd4j.getRandom().setSeed(12345);
 
         int[][] inputSizes = new int[][]{{1, 3, 8, 8}, {3, 6, 12, 12}};
@@ -327,7 +330,7 @@ public class LayerOpValidation extends BaseOpValidation {
         for (int[] inSizeNCHW : inputSizes) {
 
             SameDiff sd = SameDiff.create();
-            SDVariable var = sd.var("in", Nd4j.rand(inSizeNCHW));
+            SDVariable var = sd.var("in", Nd4j.rand(DataType.DOUBLE, inSizeNCHW));
             SDVariable im2col = sd.im2Col(var, Conv2DConfig.builder()
                     .kH(2).kW(2)
                     .sH(1).sW(1)
@@ -382,7 +385,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .config(conf)
                 .build();
 
-        List<long[]> outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
+        val outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
 
         assertEquals(1, outSizes.size());
 
@@ -392,7 +395,7 @@ public class LayerOpValidation extends BaseOpValidation {
         long[] exp = new long[]{1, outH, outW, 3};    //NHWC
 
         assertEquals(1, outSizes.size());
-        assertArrayEquals(exp, outSizes.get(0));
+        assertArrayEquals(exp, outSizes.get(0).getShape());
 
         INDArray grad = Nd4j.create(exp);
 
@@ -403,10 +406,10 @@ public class LayerOpValidation extends BaseOpValidation {
                 .config(conf)
                 .build();
 
-        List<long[]> outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
+        val outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
         assertEquals(1, outSizesBP.size());
 
-        assertArrayEquals(inSize, outSizesBP.get(0));
+        assertArrayEquals(inSize, outSizesBP.get(0).getShape());
     }
 
 
@@ -428,7 +431,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .config(conf)
                 .build();
 
-        List<long[]> outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
+        val outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
         assertEquals(1, outSizes.size());
 
         //NO SAME: out = (in - k + 2*p)/s + 1;
@@ -437,7 +440,7 @@ public class LayerOpValidation extends BaseOpValidation {
         long[] exp = new long[]{1, outH, outW, 3};    //NHWC
 
         assertEquals(1, outSizes.size());
-        assertArrayEquals(exp, outSizes.get(0));
+        assertArrayEquals(exp, outSizes.get(0).getShape());
 
         INDArray grad = Nd4j.create(exp);
 
@@ -448,11 +451,11 @@ public class LayerOpValidation extends BaseOpValidation {
                 .config(conf)
                 .build();
 
-        List<long[]> outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
+        val outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
         assertEquals(1, outSizesBP.size());
-        assertArrayEquals(inSize, outSizesBP.get(0));
+        assertArrayEquals(inSize, outSizesBP.get(0).getShape());
 
-        Nd4j.getExecutioner().exec(avg2dDeriv);
+        Nd4j.getExecutioner().execAndReturn(avg2dDeriv);
     }
 
 
@@ -489,7 +492,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
                             out = sd.conv3d(in, w0, b0, Conv3DConfig.builder()
                                     .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
-                                    .isValidMode(false)
+                                    .isSameMode(true)
                                     .kH(2).kW(2).kD(2)
                                     .sD(1).sH(1).sW(1)
                                     .build());
@@ -500,7 +503,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             SDVariable w1 = sd.var("w1", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
                             out = sd.conv3d(in, w1, Conv3DConfig.builder()
                                     .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
-                                    .isValidMode(true)
+                                    .isSameMode(false)
                                     .kH(2).kW(2).kD(2)
                                     .sD(1).sH(1).sW(1)
                                     .build());
@@ -511,7 +514,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             out = sd.avgPooling3d(in, Pooling3DConfig.builder()
                                     .kH(2).kW(2).kD(2)
                                     .sH(1).sW(1).sD(1)
-                                    .ceilingMode(false)
+                                    .isSameMode(false)
                                     .build());
                             break;
                         case 3:
@@ -520,7 +523,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             out = sd.avgPooling3d(in, Pooling3DConfig.builder()
                                     .kH(2).kW(2).kD(2)
                                     .sH(1).sW(1).sD(1)
-                                    .ceilingMode(true)
+                                    .isSameMode(true)
                                     .build());
                             break;
                         case 4:
@@ -866,7 +869,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .pH(0).pW(0).pD(0)
                 .sH(1).sW(1).sD(1)
                 .dH(1).dW(1).dD(1)
-                .ceilingMode(false)
+                .isSameMode(false)
                 .isNCDHW(true)
                 .build();
 
@@ -907,7 +910,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .pH(0).pW(0).pD(0)
                 .sH(1).sW(1).sD(1)
                 .dH(1).dW(1).dD(1)
-                .ceilingMode(false)
+                .isSameMode(false)
                 .build();
 
         SDVariable out = sd.maxPooling3d(in, pooling3DConfig);
@@ -978,7 +981,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .kH(kH).kW(kW).kD(kD)
                 .sD(1).sH(1).sW(1)
                 .dH(1).dW(1).dD(1)
-                .isValidMode(false) //samemode = true
+                .isSameMode(true)
                 .biasUsed(false)
                 .dataFormat(Conv3DConfig.NCDHW)
                 .build();

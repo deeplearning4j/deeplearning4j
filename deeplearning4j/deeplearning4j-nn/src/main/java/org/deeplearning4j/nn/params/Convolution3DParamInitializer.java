@@ -18,18 +18,16 @@ package org.deeplearning4j.nn.params;
 
 
 import lombok.val;
-import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Initialize 3D convolution parameters.
@@ -126,7 +124,6 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
         Convolution3D layerConf = (Convolution3D) conf.getLayer();
 
         if (initializeParams) {
-            Distribution dist = Distributions.createDistribution(layerConf.getDist());
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();
 
@@ -139,7 +136,7 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
 
             val weightsShape = new long[]{outputDepth, inputDepth, kernel[0], kernel[1], kernel[2]};
 
-            return WeightInitUtil.initWeights(fanIn, fanOut, weightsShape, layerConf.getWeightInit(), dist, 'c',
+            return layerConf.getWeightInitFn().init(fanIn, fanOut, weightsShape, 'c',
                     weightView);
         } else {
             int[] kernel = layerConf.getKernelSize();

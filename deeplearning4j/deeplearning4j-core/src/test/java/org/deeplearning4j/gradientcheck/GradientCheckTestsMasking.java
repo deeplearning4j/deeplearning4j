@@ -27,10 +27,9 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -58,7 +57,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-7;
 
     static {
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataType.DOUBLE);
     }
 
     private static class GradientCheckSimpleScenario {
@@ -131,10 +130,10 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L)
                                 .list()
                                 .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
-                                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                                        .dist(new NormalDistribution(0, 1))
                                                 .updater(new NoOp()).build())
                                 .layer(1, new RnnOutputLayer.Builder(s.lf).activation(s.act).nIn(layerSize).nOut(s.nOut)
-                                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                                        .dist(new NormalDistribution(0, 1))
                                                 .updater(new NoOp()).build())
                                 .build();
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -171,7 +170,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
         for (INDArray mask : masks) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                            .updater(new NoOp())
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                             .layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize)
                                             .activation(Activation.TANH).build())
@@ -214,7 +213,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
         int nIn = 6;
         int layerSize = 4;
 
-        INDArray mask1 = Nd4j.create(new double[] {1, 0, 0, 1, 0});
+        INDArray mask1 = Nd4j.create(new double[] {1, 0, 0, 1, 0}).reshape(1, -1);
         INDArray mask3 = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {0, 1, 0, 1, 0}, {1, 0, 0, 1, 1}});
         INDArray[] labelMasks = new INDArray[] {mask1, mask3};
 
@@ -259,7 +258,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
 
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
-                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
+                                .dist(new NormalDistribution(0, 1)).seed(12345)
                                 .list()
                                 .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                                 .build())
@@ -354,7 +353,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
 
                 Nd4j.getRandom().setSeed(12345);
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
-                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
+                                .dist(new NormalDistribution(0, 1)).seed(12345)
                                 .list()
                                 .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                                 .build())
@@ -385,7 +384,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 //Check the equivalent compgraph:
                 Nd4j.getRandom().setSeed(12345);
                 ComputationGraphConfiguration cg = new NeuralNetConfiguration.Builder().updater(new NoOp())
-                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2)).seed(12345)
+                                .dist(new NormalDistribution(0, 2)).seed(12345)
                                 .graphBuilder().addInputs("in")
                                 .addLayer("0", new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
                                                 .activation(Activation.TANH).build(), "in")

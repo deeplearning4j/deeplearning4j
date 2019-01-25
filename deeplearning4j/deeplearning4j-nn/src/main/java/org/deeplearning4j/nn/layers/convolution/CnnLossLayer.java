@@ -140,11 +140,6 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
     }
 
     @Override
-    public INDArray labelProbabilities(INDArray examples) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
     public void fit(INDArray examples, INDArray labels) {
         throw new UnsupportedOperationException("Not supported");
     }
@@ -247,7 +242,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
 
         // FIXME
         INDArray scoreArrayTs = ConvolutionUtils.reshape2dTo4d(scoreArray, ArrayUtil.toInts(newShape), workspaceMgr, ArrayType.FF_WORKING_MEM);
-        INDArray summedScores = scoreArrayTs.sum(1,2,3);
+        INDArray summedScores = scoreArrayTs.sum(1,2,3).reshape(scoreArrayTs.size(0), 1);
 
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if (l1l2 != 0.0) {

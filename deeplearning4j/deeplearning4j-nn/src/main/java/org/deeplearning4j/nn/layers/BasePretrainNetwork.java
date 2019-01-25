@@ -62,7 +62,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
      */
     public INDArray getCorruptedInput(INDArray x, double corruptionLevel) {
         INDArray corrupted = Nd4j.getDistributions().createBinomial(1, 1 - corruptionLevel).sample(x.shape());
-        corrupted.muli(x);
+        corrupted.muli(x.castTo(Nd4j.defaultFloatingPointType()));
         return corrupted;
     }
 
@@ -91,7 +91,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     }
 
     @Override
-    public int numParams(boolean backwards) {
+    public long numParams(boolean backwards) {
         return super.numParams(backwards);
     }
 
@@ -134,17 +134,13 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     }
 
     public INDArray params() {
-        List<INDArray> list = new ArrayList<>(2);
-        for (Map.Entry<String, INDArray> entry : params.entrySet()) {
-            list.add(entry.getValue());
-        }
-        return Nd4j.toFlattened('f', list);
+        return paramsFlattened;
     }
 
     /**The number of parameters for the model, for backprop (i.e., excluding visible bias)
      * @return the number of parameters for the model (ex. visible bias)
      */
-    public int numParams() {
+    public long numParams() {
         int ret = 0;
         for (Map.Entry<String, INDArray> entry : params.entrySet()) {
             ret += entry.getValue().length();

@@ -1686,6 +1686,7 @@ public class WordVectorSerializer {
         }
 
         List<INDArray> arrays = new ArrayList<>();
+        long[] vShape = new long[]{1,-1};
         while (iter.hasNext()) {
             if (line.isEmpty())
                 line = iter.nextLine();
@@ -1707,7 +1708,8 @@ public class WordVectorSerializer {
                 vector[i - 1] = Float.parseFloat(split[i]);
             }
 
-            INDArray row = Nd4j.create(vector);
+            vShape[1] = vector.length;
+            INDArray row = Nd4j.create(vector, vShape);
 
             arrays.add(row);
 
@@ -1720,8 +1722,6 @@ public class WordVectorSerializer {
         InMemoryLookupTable lookupTable =
                         (InMemoryLookupTable) new InMemoryLookupTable.Builder().vectorLength(arrays.get(0).columns())
                                         .useAdaGrad(false).cache(cache).useHierarchicSoftmax(false).build();
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(syn);
 
         lookupTable.setSyn0(syn);
 

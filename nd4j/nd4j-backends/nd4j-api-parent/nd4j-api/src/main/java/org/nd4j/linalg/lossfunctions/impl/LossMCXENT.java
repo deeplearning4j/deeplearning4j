@@ -146,7 +146,7 @@ public class LossMCXENT extends DifferentialFunction implements ILossFunction {
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1).muli(-1);
+        return scoreArr.sum(true,1).muli(-1);
     }
 
     @Override
@@ -155,7 +155,6 @@ public class LossMCXENT extends DifferentialFunction implements ILossFunction {
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
         INDArray grad;
-        //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         if (activationFn instanceof ActivationSoftmax) {
@@ -171,7 +170,7 @@ public class LossMCXENT extends DifferentialFunction implements ILossFunction {
                                     + ") does not match output.size(1)=" + output.size(1));
                 }
                 INDArray temp = labels.mulRowVector(weights);
-                INDArray col = temp.sum(1);
+                INDArray col = temp.sum(true,1);
                 grad = output.mulColumnVector(col).sub(temp);
             } else {
                 grad = output.subi(labels);

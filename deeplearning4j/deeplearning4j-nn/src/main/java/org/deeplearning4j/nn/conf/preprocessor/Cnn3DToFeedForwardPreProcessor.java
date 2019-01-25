@@ -21,6 +21,7 @@ import lombok.val;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -81,6 +82,10 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = 1;
+    }
+
+    public Cnn3DToFeedForwardPreProcessor(int inputDepth, int inputHeight, int inputWidth, int numChannels, Convolution3D.DataFormat dataFormat){
+        this(inputDepth, inputHeight, inputWidth, numChannels, dataFormat == Convolution3D.DataFormat.NCDHW);
     }
 
     public Cnn3DToFeedForwardPreProcessor() {

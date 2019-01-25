@@ -71,7 +71,7 @@ public class TestPCA extends BaseNd4jTest {
                         40, 66, 68, 6, 15, 8, 8, 6, 9, 17, 22, 18, 4, 23, 9, 8, 60, 52, 20, 47, 33, 22, 6, 44, 22, 26,
                         34, 12, 12};
 
-        INDArray A = Nd4j.create(f, new int[] {m, n}, 'f');
+        INDArray A = Nd4j.create(f, new long[] {m, n}, 'f');
 
         INDArray A1 = A.dup('f');
         INDArray factor = org.nd4j.linalg.dimensionalityreduction.PCA.pca_factor(A1, 3, true);
@@ -156,7 +156,7 @@ public class TestPCA extends BaseNd4jTest {
         // FIXME: int cast
         // sample 1000 of the randomly generated samples with the reduced basis set
         for (int i = 0; i < 1000; i++)
-            variance += myPCA.estimateVariance(m.getRow(i), (int) reduced70.columns());
+            variance += myPCA.estimateVariance(m.getRow(i), reduced70.columns());
         variance /= 1000.0;
         System.out.println("Fraction of variance using 70% variance with " + reduced70.columns() + " columns: "
                         + variance);
