@@ -49,7 +49,7 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "losses/softmax_ce"
+            "simplewhile_nested"
     };
 
     @After

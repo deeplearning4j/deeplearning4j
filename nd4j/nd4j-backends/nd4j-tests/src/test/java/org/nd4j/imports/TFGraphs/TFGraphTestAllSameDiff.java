@@ -122,9 +122,6 @@ public class TFGraphTestAllSameDiff {
             "alpha_dropout/.*",
             "layers_dropout/.*",
 
-            //2019/01/16 - "IllegalStateException: Expected exactly 1 op input, got null+null"
-            "simplewhile_nested",
-
             //2019/01/16 - "org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter cannot be cast to org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray"
             //Doesn't seem like a valid structure, based on the docs
             // TensorArrayReadV3 has 3 inputs - handle, index, and flow_in
