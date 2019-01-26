@@ -50,7 +50,9 @@ Seq[Any](format.raw/*1.4*/("""
         <meta name="viewport" content="width=device-width, initial-scale=1">
             <!-- end: Mobile Specific -->
 
-        <link id="bootstrap-style" href="/assets/webjars/bootstrap/2.3.1/css/bootstrap.min.css" rel="stylesheet">
+        <link id="bootstrap-style" href="/assets/webjars/bootstrap/4.2.1/css/bootstrap.min.css" rel="stylesheet">
+
+        <link href="/assets/js/samediff/samediff2.css" rel="stylesheet">
 
             <!-- The HTML5 shim, for IE6-8 support of HTML5 elements -->
             <!--[if lt IE 9]>
@@ -63,12 +65,11 @@ Seq[Any](format.raw/*1.4*/("""
 	<![endif]-->
     </head>
 
-    <body style="height: 100%;
-        margin: 0;">
+    <body>
             <!-- Start JavaScript-->
         <script src="/assets/webjars/jquery/2.2.0/jquery.min.js"></script>
         <script src="/assets/webjars/jquery-ui/1.10.2/ui/minified/jquery-ui.min.js"></script>
-        <script src="/assets/webjars/bootstrap/2.3.1/js/bootstrap.min.js"></script>
+        <script src="/assets/webjars/bootstrap/4.2.1/js/bootstrap.min.js"></script>
         <script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js"></script>
         <script src="/assets/webjars/flatbuffers/1.9.0/js/flatbuffers.js"></script>
 
@@ -94,38 +95,68 @@ Seq[Any](format.raw/*1.4*/("""
         <script src="/assets/js/samediff/samediff-ui.js"></script>
         <script src="/assets/js/samediff/flatbuffers-utils.js"></script>
 
-        <div class="container-fluid-full">
-            <div class="row-fluid">
-                <input type="file" id="file" name="file" />
-                <output id="list"></output>
-                """),format.raw/*77.78*/("""
-                """),format.raw/*78.17*/("""<div class="row-fluid">
-                    Layout:
-                    <button onclick="setLayout('dagre')">Dagre</button>
-                    <button onclick="setLayout('klay_down')">Klay (Down)</button>
-                    <button onclick="setLayout('klay_lr')">Klay (Right)</button>
-                    """),format.raw/*83.76*/("""
-                    """),format.raw/*84.78*/("""
-                    """),format.raw/*85.74*/("""
-                    """),format.raw/*86.21*/("""<button onclick="setLayout('cose-bilkent')">CoSE Bilkent</button>
-                    <button onclick="setLayout('breadthfirst')">Breadth First</button>
-                    """),format.raw/*88.74*/("""
-                """),format.raw/*89.17*/("""</div>
+        <!-- NavBar - Bootstrap classes -->
+        <nav class="navbar navbar-expand navbar-dark bg-dark">
+            <a class="navbar-brand" href="#">SameDiff</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                <div class="navbar-nav">
+                    <a class="nav-item nav-link active" href="#" onclick="samediffSetPage('graph')">Graph</a>
+                    <a class="nav-item nav-link" href="#" onclick="samediffSetPage('plots')">Plots</a>
+                    <a class="nav-item nav-link" href="#" onclick="samediffSetPage('evaluation')">Evaluation</a>
+                    <a class="nav-item nav-link" href="#"onclick="samediffSetPage('performance')">Performance</a>
+                    <a class="nav-item nav-link" href="#"onclick="toggleSidebar()">Toggle Sidebar</a>
+                </div>
+            </div>
+        </nav>
+        <div class="wrapper">
+
+                <!-- Sidebar -->
+            <div id="samediffsidebar">
+                <div id="sidebartop" style="position: absolute; top: 0">
+                    <br><br>[No file loaded]
+                </div>
+
+                <div id="sidebarbottom" style="position: absolute; bottom: 0">
+                    <label class="input-group-btn">
+                        <span class="btn btn-secondary btn-sm">
+                            Select File<input type="file" id="fileselect" style="display: none;" multiple>
+                        </span>
+                    </label>
+                    <div id="selectedfile">Selected: None</div>
+
+                    <br><br>
+                    <strong>Layout:</strong>
+                    <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                        <label class="btn btn-secondary active" onclick="setLayout('klay_down')">
+                            <input type="radio" name="options" id="option1" autocomplete="off" checked>Down</label>
+                        <label class="btn btn-secondary" onclick="setLayout('klay_lr')">
+                            <input type="radio" name="options" id="option2" autocomplete="off">Left</label>
+                        <label class="btn btn-secondary" onclick="setLayout('dagre')">
+                            <input type="radio" name="options" id="option3" autocomplete="off">Alt</label>
+                        <label class="btn btn-secondary" onclick="setLayout('cose-bilkent')">
+                            <input type="radio" name="options" id="option3" autocomplete="off">Spread</label>
+                    </div>
+                </div>
+            </div>
+
+                <!-- Page Content -->
+            <div id="samediffcontent" class="w-100">
+                <div id="graphdiv" style="height: 100%; width: 100%; display: table">
+
+                </div>
             </div>
         </div>
-        <div id="graphdiv" style="height: calc(100% - 60px);
-            width: 100%;
-            display: table">
-
-        </div>
 
 
-            <!-- Execute once on page load -->
+        <!-- Execute once on page load -->
         <script>
-                document.getElementById('file').addEventListener('change', fileSelect, false);
-                $(document).ready(function () """),format.raw/*102.47*/("""{"""),format.raw/*102.48*/("""
-                    """),format.raw/*103.21*/("""renderSameDiffGraph();
-                """),format.raw/*104.17*/("""}"""),format.raw/*104.18*/(""");
+            document.getElementById('fileselect').addEventListener('change', fileSelect, false);
+            $(document).ready(function () """),format.raw/*133.43*/("""{"""),format.raw/*133.44*/("""
+                """),format.raw/*134.17*/("""renderSameDiffGraph();
+            """),format.raw/*135.13*/("""}"""),format.raw/*135.14*/(""");
         </script>
     </body>
 </html>
@@ -149,11 +180,11 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Fri Jan 25 15:01:30 AEDT 2019
+                  DATE: Sat Jan 26 21:04:13 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
-                  HASH: 5bbca606352004bcd370a7bff06c376141f0d082
-                  MATRIX: 561->1|657->3|685->5|4595->3948|4641->3966|4981->4333|5031->4412|5081->4487|5131->4509|5334->4737|5380->4755|5801->5147|5831->5148|5882->5170|5951->5210|5981->5211
-                  LINES: 20->1|25->1|26->2|101->77|102->78|107->83|108->84|109->85|110->86|112->88|113->89|126->102|126->102|127->103|128->104|128->104
+                  HASH: e04ab0b05ac491a028f37674b8a0be612d6160e2
+                  MATRIX: 561->1|657->3|685->5|7800->7091|7830->7092|7877->7110|7942->7146|7972->7147
+                  LINES: 20->1|25->1|26->2|157->133|157->133|158->134|159->135|159->135
                   -- GENERATED --
               */
           
