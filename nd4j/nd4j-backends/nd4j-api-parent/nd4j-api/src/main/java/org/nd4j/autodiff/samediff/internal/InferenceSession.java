@@ -83,7 +83,6 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         } else if(op instanceof Enter) {
             //Enter op: forwards input to specified execution frame
             Enter e = (Enter)op;
-            String frame = e.getFrameName();
             String[] input = e.argNames();
             Preconditions.checkState(input.length == 1, "Expected only 1 arg name for enter op: got %s", input);
             Preconditions.checkState(totalInputs == 1, "Expected exactly 1 op input for Enter op \"%s\", got %s+%s", e.getOwnName(), opInputs, constAndPhInputs);
@@ -91,7 +90,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             VarId inputVarId;
             if(constPhInput) {
                 //Constant or placeholder
-                inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0);
+                inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0, null);
             } else if(allIterInputs != null && allIterInputs.size() > 0){
                 inputVarId = allIterInputs.iterator().next();
             } else {
@@ -107,7 +106,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             VarId inputVarId;
             if(constPhInput){
                 //Constant or placeholder
-                inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0);
+                inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0, null);
             } else if(allIterInputs != null && allIterInputs.size() > 0){
                 inputVarId = allIterInputs.iterator().next();
             } else {
@@ -412,16 +411,76 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         int numNonConstIns = (opInputs == null ? 0 : opInputs.size());
         int numNonConstInsAllIters = (allIterInputs == null ? 0 : allIterInputs.size());
         int numConstPhIns = (constAndPhInputs == null ? 0 : constAndPhInputs.size());
+
+        Set<String> constEnterInputs = null;
         if(numArgs != (numNonConstIns + numConstPhIns + numNonConstInsAllIters)){
+            boolean anyConstEnterInputs = false;
+            SDVariable[] args = df.args();
+            for(SDVariable v : args){
+                Variable var = sameDiff.getVariables().get(v.getVarName());
+                DifferentialFunction inputVarFn = (var.getOutputOfOp() == null ? null : sameDiff.getOps().get(var.getOutputOfOp()).getOp());
+                if(inputVarFn instanceof Enter && ((Enter)inputVarFn).isConstant()){
+                    anyConstEnterInputs = true;
+                    if(constEnterInputs == null)
+                        constEnterInputs = new HashSet<>();
+                    constEnterInputs.add(v.getVarName());
+                }
+            }
+
+            if(anyConstEnterInputs){
+                /*
+                2019/01/26: AB
+                Resolve nested enter inputs (constants 2+ enters in)
+                Why this hack is necessary: consider the following (sub) graph:     constX -> Enter(a) -> Enter(b) -> opY
+                On iterations (a=0, b=0) all is well, opY gets triggered as normal.
+                On iterations (a>0, b=*) the "opY is available for exec" won't be triggered.
+                This is because Enter(a) is only executed once, on iteration 0 of the outer loop.
+                Consequently, Enter(b) is not triggered as available on iteration 1+.
+                When we do the lookup for the actual array to use for op execution (i.e., get inputs for opY(a=1,b=0))
+                it won't be found.
+                This is a bit of an ugly hack, though I've yet to find a cleaner solution.
+                It should only be required with the combination of: constants, 2 levels of enters, and more than 1 iteration in each loop.
+                 */
+
+                //For example, const -> Enter(a) -> Enter(b) -> op; in this case, the input to Op (at any frame/iteration) should should
+                // be the constant value - which is recorded as (frame="a",iter=0,parent=(frame="b",iter=0))
+                for(String s : constEnterInputs){
+                    //First: check if this has already been provided
+                    if(constAndPhInputs != null && constAndPhInputs.contains(s)){
+                        //already resolved/provided
+                        continue;
+                    }
+                    boolean found = false;
+                    if(allIterInputs != null) {
+                        for (VarId vid : allIterInputs) {
+                            if (s.equals(vid.getVariable())) {
+                                //Already resolved/provided
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if(found)
+                        continue;
+
+                    //Resolve missing constant
+                    if(constEnterInputs == null)
+                        constEnterInputs = new HashSet<>();
+                    constEnterInputs.add(s);
+                }
+            }
+
+            int constEnterInputCount = anyConstEnterInputs ? constEnterInputs.size() : 0;
+
             if(numArgs > 1){
                 //Might be due to repeated inputs
                 Set<String> uniqueArgNames = new HashSet<>();
                 Collections.addAll(uniqueArgNames, argNames);
-                Preconditions.checkState(uniqueArgNames.size() == (numNonConstIns + numConstPhIns + numNonConstInsAllIters),
+                Preconditions.checkState(uniqueArgNames.size() == (numNonConstIns + numConstPhIns + numNonConstInsAllIters + constEnterInputCount),
                         "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
                         opName, uniqueArgNames, opInputs, constAndPhInputs);
             } else {
-                Preconditions.checkState(numArgs == (numNonConstIns + numConstPhIns),
+                Preconditions.checkState(numArgs == (numNonConstIns + numConstPhIns + constEnterInputCount),
                         "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
                         opName, argNames, opInputs, constAndPhInputs);
             }
@@ -435,9 +494,22 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 SDVariable v = sameDiff.getVariable(s);
                 if(v.isConstant()) {
                     args[i] = v.getArr();
-                } else if(v.isPlaceHolder()){
+                } else if(v.isPlaceHolder()) {
                     Preconditions.checkState(placeholderValues != null && placeholderValues.containsKey(s), "No array provided for placeholder %s");
                     args[i] = placeholderValues.get(s);
+                } else if(constEnterInputs != null && constEnterInputs.contains(s)){
+                    //For enter nodes that are constants, we want iteration 0 in all frames in the heirarchy
+                    //For example, const -> Enter(a) -> Enter(b) -> op; in this case, the input to Op (at any frame/iteration) should should
+                    // be the constant value - which is recorded as (frame="a",iter=0,parent=(frame="b",iter=0))
+                    VarId vid = newVarId(s, frameIter.clone());
+                    vid.setIteration(0);
+                    FrameIter toZero = vid.getParentFrame();
+                    while(toZero != null){
+                        toZero.setIteration(0);
+                        toZero = toZero.getParentFrame();
+                    }
+                    INDArray arr = this.nodeOutputs.get(vid);
+                    args[i] = arr;
                 } else {
                     for(VarId vid : opInputs){
                         if(vid.getVariable().equals(s)){

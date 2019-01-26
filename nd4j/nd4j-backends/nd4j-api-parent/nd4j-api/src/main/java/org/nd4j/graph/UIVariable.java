@@ -26,36 +26,49 @@ public final class UIVariable extends Table {
   public int shapeLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(12, 8); }
   public ByteBuffer shapeInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 12, 8); }
-  public String outputOfOp() { int o = __offset(14); return o != 0 ? __string(o + bb_pos) : null; }
-  public ByteBuffer outputOfOpAsByteBuffer() { return __vector_as_bytebuffer(14, 1); }
-  public ByteBuffer outputOfOpInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 14, 1); }
-  public String inputsForOp(int j) { int o = __offset(16); return o != 0 ? __string(__vector(o) + j * 4) : null; }
-  public int inputsForOpLength() { int o = __offset(16); return o != 0 ? __vector_len(o) : 0; }
-  public String controlDepsForOp(int j) { int o = __offset(18); return o != 0 ? __string(__vector(o) + j * 4) : null; }
-  public int controlDepsForOpLength() { int o = __offset(18); return o != 0 ? __vector_len(o) : 0; }
-  public String controlDepsForVar(int j) { int o = __offset(20); return o != 0 ? __string(__vector(o) + j * 4) : null; }
-  public int controlDepsForVarLength() { int o = __offset(20); return o != 0 ? __vector_len(o) : 0; }
-  public String gradientVariable() { int o = __offset(22); return o != 0 ? __string(o + bb_pos) : null; }
-  public ByteBuffer gradientVariableAsByteBuffer() { return __vector_as_bytebuffer(22, 1); }
-  public ByteBuffer gradientVariableInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 22, 1); }
+  public String controlDeps(int j) { int o = __offset(14); return o != 0 ? __string(__vector(o) + j * 4) : null; }
+  public int controlDepsLength() { int o = __offset(14); return o != 0 ? __vector_len(o) : 0; }
+  public String outputOfOp() { int o = __offset(16); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer outputOfOpAsByteBuffer() { return __vector_as_bytebuffer(16, 1); }
+  public ByteBuffer outputOfOpInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 16, 1); }
+  public String inputsForOp(int j) { int o = __offset(18); return o != 0 ? __string(__vector(o) + j * 4) : null; }
+  public int inputsForOpLength() { int o = __offset(18); return o != 0 ? __vector_len(o) : 0; }
+  public String controlDepsForOp(int j) { int o = __offset(20); return o != 0 ? __string(__vector(o) + j * 4) : null; }
+  public int controlDepsForOpLength() { int o = __offset(20); return o != 0 ? __vector_len(o) : 0; }
+  public String controlDepsForVar(int j) { int o = __offset(22); return o != 0 ? __string(__vector(o) + j * 4) : null; }
+  public int controlDepsForVarLength() { int o = __offset(22); return o != 0 ? __vector_len(o) : 0; }
+  public String gradientVariable() { int o = __offset(24); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer gradientVariableAsByteBuffer() { return __vector_as_bytebuffer(24, 1); }
+  public ByteBuffer gradientVariableInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 24, 1); }
+  public String uiLabelExtra() { int o = __offset(26); return o != 0 ? __string(o + bb_pos) : null; }
+  public ByteBuffer uiLabelExtraAsByteBuffer() { return __vector_as_bytebuffer(26, 1); }
+  public ByteBuffer uiLabelExtraInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 26, 1); }
+  public FlatArray constantValue() { return constantValue(new FlatArray()); }
+  public FlatArray constantValue(FlatArray obj) { int o = __offset(28); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
 
   public static int createUIVariable(FlatBufferBuilder builder,
-      int idOffset,
-      int nameOffset,
-      byte type,
-      byte datatype,
-      int shapeOffset,
-      int outputOfOpOffset,
-      int inputsForOpOffset,
-      int controlDepsForOpOffset,
-      int controlDepsForVarOffset,
-      int gradientVariableOffset) {
-    builder.startObject(10);
+                                     int idOffset,
+                                     int nameOffset,
+                                     byte type,
+                                     byte datatype,
+                                     int shapeOffset,
+                                     int controlDepsOffset,
+                                     int outputOfOpOffset,
+                                     int inputsForOpOffset,
+                                     int controlDepsForOpOffset,
+                                     int controlDepsForVarOffset,
+                                     int gradientVariableOffset,
+                                     int uiLabelExtraOffset,
+                                     int constantValueOffset) {
+    builder.startObject(13);
+    UIVariable.addConstantValue(builder, constantValueOffset);
+    UIVariable.addUiLabelExtra(builder, uiLabelExtraOffset);
     UIVariable.addGradientVariable(builder, gradientVariableOffset);
     UIVariable.addControlDepsForVar(builder, controlDepsForVarOffset);
     UIVariable.addControlDepsForOp(builder, controlDepsForOpOffset);
     UIVariable.addInputsForOp(builder, inputsForOpOffset);
     UIVariable.addOutputOfOp(builder, outputOfOpOffset);
+    UIVariable.addControlDeps(builder, controlDepsOffset);
     UIVariable.addShape(builder, shapeOffset);
     UIVariable.addName(builder, nameOffset);
     UIVariable.addId(builder, idOffset);
@@ -64,7 +77,7 @@ public final class UIVariable extends Table {
     return UIVariable.endUIVariable(builder);
   }
 
-  public static void startUIVariable(FlatBufferBuilder builder) { builder.startObject(10); }
+  public static void startUIVariable(FlatBufferBuilder builder) { builder.startObject(13); }
   public static void addId(FlatBufferBuilder builder, int idOffset) { builder.addOffset(0, idOffset, 0); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(1, nameOffset, 0); }
   public static void addType(FlatBufferBuilder builder, byte type) { builder.addByte(2, type, 0); }
@@ -72,17 +85,22 @@ public final class UIVariable extends Table {
   public static void addShape(FlatBufferBuilder builder, int shapeOffset) { builder.addOffset(4, shapeOffset, 0); }
   public static int createShapeVector(FlatBufferBuilder builder, long[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addLong(data[i]); return builder.endVector(); }
   public static void startShapeVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
-  public static void addOutputOfOp(FlatBufferBuilder builder, int outputOfOpOffset) { builder.addOffset(5, outputOfOpOffset, 0); }
-  public static void addInputsForOp(FlatBufferBuilder builder, int inputsForOpOffset) { builder.addOffset(6, inputsForOpOffset, 0); }
+  public static void addControlDeps(FlatBufferBuilder builder, int controlDepsOffset) { builder.addOffset(5, controlDepsOffset, 0); }
+  public static int createControlDepsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
+  public static void startControlDepsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addOutputOfOp(FlatBufferBuilder builder, int outputOfOpOffset) { builder.addOffset(6, outputOfOpOffset, 0); }
+  public static void addInputsForOp(FlatBufferBuilder builder, int inputsForOpOffset) { builder.addOffset(7, inputsForOpOffset, 0); }
   public static int createInputsForOpVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startInputsForOpVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
-  public static void addControlDepsForOp(FlatBufferBuilder builder, int controlDepsForOpOffset) { builder.addOffset(7, controlDepsForOpOffset, 0); }
+  public static void addControlDepsForOp(FlatBufferBuilder builder, int controlDepsForOpOffset) { builder.addOffset(8, controlDepsForOpOffset, 0); }
   public static int createControlDepsForOpVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startControlDepsForOpVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
-  public static void addControlDepsForVar(FlatBufferBuilder builder, int controlDepsForVarOffset) { builder.addOffset(8, controlDepsForVarOffset, 0); }
+  public static void addControlDepsForVar(FlatBufferBuilder builder, int controlDepsForVarOffset) { builder.addOffset(9, controlDepsForVarOffset, 0); }
   public static int createControlDepsForVarVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startControlDepsForVarVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
-  public static void addGradientVariable(FlatBufferBuilder builder, int gradientVariableOffset) { builder.addOffset(9, gradientVariableOffset, 0); }
+  public static void addGradientVariable(FlatBufferBuilder builder, int gradientVariableOffset) { builder.addOffset(10, gradientVariableOffset, 0); }
+  public static void addUiLabelExtra(FlatBufferBuilder builder, int uiLabelExtraOffset) { builder.addOffset(11, uiLabelExtraOffset, 0); }
+  public static void addConstantValue(FlatBufferBuilder builder, int constantValueOffset) { builder.addOffset(12, constantValueOffset, 0); }
   public static int endUIVariable(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

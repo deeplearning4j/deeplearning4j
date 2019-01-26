@@ -53,11 +53,14 @@ table UIVariable {
     type:VarType;                   //Use existing VarType:     VARIABLE, CONSTANT, ARRAY, PLACEHOLDER
 	datatype:DataType;
 	shape:[long];
+	controlDeps:[string];			//Input control dependencies: variable x -> this
     outputOfOp:string;              //Null for placeholders/constants. For array type SDVariables, the name of the op it's an output of
     inputsForOp:[string];           //Used as input for specific op. Mainly for quick lookup on front end
     controlDepsForOp:[string];      //if a op control dependency (x -> opY) exists, then "opY" will be in this list
     controlDepsForVar:[string];     //if a variable control dependency (x -> varY) exists, then "varY" will be in this list
     gradientVariable:string;        //Variable (if any) corresponding to gradient of this variable
+	uiLabelExtra:string;			//Optional extra information (line(s)) to show in UI for variable label
+	constantValue:FlatArray;		//Array for the constant, usually for displaying scalars. May not be encoded for larger constants
 }
 
 table UIOp {
@@ -66,4 +69,5 @@ table UIOp {
 	inputs:[string];				//Name of input variables
 	outputs:[string];				//Name of output variables
 	controlDeps:[string];			//Name of control dependencies
+	uiLabelExtra:string;			//Optional extra information (line(s)) to show in UI for op label. Example: frame for enter/exit ops
 }

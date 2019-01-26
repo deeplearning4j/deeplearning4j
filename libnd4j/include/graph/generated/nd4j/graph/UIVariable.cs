@@ -35,26 +35,36 @@ public struct UIVariable : IFlatbufferObject
   public ArraySegment<byte>? GetShapeBytes() { return __p.__vector_as_arraysegment(12); }
 #endif
   public long[] GetShapeArray() { return __p.__vector_as_array<long>(12); }
-  public string OutputOfOp { get { int o = __p.__offset(14); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+  public string ControlDeps(int j) { int o = __p.__offset(14); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
+  public int ControlDepsLength { get { int o = __p.__offset(14); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public string OutputOfOp { get { int o = __p.__offset(16); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetOutputOfOpBytes() { return __p.__vector_as_span(14); }
+  public Span<byte> GetOutputOfOpBytes() { return __p.__vector_as_span(16); }
 #else
-  public ArraySegment<byte>? GetOutputOfOpBytes() { return __p.__vector_as_arraysegment(14); }
+  public ArraySegment<byte>? GetOutputOfOpBytes() { return __p.__vector_as_arraysegment(16); }
 #endif
-  public byte[] GetOutputOfOpArray() { return __p.__vector_as_array<byte>(14); }
-  public string InputsForOp(int j) { int o = __p.__offset(16); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
-  public int InputsForOpLength { get { int o = __p.__offset(16); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public string ControlDepsForOp(int j) { int o = __p.__offset(18); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
-  public int ControlDepsForOpLength { get { int o = __p.__offset(18); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public string ControlDepsForVar(int j) { int o = __p.__offset(20); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
-  public int ControlDepsForVarLength { get { int o = __p.__offset(20); return o != 0 ? __p.__vector_len(o) : 0; } }
-  public string GradientVariable { get { int o = __p.__offset(22); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+  public byte[] GetOutputOfOpArray() { return __p.__vector_as_array<byte>(16); }
+  public string InputsForOp(int j) { int o = __p.__offset(18); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
+  public int InputsForOpLength { get { int o = __p.__offset(18); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public string ControlDepsForOp(int j) { int o = __p.__offset(20); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
+  public int ControlDepsForOpLength { get { int o = __p.__offset(20); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public string ControlDepsForVar(int j) { int o = __p.__offset(22); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
+  public int ControlDepsForVarLength { get { int o = __p.__offset(22); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public string GradientVariable { get { int o = __p.__offset(24); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
 #if ENABLE_SPAN_T
-  public Span<byte> GetGradientVariableBytes() { return __p.__vector_as_span(22); }
+  public Span<byte> GetGradientVariableBytes() { return __p.__vector_as_span(24); }
 #else
-  public ArraySegment<byte>? GetGradientVariableBytes() { return __p.__vector_as_arraysegment(22); }
+  public ArraySegment<byte>? GetGradientVariableBytes() { return __p.__vector_as_arraysegment(24); }
 #endif
-  public byte[] GetGradientVariableArray() { return __p.__vector_as_array<byte>(22); }
+  public byte[] GetGradientVariableArray() { return __p.__vector_as_array<byte>(24); }
+  public string UiLabelExtra { get { int o = __p.__offset(26); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetUiLabelExtraBytes() { return __p.__vector_as_span(26); }
+#else
+  public ArraySegment<byte>? GetUiLabelExtraBytes() { return __p.__vector_as_arraysegment(26); }
+#endif
+  public byte[] GetUiLabelExtraArray() { return __p.__vector_as_array<byte>(26); }
+  public FlatArray? ConstantValue { get { int o = __p.__offset(28); return o != 0 ? (FlatArray?)(new FlatArray()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
 
   public static Offset<UIVariable> CreateUIVariable(FlatBufferBuilder builder,
       Offset<IntPair> idOffset = default(Offset<IntPair>),
@@ -62,17 +72,23 @@ public struct UIVariable : IFlatbufferObject
       VarType type = VarType.VARIABLE,
       DataType datatype = DataType.INHERIT,
       VectorOffset shapeOffset = default(VectorOffset),
+      VectorOffset controlDepsOffset = default(VectorOffset),
       StringOffset outputOfOpOffset = default(StringOffset),
       VectorOffset inputsForOpOffset = default(VectorOffset),
       VectorOffset controlDepsForOpOffset = default(VectorOffset),
       VectorOffset controlDepsForVarOffset = default(VectorOffset),
-      StringOffset gradientVariableOffset = default(StringOffset)) {
-    builder.StartObject(10);
+      StringOffset gradientVariableOffset = default(StringOffset),
+      StringOffset uiLabelExtraOffset = default(StringOffset),
+      Offset<FlatArray> constantValueOffset = default(Offset<FlatArray>)) {
+    builder.StartObject(13);
+    UIVariable.AddConstantValue(builder, constantValueOffset);
+    UIVariable.AddUiLabelExtra(builder, uiLabelExtraOffset);
     UIVariable.AddGradientVariable(builder, gradientVariableOffset);
     UIVariable.AddControlDepsForVar(builder, controlDepsForVarOffset);
     UIVariable.AddControlDepsForOp(builder, controlDepsForOpOffset);
     UIVariable.AddInputsForOp(builder, inputsForOpOffset);
     UIVariable.AddOutputOfOp(builder, outputOfOpOffset);
+    UIVariable.AddControlDeps(builder, controlDepsOffset);
     UIVariable.AddShape(builder, shapeOffset);
     UIVariable.AddName(builder, nameOffset);
     UIVariable.AddId(builder, idOffset);
@@ -81,7 +97,7 @@ public struct UIVariable : IFlatbufferObject
     return UIVariable.EndUIVariable(builder);
   }
 
-  public static void StartUIVariable(FlatBufferBuilder builder) { builder.StartObject(10); }
+  public static void StartUIVariable(FlatBufferBuilder builder) { builder.StartObject(13); }
   public static void AddId(FlatBufferBuilder builder, Offset<IntPair> idOffset) { builder.AddOffset(0, idOffset.Value, 0); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(1, nameOffset.Value, 0); }
   public static void AddType(FlatBufferBuilder builder, VarType type) { builder.AddSbyte(2, (sbyte)type, 0); }
@@ -90,20 +106,26 @@ public struct UIVariable : IFlatbufferObject
   public static VectorOffset CreateShapeVector(FlatBufferBuilder builder, long[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddLong(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateShapeVectorBlock(FlatBufferBuilder builder, long[] data) { builder.StartVector(8, data.Length, 8); builder.Add(data); return builder.EndVector(); }
   public static void StartShapeVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
-  public static void AddOutputOfOp(FlatBufferBuilder builder, StringOffset outputOfOpOffset) { builder.AddOffset(5, outputOfOpOffset.Value, 0); }
-  public static void AddInputsForOp(FlatBufferBuilder builder, VectorOffset inputsForOpOffset) { builder.AddOffset(6, inputsForOpOffset.Value, 0); }
+  public static void AddControlDeps(FlatBufferBuilder builder, VectorOffset controlDepsOffset) { builder.AddOffset(5, controlDepsOffset.Value, 0); }
+  public static VectorOffset CreateControlDepsVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateControlDepsVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static void StartControlDepsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddOutputOfOp(FlatBufferBuilder builder, StringOffset outputOfOpOffset) { builder.AddOffset(6, outputOfOpOffset.Value, 0); }
+  public static void AddInputsForOp(FlatBufferBuilder builder, VectorOffset inputsForOpOffset) { builder.AddOffset(7, inputsForOpOffset.Value, 0); }
   public static VectorOffset CreateInputsForOpVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateInputsForOpVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartInputsForOpVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddControlDepsForOp(FlatBufferBuilder builder, VectorOffset controlDepsForOpOffset) { builder.AddOffset(7, controlDepsForOpOffset.Value, 0); }
+  public static void AddControlDepsForOp(FlatBufferBuilder builder, VectorOffset controlDepsForOpOffset) { builder.AddOffset(8, controlDepsForOpOffset.Value, 0); }
   public static VectorOffset CreateControlDepsForOpVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateControlDepsForOpVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartControlDepsForOpVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddControlDepsForVar(FlatBufferBuilder builder, VectorOffset controlDepsForVarOffset) { builder.AddOffset(8, controlDepsForVarOffset.Value, 0); }
+  public static void AddControlDepsForVar(FlatBufferBuilder builder, VectorOffset controlDepsForVarOffset) { builder.AddOffset(9, controlDepsForVarOffset.Value, 0); }
   public static VectorOffset CreateControlDepsForVarVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateControlDepsForVarVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartControlDepsForVarVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static void AddGradientVariable(FlatBufferBuilder builder, StringOffset gradientVariableOffset) { builder.AddOffset(9, gradientVariableOffset.Value, 0); }
+  public static void AddGradientVariable(FlatBufferBuilder builder, StringOffset gradientVariableOffset) { builder.AddOffset(10, gradientVariableOffset.Value, 0); }
+  public static void AddUiLabelExtra(FlatBufferBuilder builder, StringOffset uiLabelExtraOffset) { builder.AddOffset(11, uiLabelExtraOffset.Value, 0); }
+  public static void AddConstantValue(FlatBufferBuilder builder, Offset<FlatArray> constantValueOffset) { builder.AddOffset(12, constantValueOffset.Value, 0); }
   public static Offset<UIVariable> EndUIVariable(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<UIVariable>(o);

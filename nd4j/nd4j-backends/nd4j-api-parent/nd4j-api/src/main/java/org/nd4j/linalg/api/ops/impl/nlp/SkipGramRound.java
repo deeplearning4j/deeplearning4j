@@ -30,6 +30,8 @@ public class SkipGramRound extends DynamicCustomOp {
         return "skipgram";
     }
 
+    public SkipGramRound(){ }
+
     /**
      * sg hs round
      *

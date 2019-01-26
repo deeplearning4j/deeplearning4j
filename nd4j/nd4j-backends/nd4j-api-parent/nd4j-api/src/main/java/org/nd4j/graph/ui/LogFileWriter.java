@@ -5,13 +5,20 @@ import com.google.flatbuffers.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.BaseCompatOp;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.NextIteration;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -358,17 +365,41 @@ public class LogFileWriter {
                 shapeOffset = UIVariable.createShapeVector(fbb, shape);
             }
 
+            int controlDepsIdx = 0;
+            if(e.getValue().getControlDeps() != null ){
+                List<String> cds = e.getValue().getControlDeps();
+                if(!cds.isEmpty()){
+                    int[] cdIdxs = new int[cds.size()];
+                    for( int i=0; i<cdIdxs.length; i++ ){
+                        cdIdxs[i] = fbb.createString(cds.get(i));
+                    }
+                    controlDepsIdx = UIVariable.createControlDepsVector(fbb, cdIdxs);
+                }
+            }
+
+            int uiExtraLabelOffset = 0;     //String value - "extra" information to be shown in label. Currently unused
+            int constantValueOffset = 0;
+            if(e.getValue().getVariable().getVariableType() == VariableType.CONSTANT){
+                INDArray arr = e.getValue().getVariable().getArr();
+                if(arr != null && arr.length() < 1000){
+                    constantValueOffset = arr.toFlatArray(fbb);
+                }
+            }
+
             int uiVariableIdx = UIVariable.createUIVariable(fbb,
                     intPair,
                     name,
                     FlatBuffersMapper.toVarType(e.getValue().getVariable().getVariableType()),
                     dtVal,
                     shapeOffset,
+                    controlDepsIdx,
                     outputOfOpIdx,
                     inputsForOpIdx,
                     controlDepsForOpIdx,
                     controlDepsForVarIdx,
-                    0       //TODO gradient variable
+                    0,       //TODO gradient variable
+                    uiExtraLabelOffset,
+                    constantValueOffset
             );
 
             varListOffsets[count++] = uiVariableIdx;
@@ -409,12 +440,23 @@ public class LogFileWriter {
                 controlDepIdxs = UIOp.createControlDepsVector(fbb, idx);
             }
 
+            int extraLabelOffset = 0;
+            DifferentialFunction df = e.getValue().getOp();
+            if(df instanceof Enter || df instanceof Exit || df instanceof NextIteration){ //Enter, Exit, NextIteration
+                String frame = ((BaseCompatOp) df).getFrameName();
+                if(frame != null) {
+                    String extra = "Frame: \"" + frame + "\"";
+                    extraLabelOffset = fbb.createString(extra);
+                }
+            }
+
             opListOffsets[count++] = UIOp.createUIOp(fbb,
                     nameIdx,
                     opNameIdx,
                     inputsIdx,
                     outputsIdx,
-                    controlDepIdxs);
+                    controlDepIdxs,
+                    extraLabelOffset);
 
         }
         int opsListOffset = UIGraphStructure.createOpsVector(fbb, opListOffsets);
