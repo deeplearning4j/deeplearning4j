@@ -18,8 +18,11 @@ function toggleSidebar(){
     $('#samediffsidebar').toggleClass('sidebarhidden');
 }
 
+var selectedPage = "graph";
 function samediffSetPage(pageName){
     console.log("Selected page: " + pageName);
+    selectedPage = pageName;
+    renderContent();
 }
 
 
@@ -343,14 +346,32 @@ function fileSelect(evt) {
 
             }
 
-            renderSameDiffGraph();
+            renderContent();
         };
         // console.log("Number of bytes: " + bytes.length());
     }
 }
 
+function renderContent(){
+    document.getElementById("samediffcontent").innerHTML = "";
+
+    switch(selectedPage){
+        case "graph":
+            renderSameDiffGraph();
+            break;
+        case "plots":
+        case "evaluation":
+        case "performance":
+            //TODO
+            renderPageNotImplemented();
+        default:
+            renderPageNotImplemented();
+    }
+}
+
 
 function renderSameDiffGraph() {
+    document.getElementById("samediffcontent").innerHTML = "<div id=\"graphdiv\" style=\"height: 100%; width: 100%; display: table\"></div>";
 
     if (nodes) {
 
@@ -378,6 +399,10 @@ function renderSameDiffGraph() {
     }
 }
 
+function renderPageNotImplemented(){
+    document.getElementById("samediffcontent").innerHTML = "<br><br>Page not yet implemented: " + selectedPage + "<br>";
+}
+
 samediffgraphlayout = "klay";
 klaylayout = "DOWN";
 function setLayout(newLayout){
@@ -390,5 +415,5 @@ function setLayout(newLayout){
         newLayout = "klay";
     }
     samediffgraphlayout = newLayout;
-    renderSameDiffGraph();
+    renderContent();
 }
