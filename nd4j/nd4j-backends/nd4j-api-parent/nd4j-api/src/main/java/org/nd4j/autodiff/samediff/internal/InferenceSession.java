@@ -418,7 +418,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             SDVariable[] args = df.args();
             for(SDVariable v : args){
                 Variable var = sameDiff.getVariables().get(v.getVarName());
-                DifferentialFunction inputVarFn = (var.getOutputOfOp() == null ? null : sameDiff.getOps().get(v.getVarName()).getOp());
+                DifferentialFunction inputVarFn = (var.getOutputOfOp() == null ? null : sameDiff.getOps().get(var.getOutputOfOp()).getOp());
                 if(inputVarFn instanceof Enter && ((Enter)inputVarFn).isConstant()){
                     anyConstEnterInputs = true;
                     if(constEnterInputs == null)
