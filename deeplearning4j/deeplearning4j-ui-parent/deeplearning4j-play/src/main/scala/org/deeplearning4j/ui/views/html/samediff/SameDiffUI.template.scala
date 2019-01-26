@@ -52,7 +52,7 @@ Seq[Any](format.raw/*1.4*/("""
 
         <link id="bootstrap-style" href="/assets/webjars/bootstrap/4.2.1/css/bootstrap.min.css" rel="stylesheet">
 
-        <link href="/assets/js/samediff/samediff2.css" rel="stylesheet">
+        <link href="/assets/css/samediff/samediff.css" rel="stylesheet">
 
             <!-- The HTML5 shim, for IE6-8 support of HTML5 elements -->
             <!--[if lt IE 9]>
@@ -144,9 +144,7 @@ Seq[Any](format.raw/*1.4*/("""
 
                 <!-- Page Content -->
             <div id="samediffcontent" class="w-100">
-                <div id="graphdiv" style="height: 100%; width: 100%; display: table">
-
-                </div>
+                <div id="graphdiv" style="height: 100%; width: 100%; display: table"></div>
             </div>
         </div>
 
@@ -154,9 +152,9 @@ Seq[Any](format.raw/*1.4*/("""
         <!-- Execute once on page load -->
         <script>
             document.getElementById('fileselect').addEventListener('change', fileSelect, false);
-            $(document).ready(function () """),format.raw/*133.43*/("""{"""),format.raw/*133.44*/("""
-                """),format.raw/*134.17*/("""renderSameDiffGraph();
-            """),format.raw/*135.13*/("""}"""),format.raw/*135.14*/(""");
+            $(document).ready(function () """),format.raw/*131.43*/("""{"""),format.raw/*131.44*/("""
+                """),format.raw/*132.17*/("""renderSameDiffGraph();
+            """),format.raw/*133.13*/("""}"""),format.raw/*133.14*/(""");
         </script>
     </body>
 </html>
@@ -180,11 +178,11 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Sat Jan 26 21:04:13 AEDT 2019
+                  DATE: Sat Jan 26 21:34:35 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
-                  HASH: e04ab0b05ac491a028f37674b8a0be612d6160e2
-                  MATRIX: 561->1|657->3|685->5|7800->7091|7830->7092|7877->7110|7942->7146|7972->7147
-                  LINES: 20->1|25->1|26->2|157->133|157->133|158->134|159->135|159->135
+                  HASH: c7c650206ba9e8c2a9386830e9ac95c344baf80c
+                  MATRIX: 561->1|657->3|685->5|7780->7071|7810->7072|7857->7090|7922->7126|7952->7127
+                  LINES: 20->1|25->1|26->2|155->131|155->131|156->132|157->133|157->133
                   -- GENERATED --
               */
           
