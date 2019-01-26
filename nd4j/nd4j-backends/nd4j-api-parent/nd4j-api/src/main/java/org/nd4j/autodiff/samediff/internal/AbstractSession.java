@@ -268,7 +268,9 @@ public abstract class AbstractSession<T, O> {
                         boolean isConstant = ((Enter) parameterizedOp).isConstant();
                         FrameIter outParentFrame = varToExec.getParentFrame();
                         if(isConstant && outParentFrame != null){
-                            //Idea: if it's a constant, it's iteration 0 all the way down...
+                            //For enter nodes that are constants, we want iteration 0 in all frames in the heirarchy
+                            //For example, const -> Enter(a) -> Enter(b) -> op; in this case, the input to Op (at any frame/iteration) should should
+                            // be the constant value - which is recorded as (frame="a",iter=0,parent=(frame="b",iter=0))
                             outParentFrame = outParentFrame.clone();
                             FrameIter toZero = outParentFrame;
                             while(toZero != null){
@@ -433,7 +435,9 @@ public abstract class AbstractSession<T, O> {
                     VarId outVarId = newVarId(opOutputs.get(0), e.getFrameName(), 0, executedVar.toFrameIter());     //Note: parent frame of output op is enter var's *current* frame
 
                     if(isConstant && executedVar.getParentFrame() != null){
-                        //For enter constants, we want iteration 0 all the way down...
+                        //For enter nodes that are constants, we want iteration 0 in all frames in the heirarchy
+                        //For example, const -> Enter(a) -> Enter(b) -> op; in this case, the input to Op (at any frame/iteration) should should
+                        // be the constant value - which is recorded as (frame="a",iter=0,parent=(frame="b",iter=0))
                         outVarId.setParentFrame(outVarId.getParentFrame().clone());
                         FrameIter fi = outVarId.getParentFrame();
                         while(fi != null){
@@ -698,55 +702,26 @@ public abstract class AbstractSession<T, O> {
             } else {
                 //Normal (non-constant)
                 //Edge case: "Enter" nodes always have iteration 0 by definition. In some TF graphs/loops, the enter node
-                // is used in multiple iterations (like, in a loop condition) - not just the first iteration
+                // is used in multiple iterations (like, a constant in a loop condition) - not just the first iteration
                 int iter = executedVar.getIteration();
                 FrameIter parentFrame = executedVar.getParentFrame();
                 if(sdv.getVariableType() == VariableType.ARRAY && sameDiff.getOps().get(variable.getOutputOfOp()).getOp() instanceof Enter){
                     iter = 0;
-//                    //Image and more thorough descritption: https://gist.github.com/AlexDBlack/bd84813a93db94cd17aec353453fc1cb
-//                    //Edge case hack: Graph structure X -> Enter(a) -> Enter(b) -> opY
-//                    //(Or any arbitrary number of chained enter ops)
-//                    //Challenge here: op Y should (indirectly) use variable X for iteration 0 for BOTH frames (a and b)
-//                    //If we look for VarId("enter-b", frame="b", iter=0, parent=("a",iter=1+)) then we wont find it
-//                    //Instead, what we want to look for VarId("enter-b", frame="b", iter=0, parent=("a",iter=0))
-//                    //Put another way: "enter-b" is available for all iterations of frame "b".
-//                    //TODO is there a cleaner way to handle this edge case?
-//                    Enter e = (Enter) sameDiff.getOps().get(variable.getOutputOfOp()).getOp();
-//                    String inputName = e.arg().getVarName();
-//                    boolean isNestedEnter = (sameDiff.getVariableOutputFunction(inputName) instanceof Enter);
-//                    if(isNestedEnter){
-//                        parentFrame = parentFrame.clone();
-//                    }
-//
-//                    Enter currentEnter = e;
-//                    FrameIter frameToModifyParent = parentFrame;
-//                    while(isNestedEnter && frameToModifyParent != null){
-//                        frameToModifyParent.setIteration(0);
-//                        inputName = currentEnter.arg().getVarName();
-//                        isNestedEnter = (sameDiff.getVariableOutputFunction(inputName) instanceof Enter);
-//                        if(isNestedEnter){
-//                            currentEnter = (Enter) sameDiff.getVariableOutputFunction(inputName);
-//                            frameToModifyParent = frameToModifyParent.getParentFrame();
-//                        }
-//                    }
-//                    nestedWhile = true;
-
                     Enter e = (Enter)sameDiff.getOps().get(variable.getOutputOfOp()).getOp();
                     if(e.isConstant()){
-                        //For enter constants, want iteration 0 all the way down...=
+                        //For enter nodes that are constants, we want iteration 0 in all frames in the heirarchy
+                        //For example, const -> Enter(a) -> Enter(b) -> op; in this case, the input to Op (at any frame/iteration) should should
+                        // be the constant value - which is recorded as (frame="a",iter=0,parent=(frame="b",iter=0))
                         parentFrame = parentFrame.clone();
-//                        executedVar.setParentFrame(parentFrame);
                         FrameIter toZero = parentFrame;
                         while(toZero != null){
                             toZero.setIteration(0);
                             toZero = toZero.getParentFrame();
                         }
-
                     }
                 }
                 vid = newVarId(in, executedVar.getFrame(), iter, parentFrame);
             }
-
             if (!nodeOutputs.containsKey(vid)) {
                 return false;
             }
@@ -829,35 +804,12 @@ public abstract class AbstractSession<T, O> {
                     iter0 = newVarId(iter0.getVariable(), iter0.getFrame(), 0, forVariable.getParentFrame());
                 }
 
-//                //Nested Enter nodes case - see handling in allInputsAvailable for reasoning here
-//                Variable var = sameDiff.getVariables().get(inputVar.getVariable());
-//                Enter e = (Enter) sameDiff.getOps().get(var.getOutputOfOp()).getOp();
-//                String inputName = e.arg().getVarName();
-//                boolean isNestedEnter = (sameDiff.getVariableOutputFunction(inputName) instanceof Enter);
-//                if(isNestedEnter){
-//                    iter0 = newVarId(iter0.getVariable(), iter0.getFrame(), iter0.getIteration(), iter0.getParentFrame().clone());
-//                }
-//
-//                Enter currentEnter = e;
-//                FrameIter frameToModifyParent = iter0.getParentFrame();
-//                while(isNestedEnter && frameToModifyParent != null){
-//                    frameToModifyParent.setIteration(0);
-//                    inputName = currentEnter.arg().getVarName();
-//                    isNestedEnter = (sameDiff.getVariableOutputFunction(inputName) instanceof Enter);
-//                    if(isNestedEnter){
-//                        currentEnter = (Enter) sameDiff.getVariableOutputFunction(inputName);
-//                        frameToModifyParent = frameToModifyParent.getParentFrame();
-//                    }
-//                }
-
-
-                //Nested Enter nodes case - see handling in allInputsAvailable for reasoning here
-//                inputVar = adaptForNestedEnter(inputVar);
-
                 Variable var = sameDiff.getVariables().get(inputVar.getVariable());
                 Enter e = (Enter) sameDiff.getOps().get(var.getOutputOfOp()).getOp();
                 if(e.isConstant()){
-                    //Enter node constant: want zeros all the way down...
+                    //For enter nodes that are constants, we want iteration 0 in all frames in the heirarchy
+                    //For example, const -> Enter(a) -> Enter(b) -> op; in this case, the input to Op (at any frame/iteration) should should
+                    // be the constant value - which is recorded as (frame="a",iter=0,parent=(frame="b",iter=0))
                     iter0.setParentFrame(iter0.getParentFrame().clone());
                     FrameIter toZero = iter0.getParentFrame();
                     while(toZero != null){
@@ -865,7 +817,6 @@ public abstract class AbstractSession<T, O> {
                         toZero = toZero.getParentFrame();
                     }
                 }
-
 
                 if(!execInputsAllIter.containsKey(iter0))
                     execInputsAllIter.put(iter0, new HashSet<VarId>());
@@ -936,41 +887,4 @@ public abstract class AbstractSession<T, O> {
             return new FrameIter(frame, iteration, (parentFrame == null ? null : parentFrame.clone()));
         }
     }
-
-//    /**
-//     *
-//     * @param varId Variable to execute - output of an enter op
-//     * @return
-//     */
-//    protected VarId adaptForNestedEnter(VarId varId){
-//        //Nested Enter nodes case - see handling in allInputsAvailable for reasoning here
-//        Variable var = sameDiff.getVariables().get(varId.getVariable());
-//        SameDiffOp op = sameDiff.getOps().get(var.getOutputOfOp());
-//        if(var.getVariable().getVariableType() != VariableType.ARRAY || op == null || !(op.getOp() instanceof Enter)){
-//            //Standard/usual case
-//            return varId;
-//        }
-//
-//        Enter e = (Enter) op.getOp();
-//        String inputName = e.arg().getVarName();
-//        boolean isNestedEnter = (sameDiff.getVariableOutputFunction(inputName) instanceof Enter);
-//        VarId vid = varId;
-//        if(isNestedEnter){
-//            vid = newVarId(vid.getVariable(), vid.getFrame(), vid.getIteration(), vid.getParentFrame().clone());
-//        }
-//
-//        Enter currentEnter = e;
-//        FrameIter frameToModifyParent = vid.getParentFrame();
-//        while(isNestedEnter && frameToModifyParent != null){
-//            frameToModifyParent.setIteration(0);
-//            inputName = currentEnter.arg().getVarName();
-//            isNestedEnter = (sameDiff.getVariableOutputFunction(inputName) instanceof Enter);
-//            if(isNestedEnter){
-//                currentEnter = (Enter) sameDiff.getVariableOutputFunction(inputName);
-//                frameToModifyParent = frameToModifyParent.getParentFrame();
-//            }
-//        }
-//
-//        return vid;
-//    }
 }

@@ -83,15 +83,11 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         } else if(op instanceof Enter) {
             //Enter op: forwards input to specified execution frame
             Enter e = (Enter)op;
-            String frame = e.getFrameName();
             String[] input = e.argNames();
             Preconditions.checkState(input.length == 1, "Expected only 1 arg name for enter op: got %s", input);
             Preconditions.checkState(totalInputs == 1, "Expected exactly 1 op input for Enter op \"%s\", got %s+%s", e.getOwnName(), opInputs, constAndPhInputs);
 
             VarId inputVarId;
-//            if(e.isConstant()){
-//                FrameIter inFrameIter =
-//            } else
             if(constPhInput) {
                 //Constant or placeholder
                 inputVarId = new VarId(constAndPhInputs.iterator().next(), OUTER_FRAME, 0, null);
@@ -416,7 +412,6 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         int numNonConstInsAllIters = (allIterInputs == null ? 0 : allIterInputs.size());
         int numConstPhIns = (constAndPhInputs == null ? 0 : constAndPhInputs.size());
 
-//        Map<String,INDArray> resolvedConstEnterInputs = null;
         Set<String> constEnterInputs = null;
         if(numArgs != (numNonConstIns + numConstPhIns + numNonConstInsAllIters)){
             boolean anyConstEnterInputs = false;
@@ -433,7 +428,22 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             }
 
             if(anyConstEnterInputs){
-                //Resolve nested enter inputs (constants 2+ enters in)
+                /*
+                2019/01/26: AB
+                Resolve nested enter inputs (constants 2+ enters in)
+                Why this hack is necessary: consider the following (sub) graph:     constX -> Enter(a) -> Enter(b) -> opY
+                On iterations (a=0, b=0) all is well, opY gets triggered as normal.
+                On iterations (a>0, b=*) the "opY is available for exec" won't be triggered.
+                This is because Enter(a) is only executed once, on iteration 0 of the outer loop.
+                Consequently, Enter(b) is not triggered as available on iteration 1+.
+                When we do the lookup for the actual array to use for op execution (i.e., get inputs for opY(a=1,b=0))
+                it won't be found.
+                This is a bit of an ugly hack, though I've yet to find a cleaner solution.
+                It should only be required with the combination of: constants, 2 levels of enters, and more than 1 iteration in each loop.
+                 */
+
+                //For example, const -> Enter(a) -> Enter(b) -> op; in this case, the input to Op (at any frame/iteration) should should
+                // be the constant value - which is recorded as (frame="a",iter=0,parent=(frame="b",iter=0))
                 for(String s : constEnterInputs){
                     //First: check if this has already been provided
                     if(constAndPhInputs != null && constAndPhInputs.contains(s)){
@@ -488,7 +498,9 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     Preconditions.checkState(placeholderValues != null && placeholderValues.containsKey(s), "No array provided for placeholder %s");
                     args[i] = placeholderValues.get(s);
                 } else if(constEnterInputs != null && constEnterInputs.contains(s)){
-                    //Constant inputs: resolve iteration 0 all the way down...
+                    //For enter nodes that are constants, we want iteration 0 in all frames in the heirarchy
+                    //For example, const -> Enter(a) -> Enter(b) -> op; in this case, the input to Op (at any frame/iteration) should should
+                    // be the constant value - which is recorded as (frame="a",iter=0,parent=(frame="b",iter=0))
                     VarId vid = newVarId(s, frameIter.clone());
                     vid.setIteration(0);
                     FrameIter toZero = vid.getParentFrame();
