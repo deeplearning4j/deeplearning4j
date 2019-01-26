@@ -1,0 +1,24 @@
+
+
+.wrapper {
+    display: flex;
+    height: 100vh;
+    align-items: stretch;
+}
+
+#samediffsidebar {
+    min-width: 250px;
+    max-width: 250px;
+    min-height: 100%;
+    background-color: #e6e6e6;
+    position: relative;
+}
+
+#samediffsidebar.sidebarhidden {
+    margin-left: -250px;
+}
+
+#samediffcontent {
+    min-height: 100%;
+}
+

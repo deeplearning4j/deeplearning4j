@@ -14,6 +14,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+function toggleSidebar(){
+    $('#samediffsidebar').toggleClass('sidebarhidden');
+}
+
+function samediffSetPage(pageName){
+    console.log("Selected page: " + pageName);
+}
+
+
 nodes = [];
 edges = [];
 
@@ -24,7 +33,8 @@ function fileSelect(evt) {
         file.size, ' bytes, last modified: ',
         file.lastModifiedDate ? file.lastModifiedDate.toLocaleDateString() : 'n/a',
         '</li>');
-    document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+    document.getElementById('selectedfile').innerHTML = "<strong>" + escape(file.name) + "</strong><br>" + file.size + " bytes<br>Modified: " +
+        (file.lastModifiedDate ? file.lastModifiedDate.toLocaleDateString() : 'n/a');
 
     console.log("About to render graph: file " + file.name);
 
@@ -54,6 +64,11 @@ function fileSelect(evt) {
             console.log("Decoded header message: " + decoded[0]);
 
             if (decoded[0] === "graph") {
+                var opCount = 0;
+                var phCount = 0;
+                var varCount = 0;
+                var constCount = 0;
+
                 nodes.length = 0;
                 edges.length = 0;
                 var graph = decoded[1];
@@ -81,6 +96,19 @@ function fileSelect(evt) {
                     var name = v.name();
                     //Add variables/constants/placeholders as a node
                     var vType = v.type();
+
+                    switch(vType){
+                        case nd4j.graph.VarType.CONSTANT:
+                            constCount++;
+                            break;
+                        case nd4j.graph.VarType.PLACEHOLDER:
+                            phCount++;
+                            break;
+                        case nd4j.graph.VarType.VARIABLE:
+                            varCount++;
+                            break;
+                    }
+
                     if(vType === nd4j.graph.VarType.CONSTANT || vType === nd4j.graph.VarType.PLACEHOLDER || vType === nd4j.graph.VarType.VARIABLE ){
                         var dt = dataTypeToString(v.datatype());
                         var shape = varShapeToString(v);
@@ -174,6 +202,7 @@ function fileSelect(evt) {
                 var mapOpNameInteger = new Map();
                 var mapOp = new Map();
                 count = 0;
+                opCount = ops.length;
                 for (var i = 0; i < ops.length; i++) {
                     var o = ops[i];
                     var name = o.name();
@@ -297,6 +326,17 @@ function fileSelect(evt) {
                 }
 
 
+                //Render the side bar:
+                document.getElementById('sidebartop').innerHTML =
+                    "<br><br><strong>File:</strong> " + file.name + "<br>" +
+                    "<strong>Inputs:</strong> \"" + inputs.join("\", \"") + "\"<br>" +
+                    "<strong>Outputs:</strong> \"" + outputs.join("\", \"") + "\"<br>" +
+                    "<strong>Placeholder Count:</strong> " + phCount + "<br>" +
+                    "<strong>Variable Count:</strong> " + varCount + "<br>" +
+                    "<strong>Constant Count:</strong> " + constCount + "<br>" +
+                    "<strong>Op Count:</strong> " + opCount + "<br>";
+
+
             } else if (decoded[0] === "systeminfo") {
 
             } else if (decoded[0] === "startevents") {
@@ -338,12 +378,12 @@ function renderSameDiffGraph() {
     }
 }
 
-samediffgraphlayout = "dagre";
+samediffgraphlayout = "klay";
 klaylayout = "DOWN";
 function setLayout(newLayout){
     //spread( cytoscape );
     if(newLayout === "klay_down"){
-        klaylayout = "DOWN"
+        klaylayout = "DOWN";
         newLayout = "klay";
     } else if(newLayout === "klay_lr"){
         klaylayout = "RIGHT";

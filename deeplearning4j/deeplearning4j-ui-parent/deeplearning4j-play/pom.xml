@@ -309,10 +309,15 @@
 
 
         <!-- WebJars Dependencies -->
+        <!--<dependency>-->
+            <!--<groupId>org.webjars</groupId>-->
+            <!--<artifactId>bootstrap</artifactId>-->
+            <!--<version>2.3.1</version>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>bootstrap</artifactId>
-            <version>2.3.1</version>
+            <version>4.2.1</version>
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>
