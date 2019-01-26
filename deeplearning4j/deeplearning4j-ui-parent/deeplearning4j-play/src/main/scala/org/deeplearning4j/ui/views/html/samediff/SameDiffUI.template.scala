@@ -84,6 +84,11 @@ Seq[Any](format.raw/*1.4*/("""
         <script src="/assets/webjars/cytoscape-klay/3.1.2/cytoscape-klay.js"></script>
         <script src="/assets/webjars/weaverjs/1.2.0/dist/weaver.js"></script>
         <script src="/assets/webjars/cytoscape-spread/3.0.0/cytoscape-spread.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.pie.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.stack.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.resize.min.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.selection.js"></script>
 
 
         <script src="/assets/js/samediff/generated/uigraphevents_generated.js"></script>
@@ -93,6 +98,7 @@ Seq[Any](format.raw/*1.4*/("""
         <script src="/assets/js/samediff/generated/variable_generated.js"></script>
 
         <script src="/assets/js/samediff/samediff-ui.js"></script>
+        <script src="/assets/js/samediff/samediff-plots.js"></script>
         <script src="/assets/js/samediff/flatbuffers-utils.js"></script>
 
         <!-- NavBar - Bootstrap classes -->
@@ -103,10 +109,10 @@ Seq[Any](format.raw/*1.4*/("""
             </button>
             <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                 <div class="navbar-nav">
-                    <a class="nav-item nav-link active" href="#" onclick="samediffSetPage('graph')">Graph</a>
-                    <a class="nav-item nav-link" href="#" onclick="samediffSetPage('plots')">Plots</a>
-                    <a class="nav-item nav-link" href="#" onclick="samediffSetPage('evaluation')">Evaluation</a>
-                    <a class="nav-item nav-link" href="#"onclick="samediffSetPage('performance')">Performance</a>
+                    <a id="sdnavgraph" class="nav-item nav-link active" href="#" onclick="samediffSetPage('graph')">Graph</a>
+                    <a id="sdnavplots" class="nav-item nav-link" href="#" onclick="samediffSetPage('plots')">Plots</a>
+                    <a id="sdnaveval" class="nav-item nav-link" href="#" onclick="samediffSetPage('evaluation')">Evaluation</a>
+                    <a id="sdnavperf" class="nav-item nav-link" href="#"onclick="samediffSetPage('performance')">Performance</a>
                     <a class="nav-item nav-link" href="#"onclick="toggleSidebar()">Toggle Sidebar</a>
                 </div>
             </div>
@@ -133,12 +139,15 @@ Seq[Any](format.raw/*1.4*/("""
                         <label class="btn btn-secondary active" onclick="setLayout('klay_down')">
                             <input type="radio" name="options" id="option1" autocomplete="off" checked>Down</label>
                         <label class="btn btn-secondary" onclick="setLayout('klay_lr')">
-                            <input type="radio" name="options" id="option2" autocomplete="off">Left</label>
+                            <input type="radio" name="options" id="option2" autocomplete="off">Right</label>
                         <label class="btn btn-secondary" onclick="setLayout('dagre')">
                             <input type="radio" name="options" id="option3" autocomplete="off">Alt</label>
                         <label class="btn btn-secondary" onclick="setLayout('cose-bilkent')">
                             <input type="radio" name="options" id="option3" autocomplete="off">Spread</label>
                     </div>
+                    <br>
+                    <br>
+                    <br>
                 </div>
             </div>
 
@@ -152,9 +161,9 @@ Seq[Any](format.raw/*1.4*/("""
         <!-- Execute once on page load -->
         <script>
             document.getElementById('fileselect').addEventListener('change', fileSelect, false);
-            $(document).ready(function () """),format.raw/*131.43*/("""{"""),format.raw/*131.44*/("""
-                """),format.raw/*132.17*/("""renderSameDiffGraph();
-            """),format.raw/*133.13*/("""}"""),format.raw/*133.14*/(""");
+            $(document).ready(function () """),format.raw/*140.43*/("""{"""),format.raw/*140.44*/("""
+                """),format.raw/*141.17*/("""renderSameDiffGraph();
+            """),format.raw/*142.13*/("""}"""),format.raw/*142.14*/(""");
         </script>
     </body>
 </html>
@@ -178,11 +187,11 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Sat Jan 26 21:34:35 AEDT 2019
+                  DATE: Sat Jan 26 23:05:45 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
-                  HASH: c7c650206ba9e8c2a9386830e9ac95c344baf80c
-                  MATRIX: 561->1|657->3|685->5|7780->7071|7810->7072|7857->7090|7922->7126|7952->7127
-                  LINES: 20->1|25->1|26->2|155->131|155->131|156->132|157->133|157->133
+                  HASH: 27640729bbb4828beea10f928d91e70cd1bb41f0
+                  MATRIX: 561->1|657->3|685->5|8398->7689|8428->7690|8475->7708|8540->7744|8570->7745
+                  LINES: 20->1|25->1|26->2|164->140|164->140|165->141|166->142|166->142
                   -- GENERATED --
               */
           

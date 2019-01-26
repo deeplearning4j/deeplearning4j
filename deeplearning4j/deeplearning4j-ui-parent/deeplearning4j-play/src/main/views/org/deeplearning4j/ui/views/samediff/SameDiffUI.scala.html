@@ -60,6 +60,11 @@
         <script src="/assets/webjars/cytoscape-klay/3.1.2/cytoscape-klay.js"></script>
         <script src="/assets/webjars/weaverjs/1.2.0/dist/weaver.js"></script>
         <script src="/assets/webjars/cytoscape-spread/3.0.0/cytoscape-spread.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.pie.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.stack.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.resize.min.js"></script>
+        <script src="/assets/webjars/flot/0.8.3/jquery.flot.selection.js"></script>
 
 
         <script src="/assets/js/samediff/generated/uigraphevents_generated.js"></script>
@@ -69,6 +74,7 @@
         <script src="/assets/js/samediff/generated/variable_generated.js"></script>
 
         <script src="/assets/js/samediff/samediff-ui.js"></script>
+        <script src="/assets/js/samediff/samediff-plots.js"></script>
         <script src="/assets/js/samediff/flatbuffers-utils.js"></script>
 
         <!-- NavBar - Bootstrap classes -->
@@ -79,10 +85,10 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                 <div class="navbar-nav">
-                    <a class="nav-item nav-link active" href="#" onclick="samediffSetPage('graph')">Graph</a>
-                    <a class="nav-item nav-link" href="#" onclick="samediffSetPage('plots')">Plots</a>
-                    <a class="nav-item nav-link" href="#" onclick="samediffSetPage('evaluation')">Evaluation</a>
-                    <a class="nav-item nav-link" href="#"onclick="samediffSetPage('performance')">Performance</a>
+                    <a id="sdnavgraph" class="nav-item nav-link active" href="#" onclick="samediffSetPage('graph')">Graph</a>
+                    <a id="sdnavplots" class="nav-item nav-link" href="#" onclick="samediffSetPage('plots')">Plots</a>
+                    <a id="sdnaveval" class="nav-item nav-link" href="#" onclick="samediffSetPage('evaluation')">Evaluation</a>
+                    <a id="sdnavperf" class="nav-item nav-link" href="#"onclick="samediffSetPage('performance')">Performance</a>
                     <a class="nav-item nav-link" href="#"onclick="toggleSidebar()">Toggle Sidebar</a>
                 </div>
             </div>
@@ -115,6 +121,9 @@
                         <label class="btn btn-secondary" onclick="setLayout('cose-bilkent')">
                             <input type="radio" name="options" id="option3" autocomplete="off">Spread</label>
                     </div>
+                    <br>
+                    <br>
+                    <br>
                 </div>
             </div>
 

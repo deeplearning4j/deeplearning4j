@@ -20,6 +20,26 @@ function toggleSidebar(){
 
 var selectedPage = "graph";
 function samediffSetPage(pageName){
+    $("#sdnavgraph").removeClass("active");
+    $("#sdnavplots").removeClass("active");
+    $("#sdnaveval").removeClass("active");
+    $("#sdnavperf").removeClass("active");
+
+    switch(pageName){
+        case "graph":
+            $("#sdnavgraph").addClass("active");
+            break;
+        case "plots":
+            $("#sdnavplots").addClass("active");
+            break;
+        case "evaluation":
+            $("#sdnaveval").addClass("active");
+            break;
+        case "performance":
+            $("#sdnavperf").addClass("active");
+            break;
+    }
+
     console.log("Selected page: " + pageName);
     selectedPage = pageName;
     renderContent();
@@ -38,20 +58,24 @@ function fileSelect(evt) {
         '</li>');
     document.getElementById('selectedfile').innerHTML = "<strong>" + escape(file.name) + "</strong><br>" + file.size + " bytes<br>Modified: " +
         (file.lastModifiedDate ? file.lastModifiedDate.toLocaleDateString() : 'n/a');
-
     console.log("About to render graph: file " + file.name);
 
+
+    readGraphStructure();
+}
+
+function readGraphStructure(){
     //First: load data
     if (file) {
         var fr = new FileReader();
-        var fileData = new Blob([file]);
+        var fileData = new Blob([file]);            //TODO Don't load the whole file into memory at once!
         fr.readAsArrayBuffer(fileData);
         fr.onload = function () {
-            var arrayBuffer = fr.result
+            var arrayBuffer = fr.result;
             var bytes = new Uint8Array(arrayBuffer);
-            console.log(bytes);
+            //console.log(bytes);
 
-            var lengths = extractHeaders(bytes);
+            var lengths = extractHeaders(bytes, 0);
             var headerLength = lengths[0];
             var contentLength = lengths[1];
 
@@ -100,7 +124,7 @@ function fileSelect(evt) {
                     //Add variables/constants/placeholders as a node
                     var vType = v.type();
 
-                    switch(vType){
+                    switch (vType) {
                         case nd4j.graph.VarType.CONSTANT:
                             constCount++;
                             break;
@@ -112,23 +136,23 @@ function fileSelect(evt) {
                             break;
                     }
 
-                    if(vType === nd4j.graph.VarType.CONSTANT || vType === nd4j.graph.VarType.PLACEHOLDER || vType === nd4j.graph.VarType.VARIABLE ){
+                    if (vType === nd4j.graph.VarType.CONSTANT || vType === nd4j.graph.VarType.PLACEHOLDER || vType === nd4j.graph.VarType.VARIABLE) {
                         var dt = dataTypeToString(v.datatype());
                         var shape = varShapeToString(v);
                         var n = "\"" + name + "\"\n" + varTypeToString(vType) + "\n" + dt + " " + shape;
 
                         var extraLabel = v.uiLabelExtra();
-                        if(extraLabel != null && extraLabel !== ""){
+                        if (extraLabel != null && extraLabel !== "") {
                             n = n + "\n" + extraLabel;
                         }
 
 
-                        if(vType === nd4j.graph.VarType.CONSTANT){
+                        if (vType === nd4j.graph.VarType.CONSTANT) {
                             var constArr = v.constantValue();
-                            if(constArr != null){
-                                if(constArr.shapeLength() === 0 && constArr.bufferLength() > 0){
+                            if (constArr != null) {
+                                if (constArr.shapeLength() === 0 && constArr.bufferLength() > 0) {
                                     var scalar = scalarFromFlatArray(constArr);
-                                    if(scalar != null && scalar !== ""){
+                                    if (scalar != null && scalar !== "") {
                                         n = n + "\nScalar val: " + scalar;
                                     }
                                 }
@@ -139,22 +163,22 @@ function fileSelect(evt) {
                         var nodeObj = {
                             label: n,
                             id: "var-" + name,
-                            name: "var-" +name
+                            name: "var-" + name
                         };
 
                         var renderStyle = "";
-                        if(vType === nd4j.graph.VarType.VARIABLE){
+                        if (vType === nd4j.graph.VarType.VARIABLE) {
                             renderStyle = "uivariable variable";
-                        } else if(vType === nd4j.graph.VarType.PLACEHOLDER){
+                        } else if (vType === nd4j.graph.VarType.PLACEHOLDER) {
                             renderStyle = "uivariable placeholder";
-                        } else if(vType === nd4j.graph.VarType.CONSTANT){
+                        } else if (vType === nd4j.graph.VarType.CONSTANT) {
                             renderStyle = "uivariable constant";
                         }
 
                         nodes.push({data: nodeObj, classes: renderStyle});
 
-                        if(v.inputsForOpLength() > 0){
-                            for(var j=0; j<v.inputsForOpLength(); j++ ){
+                        if (v.inputsForOpLength() > 0) {
+                            for (var j = 0; j < v.inputsForOpLength(); j++) {
                                 var opName = v.inputsForOp(j);
                                 var edgeObj = {
                                     id: "edge_" + name + "_" + j,
@@ -163,14 +187,14 @@ function fileSelect(evt) {
                                     label: ""
                                 };
 
-                                edges.push({data: edgeObj, classes:"opoutputedge"});
+                                edges.push({data: edgeObj, classes: "opoutputedge"});
                             }
                         }
 
                         //Add variable control dependencies:
                         var vcdCount = v.controlDepsLength();
-                        if(vcdCount > 0){
-                            for(var j=0; j<vcdCount; j++ ){
+                        if (vcdCount > 0) {
+                            for (var j = 0; j < vcdCount; j++) {
                                 var vcd = v.controlDeps(j);
 
                                 //2 possibilities: variable is a variable/constant/placeholder: source is from variable node
@@ -178,7 +202,7 @@ function fileSelect(evt) {
                                 var vcdVariable = mapVars.get(vcd);
                                 var sourceName;
                                 var edgeLabel;
-                                if(vcdVariable.type() === nd4j.graph.VarType.ARRAY){
+                                if (vcdVariable.type() === nd4j.graph.VarType.ARRAY) {
                                     //Control dependency: array -> variable/const/placeholder
                                     sourceName = vcdVariable.outputOfOp();
                                     edgeLabel = vcd;    //Don't need to report datatype here, data is not actually used
@@ -193,7 +217,7 @@ function fileSelect(evt) {
                                     target: "var-" + name,
                                     label: edgeLabel
                                 };
-                                edges.push({data: edgeObj, classes:"controldepedge"});
+                                edges.push({data: edgeObj, classes: "controldepedge"});
                             }
                         }
                     }
@@ -215,20 +239,20 @@ function fileSelect(evt) {
 
                     var label = "\"" + name + "\"\n(" + opName + ")";
                     var e = o.uiLabelExtra();
-                    if(e != null && e !== ""){
+                    if (e != null && e !== "") {
                         label = label + "\n" + e;
                     }
 
                     var opclasses = "uiop";
-                    if(opName === "enter"){
+                    if (opName === "enter") {
                         opclasses = opclasses + " openter";
-                    } else if(opName === "exit"){
+                    } else if (opName === "exit") {
                         opclasses = opclasses + " opexit";
-                    } else if(opName === "next_iteration"){
+                    } else if (opName === "next_iteration") {
                         opclasses = opclasses + " opnextiter";
-                    } else if(opName === "switch"){
+                    } else if (opName === "switch") {
                         opclasses = opclasses + " opswitch";
-                    } else if(opName === "merge"){
+                    } else if (opName === "merge") {
                         opclasses = opclasses + " opmerge";
                     }
 
@@ -237,13 +261,13 @@ function fileSelect(evt) {
                         id: name,
                         name: name
                     };
-                    nodes.push({data: nodeObj, classes:opclasses});
+                    nodes.push({data: nodeObj, classes: opclasses});
 
 
                     //Add edges between ops:
                     var ol = o.outputsLength();
-                    if(ol > 0){
-                        for( var j =0; j<ol; j++ ){
+                    if (ol > 0) {
+                        for (var j = 0; j < ol; j++) {
                             var outVarName = o.outputs(j);
                             var outVar = mapVars.get(outVarName);
                             var outVarInputCount = outVar.inputsForOpLength();
@@ -253,15 +277,15 @@ function fileSelect(evt) {
 
                             var dt = dataTypeToString(outVar.datatype());
 
-                            if(outVarInputCount > 0){
-                                for( var k=0; k<outVarInputCount; k++ ){
+                            if (outVarInputCount > 0) {
+                                for (var k = 0; k < outVarInputCount; k++) {
                                     var opName = outVar.inputsForOp(k);
                                     var edgeObj = {
                                         source: name,
                                         target: opName,
                                         label: outVarName + " (" + dt + ")"
                                     };
-                                    edges.push({data: edgeObj, classes:"opoutputedge"});
+                                    edges.push({data: edgeObj, classes: "opoutputedge"});
                                 }
                             }
                         }
@@ -269,8 +293,8 @@ function fileSelect(evt) {
 
                     //Add control dependencies:
                     var cdLength = o.controlDepsLength();
-                    if(cdLength > 0){
-                        for( var j=0; j<cdLength; j++ ) {
+                    if (cdLength > 0) {
+                        for (var j = 0; j < cdLength; j++) {
                             var varName = o.controlDeps(j);
                             //If placeholder, variable or constant, make edge from variable node
                             //If array, make edge from op node
@@ -279,7 +303,7 @@ function fileSelect(evt) {
                             var dt = dataTypeToString(variable.datatype());
                             var vType = variable.type();
                             var edgeObj;
-                            if(vType === nd4j.graph.VarType.CONSTANT || vType === nd4j.graph.VarType.PLACEHOLDER || vType === nd4j.graph.VarType.VARIABLE ){
+                            if (vType === nd4j.graph.VarType.CONSTANT || vType === nd4j.graph.VarType.PLACEHOLDER || vType === nd4j.graph.VarType.VARIABLE) {
                                 edgeObj = {
                                     source: "var-" + varName,
                                     target: opName,
@@ -293,7 +317,7 @@ function fileSelect(evt) {
                                     label: "CD: " + varName + " (" + dt + ")"
                                 };
                             }
-                            edges.push({data: edgeObj, classes:"controldepedge"});
+                            edges.push({data: edgeObj, classes: "controldepedge"});
                         }
                     }
 
@@ -301,11 +325,11 @@ function fileSelect(evt) {
                 }
 
                 //Also add the outputs:
-                for( var i=0; i<outputs.length; i++ ){
+                for (var i = 0; i < outputs.length; i++) {
                     var outName = outputs[i];
                     var v = mapVars.get(outName);
                     var opName = v.outputOfOp();
-                    if(opName != null){
+                    if (opName != null) {
                         var dt = dataTypeToString(v.datatype());
                         var shape = varShapeToString(v);
                         var n = "Output: \"" + outName + "\"\n" + varTypeToString(vType) + "\n" + dt + " " + shape;
@@ -313,10 +337,10 @@ function fileSelect(evt) {
                         var nodeObj = {
                             label: n,
                             id: "out-" + name,
-                            name: "out-" +name
+                            name: "out-" + name
                         };
 
-                        nodes.push({data: nodeObj, classes:"uivariable output"});
+                        nodes.push({data: nodeObj, classes: "uivariable output"});
 
                         //Also add edge:
                         var edgeObj = {
@@ -324,7 +348,7 @@ function fileSelect(evt) {
                             source: opName,
                             target: "out-" + name
                         };
-                        edges.push({data: edgeObj, classes:"opoutputedge"});
+                        edges.push({data: edgeObj, classes: "opoutputedge"});
                     }
                 }
 
@@ -348,8 +372,90 @@ function fileSelect(evt) {
 
             renderContent();
         };
-        // console.log("Number of bytes: " + bytes.length());
     }
+}
+
+function readPlotsData(){
+
+    if (file) {
+        var fr = new FileReader();
+        var fileData = new Blob([file]);        //TODO Don't load the whole file into memory at once!
+        fr.readAsArrayBuffer(fileData);
+        fr.onload = function () {
+            var arrayBuffer = fr.result;
+            var bytes = new Uint8Array(arrayBuffer);
+            //console.log(bytes);
+
+            var currentOffset = 0;
+            var foundStartEvents = false;
+            var numBytes = bytes.length;
+            while(currentOffset < numBytes) {
+
+                var lengths = extractHeaders(bytes, currentOffset);
+                var headerLength = lengths[0];
+                var contentLength = lengths[1];
+
+                //TODO is there a way to do this with views, not slices?
+                var headerSlice = bytes.slice(currentOffset + 8, currentOffset + 8 + headerLength);
+                var headerBuffer = new flatbuffers.ByteBuffer(headerSlice);
+                var header = nd4j.graph.UIStaticInfoRecord.getRootAsUIStaticInfoRecord(headerBuffer);
+
+                currentOffset += 8 + headerLength + contentLength;
+
+                if(header.infoType() == nd4j.graph.UIInfoType.START_EVENTS){
+                    foundStartEvents = true;
+                    break;
+                }
+            }
+
+            var x = [];
+            var y = [];
+            var label = "<label here>";
+
+            if(foundStartEvents){
+                //"Start events" marker found... we *might* have some data to plot
+
+                while(currentOffset < numBytes) {
+
+                    var lengths = extractHeaders(bytes, currentOffset);
+                    var headerLength = lengths[0];
+                    var contentLength = lengths[1];
+
+                    var headerSlice = bytes.slice(currentOffset + 8, currentOffset + 8 + headerLength);
+                    var headerBuffer = new flatbuffers.ByteBuffer(headerSlice);
+                    var header = nd4j.graph.UIEvent.getRootAsUIEvent(headerBuffer);
+
+                    //TODO only slice if it's something we want to decode...
+                    var contentSlice = bytes.slice(currentOffset + 8 + headerLength, currentOffset + 8 + headerLength + contentLength);
+                    var contentBuffer = new flatbuffers.ByteBuffer(contentSlice);
+
+                    var evtType = header.eventType();
+                    if(evtType === nd4j.graph.UIEventType.ADD_NAME){
+                        var content = nd4j.graph.UIAddName.getRootAsUIAddName(contentBuffer);
+                        console.log("Decoded ADD_NAME event: " + content.name());
+                        label = content.name();
+                    } else if(evtType === nd4j.graph.UIEventType.SCALAR){
+                        var content = nd4j.graph.FlatArray.getRootAsFlatArray(contentBuffer);
+                        var scalar = scalarFromFlatArray(content);
+                        var dt = dataTypeToString(content.dtype());
+                        console.log("Decoded SCALAR event: " + scalar + " - " + dt);
+
+                        x.push(x.length);
+                        y.push(scalar);
+                    }
+
+                    //TODO other types!
+
+                    currentOffset += 8 + headerLength + contentLength;
+                }
+            }
+
+            document.getElementById("samediffcontent").innerHTML = "<div id=\"testchart\" class=\"center\" style=\"height: 300px; max-width:750px\" ></div>";
+            var element = $("#testchart");
+            renderLineChart(element, label, x, y);
+        }
+    }
+
 }
 
 function renderContent(){
@@ -360,6 +466,8 @@ function renderContent(){
             renderSameDiffGraph();
             break;
         case "plots":
+            readPlotsData();
+            break;
         case "evaluation":
         case "performance":
             //TODO
