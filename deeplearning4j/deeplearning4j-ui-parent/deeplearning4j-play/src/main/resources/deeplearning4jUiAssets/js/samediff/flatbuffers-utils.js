@@ -15,10 +15,9 @@
  ******************************************************************************/
 
 
-
-function extractHeaders(/*Uint8Array*/ bytes){
-    var header1a = bytes.slice(0,4);
-    var header1b = bytes.slice(4,8);
+function extractHeaders(/*Uint8Array*/ bytes, offset){
+    var header1a = bytes.slice(offset+0,offset+4);
+    var header1b = bytes.slice(offset+4,offset+8);
     var headerLength = byteArrayToInt(header1a);
     var contentLength = byteArrayToInt(header1b);
     return [headerLength, contentLength];
@@ -201,7 +200,7 @@ function scalarFromFlatArray(/*FlatArray*/ flatArray){
 
     //TODO check if actually scalar...
     var dt = flatArray.dtype();
-    switch (dataTypeByte){
+    switch (dt){
         //Skip hard to decode types for now
         case nd4j.graph.DataType.FLOAT8:
         case nd4j.graph.DataType.QINT8:
@@ -222,7 +221,7 @@ function scalarFromFlatArray(/*FlatArray*/ flatArray){
     }
 
     var out;
-    switch (dataTypeByte){
+    switch (dt){
         case nd4j.graph.DataType.BOOL:
             out = (dv.getUint8(0) === 0 ? "false" : "true");
             break;

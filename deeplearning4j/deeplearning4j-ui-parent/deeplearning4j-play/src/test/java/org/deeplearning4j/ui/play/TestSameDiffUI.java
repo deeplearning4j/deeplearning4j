@@ -51,9 +51,11 @@ public class TestSameDiffUI {
 
         //Append a number of events
         lfw.registerEventName("accuracy");
-        for( int iter=0; iter<10; iter++) {
-            long t = System.currentTimeMillis();
-            lfw.writeScalarEvent("accuracy", t, iter, 0, 0.5 + 0.1 * iter);
+        long t = System.currentTimeMillis();
+        for( int iter=0; iter<50; iter++) {
+            double d = Math.cos(0.1*iter);
+            d *= d;
+            lfw.writeScalarEvent("accuracy", t + iter, iter, 0, d);
         }
 
         UIServer uiServer = UIServer.getInstance();
