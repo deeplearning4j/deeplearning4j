@@ -209,7 +209,7 @@ namespace simdOps {
 
 
 	template <typename X, typename Y, typename Z>
-	class LogPoisonLossFull {
+	class LogPoissonLossFull {
 
 	public:
 		op_def static Z op(X z, Y c) {
@@ -236,7 +236,7 @@ namespace simdOps {
 	};
 
 	template <typename X, typename Y, typename Z>
-	class LogPoisonLoss {
+	class LogPoissonLoss {
 
 	public:
 		op_def static Z op(X z, Y c) {

@@ -35,8 +35,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotEquals;
 
 @Slf4j
 public class LossOpValidation extends BaseOpValidation {
@@ -46,7 +46,7 @@ public class LossOpValidation extends BaseOpValidation {
 
     public static final Set<String> NO_BP_YET = new HashSet<>();
     static {
-        NO_BP_YET.addAll(Arrays.asList("hinge", "huber", "l2_loss", "poisson", "mpwse"));
+        NO_BP_YET.addAll(Arrays.asList("l2_loss"));
     }
 
     @Test
@@ -59,9 +59,11 @@ public class LossOpValidation extends BaseOpValidation {
 
         int totalRun = 0;
         for (String fn : new String[]{
+                "log_poisson", "log_poisson_full",
                 "absdiff", "cosine", "hinge", "huber", "log", "mse",
                 "sigmoidxent", "sigmoidxent_smooth", "softmaxxent", "softmaxxent_smooth", "mpwse",
-                "sparsesoftmax"}) {
+                "sparsesoftmax"
+                }) {
 
 
             for(String weights : new String[]{"none", "scalar", "perExample", "perOutput"}) {
@@ -73,7 +75,7 @@ public class LossOpValidation extends BaseOpValidation {
 
                 for (LossReduce reduction : LossReduce.values()) {
 
-                    if(fn.equals("mpwse") && (reduction != LossReduce.MEAN_BY_WEIGHT || weights.equals("perOutput"))) //LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT)
+                    if(fn.equals("mpwse") && (reduction != LossReduce.NONE || weights.equals("perOutput"))) //LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT)
                         continue;   //MPWSE only provides scalar output - i.e., no other reduction modes. And only none/scalar/per-example weights
 
                     if((fn.equals("softmaxxent") || fn.equals("softmaxxent_smooth")) && reduction == LossReduce.NONE)
@@ -157,8 +159,8 @@ public class LossOpValidation extends BaseOpValidation {
                         case "huber":
                             //https://en.wikipedia.org/wiki/Huber_loss
                             double delta = 1.0;
-                            INDArray absDiff = Transforms.abs(labelsArr.sub(predictionsArr));
                             INDArray diff = labelsArr.sub(predictionsArr);
+                            INDArray absDiff = Transforms.abs(diff);
                             INDArray lte = absDiff.lte(delta).castTo(DataType.DOUBLE);
                             INDArray gt = absDiff.gt(delta).castTo(DataType.DOUBLE);
                             expOut = diff.mul(diff).mul(0.5).muli(lte);
@@ -175,6 +177,22 @@ public class LossOpValidation extends BaseOpValidation {
                             INDArray log1p = Transforms.log(predictionsArr.rsub(1.0).add(eps), true);
                             expOut = labelsArr.mul(logP).addi(labelsArr.rsub(1).mul(log1p)).negi();
                             loss = sd.lossLog("loss", labels, predictions, w, reduction, eps);
+                            break;
+                        case "log_poisson":
+                            predictionsArr = Transforms.log(Transforms.abs(predictionsArr));
+                            labelsArr = Transforms.abs(labelsArr);
+                            expOut = Transforms.exp(predictionsArr).sub(labelsArr.mul(predictionsArr));
+                            loss = sd.lossLogPoisson("loss", labels, predictions, w, reduction);
+                            break;
+                        case "log_poisson_full":
+                            predictionsArr = Transforms.log(Transforms.abs(predictionsArr));
+                            labelsArr = Transforms.abs(labelsArr);
+                            expOut = Transforms.exp(predictionsArr)
+                                    .sub(labelsArr.mul(predictionsArr))
+                                    .add(labelsArr.mul(Transforms.log(labelsArr)))
+                                    .sub(labelsArr)
+                                    .add(Transforms.log(labelsArr.mul(Math.PI * 2)).mul(0.5));
+                            loss = sd.lossLogPoissonFull("loss", labels, predictions, w, reduction);
                             break;
                         case "mse":
                             //To match TF, this is actually sum of squares - 1/numExamples (prediction-label)^2
@@ -219,22 +237,24 @@ public class LossOpValidation extends BaseOpValidation {
                             break;
                         case "mpwse":
                             expOut = Nd4j.create(labelsArr.size(0));
-                            int pairCount = 0;
-                            for( int i=0; i<labelsArr.size(0); i++ ){
-                                for( int j=0; j<labelsArr.size(1); j++){
-                                    for(int k=j+1; k<labelsArr.size(1); k++){
-                                        double d1 = predictionsArr.getDouble(i, j);
-                                        double d2 = predictionsArr.getDouble(i, k);
-                                        double d3 = labelsArr.getDouble(i, j);
-                                        double d4 = labelsArr.getDouble(i, k);
-                                        double add = ((d1-d2)-(d3-d4));
-                                        add *= add;
-                                        expOut.putScalar(i, expOut.getDouble(i) + add);
-                                        if(i == 0)
-                                            pairCount++;
+                            double n = (double) labelsArr.size(1);
+                            for(int example = 0; example < labelsArr.size(0); example++){
+                                for(int i = 0; i < labelsArr.size(1); i++){
+                                    for(int k = 0; k < labelsArr.size(1); k++){
+                                        if(i != k){
+                                            double y_i = predictionsArr.getDouble(example, i);
+                                            double y_k = predictionsArr.getDouble(example, k);
+                                            double q_i = labelsArr.getDouble(example, i);
+                                            double q_k = labelsArr.getDouble(example, k);
+                                            double add = Math.pow(((y_i-y_k)-(q_i-q_k)), 2);
+                                            expOut.putScalar(example, expOut.getDouble(example) + add);
+                                        }
                                     }
                                 }
                             }
+
+                            expOut.muli(1/((n*(n-1)) / 2));
+
                             loss = sd.lossMeanPairwiseSquaredError("loss", labels, predictions, w);
                             break;
                         case "sparsesoftmax":
@@ -401,6 +421,64 @@ public class LossOpValidation extends BaseOpValidation {
 
             String err = OpValidation.validate(tc);
             assertNull(err);
+        }
+    }
+
+    @Test
+    public void testNonZeroResult() {
+        INDArray predictions = Nd4j.rand(org.nd4j.graph.DataType.DOUBLE, 10, 4);
+        INDArray w = Nd4j.scalar(1.0);
+        INDArray label = Nd4j.rand(org.nd4j.graph.DataType.DOUBLE, 10, 5);
+        final INDArray zero = Nd4j.scalar(0.);
+        final INDArray zeroBp = Nd4j.zerosLike(predictions);
+
+        final String[] lossOps = {
+                "absolute_difference_loss",
+                "cosine_distance_loss",
+                "mean_pairwssqerr_loss",
+                "mean_sqerr_loss",
+                "sigm_cross_entropy_loss",
+                "hinge_loss",
+                "huber_loss",
+                "log_loss",
+                "softmax_cross_entropy_loss"
+        };
+
+        for (String lossOp : lossOps) {
+            for (int reductionMode : new int[]{1, 2, 3}) {
+                INDArray out = Nd4j.scalar(0.0);
+                CustomOp op = DynamicCustomOp.builder(lossOp)
+                        .addInputs(predictions, w, label)
+                        .addOutputs(out)
+                        .addIntegerArguments(
+                                reductionMode,
+                                0 // for cosine_distance_loss
+                        )
+                        .addFloatingPointArguments(1.0) // for sigm_cross_entropy_loss
+                        .build();
+                Nd4j.getExecutioner().exec(op);
+
+                assertNotEquals(lossOp + " returns zero result. Reduction Mode " + reductionMode, out, zero);
+            }
+        }
+
+        final String[] lossBPOps = {"absolute_difference_loss", "cosine_distance_loss", "sigm_cross_entropy_loss", "log_loss", "mean_sqerr_loss", "sigm_cross_entropy_loss", "softmax_cross_entropy_loss"};
+        for (String lossOp : lossBPOps) {
+            for (int reductionMode : new int[]{1, 2, 3}) {
+                INDArray outBP = Nd4j.zerosLike(predictions);
+                CustomOp op = DynamicCustomOp.builder(lossOp + "_grad")
+                        .addInputs(predictions, w, label)
+                        .addOutputs(outBP, Nd4j.zerosLike(w), Nd4j.zerosLike(label))
+                        .addIntegerArguments(
+                                reductionMode,
+                                0 // for cosine_distance_loss
+                        )
+                        .addFloatingPointArguments(1.0) // for sigm_cross_entropy_loss
+                        .build();
+                Nd4j.getExecutioner().exec(op);
+
+                assertNotEquals(lossOp + "_grad returns zero result. Reduction Mode " + reductionMode, outBP, zeroBp);
+            }
         }
     }
 }
