@@ -34,6 +34,7 @@ import org.threadly.concurrent.PriorityScheduler;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -196,6 +197,67 @@ public class VocabConstructor<T extends SequenceElement> {
         return result;
     }
 
+    public void processDocument(AbstractCache<T> targetVocab, Sequence<T> document,
+                                AtomicLong finalCounter, AtomicLong loopCounter) {
+        try {
+            Map<String, AtomicLong> seqMap = new HashMap<>();
+            //  log.info("Sequence length: ["+ document.getElements().size()+"]");
+
+            if (fetchLabels && document.getSequenceLabels() != null) {
+                for (T labelWord : document.getSequenceLabels()) {
+                    if (!targetVocab.hasToken(labelWord.getLabel())) {
+                        labelWord.setSpecial(true);
+                        labelWord.markAsLabel(true);
+                        labelWord.setElementFrequency(1);
+
+                        targetVocab.addToken(labelWord);
+                    }
+                }
+            }
+
+            List<String> tokens = document.asLabels();
+            for (String token : tokens) {
+                if (stopWords != null && stopWords.contains(token))
+                    continue;
+                if (token == null || token.isEmpty())
+                    continue;
+
+                if (!targetVocab.containsWord(token)) {
+                    T element = document.getElementByLabel(token);
+                    element.setElementFrequency(1);
+                    element.setSequencesCount(1);
+                    targetVocab.addToken(element);
+                    //                    elementsCounter.incrementAndGet();
+                    loopCounter.incrementAndGet();
+
+                    // if there's no such element in tempHolder, it's safe to set seqCount to 1
+                    seqMap.put(token, new AtomicLong(0));
+                } else {
+                    targetVocab.incrementWordCount(token);
+
+                    // if element exists in tempHolder, we should update it seqCount, but only once per sequence
+                    if (!seqMap.containsKey(token)) {
+                        seqMap.put(token, new AtomicLong(1));
+                        T element = targetVocab.wordFor(token);
+                        element.incrementSequencesCount();
+                    }
+
+                    if (index != null) {
+                        if (document.getSequenceLabel() != null) {
+                            index.addWordsToDoc(index.numDocuments(), document.getElements(), document.getSequenceLabel());
+                        } else {
+                            index.addWordsToDoc(index.numDocuments(), document.getElements());
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            finalCounter.incrementAndGet();
+        }
+    }
     /**
      * This method scans all sources passed through builder, and returns all words as vocab.
      * If TargetVocabCache was set during instance creation, it'll be filled too.
@@ -249,28 +311,19 @@ public class VocabConstructor<T extends SequenceElement> {
                 parsedCount.addAndGet(document.size());
                 tempHolder.incrementTotalDocCount();
                 execCounter.incrementAndGet();
-                VocabRunnable runnable = new VocabRunnable(tempHolder, document, finCounter, loopCounter);
 
-                executorService.execute(runnable);
+                if (allowParallelBuilder) {
+                    executorService.execute(new VocabRunnable(tempHolder, document, finCounter, loopCounter));
+                    // as we see in profiler, this lock isn't really happen too often
+                    // we don't want too much left in tail
 
-                // if we're not in parallel mode - wait till this runnable finishes
-                if (!allowParallelBuilder) {
-                    try {
-                        runnable.awaitDone();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException(e);
+                    while (execCounter.get() - finCounter.get() > numProc) {
+                        ThreadUtils.uncheckedSleep(1);
                     }
                 }
-
-                // as we see in profiler, this lock isn't really happen too often
-                // we don't want too much left in tail
-
-                while (execCounter.get() - finCounter.get() > numProc) {
-                    ThreadUtils.uncheckedSleep(1);
+                else  {
+                    processDocument(tempHolder, document, finCounter, loopCounter);
                 }
-
-
 
                 sequences++;
                 if (seqCount.get() % 100000 == 0) {
@@ -558,7 +611,7 @@ public class VocabConstructor<T extends SequenceElement> {
         private final Sequence<T> document;
         private final AbstractCache<T> targetVocab;
         private final AtomicLong loopCounter;
-        private boolean done;
+        private AtomicBoolean done = new AtomicBoolean(false);
 
         public VocabRunnable(@NonNull AbstractCache<T> targetVocab, @NonNull Sequence<T> sequence,
                         @NonNull AtomicLong finalCounter, @NonNull AtomicLong loopCounter) {
@@ -568,75 +621,15 @@ public class VocabConstructor<T extends SequenceElement> {
             this.loopCounter = loopCounter;
         }
 
-        public void awaitDone() throws InterruptedException {
-            synchronized (this) {
-                while (! done) {
-                    this.wait();
-                }
-            }
-        }
-
-	@Override
+	    @Override
         public void run() {
-            try {
-                Map<String, AtomicLong> seqMap = new HashMap<>();
-                //  log.info("Sequence length: ["+ document.getElements().size()+"]");
-
-                if (fetchLabels && document.getSequenceLabels() != null) {
-                    for (T labelWord : document.getSequenceLabels()) {
-                        if (!targetVocab.hasToken(labelWord.getLabel())) {
-                            labelWord.setSpecial(true);
-                            labelWord.markAsLabel(true);
-                            labelWord.setElementFrequency(1);
-
-                            targetVocab.addToken(labelWord);
-                        }
-                    }
-                }
-
-                List<String> tokens = document.asLabels();
-                for (String token : tokens) {
-                    if (stopWords != null && stopWords.contains(token))
-                        continue;
-                    if (token == null || token.isEmpty())
-                        continue;
-
-                    if (!targetVocab.containsWord(token)) {
-                        T element = document.getElementByLabel(token);
-                        element.setElementFrequency(1);
-                        element.setSequencesCount(1);
-                        targetVocab.addToken(element);
-                        //                    elementsCounter.incrementAndGet();
-                        loopCounter.incrementAndGet();
-
-                        // if there's no such element in tempHolder, it's safe to set seqCount to 1
-                        seqMap.put(token, new AtomicLong(0));
-                    } else {
-                        targetVocab.incrementWordCount(token);
-
-                        // if element exists in tempHolder, we should update it seqCount, but only once per sequence
-                        if (!seqMap.containsKey(token)) {
-                            seqMap.put(token, new AtomicLong(1));
-                            T element = targetVocab.wordFor(token);
-                            element.incrementSequencesCount();
-                        }
-
-                        if (index != null) {
-                            if (document.getSequenceLabel() != null) {
-                                index.addWordsToDoc(index.numDocuments(), document.getElements(), document.getSequenceLabel());
-                            } else {
-                                index.addWordsToDoc(index.numDocuments(), document.getElements());
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            } finally {
-                finalCounter.incrementAndGet();
-                synchronized (this) {
-                    this.notifyAll();
-                }
+             try {
+                 processDocument(targetVocab, document, finalCounter, loopCounter);
+             } catch (Exception e) {
+                 throw new RuntimeException(e);
+             }
+             finally {
+                done.set(true);
             }
         }
     }

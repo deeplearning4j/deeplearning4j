@@ -58,6 +58,9 @@ namespace nd4j {
 		template<typename T>
         math_def inline T nd4j_min(T val1, T val2);
 
+		template <typename T>
+		math_def inline bool nd4j_eq(T val1, T val2, double eps);
+
 		template<typename T, typename Z>
 		math_def inline Z nd4j_re(T val1, T val2);
 
@@ -532,6 +535,31 @@ namespace nd4j {
 			return val1 < val2 ? val1 : val2;
 		}
 
+		template <typename T>
+		math_def inline bool nd4j_eq(T d1, T d2, double eps) {
+			if (nd4j::math::nd4j_isinf<T>(d1) && nd4j::math::nd4j_isinf<T>(d2)) {
+				if (d1 > 0 && d2 > 0)
+					return true;
+				else if (d1 < 0 && d2 < 0)
+					return true;
+				else
+					return false;
+			}
+
+			auto diff = static_cast<double>(nd4j::math::nd4j_abs<T>(d1 - d2));
+
+
+			// works well except in the range of very large numbers
+			if (diff <= eps)
+				return true;
+
+			// Knuth approach
+			// works well except in the range of very small numbers
+			if (diff <= nd4j::math::nd4j_max<double>(nd4j::math::nd4j_abs<double>(static_cast<double>(d1)), nd4j::math::nd4j_abs<double>(static_cast<double>(d2))) * eps)
+				return true;
+
+			return false;
+		}
 
 		template <typename X, typename Z>
         math_def inline Z nd4j_ceil(X val) {

@@ -1,0 +1,138 @@
+[
+  {
+    "selector": ".uiop",
+    "style": {
+      "label": "data(label)",
+      "width": 30,
+      "height": 15,
+      "text-valign": "center",
+      "text-halign": "center",
+      "text-wrap": "wrap",
+      "font-size":6,
+      "shape": "roundrectangle"
+    }
+  },
+  {
+    "selector": ".uivariable",
+    "style": {
+      "label": "data(label)",
+      "width": 6,
+      "height": 6,
+      "text-valign": "center",
+      "text-halign": "left",
+      "text-wrap": "wrap",
+      "font-size":5,
+      "text-margin-x": -4
+    }
+  },
+  {
+    "selector": ".opoutputedge",
+    "style": {
+      "label": "data(label)",
+      "curve-style": "bezier",
+      "width": 1.5,
+      "line-color": "#ccc",
+      "target-arrow-shape": "triangle",
+      "source-arrow-shape": "none",
+      "source-arrow-color": "#A9A9A9",
+      "target-arrow-color": "#A9A9A9",
+      "arrow-scale": 0.7,
+      "text-wrap": "wrap",
+      "font-size":5,
+      "text-margin-x": -4,
+      "edge-text-rotation": "autorotate"
+    }
+  },
+  {
+    "selector": ".placeholder",
+    "style": {
+      "background-color": "#d9d9d9",
+      "border-width": 1,
+      "border-color": "#000000"
+    }
+  },
+  {
+    "selector": ".variable",
+    "style": {
+      "background-color": "#b3e6ff"
+    }
+  },
+  {
+    "selector": ".constant",
+    "style": {
+      "background-color": "#d6f5d6"
+    }
+  },
+  {
+    "selector": ".output",
+    "style": {
+      "background-color": "#ffb366",
+      "border-width": 1,
+      "border-color": "#000000"
+    }
+  },
+  {
+    "selector": ".openter",
+    "style": {
+      "background-color": "#8cd98c",
+      "border-width": 1,
+      "border-color": "#808080",
+      "border-style": "solid"
+    }
+  },
+  {
+    "selector": ".opexit",
+    "style": {
+      "background-color": "#ffcc99",
+      "border-width": 1,
+      "border-color": "#808080",
+      "border-style": "solid"
+    }
+  },
+  {
+    "selector": ".opnextiter",
+    "style": {
+      "background-color": "#ffff66",
+      "border-width": 1,
+      "border-color": "#808080",
+      "border-style": "solid"
+    }
+  },
+  {
+    "selector": ".opswitch",
+    "style": {
+      "background-color": "#ff6666",
+      "border-width": 1,
+      "border-color": "#808080",
+      "border-style": "solid"
+    }
+  },
+  {
+    "selector": ".opmerge",
+    "style": {
+      "background-color": "#d98cd9",
+      "border-width": 1,
+      "border-color": "#808080",
+      "border-style": "solid"
+    }
+  },
+  {
+    "selector": ".controldepedge",
+    "style": {
+      "label": "data(label)",
+      "curve-style": "bezier",
+      "width": 1.5,
+      "line-color": "#cce6ff",
+      "line-style": "dashed",
+      "target-arrow-shape": "triangle",
+      "source-arrow-shape": "none",
+      "source-arrow-color": "#cce6ff",
+      "target-arrow-color": "#cce6ff",
+      "arrow-scale": 0.7,
+      "text-wrap": "wrap",
+      "font-size":5,
+      "text-margin-x": -4,
+      "edge-text-rotation": "autorotate"
+    }
+  }
+]

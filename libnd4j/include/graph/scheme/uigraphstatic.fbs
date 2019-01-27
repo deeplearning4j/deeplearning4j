@@ -1,0 +1,73 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+include "utils.fbs";		//For: IntPair
+include "variable.fbs";		//For: VarType
+include "array.fbs";		//For: DataType
+
+namespace nd4j.graph;
+
+enum UIInfoType:byte {
+	GRAPH_STRUCTURE,
+	SYTEM_INFO,
+	START_EVENTS		//An enum that means "we're done encoding static info, hereafter log contains only event pairs"
+}
+
+//Used only as a type/information header, so we know what to expect next (and hence how to decode it)
+table UIStaticInfoRecord {
+	infoType:UIInfoType;
+}
+
+table UISystemInfo {
+	//TODO - standard hardware information: CPU, GPU(s), total memory, etc.
+	// Also software info.
+	physicalCores:int;
+}
+
+
+//A representation of the graph structure for visual rendering
+table UIGraphStructure {
+    inputs:[string];
+    inputsPair:[IntPair];
+    outputs:[string];
+    variables:[UIVariable];
+    ops:[UIOp];
+}
+
+table UIVariable {
+    id:IntPair;                     //Existing IntPair class
+    name:string;
+    type:VarType;                   //Use existing VarType:     VARIABLE, CONSTANT, ARRAY, PLACEHOLDER
+	datatype:DataType;
+	shape:[long];
+	controlDeps:[string];			//Input control dependencies: variable x -> this
+    outputOfOp:string;              //Null for placeholders/constants. For array type SDVariables, the name of the op it's an output of
+    inputsForOp:[string];           //Used as input for specific op. Mainly for quick lookup on front end
+    controlDepsForOp:[string];      //if a op control dependency (x -> opY) exists, then "opY" will be in this list
+    controlDepsForVar:[string];     //if a variable control dependency (x -> varY) exists, then "varY" will be in this list
+    gradientVariable:string;        //Variable (if any) corresponding to gradient of this variable
+	uiLabelExtra:string;			//Optional extra information (line(s)) to show in UI for variable label
+	constantValue:FlatArray;		//Array for the constant, usually for displaying scalars. May not be encoded for larger constants
+}
+
+table UIOp {
+	name:string;					//Unique name of this specific op
+	opName:string;					//Name of the op ("linspace", "add" etc)
+	inputs:[string];				//Name of input variables
+	outputs:[string];				//Name of output variables
+	controlDeps:[string];			//Name of control dependencies
+	uiLabelExtra:string;			//Optional extra information (line(s)) to show in UI for op label. Example: frame for enter/exit ops
+}

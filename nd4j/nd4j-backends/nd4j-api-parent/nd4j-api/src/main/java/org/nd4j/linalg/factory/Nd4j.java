@@ -50,6 +50,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
 import org.nd4j.linalg.api.ndarray.*;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -121,14 +122,11 @@ public class Nd4j {
     public final static String ORDER_KEY = "ndarray.order";
     public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
     public final static String SPARSE_NDARRAY_FACTORY_CLASS = "sparsendarrayfactory.class";
-    public final static String COPY_OPS = "ndarray.copyops";
     public final static String OP_EXECUTIONER = "opexec";
     public final static String OP_FACTORY = "opfactory";
     public final static String DISTRIBUTION = "dist";
     public final static String INSTRUMENTATION = "instrumentation";
     public final static String INSTRUMENTATION_CLASS = "instrumentation.class";
-    public final static String RESOURCE_MANGER_ON = "resourcemanager_state";
-    public final static String EXECUTION_MODE = "opexec.mode";
     public final static String SHAPEINFO_PROVIDER = "shapeinfoprovider";
     public final static String SPARSEINFO_PROVIDER = "sparseinfoprovider";
     public final static String CONSTANT_PROVIDER = "constantsprovider";
@@ -142,21 +140,13 @@ public class Nd4j {
     @Deprecated
     public static final String LOG_INIT_ENV_PROPERTY = ND4JSystemProperties.LOG_INITIALIZATION;
 
-    //execution mode for element wise operations
-    public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
-
     //the datatype used for allocating buffers
     protected static DataType dtype = DataType.FLOAT;
     //the allocation mode for the heap
     public static DataBuffer.AllocationMode alloc = DataBuffer.AllocationMode.HEAP;
     public static char ORDER = 'c';
     public static double EPS_THRESHOLD = 1e-5;
-    //number of elements to print in begin and end
-    public static int MAX_ELEMENTS_PER_SLICE = 3;
-    public static int MAX_SLICES_TO_PRINT = 3;
-    public static boolean copyOnOps = true;
     public static boolean shouldInstrument = false;
-    public static boolean resourceManagerOn = false;
     private static boolean allowsOrder = false;
     public static boolean compressDebug = false;
     public static volatile boolean preventUnpack;
@@ -164,7 +154,6 @@ public class Nd4j {
     public static RandomFactory randomFactory;
     private static MemoryWorkspaceManager workspaceManager;
     private static final AtomicInteger numThreads = new AtomicInteger(-1);
-    private static final AtomicBoolean skipTheadSafetyChecks = new AtomicBoolean(false);
     private static AtomicReference<DataType> defaultFloatingPointDataType;
 
     protected static Class<? extends MemoryWorkspaceManager> workspaceManagerClazz;
@@ -5981,11 +5970,7 @@ public class Nd4j {
             }
 
             compressDebug = pp.toBoolean(COMPRESSION_DEBUG);
-            copyOnOps = pp.toBoolean(COPY_OPS, true);
             shouldInstrument = pp.toBoolean(INSTRUMENTATION);
-            resourceManagerOn = pp.toBoolean(RESOURCE_MANGER_ON);
-            executionMode = pp.toString(EXECUTION_MODE, "java").equals("java") ? OpExecutioner.ExecutionMode.JAVA
-                    : OpExecutioner.ExecutionMode.NATIVE;
             ORDER = pp.toChar(ORDER_KEY, NDArrayFactory.C);
 
             affinityManagerClazz = (Class<? extends BasicAffinityManager>) Class
@@ -6051,7 +6036,6 @@ public class Nd4j {
             DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
 
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
-            getExecutioner().setExecutionMode(executionMode);
 
             if (isFallback()) {
                 fallbackMode.set(true);
@@ -6748,14 +6732,6 @@ public class Nd4j {
         numThreads.set(numthreads);
     }
 
-    public static void skipThreadSafetyChecks(boolean reallySkip) {
-        skipTheadSafetyChecks.set(reallySkip);
-    }
-
-    public static boolean areThreadSafetyChecksSkipped() {
-        return skipTheadSafetyChecks.get();
-    }
-
     public static DataType defaultFloatingPointType() {
         return defaultFloatingPointDataType.get();
     }
@@ -7408,5 +7384,23 @@ public class Nd4j {
 
     public static boolean isExperimentalMode() {
         return getExecutioner().isExperimentalMode();
+    }
+
+    /**
+     * Execute the operation and return the result
+     *
+     * @param op the operation to execute
+     */
+    public static INDArray exec(Op op){
+        return getExecutioner().exec(op);
+    }
+
+    /**
+     * Execute the operation and return the result
+     *
+     * @param op the operation to execute
+     */
+    public static INDArray[] exec(CustomOp op){
+        return getExecutioner().exec(op);
     }
 }

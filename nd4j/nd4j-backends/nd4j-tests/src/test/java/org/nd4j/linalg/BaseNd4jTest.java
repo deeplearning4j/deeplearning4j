@@ -23,7 +23,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.config.ND4JEnvironmentVars;
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -58,7 +61,7 @@ public abstract class BaseNd4jTest {
         this.name = name;
 
         //Suppress ND4J initialization - don't need this logged for every test...
-        System.setProperty(Nd4j.LOG_INIT_ENV_PROPERTY, "false");
+        System.setProperty(ND4JSystemProperties.LOG_INITIALIZATION, "false");
         System.gc();
     }
 
@@ -181,8 +184,6 @@ public abstract class BaseNd4jTest {
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());
-        Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
-        Nd4j.MAX_SLICES_TO_PRINT = -1;
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         Nd4j.getExecutioner().enableDebugMode(false);
         Nd4j.getExecutioner().enableVerboseMode(false);
@@ -198,8 +199,6 @@ public abstract class BaseNd4jTest {
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());
-        Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
-        Nd4j.MAX_SLICES_TO_PRINT = -1;
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         Nd4j.getExecutioner().enableDebugMode(false);
         Nd4j.getExecutioner().enableVerboseMode(false);

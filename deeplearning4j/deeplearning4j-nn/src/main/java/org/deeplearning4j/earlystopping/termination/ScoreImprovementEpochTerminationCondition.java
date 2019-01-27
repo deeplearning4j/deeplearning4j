@@ -39,7 +39,8 @@ public class ScoreImprovementEpochTerminationCondition implements EpochTerminati
         this.maxEpochsWithNoImprovement = maxEpochsWithNoImprovement;
     }
 
-    public ScoreImprovementEpochTerminationCondition(int maxEpochsWithNoImprovement, double minImprovement) {
+    public ScoreImprovementEpochTerminationCondition(@JsonProperty("maxEpochsWithNoImprovement") int maxEpochsWithNoImprovement,
+                                                     @JsonProperty("minImprovement") double minImprovement) {
         this.maxEpochsWithNoImprovement = maxEpochsWithNoImprovement;
         this.minImprovement = minImprovement;
     }

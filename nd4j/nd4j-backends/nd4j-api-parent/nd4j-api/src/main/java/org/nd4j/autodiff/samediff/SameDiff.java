@@ -734,7 +734,7 @@ public class SameDiff {
                 return variablesArrays.containsKey(varName);
             case ARRAY:
                 long tid = Thread.currentThread().getId();
-                return sessions.containsKey(tid) && sessions.get(tid).contains(varName, InferenceSession.OUTER_FRAME, 0);
+                return sessions.containsKey(tid) && sessions.get(tid).contains(varName, InferenceSession.OUTER_FRAME, 0, null);
             case CONSTANT:
                 return constantArrays.containsKey(varName);
             case PLACEHOLDER:
@@ -771,7 +771,7 @@ public class SameDiff {
                 InferenceSession s = sessions.get(Thread.currentThread().getId());
                 if(s == null)
                     return null;
-                return s.get(varName, InferenceSession.OUTER_FRAME, 0, false);
+                return s.get(varName, InferenceSession.OUTER_FRAME, 0, null, false);
             case PLACEHOLDER:
                 long tid = Thread.currentThread().getId();
                 if(placeholdersPerThread.get(tid) == null || !placeholdersPerThread.get(tid).containsKey(varName))
@@ -829,7 +829,7 @@ public class SameDiff {
             case ARRAY:
                 // FIXME: remove this before release
                 val session = sessions.get(Thread.currentThread().getId());
-                val varId = session.newVarId(variable.getVarName(), AbstractSession.OUTER_FRAME, 0);
+                val varId = session.newVarId(variable.getVarName(), AbstractSession.OUTER_FRAME, 0, null);
                 session.getNodeOutputs().put(varId, arr);
                 //throw new UnsupportedOperationException("Cannot associate array with SDVariable of type ARRAY");
             case PLACEHOLDER:

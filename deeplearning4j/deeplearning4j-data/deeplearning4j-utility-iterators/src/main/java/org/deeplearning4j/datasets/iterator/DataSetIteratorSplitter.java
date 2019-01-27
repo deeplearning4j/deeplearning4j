@@ -253,6 +253,7 @@ public class DataSetIteratorSplitter {
 
             @Override
             public DataSet next() {
+                counter.incrementAndGet();
                 return backedIterator.next();
             }
         };

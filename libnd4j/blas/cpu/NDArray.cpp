@@ -3461,8 +3461,14 @@ template void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDAr
     template <typename T>
     T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l) const {
         //return (*this)(i, j, k);
-        if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
-            throw std::invalid_argument("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
+        if (rankOf() != 4)
+            throw std::invalid_argument("NDArray::e(i,j,k,l): NDArray isn't rank 4");
+
+
+        if (i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3]) {
+            nd4j_printf("Bad indices are: [%lld, %lld, %lld, %lld]\n", i, j, k, l);
+            throw std::invalid_argument("NDArray::e(i,j,k,l): one of input indexes is out of array length!");
+        }
 
         auto xType = this->dataType();
         Nd4jLong coords[4] = {i, j, k, l};

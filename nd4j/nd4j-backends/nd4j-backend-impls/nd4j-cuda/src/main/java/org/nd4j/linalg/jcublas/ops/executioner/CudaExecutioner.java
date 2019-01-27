@@ -631,7 +631,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         checkForCompression(op);
 
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpreted as vectors)
-        if ( executionMode() == ExecutionMode.JAVA || op instanceof CopyOp) {
+        if ( op instanceof CopyOp) {
             // we dont' care about op.Z sync state, since it'll be overwritten
             if (op.x() != null)
                 AtomicAllocator.getInstance().synchronizeHostData(op.x());

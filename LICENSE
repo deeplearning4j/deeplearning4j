@@ -200,7 +200,6 @@ Apache License
    See the License for the specific language governing permissions and
    limitations under the License.
 
-
 ##########################
 
 Keras code
@@ -247,3 +246,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+##########################
+
+OpenCSV Code
+
+CSVParser: https://github.com/deeplearning4j/deeplearning4j/blob/master/datavec/datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/SerializableCSVParser.java
+
+Apache 2.0 License
+
+All contributions by Bytecode Pty Ltd.
+Copyright 2005 Bytecode Pty Ltd.
+All rights reserved.

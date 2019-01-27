@@ -3386,29 +3386,8 @@ namespace simdOps {
         }
 
         op_def static Z op(X d1, X d2, Z *extraParamsRef) {
-        	if (nd4j::math::nd4j_isinf<X>(d1) && nd4j::math::nd4j_isinf<X>(d2)) {
-        	    if (d1 > 0 && d2 > 0)
-        	    	return static_cast<Z>(0.f);
-        	    else if (d1 < 0 && d2 < 0)
-					return static_cast<Z>(0.f);
-				else
-					return static_cast<Z>(1.f);
-        	}
-
-            Z eps = nd4j::math::nd4j_abs<Z>(extraParamsRef[2]);
-            Z diff = static_cast<Z>(nd4j::math::nd4j_abs<X>(d1 - d2));
-
-
-    		// works well except in the range of very large numbers
-    		if (diff <= eps)
-    	    	return static_cast<Z>(0.f);
-
-    	    // Knuth approach
-    	    // works well except in the range of very small numbers
-		    if (diff <= nd4j::math::nd4j_max<Z>(nd4j::math::nd4j_abs<Z>(static_cast<Z>(d1)), nd4j::math::nd4j_abs<Z>(static_cast<Z>(d2))) * eps)
-		    	return static_cast<Z>(0.f);
-
-        	return static_cast<Z>(1.f);
+			double eps = nd4j::math::nd4j_abs<double>(extraParamsRef[2]);
+			return static_cast<Z>(!nd4j::math::nd4j_eq<X>(d1, d2, eps));
         }
 
 

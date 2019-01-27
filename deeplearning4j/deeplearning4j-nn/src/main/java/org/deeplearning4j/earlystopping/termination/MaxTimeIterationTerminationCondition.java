@@ -16,10 +16,14 @@
 
 package org.deeplearning4j.earlystopping.termination;
 
+import lombok.Data;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+
 import java.util.concurrent.TimeUnit;
 
 /**Terminate training based on max time.
  */
+@Data
 public class MaxTimeIterationTerminationCondition implements IterationTerminationCondition {
 
     private long maxTimeAmount;
@@ -27,7 +31,7 @@ public class MaxTimeIterationTerminationCondition implements IterationTerminatio
     private long initializationTime;
     private long endTime;
 
-    public MaxTimeIterationTerminationCondition(long maxTimeAmount, TimeUnit maxTimeUnit) {
+    public MaxTimeIterationTerminationCondition(@JsonProperty("maxTimeAmount") long maxTimeAmount, @JsonProperty("maxTimeUnit") TimeUnit maxTimeUnit) {
         if (maxTimeAmount <= 0 || maxTimeUnit == null)
             throw new IllegalArgumentException(
                             "Invalid maximum training time: " + "amount = " + maxTimeAmount + " unit = " + maxTimeUnit);
