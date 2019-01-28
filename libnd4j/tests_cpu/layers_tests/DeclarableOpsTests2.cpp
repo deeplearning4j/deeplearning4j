@@ -2394,197 +2394,60 @@ TEST_F(DeclarableOpsTests2, log_loss_test13) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test1) {
-    
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4});
-    auto predictions = NDArrayFactory::create<double>('c', {2,3,4});
-    auto weights = NDArrayFactory::create<double>('c', {2,3,4});
-                                            
-    predictions.linspace(0.5, 0.5);
-    labels.linspace(1);
-    weights.assign(0.5);    
- 
+    auto labels = NDArrayFactory::create<double>('c', {1,3}, {0., 0.5, 1.});
+    auto predictions = NDArrayFactory::create<double>('c', {1,3}, {1., 1., 1.});
+    auto weights = NDArrayFactory::create<double>('c', {1,1}, {1});
+    auto expected = NDArrayFactory::create<double>('c', {1,1}, {1.});
+
     nd4j::ops::mean_pairwssqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *result = results->at(0);            
+    auto *result = results->at(0);
 
-    ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 78., 1e-5);    
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test2) {
-    
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4});
-    auto predictions = NDArrayFactory::create<double>('c', {2,3,4});
-    auto weights = NDArrayFactory::create<double>('c', {1,3,1});
-                                            
-    predictions.linspace(0.5, 0.5);
-    labels.linspace(1);
-    weights.assign(0.5);    
- 
+    auto labels = NDArrayFactory::create<double>('c', {10,4}, {-0.5533444483384939, -0.4045807428083095, -0.38990808632111873, -1.3367815555936828, 2.2110825342567204, -0.3322538938773163, 0.5683588435736076, 1.401524673423209, -0.2216208609234102, -0.23645194877057543, -1.9319189398422172, 0.6106128799796062, 1.6973842275926025, -2.8306371397325553E-4, -1.1550401544465256, -0.08357706614294765, -0.27784822018757077, 0.8290894318337857, 1.6484476009013025, -0.7752524785358668, -0.9700596207063842, 3.0809371469543207, -0.23684959888998405, 0.22403535560739518, 0.6146150452128438, -1.1250088686147994, -0.5915314787415693, -0.0944090155356556, 0.7995514825959854, -1.2290496239142903, -1.8329592004926936, -0.1694821152623061, -1.7614978090471403, 0.07929168376086736, 0.4086255139492943, 2.045562727396195, -0.48701853719962834, 0.10304152395720723, -0.8993147347502636, -0.49078404206110715});
+    auto predictions = NDArrayFactory::create<double>('c', {10,4}, {-0.5982871220907984, 1.2010665656903237, 0.30243355682445544, -0.2070857400459659, 0.6962389393180044, -0.5878034128580758, 0.8325626284025988, -0.3555823702782838, -0.7099759151434476, 1.7971905051128672, -1.1018498592680859, 0.008705918349147959, -1.713038986676157, 0.5029671900704719, 0.7491261275031563, -0.34800067781360444, -1.3529065441284513, -0.6075230577852321, -0.6153583973120907, 1.6014780660677996, 0.6444219215516616, 0.7925830851904783, -0.5006063079380708, 1.7812300901376552, 0.4736193941708224, 1.411502849640833, 0.9555142545037492, -0.03936687661890644, 1.31661624967917, 0.7344531724786305, 0.8388550872918745, 0.7010030219905558, -0.5442944240155373, 0.4437344837841118, -1.7502823958671712, -1.9271369730241665, 0.9256612923554498, 1.9065401403827893, 0.42450175148842717, -0.11783183865542822});
+    auto weights = NDArrayFactory::create<double>('c', {1,1}, {1});
+    auto expected = NDArrayFactory::create<double>('c', {10,1}, {1.9665822560405073, 3.806679563402927, 6.185624212589066, 20.237895345263905, 16.739700814450472, 13.655430201400929, 6.473256392322658, 3.9337379694106325, 22.509455553531062, 1.4741234749089487});
+
     nd4j::ops::mean_pairwssqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *result = results->at(0);            
+    auto *result = results->at(0);
 
-    ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 19.5, 1e-5);    
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test3) {
-    
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4});
-    auto predictions = NDArrayFactory::create<double>('c', {2,3,4});
-    auto weights = NDArrayFactory::create<double>('c', {1,1,4});
-                                            
-    predictions.linspace(0.5, 0.5);
-    labels.linspace(1);
-    weights.assign(0.5);    
- 
+    auto labels = NDArrayFactory::create<double>('c', {10,4}, {0.9165069946629816, 0.166426191704143, 0.13873357227527264, -0.5986162145785378, 0.4763504550662989, 1.2259816058633732, -0.4653205175596491, -1.7447031523970766, 1.349525448316014, 2.433089865629357, -2.54858150221601, -0.6060282162911894, 0.2625377104613349, -0.5007107584102752, 0.9576065700956302, -0.35787770401703584, -0.2608532564720665, 0.65688909921908, -0.1705876431948587, 1.2052884124800949, -0.976783296084278, 1.1163504624016534, -0.10545986164581109, -1.0632271027867568, 0.26460250034147065, -0.2299030354616135, -0.418989869909565, 0.7954060747536896, 0.37934127200736545, 0.8550487997440007, 0.2984909806904042, 0.1329065864221682, 1.478600294413247, 0.05421279873635542, -1.0552978360622536, -0.743808639782604, -1.3371851696151362, 2.7752972493355963, -1.6107187893743549, 1.5030902829432997});
+    auto predictions = NDArrayFactory::create<double>('c', {10,4}, {-3.398114657004427, 0.40587455906092945, 1.587706448479039, 0.27394335709083156, 1.0463122023764637, -0.6552570653663903, -0.26929204111727345, -2.710461824817806, 0.9141296064806023, -0.7632270851454939, -0.4077235519855459, 0.5555107559107472, -0.6776140976423888, 1.2422270521180823, 0.2372445100636733, 0.08522757123963924, -2.708523129389936, 0.09738215252575103, -0.8797837670498875, 0.8714091607391934, -0.628958978867591, 0.49380147969660415, -0.6663578349373824, 0.14570184758600965, -0.4710388511314244, 0.7708214742640788, 0.06836525442683238, -1.2786368797129386, -0.5077556003990912, 0.45383439418987664, 1.1686877788409553, -0.3078567969393852, -2.2375730522738198, 1.0108200459611192, 0.21955367964983963, 1.2268011099696847, 0.48061693077695455, -0.5306373077054981, 1.5005367299570744, -2.1005486985463966});
+    auto weights = NDArrayFactory::create<double>('c', {10,1}, {0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0, 4.0, 4.0});
+    auto expected = NDArrayFactory::create<double>('c', {10,1}, {0.0, 0.0, 21.748459867092496, 6.090581568657439, 7.51315897553838, 5.999534225166869, 22.58050883748054, 6.8600435676788605, 107.5976928688877, 191.56864939172544});
+
     nd4j::ops::mean_pairwssqerr_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *result = results->at(0);            
+    auto *result = results->at(0);
 
-    ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 26.0, 1e-5);    
-
-    delete results;
-}
-
-
-///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test4) {
-    
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4});
-    auto predictions = NDArrayFactory::create<double>('c', {2,3,4});
-    auto weights = NDArrayFactory::create<double>('c', {2,1,1});
-                                            
-    predictions.linspace(0.5, 0.5);
-    labels.linspace(1);
-    weights.assign(0.5);    
- 
-    nd4j::ops::mean_pairwssqerr_loss op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    auto *result = results->at(0);            
-
-    ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 6.5, 1e-5);    
-
-    delete results;
-}
-
-///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test5) {
-    
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4});
-    auto predictions = NDArrayFactory::create<double>('c', {2,3,4});
-    auto weights = NDArrayFactory::create<double>('c', {1,1});
-                                            
-    predictions.linspace(0.5, 0.5);
-    labels.linspace(1);
-    weights.assign(0.5);    
- 
-    nd4j::ops::mean_pairwssqerr_loss op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    auto *result = results->at(0);            
-
-    ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 6.5, 1e-5);    
-
-    delete results;
-}
-
-///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test6) {
-    
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4});
-    auto predictions = NDArrayFactory::create<double>('c', {2,3,4});
-    auto weights = NDArrayFactory::create<double>('c', {2,3,1});
-                                            
-    predictions.linspace(0.5, 0.5);
-    labels.linspace(1);
-    weights.assign(0.5);    
- 
-    nd4j::ops::mean_pairwssqerr_loss op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    auto *result = results->at(0);            
-
-    ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 19.5, 1e-5);    
-
-    delete results;
-}
-
-///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test7) {
-    
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4});
-    auto predictions = NDArrayFactory::create<double>('c', {2,3,4});
-    auto weights = NDArrayFactory::create<double>('c', {2,1,4});
-                                            
-    predictions.linspace(0.5, 0.5);
-    labels.linspace(1);
-    weights.assign(0.5);    
- 
-    nd4j::ops::mean_pairwssqerr_loss op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    auto *result = results->at(0);            
-
-    ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 26., 1e-5);    
-
-    delete results;
-}
-
-///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test8) {
-    
-    auto labels = NDArrayFactory::create<double>('c', {2,3,4});
-    auto predictions = NDArrayFactory::create<double>('c', {2,3,4});
-    auto weights = NDArrayFactory::create<double>('c', {2,3,4});
-                                            
-    predictions.linspace(0.5, 0.5);
-    labels.linspace(1);
-    weights.assign(0.5);    
-    weights.p(0, 0.);
-    weights.p(1, 0.);
-    weights.p(2, 0.);
-    weights.p(3, 0.);    
- 
-    nd4j::ops::mean_pairwssqerr_loss op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    auto *result = results->at(0);            
-
-    ASSERT_TRUE(result->isScalar());    
-    ASSERT_NEAR(result->e<double>(0), 7.4285583, 1e-4);    
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
 }
