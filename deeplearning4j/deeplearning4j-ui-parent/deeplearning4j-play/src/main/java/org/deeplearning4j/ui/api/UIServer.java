@@ -19,6 +19,7 @@ package org.deeplearning4j.ui.api;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.ui.play.PlayUIServer;
+import org.nd4j.linalg.function.Function;
 
 import java.util.List;
 
@@ -38,9 +39,27 @@ public abstract class UIServer {
      * @return UI instance for this JVM
      */
     public static synchronized UIServer getInstance() {
-        if (uiServer == null) {
-            PlayUIServer playUIServer = new PlayUIServer();
-            playUIServer.runMain(new String[] {"--uiPort", String.valueOf(PlayUIServer.DEFAULT_UI_PORT)});
+        return getInstance(false, null);
+    }
+
+    /**
+     * Get (and, initialize if necessary) the UI server.
+     * Singleton pattern - all calls to getInstance() will return the same UI instance.
+     * @param multiSession in multi-session mode, multiple training sessions can be visualized in separate browser tabs.
+     *                     <br/>URL path will include session ID as a parameter, i.e.: /train becomes /train/:sessionId
+     * @param statsStorageProvider function that returns a StatsStorage containing the given session ID.
+     *                             <br/>Use this to auto-attach StatsStorage if an unknown session ID is passed
+     *                             as URL path parameter in multi-session mode, or leave it {@code null}.
+     * @return UI instance for this JVM
+     */
+    public static synchronized UIServer getInstance(boolean multiSession, Function<String, StatsStorage> statsStorageProvider) {
+        if (uiServer== null) {
+            PlayUIServer playUIServer = new PlayUIServer(PlayUIServer.DEFAULT_UI_PORT, multiSession);
+            playUIServer.setMultiSession(multiSession);
+            if (statsStorageProvider != null) {
+                playUIServer.autoAttachStatsStorageBySessionId(statsStorageProvider);
+            }
+            playUIServer.runMain(new String[] {});
             uiServer = playUIServer;
         }
         return uiServer;

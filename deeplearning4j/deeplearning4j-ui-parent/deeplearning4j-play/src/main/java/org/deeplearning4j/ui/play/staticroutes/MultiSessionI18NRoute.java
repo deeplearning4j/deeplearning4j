@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,32 +14,25 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.ui.play.misc;
+package org.deeplearning4j.ui.play.staticroutes;
 
-import play.libs.F;
+import org.deeplearning4j.ui.i18n.I18NProvider;
 import play.mvc.Result;
 
 import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
+
+import static play.mvc.Results.ok;
 
 /**
- * Utility methods for Routing
+ * Route for multi-session internationalization setting
  *
- * @author Alex Black
+ * @author Tamas Fenyvesi
  */
-public class FunctionUtil {
+public class MultiSessionI18NRoute implements BiFunction<String, String, Result> {
 
-    public static F.Function0<Result> function0(Supplier<Result> supplier) {
-        return supplier::get;
+    @Override
+    public Result apply(String sessionId, String languageCode) {
+        I18NProvider.getInstance(sessionId).setDefaultLanguage(languageCode);
+        return ok();
     }
-
-    public static <T> F.Function<T, Result> function(Function<T, Result> function) {
-        return function::apply;
-    }
-
-    public static <T,U> F.Function2<T, U, Result> biFunction(BiFunction<T, U, Result> function) {
-        return function::apply;
-    }
-
 }

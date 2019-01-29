@@ -23,12 +23,14 @@ import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.i18n.I18NResource;
+import org.nd4j.linalg.function.Supplier;
 
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import static play.mvc.Results.ok;
 import static play.mvc.Results.redirect;
 
 /**
@@ -36,6 +38,23 @@ import static play.mvc.Results.redirect;
  * @author Alex Black
  */
 public class DefaultModule implements UIModule {
+    private boolean multiSession;
+    private final Supplier<String> addressSupplier;
+
+    public DefaultModule() {
+        this(false, null);
+    }
+
+    /**
+     *
+     * @param multiSession multi-session mode
+     * @param addressSupplier supplier for server address (server address in PlayUIServer gets initialized after modules)
+     */
+    public DefaultModule(boolean multiSession, Supplier<String> addressSupplier) {
+        this.multiSession = multiSession;
+        this.addressSupplier = addressSupplier;
+    }
+
     @Override
     public List<String> getCallbackTypeIDs() {
         return Collections.emptyList();
@@ -45,7 +64,10 @@ public class DefaultModule implements UIModule {
     public List<Route> getRoutes() {
         //TODO
         //        Route r = new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> ok(org.deeplearning4j.ui.views.html.defaultPage.DefaultPage.apply()));
-        Route r = new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train/overview"));
+        Route r = multiSession ? new Route("/", HttpMethod.GET, FunctionType.Supplier,
+                () -> ok("UI server is in multi-session mode. You can find a training session at "
+                        + addressSupplier.get() + "/train/:sessionId (See console for attached training session ID.)"))
+                : new Route("/", HttpMethod.GET, FunctionType.Supplier, () -> redirect("/train/overview"));
 
         return Collections.singletonList(r);
     }
