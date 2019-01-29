@@ -18,6 +18,7 @@ package org.deeplearning4j.models.sequencevectors.transformers.impl.iterables;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -25,8 +26,9 @@ import org.deeplearning4j.text.documentiterator.AsyncLabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelledDocument;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -59,8 +61,9 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         this.allowMultithreading = allowMultithreading;
         this.stringBuffer = new LinkedBlockingQueue<>(512);
 
-        threads = new TokenizerThread[allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors(), 2) : 1];
-
+        //threads = new TokenizerThread[allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors(), 2) : 1];
+        ExecutorService executorService = Executors.newFixedThreadPool(allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors(), 2) : 1);
+        List<Future<Sequence<VocabWord>>> futureList = new ArrayList<Future<Sequence<VocabWord>>>();
         try {
             int cnt = 0;
             while (cnt < 256) {
@@ -69,8 +72,17 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
                 if (before)
                     underlyingHas = this.iterator.hasNextDocument();
 
-                if (underlyingHas)
+                if (underlyingHas) {
                     stringBuffer.put(this.iterator.nextDocument());
+                    FutureTask<Sequence<VocabWord>> task = new FutureTask<>(new Callable<Sequence<VocabWord>>() {
+                        @Override
+                        public Sequence<VocabWord> call() throws Exception {
+                            Sequence<VocabWord> sequence = sentenceTransformer.transformToSequence(stringBuffer.take().getContent());
+                            return sequence;
+                        }
+                    });
+                    futureList.add((Future<Sequence<VocabWord>>)executorService.submit(task));
+                }
                 else
                     cnt += 257;
 
@@ -80,12 +92,25 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
             //
         }
 
-        for (int x = 0; x < threads.length; x++) {
+        for (val result : futureList) {
+            try {
+                buffer.put(result.get());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+
+        executorService.shutdown();
+
+
+
+            /*for (int x = 0; x < threads.length; x++) {
             threads[x] = new TokenizerThread(x, transformer, stringBuffer, buffer, processing);
             threads[x].setDaemon(true);
             threads[x].setName("ParallelTransformer thread " + x);
-            threads[x].start();
-        }
+            threads[x].start();*/
     }
 
     @Override
