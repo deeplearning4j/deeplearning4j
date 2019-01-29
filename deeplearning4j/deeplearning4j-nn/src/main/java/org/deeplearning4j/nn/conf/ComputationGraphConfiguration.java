@@ -21,10 +21,13 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
@@ -661,6 +664,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected boolean allowDisconnected = false;
         protected boolean allowNoOutput = false;
         protected boolean validateOutputConfig = true;
+        protected boolean validateTbpttConfig = true;
 
         public GraphBuilder(NeuralNetConfiguration.Builder globalConfiguration) {
             this.globalConfiguration = globalConfiguration;
@@ -993,6 +997,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Enabled by default. If enabled, an exception will be throw when using the (invalid) combination of truncated
+         * backpropagation through time (TBPTT) with either a GlobalPoolingLayer or LastTimeStepLayer.<br>
+         * It is possible to disable this validation to allow what is almost certainly an invalid configuration to be used,
+         * however this is not recommended.
+         *
+         * @param validate Whether TBPTT validation should be performed
+         */
+        public GraphBuilder validateTbpttConfig(boolean validate){
+            this.validateTbpttConfig = validate;
+            return this;
+        }
+
+        /**
          * For the (perhaps partially constructed) network configuration, return a map of activation sizes for each
          * layer and vertex in the graph.<br>
          * Note 1: The network configuration may be incomplete, but the inputs have been added to the layer already.<br>
@@ -1100,6 +1117,22 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     if (e.getValue() instanceof LayerVertex) {
                         Layer l = ((LayerVertex) e.getValue()).getLayerConf().getLayer();
                         OutputLayerUtil.validateOutputLayer(e.getKey(), l); //No-op for non output/loss layers
+                    }
+                }
+            }
+
+            if(backpropType == BackpropType.TruncatedBPTT && validateTbpttConfig){
+                //Check for invalid combination - tbptt plus LastTimeStepLayer or
+                for(Map.Entry<String,GraphVertex> e : vertices.entrySet()){
+                    GraphVertex gv = e.getValue();
+                    Layer l = (gv instanceof LayerVertex ? ((LayerVertex)gv).getLayerConf().getLayer() : null);
+                    if(gv instanceof LastTimeStepVertex || (l != null && (l instanceof LastTimeStep || l instanceof GlobalPoolingLayer))){
+                        String s = (l == null ? gv.getClass().getName() : l.getClass().getName());
+                        String n = e.getKey();
+                        throw new IllegalStateException("Invalid network configuration detected: Truncated backpropagation through time (TBPTT)" +
+                                " cannot be used with layer \"" + n + "\" of type " + s + ": TBPTT is incompatible with this layer type (which is designed " +
+                                "to process entire sequences at once, and does support the type of sequence segments that TPBTT uses).\n" +
+                                "This check can be disabled using validateTbpttConfig(false) but this is not recommended.");
                     }
                 }
             }
