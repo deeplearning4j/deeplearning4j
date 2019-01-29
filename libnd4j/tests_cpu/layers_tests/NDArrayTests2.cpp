@@ -615,7 +615,7 @@ TEST_F(NDArrayTest2, Test_DType_Conversion_1) {
     ASSERT_TRUE(x.isSameShape(xf));
     ASSERT_TRUE(x.equalsTo(xf));
 
-    delete xf;
+    delete xf; 
     delete xd;
 }
 
