@@ -146,12 +146,12 @@ public class TFGraphTestAllSameDiff {
     @Before
     public void setup() {
         Nd4j.setDataType(DataType.FLOAT);
+        Nd4j.getExecutioner().enableDebugMode(false);
+        Nd4j.getExecutioner().enableVerboseMode(false);
     }
 
     @After
     public void tearDown() {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(true);
     }
 
     @Parameterized.Parameters(name="{2}")
@@ -179,8 +179,6 @@ public class TFGraphTestAllSameDiff {
     @Test//(timeout = 25000L)
     public void testOutputOnly() throws Exception {
         Nd4j.create(1);
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         if (SKIP_SET.contains(modelName)) {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;
