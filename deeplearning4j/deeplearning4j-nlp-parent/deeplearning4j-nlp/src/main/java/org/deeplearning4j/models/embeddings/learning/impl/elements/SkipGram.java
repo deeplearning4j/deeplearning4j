@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -31,6 +32,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateSkipGram;
+import org.nd4j.linalg.api.ops.impl.nlp.SkipGramRound;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
@@ -106,10 +108,11 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             }
         }
 
-        this.expTable = new DeviceLocalNDArray(Nd4j.create(((InMemoryLookupTable<T>) lookupTable).getExpTable()));
         this.syn0 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn0());
         this.syn1 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1());
         this.syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
+        this.expTable = new DeviceLocalNDArray(Nd4j.create(((InMemoryLookupTable<T>) lookupTable).getExpTable(),
+                                               new long[]{((InMemoryLookupTable<T>) lookupTable).getExpTable().length}, syn0.get().dataType()));
         this.table = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getTable());
 
 
@@ -250,22 +253,22 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         double score = 0.0;
 
         int[] idxSyn1 = null;
-        int[] codes = null;
+        byte[] codes = null;
         if (configuration.isUseHierarchicSoftmax()) {
             idxSyn1 = new int[w1.getCodeLength()];
-            codes = new int[w1.getCodeLength()];
+            codes = new byte[w1.getCodeLength()];
             for (int i = 0; i < w1.getCodeLength(); i++) {
                 int code = w1.getCodes().get(i);
                 int point = w1.getPoints().get(i);
                 if (point >= vocabCache.numWords() || point < 0)
                     continue;
 
-                codes[i] = code;
+                codes[i] = (byte)code;
                 idxSyn1[i] = point;
             }
         } else {
             idxSyn1 = new int[0];
-            codes = new int[0];
+            codes = new byte[0];
         }
 
 
@@ -284,19 +287,26 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         //log.info("VocabWords: {}; lastWordIndex: {}; syn1neg: {}", vocabCache.numWords(), lastWord.getIndex(), syn1Neg.get().rows());
 
-        AggregateSkipGram sg = new AggregateSkipGram(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(),
+        /*AggregateSkipGram sg = new AggregateSkipGram(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(),
                         lastWord.getIndex(), idxSyn1, codes, (int) negative, target, vectorLength, alpha,
                         nextRandom.get(), vocabCache.numWords(), inferenceVector);
-        nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-
         if (!isInference) {
             batches.get().add(sg);
             if (batches.get().size() > 4096) {
                 Nd4j.getExecutioner().exec(batches.get());
                 batches.get().clear();
             }
-        } else
+        } else {
             Nd4j.getExecutioner().exec(sg);
+        }*/
+
+        nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
+
+        val sg = new SkipGramRound(lastWord.getIndex(), syn0.get(), syn1.get(), expTable.get(), idxSyn1, codes,
+                                   alpha, nextRandom.longValue(),
+                                   inferenceVector != null ? inferenceVector :Nd4j.empty(syn0.get().dataType()));
+        Nd4j.getExecutioner().exec(sg);
+
 
         return score;
     }

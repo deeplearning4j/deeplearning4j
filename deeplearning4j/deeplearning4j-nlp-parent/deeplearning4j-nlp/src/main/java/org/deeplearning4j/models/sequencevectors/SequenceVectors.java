@@ -1059,6 +1059,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.buffer = new LinkedBlockingQueue<>(limitUpper);
         }
 
+        // Preserve order of input sequences to gurantee order of output tokens
         @Override
         public void run() {
             isRunning.set(true);
