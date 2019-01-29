@@ -185,68 +185,35 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_1) {
 
     LaunchContext lc(stream, nullptr, nullptr);
     NativeOpExecutioner::execPairwiseTransform(&lc, pairwise::Add, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr);
+    z.tickWriteDevice();
     auto res = cudaStreamSynchronize(*stream);
     ASSERT_EQ(0, res);
-    //double* localBuffer = ;
-    cudaMemcpy(z.buffer(), z.specialBuffer(), z.lengthOf() * z.sizeOfT(), cudaMemcpyDeviceToHost);
-    res = cudaStreamSynchronize(*stream);
-    ASSERT_EQ(0, res);
-    x.printBuffer("X = ");
-    y.printBuffer("Y = ");
-    z.printBuffer("Result out");
 
-    //
-    // cudaFree(devBufferPtrX);
-    //cudaFree(devBufferPtrZ);
-    //cudaFree(devShapePtrX);
-
-    for (int e = 0; e < z.lengthOf(); e++) {
+    for (int e = 0; e < z.lengthOf(); e++) 
         ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
-    }
 }
 
 //////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, TestAdd_2) {
     // allocating host-side arrays
-    auto x = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
-    auto y = NDArrayFactory::create<double>('c', { 5 }, { 1, 2, 3, 4, 5});
-    auto z = NDArrayFactory::create<double>('c', { 5 });
+    NDArray x('c', { 5 }, { 1, 2, 3, 4, 5});
+    NDArray y('c', { 5 }, { 1, 2, 3, 4, 5});
+    NDArray z('c', { 5 }, nd4j::DataType::DOUBLE);
 
-    auto exp = NDArrayFactory::create<double>('c', { 5 }, { 2, 4, 6, 8, 10 });
-
-    // making raw buffers
-    //Nd4jPointer devBufferPtrX, devBufferPtrZ, devShapePtrX;
-    //cudaError_t res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrX), x.lengthOf() * x.sizeOfT());
-    //ASSERT_EQ(0, res);
-    //res = cudaMalloc(reinterpret_cast<void **>(&devBufferPtrZ), x.lengthOf() * x.sizeOfT());
-    //ASSERT_EQ(0, res);
-    //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
-    //ASSERT_EQ(0, res);
+    NDArray exp('c', { 5 }, { 2, 4, 6, 8, 10 });
 
     Nd4jPointer nativeStream = (Nd4jPointer)malloc(sizeof(cudaStream_t));
     CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream", sizeof(cudaStream_t));
     cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
     auto stream = reinterpret_cast<cudaStream_t *>(&nativeStream);
-
-    //cudaMemcpyAsync(devBufferPtrX, x.buffer(), x.lengthOf() * x.sizeOfT(), cudaMemcpyHostToDevice, *stream);
-    //cudaMemcpyAsync(devShapePtrX, x.shapeInfo(), shape::shapeInfoByteLength(x.shapeInfo()), cudaMemcpyHostToDevice, *stream);
-    z.lazyAllocateBuffer();
+    
     LaunchContext lc(stream, *stream, nullptr, nullptr);
-    NativeOpExecutioner::execPairwiseTransform(&lc, pairwise::Add, nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr);
+    NativeOpExecutioner::execPairwiseTransform(&lc, pairwise::Add, nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr);    
     auto res = cudaStreamSynchronize(*stream);
-    ASSERT_EQ(0, res);
-
-    cudaMemcpyAsync(z.buffer(), z.specialBuffer(), z.lengthOf() * z.sizeOfT(), cudaMemcpyDeviceToHost, *stream);
-    res = cudaStreamSynchronize(*stream);
-    ASSERT_EQ(0, res);
-    z.printBuffer("2Result out");
-    //cudaFree(devBufferPtrX);
-    //cudaFree(devBufferPtrZ);
-    //cudaFree(devShapePtrX);
-
-    for (int e = 0; e < z.lengthOf(); e++) {
-        ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
-    }
+    ASSERT_EQ(0, res);    
+    
+    for (int e = 0; e < z.lengthOf(); e++) 
+        ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);        
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -277,6 +244,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_3) {
 
     LaunchContext lc(stream, *stream, nullptr, nullptr);
     NativeOpExecutioner::execPairwiseTransform(&lc, pairwise::Add, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr);
+    z.tickWriteDevice();
     auto res = cudaStreamSynchronize(*stream);
     ASSERT_EQ(0, res);
     //double* localBuffer = ;
@@ -314,11 +282,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_4) {
     //ASSERT_EQ(0, res);
     //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
     //ASSERT_EQ(0, res);
-    x.applyPairwiseTransform(pairwise::Add, &y, &z, nullptr);
-    x.printBuffer("3X = ");
-    y.printBuffer("3Y = ");
-    z.lazyAllocateBuffer();
-    z.printBuffer("3Result out");
+    x.applyPairwiseTransform(pairwise::Add, &y, &z, nullptr);    
 
     //
     // cudaFree(devBufferPtrX);
@@ -349,8 +313,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_5) {
     //ASSERT_EQ(0, res);
     x += y;
     //x.applyPairwiseTransform(pairwise::Add, &y, &z, nullptr);
-    x.syncToHost();
-    x.printBuffer("33X = ");
+    x.syncToHost();    
     //y.printBuffer("3Y = ");
     //z.printBuffer("3Result out");
 

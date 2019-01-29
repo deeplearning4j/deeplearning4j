@@ -96,16 +96,12 @@ NDArray::NDArray(const NDArray& other) {
 ////////////////////////////////////////////////////////////////////////
 void NDArray::lazyAllocateBuffer() const {
     
-    if (lengthOf() > 0) {
-        if (_buffer == nullptr && !this->isEmpty()) {
-            NDArray* constThis = const_cast<NDArray*>(this);
-            //int8_t* pB = const_cast<int8_t*>(_buffer);
-            // ALLOCATE(constThis->_buffer, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
-            ALLOCATE(constThis->_buffer, _context->getWorkspace(), (getOffset(_length - 1) + 1) * sizeOfT(), int8_t);
-            //const_cast<NDArray*>(this)->_buffer = pB;
-            constThis->_isBuffAlloc = true;
-            syncToHost();
-        }
+    if (lengthOf() > 0 && _buffer == nullptr && !isEmpty()) {
+        
+        NDArray* constThis = const_cast<NDArray*>(this);
+        // ALLOCATE(constThis->_buffer, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
+        ALLOCATE(constThis->_buffer, _context->getWorkspace(), (getOffset(_length - 1) + 1) * sizeOfT(), int8_t);
+        constThis->_isBuffAlloc = true;
     }
 }   
 
@@ -940,19 +936,9 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 ////////////////////////////////////////////////////////////////////////
     void NDArray::syncToHost() const {
         
-        if(isEmpty()) return;        
+        if(isEmpty() || lengthOf() == 0) return;
         
-        if (_buffer == nullptr && !this->isEmpty()) {
-//            const_cast<NDArray*>(this)->lazyAllocateBuffer();
-            //NDArray* constThis =  const_cast<NDArray*>(this); // not recommended solution
-            //ALLOCATE(constThis->_buffer, _context->getWorkspace(), (getOffset(_length - 1) + 1) * sizeOfT(), int8_t);
-            //constThis->_isBuffAlloc = true;
-            throw std::runtime_error("Cannot sync to host due host buffer is not allocated yet.");
-        }
-        else if (lengthOf() == 0) {
-            printf("sync with zero lenght is not needed.");
-            return;
-        }
+        lazyAllocateBuffer();        
 
         auto res = cudaStreamSynchronize(*_context->getCudaStream());
         if (res != 0)
@@ -1092,7 +1078,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (!isS())
             throw std::runtime_error("This method is available for String arrays only");
 
-        lazyAllocateBuffer();
         if(!isActualOnHostSide()) 
             syncToHost();
 
@@ -1105,8 +1090,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 //////////////////////////////////////////////////////////////////////////
     template <>
     std::string NDArray::e(const Nd4jLong i) const {
-
-        const_cast<NDArray*>(this)->lazyAllocateBuffer();
+        
         if(!isActualOnHostSide())
             syncToHost();
 
@@ -1124,13 +1108,11 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (i >= _length)
             throw std::invalid_argument("NDArray::e(i): input index is out of array length !");
 
-        const_cast<NDArray*>(this)->lazyAllocateBuffer();
         if(!isActualOnHostSide())
             syncToHost();
-
+        
         auto rp = getOffset(i);
-        tickReadHost();
-
+        tickReadHost();        
         BUILD_SINGLE_PARTIAL_SELECTOR(this->dataType(), return templatedGet<, T>(this->_buffer, rp), LIBND4J_TYPES);
         
 //        return static_cast<T>(119);
@@ -1146,7 +1128,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
             throw std::invalid_argument("NDArray::e(i,j): one of input indexes is out of array length or rank!=2 !");
 
-        const_cast<NDArray*>(this)->lazyAllocateBuffer();
         if(!isActualOnHostSide()) 
             syncToHost();
 
@@ -1169,7 +1150,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
             throw std::invalid_argument("NDArray::e(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
-        const_cast<NDArray*>(this)->lazyAllocateBuffer();
         if(!isActualOnHostSide()) 
             syncToHost();
 
@@ -1191,7 +1171,6 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
             throw std::invalid_argument("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
 
-        const_cast<NDArray*>(this)->lazyAllocateBuffer();
         if(!isActualOnHostSide()) 
             syncToHost();
 
@@ -2738,7 +2717,7 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 // This method sets value in linear buffer to position i
     template <typename T>
     void NDArray::p(const Nd4jLong i, const T value) {
-        lazyAllocateBuffer();
+
         if (!isActualOnHostSide())
             syncToHost();
 
@@ -2786,7 +2765,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
             throw std::invalid_argument("NDArray:pe(i,j, value): one of input indexes is out of array length or rank!=2 !");
 
-        lazyAllocateBuffer();
         if (!isActualOnHostSide())
             syncToHost();
 
@@ -2816,7 +2794,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
             throw std::invalid_argument("NDArray:pe(i,j,k, value): one of input indexes is out of array length or rank!=3 !");
 
-        lazyAllocateBuffer();
         if (!isActualOnHostSide())
             syncToHost();
         
@@ -2844,7 +2821,6 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
         if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
             throw std::invalid_argument("NDArray::p(i,j,k,l, value): one of input indexes is out of array length or rank!=4 !");
 
-        lazyAllocateBuffer();
         if(!isActualOnHostSide())
             syncToHost();
         
