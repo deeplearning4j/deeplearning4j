@@ -167,7 +167,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 return new INDArray[]{Nd4j.scalar(true), Nd4j.scalar(0.0f)};
             } else if (op instanceof TensorArrayRead) {
                 //Do lookup and return
-                //Input 0 is the TensorArray (or dummy variable that represents it)
+                //Input 0 is the TensorArray (or dummy variable that represents it). Sometimes (for import) this can be like (TensorArray -> Enter -> TensorArrayRead)
                 //Input 1 is the index
                 SDVariable idxSDV = op.arg(1);
                 INDArray idxArr = getArray(idxSDV, opInputs, allIterInputs);
@@ -175,10 +175,20 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 int i = idxArr.getInt(0);
 
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+
                 //Work out the frame/iteration:
                 VarId v = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
                 if(v == null && allIterInputs != null){
                     v = lookup(inTensorArray.getVarName(), allIterInputs, false);
+                }
+
+                Preconditions.checkState(v != null, "Could not find input %s", inTensorArray.getVarName());
+
+                while(sameDiff.getVariableOutputFunction(inTensorArray.getVarName()) instanceof Enter){
+                    //Handle the enter case: this is like TensorArray -> Enter -> TensorArrayRead
+                    //TODO also TensorArrayWrite, scatter, etc??
+                    inTensorArray = sameDiff.getVariableOutputFunction(inTensorArray.getVarName()).arg();
+                    v = newVarId(inTensorArray.getVarName(), v.getParentFrame());
                 }
 
                 List<INDArray> list = getTensorArrays().get(v);
