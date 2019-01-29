@@ -185,7 +185,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 Preconditions.checkState(v != null, "Could not find input %s", inTensorArray.getVarName());
 
                 while(sameDiff.getVariableOutputFunction(inTensorArray.getVarName()) instanceof Enter){
-                    //Handle the enter case: this is like TensorArray -> Enter -> TensorArrayRead
+                    //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayRead
                     //TODO also TensorArrayWrite, scatter, etc??
                     inTensorArray = sameDiff.getVariableOutputFunction(inTensorArray.getVarName()).arg();
                     v = newVarId(inTensorArray.getVarName(), v.getParentFrame());
@@ -207,7 +207,16 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
                 }
 
-                //Input 0 is the TensorArray (or dummy variable that represents it)
+                Preconditions.checkState(tArr != null, "Could not find input %s", inTensorArray.getVarName());
+
+                while(sameDiff.getVariableOutputFunction(inTensorArray.getVarName()) instanceof Enter){
+                    //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayWrite
+                    //TODO also TensorArrayScatter, etc??
+                    inTensorArray = sameDiff.getVariableOutputFunction(inTensorArray.getVarName()).arg();
+                    tArr = newVarId(inTensorArray.getVarName(), tArr.getParentFrame());
+                }
+
+                //Input 0 is the TensorArray (or dummy variable that represents it) - but sometimes Enter, in TensorArray -> Enter -> TensorARrayRead
                 //Input 1 is the index
                 //Input 2 is the value to write
 
