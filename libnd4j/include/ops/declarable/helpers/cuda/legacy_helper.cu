@@ -93,7 +93,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template void eluDerivative_, (NDArray* input, NDArray* epsilon, NDArray*output);, FLOAT_TYPES);
 
-    void eluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void eluDerivative(graph::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), eluDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
