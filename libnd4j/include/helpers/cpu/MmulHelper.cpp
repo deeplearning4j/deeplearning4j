@@ -18,7 +18,6 @@
 // @author raver119@gmail.com
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
-
 #include "../MmulHelper.h"
 #include <NDArrayFactory.h>
 #include <helpers/BlasHelper.h>
@@ -28,13 +27,13 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN
-template <typename X, typename Y, typename Z>
+template <typename T1, typename T2, typename T3>
 static void usualGemm(const char cOrder, const bool transA, const bool transB, const int M, const int N, const int K, const double alpha, const void* vA, const int lda, const void* vB, const int ldb, const double beta, void* vC, const int ldc) {
 
-    X* A = reinterpret_cast<X*>(const_cast<void*>(vA));
-    Y* B = reinterpret_cast<Y*>(const_cast<void*>(vB));
-    Z* C = reinterpret_cast<Z*>(vC);
-    Z alphaZ(alpha), betaZ(beta);
+    T1* A = reinterpret_cast<T1*>(const_cast<void*>(vA));
+    T2* B = reinterpret_cast<T2*>(const_cast<void*>(vB));
+    T3* C = reinterpret_cast<T3*>(vC);
+    T3 alphaZ(alpha), betaZ(beta);
     
     Nd4jLong strideArow, strideAcol, strideBrow, strideBcol, strideCrow, strideCcol;
 
@@ -56,10 +55,10 @@ static void usualGemm(const char cOrder, const bool transA, const bool transB, c
     #pragma omp parallel for if(M*N > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2)        
     for(int row = 0; row < M; ++row) {
        for(int col = 0; col < N; ++col) {            
-            X* a = A + row * strideArow;
-            Y* b = B + col * strideBcol;            
-            Z* c = C + row * strideCrow + col * strideCcol;
-            Z val = 0;            
+            T1* a = A + row * strideArow;
+            T2* b = B + col * strideBcol;            
+            T3* c = C + row * strideCrow + col * strideCcol;
+            T3 val = 0;            
             for(int i = 0; i < K; ++i)
                 val = val + a[i*strideAcol] * b[i*strideBrow];            
             *c = alphaZ * val + betaZ * *c;
@@ -67,23 +66,65 @@ static void usualGemm(const char cOrder, const bool transA, const bool transB, c
     }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// MXN x N = M
+template <typename T1, typename T2, typename T3>
+static void usualGemv(const char aOrder, const int M, const int N, const double alpha, const void* vA, const int lda, const void* vX, const int incx, const double beta, void* vY, const int incy) {
+
+    T1* A = reinterpret_cast<T1*>(const_cast<void*>(vA));
+    T2* X = reinterpret_cast<T2*>(const_cast<void*>(vX));
+    T3* Y = reinterpret_cast<T3*>(vY);
+    T3 alphaZ(alpha), betaZ(beta);
+    
+    Nd4jLong strideArow, strideAcol;
+
+    if(aOrder == 'c') { strideArow = lda; strideAcol = 1;   } 
+    else              { strideArow = 1;   strideAcol = lda; }            
+
+    #pragma omp parallel for if(M > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+    for(int row = 0; row < M; ++row) {
+        T1* a = A + row * strideArow;
+        T3* y = Y + row * incy;
+        T3 val = 0;            
+        for(int i = 0; i < N; ++i)
+            val = val + a[i * strideAcol] * X[i * incx];            
+        *y = alphaZ * val + betaZ * *y;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// (X*Y) = Z[0]
+template <typename T1, typename T2, typename T3>
+static void usualDot(const Nd4jLong length, const double alpha, const void* vX, const Nd4jLong incx, const void* vY, const Nd4jLong incy, const double beta, void* vZ) {
+
+    T1* X = reinterpret_cast<T1*>(const_cast<void*>(vX));
+    T2* Y = reinterpret_cast<T2*>(const_cast<void*>(vY));
+    T3* Z = reinterpret_cast<T3*>(vZ);
+
+    T3 sum = 0;
+    #pragma omp parallel for if(length > Environment::getInstance()->elementwiseThreshold()) schedule(guided) reduction(sumT:sum)
+    for(int i = 0; i < length; ++i)
+            sum = sum + X[i * incx] * Y[i * incy];        
+    *Z = (T3)alpha * sum + (T3)beta * *Z;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN
-NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta, const char outOrder) {
+NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta, const char outOrder) {    
 
     if(A->rankOf() != 2)
         throw std::runtime_error("MmulHelper::mmulMxM: rank of A array is not equal 2 !");
     if(B->rankOf() != 2)
-        throw std::runtime_error("MmulHelper::mmulMxM: rank of B array is not equal 2 !");
+        throw std::runtime_error("MmulHelper::mmulMxM: rank of B array is not equal 2 !");    
+
+    const auto M     = A->sizeAt(0);
+    const auto K     = A->sizeAt(1);
+    const auto N     = B->sizeAt(1);
+    const auto bRows = B->sizeAt(0);
+    
     if(C != nullptr && C->rankOf() != 2)
         throw std::runtime_error("MmulHelper::mmulMxM: rank of C array is not equal 2 !");
-
-    const auto M = A->sizeAt(0);
-    const auto K = A->sizeAt(1);
-    const auto N = B->sizeAt(1);
-
-    if(B->sizeAt(0) != K)
+    if(bRows != K)
         throw std::runtime_error("MmulHelper::mmulMxM: B array has wrong number of rows !");
     if(C != nullptr && C->sizeAt(0) != M)
         throw std::runtime_error("MmulHelper::mmulMxM: C array has wrong number of rows !");
@@ -133,7 +174,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     else if (ABC && hasGemm && aType == DataType::DOUBLE) {
         BlasHelper::getInstance()->dgemm()(blasOrder, transAblas, transBblas, M, N, K, (double) alpha, reinterpret_cast<double *>(pA->getBuffer()), lda, reinterpret_cast<double *>(pB->getBuffer()), ldb, (double) beta, reinterpret_cast<double *>(pC->getBuffer()), ldc);
     }
-    else {    
+    else {
         BUILD_TRIPLE_SELECTOR(aType, bType, cType, usualGemm, (cOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
     }    
 
@@ -150,54 +191,101 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
 }
 
 ////////////////////////////////////////////////////////////////////////////
-// static
-template <typename X, typename Y, typename Z>
-nd4j::NDArray* MmulHelper::mmulMxV(const nd4j::NDArray* A, const nd4j::NDArray* B, nd4j::NDArray* C, const double alpha, const double beta, const char outOrder) {
+// MXN x N = M
+NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* Y, const double alpha, const double beta, const char outOrder) {
+
+    int xLenDim, yLenDim(0);
+
+    if(A->rankOf() != 2)
+        throw std::runtime_error("MmulHelper::mmulMxV: rank of A array is not equal 2 !");
+    if(!shape::isCommonVector(X->getShapeInfo(), xLenDim))
+        throw std::runtime_error("MmulHelper::mmulMxV: X array must be vector !");    
+
+    const auto M = A->sizeAt(0);    
+    const auto N = A->sizeAt(1);
     
-    nd4j::NDArray* result = C;
-    // gemv
-    if (A->columns() != B->lengthOf())
-        throw std::runtime_error("A columns != B length");
-    if (result == nullptr)
-        result = NDArrayFactory::create_<Z>('f', {A->rows(), 1});        
+    if(Y != nullptr && !shape::isCommonVector(Y->getShapeInfo(), yLenDim))
+        throw std::runtime_error("MmulHelper::mmulMxV: Y array must be vector !");
+    if(X->lengthOf() != N)
+        throw std::runtime_error("MmulHelper::mmulMxV: X vector has wrong length !");
+    if(Y != nullptr && Y->lengthOf() != M)
+        throw std::runtime_error("MmulHelper::mmulMxV: Y array has wrong length !");    
 
-    auto xType = A->dataType();
-    auto yType = B->dataType();
-    auto zType = result->dataType();
-
-    NDArray *pA(const_cast<NDArray*>(A)), *pB(const_cast<NDArray*>(B)), *pC(const_cast<NDArray*>(result));
-
-    if(pA->ews() != 1) pA = pA->dup('f');
-    if(pB->ews() != 1) pB = pB->dup('f');
-    if(pC->ews() != 1) pC = pC->dup('f');
-
-    // TODO: strides!!!
-    if (xType == yType && xType == zType && BlasHelper::getInstance()->hasGEMV<X>()) {
-        nd4j_debug("Using provided GEMV pointer\n","");
-        auto layout = pA->ordering() == 'f' ? CblasColMajor : CblasRowMajor;
-        if (std::is_same<X, float>::value)
-            BlasHelper::getInstance()->sgemv()(layout, CblasNoTrans, pA->rows(), pA->columns(), (float) alpha, reinterpret_cast<float *>(pA->getBuffer()), layout == CblasColMajor ? pA->rows() : pA->columns(), reinterpret_cast<float *>(pB->getBuffer()), 1, (float) beta, reinterpret_cast<float *>(pC->getBuffer()), 1);
-        else if (std::is_same<X, double>::value)
-            BlasHelper::getInstance()->dgemv()(layout, CblasNoTrans, pA->rows(), pA->columns(), (double) alpha, reinterpret_cast<double *>(pA->getBuffer()), layout == CblasColMajor ? pA->rows() : pA->columns(), reinterpret_cast<double *>(pB->getBuffer()), 1, (double) beta, reinterpret_cast<double *>(pC->getBuffer()), 1);
-        else
-            nd4j::blas::GEMV<X, Y, Z>::op(pA->ordering() == 'f' ? CblasTrans : 0, pA->rows(), pA->columns(), alpha, pA->getBuffer(), pB->lengthOf(), pB->getBuffer(), 1, beta, pC->getBuffer(), 1);
-        } 
-        else {
-            nd4j_debug("Using fallback GEMV impl\n","");
-            nd4j::blas::GEMV<X, Y, Z>::op(pA->ordering() == 'f' ? CblasTrans : 0, pA->rows(), pA->columns(), alpha, pA->getBuffer(), pB->lengthOf(), pB->getBuffer(), 1, beta, pC->getBuffer(), 1);
-        }
+    if(Y == nullptr)        
+        Y = new NDArray(outOrder, {M}, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()), A->getContext());
     
-    if(pA != A) delete pA;
-    if(pB != B) delete pB;
-    if(pC != result) {
-        result->assign(pC);
-        delete pC;
+    NDArray *pA(const_cast<NDArray*>(A));
+
+    if(A->ews() != 1)
+        pA = pA->dup();
+    
+    CBLAS_ORDER blasOrder;
+    int lda;
+    if (pA->ordering() == 'f')  {blasOrder = CblasColMajor; lda = M; }
+    else                        {blasOrder = CblasRowMajor; lda = N; }
+         
+    const int incx = X->stridesOf()[xLenDim];
+    const int incy = Y->stridesOf()[yLenDim];
+
+    const auto aType = pA->dataType();
+    const auto xType = X->dataType();
+    const auto yType = Y->dataType();
+
+    const bool AX(aType == xType), AY(aType == yType), AXY(AX && AY);
+    const bool hasGemv = BlasHelper::getInstance()->hasGEMV(aType);
+    
+    // choose appropriate cuda gemm api depending on data types    
+    if(AXY && hasGemv && aType == DataType::DOUBLE) {
+        BlasHelper::getInstance()->dgemv()(blasOrder, CblasNoTrans, M, N, alpha,       (double*)pA->getBuffer(), lda, (double*)X->getBuffer(), incx, beta,        (double*)Y->getBuffer(), incy);
+    }
+    else if(AXY && hasGemv && aType == DataType::FLOAT32) {                
+        BlasHelper::getInstance()->sgemv()(blasOrder, CblasNoTrans, M, N, (float)alpha, (float*)pA->getBuffer(), lda, (float*)X->getBuffer(),  incx, (float)beta, (float*)Y->getBuffer(),  incy);
+    }
+    else {
+        BUILD_TRIPLE_SELECTOR(aType, xType, yType, usualGemv, (pA->ordering(), M, N, alpha, pA->getBuffer(), lda, X->getBuffer(), incx, beta, Y->getBuffer(), incy), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);        
     }
 
-    return result;
+    if(pA != A)
+        delete pA;
+    
+    return Y;
 }
 
+////////////////////////////////////////////////////////////////////////////
+// (X * Y) = Z[0]
+NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, nd4j::NDArray* Z, const double alpha, const double beta) {
+
+    int xLenDim(0), yLenDim(0);
+
+    if(!shape::isCommonVector(X->getShapeInfo(), xLenDim))
+        throw std::runtime_error("MmulHelper::dot cuda: X array must be vector !");
+    if(!shape::isCommonVector(Y->getShapeInfo(), yLenDim))
+        throw std::runtime_error("MmulHelper::dot cuda: Y array must be vector !");
+    if(Z != nullptr && !Z->isScalar())
+        throw std::runtime_error("MmulHelper::dot cuda: Z array must be scalar !");
+
+    const auto length = X->lengthOf();
+
+    if(Y->lengthOf() != length)
+        throw std::runtime_error("MmulHelper::dot cuda: lengths of input vectors are different !");
+
+    if(Z == nullptr)        
+        Z = new NDArray(DataTypeUtils::pickPairwiseResultType(X->dataType(), Y->dataType()), X->getContext());
+    
+    const Nd4jLong incx = X->stridesOf()[xLenDim];
+    const Nd4jLong incy = Y->stridesOf()[yLenDim];
+
+    const auto xType = X->dataType();
+    const auto yType = Y->dataType();
+    const auto zType = Z->dataType();
+    
+    BUILD_TRIPLE_SELECTOR(xType, yType, zType, usualDot, (length, alpha, X->getBuffer(), incx, Y->getBuffer(), incy, beta, Z->getBuffer()), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);        
+
+    return Z;
+}
 
 BUILD_TRIPLE_TEMPLATE(template void usualGemm, (const char cOrder, const bool transA, const bool transB, const int M, const int N, const int K, const double alpha, const void* A, const int lda, const void* B, const int ldb, const double beta, void* C, const int ldc), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
-BUILD_TRIPLE_TEMPLATE(template NDArray* MmulHelper::mmulMxV, (const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta, const char outOrder), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+BUILD_TRIPLE_TEMPLATE(template void usualGemv, (const char aOrder, const int M, const int N, const double alpha, const void* A, const int lda, const void* B, const int incx, const double beta, void* C, const int incy), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+BUILD_TRIPLE_TEMPLATE(template void usualDot,  (const Nd4jLong length, const double alpha, const void* vX, const Nd4jLong incx, const void* vY, const Nd4jLong incy, const double beta, void* vZ), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+
 }

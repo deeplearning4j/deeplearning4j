@@ -18,7 +18,6 @@
 // @author raver119@gmail.com
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
-
 #include <exceptions/cuda_exception.h>
 #include <cublas_v2.h>
 #include "../MmulHelper.h"
@@ -31,14 +30,14 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN
 // C array must be in f order
-template <typename X, typename Y, typename Z>
+template <typename T1, typename T2, typename T3>
 static __global__ void usualCudaGemm(const bool transA, const bool transB, const int M, const int N, const int K, const double alpha, const void* vA, const int lda, const void* vB, const int ldb, const double beta, void* vC, const int ldc) {
 
-    X* A = reinterpret_cast<X*>(const_cast<void*>(vA));
-    Y* B = reinterpret_cast<Y*>(const_cast<void*>(vB));
-    Z* C = reinterpret_cast<Z*>(vC);     
+    T1* A = reinterpret_cast<T1*>(const_cast<void*>(vA));
+    T2* B = reinterpret_cast<T2*>(const_cast<void*>(vB));
+    T3* C = reinterpret_cast<T3*>(vC);     
 
-    __shared__ Z alphaZ, betaZ;
+    __shared__ T3 alphaZ, betaZ;
     __shared__ Nd4jLong strideArow, strideAcol, strideBrow, strideBcol;
 
     const int row = blockIdx.y * blockDim.y + threadIdx.y;
@@ -55,7 +54,7 @@ static __global__ void usualCudaGemm(const bool transA, const bool transB, const
 
     __syncthreads();
 
-    Z val = 0;
+    T3 val = 0;
     if (row < M && col < N)         
         for (int i = 0; i < K; i++)             
             val = val + A[row * strideArow + i * strideAcol] * B[i * strideBrow + col * strideBcol];
@@ -64,15 +63,14 @@ static __global__ void usualCudaGemm(const bool transA, const bool transB, const
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y, typename Z>    
+template <typename T1, typename T2, typename T3>    
 __host__ static void usualGemm(const dim3 &blocksPerGrid, const dim3 &threadsPerBlock, cudaStream_t *stream, const bool transA, const bool transB, const int M, const int N, const int K, const double alpha, const void* vA, const int lda, const void* vB, const int ldb, const double beta, void* vC, const int ldc) {
     
-    usualCudaGemm<X,Y,Z><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(transA, transB, M, N, K, alpha, vA, lda, vB, ldb, beta, vC, ldc);
+    usualCudaGemm<T1,T2,T3><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(transA, transB, M, N, K, alpha, vA, lda, vB, ldb, beta, vC, ldc);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // MXN x N = M
-// C array must be in f order
 template <typename T1, typename T2, typename T3>
 static __global__ void usualCudaGemv(const bool transA, const int M, const int N, const double alpha, const void* vA, const int lda, const void* vX, const int incx, const double beta, void* vY, const int incy) {
 
@@ -112,31 +110,64 @@ __host__ static void usualGemv(const dim3 &blocksPerGrid, const dim3 &threadsPer
 }
 
 //////////////////////////////////////////////////////////////////////////////
+template <typename T1, typename T2, typename T3>
+static __global__ void usualCudaDot(const Nd4jLong length, const double alpha, const void* vX, const Nd4jLong incx, const void* vY, const Nd4jLong incy, const double beta, void* vZ) {
+
+    T1* X = reinterpret_cast<T1*>(const_cast<void*>(vX));
+    T2* Y = reinterpret_cast<T2*>(const_cast<void*>(vY));
+    T3* Z = reinterpret_cast<T3*>(vZ);
+    
+    extern __shared__ char shmem[];
+    auto pairwiseMul = reinterpret_cast<T3*>(shmem);
+
+    const int tid = blockIdx.x * blockDim.x + threadIdx.x;    
+    if(tid < length)
+        pairwiseMul[tid] = X[tid * incx] * Y[tid * incy];
+    
+    __syncthreads();
+
+    if(tid == 0) {
+        T3 sum = 0;
+        for(Nd4jLong i = 0; i < length; ++i)
+            sum = sum + pairwiseMul[i];
+        *Z = (T3)alpha * sum + (T3)beta * *Z;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename T1, typename T2, typename T3>    
+__host__ static void usualDot(const dim3 &blocksPerGrid, const dim3 &threadsPerBlock, cudaStream_t *stream, const Nd4jLong length, const double alpha, const void* vX, const Nd4jLong incx, const void* vY, const Nd4jLong incy, const double beta, void* vZ) {
+    
+    usualCudaDot<T1,T2,T3><<<blocksPerGrid, threadsPerBlock, length*sizeof(T3) + 128, *stream>>>(length, alpha, vX, incx, vY, incy, beta, vZ);
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN
 NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, double alpha, double beta, const char outOrder) {
 
-	if(A->rankOf() != 2)
-		throw std::runtime_error("MmulHelper::mmulMxM cuda: rank of A array is not equal 2 !");
-	if(B->rankOf() != 2)
-		throw std::runtime_error("MmulHelper::mmulMxM cuda: rank of B array is not equal 2 !");
-	if(C != nullptr && C->rankOf() != 2)
-		throw std::runtime_error("MmulHelper::mmulMxM cuda: rank of C array is not equal 2 !");
+    if(A->rankOf() != 2)
+        throw std::runtime_error("MmulHelper::mmulMxM cuda: rank of A array is not equal 2 !");
+    if(B->rankOf() != 2)
+        throw std::runtime_error("MmulHelper::mmulMxM cuda: rank of B array is not equal 2 !"); 
 
-	const auto M = A->sizeAt(0);
-	const auto K = A->sizeAt(1);
-	const auto N = B->sizeAt(1);
+    const auto M = A->sizeAt(0);
+    const auto K = A->sizeAt(1);
+    const auto N = B->sizeAt(1);
+    const auto bRows = B->sizeAt(0);
 
-	if(B->sizeAt(0) != K)
-		throw std::runtime_error("MmulHelper::mmulMxM cuda: B array has wrong number of rows !");
-	if(C != nullptr && C->sizeAt(0) != M)
-		throw std::runtime_error("MmulHelper::mmulMxM cuda: C array has wrong number of rows !");
-	if(C != nullptr && C->sizeAt(1) != N)
-		throw std::runtime_error("MmulHelper::mmulMxM cuda: C array has wrong number of columns !");
+    if(C != nullptr && C->rankOf() != 2)
+        throw std::runtime_error("MmulHelper::mmulMxM cuda: rank of C array is not equal 2 !");
+    if(B->sizeAt(0) != K)
+        throw std::runtime_error("MmulHelper::mmulMxM cuda: B array has wrong number of rows !");
+    if(C != nullptr && C->sizeAt(0) != M)
+        throw std::runtime_error("MmulHelper::mmulMxM cuda: C array has wrong number of rows !");
+    if(C != nullptr && C->sizeAt(1) != N)
+        throw std::runtime_error("MmulHelper::mmulMxM cuda: C array has wrong number of columns !");
 
-	if(C == nullptr) 		
+    if(C == nullptr)        
         C = new NDArray(outOrder, {M,N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()), A->getContext());
 
-	NDArray *pA(const_cast<NDArray*>(A)), *pB(const_cast<NDArray*>(B)), *pC(const_cast<NDArray*>(C));        
+    NDArray *pA(const_cast<NDArray*>(A)), *pB(const_cast<NDArray*>(B)), *pC(const_cast<NDArray*>(C));        
 
     if(A->ews() != 1)
         pA = pA->dup('f');
@@ -223,21 +254,19 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     pC->tickWriteDevice();
 
     if(pC != C) {
-    	C->assign(pC);
-    	delete pC;
+        C->assign(pC);
+        delete pC;
     }
     if(pA != A)
-    	delete pA;
+        delete pA;
     if(pB != B)
-    	delete pB;
+        delete pB;
 
-	return C;
+    return C;
 }
 
 ////////////////////////////////////////////////////////////////////////////
-// static
 // MXN x N = M
-template <typename T1, typename T2, typename T3>
 NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* Y, const double alpha, const double beta, const char outOrder) {
 
     int xLenDim, yLenDim(0);
@@ -245,13 +274,13 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
     if(A->rankOf() != 2)
         throw std::runtime_error("MmulHelper::mmulMxV cuda: rank of A array is not equal 2 !");
     if(!shape::isCommonVector(X->getShapeInfo(), xLenDim))
-        throw std::runtime_error("MmulHelper::mmulMxV cuda: X array must be vector !");
-    if(Y != nullptr && !shape::isCommonVector(Y->getShapeInfo(), yLenDim))
-        throw std::runtime_error("MmulHelper::mmulMxV cuda: Y array must be vector !");
+        throw std::runtime_error("MmulHelper::mmulMxV cuda: X array must be vector !");    
 
     const auto M = A->sizeAt(0);    
     const auto N = A->sizeAt(1);
 
+    if(Y != nullptr && !shape::isCommonVector(Y->getShapeInfo(), yLenDim))
+        throw std::runtime_error("MmulHelper::mmulMxV cuda: Y array must be vector !");
     if(X->lengthOf() != N)
         throw std::runtime_error("MmulHelper::mmulMxV cuda: X vector has wrong length !");
     if(Y != nullptr && Y->lengthOf() != M)
@@ -312,13 +341,13 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
             threadsPerBlock.x = 512;             
             blocksPerGrid.x = math::nd4j_ceil<double, int>(static_cast<double>(M) / threadsPerBlock.x);    // rows            
         }        
-        usualGemv<T1,T2,T3>(blocksPerGrid, threadsPerBlock, stream, transA, M, N, alpha, pA->getSpecialBuffer(), lda, X->getSpecialBuffer(), incx, beta, Y->getSpecialBuffer(), incy);
+        BUILD_TRIPLE_SELECTOR(aType, xType, yType, usualGemv, (blocksPerGrid, threadsPerBlock, stream, transA, M, N, alpha, pA->getSpecialBuffer(), lda, X->getSpecialBuffer(), incx, beta, Y->getSpecialBuffer(), incy), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
     }
 
-    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
 
     auto cudaResult = cudaStreamSynchronize(*stream);
-    if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
+    if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", cudaResult);
    
     cublasDestroy(handle);    
 
@@ -332,7 +361,59 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
     return Y;
 }
 
+////////////////////////////////////////////////////////////////////////////
+// (X * Y) = Z[0]
+NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, nd4j::NDArray* Z, const double alpha, const double beta) {
+
+    int xLenDim(0), yLenDim(0);
+
+    if(!shape::isCommonVector(X->getShapeInfo(), xLenDim))
+        throw std::runtime_error("MmulHelper::dot cuda: X array must be vector !");
+    if(!shape::isCommonVector(Y->getShapeInfo(), yLenDim))
+        throw std::runtime_error("MmulHelper::dot cuda: Y array must be vector !");
+    if(Z != nullptr && !Z->isScalar())
+        throw std::runtime_error("MmulHelper::dot cuda: Z array must be scalar !");
+
+    const auto length = X->lengthOf();
+
+    if(Y->lengthOf() != length)
+        throw std::runtime_error("MmulHelper::dot cuda: lengths of input vectors are different !");
+
+    if(Z == nullptr)        
+        Z = new NDArray(DataTypeUtils::pickPairwiseResultType(X->dataType(), Y->dataType()), X->getContext());
+    
+    const Nd4jLong incx = X->stridesOf()[xLenDim];
+    const Nd4jLong incy = Y->stridesOf()[yLenDim];
+
+    const auto xType = X->dataType();
+    const auto yType = Y->dataType();
+    const auto zType = Z->dataType();
+    
+    if(!X->isActualOnDeviceSide())  X->syncToDevice();
+    if(!Y->isActualOnDeviceSide())  Y->syncToDevice();
+    if(!Z->isActualOnDeviceSide())  Z->syncToDevice();
+    
+    cudaStream_t* stream = X->getContext()->getCudaStream();
+
+    dim3 threadsPerBlock(512);
+    dim3 blocksPerGrid(1);
+    if (length > 512)        
+        threadsPerBlock.x = math::nd4j_ceil<double, int>(static_cast<double>(length) / 512);
+
+    BUILD_TRIPLE_SELECTOR(xType, yType, zType, usualDot, (blocksPerGrid, threadsPerBlock, stream, length, alpha, X->getSpecialBuffer(), incx, Y->getSpecialBuffer(), incy, beta, Z->getSpecialBuffer()), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+        
+    auto cudaResult = cudaStreamSynchronize(*stream);
+    if (cudaResult != 0) throw cuda_exception::build("MmulHelper::dot cuda failed !", cudaResult);       
+
+    X->tickReadDevice();
+    Y->tickReadDevice();
+    Z->tickWriteDevice();
+    
+    return Z;
+}
 
 BUILD_TRIPLE_TEMPLATE(template void usualGemm, (const dim3 &blocksPerGrid, const dim3 &threadsPerBlock, cudaStream_t *stream, const bool transA, const bool transB, const int M, const int N, const int K, const double alpha, const void* vA, const int lda, const void* vB, const int ldb, const double beta, void* vC, const int ldc), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
-BUILD_TRIPLE_TEMPLATE(template NDArray* MmulHelper::mmulMxV, (const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta, const char outOrder), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+BUILD_TRIPLE_TEMPLATE(template void usualGemv, (const dim3 &blocksPerGrid, const dim3 &threadsPerBlock, cudaStream_t *stream, const bool transA, const int M, const int N, const double alpha, const void* vA, const int lda, const void* vB, const int incx, const double beta, void* vC, const int incy), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+BUILD_TRIPLE_TEMPLATE(template void usualDot,  (const dim3 &blocksPerGrid, const dim3 &threadsPerBlock, cudaStream_t *stream, const Nd4jLong length, const double alpha, const void* vX, const Nd4jLong incx, const void* vY, const Nd4jLong incy, const double beta, void* vZ), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+
 }

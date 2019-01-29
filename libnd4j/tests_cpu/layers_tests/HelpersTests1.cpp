@@ -2096,4 +2096,129 @@ TEST_F(HelpersTests1, checkGrad_test6) {
     ASSERT_TRUE(isGradCorrect);
 }
 
+//////////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, mmulMxV_1) {
+
+    const Nd4jLong M = 3;
+    const Nd4jLong N = 4;
+
+    NDArray a('f', {M,N}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+    NDArray temp('f', {M,N,5}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray x = temp(6, {0,2});
+    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+
+    NDArray exp('f', {M}, {5.5, 5.1, 4.7}, nd4j::DataType::DOUBLE);
+
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    ASSERT_TRUE(y.equalsTo(&exp));
+}
+
+//////////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, mmulMxV_2) {
+
+    const Nd4jLong M = 3;
+    const Nd4jLong N = 4;
+
+    NDArray a('f', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+    a.permutei({1,0});
+    NDArray temp('f', {M,N,5}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray x = temp(6, {0,2});
+    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+
+    NDArray exp('f', {M}, {5.1, 3.3, 1.5}, nd4j::DataType::DOUBLE);
+
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    ASSERT_TRUE(y.equalsTo(&exp));
+}
+
+//////////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, mmulMxV_3) {
+
+    const Nd4jLong M = 3;
+    const Nd4jLong N = 4;
+
+    NDArray a('f', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+    a.permutei({1,0});
+    NDArray temp('f', {N,M,5}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray x = temp(4, {1,2});
+    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+
+    NDArray exp('f', {M}, {6.2, 4.5, 1.7}, nd4j::DataType::DOUBLE);
+
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    ASSERT_TRUE(y.equalsTo(&exp));
+}
+
+//////////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, mmulMxV_4) {
+
+    const Nd4jLong M = 3;
+    const Nd4jLong N = 4;
+
+    NDArray a('f', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+    a.permutei({1,0});
+    NDArray temp('f', {5,M,N}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray x = temp(3, {0,1});
+    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+
+    NDArray exp('f', {M}, {1.5, 1.8, 1.5}, nd4j::DataType::DOUBLE);
+
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    ASSERT_TRUE(y.equalsTo(&exp));
+}
+
+//////////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, mmulMxV_5) {
+
+    const Nd4jLong M = 3;
+    const Nd4jLong N = 4;
+
+    NDArray a('c', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+    a.permutei({1,0});
+    NDArray temp('f', {5,M,N}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray x = temp(2, {0,1});
+    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+
+    NDArray exp('f', {M}, {-0.3, 0.3, 0.9}, nd4j::DataType::DOUBLE);
+
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    ASSERT_TRUE(y.equalsTo(&exp));
+}
+
+//////////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, mmulMxV_6) {
+
+    const Nd4jLong M = 3;
+    const Nd4jLong N = 4;
+
+    NDArray a('c', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+    a.permutei({1,0});
+    NDArray temp('c', {5,N,M}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray x = temp(13, {0,2});
+    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+
+    NDArray exp('f', {M}, {-12.1, -10.9, -9.7}, nd4j::DataType::DOUBLE);
+
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    ASSERT_TRUE(y.equalsTo(&exp));
+}
+
+//////////////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, mmulMxV_7) {
+
+    const Nd4jLong M = 3;
+    const Nd4jLong N = 4;
+
+    NDArray a('c', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+    a.permutei({1,0});
+    NDArray temp('c', {5,N,M}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray x = temp(10, {0,2});
+    NDArray y('c', {M}, nd4j::DataType::DOUBLE);
+
+    NDArray exp('c', {M}, {3.3, 3.3, 3.3}, nd4j::DataType::DOUBLE);
+
+    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    ASSERT_TRUE(y.equalsTo(&exp));
+}
+
 #endif

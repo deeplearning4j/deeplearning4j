@@ -122,6 +122,14 @@ namespace nd4j {
         return false;
     }
 
+    bool BlasHelper::hasGEMV(const nd4j::DataType dtype) const {
+        if(dtype == DataType::FLOAT32)
+            return _hasSgemm;
+        if(dtype == DataType::DOUBLE)
+            return _hasDgemm;
+        return false;
+    }
+
     template <>
     bool BlasHelper::hasGEMM<float>() {
         return _hasSgemm;
