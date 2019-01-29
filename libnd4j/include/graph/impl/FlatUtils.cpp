@@ -44,7 +44,7 @@ namespace nd4j {
             if (shape::isEmpty(newShape)) {
                 delete[] newShape;
                 // FIXME: probably should be not a static float
-                return NDArrayFactory::empty<float>(nullptr);
+                return NDArrayFactory::empty_<float>(nullptr);
             }
 
             auto length = shape::length(newShape);

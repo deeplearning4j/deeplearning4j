@@ -104,7 +104,8 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, nd4j::graph::Launc
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
 NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* context, const bool isBuffAlloc, const bool isShapeAlloc) {
-    
+
+    if (ArrayOptions::arrayType(shapeInfo) != ArrayType::EMPTY)
     if (buffer == nullptr)
         throw std::runtime_error("NDArray constructor: can't be initalized with nullptr buffer !");
     
@@ -124,7 +125,9 @@ NDArray::NDArray(void *buffer, Nd4jLong *shapeInfo, graph::LaunchContext* contex
     _isShapeAlloc = true;
 
     if (this->isEmpty()) {
-        _length = 0;                
+        _length = 0;
+        tickReadDevice();
+        tickReadHost();
     }
     else {        
         _buffer = reinterpret_cast<int8_t *>(buffer);            
@@ -2197,9 +2200,13 @@ void NDArray::operator*=(const NDArray& other) {
 
     if (!this->isScalar() && other.isScalar()) {
         NativeOpExecutioner::execScalar(_context, nd4j::scalar::Multiply, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr);
+        this->tickWriteHost();
+        this->tickWriteDevice();
     }
     else if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
         NativeOpExecutioner::execPairwiseTransform(_context, nd4j::pairwise::Multiply, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, nullptr);
+        this->tickWriteHost();
+        this->tickWriteDevice();
     }
     else{
         Nd4jLong *bShape = nullptr;

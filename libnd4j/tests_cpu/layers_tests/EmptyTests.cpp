@@ -35,8 +35,8 @@ public:
     }
 };
 
-TEST_F(EmptyTests, Test_Create_Empty) {
-    auto empty = NDArrayFactory::empty<float>();
+TEST_F(EmptyTests, Test_Create_Empty_1) {
+    auto empty = NDArrayFactory::empty_<float>();
     ASSERT_TRUE(empty->isEmpty());
 
     ASSERT_EQ(0, empty->lengthOf());
@@ -47,8 +47,19 @@ TEST_F(EmptyTests, Test_Create_Empty) {
     delete empty;
 }
 
-TEST_F(EmptyTests, Test_Concat_1) {
+TEST_F(EmptyTests, Test_Create_Empty_2) {
     auto empty = NDArrayFactory::empty<float>();
+    ASSERT_TRUE(empty.isEmpty());
+
+    ASSERT_EQ(0, empty.lengthOf());
+    ASSERT_TRUE(empty.buffer() == nullptr);
+
+    ASSERT_TRUE(shape::isEmpty(empty.shapeInfo()));
+    ASSERT_TRUE(empty.isEmpty());
+}
+
+TEST_F(EmptyTests, Test_Concat_1) {
+    auto empty = NDArrayFactory::empty_<float>();
     auto vector = NDArrayFactory::create_<float>('c', {1}, {1.0f});
 
     ASSERT_TRUE(empty->isEmpty());
@@ -71,7 +82,7 @@ TEST_F(EmptyTests, Test_Concat_1) {
 
 
 TEST_F(EmptyTests, Test_Concat_2) {
-    auto empty = NDArrayFactory::empty<float>();
+    auto empty = NDArrayFactory::empty_<float>();
     auto scalar1 =  NDArrayFactory::create_<float>(1.0f);
     auto scalar2  = NDArrayFactory::create_<float>(2.0f);
     auto exp = NDArrayFactory::create<float>('c', {2}, {1.f, 2.f});
@@ -101,20 +112,19 @@ TEST_F(EmptyTests, Test_Reshape_1) {
     auto empty = NDArrayFactory::empty<int>();
 
     nd4j::ops::reshape op;
-    auto result = op.execute({&vector, empty}, {}, {});
+    auto result = op.execute({&vector, &empty}, {}, {});
 
     ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_EQ(exp, *result->at(0));
 
-    delete empty;
     delete result;
 }
 
 TEST_F(EmptyTests, Test_Reshape_2) {
     auto vector = NDArrayFactory::create<float>('c', {1}, {119.0f});
     auto exp = NDArrayFactory::create<float>(119.0f);
-    auto empty = NDArrayFactory::empty<Nd4jLong>();
+    auto empty = NDArrayFactory::empty_<Nd4jLong>();
 
     nd4j::ops::reshape op;
     auto result = op.execute({&vector, empty}, {}, {}, {}, true);

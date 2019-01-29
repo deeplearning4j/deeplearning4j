@@ -1702,8 +1702,9 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         if (!scalar->isActualOnDeviceSide())
             scalar->syncToDevice();
-        NDArray::registerSpecialUse({target}, {this, scalar});
+        //NDArray::registerSpecialUse({target}, {this, scalar});
         NativeOpExecutioner::execScalarBool(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, scalar->_buffer, scalar->_shapeInfo, scalar->_bufferD, scalar->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()): nullptr);
+        target->tickWriteDevice();
     }
 
     template <typename T>
@@ -1741,8 +1742,9 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
         if (!scalar->isActualOnDeviceSide())
             scalar->syncToDevice();
-        NDArray::registerSpecialUse({target}, {this,scalar});
+        //NDArray::registerSpecialUse({target}, {this,scalar});
         NativeOpExecutioner::execScalar(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, scalar->getBuffer(), scalar->getShapeInfo(), scalar->_bufferD, scalar->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
+        target->tickWriteDevice();
     }
 
     template <typename T>
@@ -1822,12 +1824,12 @@ NDArray NDArray::e(const Nd4jLong i) const {
             if(cudaResult != 0) throw cuda_exception::build("Cannot copy memory block for tads on device", cudaResult);
         }
 
-        NDArray::registerSpecialUse({result}, {this, tadArray});
+        //NDArray::registerSpecialUse({result}, {this, tadArray});
 
         // call cuda kernel which calculates result
         // TODO: eventually we want separate tads here
         NativeOpExecutioner::execBroadcast(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD, result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, (int*)devicePtrs[0], (int)copy.size(), (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
-        //result->tickWriteDevice();
+        result->tickWriteDevice();
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -1886,12 +1888,12 @@ NDArray NDArray::e(const Nd4jLong i) const {
         }
 
         // call cuda kernel which calculates result
-        NDArray::registerSpecialUse({result}, {this, tadArray});
+        //NDArray::registerSpecialUse({result}, {this, tadArray});
         // TODO: eventually we want separate tads here
         NativeOpExecutioner::execBroadcastBool(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD,
                                                tadArray->_buffer, tadArray->_shapeInfo, tadArray->_bufferD, tadArray->_shapeInfoD,
                                                result->_buffer, result->_shapeInfo, result->_bufferD, result->_shapeInfoD, (int*)devicePtrs[0], (int)copy.size(), (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
-        //result->tickWriteDevice();
+        result->tickWriteDevice();
     }
 
     //////////////////////////////////////////////////////////////////////////

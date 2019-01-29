@@ -71,10 +71,10 @@ namespace nd4j {
 // copy constructor
 NDArray::NDArray(const NDArray& other) {
 
-    _context = other._context;    
+    _context = other._context;
 
     setShapeInfo(ShapeBuilders::copyShapeInfo(other._shapeInfo, false, _context->getWorkspace()));
-    ALLOCATE(_buffer, other._context->getWorkspace(), _length * other.sizeOfT(), int8_t);    
+    ALLOCATE(_buffer, other._context->getWorkspace(), _length * other.sizeOfT(), int8_t);
 
     triggerAllocationFlag(true, true);
 
@@ -148,7 +148,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         if (shape.empty())
             throw std::runtime_error("NDArray constructor: input shape is empty !");
-        
+
         if ((int) shape.size() > MAX_RANK)
             throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
@@ -174,17 +174,17 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         _context = context;
         _isAttached = _context->getWorkspace() != nullptr;
 
-        if(!isShapeAlloc) {            
+        if(!isShapeAlloc) {
             setShapeInfo(ShapeBuilders::copyShapeInfo(shapeInfo, copyStrides, _context->getWorkspace()), dtype);
         }
         else {
-            setShapeInfo(shapeInfo, dtype);            
+            setShapeInfo(shapeInfo, dtype);
             if(!copyStrides)
                 shape::updateStrides(_shapeInfo, shape::order(shapeInfo));
         }
 
         _isShapeAlloc = true;
-        
+
         if (this->isEmpty()) {
             _length = 0;
             _isBuffAlloc = false;
@@ -233,7 +233,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         ALLOCATE(_buffer, _context->getWorkspace(), _length * sizeOfT(), int8_t);
 
         _isBuffAlloc = true;
-        _isShapeAlloc = true;        
+        _isShapeAlloc = true;
         this->assign(&other);
     }
 
@@ -288,7 +288,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
             throw std::runtime_error("NDArray::applyTrueBroadcast bool: you can't use this method on String array!");
         if(target == nullptr || other == nullptr)
             throw std::runtime_error("NDArray::applyTrueBroadcast bool method: target or other = nullptr !");
-        
+
         if (isScalar()) {
             NDArray temp(target->_shapeInfo, _dataType, false, _context);
             temp.assign(this);
@@ -450,7 +450,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         else {
             auto dimsToExclude = ShapeUtils::evalDimsToExclude(target->rankOf(), sameDims);
             const auto numOfSubArrs = ShapeUtils::getNumOfSubArrs(target->_shapeInfo, dimsToExclude);
-        
+
 #pragma omp parallel for schedule(guided)
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
                 auto targetSubArr = (*target)(i, dimsToExclude);
@@ -730,11 +730,11 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
             setShapeInfo(shapeInfoNew, dataType());
             _isShapeAlloc = true;
-        } 
+        }
         else {
             Nd4jLong *shapeInfoNew = ShapeBuilders::createShapeInfo(dataType(), order, shape, _context->getWorkspace());
-            NDArray temp(shapeInfoNew, true, _context, true);                    
-            this->applyTransform(transform::Copy, &temp, nullptr);                        
+            NDArray temp(shapeInfoNew, true, _context, true);
+            this->applyTransform(transform::Copy, &temp, nullptr);
             *this = std::move(temp);
         }
 
@@ -977,7 +977,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
 
         // memcpy is allowed only for same order && same ews (being equal to 1)
         if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1)
-            memcpy(_buffer, other._buffer, _length * sizeOfT());        
+            memcpy(_buffer, other._buffer, _length * sizeOfT());
         else
             NativeOpExecutioner::execTransformAny(_context, transform::Assign, other._buffer, other._shapeInfo, nullptr, nullptr, _buffer, _shapeInfo, nullptr, nullptr, nullptr, nullptr, nullptr);
     }
@@ -1757,7 +1757,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         std::vector<int> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
         shape::checkDimensions(other->rankOf(), copy);
-        
+
         // create tads
         shape::TAD tadX(_shapeInfo, copy.data(), copy.size());
         tadX.createTadOnlyShapeInfo();
@@ -1766,7 +1766,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         shape::TAD tadY(other->_shapeInfo, copy.data(), copy.size());
         tadY.createTadOnlyShapeInfo();
         tadY.createOffsets();
-        
+
         // check tads shapes
         if(!shape::equalsSoft(tadX.tadOnlyShapeInfo, tadY.tadOnlyShapeInfo))
             throw std::runtime_error("NDArray::applyAllReduce3 method: the shapes of array tads are different !");
@@ -1847,12 +1847,12 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
                 _length = shape::length(_shapeInfo);
 
             _dataType = ArrayOptions::dataType(_shapeInfo);
-        } 
+        }
         else {
             _dataType = nd4j::DataType::INHERIT;
         }
     }
-    
+
     //////////////////////////////////////////////////////////////////////////
     void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const nd4j::DataType dtype) {
         if(_isShapeAlloc && _context->getWorkspace() == nullptr)
@@ -1861,16 +1861,16 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
         _shapeInfo = shapeInfo;
 
         if (shapeInfo != nullptr) {
-             
+
              ArrayOptions::setDataType(_shapeInfo, dtype);
 
             if(ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
                 _length = 0;
             else
                 _length = shape::length(shapeInfo);
-            
+
             _dataType = dtype;
-        } 
+        }
         else {
             _dataType = nd4j::DataType::INHERIT;
         }
@@ -1904,7 +1904,7 @@ NDArray::NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::Dat
                 throw std::runtime_error("NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!");
             shape::doPermuteShapeInfo(_shapeInfo, dimensions);
         }
-        
+
         return true;
     }
 
@@ -2149,9 +2149,9 @@ void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, co
 
         shape::TAD tad(this->_shapeInfo, copy.data(), copy.size());
         tad.createTadOnlyShapeInfo();
-        tad.createOffsets();        
+        tad.createOffsets();
 
-        auto array = new NDArray(bufferWithOffset(tad.tadOffsets[index]), tad.tadOnlyShapeInfo, _context, false, false);        
+        auto array = new NDArray(bufferWithOffset(tad.tadOffsets[index]), tad.tadOnlyShapeInfo, _context, false, false);
         array->_isView = true;
 
         return array;

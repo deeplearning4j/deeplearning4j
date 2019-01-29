@@ -1899,6 +1899,9 @@ bool NDArray::isSameShapeStrict(const NDArray *other) const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isEmpty() const {
+    if (this->_shapeInfo == nullptr)
+            return false;
+    
     return ArrayOptions::arrayType(this->getShapeInfo()) == ArrayType::EMPTY;
 }
 

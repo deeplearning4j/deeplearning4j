@@ -41,7 +41,7 @@ public:
 };
 
 TEST_F(NDArrayConstructorsTests, test_constructor_1) {
-    auto x = NDArrayFactory::empty<float>();
+    auto x = NDArrayFactory::empty_<float>();
 
     ASSERT_TRUE(x->buffer() == nullptr);
     ASSERT_TRUE(x->specialBuffer() == nullptr);
