@@ -97,10 +97,11 @@ NDArray::NDArray(const NDArray& other) {
 void NDArray::lazyAllocateBuffer() const {
     
     if (lengthOf() > 0) {
-        NDArray* constThis = const_cast<NDArray*>(this);
         if (_buffer == nullptr && !this->isEmpty()) {
+            NDArray* constThis = const_cast<NDArray*>(this);
             //int8_t* pB = const_cast<int8_t*>(_buffer);
-            ALLOCATE(constThis->_buffer, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
+            // ALLOCATE(constThis->_buffer, _context->getWorkspace(), this->lengthOf() * this->sizeOfT(), int8_t);
+            ALLOCATE(constThis->_buffer, _context->getWorkspace(), (getOffset(_length - 1) + 1) * sizeOfT(), int8_t);
             //const_cast<NDArray*>(this)->_buffer = pB;
             constThis->_isBuffAlloc = true;
             syncToHost();
@@ -752,17 +753,17 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         // remember old values
 
         // we can do this only if there was no permute applied, or there are no weird strides
-        if (shape::canReshape(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f')) {                        
+        if (shape::canReshape(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f')) {                                    
             Nd4jLong *shapeInfoNew;            
             ALLOCATE(shapeInfoNew, _context->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);            
-            shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew);            
+            shape::reshapeCF(this->rankOf(), this->_shapeInfo, shape.size(), shape.data(), order == 'f', shapeInfoNew);
             
-            setShapeInfo(shapeInfoNew, dataType());      
+            setShapeInfo(shapeInfoNew, dataType());
             _isShapeAlloc = true;
         } 
         else {
             Nd4jLong *shapeInfoNew = ShapeBuilders::createShapeInfo(dataType(), order, shape, _context->getWorkspace());
-            NDArray temp(shapeInfoNew, true, _context, true);                    
+            NDArray temp(shapeInfoNew, true, _context, true);            
             this->applyTransform(transform::Copy, &temp, nullptr);            
             temp.tickWriteDevice();
             *this = std::move(temp);
@@ -1013,34 +1014,35 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
         if (this == &other)
             return;
 
+        if (other.isEmpty()) {
+            if (!isEmpty()) {
+                 ArrayOptions::setPropertyBit(this->_shapeInfo, ARRAY_EMPTY);
+                 syncShape();
+            }
+            return;
+        }
+
+        if(isEmpty()) {
+            *this = other;
+            return;
+        }
+
         // if (!Environment::getInstance()->isExperimentalBuild() && (this->dataType() != other.dataType() && other.dataType() != DataType::BOOL)) {
         //     throw datatype_exception::build("NDArray::assign: cannot assign array of different types", this->dataType(), other.dataType());
         // }
 
         if (other.isScalar()) {
             if(this->isScalar()) {
-                if (!this->isEmpty() && !other.isEmpty()) {
-                    BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign,
-                                          (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
-                    if (!isActualOnDeviceSide())
-                    syncToDevice();
-                    tickWriteHost();
-                }
-                else if (this->isEmpty() != other.isEmpty()) { // need assign non-empty scalar to empty
-                    if (other.isEmpty()) {
-                        ArrayOptions::setPropertyBit(this->_shapeInfo, ARRAY_EMPTY);
-                        syncShape();
-                    }
-                    else
-                        *this = other;
-                }
+                lazyAllocateBuffer();
+                if (!other.isActualOnHostSide()) other.syncToHost();
+                BUILD_DOUBLE_SELECTOR(_dataType, other._dataType, templatedDoubleAssign, (_buffer, 0, other._buffer, 0), LIBND4J_TYPES, LIBND4J_TYPES);
+                tickWriteHost();
             }
             else {
-                if (!isActualOnDeviceSide())
-                syncToDevice();
+                if (!other.isActualOnDeviceSide()) other.syncToDevice();
                 NativeOpExecutioner::execScalar(_context, scalar::CopyPws, _buffer, _shapeInfo, _bufferD, _shapeInfoD, _buffer, _shapeInfo, _bufferD, _shapeInfoD, other._buffer, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr);
+                tickWriteDevice();
             }
-            tickWriteDevice();
             return;
         }
 
@@ -1051,13 +1053,13 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
             throw std::runtime_error("Lengths of arrays are mismatched");
         }
 
+        if (!other.isActualOnDeviceSide()) other.syncToDevice();        
+
         // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1)
+        if (ordering() == other.ordering() && _dataType == other._dataType && ews() == 1 && other.ews() == 1) 
             cudaMemcpy(_bufferD, other._bufferD, _length * sizeOfT(), cudaMemcpyDeviceToDevice);
         else 
-            NativeOpExecutioner::execTransformAny(_context, transform::Assign, nullptr, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr, _shapeInfo, _bufferD, _shapeInfoD, nullptr, nullptr, nullptr);
-
-        //syncToHost();
+            NativeOpExecutioner::execTransformAny(_context, transform::Assign, nullptr, other._shapeInfo, other._bufferD, other._shapeInfoD, nullptr, _shapeInfo, _bufferD, _shapeInfoD, nullptr, nullptr, nullptr);        
 
         tickWriteDevice();
     }
@@ -1548,6 +1550,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         if (!target->isR())
             throw std::runtime_error("NDArray::applyTransform FloatOps: target array must have one of FLOAT types");
 
+        if(!isActualOnDeviceSide()) syncToDevice();
         NativeOpExecutioner::execTransformFloat(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
         target->tickWriteDevice();
     }
@@ -1561,6 +1564,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
             target = this;
 
 //        NDArray::registerSpecialUse({target}, {this});
+        if(!isActualOnDeviceSide()) syncToDevice();
         NativeOpExecutioner::execTransformAny(_context, op, _buffer, _shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
         target->tickWriteDevice();
     }
@@ -1576,6 +1580,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         if (target->dataType() != this->dataType())
             throw std::runtime_error("NDArray::applyTransform SameOps: target array must have the same data type as original array");
 //        NDArray::registerSpecialUse({target}, {this});
+        if(!isActualOnDeviceSide()) syncToDevice();
         NativeOpExecutioner::execTransformSame(_context, op, this->_buffer, this->_shapeInfo, this->_bufferD, this->_shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
         target->tickWriteDevice();
     }
@@ -1591,6 +1596,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
             throw std::runtime_error("NDArray::applyTransform BoolOps: target array must have one of BOOL types");
 
         NDArray::registerSpecialUse({target}, {this});
+        if(!isActualOnDeviceSide()) syncToDevice();
         NativeOpExecutioner::execTransformBool(_context, op, this->_buffer, this->_shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(this->dataType()) : nullptr, nullptr, nullptr);
     }
 
@@ -1605,6 +1611,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
             throw std::runtime_error("NDArray::applyTransform StrictOps: both Source and Target array must have same FLOAT type !");
 
         NDArray::registerSpecialUse({target}, {this});
+        if(!isActualOnDeviceSide()) syncToDevice();
         NativeOpExecutioner::execTransformStrict(_context, op, this->_buffer, this->_shapeInfo, _bufferD, _shapeInfoD, target->_buffer, target->_shapeInfo, target->_bufferD, target->_shapeInfoD, extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
     }
 

@@ -2402,7 +2402,7 @@ template void NDArray::operator/=(const bool scalar);
         if (left.isS() || right.isS())
             throw std::runtime_error("mmul friend function: you can't use this function on String array!");
         auto ptr = MmulHelper::mmul(const_cast<NDArray*>(&left), const_cast<NDArray*>(&right), nullptr, 1., 0.);
-        NDArray result(*ptr);
+        NDArray result(std::move(*ptr));
         delete ptr;
         return result;
     }
