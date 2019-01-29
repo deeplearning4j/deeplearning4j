@@ -427,7 +427,7 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::graph::LaunchContext*
         context = nd4j::graph::LaunchContext::defaultContext();
 
     res.setAttached(context->getWorkspace() != nullptr);
-    
+
     int8_t *buffer = nullptr;
     ALLOCATE(buffer, context->getWorkspace(), DataTypeUtils::sizeOfElement(dtype), int8_t);
     memset(buffer, 0, DataTypeUtils::sizeOfElement(dtype));
@@ -476,17 +476,37 @@ template NDArray NDArrayFactory::create(const std::vector<bool> &values, nd4j::g
 
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    NDArray* NDArrayFactory::empty(nd4j::graph::LaunchContext* context) {
+    NDArray* NDArrayFactory::empty_(nd4j::graph::LaunchContext* context) {
+        return empty_(DataTypeUtils::fromT<T>(), context);
+    }
+    BUILD_SINGLE_TEMPLATE(template NDArray* NDArrayFactory::empty_, (nd4j::graph::LaunchContext* context), LIBND4J_TYPES);
+
+    NDArray* NDArrayFactory::empty_(nd4j::DataType dataType, nd4j::graph::LaunchContext* context) {
         if (context == nullptr)
             context = nd4j::graph::LaunchContext::defaultContext();
 
-        auto shapeInfo = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace());
+        auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
-        auto result = new NDArray(nullptr, shapeInfo, context, false, true);        
+        auto result = new NDArray(nullptr, shapeInfo, context, false, true);
 
         return result;
     }
-    BUILD_SINGLE_TEMPLATE(template NDArray* NDArrayFactory::empty, (nd4j::graph::LaunchContext* context), LIBND4J_TYPES);
+
+////////////////////////////////////////////////////////////////////////
+    template <typename T>
+    NDArray NDArrayFactory::empty(nd4j::graph::LaunchContext* context) {
+        return empty(DataTypeUtils::fromT<T>(), context);
+    }
+    BUILD_SINGLE_TEMPLATE(template NDArray NDArrayFactory::empty, (nd4j::graph::LaunchContext* context), LIBND4J_TYPES);
+
+    NDArray NDArrayFactory::empty(nd4j::DataType dataType, nd4j::graph::LaunchContext* context) {
+        auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
+        ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
+        NDArray result(nullptr, shapeInfo, context);
+        result.triggerAllocationFlag(false, true);
+
+        return result;
+    }
 
 ////////////////////////////////////////////////////////////////////////
     NDArray* NDArrayFactory::valueOf(const std::vector<Nd4jLong>& shape, const NDArray& value, const char order, nd4j::graph::LaunchContext* context) {
