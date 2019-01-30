@@ -128,3 +128,35 @@ function onGraphNodeClick(nodeId){
         "<b>Type:</b> " + type + "<br>" +
         extra;
 }
+
+function onGraphNodeSearch(){
+    var value = document.getElementById("findnodetxt").value;
+    console.log("SEARCH TERM: " + value);
+
+    var results = [];
+    if(value != null && value !== ""){
+        //Iterate over ops, find ones that contain the search string
+        var keySet = sdGraphOpsMap.keys();
+        var values = sdGraphOpsMap.values();    //Iterator<nd4j.graph.UIOp>
+        // for( var v in values ){
+        // while(values.hasNe)
+        for(var i=0; i<sdGraphOpsList.length; i++ ){
+            var op = sdGraphOpsList[i];
+            var name = op.name();
+            if(name.includes(value)){
+                results.push(name);
+            }
+        }
+    }
+
+    var listHtml = "<ul>\n";
+    for( var i=0; i<results.length; i++ ){
+        listHtml = listHtml + "<li onclick='onGraphNodeSearchResultClick(\"" + results[i] + "\")'>" + results[i] + "</li>\n";
+    }
+    listHtml = listHtml + "</ul>";
+    document.getElementById("findnoderesults").innerHTML = listHtml;
+}
+
+function onGraphNodeSearchResultClick( clicked ){
+    console.log("CLICKED ON SEARCH RESULT: " + clicked);
+}

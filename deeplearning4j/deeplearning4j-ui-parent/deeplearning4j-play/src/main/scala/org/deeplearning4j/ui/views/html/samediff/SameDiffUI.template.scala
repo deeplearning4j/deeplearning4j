@@ -131,6 +131,14 @@ Seq[Any](format.raw/*1.4*/("""
                     (None)
                 </div>
 
+                <div id="sidebarmid2" style="position: absolute; top: 600px">
+                    <b>Find Node:</b><br>
+                    <input id="findnodetxt" type="text" oninput="onGraphNodeSearch()">
+                    <div id="findnoderesults">
+
+                    </div>
+                </div>
+
                 <div id="sidebarbottom" style="position: absolute; bottom: 0">
                     <label class="input-group-btn">
                         <span class="btn btn-secondary btn-sm">
@@ -167,9 +175,9 @@ Seq[Any](format.raw/*1.4*/("""
         <!-- Execute once on page load -->
         <script>
             document.getElementById('fileselect').addEventListener('change', fileSelect, false);
-            $(document).ready(function () """),format.raw/*146.43*/("""{"""),format.raw/*146.44*/("""
-                """),format.raw/*147.17*/("""renderSameDiffGraph();
-            """),format.raw/*148.13*/("""}"""),format.raw/*148.14*/(""");
+            $(document).ready(function () """),format.raw/*154.43*/("""{"""),format.raw/*154.44*/("""
+                """),format.raw/*155.17*/("""renderSameDiffGraph();
+            """),format.raw/*156.13*/("""}"""),format.raw/*156.14*/(""");
         </script>
     </body>
 </html>
@@ -193,11 +201,11 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Wed Jan 30 14:55:50 AEDT 2019
+                  DATE: Wed Jan 30 15:52:56 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
-                  HASH: 9a5084d6348a024a848042a4951939d6a7e40aa5
-                  MATRIX: 561->1|657->3|685->5|8648->7939|8678->7940|8725->7958|8790->7994|8820->7995
-                  LINES: 20->1|25->1|26->2|170->146|170->146|171->147|172->148|172->148
+                  HASH: 0e0dd4439bb1bac3551c3382c343048fcf741e41
+                  MATRIX: 561->1|657->3|685->5|8962->8253|8992->8254|9039->8272|9104->8308|9134->8309
+                  LINES: 20->1|25->1|26->2|178->154|178->154|179->155|180->156|180->156
                   -- GENERATED --
               */
           
