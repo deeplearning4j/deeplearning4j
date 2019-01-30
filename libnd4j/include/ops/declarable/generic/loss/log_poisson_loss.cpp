@@ -54,10 +54,10 @@ namespace ops {
 
 
         NDArray E(labels->getShapeInfo(), block.getWorkspace());
-        if (!computeFullLoss)
-            labels->applyPairwiseTransform(pairwise::LogPoissonLoss, log_predictions, &E, nullptr);
-        else
+        if (computeFullLoss)
             labels->applyPairwiseTransform(pairwise::LogPoissonLossFull, log_predictions, &E, nullptr);
+        else
+            labels->applyPairwiseTransform(pairwise::LogPoissonLoss, log_predictions, &E, nullptr);
 
 
         // multiply E on weights
@@ -177,22 +177,24 @@ namespace ops {
         NDArray E(labels->getShapeInfo(), block.getWorkspace());
         if (computeFullLoss) {
             labels->applyPairwiseTransform(pairwise::LogPoissonLossFull, log_predictions, &E, nullptr);
-            dLdl->assign(-(*log_predictions));
-        } else {
-            labels->applyPairwiseTransform(pairwise::LogPoissonLoss, log_predictions, &E, nullptr);
 
             NDArray rDiv(labels->getShapeInfo(), block.getWorkspace());
             labels->applyScalar(scalar::ReverseDivide, 0.5f, &rDiv);
             dLdl->assign(rDiv  + labels->transform(transform::Log) + -(*log_predictions));
+        } else {
+            labels->applyPairwiseTransform(pairwise::LogPoissonLoss, log_predictions, &E, nullptr);
+
+            dLdl->assign(-(*log_predictions));
         }
 
         dLdp->assign(log_predictions->transform(transform::Exp) - (*labels));
-
+        
         switch (reductionMode) {
 
             case 1: {											// 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
 
                 *dLdp *= *weightsBroad;
+                *dLdl *= *weightsBroad;
 
                 if(weights->isScalar())
                     dLdw->assign(E.reduceNumber(reduce::Sum));
@@ -214,11 +216,13 @@ namespace ops {
 
                 if (sum.e<double>(0) == 0.) {
                     *dLdp = 0.;
+                    *dLdl = 0.;
                     *dLdw = 0.;
                 }
                 else {
 
                     *dLdp *= *weightsBroad / sum;
+                    *dLdl *= *weightsBroad / sum;
 
                     if(weights->isScalar())
                         *dLdw = 0.;
@@ -243,6 +247,7 @@ namespace ops {
 
                 if (numOfNonZeroWeights == 0) {
                     *dLdp = 0.;
+                    *dLdl = 0.;
                     *dLdw = 0.;
                 }
                 else {
@@ -260,6 +265,7 @@ namespace ops {
 
                     NDArray temp = *weightsBroad / numOfNonZeroWeightsScalar;
                     *dLdp *= temp;
+                    *dLdl *= temp;
                 }
                 break;
             }

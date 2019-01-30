@@ -8999,10 +8999,10 @@ public class SameDiff {
     }
 
     /**
-     * See {@link #lossMeanPairwiseSquaredError(String, SDVariable, SDVariable, SDVariable)}.
+     * See {@link #lossMeanPairwiseSquaredError(String, SDVariable, SDVariable, SDVariable, LossReduce)}.
      */
-    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions) {
-        return lossMeanPairwiseSquaredError(name, label, predictions, null);
+    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, @NonNull LossReduce lossReduce) {
+        return lossMeanPairwiseSquaredError(name, label, predictions, null, lossReduce);
     }
 
     /**
@@ -9017,10 +9017,10 @@ public class SameDiff {
      * @param weights     Weights array. May be null. If null, a weight of 1.0 is used. Must be either null, scalar, or have shape [batchSize]
      * @return Loss variable, scalar output
      */
-    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, SDVariable weights) {
+    public SDVariable lossMeanPairwiseSquaredError(String name, @NonNull SDVariable label, @NonNull SDVariable predictions, SDVariable weights, @NonNull LossReduce lossReduce) {
         if(weights == null)
             weights = this.scalar(null, 1.0);
-        SDVariable result = functionFactory.lossMeanPairwiseSquaredError(label, predictions, weights);
+        SDVariable result = functionFactory.lossMeanPairwiseSquaredError(label, predictions, weights, lossReduce);
         return updateVariableNameAndReference(result, name);
     }
 
