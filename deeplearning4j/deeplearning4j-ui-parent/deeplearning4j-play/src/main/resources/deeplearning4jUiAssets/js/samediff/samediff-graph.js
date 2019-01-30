@@ -22,7 +22,7 @@ function renderSameDiffGraph() {
 
     if (sdGraphNodes) {
 
-        var cy = cytoscape({
+        cy = cytoscape({
 
             container: document.getElementById('graphdiv'), // container to render in
 
@@ -62,8 +62,10 @@ function renderSameDiffGraph() {
 
 
 
-function onGraphNodeClick(nodeId){
+function onGraphNodeClick(node){
     var element = $("#sidebarmid");
+
+    var nodeId = idRestoreSlashes(node);    //"while__Enter" -> "while/Enter"
 
     //Next, find all inputs and outputs...
     var type = "-";
@@ -159,4 +161,10 @@ function onGraphNodeSearch(){
 
 function onGraphNodeSearchResultClick( clicked ){
     console.log("CLICKED ON SEARCH RESULT: " + clicked);
+
+    //Find the node, and center the view on it
+    // var node = cy.$("#" + clicked);  //"The selector `#while/Enter`is invalid"
+    var id = idEscapeSlashes(clicked);
+    var node = cy.$('#' + id);
+    cy.center(node);
 }

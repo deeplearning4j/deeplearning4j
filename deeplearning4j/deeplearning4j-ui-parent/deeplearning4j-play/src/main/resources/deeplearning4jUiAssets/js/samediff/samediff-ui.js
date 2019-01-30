@@ -188,6 +188,7 @@ function readGraphStructure(){
                         if (v.inputsForOpLength() > 0) {
                             for (var j = 0; j < v.inputsForOpLength(); j++) {
                                 var opName = v.inputsForOp(j);
+                                opName = idEscapeSlashes(opName);
                                 var edgeObj = {
                                     id: "edge_" + name + "_" + j,
                                     source: "var-" + name,
@@ -213,6 +214,7 @@ function readGraphStructure(){
                                 if (vcdVariable.type() === nd4j.graph.VarType.ARRAY) {
                                     //Control dependency: array -> variable/const/placeholder
                                     sourceName = vcdVariable.outputOfOp();
+                                    sourceName = idEscapeSlashes(sourceName);
                                     edgeLabel = vcd;    //Don't need to report datatype here, data is not actually used
                                 } else {
                                     //Control dependency: variable/const/placeholder -> variable/const/placeholder
@@ -264,10 +266,11 @@ function readGraphStructure(){
                         opclasses = opclasses + " opmerge";
                     }
 
+                    var id = idEscapeSlashes(name);
+
                     var nodeObj = {
                         label: label,
-                        id: name,
-                        name: name
+                        id: id
                     };
                     sdGraphNodes.push({data: nodeObj, classes: opclasses});
 
@@ -288,8 +291,9 @@ function readGraphStructure(){
                             if (outVarInputCount > 0) {
                                 for (var k = 0; k < outVarInputCount; k++) {
                                     var opName = outVar.inputsForOp(k);
+                                    opName = idEscapeSlashes(opName);
                                     var edgeObj = {
-                                        source: name,
+                                        source: id,
                                         target: opName,
                                         label: outVarName + " (" + dt + ")"
                                     };
@@ -314,14 +318,15 @@ function readGraphStructure(){
                             if (vType === nd4j.graph.VarType.CONSTANT || vType === nd4j.graph.VarType.PLACEHOLDER || vType === nd4j.graph.VarType.VARIABLE) {
                                 edgeObj = {
                                     source: "var-" + varName,
-                                    target: opName,
+                                    target: id,
                                     label: ""
                                 }
                             } else {
                                 var inOpName = variable.outputOfOp();
+                                inOpName = idEscapeSlashes(inOpName);
                                 edgeObj = {
                                     source: inOpName,
-                                    target: opName,
+                                    target: id,
                                     label: "CD: " + varName + " (" + dt + ")"
                                 };
                             }
@@ -337,6 +342,7 @@ function readGraphStructure(){
                     var outName = sdGraphOutputs[i];
                     var v = sdGraphVariableMap.get(outName);
                     var opName = v.outputOfOp();
+                    opName = idEscapeSlashes(opName);
                     if (opName != null) {
                         var dt = dataTypeToString(v.datatype());
                         var shape = varShapeToString(v);
@@ -344,8 +350,7 @@ function readGraphStructure(){
 
                         var nodeObj = {
                             label: n,
-                            id: "out-" + name,
-                            name: "out-" + name
+                            id: "out-" + name
                         };
 
                         sdGraphNodes.push({data: nodeObj, classes: "uivariable output"});
@@ -505,4 +510,12 @@ function setLayout(newLayout){
     }
     samediffgraphlayout = newLayout;
     renderContent();
+}
+
+function idEscapeSlashes(input){
+    return input.replace(new RegExp('/', 'g'), '__');
+}
+
+function idRestoreSlashes(input){
+    return input.replace(new RegExp('__', 'g'), '/');
 }
