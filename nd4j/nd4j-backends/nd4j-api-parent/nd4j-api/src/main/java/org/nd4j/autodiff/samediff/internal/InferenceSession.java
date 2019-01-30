@@ -578,6 +578,14 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     reqShape = reqShape.asDataType(dt);
                 }
 
+                //Validate shape
+                long[] shape = reqShape.getShape();
+                if(shape != null){
+                    for(long s : shape){
+                        Preconditions.checkState(s > 0, "Invalid shape for op %s: shape has invalid values <= 0: shape=%s", customOp.opName(), shape);
+                    }
+                }
+
                 if(currOutput == null || !currOutput.shapeDescriptor().equals(reqShape) || isLoop){
                     INDArray out = Nd4j.create(reqShape, false);
                     customOp.setOutputArgument(i, out);
@@ -631,7 +639,9 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
                             op.getClass().getSimpleName(), (z == null ? null : Arrays.toString(z.shape())), outputShape.get(0).toString());
                 }
-                z = Nd4j.create(outputShape.get(0), false);
+
+                LongShapeDescriptor lsd = outputShape.get(0);
+                z = Nd4j.create(lsd, false);
                 op.setZ(z);
             }
             df.resolvePropertiesFromSameDiffBeforeExecution();
