@@ -23,7 +23,6 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
-#include <iostream>
 
 namespace nd4j {
     namespace ops {
