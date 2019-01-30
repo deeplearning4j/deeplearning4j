@@ -52,6 +52,7 @@ public class LossOpValidation extends BaseOpValidation {
     @Test
     public void testLoss2d() {
         OpValidationSuite.ignoreFailing();  //2019/01/17 - Some passing, some not yet implemented, some issues: Issue 17 https://github.com/deeplearning4j/deeplearning4j/issues/6958
+        final List<String> oneDimensionalOutputFns = Arrays.asList("cosine", "mpwse", "softmaxxent", "softmaxxent_smooth", "mpwse", "sparsesoftmax");
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -67,17 +68,10 @@ public class LossOpValidation extends BaseOpValidation {
 
 
             for(String weights : new String[]{"none", "scalar", "perExample", "perOutput"}) {
-                if((fn.startsWith("softmax") || fn.equals("cosine")) && weights.equals("perOutput"))
+                if(weights.equals("perOutput") && oneDimensionalOutputFns.contains(fn))
                     continue;   //Skip this combination (not possible)
 
-                if(fn.equals("mpwse") && weights.equals("perOutput"))
-                    continue;   //MPWSE only supports scalar, none, or per example weights
-
                 for (LossReduce reduction : LossReduce.values()) {
-
-                    if(fn.equals("mpwse") && (reduction != LossReduce.NONE || weights.equals("perOutput"))) //LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT)
-                        continue;   //MPWSE only provides scalar output - i.e., no other reduction modes. And only none/scalar/per-example weights
-
                     if((fn.equals("softmaxxent") || fn.equals("softmaxxent_smooth")) && reduction == LossReduce.NONE)
                         continue;       //Combination not supported (doesn't make sense)
 
@@ -255,7 +249,7 @@ public class LossOpValidation extends BaseOpValidation {
 
                             expOut.muli(1/((n*(n-1)) / 2));
 
-                            loss = sd.lossMeanPairwiseSquaredError("loss", labels, predictions, w);
+                            loss = sd.lossMeanPairwiseSquaredError("loss", labels, predictions, w, reduction);
                             break;
                         case "sparsesoftmax":
                             labelsArr = Nd4j.create(DataType.INT, minibatch);
@@ -298,7 +292,7 @@ public class LossOpValidation extends BaseOpValidation {
                             expOut = expOut.sum().reshape();
                             break;
                         case MEAN_BY_WEIGHT:
-                            if((fn.startsWith("softmax") || fn.equals("cosine"))){
+                            if(oneDimensionalOutputFns.contains(fn)){
                                 //1d output, not 2d
                                 expOut = expOut.sum().divi(wArrBroadcast.getColumn(0).sumNumber().doubleValue());
                             } else {
@@ -306,7 +300,7 @@ public class LossOpValidation extends BaseOpValidation {
                             }
                             break;
                         case MEAN_BY_NONZERO_WEIGHT_COUNT:
-                            if((fn.startsWith("softmax") || fn.equals("cosine"))) {
+                            if(oneDimensionalOutputFns.contains(fn)) {
                                 //1d output, not 2d
                                 int countNonZero = wArrBroadcast.getColumn(0).neq(0.0).castTo(DataType.DOUBLE).sumNumber().intValue();
                                 expOut = expOut.sum().divi(countNonZero);
