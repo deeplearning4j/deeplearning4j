@@ -227,7 +227,7 @@ public class LossOpValidation extends BaseOpValidation {
                             }
                             INDArray logP2 = Transforms.log(softmaxPredictions, true);
                             expOut = labelsArrCopy.mul(logP2).negi().sum(1);
-                            loss = sd.lossSoftmaxCrossEntropy("loss", labels.castTo(DataType.INT), predictions, w, reduction, lblSmooth2);
+                            loss = sd.lossSoftmaxCrossEntropy("loss", labels, predictions, w, reduction, lblSmooth2);
                             break;
                         case "mpwse":
                             expOut = Nd4j.create(labelsArr.size(0));
@@ -252,7 +252,7 @@ public class LossOpValidation extends BaseOpValidation {
                             loss = sd.lossMeanPairwiseSquaredError("loss", labels, predictions, w, reduction);
                             break;
                         case "sparsesoftmax":
-                            labelsArr = Nd4j.create(DataType.INT, minibatch);
+                            labelsArr = Nd4j.create(DataType.DOUBLE, minibatch);
                             INDArray oneHot = Nd4j.create(DataType.DOUBLE, minibatch, nOut);
                             for( int i=0; i<minibatch; i++ ){
                                 labelsArr.putScalar(i, i%nOut);
