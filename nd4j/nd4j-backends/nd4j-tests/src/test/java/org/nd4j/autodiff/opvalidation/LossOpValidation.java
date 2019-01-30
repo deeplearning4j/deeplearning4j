@@ -44,14 +44,11 @@ public class LossOpValidation extends BaseOpValidation {
         super(backend);
     }
 
+    // All tested Loss Ops have backprop at the moment 2019/01/30
     public static final Set<String> NO_BP_YET = new HashSet<>();
-    static {
-        NO_BP_YET.addAll(Arrays.asList("l2_loss"));
-    }
 
     @Test
     public void testLoss2d() {
-        OpValidationSuite.ignoreFailing();  //2019/01/17 - Some passing, some not yet implemented, some issues: Issue 17 https://github.com/deeplearning4j/deeplearning4j/issues/6958
         final List<String> oneDimensionalOutputFns = Arrays.asList("cosine", "mpwse", "softmaxxent", "softmaxxent_smooth", "mpwse", "sparsesoftmax");
 
         Nd4j.getRandom().setSeed(12345);
