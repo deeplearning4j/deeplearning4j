@@ -335,6 +335,10 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     idx[0] = NDArrayIndex.point(i);
                     INDArray get = valuesArr.get(idx).dup();
                     int outIdx = idxs[i];
+                    if(idxs.length == 2 && get.rank() == 2){
+                        //Workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/7092
+                        get = get.reshape(get.length());
+                    }
                     l.set(outIdx, get);
                 }
 
