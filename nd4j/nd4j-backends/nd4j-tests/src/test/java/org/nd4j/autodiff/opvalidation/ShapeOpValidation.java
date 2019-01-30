@@ -1915,4 +1915,25 @@ public class ShapeOpValidation extends BaseOpValidation {
         long[] expShape = new long[]{1,5};
         assertArrayEquals(expShape, shape);     //Fails: actual shape: [5]
     }
+
+    @Test
+    public void testSliceShape(){
+
+        INDArray arr = Nd4j.arange(0, 25).reshape(1,5,5).castTo(DataType.INT);
+        System.out.println(Arrays.toString(arr.shape()));
+        System.out.println(arr);
+
+        INDArray begin = Nd4j.createFromArray(0, 1, 2);
+        INDArray size = Nd4j.createFromArray(-1, -1, -1);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("slice")
+                .addInputs(arr, begin, size)
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        long[] shape = l.get(0).getShape();
+        long[] shapeExp = new long[]{1,4,3};
+
+        assertArrayEquals(shapeExp, shape);
+    }
 }

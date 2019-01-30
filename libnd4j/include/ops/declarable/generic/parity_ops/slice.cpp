@@ -23,6 +23,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
+#include <iostream>
 
 namespace nd4j {
     namespace ops {
@@ -111,6 +112,10 @@ namespace nd4j {
             for (int e = 0; e < x_rank; e++) {
                 auto stop = end[e];
                 auto start = begin[e];
+
+                if(stop == -1){
+					stop = inShape[e+1] - start;
+				}
 
                 shape.emplace_back(stop);
             }
