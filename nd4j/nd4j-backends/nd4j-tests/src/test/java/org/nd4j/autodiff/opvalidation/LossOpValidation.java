@@ -341,6 +341,10 @@ public class LossOpValidation extends BaseOpValidation {
                             .gradientCheck(doGradCheck)
                             .testFlatBufferSerialization(TestCase.TestSerialization.BOTH);
 
+                    if(reduction == LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT && !weights.equals("none")){
+                        tc = tc.gradCheckMask(Collections.singletonMap("weights", w.getArr().neq(0)));
+                    }
+
                     if(fn.equals("sparsesoftmax")){
                         tc.gradCheckSkipVariables("labels");
                     }
