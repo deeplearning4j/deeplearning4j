@@ -77,7 +77,7 @@ namespace nd4j {
         // return sorted vector of dimensions of array with larger dimensions along which two input arrays have same shape
         static std::vector<int> getDimsWithSameShape(const NDArray& max, const NDArray& min);
 
-        // return absolute index of array min, min is sub-array of max, index to be returned is min index and it corresponds maxIdx of max array 
+        // return absolute index of array min, min is sub-array of max, index to be returned is min array index and it corresponds maxIdx of max array 
         static Nd4jLong getSubArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const Nd4jLong maxIdx);
 
         // evaluate shapeInfo for resulting array of tile operation

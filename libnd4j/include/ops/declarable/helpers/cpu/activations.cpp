@@ -171,12 +171,10 @@ namespace helpers {
 
 #pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(Nd4jLong i = 0; i < inputLen; ++i) {
-             // FIXME: double!
-            double x = input.e<double>(i);
-            if(x < 0.0) {
-                // FIXME: double
-                output.p(i, (x * alpha.e<double>(ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i))));
-            } else
+            auto x = input.e(i);
+            if(x.e<float>(0) < 0.0)
+                output.p(i, (x * alpha.e(ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i))));
+            else
                 output.p(i, x);
         }
     }
@@ -191,11 +189,10 @@ namespace helpers {
         dLdA.assign(0.0f);
 
 //#pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(Nd4jLong i = 0; i < inputLen; ++i) {
-            // FIXME: double
+        for(Nd4jLong i = 0; i < inputLen; ++i) {            
             auto x   = input.e(i);
             auto grO = dLdO.e(i);
-            if(x.e<double>(0) < 0.0) {
+            if(x.e<float>(0) < 0.0) {
                 Nd4jLong alphaInd = ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i);
                 dLdI.p(i, grO * alpha.e(alphaInd));
                 auto prevVal = dLdA.e(alphaInd);
@@ -209,11 +206,7 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template void _softMaxForVector, (graph::LaunchContext* context, void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo), FLOAT_TYPES);
     BUILD_SINGLE_TEMPLATE(template void _logSoftMaxForVector, (graph::LaunchContext* context, void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo), FLOAT_TYPES);
-
-    bool checkAlphaShapeLen(graph::LaunchContext* context, std::vector<Nd4jLong> const& expectedShape, Nd4jLong shapeLen) {
-        Nd4jLong expectedAlphaLen = std::accumulate(expectedShape.cbegin(), expectedShape.cend(), 1, std::multiplies<Nd4jLong>());
-        return expectedAlphaLen == shapeLen;
-    }
+    
     template <typename T>
     static void thresholdRelu_(NDArray const& input, double threshold, NDArray& output) {
         auto routine = LAMBDA_T(_x, threshold) {

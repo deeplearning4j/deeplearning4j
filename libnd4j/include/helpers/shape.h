@@ -1039,7 +1039,7 @@ namespace shape {
 
 
     // return absolute index of array min, min is sub-array of max, index to be returned is min index and corresponds to maxIdx of max array
-    ND4J_EXPORT _CUDA_H Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx);
+    ND4J_EXPORT _CUDA_HD Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx);
 
     ND4J_EXPORT _CUDA_HD void shapeOldScalar(nd4j::DataType dtype, Nd4jLong* const buffer, const char order);
 

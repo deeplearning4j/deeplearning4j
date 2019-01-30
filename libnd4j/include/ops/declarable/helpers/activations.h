@@ -43,8 +43,6 @@ namespace helpers {
 
     void preluBP(graph::LaunchContext* context, const NDArray &input, const NDArray &alpha, const NDArray &dLdO, NDArray &dLdI, NDArray &dLdA);
 
-    bool checkAlphaShapeLen(graph::LaunchContext* context, std::vector<Nd4jLong> const &expectedShape, Nd4jLong shapeLen);
-
     void thresholdRelu(graph::LaunchContext* context, const NDArray &input, double threshold, NDArray &output);
 
     void thresholdReluDerivative(graph::LaunchContext* context, NDArray *input, double threshold, NDArray* dLdO, NDArray *output);
