@@ -420,6 +420,8 @@ public class PlayUIServer extends UIServer {
                     m.reportStorageEvents(out);
                 }
 
+                events.clear();
+
                 try {
                     Thread.sleep(uiProcessingDelay);
                 } catch (InterruptedException e) {

@@ -126,6 +126,8 @@ public class Dropout implements IDropout {
 
     @Override
     public INDArray applyDropout(INDArray inputActivations, INDArray output, int iteration, int epoch, LayerWorkspaceMgr workspaceMgr) {
+        Preconditions.checkState(output.dataType().isFPType(), "Output array must be a floating point type, got %s for array of shape %ndShape",
+                output.dataType(), output);
         double currP;
         if(pSchedule != null){
             currP = pSchedule.valueAt(iteration, epoch);
@@ -138,9 +140,14 @@ public class Dropout implements IDropout {
             return output;
         }
 
-        mask = workspaceMgr.createUninitialized(ArrayType.INPUT, output.shape(), output.ordering()).assign(1.0);
+        INDArray inputCast = inputActivations;
+        if(inputCast != output && inputCast.dataType() != output.dataType()){
+            inputCast = inputCast.castTo(output.dataType());
+        }
+
+        mask = workspaceMgr.createUninitialized(ArrayType.INPUT, output.dataType(), output.shape(), output.ordering()).assign(1.0);
         Nd4j.getExecutioner().exec(new DropOutInverted(mask, mask, currP));
-        Nd4j.getExecutioner().exec(new OldMulOp(inputActivations.castTo(Nd4j.defaultFloatingPointType()), mask, output));
+        Nd4j.getExecutioner().exec(new OldMulOp(inputCast, mask, output));
         return output;
     }
 
@@ -154,7 +161,11 @@ public class Dropout implements IDropout {
         Preconditions.checkState(mask != null, "Cannot perform backprop: Dropout mask array is absent (already cleared?)");
         //dL/dx = dL/dz * dz/dx, with z=0 or x/p
         //Mask already contains either 0 or 1/p, so just muli
-        Nd4j.getExecutioner().exec(new OldMulOp(gradAtOutput, mask, gradAtInput));
+        INDArray m = mask;
+        if(m.dataType() != gradAtInput.dataType()){
+            m = m.castTo(gradAtInput.dataType());
+        }
+        Nd4j.getExecutioner().exec(new OldMulOp(gradAtOutput, m, gradAtInput));
         mask = null;
         return gradAtInput;
     }
