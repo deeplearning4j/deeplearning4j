@@ -46,8 +46,15 @@ function samediffSetPage(pageName){
 }
 
 
-nodes = [];
-edges = [];
+sdGraphNodes = [];
+sdGraphEdges = [];
+sdGraphInputs = [];
+sdGraphOutputs = [];
+sdGraphVariables = [];
+sdGraphVariableNames = [];
+sdGraphOpsList = [];
+sdGraphOpsMap = new Map();
+sdGraphVariableMap = new Map();
 
 function fileSelect(evt) {
     var output = [];
@@ -79,7 +86,7 @@ function readGraphStructure(){
             var headerLength = lengths[0];
             var contentLength = lengths[1];
 
-            console.log("Header/content lengths: " + headerLength + ", " + contentLength);
+            // console.log("Header/content lengths: " + headerLength + ", " + contentLength);
 
             //https://gist.github.com/alexvictoor/0b76764857b780ad8f83
 
@@ -88,7 +95,7 @@ function readGraphStructure(){
 
             var decoded = decodeStaticInfo(headerSlice, contentSlice);
 
-            console.log("Decoded header message: " + decoded[0]);
+            // console.log("Decoded header message: " + decoded[0]);
 
             if (decoded[0] === "graph") {
                 var opCount = 0;
@@ -96,30 +103,31 @@ function readGraphStructure(){
                 var varCount = 0;
                 var constCount = 0;
 
-                nodes.length = 0;
-                edges.length = 0;
+                sdGraphNodes.length = 0;
+                sdGraphEdges.length = 0;
                 var graph = decoded[1];
-                var inputs = uiGraphGetInputs(graph);
-                var outputs = uiGraphGetOutputs(graph);
-                var variables = uiGraphGetVariables(graph);
-                var ops = uiGraphGetOps(graph);
-                console.log("Inputs: " + inputs);
-                console.log("Outputs: " + outputs);
-                console.log("Variables: " + variables);
-                console.log("Ops: " + ops);
+                sdGraphInputs = uiGraphGetInputs(graph);
+                sdGraphOutputs = uiGraphGetOutputs(graph);
+                sdGraphVariables = uiGraphGetVariables(graph);
+                sdGraphVariableNames = uiGraphGetVariableNames(graph);
+                sdGraphOpsList = uiGraphGetOps(graph);
+                console.log("Inputs: " + sdGraphInputs);
+                console.log("Outputs: " + sdGraphOutputs);
+                console.log("Variables: " + sdGraphVariableNames);
+                console.log("Ops: " + sdGraphOpsList);
 
                 var mapVarNameInteger = new Map();
-                var mapVars = new Map();            //Key: variable name, value: variable
+                sdGraphVariableMap = new Map();            //Key: variable name, value: variable
                 var count = 0;
-                for (var i = 0; i < variables.length; i++) {
-                    var v = variables[i];
+                for (var i = 0; i < sdGraphVariables.length; i++) {
+                    var v = sdGraphVariables[i];
                     var name = v.name();
                     mapVarNameInteger.set(count, name);
-                    mapVars.set(name, v);
+                    sdGraphVariableMap.set(name, v);
                 }
 
-                for (var i = 0; i < variables.length; i++) {
-                    var v = variables[i];
+                for (var i = 0; i < sdGraphVariables.length; i++) {
+                    var v = sdGraphVariables[i];
                     var name = v.name();
                     //Add variables/constants/placeholders as a node
                     var vType = v.type();
@@ -175,7 +183,7 @@ function readGraphStructure(){
                             renderStyle = "uivariable constant";
                         }
 
-                        nodes.push({data: nodeObj, classes: renderStyle});
+                        sdGraphNodes.push({data: nodeObj, classes: renderStyle});
 
                         if (v.inputsForOpLength() > 0) {
                             for (var j = 0; j < v.inputsForOpLength(); j++) {
@@ -187,7 +195,7 @@ function readGraphStructure(){
                                     label: ""
                                 };
 
-                                edges.push({data: edgeObj, classes: "opoutputedge"});
+                                sdGraphEdges.push({data: edgeObj, classes: "opoutputedge"});
                             }
                         }
 
@@ -199,7 +207,7 @@ function readGraphStructure(){
 
                                 //2 possibilities: variable is a variable/constant/placeholder: source is from variable node
                                 //Or variable is output of an op: source is from an op node
-                                var vcdVariable = mapVars.get(vcd);
+                                var vcdVariable = sdGraphVariableMap.get(vcd);
                                 var sourceName;
                                 var edgeLabel;
                                 if (vcdVariable.type() === nd4j.graph.VarType.ARRAY) {
@@ -217,7 +225,7 @@ function readGraphStructure(){
                                     target: "var-" + name,
                                     label: edgeLabel
                                 };
-                                edges.push({data: edgeObj, classes: "controldepedge"});
+                                sdGraphEdges.push({data: edgeObj, classes: "controldepedge"});
                             }
                         }
                     }
@@ -227,15 +235,15 @@ function readGraphStructure(){
 
                 //Op nodes
                 var mapOpNameInteger = new Map();
-                var mapOp = new Map();
+                sdGraphOpsMap = new Map();
                 count = 0;
-                opCount = ops.length;
-                for (var i = 0; i < ops.length; i++) {
-                    var o = ops[i];
+                opCount = sdGraphOpsList.length;
+                for (var i = 0; i < sdGraphOpsList.length; i++) {
+                    var o = sdGraphOpsList[i];
                     var name = o.name();
                     var opName = o.opName();
                     mapOpNameInteger.set(count, name);
-                    mapOp.set(name, o);
+                    sdGraphOpsMap.set(name, o);
 
                     var label = "\"" + name + "\"\n(" + opName + ")";
                     var e = o.uiLabelExtra();
@@ -261,7 +269,7 @@ function readGraphStructure(){
                         id: name,
                         name: name
                     };
-                    nodes.push({data: nodeObj, classes: opclasses});
+                    sdGraphNodes.push({data: nodeObj, classes: opclasses});
 
 
                     //Add edges between ops:
@@ -269,7 +277,7 @@ function readGraphStructure(){
                     if (ol > 0) {
                         for (var j = 0; j < ol; j++) {
                             var outVarName = o.outputs(j);
-                            var outVar = mapVars.get(outVarName);
+                            var outVar = sdGraphVariableMap.get(outVarName);
                             var outVarInputCount = outVar.inputsForOpLength();
 
                             //Op -> outVar -> otherOp exists
@@ -285,7 +293,7 @@ function readGraphStructure(){
                                         target: opName,
                                         label: outVarName + " (" + dt + ")"
                                     };
-                                    edges.push({data: edgeObj, classes: "opoutputedge"});
+                                    sdGraphEdges.push({data: edgeObj, classes: "opoutputedge"});
                                 }
                             }
                         }
@@ -299,7 +307,7 @@ function readGraphStructure(){
                             //If placeholder, variable or constant, make edge from variable node
                             //If array, make edge from op node
 
-                            var variable = mapVars.get(varName);
+                            var variable = sdGraphVariableMap.get(varName);
                             var dt = dataTypeToString(variable.datatype());
                             var vType = variable.type();
                             var edgeObj;
@@ -317,7 +325,7 @@ function readGraphStructure(){
                                     label: "CD: " + varName + " (" + dt + ")"
                                 };
                             }
-                            edges.push({data: edgeObj, classes: "controldepedge"});
+                            sdGraphEdges.push({data: edgeObj, classes: "controldepedge"});
                         }
                     }
 
@@ -325,9 +333,9 @@ function readGraphStructure(){
                 }
 
                 //Also add the outputs:
-                for (var i = 0; i < outputs.length; i++) {
-                    var outName = outputs[i];
-                    var v = mapVars.get(outName);
+                for (var i = 0; i < sdGraphOutputs.length; i++) {
+                    var outName = sdGraphOutputs[i];
+                    var v = sdGraphVariableMap.get(outName);
                     var opName = v.outputOfOp();
                     if (opName != null) {
                         var dt = dataTypeToString(v.datatype());
@@ -340,7 +348,7 @@ function readGraphStructure(){
                             name: "out-" + name
                         };
 
-                        nodes.push({data: nodeObj, classes: "uivariable output"});
+                        sdGraphNodes.push({data: nodeObj, classes: "uivariable output"});
 
                         //Also add edge:
                         var edgeObj = {
@@ -348,7 +356,7 @@ function readGraphStructure(){
                             source: opName,
                             target: "out-" + name
                         };
-                        edges.push({data: edgeObj, classes: "opoutputedge"});
+                        sdGraphEdges.push({data: edgeObj, classes: "opoutputedge"});
                     }
                 }
 
@@ -356,8 +364,8 @@ function readGraphStructure(){
                 //Render the side bar:
                 document.getElementById('sidebartop').innerHTML =
                     "<br><br><strong>File:</strong> " + file.name + "<br>" +
-                    "<strong>Inputs:</strong> \"" + inputs.join("\", \"") + "\"<br>" +
-                    "<strong>Outputs:</strong> \"" + outputs.join("\", \"") + "\"<br>" +
+                    "<strong>Inputs:</strong> \"" + sdGraphInputs.join("\", \"") + "\"<br>" +
+                    "<strong>Outputs:</strong> \"" + sdGraphOutputs.join("\", \"") + "\"<br>" +
                     "<strong>Placeholder Count:</strong> " + phCount + "<br>" +
                     "<strong>Variable Count:</strong> " + varCount + "<br>" +
                     "<strong>Constant Count:</strong> " + constCount + "<br>" +
@@ -478,34 +486,7 @@ function renderContent(){
 }
 
 
-function renderSameDiffGraph() {
-    document.getElementById("samediffcontent").innerHTML = "<div id=\"graphdiv\" style=\"height: 100%; width: 100%; display: table\"></div>";
 
-    if (nodes) {
-
-        var cy = cytoscape({
-
-            container: document.getElementById('graphdiv'), // container to render in
-
-            layout: {
-                name: samediffgraphlayout,
-                padding: 10,
-                klay : {
-                    direction: klaylayout
-                }
-            },
-
-            elements: {
-                nodes: nodes,
-                edges: edges
-            },
-            style: fetch('/assets/js/samediff/cytoscape-style.json').then(function(res){
-                return res.json();
-            }),
-            wheelSensitivity: 0.2
-        });
-    }
-}
 
 function renderPageNotImplemented(){
     document.getElementById("samediffcontent").innerHTML = "<br><br>Page not yet implemented: " + selectedPage + "<br>";

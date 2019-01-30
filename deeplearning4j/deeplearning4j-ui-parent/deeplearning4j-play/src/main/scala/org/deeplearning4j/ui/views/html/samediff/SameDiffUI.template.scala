@@ -98,6 +98,7 @@ Seq[Any](format.raw/*1.4*/("""
         <script src="/assets/js/samediff/generated/variable_generated.js"></script>
 
         <script src="/assets/js/samediff/samediff-ui.js"></script>
+        <script src="/assets/js/samediff/samediff-graph.js"></script>
         <script src="/assets/js/samediff/samediff-plots.js"></script>
         <script src="/assets/js/samediff/flatbuffers-utils.js"></script>
 
@@ -123,6 +124,11 @@ Seq[Any](format.raw/*1.4*/("""
             <div id="samediffsidebar">
                 <div id="sidebartop" style="position: absolute; top: 0">
                     <br><br>[No file loaded]
+                </div>
+
+                <div id="sidebarmid" style="position: absolute; top: 300px">
+                    <b>Selected Node:</b><br>
+                    (None)
                 </div>
 
                 <div id="sidebarbottom" style="position: absolute; bottom: 0">
@@ -161,9 +167,9 @@ Seq[Any](format.raw/*1.4*/("""
         <!-- Execute once on page load -->
         <script>
             document.getElementById('fileselect').addEventListener('change', fileSelect, false);
-            $(document).ready(function () """),format.raw/*140.43*/("""{"""),format.raw/*140.44*/("""
-                """),format.raw/*141.17*/("""renderSameDiffGraph();
-            """),format.raw/*142.13*/("""}"""),format.raw/*142.14*/(""");
+            $(document).ready(function () """),format.raw/*146.43*/("""{"""),format.raw/*146.44*/("""
+                """),format.raw/*147.17*/("""renderSameDiffGraph();
+            """),format.raw/*148.13*/("""}"""),format.raw/*148.14*/(""");
         </script>
     </body>
 </html>
@@ -187,11 +193,11 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Sat Jan 26 23:05:45 AEDT 2019
+                  DATE: Wed Jan 30 14:55:50 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
-                  HASH: 27640729bbb4828beea10f928d91e70cd1bb41f0
-                  MATRIX: 561->1|657->3|685->5|8398->7689|8428->7690|8475->7708|8540->7744|8570->7745
-                  LINES: 20->1|25->1|26->2|164->140|164->140|165->141|166->142|166->142
+                  HASH: 9a5084d6348a024a848042a4951939d6a7e40aa5
+                  MATRIX: 561->1|657->3|685->5|8648->7939|8678->7940|8725->7958|8790->7994|8820->7995
+                  LINES: 20->1|25->1|26->2|170->146|170->146|171->147|172->148|172->148
                   -- GENERATED --
               */
           

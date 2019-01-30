@@ -56,6 +56,7 @@ function decodeStaticInfo(headerContentBytes, bufferContentBytes){
     }
 }
 
+//Return graph inputs as a String[]
 function uiGraphGetInputs(/*UIGraphStructure*/ graph){
     var inLength = graph.inputsLength();
     var inputs = [];
@@ -65,6 +66,7 @@ function uiGraphGetInputs(/*UIGraphStructure*/ graph){
     return inputs;
 }
 
+//Return graph outputs as a String[]
 function uiGraphGetOutputs(/*UIGraphStructure*/ graph){
     var inLength = graph.outputsLength();
     var outputs = [];
@@ -74,6 +76,7 @@ function uiGraphGetOutputs(/*UIGraphStructure*/ graph){
     return outputs;
 }
 
+//Return graph variables as nd4j.graph.UIVariable[]
 function uiGraphGetVariables(/*UIGraphStructure*/ graph){
     var varsLength = graph.variablesLength();
     var vars = [];
@@ -83,6 +86,17 @@ function uiGraphGetVariables(/*UIGraphStructure*/ graph){
     return vars;
 }
 
+//Return graph variables as String[]
+function uiGraphGetVariableNames(/*UIGraphStructure*/ graph){
+    var varsLength = graph.variablesLength();
+    var vars = [];
+    for( var i=0; i<varsLength; i++ ){
+        vars.push(graph.variables(i).name());
+    }
+    return vars;
+}
+
+//Returns nd4j.graph.UIOp[]
 function uiGraphGetOps(/*UIGraphStructure*/ graph){
     var opsLength = graph.opsLength();
     var ops = [];
