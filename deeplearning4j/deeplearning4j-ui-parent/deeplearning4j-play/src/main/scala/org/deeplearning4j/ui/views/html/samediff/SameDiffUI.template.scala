@@ -101,83 +101,105 @@ Seq[Any](format.raw/*1.4*/("""
         <script src="/assets/js/samediff/samediff-graph.js"></script>
         <script src="/assets/js/samediff/samediff-plots.js"></script>
         <script src="/assets/js/samediff/flatbuffers-utils.js"></script>
-
-        <!-- NavBar - Bootstrap classes -->
-        <nav class="navbar navbar-expand navbar-dark bg-dark">
-            <a class="navbar-brand" href="#">SameDiff</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-                <div class="navbar-nav">
-                    <a id="sdnavgraph" class="nav-item nav-link active" href="#" onclick="samediffSetPage('graph')">Graph</a>
-                    <a id="sdnavplots" class="nav-item nav-link" href="#" onclick="samediffSetPage('plots')">Plots</a>
-                    <a id="sdnaveval" class="nav-item nav-link" href="#" onclick="samediffSetPage('evaluation')">Evaluation</a>
-                    <a id="sdnavperf" class="nav-item nav-link" href="#"onclick="samediffSetPage('performance')">Performance</a>
-                    <a class="nav-item nav-link" href="#"onclick="toggleSidebar()">Toggle Sidebar</a>
-                </div>
+        """),format.raw/*80.34*/("""
+        """),format.raw/*81.9*/("""<div class="container-fluid" style="min-height: 100%">
+            <div class="row">
+                    <!-- NavBar - Bootstrap classes -->
+                <nav class="navbar navbar-expand navbar-dark bg-dark" style="width: 100pc">
+                    <a class="navbar-brand" href="#">SameDiff</a>
+                    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                        <div class="navbar-nav">
+                            <a id="sdnavgraph" class="nav-item nav-link active" href="#" onclick="samediffSetPage('graph')">
+                                Graph</a>
+                            <a id="sdnavplots" class="nav-item nav-link" href="#" onclick="samediffSetPage('plots')">
+                                Plots</a>
+                            <a id="sdnaveval" class="nav-item nav-link" href="#" onclick="samediffSetPage('evaluation')">
+                                Evaluation</a>
+                            <a id="sdnavperf" class="nav-item nav-link" href="#" onclick="samediffSetPage('performance')">
+                                Performance</a>
+                            <a class="nav-item nav-link" href="#" onclick="toggleSidebar()">Toggle Sidebar</a>
+                        </div>
+                    </div>
+                </nav>
             </div>
-        </nav>
-        <div class="wrapper">
 
-                <!-- Sidebar -->
-            <div id="samediffsidebar">
-                <div id="sidebartop" style="position: absolute; top: 0">
-                    <br><br>[No file loaded]
-                </div>
+            <div class="row" style="min-height: 100%">
+                    <!-- Sidebar -->
+                """),format.raw/*107.47*/("""
+                """),format.raw/*108.17*/("""<div class="col-md-4 col-12" style="min-width: 300px; max-width: 300px; background-color: #e6e6e6; height:100%; min-height:100vh">
+                    """),format.raw/*109.81*/("""
+                    """),format.raw/*110.21*/("""<div id="sidebartop" class="row p-2">
+                        <div style="width:auto">
+                            <label class="input-group-btn">
+                                <span class="btn btn-secondary btn-sm">
+                                    Select File<input type="file" id="fileselect" style="display: none;" multiple>
+                                </span>
+                            </label>
+                        </div>
+                        <div id="selectedfile" class="w-100">[No File Loaded]</div>
+                    </div>
 
-                <div id="sidebarmid" style="position: absolute; top: 300px">
-                    <b>Selected Node:</b><br>
-                    (None)
-                </div>
+                    <div class="sidebarline"></div>
 
-                <div id="sidebarmid2" style="position: absolute; top: 600px">
-                    <b>Find Node:</b><br>
-                    <input id="findnodetxt" type="text" oninput="onGraphNodeSearch()">
-                    <div id="findnoderesults">
+                    """),format.raw/*123.85*/("""
+                    """),format.raw/*124.21*/("""<div id="sidebarmid" class="row p-2">
+                        <div class="w-100"><b>Selected Node:</b></div>
+                        <div id="sidebarmid-content" class="w-100">(None)</div>
+                    </div>
 
+                    <div class="sidebarline"></div>
+
+                    <div id="sidebarmid2" class="row p-2">
+                        <div style="width:100%">
+                            <b>Find Node:</b><br>
+                        </div>
+                        <input id="findnodetxt" type="text" oninput="onGraphNodeSearch()">
+                        <div id="findnoderesults">
+
+                        </div>
+                    </div>
+
+                    <div class="sidebarline"></div>
+
+                    """),format.raw/*143.87*/("""
+                    """),format.raw/*144.21*/("""<div id="sidebarbottom" class="row p-2">
+                        <br><br>
+                        <strong>Graph Layout:</strong>
+                        <div class="btn-group btn-group-toggle w-100" data-toggle="buttons" style="height: 40px">
+                            <label class="btn btn-secondary active" onclick="setLayout('klay_down')">
+                                <input type="radio" name="options" id="option1" autocomplete="off" checked>Down</label>
+                            <label class="btn btn-secondary" onclick="setLayout('klay_lr')">
+                                <input type="radio" name="options" id="option2" autocomplete="off">Right</label>
+                            <label class="btn btn-secondary" onclick="setLayout('dagre')">
+                                <input type="radio" name="options" id="option3" autocomplete="off">Alt</label>
+                            <label class="btn btn-secondary" onclick="setLayout('cose-bilkent')">
+                                <input type="radio" name="options" id="option3" autocomplete="off">Spread</label>
+                        </div>
+                        <br>
+                        <br>
+                        <br>
                     </div>
                 </div>
 
-                <div id="sidebarbottom" style="position: absolute; bottom: 0">
-                    <label class="input-group-btn">
-                        <span class="btn btn-secondary btn-sm">
-                            Select File<input type="file" id="fileselect" style="display: none;" multiple>
-                        </span>
-                    </label>
-                    <div id="selectedfile">Selected: None</div>
-
-                    <br><br>
-                    <strong>Layout:</strong>
-                    <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
-                        <label class="btn btn-secondary active" onclick="setLayout('klay_down')">
-                            <input type="radio" name="options" id="option1" autocomplete="off" checked>Down</label>
-                        <label class="btn btn-secondary" onclick="setLayout('klay_lr')">
-                            <input type="radio" name="options" id="option2" autocomplete="off">Right</label>
-                        <label class="btn btn-secondary" onclick="setLayout('dagre')">
-                            <input type="radio" name="options" id="option3" autocomplete="off">Alt</label>
-                        <label class="btn btn-secondary" onclick="setLayout('cose-bilkent')">
-                            <input type="radio" name="options" id="option3" autocomplete="off">Spread</label>
-                    </div>
-                    <br>
-                    <br>
-                    <br>
+                    <!-- Page Content -->
+                <div id="samediffcontent" class="col-md col-12 main pa-1">
+                    <div id="graphdiv" style="height: 100%;
+                        width: 100%;
+                        display: table"></div>
                 </div>
-            </div>
-
-                <!-- Page Content -->
-            <div id="samediffcontent" class="w-100">
-                <div id="graphdiv" style="height: 100%; width: 100%; display: table"></div>
             </div>
         </div>
 
 
-        <!-- Execute once on page load -->
+            <!-- Execute once on page load -->
         <script>
-            document.getElementById('fileselect').addEventListener('change', fileSelect, false);
-            $(document).ready(function () """),format.raw/*154.43*/("""{"""),format.raw/*154.44*/("""
-                """),format.raw/*155.17*/("""renderSameDiffGraph();
-            """),format.raw/*156.13*/("""}"""),format.raw/*156.14*/(""");
+                document.getElementById('fileselect').addEventListener('change', fileSelect, false);
+                $(document).ready(function () """),format.raw/*176.47*/("""{"""),format.raw/*176.48*/("""
+                    """),format.raw/*177.21*/("""renderSameDiffGraph();
+                """),format.raw/*178.17*/("""}"""),format.raw/*178.18*/(""");
         </script>
     </body>
 </html>
@@ -201,11 +223,11 @@ Seq[Any](format.raw/*1.4*/("""
 object SameDiffUI extends SameDiffUI_Scope0.SameDiffUI
               /*
                   -- GENERATED --
-                  DATE: Wed Jan 30 15:52:56 AEDT 2019
+                  DATE: Thu Jan 31 10:58:54 AEDT 2019
                   SOURCE: c:/DL4J/Git/deeplearning4j/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/samediff/SameDiffUI.scala.html
-                  HASH: 0e0dd4439bb1bac3551c3382c343048fcf741e41
-                  MATRIX: 561->1|657->3|685->5|8962->8253|8992->8254|9039->8272|9104->8308|9134->8309
-                  LINES: 20->1|25->1|26->2|178->154|178->154|179->155|180->156|180->156
+                  HASH: 0c99ff525b71b9ca24441939ad34c68158a15ff2
+                  MATRIX: 561->1|657->3|685->5|4980->4297|5017->4307|6797->6088|6844->6106|7025->6318|7076->6340|7745->7044|7796->7066|8578->7885|8629->7907|10475->9724|10505->9725|10556->9747|10625->9787|10655->9788
+                  LINES: 20->1|25->1|26->2|104->80|105->81|131->107|132->108|133->109|134->110|147->123|148->124|167->143|168->144|200->176|200->176|201->177|202->178|202->178
                   -- GENERATED --
               */
           

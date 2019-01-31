@@ -367,7 +367,7 @@ function readGraphStructure(){
 
 
                 //Render the side bar:
-                document.getElementById('sidebartop').innerHTML =
+                document.getElementById('selectedfile').innerHTML =
                     "<br><br><strong>File:</strong> " + file.name + "<br>" +
                     "<strong>Inputs:</strong> \"" + sdGraphInputs.join("\", \"") + "\"<br>" +
                     "<strong>Outputs:</strong> \"" + sdGraphOutputs.join("\", \"") + "\"<br>" +
