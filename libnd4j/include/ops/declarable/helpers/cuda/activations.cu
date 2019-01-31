@@ -53,7 +53,7 @@ __global__ static void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
             const auto xVal     = x[xzOffset];
                   
             if(xVal < 0)
-                z[xzOffset] = xVal * y[shape::subArrayIndex(xShapeInfo, yShapeInfo, i) * yEws];
+                z[xzOffset] = xVal * y[shape::subArrayIndex(i, xShapeInfo, yShapeInfo) * yEws];
             else
                 z[xzOffset] = xVal;
         }     
@@ -65,7 +65,7 @@ __global__ static void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
             const auto xVal     = x[xzOffset];
 
             if(xVal < 0)                
-                z[xzOffset] = xVal * y[shape::subArrayIndex(xShapeInfo, yShapeInfo, i)];
+                z[xzOffset] = xVal * y[shape::subArrayIndex(i, xShapeInfo, yShapeInfo)];
             else
                 z[xzOffset] = xVal;
         }
