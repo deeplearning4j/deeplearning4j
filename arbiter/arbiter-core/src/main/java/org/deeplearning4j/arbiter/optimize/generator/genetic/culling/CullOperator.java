@@ -14,27 +14,28 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.arbiter.optimize.generator.genetic.crossover;
+package org.deeplearning4j.arbiter.optimize.generator.genetic.culling;
+
+import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationModel;
 
 /**
- * Returned by a crossover operator
- * 
+ * The cull operator will remove from the population the least desirables chromosomes.
+ *
  * @author Alexandre Boulanger
  */
-public class CrossoverResult {
-	/**
-	* If false, there was no crossover and the operator simply returned the genes of a random parent.
-	* If true, the genes are the result of a crossover.
-	*/
-    public final boolean hasModification;
-	
-	/**
-	* The genes returned by the operator.
-	*/
-    public final double[] genes;
+public interface CullOperator {
+    /**
+     * Will be called by the population model once created.
+     */
+    void initializeInstance(PopulationModel populationModel);
 
-    public CrossoverResult(boolean hasModification, double[] genes) {
-        this.hasModification = hasModification;
-        this.genes = genes;
-    }
+    /**
+     * Cull the population to the culled size.
+     */
+    void cullPopulation();
+
+    /**
+     * @return The target population size after culling.
+     */
+    int getCulledSize();
 }

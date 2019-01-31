@@ -1,9 +1,33 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.arbiter.optimize.generator.genetic.crossover;
 
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.SynchronizedRandomGenerator;
+import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection.RandomTwoParentSelection;
+import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection.TwoParentSelection;
 
+/**
+ * The single point crossover will select a random point where every genes before that point comes from one parent
+ * and after which every genes comes from the other parent.
+ *
+ * @author Alexandre Boulanger
+ */
 public class SinglePointCrossover extends TwoParentsCrossoverOperator {
     private static final double DEFAULT_CROSSOVER_RATE = 0.85;
 
@@ -12,7 +36,12 @@ public class SinglePointCrossover extends TwoParentsCrossoverOperator {
         private RandomGenerator rng;
         private TwoParentSelection parentSelection;
 
-        public SinglePointCrossover.Builder crossoverRate(double rate) {
+        /**
+         * The probability that the operator generates a crossover (default 0.85).
+         *
+         * @param rate A value between 0.0 and 1.0
+         */
+        public Builder crossoverRate(double rate) {
             if(rate < 0 || rate > 1.0) {
                 throw new IllegalArgumentException("Rate must be between 0.0 and 1.0");
             }
@@ -21,12 +50,22 @@ public class SinglePointCrossover extends TwoParentsCrossoverOperator {
             return this;
         }
 
-        public SinglePointCrossover.Builder randomGenerator(RandomGenerator rng) {
+        /**
+         * Use a supplied RandomGenerator
+         *
+         * @param rng An instance of RandomGenerator
+         */
+        public Builder randomGenerator(RandomGenerator rng) {
             this.rng = rng;
             return this;
         }
 
-        public SinglePointCrossover.Builder parentSelection(TwoParentSelection parentSelection) {
+        /**
+         * The parent selection behavior. Default is random parent selection.
+         *
+         * @param parentSelection An instance of TwoParentSelection
+         */
+        public Builder parentSelection(TwoParentSelection parentSelection) {
             this.parentSelection = parentSelection;
             return this;
         }
@@ -47,13 +86,20 @@ public class SinglePointCrossover extends TwoParentsCrossoverOperator {
     private final RandomGenerator rng;
     private final double crossoverRate;
 
-    public SinglePointCrossover(SinglePointCrossover.Builder builder) {
+    private SinglePointCrossover(SinglePointCrossover.Builder builder) {
         super(builder.parentSelection);
 
         this.crossoverRate = builder.crossoverRate;
         this.rng = builder.rng;
     }
 
+    /**
+     * Has a probability <i>crossoverRate</i> of performing the crossover where the operator will select a random crossover point.<br>
+     * Each gene before this point comes from one of the two parents and each gene at or after this point comes from the other parent.
+     * Otherwise, returns the genes of a random parent.
+     *
+     * @return The crossover result. See {@link CrossoverResult}.
+     */
     public CrossoverResult crossover()  {
         double[][] parents = parentSelection.selectParents();
 

@@ -1,10 +1,10 @@
 package org.deeplearning4j.arbiter.optimize.genetic.selection;
 
-import main.java.org.ab2002.genetic.tests.TestPopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.ChromosomeFactory;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationModel;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.selection.SelectionOperator;
+import org.deeplearning4j.arbiter.optimize.genetic.TestPopulationInitializer;
 import org.junit.Assert;
 import org.junit.Test;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
@@ -32,7 +32,7 @@ public class SelectionOperatorTests {
 
         PopulationInitializer populationInitializer = new TestPopulationInitializer();
 
-        PopulationModel populationModel = new PopulationModel.Builder(populationInitializer).build();
+        PopulationModel populationModel = new PopulationModel.Builder().populationInitializer(populationInitializer).build();
         ChromosomeFactory chromosomeFactory = new ChromosomeFactory();
         sut.initializeInstance(populationModel, chromosomeFactory);
 

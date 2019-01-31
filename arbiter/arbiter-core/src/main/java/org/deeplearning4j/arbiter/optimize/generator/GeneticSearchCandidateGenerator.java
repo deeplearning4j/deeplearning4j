@@ -1,3 +1,19 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.arbiter.optimize.generator;
 
 import org.apache.commons.math3.random.JDKRandomGenerator;
@@ -20,10 +36,12 @@ import org.deeplearning4j.arbiter.optimize.generator.genetic.selection.Selection
 
 import java.util.Map;
 
+/**
+ * Uses a genetic algorithm to generate candidates.
+ *
+ * @author Alexandre Boulanger
+ */
 public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
-
-
-
     public static class Builder {
         protected final ParameterSpace<?> parameterSpace;
 
@@ -34,22 +52,32 @@ public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
         protected ChromosomeFactory chromosomeFactory;
         protected SelectionOperator selectionOperator;
 
+        /**
+         * @param parameterSpace ParameterSpace from which to generate candidates
+         * @param scoreFunction The score function that will be used in the OptimizationConfiguration
+         */
         public Builder(ParameterSpace<?> parameterSpace, ScoreFunction scoreFunction) {
             this.parameterSpace = parameterSpace;
             this.minimizeScore = scoreFunction.minimize();
         }
 
-        public GeneticSearchCandidateGenerator.Builder populationModel(PopulationModel populationModel) {
+        /**
+         * @param populationModel The PopulationModel instance to use.
+         */
+        public Builder populationModel(PopulationModel populationModel) {
             this.populationModel = populationModel;
             return this;
         }
 
-        public GeneticSearchCandidateGenerator.Builder selectionOperator(SelectionOperator selectionOperator) {
+        /**
+         * @param selectionOperator The SelectionOperator to use. Default is GeneticSelectionOperator
+         */
+        public Builder selectionOperator(SelectionOperator selectionOperator) {
             this.selectionOperator = selectionOperator;
             return this;
         }
 
-        public GeneticSearchCandidateGenerator.Builder dataParameters(Map<String, Object> dataParameters) {
+        public Builder dataParameters(Map<String, Object> dataParameters) {
 
             this.dataParameters = dataParameters;
             return this;
@@ -60,7 +88,10 @@ public class GeneticSearchCandidateGenerator extends BaseCandidateGenerator {
             return this;
         }
 
-        public GeneticSearchCandidateGenerator.Builder chromosomeFactory(ChromosomeFactory chromosomeFactory) {
+        /**
+         * @param chromosomeFactory The ChromosomeFactory to use
+         */
+        public Builder chromosomeFactory(ChromosomeFactory chromosomeFactory) {
             this.chromosomeFactory = chromosomeFactory;
             return this;
         }
