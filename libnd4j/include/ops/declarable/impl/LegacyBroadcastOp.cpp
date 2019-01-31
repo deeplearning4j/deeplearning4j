@@ -34,7 +34,7 @@ namespace nd4j {
             std::vector<int> dims(*block.getAxis());
             if (dims.size() == 0 && block.width() > 2) {
                 auto axis = INPUT_VARIABLE(2);
-                helpers::adjustAxis(block.launchContext(), x, axis, dims);
+                helpers::adjustAxis(x->rankOf(), axis, dims);
                 //dims = ShapeUtils::convertAxisToTadTarget(z->rankOf(), dims);
             }
             if (dims.size() > 0)

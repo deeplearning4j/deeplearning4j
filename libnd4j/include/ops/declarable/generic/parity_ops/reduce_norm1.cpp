@@ -32,7 +32,7 @@ namespace ops {
             std::vector<int> axes;
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
+            helpers::adjustAxis(input->rankOf(), axesVector, axes);
         }
         else if (block.getIArguments()->size())
             axes = *block.getIArguments();
@@ -52,7 +52,7 @@ namespace ops {
     }
 
     DECLARE_SHAPE_FN(reduce_norm1) {
-
+        auto in = inputShape->at(0);
         bool keepDims = false;
         if (block.getBArguments()->size())
             keepDims = B_ARG(0);
@@ -62,13 +62,13 @@ namespace ops {
         std::vector<int> dimensions;
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(block.launchContext(), INPUT_VARIABLE(0), axesVector, dimensions);
+            helpers::adjustAxis(shape::rank(in), axesVector, dimensions);
         }
         else if (block.getIArguments()->size())
             dimensions = *block.getIArguments();
 
-        Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
-        ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
+        Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(in), dimensions, in, keepDims, false, block.getWorkspace());
+        ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(in));
 
         return SHAPELIST(outShapeInfo);
     }
@@ -111,7 +111,7 @@ namespace ops {
             auto axes = *block.getIArguments();
             if (block.width() > 2) {
                 auto axesVector = INPUT_VARIABLE(2);
-                helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
+                helpers::adjustAxis(input->rankOf(), axesVector, axes);
             }
 //            else if (block.getIArguments()->size())
             bool keepDims = false;

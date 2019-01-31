@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(reduce_mean, 1, 1, false, 0, 0) {
     auto dimensions = *block.getIArguments();
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(block.launchContext(), input, axesVector, dimensions);
+        helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
     }
 //            else if (block.getIArguments()->size())
     bool keepDims = false;
@@ -61,9 +61,10 @@ CUSTOM_OP_IMPL(reduce_mean, 1, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(reduce_mean) {
     auto dimensions = *block.getIArguments();
+    auto in = inputShape->at(0);
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
-        helpers::adjustAxis(block.launchContext(), INPUT_VARIABLE(0), axesVector, dimensions);
+        helpers::adjustAxis(shape::rank(in), axesVector, dimensions);
     }
 //            else if (block.getIArguments()->size())
     bool keepDims = false;
@@ -72,12 +73,12 @@ DECLARE_SHAPE_FN(reduce_mean) {
     else if (block.getTArguments()->size())
         keepDims = (bool)T_ARG(0);
 
-    REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_MEAN OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+    REQUIRE_TRUE(dimensions.size() <= in[0], 0, "REDUCE_MEAN OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item > -inputShape->at(0)[0] || item < inputShape->at(0)[0], 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-    auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
+    auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(in), dimensions, in, keepDims, false, block.getWorkspace());
 
     return SHAPELIST(outShapeInfo);
 }
@@ -100,7 +101,7 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
     auto dimensions = *block.getIArguments();
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
-        helpers::adjustAxis(block.launchContext(), input, axesVector, dimensions);
+        helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
     }
 //            else if (block.getIArguments()->size())
     bool keepDims = false;
@@ -138,17 +139,19 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
 
 
 
-DECLARE_SHAPE_FN(reduce_mean_bp) {    
+DECLARE_SHAPE_FN(reduce_mean_bp) {
+    auto in = inputShape->at(0);
     auto dimensions = *block.getIArguments();
+    auto rank = shape::rank(in);
+
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
-        helpers::adjustAxis(block.launchContext(), INPUT_VARIABLE(0), axesVector, dimensions);
+        helpers::adjustAxis(rank, axesVector, dimensions);
     }
-
-    REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_MEAN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+    REQUIRE_TRUE(dimensions.size() <= rank, 0, "REDUCE_MEAN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
     
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -inputShape->at(0)[0] || item < inputShape->at(0)[0], 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
+        REQUIRE_TRUE(item > -rank || item < rank, 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , rank, rank, item);
     
     Nd4jLong* gradIshapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), gradIshapeInfo);

@@ -32,7 +32,7 @@ namespace ops {
         auto axes = *block.getIArguments();
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
+            helpers::adjustAxis(input->rankOf(), axesVector, axes);
         }
 //            else if (block.getIArguments()->size())
         bool keepDims = false;
@@ -50,11 +50,11 @@ namespace ops {
     }
 
     DECLARE_SHAPE_FN(reduce_sqnorm) {
-
+        auto in = inputShape->at(0);
         auto axes = *block.getIArguments();
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(block.launchContext(), INPUT_VARIABLE(0), axesVector, axes);
+            helpers::adjustAxis(shape::rank(in), axesVector, axes);
         }
 //            else if (block.getIArguments()->size())
         bool keepDims = false;
@@ -63,7 +63,7 @@ namespace ops {
         else if (block.getTArguments()->size())
             keepDims = (bool)T_ARG(0);
 
-        Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), axes, inputShape->at(0), keepDims, false, block.getWorkspace());
+        Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(in), axes, in, keepDims, false, block.getWorkspace());
         //ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
 
         return SHAPELIST(outShapeInfo);
@@ -106,7 +106,7 @@ namespace ops {
                 auto axes = *block.getIArguments();
                 if (block.width() > 2) {
                     auto axesVector = INPUT_VARIABLE(2);
-                    helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
+                    helpers::adjustAxis(input->rankOf(), axesVector, axes);
                 }
 //            else if (block.getIArguments()->size())
                 bool keepDims = false;

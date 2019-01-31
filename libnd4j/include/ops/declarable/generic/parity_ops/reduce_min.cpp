@@ -31,7 +31,7 @@ namespace ops {
             std::vector<int> axes;
             if (block.width() > 1) {
                 auto axesVector = INPUT_VARIABLE(1);
-                helpers::adjustAxis(block.launchContext(), input, axesVector, axes);
+                helpers::adjustAxis(input->rankOf(), axesVector, axes);
             }
             else
                 axes = *block.getIArguments();
@@ -56,7 +56,7 @@ namespace ops {
         }
 
     DECLARE_SHAPE_FN(reduce_min) {
-
+        auto in = inputShape->at(0);
         bool keepDims = false;//: false;
         if (block.getBArguments()->size() > 0)
             keepDims = B_ARG(0);
@@ -66,11 +66,11 @@ namespace ops {
         std::vector<int> axes;
         if (block.width() > 1) {
             auto axesVector = INPUT_VARIABLE(1);
-            helpers::adjustAxis(block.launchContext(), INPUT_VARIABLE(0), axesVector, axes);
+            helpers::adjustAxis(shape::rank(in), axesVector, axes);
         }
         else if (block.getIArguments()->size())
             axes = *block.getIArguments();
-        Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), axes, inputShape->at(0), keepDims, false, block.getWorkspace());
+        Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(in), axes, in, keepDims, false, block.getWorkspace());
         ArrayOptions::setDataType(outShapeInfo, ArrayOptions::dataType(inputShape->at(0)));
         return SHAPELIST(outShapeInfo);
     }
@@ -112,7 +112,7 @@ namespace ops {
             std::vector<int> axesInt;
             if (block.width() > 2) {
                 auto axesVector = INPUT_VARIABLE(2);
-                helpers::adjustAxis(block.launchContext(), input, axesVector, axesInt);
+                helpers::adjustAxis(input->rankOf(), axesVector, axesInt);
             }
             else
                 axesInt = *block.getIArguments();

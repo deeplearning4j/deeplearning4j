@@ -57,7 +57,7 @@ namespace ops {
                 std::vector<int> axes; // = *block.getIArguments();
                 if (block.width() > 3) { // axes as last array
                     auto axesArr = INPUT_VARIABLE(3);
-                    helpers::adjustAxis(block.launchContext(), inputX, axesArr, axes);
+                    helpers::adjustAxis(inputX->rankOf(), axesArr, axes);
                 } else
                     axes = *block.getIArguments();
 

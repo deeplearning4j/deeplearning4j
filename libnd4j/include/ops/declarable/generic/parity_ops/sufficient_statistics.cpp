@@ -36,7 +36,7 @@ namespace nd4j {
             std::vector<int> axis(axisVector->lengthOf());//*block.getIArguments();
 
             // axis might be dynamic (i.e. tf mode)
-            helpers::adjustAxis(block.launchContext(), input, axisVector, axis);
+            helpers::adjustAxis(input->rankOf(), axisVector, axis);
 
             input->reduceAlongDimension(reduce::SquaredNorm, squares, axis);
             input->reduceAlongDimension(reduce::Sum, sum, axis);
@@ -67,14 +67,8 @@ namespace nd4j {
             std::vector<int> axis(axisVector->lengthOf());
 
             auto input = INPUT_VARIABLE(0);
+            helpers::adjustAxis(input->rankOf(), axisVector, axis);
 
-            for (int e = 0; e < axisVector->lengthOf(); e++) {
-                int ca = axisVector->e<int>(e);
-                if (ca < 0)
-                        ca += input->rankOf();
-
-                    axis[e] = ca;
-            }
             //std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {axis});
             auto scalarShape = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)), block.workspace());
             auto sumShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
