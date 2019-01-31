@@ -1,17 +1,28 @@
 package org.nd4j.linalg.learning.regularization;
 
+import lombok.Data;
+import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.schedule.FixedSchedule;
 import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * L2 regularization: very similar to weight decay, but is applied before the updater is applied, not after.
+ * L2 regularization: very similar to {@link WeightDecay}, but is applied before the updater is applied, not after.
  * <br>
  * <br>
  * Implements updating as follows:<br>
- * {@code w -= updater(gradient + l2 * w}<br>
+ * {@code L = loss + l2 * 0.5 * sum_i w[i]^2}<br>
+ * {@code w[i] -= updater(gradient[i] + l2 * w[i]}<br>
+ *
+ * See also: {@link WeightDecay} which should generally be preferred in practice.<br>
+ * See <a href="https://www.fast.ai/2018/07/02/adam-weight-decay/">https://www.fast.ai/2018/07/02/adam-weight-decay/</a>
+ * for further details
+ *
+ * @author Alex Black
  */
+@Data
 public class L2Regularization implements Regularization {
 
     protected final ISchedule l2;
@@ -23,7 +34,10 @@ public class L2Regularization implements Regularization {
         this(new FixedSchedule(l2));
     }
 
-    public L2Regularization(ISchedule l2) {
+    /**
+     * @param l2 L2 regularization coefficient (schedule)
+     */
+    public L2Regularization(@JsonProperty("l2") @NonNull ISchedule l2) {
         this.l2 = l2;
     }
 
@@ -42,6 +56,8 @@ public class L2Regularization implements Regularization {
 
     @Override
     public double score(INDArray param, int iteration, int epoch) {
-        return l2.valueAt(iteration, epoch) * param.norm2Number().doubleValue();
+        //Score: L = 0.5 * sum_i x[i]^2
+        double norm2 = param.norm2Number().doubleValue();   //Norm2 is sqrt(sum_i x[i]^2)
+        return l2.valueAt(iteration, epoch) * 0.5 * norm2 * norm2;
     }
 }

@@ -1,0 +1,57 @@
+package org.nd4j.linalg.learning.regularization;
+
+import lombok.Data;
+import lombok.NonNull;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.schedule.FixedSchedule;
+import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+/**
+ * L1 regularization: Implements updating as follows:<br>
+ * {@code L = loss + l1 * sum_i abs(w[i])}<br>
+ * {@code w[i] -= updater(gradient[i] + l1 * sign(w[i])}<br>
+ *
+ * @author Alex Black
+ */
+@Data
+public class L1Regularization implements Regularization {
+
+    protected final ISchedule l1;
+
+    /**
+     * @param l1   l1 regularization coefficient
+     */
+    public L1Regularization(double l1) {
+        this(new FixedSchedule(l1));
+    }
+
+    /**
+     * @param l1 L1 regularization coefficient (schedule)
+     */
+    public L1Regularization(@JsonProperty("l1") @NonNull ISchedule l1) {
+        this.l1 = l1;
+    }
+
+    @Override
+    public ApplyStep applyStep(){
+        return ApplyStep.BEFORE_UPDATER;
+    }
+
+    @Override
+    public void apply(INDArray param, INDArray gradView, double lr, int iteration, int epoch) {
+        //L = loss + l1 * sum_i abs(x[i])
+        //dL/dx[i] = dloss/dx[i] + l1 * sign(x[i])
+        //where sign(x[i]) is -1 or 1
+        double coeff = l1.valueAt(iteration, epoch);
+        INDArray sign = Transforms.sign(param, true);
+        Nd4j.getBlasWrapper().level1().axpy(param.length(), coeff, sign, gradView);        //Gradient += l1 * sign(param)
+    }
+
+    @Override
+    public double score(INDArray param, int iteration, int epoch) {
+        return l1.valueAt(iteration, epoch) * param.norm1Number().doubleValue();
+    }
+}
