@@ -42,11 +42,11 @@ namespace nd4j {
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
                 auto axisVector = INPUT_VARIABLE(1);
-                helpers::adjustAxis(block.launchContext(), input, axisVector, axis);
+                helpers::adjustAxis(input->rankOf(), axisVector, axis);
 
                 input->applyIndexReduce(indexreduce::IndexMin, output, axis);
             } else {
-                helpers::adjustAxis(block.launchContext(), input->shapeInfo(), axis);
+                helpers::adjustAxis(input->rankOf(), axis);
 
                 input->applyIndexReduce(indexreduce::IndexMin, output, axis);
             }
@@ -58,7 +58,7 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(argmin) {
             std::vector<int> dims;
-
+            auto in = inputShape->at(0);
             if (block.width() == 1) {
                 dims = *block.getIArguments();
             } else {
@@ -67,7 +67,7 @@ namespace nd4j {
             }
 
             // we're resolving negative axis here
-            helpers::adjustAxis(block.launchContext(), inputShape->at(0), dims);
+            helpers::adjustAxis(shape::rank(in), dims);
 
             if (dims.size() > 1)
                 std::sort(dims.begin(), dims.end());
@@ -83,7 +83,7 @@ namespace nd4j {
             Nd4jLong tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
             Nd4jLong numTads = shape::length(inputShape->at(0)) /  tadLength;
 
-            auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), false, false, block.getWorkspace());
+            auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, in, false, false, block.getWorkspace());
             ArrayOptions::setDataType(newShape, DataType::INT64);
             return SHAPELIST(newShape);
         }

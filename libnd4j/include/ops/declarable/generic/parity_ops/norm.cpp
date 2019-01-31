@@ -39,7 +39,7 @@ namespace nd4j {
             } else {
                 auto axisVector = INPUT_VARIABLE(1);
                 dims.resize(axisVector->lengthOf());
-                helpers::adjustAxis(block.launchContext(), input, axisVector, dims);
+                helpers::adjustAxis(input->rankOf(), axisVector, dims);
                 axisVector->printIndexedBuffer("AXIS");
                 auto shape = ShapeUtils::evalReduceShapeInfo(input->ordering(), dims, *input, false, false);
                 if (!shape::equalsStrict(shape, output->shapeInfo())) {
