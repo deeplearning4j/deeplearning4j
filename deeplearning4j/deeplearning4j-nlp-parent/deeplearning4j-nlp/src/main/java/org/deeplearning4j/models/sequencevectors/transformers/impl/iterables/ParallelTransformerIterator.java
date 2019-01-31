@@ -53,13 +53,22 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
 
     protected static final AtomicInteger count = new AtomicInteger(0);
 
+    private static final int PREFETCH_SIZE = 10;
+
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer) {
         this(iterator, transformer, true);
     }
 
     private void prefetchIterator() {
-        for (int i = 0; i < 10; ++i) {
-            if (iterator.hasNextDocument()) {
+        for (int i = 0; i < PREFETCH_SIZE; ++i) {
+            boolean before = underlyingHas;
+
+            if (before)
+                underlyingHas = iterator.hasNextDocument();
+            else
+                underlyingHas = false;
+
+            if (underlyingHas) {
                 CallableTransformer callableTransformer = new CallableTransformer(iterator.nextDocument(), sentenceTransformer);
                 Future<Sequence<VocabWord>> futureSequence = executorService.submit(callableTransformer);
                 try {
