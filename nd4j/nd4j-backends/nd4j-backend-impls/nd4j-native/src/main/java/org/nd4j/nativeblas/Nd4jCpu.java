@@ -17695,8 +17695,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                 }
 //         #endif
 
-
-
         /**
          * This op calculates dropout of input
          * Input arguments
@@ -19140,6 +19138,81 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
+        /**
+         * reduce_logsumexp - tf.reduce_logsumexe operation
+         * 
+         * input params:
+         *    0 - NDArray (input)
+         *    1 - 1D NDArray (axis) (optional) - integer array
+         *
+         * T_ARG param (optional):
+         * 0 - keep_dims != 0.
+         *
+         * int params (optional):
+         *    0 - axe 1
+         *    1 - axe 2
+         *    ...
+         *    N-1 axe N 
+         *
+         *  CAUTION: All axes are optional and should be between 0 and input->rankOf() - 1
+         *  and put either with second param or as integers but not both
+         *
+         * output:
+         *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
+         */
+//         #if NOT_EXCLUDED(OP_reduce_logsumexp)
+        @Namespace("nd4j::ops") public static class reduce_logsumexp extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public reduce_logsumexp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public reduce_logsumexp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public reduce_logsumexp position(long position) {
+                return (reduce_logsumexp)super.position(position);
+            }
+        
+                                                                                    public reduce_logsumexp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
+        * This op make bilinear or nearest neighbor interpolated resize for given tensor
+        *
+        * input array:
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels) numeric type
+        *    1 - 2D-Tensor with shape (num_boxes, 4) float type
+        *    2 - 1D-Tensor with shape (num_boxes) int type
+        *    3 - 1D-Tensor with 2 values (newWidth, newHeight) (optional) int type
+        *
+        * float arguments (optional)
+        *   0 - exprapolation_value (optional) default 0.f
+        *
+        * int arguments: (optional)
+        *   0 - mode (default 0 - bilinear interpolation)
+        *
+        * output array:
+        *   the 4D-Tensor with resized to crop_size images given - float type
+        */
+//         #if NOT_EXCLUDED(OP_crop_and_resize)
+        @Namespace("nd4j::ops") public static class crop_and_resize extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public crop_and_resize(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public crop_and_resize(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public crop_and_resize position(long position) {
+                return (crop_and_resize)super.position(position);
+            }
+        
+                                                                                    public crop_and_resize() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
 
         /**
         * This op make bilinear interpolated resize for given tensor
@@ -19325,6 +19398,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *     0 - input array
          *     1 - scalar tensor with n for operation. n should be less than last dimension
          *
+         * output:
+         *    0 - NDArray with the same shape as input
          */
 //         #if NOT_EXCLUDED(OP_nth_element)
         @Namespace("nd4j::ops") public static class nth_element extends DeclarableCustomOp {
@@ -19343,6 +19418,39 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
+/**
+         * fake_quant_with_min_max_vals - tf.quantization.fake_quant_with_min_max_vars
+         * 
+         * input params:
+         *    0 - NDArray (input)
+         *    1 - 0D Tensor - min value
+         *    2 - 0D Tensor - max value
+         *
+         * int params (optional):
+         *    0 - num_bits (allowed interval [2, 16], default 8)
+         *    1 - narrow_range (default False)
+         *
+         * output:
+         *    0 - NDArray with the same shape as input
+         */
+//         #if NOT_EXCLUDED(OP_fake_quant_with_min_max_vars)
+        @Namespace("nd4j::ops") public static class fake_quant_with_min_max_vars extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public fake_quant_with_min_max_vars(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public fake_quant_with_min_max_vars(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public fake_quant_with_min_max_vars position(long position) {
+                return (fake_quant_with_min_max_vars)super.position(position);
+            }
+        
+                                                                                    public fake_quant_with_min_max_vars() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
     
 
 

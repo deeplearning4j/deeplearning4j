@@ -256,7 +256,7 @@ namespace nd4j {
                                 continue;
                         }
 
-                       nSampling_<T>(syn0 + (target * vectorLength), syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                       nSampling_<T>(syn0row, syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
                     }
                 }
 
