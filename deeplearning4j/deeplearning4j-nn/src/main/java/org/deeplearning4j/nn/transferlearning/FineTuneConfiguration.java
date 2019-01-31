@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.transferlearning;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.*;
@@ -31,9 +32,13 @@ import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
+import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.L2Regularization;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.primitives.Optional;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -58,10 +63,8 @@ public class FineTuneConfiguration {
     protected IActivation activationFn;
     protected IWeightInit weightInitFn;
     protected Double biasInit;
-    protected Double l1;
-    protected Double l2;
-    protected Double l1Bias;
-    protected Double l2Bias;
+    protected List<Regularization> regularization;
+    protected List<Regularization> regularizationBias;
     protected Optional<IDropout> dropout;
     protected Optional<IWeightNoise> weightNoise;
     protected IUpdater updater;
@@ -102,14 +105,13 @@ public class FineTuneConfiguration {
      * Obviously, having null only makes sense for some things (dropout, etc) whereas null for other things doesn't
      * make sense
      */
+    @ToString
     public static class Builder {
         private IActivation activation;
         private IWeightInit weightInitFn;
         private Double biasInit;
-        private Double l1;
-        private Double l2;
-        private Double l1Bias;
-        private Double l2Bias;
+        protected List<Regularization> regularization;
+        protected List<Regularization> regularizationBias;
         private Optional<IDropout> dropout;
         private Optional<IWeightNoise> weightNoise;
         private IUpdater updater;
@@ -211,7 +213,8 @@ public class FineTuneConfiguration {
          * L1 regularization coefficient for the weights
          */
         public Builder l1(double l1) {
-            this.l1 = l1;
+            NetworkUtils.removeInstances(regularization, L1Regularization.class);
+            regularization.add(new L1Regularization(l1));
             return this;
         }
 
@@ -219,7 +222,8 @@ public class FineTuneConfiguration {
          * L2 regularization coefficient for the weights
          */
         public Builder l2(double l2) {
-            this.l2 = l2;
+            NetworkUtils.removeInstances(regularization, L2Regularization.class);
+            regularization.add(new L2Regularization(l2));
             return this;
         }
 
@@ -227,7 +231,8 @@ public class FineTuneConfiguration {
          * L1 regularization coefficient for the bias parameters
          */
         public Builder l1Bias(double l1Bias) {
-            this.l1Bias = l1Bias;
+            NetworkUtils.removeInstances(regularizationBias, L1Regularization.class);
+            regularizationBias.add(new L1Regularization(l1Bias));
             return this;
         }
 
@@ -235,7 +240,8 @@ public class FineTuneConfiguration {
          * L2 regularization coefficient for the bias parameters
          */
         public Builder l2Bias(double l2Bias) {
-            this.l2Bias = l2Bias;
+            NetworkUtils.removeInstances(regularizationBias, L2Regularization.class);
+            regularizationBias.add(new L2Regularization(l2Bias));
             return this;
         }
 
@@ -498,11 +504,10 @@ public class FineTuneConfiguration {
         }
 
         public FineTuneConfiguration build() {
-            return new FineTuneConfiguration(activation, weightInitFn, biasInit, l1, l2, l1Bias, l2Bias, dropout, weightNoise, updater, biasUpdater, miniBatch, maxNumLineSearchIterations, seed, optimizationAlgo, stepFunction, minimize, gradientNormalization, gradientNormalizationThreshold, convolutionMode, cudnnAlgoMode, constraints, pretrain, backprop, backpropType, tbpttFwdLength, tbpttBackLength, trainingWorkspaceMode, inferenceWorkspaceMode);
-        }
-
-        public String toString() {
-            return "FineTuneConfiguration.Builder(activation=" + this.activation + ", weightInit=" + this.weightInitFn + ", biasInit=" + this.biasInit + ", l1=" + this.l1 + ", l2=" + this.l2 + ", l1Bias=" + this.l1Bias + ", l2Bias=" + this.l2Bias + ", dropout=" + this.dropout + ", weightNoise=" + this.weightNoise + ", updater=" + this.updater + ", biasUpdater=" + this.biasUpdater + ", miniBatch=" + this.miniBatch + ", maxNumLineSearchIterations=" + this.maxNumLineSearchIterations + ", seed=" + this.seed + ", optimizationAlgo=" + this.optimizationAlgo + ", stepFunction=" + this.stepFunction + ", minimize=" + this.minimize + ", gradientNormalization=" + this.gradientNormalization + ", gradientNormalizationThreshold=" + this.gradientNormalizationThreshold + ", convolutionMode=" + this.convolutionMode + ", cudnnAlgoMode=" + this.cudnnAlgoMode + ", constraints=" + this.constraints + ", pretrain=" + this.pretrain + ", backprop=" + this.backprop + ", backpropType=" + this.backpropType + ", tbpttFwdLength=" + this.tbpttFwdLength + ", tbpttBackLength=" + this.tbpttBackLength + ", trainingWorkspaceMode=" + this.trainingWorkspaceMode + ", inferenceWorkspaceMode=" + this.inferenceWorkspaceMode + ")";
+            return new FineTuneConfiguration(activation, weightInitFn, biasInit, regularization, regularizationBias, dropout,
+                    weightNoise, updater, biasUpdater, miniBatch, maxNumLineSearchIterations, seed, optimizationAlgo, stepFunction,
+                    minimize, gradientNormalization, gradientNormalizationThreshold, convolutionMode, cudnnAlgoMode, constraints,
+                    pretrain, backprop, backpropType, tbpttFwdLength, tbpttBackLength, trainingWorkspaceMode, inferenceWorkspaceMode);
         }
     }
 

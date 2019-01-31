@@ -95,34 +95,6 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         }
     }
 
-    @Override
-    public double getL1ByParam(String paramName) {
-        switch (paramName) {
-            case CenterLossParamInitializer.WEIGHT_KEY:
-                return l1;
-            case CenterLossParamInitializer.BIAS_KEY:
-                return l1Bias;
-            case CenterLossParamInitializer.CENTER_KEY:
-                return 0.0;
-            default:
-                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        switch (paramName) {
-            case CenterLossParamInitializer.WEIGHT_KEY:
-                return l2;
-            case CenterLossParamInitializer.BIAS_KEY:
-                return l2Bias;
-            case CenterLossParamInitializer.CENTER_KEY:
-                return 0.0;
-            default:
-                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
-        }
-    }
-
     public double getAlpha() {
         return alpha;
     }

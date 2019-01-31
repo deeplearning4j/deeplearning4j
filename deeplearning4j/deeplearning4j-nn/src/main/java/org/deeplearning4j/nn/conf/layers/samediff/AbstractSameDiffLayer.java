@@ -134,16 +134,6 @@ public abstract class AbstractSameDiffLayer extends Layer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        return (initializer().isWeightParam(this, paramName) ? l1 : l1Bias);
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return (initializer().isWeightParam(this, paramName) ? l2 : l2Bias);
-    }
-
-    @Override
     public IUpdater getUpdaterByParam(String paramName) {
         if (biasUpdater != null && initializer().isBiasParam(this, paramName)) {
             return biasUpdater;

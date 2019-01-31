@@ -24,11 +24,19 @@ import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
+import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.L2Regularization;
+import org.nd4j.linalg.learning.regularization.Regularization;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * A neural network layer.
@@ -41,10 +49,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     protected IActivation activationFn;
     protected IWeightInit weightInitFn;
     protected double biasInit;
-    protected double l1;
-    protected double l2;
-    protected double l1Bias;
-    protected double l2Bias;
+    protected List<Regularization> regularization;
+    protected List<Regularization> regularizationBias;
     protected IUpdater iUpdater;
     protected IUpdater biasUpdater;
     protected IWeightNoise weightNoise;
@@ -58,10 +64,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.activationFn = builder.activationFn;
         this.weightInitFn = builder.weightInitFn;
         this.biasInit = builder.biasInit;
-        this.l1 = builder.l1;
-        this.l2 = builder.l2;
-        this.l1Bias = builder.l1Bias;
-        this.l2Bias = builder.l2Bias;
+        this.regularization = builder.regularization;
+        this.regularizationBias = builder.regularizationBias;
         this.iUpdater = builder.iupdater;
         this.biasUpdater = builder.biasUpdater;
         this.gradientNormalization = builder.gradientNormalization;
@@ -79,8 +83,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.setIUpdater(null);
         this.setWeightInitFn(null);
         this.setBiasInit(Double.NaN);
-        this.setL1(Double.NaN);
-        this.setL2(Double.NaN);
+        this.regularization = null;
+        this.regularizationBias = null;
         this.setGradientNormalization(GradientNormalization.None);
         this.setGradientNormalizationThreshold(1.0);
         this.iUpdater = null;
@@ -92,6 +96,19 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         BaseLayer clone = (BaseLayer) super.clone();
         if (clone.iDropout != null) {
             clone.iDropout = clone.iDropout.clone();
+        }
+        if(regularization != null){
+            //Regularization fields are _usually_ thread safe and immutable, but let's clone to be sure
+            clone.regularization = new ArrayList<>(regularization.size());
+            for(Regularization r : regularization){
+                clone.regularization.add(r.clone());
+            }
+        }
+        if(regularizationBias != null){
+            clone.regularizationBias = new ArrayList<>(regularizationBias.size());
+            for(Regularization r : regularizationBias){
+                clone.regularizationBias.add(r.clone());
+            }
         }
         return clone;
     }
@@ -115,6 +132,17 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     public GradientNormalization getGradientNormalization() {
         return gradientNormalization;
     }
+
+    @Override
+    public List<Regularization> getRegularizationByParam(String paramName){
+        if(initializer().isWeightParam(this, paramName)){
+            return regularization;
+        } else if(initializer().isBiasParam(this, paramName)){
+            return regularizationBias;
+        }
+        return null;
+    }
+
 
     @SuppressWarnings("unchecked")
     @Getter
@@ -141,27 +169,30 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          */
         protected double biasInit = Double.NaN;
 
-        /**
-         * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
-         * coefficient for the bias.
-         */
-        protected double l1 = Double.NaN;
+//        /**
+//         * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
+//         * coefficient for the bias.
+//         */
+//        protected double l1 = Double.NaN;
+//
+//        /**
+//         * L2 regularization coefficient (weights only). Use {@link #l2Bias(double)} to configure the l2 regularization
+//         * coefficient for the bias.
+//         */
+//        protected double l2 = Double.NaN;
+//
+//        /**
+//         * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
+//         */
+//        protected double l1Bias = Double.NaN;
+//
+//        /**
+//         * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
+//         */
+//        protected double l2Bias = Double.NaN;
 
-        /**
-         * L2 regularization coefficient (weights only). Use {@link #l2Bias(double)} to configure the l2 regularization
-         * coefficient for the bias.
-         */
-        protected double l2 = Double.NaN;
-
-        /**
-         * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
-         */
-        protected double l1Bias = Double.NaN;
-
-        /**
-         * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
-         */
-        protected double l2Bias = Double.NaN;
+        protected List<Regularization> regularization = new ArrayList<>();
+        protected List<Regularization> regularizationBias = new ArrayList<>();
 
         /**
          * Gradient updater. For example, {@link org.nd4j.linalg.learning.config.Adam} or {@link
@@ -278,7 +309,9 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * coefficient for the bias.
          */
         public T l1(double l1) {
-            this.l1 = l1;
+            //Check if existing L1 exists; if so, replace it
+            NetworkUtils.removeInstances(this.regularization, L1Regularization.class);
+            this.regularization.add(new L1Regularization(l1));
             return (T) this;
         }
 
@@ -287,7 +320,10 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * coefficient for the bias.
          */
         public T l2(double l2) {
-            this.l2 = l2;
+            //Check if existing L2 exists; if so, replace it. Also remove weight decay - it doesn't make sense to use both
+            NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
+            NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
+            this.regularization.add(new L2Regularization(l2));
             return (T) this;
         }
 
@@ -295,7 +331,8 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
          */
         public T l1Bias(double l1Bias) {
-            this.l1Bias = l1Bias;
+            NetworkUtils.removeInstances(this.regularizationBias, L1Regularization.class);
+            this.regularizationBias.add(new L1Regularization(l1Bias));
             return (T) this;
         }
 
@@ -303,7 +340,9 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
          */
         public T l2Bias(double l2Bias) {
-            this.l2Bias = l2Bias;
+            NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
+            NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
+            this.regularizationBias.add(new L2Regularization(l2Bias));
             return (T) this;
         }
 

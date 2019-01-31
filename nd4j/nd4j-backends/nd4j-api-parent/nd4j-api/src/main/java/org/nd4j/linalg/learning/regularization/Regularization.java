@@ -28,4 +28,6 @@ public interface Regularization {
 
     double score(INDArray param, int iteration, int epoch);
 
+    Regularization clone();
+
 }

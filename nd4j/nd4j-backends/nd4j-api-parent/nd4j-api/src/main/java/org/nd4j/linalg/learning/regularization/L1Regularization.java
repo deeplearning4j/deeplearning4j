@@ -54,4 +54,9 @@ public class L1Regularization implements Regularization {
     public double score(INDArray param, int iteration, int epoch) {
         return l1.valueAt(iteration, epoch) * param.norm1Number().doubleValue();
     }
+
+    @Override
+    public Regularization clone() {
+        return new L1Regularization(l1.clone());
+    }
 }

@@ -60,4 +60,9 @@ public class L2Regularization implements Regularization {
         double norm2 = param.norm2Number().doubleValue();   //Norm2 is sqrt(sum_i x[i]^2)
         return l2.valueAt(iteration, epoch) * 0.5 * norm2 * norm2;
     }
+
+    @Override
+    public Regularization clone() {
+        return new L2Regularization(l2.clone());
+    }
 }
