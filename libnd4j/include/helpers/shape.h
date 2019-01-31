@@ -1039,7 +1039,7 @@ namespace shape {
 
 
     // return absolute index of array min, min is sub-array of max, index to be returned is min index and corresponds to maxIdx of max array
-    ND4J_EXPORT _CUDA_HD Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx);
+    ND4J_EXPORT _CUDA_HD Nd4jLong subArrayIndex(const Nd4jLong maxIdx, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude = nullptr);
 
     ND4J_EXPORT _CUDA_HD void shapeOldScalar(nd4j::DataType dtype, Nd4jLong* const buffer, const char order);
 
@@ -4199,22 +4199,41 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
 
 
     // return absolute index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array
-    INLINEDEF _CUDA_HD Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int maxIdx) {
+    INLINEDEF _CUDA_HD Nd4jLong subArrayIndex(const Nd4jLong maxIdx, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude) {
         const auto rankMax = shape::rank(maxShapeInfo);
         const auto rankMin = shape::rank(minShapeInfo);
+        const auto diff    = rankMax - rankMin;     // the size of dimsToExclude is equal to diff
 
-        Nd4jLong idxPerRank[MAX_RANK];
-        ind2subC(rankMax, const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<int&>(maxIdx), idxPerRank);
+        Nd4jLong idxPerDim[MAX_RANK];
+        ind2subC(rankMax, const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<Nd4jLong&>(maxIdx), idxPerDim);
 
         Nd4jLong minIdx = 0;
-        for(int i = 0; i < rankMin; ++i) {
-            if(minShapeInfo[rankMin - i] == 1 || idxPerRank[rankMax - i - 1] == 0)
-                continue;
-            if(idxPerRank[rankMax - i - 1] >= minShapeInfo[rankMin - i])
-                idxPerRank[rankMax - i - 1] %= minShapeInfo[rankMin - i];
-            minIdx += idxPerRank[rankMax - i - 1] * stride(const_cast<Nd4jLong*>(minShapeInfo))[rankMin - i - 1];
-        }
 
+        if(dimsToExclude == nullptr) {
+
+            for(int minI = 0, maxI = diff; maxI < rankMax; ++maxI, ++minI) {
+                if(minShapeInfo[minI + 1] == 1 || idxPerDim[maxI] == 0)
+                    continue;
+                if(idxPerDim[maxI] >= minShapeInfo[minI + 1])
+                    idxPerDim[maxI] %= minShapeInfo[minI + 1];
+                minIdx += idxPerDim[maxI] * minShapeInfo[rankMin + minI + 1];  // get into account stride            
+            }
+        }
+        else {
+            
+            for(int dim = 0, minI = -1, maxI = 0; maxI < rankMax; ++maxI) {
+                if(dim < diff && dimsToExclude[dim] == maxI) {
+                    ++dim;
+                    continue;
+                }
+                ++minI;
+                if(minShapeInfo[minI + 1] == 1 || idxPerDim[maxI] == 0)
+                    continue;
+                if(idxPerDim[maxI] >= minShapeInfo[minI + 1])
+                    idxPerDim[maxI] %= minShapeInfo[minI + 1];
+                minIdx += idxPerDim[maxI] * minShapeInfo[rankMin + minI + 1];  // get into account stride                
+            }
+        }        
         return minIdx;
     }
 

@@ -492,17 +492,28 @@ std::vector<int> ShapeUtils::getDimsWithSameShape(const NDArray& max, const NDAr
 
 //////////////////////////////////////////////////////////////////////////
 // return absolute index of array min, min is sub-array of max, index to be returned is min index and it corresponds maxIdx of max array 
-Nd4jLong ShapeUtils::getSubArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const Nd4jLong maxIdx) {
+// dimsToExclude must be sorted
+Nd4jLong ShapeUtils::getSubArrayIndex(const Nd4jLong maxIdx, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const std::vector<int>& dimsToExclude) {
+    
     // check shape consistence 
     if(maxShapeInfo[0] < minShapeInfo[0])
         throw std::runtime_error("ShapeUtils::getSubArrayIndex: rank of max-array must be greater or equal to min-array rank !");
-    
-    for(int i = 0; i < minShapeInfo[0]; ++i)
-        // if((maxShapeInfo[maxShapeInfo[0] - i] < minShapeInfo[minShapeInfo[0] - i]) || (maxShapeInfo[maxShapeInfo[0] - i] % minShapeInfo[minShapeInfo[0] - i] != 0) )        
-        if(maxShapeInfo[maxShapeInfo[0] - i] < minShapeInfo[minShapeInfo[0] - i])        
-            throw std::runtime_error("ShapeUtils::getSubArrayIndex: some of dimension shape of max-array is smaller than those of min-array or the max shape is not multiple of min shape !");
 
-    return shape::subArrayIndex(maxShapeInfo, minShapeInfo, maxIdx);
+    if(dimsToExclude.size() > maxShapeInfo[0])
+        throw std::runtime_error("ShapeUtils::getSubArrayIndex: the number of dimensions to exclude should be <= rank of max-array !");
+
+    for(int dim = 0, minI = 0, maxI = 0; maxI < maxShapeInfo[0]; ++maxI) {
+        // if((maxShapeInfo[maxShapeInfo[0] - i] < minShapeInfo[minShapeInfo[0] - i]) || (maxShapeInfo[maxShapeInfo[0] - i] % minShapeInfo[minShapeInfo[0] - i] != 0) )
+        if(dim < (maxShapeInfo[0] - minShapeInfo[0]) && dimsToExclude[dim] == maxI) {            
+            ++dim;
+            continue;
+        }
+        if(maxShapeInfo[maxI + 1] < minShapeInfo[minI + 1])
+            throw std::runtime_error("ShapeUtils::getSubArrayIndex: some of dimension shape of max-array is smaller than those of min-array or the max shape is not multiple of min shape !");
+        ++minI;
+    }
+
+    return shape::subArrayIndex(maxIdx, maxShapeInfo, minShapeInfo, dimsToExclude.data());
 }
 
 //////////////////////////////////////////////////////////////////////////

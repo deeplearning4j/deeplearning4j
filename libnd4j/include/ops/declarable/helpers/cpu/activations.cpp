@@ -172,8 +172,8 @@ namespace helpers {
 #pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(Nd4jLong i = 0; i < inputLen; ++i) {
             auto x = input.e(i);
-            if(x.e<float>(0) < 0.0)
-                output.p(i, (x * alpha.e(ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i))));
+            if(x.e<float>(0) < 0.0) 
+                output.p(i, (x * alpha.e(shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo))));
             else
                 output.p(i, x);
         }
@@ -193,7 +193,7 @@ namespace helpers {
             auto x   = input.e(i);
             auto grO = dLdO.e(i);
             if(x.e<float>(0) < 0.0) {
-                Nd4jLong alphaInd = ShapeUtils::getSubArrayIndex(inputShapeInfo, alphaShapeInfo, i);
+                Nd4jLong alphaInd = shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo);
                 dLdI.p(i, grO * alpha.e(alphaInd));
                 auto prevVal = dLdA.e(alphaInd);
                 prevVal += (grO * x);

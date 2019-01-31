@@ -34,7 +34,7 @@ namespace nd4j {
         //const auto resultLength = shape::length(outputShape);
         if (shape::order(outputShape) == 'c') {           //  ews == 1 always here
             for (int i = tid; i < resultLength; i += totalThreads) {
-                auto yOffset = shape::subArrayIndex(outputShape, inputShape, i);
+                auto yOffset = shape::subArrayIndex(i, outputShape, inputShape);
                 *(reinterpret_cast<T *>(outputBuffer) + i) = *(reinterpret_cast<T const *>(inputBuffer) + yOffset);
             }
 //            for(Nd4jLong i=0;  i<resultLen; ++i) {
@@ -47,7 +47,7 @@ namespace nd4j {
             //auto inputLength = shape::lenght(inputShape);
             for (int i = tid; i < resultLength; i += totalThreads) {
                 auto xOffset = shape::getIndexOffset(i, outputShape, resultLength);
-                auto yOffset = shape::subArrayIndex(outputShape, inputShape, i);
+                auto yOffset = shape::subArrayIndex(i, outputShape, inputShape);
                 *(reinterpret_cast<T *>(outputBuffer) + xOffset) = *(reinterpret_cast<T const *>(inputBuffer) +
                                                                      yOffset);
 //                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
@@ -82,13 +82,13 @@ namespace nd4j {
 
         if (ordering == 'c' && ews == 1) {           //  ews == 1 always here
             for (int i = tid; i < resultLength; i += totalThreads) {
-                auto yOffset = shape::subArrayIndex(outputShape, inputShape, i);
+                auto yOffset = shape::subArrayIndex(i, outputShape, inputShape);
                 *(reinterpret_cast<X *>(outputBuffer) + i) = static_cast<X>(*(reinterpret_cast<Y const *>(inputBuffer) +
                                                                               yOffset));
             }
         } else if (ordering == 'c' && ews > 1) {
             for (int i = tid; i < resultLength; i += totalThreads) {
-                auto yOffset = shape::subArrayIndex(outputShape, inputShape, i);
+                auto yOffset = shape::subArrayIndex(i, outputShape, inputShape);
                 *(reinterpret_cast<X *>(outputBuffer) + i * ews) = static_cast<X>(*(
                         reinterpret_cast<Y const *>(inputBuffer) + yOffset));
             }
@@ -97,7 +97,7 @@ namespace nd4j {
             for (int i = tid; i < resultLength; i += totalThreads) {
 
                 auto xOffset = shape::getIndexOffset(i, outputShape, resultLength);
-                auto yOffset = shape::subArrayIndex(outputShape, inputShape, i);
+                auto yOffset = shape::subArrayIndex(i, outputShape, inputShape);
                 *(reinterpret_cast<X *>(outputBuffer) + xOffset) = static_cast<X>(*(
                         reinterpret_cast<Y const *>(inputBuffer) + yOffset));
             }
