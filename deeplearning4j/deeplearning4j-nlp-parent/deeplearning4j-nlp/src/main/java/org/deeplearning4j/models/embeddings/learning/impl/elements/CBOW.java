@@ -186,9 +186,29 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 lookupTable.layerSize(), alpha, nextRandom.get(), vocabCache.numWords(), numLabels, trainWords,
                 inferenceVector);*/
 
-        val cbow = new CbowRound(currentWord.getIndex(), windowWords, currentWord.getIndex(), syn0.get(), syn1.get(), syn1Neg.get(),
-                expTable.get(), /*negTable*/ table.get(), idxSyn1, codes, /*nsRounds,*/ (int)negative, alpha, nextRandom.get(),
-                inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
+        boolean useHS = configuration.isUseHierarchicSoftmax();
+        boolean useNegative = configuration.getNegative() > 0;
+
+        CbowRound cbow = null;
+
+        if (useHS && useNegative) {
+            cbow = new CbowRound(currentWord.getIndex(), windowWords, currentWord.getIndex(),
+                    syn0.get(), syn1.get(), syn1Neg.get(),
+                    expTable.get(), table.get(), idxSyn1, codes, (int)negative, alpha, nextRandom.get(),
+                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
+        }
+        else if (useHS) {
+            cbow = new CbowRound(currentWord.getIndex(), windowWords,
+                    syn0.get(), syn1.get(),
+                    expTable.get(), idxSyn1, codes, alpha, nextRandom.get(),
+                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
+        }
+        else if (useNegative) {
+            cbow = new CbowRound(currentWord.getIndex(), windowWords, currentWord.getIndex(),
+                    syn0.get(), syn1Neg.get(),
+                    expTable.get(), table.get(), (int)negative, alpha, nextRandom.get(),
+                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
+        }
 
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
         Nd4j.getExecutioner().exec(cbow);

@@ -303,15 +303,24 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
         SkipGramRound sg = null;
-        if (syn1Neg != null && syn1Neg.get() != null) {
+        boolean useHS = configuration.isUseHierarchicSoftmax();
+        boolean useNegative = configuration.getNegative() > 0;
+
+        if (useHS && useNegative) {
             sg = new SkipGramRound(lastWord.getIndex(), target, syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(),
                     table.get(), (int) negative, idxSyn1, codes,
                     alpha, nextRandom.get(),
                     inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
         }
-        else {
+        else if (useHS) {
             sg = new SkipGramRound(lastWord.getIndex(), syn0.get(), syn1.get(), expTable.get(),
                     idxSyn1, codes,
+                    alpha, nextRandom.get(),
+                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
+        }
+        else if (useNegative) {
+            sg = new SkipGramRound(lastWord.getIndex(), target, syn0.get(), syn1Neg.get(), expTable.get(),
+                    table.get(), (int) negative,
                     alpha, nextRandom.get(),
                     inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
         }
