@@ -37,7 +37,7 @@ namespace nd4j {
                 T f(0.0f);
 
                 // dot
-#pragma omp simd reduction(sumT:dot)
+//#pragma omp simd reduction(sumT:dot)
                 for (int e = 0; e < vectorLength; e++) {
                     dot += syn0[e] * syn1[e];
                 }
@@ -56,14 +56,14 @@ namespace nd4j {
                 g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T) alpha;
 
                 // axpy1
-#pragma omp simd
+//#pragma omp simd
                 for (int e = 0; e < vectorLength; e++) {
                     neu1e[e] = g * syn1[e] + neu1e[e];
                 }
 
                 // axpy2
                 if (!isInference) {
-#pragma omp simd
+//#pragma omp simd
                     for (int e = 0; e < vectorLength; e++) {
                         syn1[e] = g * syn0[e] + syn1[e];
                     }
@@ -227,12 +227,15 @@ namespace nd4j {
                 memset(neu1e, 0, vectorLength * sizeof(T));
 
                 // hierarchic softmax goes first (if enabled)
+                auto syn0row = syn0 + (target * vectorLength);
                 auto irow = 0;
                 if (hsRounds > 0) {
                     for (int r = 0; r < hsRounds; r++) {
                         irow = indices[r];
 
-                        hSoftmax_<T>(syn0 + (target * vectorLength), syn1 + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, codes[r], expLength, infVector != nullptr);
+                        //nd4j_printf("Cycle [%i]: %i -> %i; code: %i\n", r, target, irow, (int) codes[r]);
+
+                        hSoftmax_<T>(syn0row, syn1 + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, codes[r], expLength, infVector != nullptr);
                     }
                 }
 
@@ -260,7 +263,7 @@ namespace nd4j {
                 if (infVector == nullptr) {
 #pragma omp simd
                     for (int e = 0; e < vectorLength; e++) {
-                        syn0[e] += neu1e[e];
+                        syn0row[e] += neu1e[e];
                     }
                 } else {
 #pragma omp simd
@@ -276,7 +279,7 @@ namespace nd4j {
             void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector) {
                 auto xType = syn0.dataType();
 
-                auto hsRounds = indices.lengthOf();
+                auto hsRounds = codes.lengthOf();
 
                 BUILD_SINGLE_SELECTOR(xType, skipgram_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0), reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t*>(codes.buffer()), alpha.e<double>(0), randomValue.e<Nd4jLong>(0), hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf()), FLOAT_TYPES);
             }
@@ -284,7 +287,7 @@ namespace nd4j {
             void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &context, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, const int numLabels, const bool trainWords) {
                 auto xType = syn0.dataType();
 
-                auto hsRounds = indices.lengthOf();
+                auto hsRounds = codes.lengthOf();
 
                 BUILD_SINGLE_SELECTOR(xType, cbow_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0), reinterpret_cast<int*>(context.buffer()), reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t*>(codes.buffer()), alpha.e<double>(0), randomValue.e<Nd4jLong>(0), (int) context.lengthOf(), hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf(), numLabels, trainWords), FLOAT_TYPES);
             }
