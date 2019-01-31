@@ -39,7 +39,7 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 4) {
 
     auto output  = OUTPUT_VARIABLE(0);                                   // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW)
 
-    int kW = INT_ARG(0);                                                        // filter(kernel) width
+    int kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));// filter(kernel) width
     int sW = INT_ARG(1);                                                        // strides width
     int pW = INT_ARG(2);                                                        // paddings width
     int isSameMode = INT_ARG(3);                                                // 0-VALID, 1-SAME
@@ -97,7 +97,7 @@ DECLARE_SHAPE_FN(conv1d) {
     auto weightsShapeInfo = inputShape->at(1);
     Nd4jLong* biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;
 
-    int kW = INT_ARG(0);                                                        // filter(kernel) width
+    int kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 0)); // filter(kernel) width
     int sW = INT_ARG(1);                                                        // strides width
     int pW = INT_ARG(2);                                                        // paddings width
     int isSameMode = INT_ARG(3);                                                // 0-VALID, 1-SAME
@@ -168,7 +168,7 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 4) {
     auto gradW = OUTPUT_VARIABLE(1);                                                 // [kW, iC, oC] always
     auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
-    int kW = INT_ARG(0);                                                        // filter(kernel) width
+    int kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));// filter(kernel) width
     int sW = INT_ARG(1);                                                        // strides width
     int pW = INT_ARG(2);                                                        // paddings width
     int isSameMode = INT_ARG(3);                                                // 0-VALID, 1-SAME
@@ -241,7 +241,7 @@ DECLARE_SHAPE_FN(conv1d_bp) {
     REQUIRE_TRUE(weightsShapeInfo[0] == rank, 0, "CUSTOM CONV1D_BP OP: rank of weights array must be equal to %i, but got %i instead !", rank, weightsShapeInfo[0]);
     REQUIRE_TRUE(gradOShapeInfo[0]   == rank, 0, "CUSTOM CONV1D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !", rank, gradOShapeInfo[0]);
 
-    int kW = INT_ARG(0);                                                        // filter(kernel) width
+    int kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 0));// filter(kernel) width
     int sW = INT_ARG(1);                                                        // strides width
     int pW = INT_ARG(2);                                                        // paddings width
     int isSameMode = INT_ARG(3);                                                // 0-VALID, 1-SAME

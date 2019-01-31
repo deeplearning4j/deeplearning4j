@@ -2097,7 +2097,7 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test6) {
     NDArray weights('c', {2}, nd4j::DataType::DOUBLE);
     
     NDArray dLdpExp('c', {2,4}, {0.0801,  0.0849, -0.2601,  0.0951, 0.0801, -0.2651,  0.0899,  0.0951});
-    NDArray dLdwExp('c', {2}, {-0.0098,  0.0098});
+    NDArray dLdwExp('c', {2}, {-0.014000, 0.014000});
 
     logits.linspace(-0.08, 0.04);
     weights.assign(0.5);
