@@ -471,8 +471,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected IActivation activationFn = new ActivationSigmoid();
         protected IWeightInit weightInitFn = new WeightInitXavier();
         protected double biasInit = 0.0;
-        protected List<Regularization> regularization;
-        protected List<Regularization> regularizationBias;
+        protected List<Regularization> regularization = new ArrayList<>();
+        protected List<Regularization> regularizationBias = new ArrayList<>();
         protected IDropout idropOut;
         protected IWeightNoise weightNoise;
         protected IUpdater iUpdater = new Sgd();

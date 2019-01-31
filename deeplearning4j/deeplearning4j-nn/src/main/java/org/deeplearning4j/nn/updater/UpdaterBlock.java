@@ -156,24 +156,35 @@ public class UpdaterBlock {
             return;
         }
 
+        //Pre-updater regularization: l1 and l2
+        applyRegularizationAllVariables(Regularization.ApplyStep.POST_UPDATER, iteration, epoch, externalGradient, fullNetworkGradientView, fullNetworkParamsArray);
+
         //Apply the updater itself
         gradientUpdater.applyUpdater(blockGradViewArray, iteration, epoch);
 
-        //Post apply: regularization (l1, l2 and weight decay by params)
+        //Post updater regularization: weight decay
+        applyRegularizationAllVariables(Regularization.ApplyStep.POST_UPDATER, iteration, epoch, externalGradient, fullNetworkGradientView, fullNetworkParamsArray);
+    }
+
+    protected void applyRegularizationAllVariables(Regularization.ApplyStep applyStep, int iteration, int epoch, boolean externalGradient, INDArray fullNetworkGradientView,
+                                                   INDArray fullNetworkParamsArray) {
         for (ParamState p : layersAndVariablesInBlock) {
             INDArray paramView;
             INDArray gradView;
             if (externalGradient) {
                 paramView = fullNetworkParamsArray.get(NDArrayIndex.point(0),
-                                NDArrayIndex.interval(p.getParamOffsetStart(), p.getParamOffsetEnd()));
+                        NDArrayIndex.interval(p.getParamOffsetStart(), p.getParamOffsetEnd()));
                 gradView = fullNetworkGradientView.get(NDArrayIndex.point(0),
-                                NDArrayIndex.interval(p.getParamOffsetStart(), p.getParamOffsetEnd()));
+                        NDArrayIndex.interval(p.getParamOffsetStart(), p.getParamOffsetEnd()));
             } else {
                 //Standard case
                 paramView = p.getParamView();
                 gradView = p.getGradView();
             }
-            postApply(p.getLayer(), p.getParamName(), gradView, paramView, iteration, epoch);
+
+            boolean hasLR = gradientUpdater.getConfig().hasLearningRate();
+            double lr = (hasLR ? gradientUpdater.getConfig().getLearningRate(iteration, epoch) : 1.0);
+            applyRegularization(applyStep, p.getLayer(), p.getParamName(), gradView, paramView, iteration, epoch, lr);
         }
     }
 
@@ -185,14 +196,13 @@ public class UpdaterBlock {
      * @param gradientView Gradient view array for the layer + param
      * @param paramsView   Parameter view array for the layer + param
      */
-    public void postApply(Trainable layer, String paramName, INDArray gradientView, INDArray paramsView, int iter, int epoch) {
+    protected void applyRegularization(Regularization.ApplyStep step, Trainable layer, String paramName, INDArray gradientView, INDArray paramsView, int iter, int epoch, double lr) {
         //TODO: do this for multiple contiguous params/layers (fewer, larger ops)
 
         List<Regularization> l = layer.getConfig().getRegularizationByParam(paramName);
         if(l != null && !l.isEmpty()){
             for(Regularization r : l){
-                if(r.applyStep() == Regularization.ApplyStep.POST_UPDATER){
-                    double lr = 0.0;    //TODO
+                if(r.applyStep() == step){
                     r.apply(paramsView, gradientView, lr, iter, epoch);
                 }
             }
