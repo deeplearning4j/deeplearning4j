@@ -302,9 +302,20 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
-        val sg = new SkipGramRound(lastWord.getIndex(), syn0.get(), syn1.get(), expTable.get(), idxSyn1, codes,
-                                   alpha, nextRandom.longValue(),
-                                   inferenceVector != null ? inferenceVector :Nd4j.empty(syn0.get().dataType()));
+        SkipGramRound sg = null;
+        if (syn1Neg != null && syn1Neg.get() != null) {
+            sg = new SkipGramRound(lastWord.getIndex(), target, syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(),
+                    table.get(), (int) negative, idxSyn1, codes,
+                    alpha, nextRandom.get(),
+                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
+        }
+        else {
+            sg = new SkipGramRound(lastWord.getIndex(), syn0.get(), syn1.get(), expTable.get(),
+                    idxSyn1, codes,
+                    alpha, nextRandom.get(),
+                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
+        }
+
         Nd4j.getExecutioner().exec(sg);
 
 

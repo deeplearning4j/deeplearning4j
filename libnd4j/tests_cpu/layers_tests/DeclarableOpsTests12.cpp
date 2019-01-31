@@ -764,3 +764,37 @@ TEST_F(DeclarableOpsTests12, gather_6) {
 
     delete result;
 }
+
+#include "ops/declarable/helpers/multiUnique.h"
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, multiUnique_1) {
+
+    NDArray input1('c', {3,5}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}, nd4j::DataType::INT32);
+    NDArray input2('c', {3,4}, {1,2,3,4,5,6,7,8,9,10,11,12}, nd4j::DataType::INT32);
+    NDArray input3('c', {2,3}, {10,11,12,13,14,15}, nd4j::DataType::INT32);
+    NDArray input4('c', {1,5}, {7,8,9,10,11}, nd4j::DataType::INT32);
+    NDArray input5('c', {5,3}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}, nd4j::DataType::INT32);
+
+    //NDArray indices('c', {1}, {2}, nd4j::DataType::INT32);
+    //NDArray expected('c', {1,5}, {11, 12, 13, 14, 15.}, nd4j::DataType::FLOAT32);
+
+    std::vector<NDArray*> arrayList({&input1, &input2, &input3, &input4, &input5});
+
+    ASSERT_FALSE(nd4j::ops::helpers::multiUnique(arrayList));
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, multiUnique_2) {
+
+    NDArray input1('c', {3,5}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}, nd4j::DataType::INT32);
+    NDArray input2('c', {3,4}, {21,22,23,24,25,26,27,28,29,210,211,212}, nd4j::DataType::INT32);
+    NDArray input3('c', {2,3}, {310,311,312,313,314,315}, nd4j::DataType::INT32);
+    NDArray input4('c', {1,5}, {47,48,49,410,411}, nd4j::DataType::INT32);
+    NDArray input5('c', {5,3}, {51,52,53,54,55,56,57,58,59,510,511,512,513,514,515}, nd4j::DataType::INT32);
+
+    //NDArray indices('c', {1}, {2}, nd4j::DataType::INT32);
+    //NDArray expected('c', {1,5}, {11, 12, 13, 14, 15.}, nd4j::DataType::FLOAT32);
+
+    std::vector<NDArray*> arrayList({&input1, &input2, &input3, &input4, &input5});
+    ASSERT_TRUE(nd4j::ops::helpers::multiUnique(arrayList));
+}

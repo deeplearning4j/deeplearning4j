@@ -19,6 +19,7 @@ package org.deeplearning4j.models.embeddings.learning.impl.elements;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.val;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -30,6 +31,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateCBOW;
+import org.nd4j.linalg.api.ops.impl.nlp.CbowRound;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 import org.slf4j.Logger;
@@ -151,11 +153,11 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     public void iterateSample(T currentWord, int[] windowWords, AtomicLong nextRandom, double alpha,
                     boolean isInference, int numLabels, boolean trainWords, INDArray inferenceVector) {
         int[] idxSyn1 = null;
-        int[] codes = null;
+        byte[] codes = null;
 
         if (configuration.isUseHierarchicSoftmax()) {
             idxSyn1 = new int[currentWord.getCodeLength()];
-            codes = new int[currentWord.getCodeLength()];
+            codes = new byte[currentWord.getCodeLength()];
             for (int p = 0; p < currentWord.getCodeLength(); p++) {
                 if (currentWord.getPoints().get(p) < 0)
                     continue;
@@ -165,7 +167,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             }
         } else {
             idxSyn1 = new int[0];
-            codes = new int[0];
+            codes = new byte[0];
         }
 
 
@@ -179,20 +181,26 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         if (batches.get() == null)
             batches.set(new ArrayList<Aggregate>());
 
-        AggregateCBOW cbow = new AggregateCBOW(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(),
-                        currentWord.getIndex(), windowWords, idxSyn1, codes, (int) negative, currentWord.getIndex(),
-                        lookupTable.layerSize(), alpha, nextRandom.get(), vocabCache.numWords(), numLabels, trainWords,
-                        inferenceVector);
-        nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
+        /*AggregateCBOW(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(),
+                currentWord.getIndex(), windowWords, idxSyn1, codes, (int) negative, currentWord.getIndex(),
+                lookupTable.layerSize(), alpha, nextRandom.get(), vocabCache.numWords(), numLabels, trainWords,
+                inferenceVector);*/
 
-        if (!isInference) {
+        val cbow = new CbowRound(currentWord.getIndex(), windowWords, currentWord.getIndex(), syn0.get(), syn1.get(), syn1Neg.get(),
+                expTable.get(), /*negTable*/ table.get(), idxSyn1, codes, /*nsRounds,*/ (int)negative, alpha, nextRandom.get(),
+                inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
+
+        nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
+        Nd4j.getExecutioner().exec(cbow);
+
+        /*if (!isInference) {
             batches.get().add(cbow);
             if (batches.get().size() > 4096) {
                 Nd4j.getExecutioner().exec(batches.get());
                 batches.get().clear();
             }
         } else
-            Nd4j.getExecutioner().exec(cbow);
+            Nd4j.getExecutioner().exec(cbow);*/
 
     }
 
