@@ -127,13 +127,8 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public double calcL2(boolean backpropOnlyParams) {
-        return fwd.calcL2(backpropOnlyParams) + bwd.calcL2(backpropOnlyParams);
-    }
-
-    @Override
-    public double calcL1(boolean backpropOnlyParams) {
-        return fwd.calcL1(backpropOnlyParams) + bwd.calcL1(backpropOnlyParams);
+    public double calcRegularizationScore(boolean backpropParamsOnly){
+        return fwd.calcRegularizationScore(backpropParamsOnly) + bwd.calcRegularizationScore(backpropParamsOnly);
     }
 
     @Override

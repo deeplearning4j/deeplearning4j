@@ -259,10 +259,10 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         return activate(training, workspaceMgr);
     }
 
-//    @Override
-//    public double calcRegularizationScore(boolean backpropParamsOnly){
-//        return 0.0;
-//    }
+    @Override
+    public double calcRegularizationScore(boolean backpropParamsOnly){
+        return 0.0;
+    }
 
     @Override
     public int batchSize() {

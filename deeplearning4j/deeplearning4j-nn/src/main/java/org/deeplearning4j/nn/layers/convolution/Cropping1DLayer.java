@@ -84,13 +84,8 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
     }
 
     @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        return 0;
-    }
-
-    @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        return 0;
+    public double calcRegularizationScore(boolean backpropParamsOnly){
+        return 0.0;
     }
 
     private INDArray inputSubset(INDArray from, ArrayType arrayType, LayerWorkspaceMgr workspaceMgr){
