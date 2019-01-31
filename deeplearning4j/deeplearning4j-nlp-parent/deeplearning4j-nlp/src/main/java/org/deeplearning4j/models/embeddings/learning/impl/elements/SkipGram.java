@@ -319,8 +319,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
         }
         else if (useNegative) {
-            sg = new SkipGramRound(lastWord.getIndex(), syn0.get(), syn1Neg.get(), expTable.get(),
-                    idxSyn1, codes,
+            sg = new SkipGramRound(lastWord.getIndex(), target, syn0.get(), syn1Neg.get(), expTable.get(),
+                    table.get(), (int) negative,
                     alpha, nextRandom.get(),
                     inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()));
         }
