@@ -157,13 +157,14 @@ public class ParallelTransformerIteratorTest {
 
     }
 
-    @Ignore //FIXME
     @Test
     public void testCompletes_WhenIteratorHasOneElement() throws Exception {
 
         String testString = "";
+        String[] stringsArray = new String[100];
         for (int i = 0; i < 100; ++i) {
             testString += Integer.toString(i) + " ";
+            stringsArray[i] = Integer.toString(i);
         }
         InputStream inputStream = IOUtils.toInputStream(testString, "UTF-8");
         SentenceIterator iterator = new BasicLineIterator(inputStream);
@@ -179,6 +180,7 @@ public class ParallelTransformerIteratorTest {
             sequence = iter.next();
             List<VocabWord> words = sequence.getElements();
             for (VocabWord word : words) {
+                assertEquals(stringsArray[cnt], word.getWord());
                 ++cnt;
             }
         }
@@ -188,9 +190,9 @@ public class ParallelTransformerIteratorTest {
     @Test
     public void orderIsStableForParallelTokenization() throws Exception {
 
-        String[] stringsArray = new String[100];
+        String[] stringsArray = new String[1000];
         String testStrings = "";
-        for (int i = 0; i < 100; ++i) {
+        for (int i = 0; i < 1000; ++i) {
             stringsArray[i] = Integer.toString(i);
             testStrings += Integer.toString(i) + "\n";
         }
