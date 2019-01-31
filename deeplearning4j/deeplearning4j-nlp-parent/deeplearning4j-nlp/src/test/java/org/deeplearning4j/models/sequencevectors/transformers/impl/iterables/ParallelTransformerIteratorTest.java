@@ -18,6 +18,7 @@ package org.deeplearning4j.models.sequencevectors.transformers.impl.iterables;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.junit.Ignore;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
@@ -156,12 +157,42 @@ public class ParallelTransformerIteratorTest {
 
     }
 
+    @Ignore //FIXME
     @Test
-    public void testOrderStability() throws Exception {
+    public void testCompletes_WhenIteratorHasOneElement() throws Exception {
 
+        String testString = "";
+        for (int i = 0; i < 100; ++i) {
+            testString += Integer.toString(i) + " ";
+        }
+        InputStream inputStream = IOUtils.toInputStream(testString, "UTF-8");
+        SentenceIterator iterator = new BasicLineIterator(inputStream);
+
+        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
+                .tokenizerFactory(factory).build();
+
+        Iterator<Sequence<VocabWord>> iter = transformer.iterator();
+
+        Sequence<VocabWord> sequence = null;
+        int cnt = 0;
+        while (iter.hasNext()) {
+            sequence = iter.next();
+            List<VocabWord> words = sequence.getElements();
+            for (VocabWord word : words) {
+                ++cnt;
+            }
+        }
+
+    }
+
+    @Test
+    public void orderIsStableForParallelTokenization() throws Exception {
+
+        String[] stringsArray = new String[100];
         String testStrings = "";
-        for (int i = 0; i < 1000; ++i) {
-            testStrings += Integer.toString(i) + " ";
+        for (int i = 0; i < 100; ++i) {
+            stringsArray[i] = Integer.toString(i);
+            testStrings += Integer.toString(i) + "\n";
         }
         InputStream inputStream = IOUtils.toInputStream(testStrings, "UTF-8");
         SentenceIterator iterator = new BasicLineIterator(inputStream);
@@ -172,11 +203,13 @@ public class ParallelTransformerIteratorTest {
         Iterator<Sequence<VocabWord>> iter = transformer.iterator();
 
         Sequence<VocabWord> sequence = null;
+        int cnt = 0;
         while (iter.hasNext()) {
             sequence = iter.next();
             List<VocabWord> words = sequence.getElements();
             for (VocabWord word : words) {
-                System.out.println(word);
+                assertEquals(stringsArray[cnt], word.getWord());
+                ++cnt;
             }
         }
 
