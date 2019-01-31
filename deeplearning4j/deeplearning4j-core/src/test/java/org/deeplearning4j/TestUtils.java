@@ -19,17 +19,24 @@ package org.deeplearning4j;
 import org.apache.commons.compress.utils.IOUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.L2Regularization;
+import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.io.*;
+import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class TestUtils {
 
@@ -155,5 +162,61 @@ public class TestUtils {
         try (OutputStream os = new BufferedOutputStream(new FileOutputStream(out))) {
             os.write(b);
         }
+    }
+
+    public static L1Regularization getL1Reg(List<Regularization> l){
+        for(Regularization r : l){
+            if(r instanceof L1Regularization){
+                return (L1Regularization) r;
+            }
+        }
+        return null;
+    }
+
+    public static L2Regularization getL2Reg(List<Regularization> l){
+        for(Regularization r : l){
+            if(r instanceof L2Regularization){
+                return (L2Regularization) r;
+            }
+        }
+        return null;
+    }
+
+    public static double getL1(BaseLayer layer) {
+        List<Regularization> l = layer.getRegularization();
+        return getL1(l);
+    }
+
+    public static double getL1(List<Regularization> l){
+        L1Regularization l1Reg = null;
+        for(Regularization reg : l){
+            if(reg instanceof L1Regularization)
+                l1Reg = (L1Regularization) reg;
+        }
+        assertNotNull(l1Reg);
+        return l1Reg.getL1().valueAt(0,0);
+    }
+
+    public static double getL2(BaseLayer layer) {
+        List<Regularization> l = layer.getRegularization();
+        return getL2(l);
+    }
+
+    public static double getL2(List<Regularization> l){
+        L2Regularization l2Reg = null;
+        for(Regularization reg : l){
+            if(reg instanceof L2Regularization)
+                l2Reg = (L2Regularization) reg;
+        }
+        assertNotNull(l2Reg);
+        return l2Reg.getL2().valueAt(0,0);
+    }
+
+    public static double getL1(AbstractSameDiffLayer layer){
+        return getL1(layer.getRegularization());
+    }
+
+    public static double getL2(AbstractSameDiffLayer layer){
+        return getL2(layer.getRegularization());
     }
 }

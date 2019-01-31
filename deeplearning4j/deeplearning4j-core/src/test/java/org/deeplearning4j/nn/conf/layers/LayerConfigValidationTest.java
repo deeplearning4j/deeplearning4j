@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -156,8 +157,8 @@ public class LayerConfigValidationTest extends BaseDL4JTest {
 
         BaseLayer layerConf = (BaseLayer) net.getLayer(0).conf().getLayer();
         assertEquals(expectedMomentum, ((Nesterovs) layerConf.getIUpdater()).getMomentum(), 1e-3);
-        assertEquals(expectedL1, layerConf.getL1(), 1e-3);
-        assertEquals(0.5, layerConf.getL2(), 1e-3);
+        assertEquals(expectedL1, TestUtils.getL1(layerConf), 1e-3);
+        assertEquals(0.5, TestUtils.getL2(layerConf), 1e-3);
 
         BaseLayer layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
         assertEquals(0.4, ((Nesterovs) layerConf1.getIUpdater()).getMomentum(), 1e-3);
@@ -171,16 +172,16 @@ public class LayerConfigValidationTest extends BaseDL4JTest {
         net.init();
 
         layerConf = (BaseLayer) net.getLayer(0).conf().getLayer();
-        assertEquals(0.3, layerConf.getL1(), 1e-3);
-        assertEquals(0.5, layerConf.getL2(), 1e-3);
+        assertEquals(0.3, TestUtils.getL1(layerConf), 1e-3);
+        assertEquals(0.5, TestUtils.getL2(layerConf), 1e-3);
 
         layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
         assertEquals(expectedAdamMeanDecay, ((Adam) layerConf1.getIUpdater()).getBeta1(), 1e-3);
         assertEquals(expectedAdamVarDecay, ((Adam) layerConf1.getIUpdater()).getBeta2(), 1e-3);
         assertEquals(new WeightInitDistribution(expectedDist), layerConf1.getWeightInitFn());
         // l1 & l2 local should still be set whether regularization true or false
-        assertEquals(expectedL1, layerConf1.getL1(), 1e-3);
-        assertEquals(expectedL2, layerConf1.getL2(), 1e-3);
+        assertEquals(expectedL1, TestUtils.getL1(layerConf1), 1e-3);
+        assertEquals(expectedL2, TestUtils.getL2(layerConf1), 1e-3);
 
         //RMSProp Updater
         conf = new NeuralNetConfiguration.Builder().updater(new RmsProp(0.3)).list()
@@ -191,8 +192,8 @@ public class LayerConfigValidationTest extends BaseDL4JTest {
 
         layerConf = (BaseLayer) net.getLayer(0).conf().getLayer();
         assertEquals(expectedRmsDecay, ((RmsProp) layerConf.getIUpdater()).getRmsDecay(), 1e-3);
-        assertEquals(expectedL1, layerConf.getL1(), 1e-3);
-        assertEquals(expectedL2, layerConf.getL2(), 1e-3);
+        assertEquals(expectedL1, TestUtils.getL1(layerConf), 1e-3);
+        assertEquals(expectedL2, TestUtils.getL2(layerConf), 1e-3);
 
         layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
         assertEquals(0.4, ((RmsProp) layerConf1.getIUpdater()).getRmsDecay(), 1e-3);

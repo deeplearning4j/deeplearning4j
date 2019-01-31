@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
@@ -158,7 +159,7 @@ public class UpdaterBlock {
         //Apply the updater itself
         gradientUpdater.applyUpdater(blockGradViewArray, iteration, epoch);
 
-        //Post apply: l1 and l2 by params
+        //Post apply: regularization (l1, l2 and weight decay by params)
         for (ParamState p : layersAndVariablesInBlock) {
             INDArray paramView;
             INDArray gradView;
@@ -172,7 +173,7 @@ public class UpdaterBlock {
                 paramView = p.getParamView();
                 gradView = p.getGradView();
             }
-            postApply(p.getLayer(), p.getParamName(), gradView, paramView);
+            postApply(p.getLayer(), p.getParamName(), gradView, paramView, iteration, epoch);
         }
     }
 
@@ -184,26 +185,17 @@ public class UpdaterBlock {
      * @param gradientView Gradient view array for the layer + param
      * @param paramsView   Parameter view array for the layer + param
      */
-    public void postApply(Trainable layer, String paramName, INDArray gradientView, INDArray paramsView) {
-        if( layer instanceof FrozenLayer ){
-            //TODO this is a quick hack to fix https://github.com/deeplearning4j/deeplearning4j/issues/4250
-            //The underlying cause seems to be the whole NeuralNetConfiguration l1/l2ByParam maps and layer config separation
-            // which is being resolved in the upcoming PR here: https://github.com/deeplearning4j/deeplearning4j/pull/4050
-            return;
-        }
-
+    public void postApply(Trainable layer, String paramName, INDArray gradientView, INDArray paramsView, int iter, int epoch) {
         //TODO: do this for multiple contiguous params/layers (fewer, larger ops)
 
-        double l2 = layer.getConfig().getL2ByParam(paramName);
-        if (l2 > 0) {
-            //This can be an axpy op, saving an allocation...
-            //gradientView += params * l2           i.e., dC/dW = dC0/dW + lambda/n * w where C0 is pre-l2 cost function
-            //Equivalent to gradientView.addi(paramsView.mul(layerConf().getL2ByParam(paramName)));
-            val length = gradientView.length();
-            Nd4j.getBlasWrapper().level1().axpy(length, l2, paramsView, gradientView);
-        }
-        if (layer.getConfig().getL1ByParam(paramName) > 0) {
-            gradientView.addi(Transforms.sign(paramsView, true).muli(layer.getConfig().getL1ByParam(paramName)));
+        List<Regularization> l = layer.getConfig().getRegularizationByParam(paramName);
+        if(l != null && !l.isEmpty()){
+            for(Regularization r : l){
+                if(r.applyStep() == Regularization.ApplyStep.POST_UPDATER){
+                    double lr = 0.0;    //TODO
+                    r.apply(paramsView, gradientView, lr, iter, epoch);
+                }
+            }
         }
     }
 }

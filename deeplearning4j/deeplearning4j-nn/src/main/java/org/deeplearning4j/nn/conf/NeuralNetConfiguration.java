@@ -46,6 +46,7 @@ import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
+import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -53,6 +54,10 @@ import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Sgd;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.L2Regularization;
+import org.nd4j.linalg.learning.regularization.Regularization;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.serde.json.LegacyIActivationDeserializer;
@@ -466,10 +471,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected IActivation activationFn = new ActivationSigmoid();
         protected IWeightInit weightInitFn = new WeightInitXavier();
         protected double biasInit = 0.0;
-        protected double l1 = Double.NaN;
-        protected double l2 = Double.NaN;
-        protected double l1Bias = Double.NaN;
-        protected double l2Bias = Double.NaN;
+        protected List<Regularization> regularization;
+        protected List<Regularization> regularizationBias;
         protected IDropout idropOut;
         protected IWeightNoise weightNoise;
         protected IUpdater iUpdater = new Sgd();
@@ -791,7 +794,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * value, and can be overridden on a per-layer basis.
          */
         public Builder l1(double l1) {
-            this.l1 = l1;
+            //Check if existing L1 exists; if so, replace it
+            NetworkUtils.removeInstances(this.regularization, L1Regularization.class);
+            this.regularization.add(new L1Regularization(l1));
             return this;
         }
 
@@ -802,7 +807,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * value, and can be overridden on a per-layer basis.
          */
         public Builder l2(double l2) {
-            this.l2 = l2;
+            //Check if existing L2 exists; if so, replace it. Also remove weight decay - it doesn't make sense to use both
+            NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
+            NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
+            this.regularization.add(new L2Regularization(l2));
             return this;
         }
 
@@ -813,7 +821,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * value, and can be overridden on a per-layer basis.
          */
         public Builder l1Bias(double l1Bias) {
-            this.l1Bias = l1Bias;
+            NetworkUtils.removeInstances(this.regularizationBias, L1Regularization.class);
+            this.regularizationBias.add(new L1Regularization(l1Bias));
             return this;
         }
 
@@ -824,7 +833,19 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * value, and can be overridden on a per-layer basis.
          */
         public Builder l2Bias(double l2Bias) {
-            this.l2Bias = l2Bias;
+            NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
+            NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
+            this.regularizationBias.add(new L2Regularization(l2Bias));
+            return this;
+        }
+
+        public Builder regularization(List<Regularization> regularization){
+            this.regularization = regularization;
+            return this;
+        }
+
+        public Builder regularizationBias(List<Regularization> regularizationBias){
+            this.regularizationBias = regularizationBias;
             return this;
         }
 
@@ -1120,7 +1141,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     sl.setConvolutionMode(convolutionMode);
                 }
             }
-            LayerValidation.generalValidation(layerName, layer, idropOut, l2, l2Bias, l1, l1Bias,
+            LayerValidation.generalValidation(layerName, layer, idropOut, regularization, regularizationBias,
                     allParamConstraints, weightConstraints, biasConstraints);
         }
 
@@ -1133,10 +1154,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
             if (layer instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) layer;
-                if (Double.isNaN(bLayer.getL1()))
-                    bLayer.setL1(l1);
-                if (Double.isNaN(bLayer.getL2()))
-                    bLayer.setL2(l2);
+                if (bLayer.getRegularization() == null || bLayer.getRegularization().isEmpty())
+                    bLayer.setRegularization(regularization);
+                if (bLayer.getRegularizationBias() == null || bLayer.getRegularizationBias().isEmpty())
+                    bLayer.setRegularizationBias(regularizationBias);
                 if (bLayer.getActivationFn() == null)
                     bLayer.setActivationFn(activationFn);
                 if (bLayer.getWeightInitFn() == null)

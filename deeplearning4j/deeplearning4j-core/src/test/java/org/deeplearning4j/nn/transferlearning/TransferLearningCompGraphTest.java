@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.transferlearning;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -475,7 +476,7 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
         assertNull(l.getIDropout());
         assertNull(l.getWeightNoise());
         assertNull(l.getConstraints());
-        assertEquals(0.0, l.getL2(), 0.0);
+        assertEquals(0.0, TestUtils.getL2(l), 0.0);
     }
 
 

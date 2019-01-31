@@ -545,14 +545,10 @@ public class FineTuneConfiguration {
                 bl.setWeightInitFn(weightInitFn);
             if (biasInit != null)
                 bl.setBiasInit(biasInit);
-            if (l1 != null)
-                bl.setL1(l1);
-            if (l2 != null)
-                bl.setL2(l2);
-            if (l1Bias != null)
-                bl.setL1Bias(l1Bias);
-            if (l2Bias != null)
-                bl.setL2Bias(l2Bias);
+            if (regularization != null)
+                bl.setRegularization(regularization);
+            if (regularizationBias != null)
+                bl.setRegularizationBias(regularizationBias);
             if (gradientNormalization != null)
                 bl.setGradientNormalization(gradientNormalization.orElse(null));
             if (gradientNormalizationThreshold != null)
@@ -592,7 +588,7 @@ public class FineTuneConfiguration {
 
         //Perform validation
         if (l != null) {
-            LayerValidation.generalValidation(l.getLayerName(), l, get(dropout), l2, l2Bias, l1, l1Bias,
+            LayerValidation.generalValidation(l.getLayerName(), l, get(dropout), regularization, regularizationBias,
                     get(constraints), null, null);
         }
     }
@@ -630,14 +626,10 @@ public class FineTuneConfiguration {
             confBuilder.setWeightInitFn(weightInitFn);
         if (biasInit != null)
             confBuilder.setBiasInit(biasInit);
-        if (l1 != null)
-            confBuilder.setL1(l1);
-        if (l2 != null)
-            confBuilder.setL2(l2);
-        if (l1Bias != null)
-            confBuilder.setL1Bias(l1Bias);
-        if (l2Bias != null)
-            confBuilder.setL2Bias(l2Bias);
+        if (regularization != null)
+            confBuilder.setRegularization(regularization);
+        if (regularizationBias != null)
+            confBuilder.setRegularizationBias(regularizationBias);
         if (dropout != null)
             confBuilder.setIdropOut(dropout.orElse(null));
         if (updater != null)

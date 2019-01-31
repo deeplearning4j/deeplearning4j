@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.transferlearning;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -496,13 +497,13 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
         assertEquals(new Adam(1e-4), l0.getIUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
         assertEquals(new WeightInitRelu(), l0.getWeightInitFn());
-        assertEquals(0.1, l0.getL1(), 1e-6);
+        assertEquals(0.1, TestUtils.getL1(l0), 1e-6);
 
         BaseLayer l1 = (BaseLayer) net.getLayer(1).conf().getLayer();
         assertEquals(new Adam(1e-4), l1.getIUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
         assertEquals(new WeightInitRelu(), l1.getWeightInitFn());
-        assertEquals(0.2, l1.getL2(), 1e-6);
+        assertEquals(0.2, TestUtils.getL2(l1), 1e-6);
 
         assertEquals(BackpropType.Standard, conf.getBackpropType());
 
@@ -511,13 +512,13 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
         assertEquals(new Adam(2e-2), l0.getIUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
         assertEquals(new WeightInitRelu(), l0.getWeightInitFn());
-        assertEquals(0.1, l0.getL1(), 1e-6);
+        assertEquals(0.1, TestUtils.getL1(l0), 1e-6);
 
         l1 = (BaseLayer) net2.getLayer(1).conf().getLayer();
         assertEquals(new Adam(2e-2), l1.getIUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
         assertEquals(new WeightInitRelu(), l1.getWeightInitFn());
-        assertEquals(0.2, l1.getL2(), 1e-6);
+        assertEquals(0.2, TestUtils.getL2(l1), 1e-6);
 
         assertEquals(BackpropType.TruncatedBPTT, net2.getLayerWiseConfigurations().getBackpropType());
     }
@@ -628,7 +629,7 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
         assertNull(l.getIDropout());
         assertNull(l.getWeightNoise());
         assertNull(l.getConstraints());
-        assertEquals(0.0, l.getL2(), 0.0);
+        assertEquals(0.0, TestUtils.getL2(l), 0.0);
     }
 
 

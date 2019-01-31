@@ -143,17 +143,11 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
 
 
     public void applyGlobalConfig(NeuralNetConfiguration.Builder b) {
-        if (Double.isNaN(l1)) {
-            l1 = b.getL1();
+        if(regularization == null || regularization.isEmpty()){
+            regularization = b.getRegularization();
         }
-        if (Double.isNaN(l2)) {
-            l2 = b.getL2();
-        }
-        if (Double.isNaN(l1Bias)) {
-            l1Bias = b.getL1Bias();
-        }
-        if (Double.isNaN(l2Bias)) {
-            l2Bias = b.getL2Bias();
+        if(regularizationBias == null || regularizationBias.isEmpty()){
+            regularizationBias = b.getRegularizationBias();
         }
         if (updater == null) {
             updater = b.getIUpdater();

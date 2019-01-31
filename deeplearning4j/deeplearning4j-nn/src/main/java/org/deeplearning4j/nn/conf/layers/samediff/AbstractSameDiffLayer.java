@@ -32,10 +32,17 @@ import org.deeplearning4j.nn.params.SameDiffParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.regularization.L1Regularization;
+import org.nd4j.linalg.learning.regularization.L2Regularization;
+import org.nd4j.linalg.learning.regularization.Regularization;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -43,10 +50,8 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public abstract class AbstractSameDiffLayer extends Layer {
 
-    protected double l1;
-    protected double l2;
-    protected double l1Bias;
-    protected double l2Bias;
+    protected List<Regularization> regularization;
+    protected List<Regularization> regularizationBias;
     protected IUpdater updater;
     protected IUpdater biasUpdater;
     protected GradientNormalization gradientNormalization;
@@ -54,12 +59,20 @@ public abstract class AbstractSameDiffLayer extends Layer {
 
     private SDLayerParams layerParams;
 
+    @Override
+    public List<Regularization> getRegularizationByParam(String paramName) {
+        if(layerParams.isWeightParam(paramName)){
+            return regularization;
+        } else if(layerParams.isBiasParam(paramName)){
+            return regularizationBias;
+        }
+        return null;
+    }
+
     protected AbstractSameDiffLayer(Builder builder) {
         super(builder);
-        this.l1 = builder.l1;
-        this.l2 = builder.l2;
-        this.l1Bias = builder.l1Bias;
-        this.l2Bias = builder.l2Bias;
+        this.regularization = builder.regularization;
+        this.regularizationBias = builder.regularizationBias;
         this.updater = builder.updater;
         this.biasUpdater = builder.biasUpdater;
 
@@ -169,17 +182,11 @@ public abstract class AbstractSameDiffLayer extends Layer {
     }
 
     public void applyGlobalConfig(NeuralNetConfiguration.Builder b) {
-        if (Double.isNaN(l1)) {
-            l1 = b.getL1();
+        if (regularization == null || regularization.isEmpty()) {
+            regularization = b.getRegularization();
         }
-        if (Double.isNaN(l2)) {
-            l2 = b.getL2();
-        }
-        if (Double.isNaN(l1Bias)) {
-            l1Bias = b.getL1Bias();
-        }
-        if (Double.isNaN(l2Bias)) {
-            l2Bias = b.getL2Bias();
+        if (regularizationBias == null || regularizationBias.isEmpty()) {
+            regularizationBias = b.getRegularizationBias();
         }
         if (updater == null) {
             updater = b.getIUpdater();
@@ -201,27 +208,8 @@ public abstract class AbstractSameDiffLayer extends Layer {
     @Setter
     public static abstract class Builder<T extends Builder<T>> extends Layer.Builder<T> {
 
-        /**
-         * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
-         * coefficient for the bias.
-         */
-        protected double l1 = Double.NaN;
-
-        /**
-         * L2 regularization coefficient (weights only). Use {@link #l2Bias(double)} to configure the l2 regularization
-         * coefficient for the bias.
-         */
-        protected double l2 = Double.NaN;
-
-        /**
-         * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
-         */
-        protected double l1Bias = Double.NaN;
-
-        /**
-         * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
-         */
-        protected double l2Bias = Double.NaN;
+        protected List<Regularization> regularization = new ArrayList<>();
+        protected List<Regularization> regularizationBias = new ArrayList<>();
 
         /**
          * Gradient updater. For example, {@link org.nd4j.linalg.learning.config.Adam} or {@link
@@ -242,7 +230,9 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * coefficient for the bias.
          */
         public T l1(double l1) {
-            this.l1 = l1;
+            //Check if existing L1 exists; if so, replace it
+            NetworkUtils.removeInstances(this.regularization, L1Regularization.class);
+            this.regularization.add(new L1Regularization(l1));
             return (T) this;
         }
 
@@ -251,7 +241,10 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * coefficient for the bias.
          */
         public T l2(double l2) {
-            this.l2 = l2;
+            //Check if existing L2 exists; if so, replace it. Also remove weight decay - it doesn't make sense to use both
+            NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
+            NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
+            this.regularization.add(new L2Regularization(l2));
             return (T) this;
         }
 
@@ -259,7 +252,8 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
          */
         public T l1Bias(double l1Bias) {
-            this.l1Bias = l1Bias;
+            NetworkUtils.removeInstances(this.regularizationBias, L1Regularization.class);
+            this.regularizationBias.add(new L1Regularization(l1Bias));
             return (T) this;
         }
 
@@ -267,7 +261,8 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
          */
         public T l2Bias(double l2Bias) {
-            this.l2Bias = l2Bias;
+            NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
+            NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
             return (T) this;
         }
 

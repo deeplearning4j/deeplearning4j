@@ -17,6 +17,7 @@
 package org.deeplearning4j.regressiontest;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -116,8 +117,8 @@ public class RegressionTest071 extends BaseDL4JTest {
         assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l0.getIUpdater());
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(new Dropout(0.6), l0.getIDropout());
-        assertEquals(0.1, l0.getL1(), 1e-6);
-        assertEquals(0.2, l0.getL2(), 1e-6);
+        assertEquals(0.1, TestUtils.getL1(l0), 1e-6);
+        assertEquals(0.2, TestUtils.getL2(l0), 1e-6);
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
         assertEquals(1.5, l0.getGradientNormalizationThreshold(), 1e-5);
 
@@ -130,8 +131,8 @@ public class RegressionTest071 extends BaseDL4JTest {
         assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l1.getIUpdater());
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(new Dropout(0.6), l1.getIDropout());
-        assertEquals(0.1, l1.getL1(), 1e-6);
-        assertEquals(0.2, l1.getL2(), 1e-6);
+        assertEquals(0.1, TestUtils.getL1(l1), 1e-6);
+        assertEquals(0.2, TestUtils.getL2(l1), 1e-6);
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l1.getGradientNormalization());
         assertEquals(1.5, l1.getGradientNormalizationThreshold(), 1e-5);
 

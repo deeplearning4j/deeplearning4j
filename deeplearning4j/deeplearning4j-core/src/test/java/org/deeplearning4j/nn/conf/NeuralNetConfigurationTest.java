@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -291,14 +292,14 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
         ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(),
                         new NegativeDefaultStepFunction(), null, net);
-        assertEquals(l1, net.getLayer(0).conf().getLayer().getL1ByParam("W"), 1e-4);
-        assertEquals(0.0, net.getLayer(0).conf().getLayer().getL1ByParam("b"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("beta"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("gamma"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("mean"), 0.0);
-        assertEquals(0.0, net.getLayer(1).conf().getLayer().getL2ByParam("var"), 0.0);
-        assertEquals(l2, net.getLayer(2).conf().getLayer().getL2ByParam("W"), 1e-4);
-        assertEquals(0.0, net.getLayer(2).conf().getLayer().getL2ByParam("b"), 0.0);
+        assertEquals(l1, TestUtils.getL1(net.getLayer(0).conf().getLayer().getRegularizationByParam("W")), 1e-4);
+        assertEquals(0.0, TestUtils.getL1(net.getLayer(0).conf().getLayer().getRegularizationByParam("b")), 0.0);
+        assertEquals(0.0, TestUtils.getL2(net.getLayer(1).conf().getLayer().getRegularizationByParam("beta")), 0.0);
+        assertEquals(0.0, TestUtils.getL2(net.getLayer(1).conf().getLayer().getRegularizationByParam("gamma")), 0.0);
+        assertEquals(0.0, TestUtils.getL2(net.getLayer(1).conf().getLayer().getRegularizationByParam("mean")), 0.0);
+        assertEquals(0.0, TestUtils.getL2(net.getLayer(1).conf().getLayer().getRegularizationByParam("var")), 0.0);
+        assertEquals(l2, TestUtils.getL2(net.getLayer(2).conf().getLayer().getRegularizationByParam("W")), 1e-4);
+        assertEquals(0.0, TestUtils.getL2(net.getLayer(2).conf().getLayer().getRegularizationByParam("b")), 0.0);
     }
 
     @Test
