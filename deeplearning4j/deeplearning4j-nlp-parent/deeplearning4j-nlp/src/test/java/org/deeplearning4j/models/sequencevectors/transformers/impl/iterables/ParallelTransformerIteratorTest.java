@@ -32,6 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Iterator;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -150,6 +151,39 @@ public class ParallelTransformerIteratorTest {
 
         log.info("Prefetched Multi-threaded time: {} ms", time2 - time1);
 
+    }
+
+    @Test
+    public void testOrderStability() throws Exception {
+        SentenceIterator iterator = new BasicLineIterator(new ClassPathResource("/big/raw_sentences.txt").getFile());
+
+        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
+                .tokenizerFactory(factory).build();
+
+        Iterator<Sequence<VocabWord>> iter = transformer.iterator();
+        int cnt = 0;
+        Sequence<VocabWord> sequence = null;
+        while (iter.hasNext()) {
+            sequence = iter.next();
+            List<VocabWord> words = sequence.getElements();
+            for (VocabWord word : words) {
+                if (cnt == 10) {
+                    assertEquals(word.getWord(), "Who");
+                    break;
+                }
+                if (cnt == 11) {
+                    assertEquals(word.getWord(), "And");
+                    break;
+                }
+                if (cnt == 12) {
+                    assertEquals(word.getWord(), "You");
+                    break;
+                }
+            }
+            cnt++;
+        }
+
+        assertEquals(97162, cnt);
     }
 
 }
