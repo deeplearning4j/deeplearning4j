@@ -57,6 +57,20 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         this(iterator, transformer, true);
     }
 
+    private void prefetchIterator() {
+        for (int i = 0; i < 10; ++i) {
+            if (iterator.hasNextDocument()) {
+                CallableTransformer callableTransformer = new CallableTransformer(iterator.nextDocument(), sentenceTransformer);
+                Future<Sequence<VocabWord>> futureSequence = executorService.submit(callableTransformer);
+                try {
+                    buffer.put(futureSequence);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     public ParallelTransformerIterator(@NonNull LabelAwareIterator iterator, @NonNull SentenceTransformer transformer,
                     boolean allowMultithreading) {
         super(new AsyncLabelAwareIterator(iterator, 512), transformer);
@@ -66,6 +80,9 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         //threads = new TokenizerThread[1];
         //threads = new TokenizerThread[allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors(), 2) : 1];
         executorService = Executors.newFixedThreadPool(allowMultithreading ? Math.max(Runtime.getRuntime().availableProcessors(), 2) : 1);
+
+        prefetchIterator();
+
         //List<Future<Sequence<VocabWord>>> futureList = new ArrayList<>();
         /*try {
             int cnt = 0;
@@ -100,6 +117,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
     public void reset() {
         this.executorService.shutdown();
         this.iterator.shutdown();
+        //prefetchIterator();
 
         /*for (int x = 0; x < threads.length; x++) {
             if (threads[x] != null) {
