@@ -24,8 +24,8 @@ public interface Regularization {
 
     ApplyStep applyStep();
 
-    void apply(INDArray param, INDArray gradView, double lr);
+    void apply(INDArray param, INDArray gradView, double lr, int iteration, int epoch);
 
-    double score(INDArray param);
+    double score(INDArray param, int iteration, int epoch);
 
 }
