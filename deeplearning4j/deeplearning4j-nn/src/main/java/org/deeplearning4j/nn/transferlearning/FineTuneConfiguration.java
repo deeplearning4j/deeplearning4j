@@ -45,6 +45,7 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -110,8 +111,8 @@ public class FineTuneConfiguration {
         private IActivation activation;
         private IWeightInit weightInitFn;
         private Double biasInit;
-        protected List<Regularization> regularization;
-        protected List<Regularization> regularizationBias;
+        protected List<Regularization> regularization = new ArrayList<>();
+        protected List<Regularization> regularizationBias = new ArrayList<>();
         private Optional<IDropout> dropout;
         private Optional<IWeightNoise> weightNoise;
         private IUpdater updater;

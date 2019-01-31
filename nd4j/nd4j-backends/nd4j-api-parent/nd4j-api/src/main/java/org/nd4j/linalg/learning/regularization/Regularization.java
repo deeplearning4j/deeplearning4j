@@ -3,8 +3,10 @@ package org.nd4j.linalg.learning.regularization;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
+import java.io.Serializable;
+
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
-public interface Regularization {
+public interface Regularization extends Serializable {
 
     /**
      * ApplyStep determines how the regularization interacts with the optimization process - i.e., when it is applied

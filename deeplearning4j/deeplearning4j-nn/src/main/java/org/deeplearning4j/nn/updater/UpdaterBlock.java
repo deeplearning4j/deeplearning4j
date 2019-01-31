@@ -157,7 +157,7 @@ public class UpdaterBlock {
         }
 
         //Pre-updater regularization: l1 and l2
-        applyRegularizationAllVariables(Regularization.ApplyStep.POST_UPDATER, iteration, epoch, externalGradient, fullNetworkGradientView, fullNetworkParamsArray);
+        applyRegularizationAllVariables(Regularization.ApplyStep.BEFORE_UPDATER, iteration, epoch, externalGradient, fullNetworkGradientView, fullNetworkParamsArray);
 
         //Apply the updater itself
         gradientUpdater.applyUpdater(blockGradViewArray, iteration, epoch);

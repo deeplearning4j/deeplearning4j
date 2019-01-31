@@ -57,7 +57,10 @@ public class WeightDecay implements Regularization {
         //L = loss + coeff * 0.5 * sum_i x[i]^2
         //dL/dx[i] = coeff * x[i]
         //update(x[i]) = coeff * x[i] * ( applyLR ? lr : )
-        double scale = applyLR ? lr * coeff.valueAt(iteration, epoch) : coeff.valueAt(iteration, epoch);
+        double scale = coeff.valueAt(iteration, epoch);
+        if(applyLR){
+            scale *= lr;
+        }
         Nd4j.getBlasWrapper().level1().axpy(param.length(), scale, param, gradView);        //update += scale * param
     }
 

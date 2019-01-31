@@ -839,6 +839,18 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        public Builder weightDecay(double coefficient) {
+            return weightDecay(coefficient, true);
+        }
+
+        public Builder weightDecay(double coefficient, boolean applyLR){
+            //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
+            NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
+            NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
+            this.regularization.add(new WeightDecay(coefficient, applyLR));
+            return this;
+        }
+
         public Builder regularization(List<Regularization> regularization){
             this.regularization = regularization;
             return this;
