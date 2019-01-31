@@ -37,7 +37,7 @@ namespace nd4j {
                 T f(0.0f);
 
                 // dot
-//#pragma omp simd reduction(sumT:dot)
+#pragma omp simd reduction(sumT:dot)
                 for (int e = 0; e < vectorLength; e++) {
                     dot += syn0[e] * syn1[e];
                 }
@@ -56,14 +56,14 @@ namespace nd4j {
                 g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T) alpha;
 
                 // axpy1
-//#pragma omp simd
+#pragma omp simd
                 for (int e = 0; e < vectorLength; e++) {
                     neu1e[e] = g * syn1[e] + neu1e[e];
                 }
 
                 // axpy2
                 if (!isInference) {
-//#pragma omp simd
+#pragma omp simd
                     for (int e = 0; e < vectorLength; e++) {
                         syn1[e] = g * syn0[e] + syn1[e];
                     }
@@ -232,8 +232,6 @@ namespace nd4j {
                 if (hsRounds > 0) {
                     for (int r = 0; r < hsRounds; r++) {
                         irow = indices[r];
-
-                        //nd4j_printf("Cycle [%i]: %i -> %i; code: %i\n", r, target, irow, (int) codes[r]);
 
                         hSoftmax_<T>(syn0row, syn1 + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, codes[r], expLength, infVector != nullptr);
                     }

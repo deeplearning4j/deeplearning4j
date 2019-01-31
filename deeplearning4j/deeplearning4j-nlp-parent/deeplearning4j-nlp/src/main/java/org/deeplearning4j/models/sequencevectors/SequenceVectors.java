@@ -45,6 +45,8 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.util.ThreadUtils;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -1171,6 +1173,13 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         @Override
         public void run() {
+            // small workspace, just to handle
+            val conf = WorkspaceConfiguration.builder()
+                    .policyLearning(LearningPolicy.OVER_TIME)
+                    .cyclesBeforeInitialization(3)
+                    .initialSize(25L * 1024L * 1024L)
+                    .build();
+
             Nd4j.getAffinityManager().getDeviceForCurrentThread();
             while (digitizer.hasMoreLines()) {
                 try {
@@ -1195,40 +1204,42 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
                         // we roll over sequences derived from digitizer, it's NOT window loop
                         for (int x = 0; x < sequences.size(); x++) {
-                            Sequence<T> sequence = sequences.get(x);
+                            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "sequence_vectors_training")) {
+                                Sequence<T> sequence = sequences.get(x);
 
-                            //log.info("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);
-                            alpha = Math.max(minLearningRate,
-                                            learningRate.get() * (1 - (1.0 * this.wordsCounter.get()
-                                                            / ((double) this.totalWordsCount) / (numIterations
-                                                                            * totalEpochs))));
+                                //log.info("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);
+                                alpha = Math.max(minLearningRate,
+                                        learningRate.get() * (1 - (1.0 * this.wordsCounter.get()
+                                                / ((double) this.totalWordsCount) / (numIterations
+                                                * totalEpochs))));
 
-                            trainSequence(sequence, nextRandom, alpha);
+                                trainSequence(sequence, nextRandom, alpha);
 
-                            // increment processed word count, please note: this affects learningRate decay
-                            totalLines.incrementAndGet();
-                            this.wordsCounter.addAndGet(sequence.getElements().size());
+                                // increment processed word count, please note: this affects learningRate decay
+                                totalLines.incrementAndGet();
+                                this.wordsCounter.addAndGet(sequence.getElements().size());
 
-                            if (totalLines.get() % 100000 == 0) {
-                                long currentTime = System.currentTimeMillis();
-                                long timeSpent = currentTime - timer.get();
+                                if (totalLines.get() % 100000 == 0) {
+                                    long currentTime = System.currentTimeMillis();
+                                    long timeSpent = currentTime - timer.get();
 
-                                timer.set(currentTime);
-                                long totalTimeSpent = currentTime - startTime;
+                                    timer.set(currentTime);
+                                    long totalTimeSpent = currentTime - startTime;
 
-                                double seqSec = (100000.0 / ((double) timeSpent / 1000.0));
-                                double wordsSecTotal = this.wordsCounter.get() / ((double) totalTimeSpent / 1000.0);
+                                    double seqSec = (100000.0 / ((double) timeSpent / 1000.0));
+                                    double wordsSecTotal = this.wordsCounter.get() / ((double) totalTimeSpent / 1000.0);
 
-                                log.info("Epoch: [{}]; Words vectorized so far: [{}];  Lines vectorized so far: [{}]; Seq/sec: [{}]; Words/sec: [{}]; learningRate: [{}]",
-                                                this.epochNumber, this.wordsCounter.get(), this.totalLines.get(),
-                                                String.format("%.2f", seqSec), String.format("%.2f", wordsSecTotal),
-                                                alpha);
-                            }
-                            if (eventListeners != null && !eventListeners.isEmpty()) {
-                                for (VectorsListener listener : eventListeners) {
-                                    if (listener.validateEvent(ListenerEvent.LINE, totalLines.get()))
-                                        listener.processEvent(ListenerEvent.LINE, SequenceVectors.this,
-                                                        totalLines.get());
+                                    log.info("Epoch: [{}]; Words vectorized so far: [{}];  Lines vectorized so far: [{}]; Seq/sec: [{}]; Words/sec: [{}]; learningRate: [{}]",
+                                            this.epochNumber, this.wordsCounter.get(), this.totalLines.get(),
+                                            String.format("%.2f", seqSec), String.format("%.2f", wordsSecTotal),
+                                            alpha);
+                                }
+                                if (eventListeners != null && !eventListeners.isEmpty()) {
+                                    for (VectorsListener listener : eventListeners) {
+                                        if (listener.validateEvent(ListenerEvent.LINE, totalLines.get()))
+                                            listener.processEvent(ListenerEvent.LINE, SequenceVectors.this,
+                                                    totalLines.get());
+                                    }
                                 }
                             }
                         }
