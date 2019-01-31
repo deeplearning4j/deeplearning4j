@@ -25,7 +25,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void adjustAxis(Nd4jLong rank, NDArray* input, NDArray* axisVector, std::vector<int>& output) {
+    void adjustAxis(Nd4jLong rank, NDArray* axisVector, std::vector<int>& output) {
         output.resize(axisVector->lengthOf());
         for (int e = 0; e < axisVector->lengthOf(); e++) {
                 auto ca = axisVector->e<int>(e);

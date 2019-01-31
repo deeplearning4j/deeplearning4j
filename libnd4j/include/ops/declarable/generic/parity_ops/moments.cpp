@@ -37,7 +37,6 @@ namespace nd4j {
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
                 auto axisVector = INPUT_VARIABLE(1);
-                axis.resize(axisVector->lengthOf());
                 helpers::adjustAxis(input->rankOf(), axisVector, axis);
 //                for (int e = 0; e < axisVector->lengthOf(); e++) {
 //                    int ca = (int) axisVector->e(e);
@@ -65,6 +64,8 @@ namespace nd4j {
                 auto axisVector = INPUT_VARIABLE(1);
                 helpers::adjustAxis(input->rankOf(), axisVector, axis);
             }
+            else
+                helpers::adjustAxis(input->rankOf(), axis);
             //std::vector<int> dims = ShapeUtils::convertAxisToTadTarget(input->rankOf(), {axis});
             const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     

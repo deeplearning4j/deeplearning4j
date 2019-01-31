@@ -26,10 +26,11 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
+    /*
+     * adjustAxis routines: adjust data with output to non-negative values.
+     * */
     void adjustAxis(Nd4jLong rank, NDArray* axisVector, std::vector<int>& output);
-
-
-    void adjustAxis(Nd4jLong rank, std::vector<int> &axisVector);
+    void adjustAxis(Nd4jLong rank, std::vector<int>& output);
 
 }
 }

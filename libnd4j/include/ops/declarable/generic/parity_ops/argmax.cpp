@@ -21,8 +21,8 @@
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_argmax)
 
-#include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
+#include <ops/declarable/CustomOperations.h>
 namespace nd4j {
     namespace ops {
         DECLARE_TYPES(argmax) {
