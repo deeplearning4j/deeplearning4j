@@ -67,6 +67,12 @@ public class FineTuneConfiguration {
     protected Double biasInit;
     protected List<Regularization> regularization;
     protected List<Regularization> regularizationBias;
+    protected boolean removeL2 = false;     //For: .l2(0.0) -> user means "no l2" so we should remove it if it is present in the original model...
+    protected boolean removeL2Bias = false;
+    protected boolean removeL1 = false;
+    protected boolean removeL1Bias = false;
+    protected boolean removeWD = false;
+    protected boolean removeWDBias = false;
     protected Optional<IDropout> dropout;
     protected Optional<IWeightNoise> weightNoise;
     protected IUpdater updater;
@@ -114,6 +120,12 @@ public class FineTuneConfiguration {
         private Double biasInit;
         protected List<Regularization> regularization = new ArrayList<>();
         protected List<Regularization> regularizationBias = new ArrayList<>();
+        protected boolean removeL2 = false;     //For: .l2(0.0) -> user means "no l2" so we should remove it if it is present in the original model...
+        protected boolean removeL2Bias = false;
+        protected boolean removeL1 = false;
+        protected boolean removeL1Bias = false;
+        protected boolean removeWD = false;
+        protected boolean removeWDBias = false;
         private Optional<IDropout> dropout;
         private Optional<IWeightNoise> weightNoise;
         private IUpdater updater;
@@ -232,6 +244,8 @@ public class FineTuneConfiguration {
             if(l2 > 0.0) {
                 NetworkUtils.removeInstancesWithWarning(regularization, WeightDecay.class, "WeightDecay regularization removed: incompatible with added L2 regularization");
                 regularization.add(new L2Regularization(l2));
+            } else {
+                removeL2 = true;
             }
             return this;
         }
@@ -243,6 +257,8 @@ public class FineTuneConfiguration {
             NetworkUtils.removeInstances(regularizationBias, L1Regularization.class);
             if(l1Bias > 0.0) {
                 regularizationBias.add(new L1Regularization(l1Bias));
+            } else {
+                removeL1Bias = true;
             }
             return this;
         }
@@ -257,6 +273,8 @@ public class FineTuneConfiguration {
             if(l2Bias > 0.0) {
                 NetworkUtils.removeInstancesWithWarning(regularizationBias, WeightDecay.class, "WeightDecay bias regularization removed: incompatible with added L2 regularization");
                 regularizationBias.add(new L2Regularization(l2Bias));
+            } else {
+                removeL2Bias = true;
             }
             return this;
         }
@@ -285,6 +303,8 @@ public class FineTuneConfiguration {
             if(coefficient > 0.0) {
                 NetworkUtils.removeInstancesWithWarning(this.regularization, L2Regularization.class, "L2 regularization removed: incompatible with added WeightDecay regularization");
                 this.regularization.add(new WeightDecay(coefficient, applyLR));
+            } else {
+                removeWD = true;
             }
             return this;
         }
@@ -311,6 +331,8 @@ public class FineTuneConfiguration {
             if(coefficient > 0) {
                 NetworkUtils.removeInstancesWithWarning(this.regularizationBias, L2Regularization.class, "L2 bias regularization removed: incompatible with added WeightDecay regularization");
                 this.regularizationBias.add(new WeightDecay(coefficient, applyLR));
+            } else {
+                removeWDBias = true;
             }
             return this;
         }
@@ -574,7 +596,8 @@ public class FineTuneConfiguration {
         }
 
         public FineTuneConfiguration build() {
-            return new FineTuneConfiguration(activation, weightInitFn, biasInit, regularization, regularizationBias, dropout,
+            return new FineTuneConfiguration(activation, weightInitFn, biasInit, regularization, regularizationBias,
+                    removeL2, removeL2Bias, removeL1, removeL1Bias, removeWD, removeWDBias, dropout,
                     weightNoise, updater, biasUpdater, miniBatch, maxNumLineSearchIterations, seed, optimizationAlgo, stepFunction,
                     minimize, gradientNormalization, gradientNormalizationThreshold, convolutionMode, cudnnAlgoMode, constraints,
                     pretrain, backprop, backpropType, tbpttFwdLength, tbpttBackLength, trainingWorkspaceMode, inferenceWorkspaceMode);
@@ -619,6 +642,18 @@ public class FineTuneConfiguration {
                 bl.setRegularization(regularization);
             if (regularizationBias != null && !regularizationBias.isEmpty())
                 bl.setRegularizationBias(regularizationBias);
+            if (removeL2)
+                NetworkUtils.removeInstances(bl.getRegularization(), L2Regularization.class);
+            if (removeL2Bias)
+                NetworkUtils.removeInstances(bl.getRegularizationBias(), L2Regularization.class);
+            if (removeL1)
+                NetworkUtils.removeInstances(bl.getRegularization(), L1Regularization.class);
+            if (removeL1Bias)
+                NetworkUtils.removeInstances(bl.getRegularizationBias(), L1Regularization.class);
+            if (removeWD)
+                NetworkUtils.removeInstances(bl.getRegularization(), WeightDecay.class);
+            if (removeWDBias)
+                NetworkUtils.removeInstances(bl.getRegularizationBias(), WeightDecay.class);
             if (gradientNormalization != null)
                 bl.setGradientNormalization(gradientNormalization.orElse(null));
             if (gradientNormalizationThreshold != null)
