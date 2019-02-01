@@ -2639,4 +2639,24 @@ public class SameDiffTests {
         sd.createGradFunction();
     }
 
+    @Test
+    public void sameDiffPlaceholderGrad(){
+        INDArray x = Nd4j.ones(2,2);
+        INDArray y = Nd4j.ones(2,2);
+
+        SameDiff sd = SameDiff.create();
+
+        SDVariable xSd = sd.placeHolder("x", x.shape());
+        SDVariable ySd = sd.placeHolder("y", y.shape());
+
+        SDVariable add = ySd.add("add", xSd);
+
+        Map<String, INDArray> placeholders = new HashMap<>();
+        placeholders.put("x", x);
+        placeholders.put("y", y);
+        sd.createGradFunction();    //Otherwise: xSd.gradient() etc won't be defined
+        sd.execBackwards(placeholders, Arrays.asList(xSd.gradient().getVarName(), ySd.gradient().getVarName()));
+        INDArray xGradientEnforced = add.getGradient().getArr(true);
+        assertNotNull(xGradientEnforced);
+    }
 }
