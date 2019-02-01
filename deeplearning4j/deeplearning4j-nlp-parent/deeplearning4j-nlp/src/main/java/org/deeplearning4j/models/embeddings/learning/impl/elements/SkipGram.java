@@ -29,6 +29,7 @@ import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
@@ -67,6 +68,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected DeviceLocalNDArray syn0, syn1, syn1Neg, table, expTable;
 
     protected ThreadLocal<List<Aggregate>> batches = new ThreadLocal<>();
+
+    private BatchSequences<T> batchSequences;
 
     /**
      * Dummy construction is required for reflection
@@ -194,6 +197,14 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom,
                             learningRate, currentWindow);
         }
+        int batchSize = configuration.getBatchSize();
+        if (batchSize > 1 && batchSequences != null) {
+            int rest = batchSequences.size() % batchSize;
+            int chunks = ((batchSequences.size() >= batchSize) ? batchSequences.size() / batchSize : 0) + ((rest > 0)? 1 : 0);
+            for (int j = 0; j < chunks; ++j) {
+                score = iterateSample(batchSequences.get());
+            }
+        }
 
         if (batches != null && batches.get() != null && batches.get().size() >= configuration.getBatchSize()) {
             Nd4j.getExecutioner().exec(batches.get());
@@ -227,10 +238,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             return 0.0;
 
         double score = 0.0;
-        int cnt = 0;
-
-        BatchSequences<T> batchSequences = new BatchSequences<>(configuration.getBatchSize());
         int batchSize = configuration.getBatchSize();
+        batchSequences = new BatchSequences<>(batchSize);
 
         int end = currentWindow * 2 + 1 - b;
         for (int a = b; a < end; a++) {
@@ -244,16 +253,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     else {
                         batchSequences.put(word, lastWord, nextRandom, alpha);
                     }
-
                 }
-            }
-        }
-
-        if (batchSize > 1) {
-            int rest = batchSequences.size() % batchSize;
-            int chunks = ((batchSequences.size() >= batchSize) ? batchSequences.size() / batchSize : 0) + ((rest > 0)? 1 : 0);
-            for (int j = 0; j < chunks; ++j) {
-                score = iterateSample(batchSequences.get());
             }
         }
 
@@ -447,7 +447,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         INDArray indicesArray = Nd4j.createFromArray(indices);
         INDArray codesArray = Nd4j.createFromArray(codes);
 
-        val sg = new SkipGramRound(targetArray, ngStarterArray, syn0.get(), syn1.get(), Nd4j.empty(syn0.get().dataType()), expTable.get(),
+        val sg = new SkipGramRound(targetArray,
+                (negative > 0) ? ngStarterArray : Nd4j.empty(DataType.INT),
+                syn0.get(), syn1.get(), Nd4j.empty(syn0.get().dataType()), expTable.get(),
                 Nd4j.empty(syn0.get().dataType()), (int) negative, indicesArray, codesArray, alphasArray, randomValuesArray,
                 /*inferenceVector != null ? inferenceVector :*/ Nd4j.empty(syn0.get().dataType()));
 
