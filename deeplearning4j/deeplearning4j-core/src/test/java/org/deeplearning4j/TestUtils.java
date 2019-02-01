@@ -30,6 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.learning.regularization.Regularization;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 
 import java.io.*;
 import java.util.List;
@@ -182,6 +183,19 @@ public class TestUtils {
         return null;
     }
 
+    public static WeightDecay getWeightDecayReg(BaseLayer bl){
+        return getWeightDecayReg(bl.getRegularization());
+    }
+
+    public static WeightDecay getWeightDecayReg(List<Regularization> l){
+        for(Regularization r : l){
+            if(r instanceof WeightDecay){
+                return (WeightDecay) r;
+            }
+        }
+        return null;
+    }
+
     public static double getL1(BaseLayer layer) {
         List<Regularization> l = layer.getRegularization();
         return getL1(l);
@@ -218,5 +232,9 @@ public class TestUtils {
 
     public static double getL2(AbstractSameDiffLayer layer){
         return getL2(layer.getRegularization());
+    }
+
+    public static double getWeightDecay(BaseLayer layer) {
+        return getWeightDecayReg(layer.getRegularization()).getCoeff().valueAt(0,0);
     }
 }

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.conf.serde;
 
+import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
@@ -35,6 +36,7 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -70,13 +72,23 @@ public class ComputationGraphConfigurationDeserializer
         Layer[] layers = layerList.toArray(new Layer[layerList.size()]);
         //Now, check if we need to manually handle IUpdater deserialization from legacy format
         boolean attemptIUpdaterFromLegacy = requiresIUpdaterFromLegacy(layers);
+        boolean requireLegacyRegularizationHandling = requiresRegularizationFromLegacy(layers);
         Long charOffsetEnd = null;
         JsonLocation endLocation = null;
         String jsonSubString = null;
-        if(attemptIUpdaterFromLegacy) {
+        if(attemptIUpdaterFromLegacy || requireLegacyRegularizationHandling) {
             endLocation = jp.getCurrentLocation();
             charOffsetEnd = endLocation.getCharOffset();
-            jsonSubString = endLocation.getSourceRef().toString().substring((int) charOffsetStart - 1, charOffsetEnd.intValue());
+            Object sourceRef = endLocation.getSourceRef();
+            String s;
+            if (sourceRef instanceof StringReader) {
+                //Workaround: sometimes sourceRef is a String, sometimes a StringReader
+                ((StringReader) sourceRef).reset();
+                s = IOUtils.toString((StringReader)sourceRef);
+            } else {
+                s = sourceRef.toString();
+            }
+            jsonSubString = s.substring((int) charOffsetStart - 1, charOffsetEnd.intValue());
 
             ObjectMapper om = NeuralNetConfiguration.mapper();
             JsonNode rootNode = om.readTree(jsonSubString);
@@ -96,8 +108,12 @@ public class ComputationGraphConfigurationDeserializer
                         continue;
                     }
 
-                    if(layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getIUpdater() == null){
+                    if(attemptIUpdaterFromLegacy && layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getIUpdater() == null){
                         handleUpdaterBackwardCompatibility((BaseLayer)layers[layerIdx], (ObjectNode)next);
+                    }
+
+                    if(requireLegacyRegularizationHandling && layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getRegularization() == null){
+                        handleL1L2BackwardCompatibility((BaseLayer)layers[layerIdx], (ObjectNode)next);
                     }
 
                     if(layers[layerIdx].getIDropout() == null){
