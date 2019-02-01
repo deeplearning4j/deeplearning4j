@@ -232,6 +232,8 @@ namespace nd4j {
                 if (hsRounds > 0) {
                     for (int r = 0; r < hsRounds; r++) {
                         irow = indices[r];
+                        if (irow < 0 || irow >= vocabSize)
+                            break;
 
                         hSoftmax_<T>(syn0row, syn1 + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, codes[r], expLength, infVector != nullptr);
                     }
@@ -285,8 +287,9 @@ namespace nd4j {
                 } else if (codes.rankOf() == 2){
                     // batch mode
 
-                    NDArray *targets = nullptr;
                     auto batchSize = codes.sizeAt(0);
+
+                    // we're
 
                     for (int e = 0; e < batchSize; e++) {
                         auto sIndices = indices.subarray({NDIndex::point(e), NDIndex::all()});
@@ -295,11 +298,12 @@ namespace nd4j {
                         // !!!
                         auto hsRounds = sCodes->lengthOf();
 
-                        auto t = target.e<int>(e);
-                        auto a = alpha.e<int>(e);
-                        auto r = randomValue.e<double>(0);
+                        auto t = target.isEmpty() ? -1 : target.e<int>(e);
+                        auto a = alpha.e<double>(e);
+                        auto r = randomValue.e<Nd4jLong>(e);
+                        auto ngs = ngStarter.isEmpty() ? -1 : ngStarter.e<int>(e);
 
-                        BUILD_SINGLE_SELECTOR(xType, skipgram_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), target.isEmpty() ? -1 : target.e<int>(e), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(e), reinterpret_cast<int *>(sIndices->buffer()), reinterpret_cast<int8_t *>(sCodes->buffer()), alpha.e<double>(0), randomValue.e<Nd4jLong>(0), hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf()), FLOAT_TYPES);
+                        BUILD_SINGLE_SELECTOR(xType, skipgram_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), t, ngs, reinterpret_cast<int *>(sIndices->buffer()), reinterpret_cast<int8_t *>(sCodes->buffer()), a, r, hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf()), FLOAT_TYPES);
 
                         delete sIndices;
                         delete sCodes;

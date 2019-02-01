@@ -330,3 +330,54 @@ TEST_F(NlpTests, basic_cb_ns_test_1) {
 
     delete result;
 }
+
+TEST_F(NlpTests, test_sg_hs_batch_1) {
+    auto exp0 = NDArrayFactory::create<float>('c', {1, 10});
+    auto exp1 = NDArrayFactory::create<float>('c', {1, 10});
+    auto exp2 = NDArrayFactory::create<float>('c', {1, 10});
+
+    exp0.assign(0.01f);
+    exp1.assign(0.020005f);
+    exp2.assign(0.019995f);
+
+    auto target = NDArrayFactory::create<int>('c', {2}, {0, 5});
+    auto ngStarter = NDArrayFactory::empty<int>();
+    auto indices = NDArrayFactory::create<int>('c', {2, 2}, {1, 2, 3, 4});
+    auto codes = NDArrayFactory::create<int8_t>('c', {2, 2}, {0, 1, 1, 1});
+    auto syn0 = NDArrayFactory::create<float>('c', {100, 10});
+    auto syn1 = NDArrayFactory::create<float>('c', {100, 10});
+    auto syn1Neg = NDArrayFactory::empty<float>();
+    auto expTable = NDArrayFactory::create<float>('c', {10000});
+    auto negTable = NDArrayFactory::empty<float>();
+
+    auto alpha = NDArrayFactory::create<double>('c', {2}, {0.001, 0.024});
+    auto randomValue = NDArrayFactory::create<Nd4jLong>('c', {2}, {1L, 3L});
+    auto inferenceVector = NDArrayFactory::empty<float>();
+
+    syn0.assign(0.01);
+    syn1.assign(0.02);
+    expTable.assign(0.5);
+
+    nd4j::ops::skipgram op;
+    auto result = op.execute({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector}, {}, {}, {false}, true);
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto row0 = syn0.subarray({NDIndex::point(0), NDIndex::all()});
+    auto row1 = syn1.subarray({NDIndex::point(1), NDIndex::all()});
+    auto row2 = syn1.subarray({NDIndex::point(2), NDIndex::all()});
+
+    row0->printIndexedBuffer("row0");
+    row1->printIndexedBuffer("row1");
+    row2->printIndexedBuffer("row2");
+
+    ASSERT_EQ(exp0, *row0);
+    ASSERT_EQ(exp1, *row1);
+    ASSERT_EQ(exp2, *row2);
+
+    delete row0;
+    delete row1;
+    delete row2;
+
+
+    delete result;
+}
