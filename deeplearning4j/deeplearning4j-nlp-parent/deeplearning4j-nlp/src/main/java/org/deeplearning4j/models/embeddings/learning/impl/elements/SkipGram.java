@@ -441,8 +441,21 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         INDArray indicesArray = Nd4j.createFromArray(indices);
         INDArray codesArray = Nd4j.createFromArray(codes);
 
-        val sg = new SkipGramRound(targetArray, ngStarterArray, syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(),
-                table.get(), (int) negative, indicesArray, codesArray, alphasArray, randomValuesArray,
+        if (maxCols - targetArray.columns() > 0) {
+            Nd4j.pad(targetArray, new int[items.size()][maxCols - targetArray.columns()],Nd4j.PadMode.CONSTANT);
+            int newCols = targetArray.columns();
+        }
+
+        /*int cols1 = targetArray.columns();
+
+        int cols2 = ngStarterArray.columns();
+        int cols3 = alphasArray.columns();
+        int cols4 = randomValuesArray.columns();
+        int cols5 = indicesArray.columns();
+        int cols6 = codesArray.columns();*/
+
+        val sg = new SkipGramRound(targetArray, ngStarterArray, syn0.get(), syn1.get(), Nd4j.empty(syn0.get().dataType()), expTable.get(),
+                Nd4j.empty(syn0.get().dataType()), (int) negative, indicesArray, codesArray, alphasArray, randomValuesArray,
                 /*inferenceVector != null ? inferenceVector :*/ Nd4j.empty(syn0.get().dataType()));
 
         Nd4j.getExecutioner().exec(sg);
