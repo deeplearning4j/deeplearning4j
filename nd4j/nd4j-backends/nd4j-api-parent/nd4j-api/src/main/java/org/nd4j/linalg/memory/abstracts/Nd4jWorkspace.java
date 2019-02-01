@@ -341,7 +341,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // we enforce 8 byte alignment to ensure CUDA doesn't blame us
         long div = requiredMemory % 8;
         if (div != 0)
-            requiredMemory += div;
+            requiredMemory += (8 - div);
 
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 

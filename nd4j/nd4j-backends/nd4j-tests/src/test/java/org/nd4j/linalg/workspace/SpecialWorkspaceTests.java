@@ -236,6 +236,28 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         assertEquals(exp, result);
     }
 
+
+    @Test
+    public void testAlignment_1() {
+        WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
+                .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();
+        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "WS132143452343");
+
+        for( int j=0; j<10000; j++ ){
+
+            try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+
+                for (int x = 0; x < 10; x++) {
+                    System.out.println("Start iteration (" + j + "," + x + ")");
+                    INDArray arr = Nd4j.linspace(1,10,10, DataType.DOUBLE).reshape(1,10);
+                    INDArray sum = arr.sum(true, 1);
+                    Nd4j.create(DataType.BOOL, x+1);        //NOTE: no crash if set to FLOAT/HALF, No crash if removed entirely; same crash for BOOL/UBYTE
+                    System.out.println("End iteration (" + j + "," + x + ")");
+                }
+            }
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';
