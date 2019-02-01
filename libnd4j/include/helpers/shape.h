@@ -3388,23 +3388,22 @@ template <typename T>
     INLINEDEF _CUDA_HD Nd4jLong getOffset(Nd4jLong baseOffset,  Nd4jLong *shape,  Nd4jLong *stride,  const Nd4jLong *indices, int rank) {
         Nd4jLong offset = baseOffset;
         for(int i = 0; i < rank; i++) {
-            if(indices[i] >= shape[i] && shape[i] != 1) {
-#ifdef __CUDA_ARCH__
-                printf("D: Index %i [%lld] must not be >= shape[%lld].\n", i,indices[i],shape[i]);
-#else
-                printf("H: Index %i [%lld] must not be >= shape[%lld].\n", i, (long long) indices[i], (long long) shape[i]);
-#endif
+//             if(indices[i] >= shape[i] && shape[i] != 1) {
+// #ifdef __CUDA_ARCH__
+//                 printf("D: Index %i [%lld] must not be >= shape[%lld].\n", i,indices[i],shape[i]);
+// #else
+//                 printf("H: Index %i [%lld] must not be >= shape[%lld].\n", i, (long long) indices[i], (long long) shape[i]);
+// #endif
 
-#ifdef __CUDA_ARCH__
-                if (threadIdx.x == 0 && blockIdx.x == 0)
-                    printShapeInfoLinear("getOffsetFailed", rank, shape, stride);
-#endif
-                return -1;
-            }
+// #ifdef __CUDA_ARCH__
+//                 if (threadIdx.x == 0 && blockIdx.x == 0)
+//                     printShapeInfoLinear("getOffsetFailed", rank, shape, stride);
+// #endif
+//                 return -1;
+//             }
 
-            if(shape[i] != 1) {
+            if(shape[i] != 1)
                 offset += indices[i] * stride[i];
-            }
         }
 
         return offset;
@@ -4196,12 +4195,14 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
 
     }
 
-
-
-    // return absolute index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array
+    //////////////////////////////////////////////////////////////////////
+    // return index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array
+    // dimsToExclude - should be sorted in increasing order
     INLINEDEF _CUDA_HD Nd4jLong subArrayIndex(const Nd4jLong maxIdx, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude) {
         const auto rankMax = shape::rank(maxShapeInfo);
         const auto rankMin = shape::rank(minShapeInfo);
+        // if(rankMin >= rankMax)
+        //     throw std::runtime_error("shape::subArrayIndex method: rank of min array should be smaller then rank of max array!");
         const auto diff    = rankMax - rankMin;     // the size of dimsToExclude is equal to diff
 
         Nd4jLong idxPerDim[MAX_RANK];
@@ -4209,12 +4210,12 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
 
         Nd4jLong minIdx = 0;
 
-        if(dimsToExclude == nullptr) {
+        if(dimsToExclude == nullptr) { // means dimsToExclude == {0,1,2,...,diff-1}
 
             for(int minI = 0, maxI = diff; maxI < rankMax; ++maxI, ++minI) {
-                if(minShapeInfo[minI + 1] == 1 || idxPerDim[maxI] == 0)
+                if(minShapeInfo[minI + 1] == 1 || idxPerDim[maxI] == 0 || idxPerDim[maxI] == minShapeInfo[minI + 1])
                     continue;
-                if(idxPerDim[maxI] >= minShapeInfo[minI + 1])
+                if(idxPerDim[maxI] > minShapeInfo[minI + 1])
                     idxPerDim[maxI] %= minShapeInfo[minI + 1];
                 minIdx += idxPerDim[maxI] * minShapeInfo[rankMin + minI + 1];  // get into account stride            
             }
@@ -4227,15 +4228,103 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
                     continue;
                 }
                 ++minI;
-                if(minShapeInfo[minI + 1] == 1 || idxPerDim[maxI] == 0)
+                if(minShapeInfo[minI + 1] == 1 || idxPerDim[maxI] == 0 || idxPerDim[maxI] == minShapeInfo[minI + 1])
                     continue;
-                if(idxPerDim[maxI] >= minShapeInfo[minI + 1])
+                if(idxPerDim[maxI] > minShapeInfo[minI + 1])
                     idxPerDim[maxI] %= minShapeInfo[minI + 1];
                 minIdx += idxPerDim[maxI] * minShapeInfo[rankMin + minI + 1];  // get into account stride                
             }
         }        
         return minIdx;
     }
+
+    //////////////////////////////////////////////////////////////////////
+    // calculate indexes of max-array, these few indexes correspond to one minIdx index of min-array which is sub-array of max-array
+    // dimsToExclude - should be sorted in increasing order
+    INLINEDEF _CUDA_HD void outerArrayIndexes(const Nd4jLong minIdx, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* maxIdxs, const int* dimsToExclude) {
+
+        const auto rankMax = shape::rank(maxShapeInfo);
+        const auto rankMin = shape::rank(minShapeInfo);
+        // if(rankMin >= rankMax)
+        //     throw std::runtime_error("shape::subArrayIndex method: rank of min array should be smaller then rank of max array!");
+        const auto diff    = rankMax - rankMin;     // the size of dimsToExclude is equal to diff
+
+        // calculate min per-dim-indexes which corresponds to absolute minIdx index
+        Nd4jLong idxPerDim[MAX_RANK];
+        ind2subC(rankMin, const_cast<Nd4jLong *>(minShapeInfo)+1, const_cast<Nd4jLong&>(minIdx), idxPerDim);
+
+        // transform storage idxPerDim to contain per-dim max indexes, purpose - memory saving        
+        for(int dim = diff-1, minI = rankMin - 1, maxI = rankMax - 1; maxI >= 0; --maxI) {
+            if(dim >= 0 && dimsToExclude[dim] == maxI) {
+                idxPerDim[maxI] = 0;
+                --dim;
+            }
+            else {
+                idxPerDim[maxI] = idxPerDim[minI--];
+            }                            
+        }       
+    }    
+
+
+INLINEDEF _CUDA_HD void nestedLoops(const Nd4jLong minIdx, Nd4jLong* maxShapeInfo, Nd4jLong* minShapeInfo, int* maxIdxs, const int* dimsToExclude) {
+    
+    int i[MAX_RANK]; // [0,  MAX_RANK/2) ->   looping variables, [MAX_RANK/2, MAX_RANK] -> upper boundaries of loops 
+    auto rankMax = shape::rank(maxShapeInfo);
+    auto rankMin = shape::rank(minShapeInfo);
+    int diff = rankMax - rankMin;
+    Nd4jLong *indices;
+    
+    memset(i, 0, rankMax * sizeof(int)); // starting values (zeros) for looping variables
+
+    int currMaxDim = rankMax-1;
+    int currMinDim = rankMin-1;
+    int j=-1;
+    int dim = diff-1;
+    
+    while (currMaxDim >= 0) {                
+
+        if(dim >= 0 && dimsToExclude[dim] == currMaxDim) {
+            maxIdxs[++j] = getOffset(0, maxShapeInfo+1,  maxShapeInfo + rankMax +1,  indices, rankMax);
+            
+            if(++indices[currMaxDim] == maxShapeInfo[currMaxDim]) {
+                indices[currMaxDim] = 0;        // restore initial value
+                --dim;
+                --currMaxDim;
+            }
+        }
+        else if(maxShapeInfo[currMaxDim] > minShapeInfo[currMinDim]) {
+            
+            maxIdxs[++j] = getOffset(0, maxShapeInfo+1, maxShapeInfo + rankMax +1, indices, rankMax);
+
+            indices[currMaxDim] += minShapeInfo[currMinDim];
+            
+            if(indices[currMaxDim] >= maxShapeInfo[currMaxDim]) {
+                indices[currMaxDim] %= minShapeInfo[currMinDim]; // restore initial value
+                --currMaxDim;
+                --currMinDim;
+            }
+        }
+        else {
+            --currMaxDim;
+            --currMinDim;
+        }
+        
+        if(indices[currMaxDim] == maxShapeInfo[currMaxDim]-1)
+
+        while (i[currMaxDim] == maxShapeInfo[currMaxDim]-1)
+        {
+            // Overflow, we're done
+            if (currMaxDim == 0)            
+                break;
+
+            ++dim;
+            i[currMaxDim--] = 0;
+            i[currMaxDim]++;
+        }
+
+        currMaxDim = rankMax - 1;
+    }
+}
 
     INLINEDEF _CUDA_HD void shapeOldScalar(nd4j::DataType dataType, Nd4jLong* const buffer, const char order) {
 
