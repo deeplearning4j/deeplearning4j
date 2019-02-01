@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class BatchSequences<T extends SequenceElement> {
 
     private int batches;
+    private int currentIndex = 0;
 
     List<BatchItem<T>> buffer = new ArrayList<>();
 
@@ -26,14 +27,12 @@ public class BatchSequences<T extends SequenceElement> {
     public List<BatchItem<T>> get() {
         List<BatchItem<T>> retVal = new ArrayList<>();
 
-        for (int i = 0; i < batches; ++i) {
-            try {
-                BatchItem<T> value = buffer.get(i);
-            } catch (IndexOutOfBoundsException e) {
-                //log.error(e.getMessage());
+        for (int i = currentIndex + 1; i < batches; ++i) {
+            if (i >= buffer.size())
                 break;
-            }
+            BatchItem<T> value = buffer.get(i);
             retVal.add(buffer.get(i));
+            currentIndex = i;
         }
         return retVal;
     }
