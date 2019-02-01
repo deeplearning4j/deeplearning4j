@@ -27,8 +27,8 @@ public class BatchSequences<T extends SequenceElement> {
         List<BatchItem<T>> retVal = new ArrayList<>();
 
 
-        for (int i = 0; (i < batches) && (i < buffer.size()); ++i) {
-            BatchItem<T> value = buffer.get(i + chunkNo * batches);
+        for (int i = 0 + chunkNo * batches; (i < batches + chunkNo * batches) && (i < buffer.size()); ++i) {
+            BatchItem<T> value = buffer.get(i);
             retVal.add(value);
         }
         return retVal;

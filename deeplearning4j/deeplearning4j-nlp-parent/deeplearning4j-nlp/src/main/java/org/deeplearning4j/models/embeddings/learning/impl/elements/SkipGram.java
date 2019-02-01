@@ -191,7 +191,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         if (variableWindows != null && variableWindows.length != 0) {
             currentWindow = variableWindows[RandomUtils.nextInt(variableWindows.length)];
         }
-
+        batchSequences = new BatchSequences<>(configuration.getBatchSize());
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom,
@@ -240,7 +240,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         double score = 0.0;
         int batchSize = configuration.getBatchSize();
-        batchSequences = new BatchSequences<>(batchSize);
 
         int end = currentWindow * 2 + 1 - b;
         for (int a = b; a < end; a++) {
