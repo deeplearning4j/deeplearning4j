@@ -11,7 +11,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class BatchSequences<T extends SequenceElement> {
 
     private int batches;
-    private int currentIndex = 0;
 
     List<BatchItem<T>> buffer = new ArrayList<>();
 
@@ -24,15 +23,13 @@ public class BatchSequences<T extends SequenceElement> {
         buffer.add(newItem);
     }
 
-    public List<BatchItem<T>> get() {
+    public List<BatchItem<T>> get(int chunkNo) {
         List<BatchItem<T>> retVal = new ArrayList<>();
 
-        for (int i = currentIndex + 1; i < batches; ++i) {
-            if (i >= buffer.size())
-                break;
+
+        for (int i = 0 + chunkNo * batches; (i < batches + chunkNo * batches) && (i < buffer.size()); ++i) {
             BatchItem<T> value = buffer.get(i);
-            retVal.add(buffer.get(i));
-            currentIndex = i;
+            retVal.add(value);
         }
         return retVal;
     }
@@ -40,4 +37,10 @@ public class BatchSequences<T extends SequenceElement> {
     public int size() {
         return buffer.size();
     }
+
+    public void clear() {
+        buffer.clear();
+    }
+
+
 }
