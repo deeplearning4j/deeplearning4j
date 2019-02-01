@@ -295,7 +295,9 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         public T l1(double l1) {
             //Check if existing L1 exists; if so, replace it
             NetworkUtils.removeInstances(this.regularization, L1Regularization.class);
-            this.regularization.add(new L1Regularization(l1));
+            if(l1 > 0.0) {
+                this.regularization.add(new L1Regularization(l1));
+            }
             return (T) this;
         }
 
@@ -309,7 +311,9 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
             //Check if existing L2 exists; if so, replace it. Also remove weight decay - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
             NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
-            this.regularization.add(new L2Regularization(l2));
+            if(l2 > 0.0) {
+                this.regularization.add(new L2Regularization(l2));
+            }
             return (T) this;
         }
 
@@ -318,7 +322,9 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          */
         public T l1Bias(double l1Bias) {
             NetworkUtils.removeInstances(this.regularizationBias, L1Regularization.class);
-            this.regularizationBias.add(new L1Regularization(l1Bias));
+            if(l1Bias > 0.0) {
+                this.regularizationBias.add(new L1Regularization(l1Bias));
+            }
             return (T) this;
         }
 
@@ -330,7 +336,9 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         public T l2Bias(double l2Bias) {
             NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
             NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
-            this.regularizationBias.add(new L2Regularization(l2Bias));
+            if(l2Bias > 0.0) {
+                this.regularizationBias.add(new L2Regularization(l2Bias));
+            }
             return (T) this;
         }
 
@@ -356,7 +364,9 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
             //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
             NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
-            this.regularization.add(new WeightDecay(coefficient, applyLR));
+            if(coefficient > 0.0) {
+                this.regularization.add(new WeightDecay(coefficient, applyLR));
+            }
             return this;
         }
 
@@ -380,7 +390,9 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
             //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
             NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
-            this.regularizationBias.add(new WeightDecay(coefficient, applyLR));
+            if(coefficient > 0.0) {
+                this.regularizationBias.add(new WeightDecay(coefficient, applyLR));
+            }
             return this;
         }
 
