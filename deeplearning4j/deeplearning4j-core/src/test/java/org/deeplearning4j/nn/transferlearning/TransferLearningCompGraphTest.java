@@ -476,7 +476,7 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
         assertNull(l.getIDropout());
         assertNull(l.getWeightNoise());
         assertNull(l.getConstraints());
-        assertEquals(0.0, TestUtils.getL2(l), 0.0);
+        assertNull(TestUtils.getL2Reg(l));
     }
 
 

@@ -174,6 +174,10 @@ public class TestUtils {
         return null;
     }
 
+    public static L2Regularization getL2Reg(BaseLayer baseLayer){
+        return getL2Reg(baseLayer.getRegularization());
+    }
+
     public static L2Regularization getL2Reg(List<Regularization> l){
         for(Regularization r : l){
             if(r instanceof L2Regularization){

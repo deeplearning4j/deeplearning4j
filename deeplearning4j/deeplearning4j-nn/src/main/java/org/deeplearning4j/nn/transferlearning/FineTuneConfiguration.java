@@ -615,9 +615,9 @@ public class FineTuneConfiguration {
                 bl.setWeightInitFn(weightInitFn);
             if (biasInit != null)
                 bl.setBiasInit(biasInit);
-            if (regularization != null)
+            if (regularization != null && !regularization.isEmpty())
                 bl.setRegularization(regularization);
-            if (regularizationBias != null)
+            if (regularizationBias != null && !regularizationBias.isEmpty())
                 bl.setRegularizationBias(regularizationBias);
             if (gradientNormalization != null)
                 bl.setGradientNormalization(gradientNormalization.orElse(null));

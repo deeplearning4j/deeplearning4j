@@ -636,6 +636,8 @@ public class VariationalAutoencoder implements Layer {
     public double calcRegularizationScore(boolean backpropParamsOnly){
         double scoreSum = 0.0;
         for (Map.Entry<String, INDArray> e : paramTable().entrySet()) {
+            if(backpropParamsOnly && isPretrainParam(e.getKey()))
+                continue;
             List<Regularization> l = layerConf().getRegularizationByParam(e.getKey());
             if(l == null || l.isEmpty()){
                 continue;
