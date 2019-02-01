@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/sg_cb.h>
 #include <AveragingArrayProxy.h>
+#include <helpers/AveragingArrayProxy.h>
 
 #define HS_MAX_EXP 6.0f
 
@@ -277,19 +278,80 @@ namespace nd4j {
             }
             BUILD_SINGLE_TEMPLATE(template void skipgram_, (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
-            void skipgramBatch_() {
+            template <typename T>
+            void skipgramBatchExec_(AveragingArrayProxy &s0, AveragingArrayProxy &s1, AveragingArrayProxy &s1n, void *vexpTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength) {
+                //auto syn0 = reinterpret_cast<T*>(vsyn0);
+                //auto syn1 = reinterpret_cast<T*>(vsyn1);
+                //auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
+                auto expTable = reinterpret_cast<T*>(vexpTable);
+                auto negTable = reinterpret_cast<int*>(vnegTable);
+                auto infVector = reinterpret_cast<T*>(vinfVector);
 
+                auto neu1e = new T[vectorLength];
+                memset(neu1e, 0, vectorLength * sizeof(T));
+
+                auto s0w = s0.writeable(target, omp_get_thread_num());
+
+                // hierarchic softmax goes first (if enabled)
+
+                auto syn0row = reinterpret_cast<T*>(s0w->buffer());
+                auto irow = 0;
+                if (hsRounds > 0) {
+                    for (int r = 0; r < hsRounds; r++) {
+                        irow = indices[r];
+                        if (irow < 0 || irow >= vocabSize)
+                            break;
+
+                        hSoftmax_<T>(syn0row, s1.writeable(irow, omp_get_thread_num())->buffer(), expTable, neu1e, alpha, vectorLength, codes[r], expLength, infVector != nullptr);
+                    }
+                }
+
+                // negative sampling goes second (if enabled)
+                auto nsStarter = ngStarter;
+                irow = nsStarter;
+                if (nsRounds > 0) {
+                    for (int r = 0; r < nsRounds + 1; r++) {
+                        if (r == 0) {
+                            // target is known in advance
+                        } else {
+                            randomValue = randomValue * (unsigned long long) 25214903917 + 11;
+                            auto idx = nd4j::math::nd4j_abs<Nd4jLong >((randomValue >> 16) % negLength);
+                            irow = idx >= negLength ? -1 : negTable[idx];
+
+                            if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
+                            if (irow == nsStarter)
+                                continue;
+                        }
+
+                        nSampling_<T>(syn0row, s1n.writeable(irow, omp_get_thread_num())->buffer(), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                    }
+                }
+
+                if (infVector == nullptr) {
+#pragma omp simd
+                    for (int e = 0; e < vectorLength; e++) {
+                        syn0row[e] += neu1e[e];
+                    }
+                } else {
+#pragma omp simd
+                    for (int e = 0; e < vectorLength; e++) {
+                        infVector[e] += neu1e[e];
+                    }
+                }
+
+                delete[] neu1e;
             }
+            BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (AveragingArrayProxy &syn0, AveragingArrayProxy &syn1, AveragingArrayProxy &syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
             void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector) {
                 auto xType = syn0.dataType();
 
                 // single round hase
-                if (codes.rankOf() == 1) {
+                if ((ngStarter.isScalar() && !ngStarter.isEmpty())|| (target.isScalar() && !target.isEmpty())) {
                     auto hsRounds = codes.lengthOf();
 
                     BUILD_SINGLE_SELECTOR(xType, skipgram_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0), reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha.e<double>(0), randomValue.e<Nd4jLong>(0), hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf()), FLOAT_TYPES);
-                } else if (codes.rankOf() == 2){
+                } else if (ngStarter.isVector() || target.isVector()){
                     // batch mode
 
                     auto batchSize = codes.sizeAt(0);
@@ -298,6 +360,7 @@ namespace nd4j {
                     AveragingArrayProxy s1(&syn1);
                     AveragingArrayProxy s1n(&syn1Neg);
 
+#pragma omp parallel for num_threads(4)
                     for (int e = 0; e < batchSize; e++) {
                         auto sIndices = indices.subarray({NDIndex::point(e), NDIndex::all()});
                         auto sCodes = codes.subarray({NDIndex::point(e), NDIndex::all()});
@@ -310,11 +373,22 @@ namespace nd4j {
                         auto r = randomValue.e<Nd4jLong>(e);
                         auto ngs = ngStarter.isEmpty() ? -1 : ngStarter.e<int>(e);
 
-                        BUILD_SINGLE_SELECTOR(xType, skipgram_, (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), t, ngs, reinterpret_cast<int *>(sIndices->buffer()), reinterpret_cast<int8_t *>(sCodes->buffer()), a, r, hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf()), FLOAT_TYPES);
+                        BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_, (s0, s1, s1n, expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), t, ngs, reinterpret_cast<int *>(sIndices->buffer()), reinterpret_cast<int8_t *>(sCodes->buffer()), a, r, hsRounds, nsRounds, (int) syn0.sizeAt(0), (int) syn0.sizeAt(1), (int) expTable.lengthOf(), (int) negTable.lengthOf()), FLOAT_TYPES);
 
                         delete sIndices;
                         delete sCodes;
                     }
+
+
+                    // if  anything was modified - collapse it out
+                    s0.collapseWrites();
+
+                    if (!s1.isEmpty())
+                        s1.collapseWrites();
+
+                    if (!s1n.isEmpty())
+                        s1n.collapseWrites();
+
                 } else
                     throw std::runtime_error("SkipGram: Codes must have rank 1 or 2");
             }

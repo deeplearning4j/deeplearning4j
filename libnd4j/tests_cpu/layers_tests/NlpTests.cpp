@@ -370,9 +370,9 @@ TEST_F(NlpTests, test_sg_hs_batch_1) {
     row1->printIndexedBuffer("row1");
     row2->printIndexedBuffer("row2");
 
-    ASSERT_EQ(exp0, *row0);
-    ASSERT_EQ(exp1, *row1);
-    ASSERT_EQ(exp2, *row2);
+    ASSERT_TRUE(exp0.equalsTo(row0, 1e-6));
+    ASSERT_TRUE(exp1.equalsTo(row1, 1e-6));
+    ASSERT_TRUE(exp2.equalsTo(row2, 1e-6));
 
     delete row0;
     delete row1;
