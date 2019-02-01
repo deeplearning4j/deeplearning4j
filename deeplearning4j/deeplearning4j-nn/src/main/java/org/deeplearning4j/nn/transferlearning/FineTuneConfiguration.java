@@ -229,8 +229,8 @@ public class FineTuneConfiguration {
          */
         public Builder l2(double l2) {
             NetworkUtils.removeInstances(regularization, L2Regularization.class);
-            NetworkUtils.removeInstances(regularization, WeightDecay.class);
             if(l2 > 0.0) {
+                NetworkUtils.removeInstances(regularization, WeightDecay.class);
                 regularization.add(new L2Regularization(l2));
             }
             return this;
@@ -281,8 +281,8 @@ public class FineTuneConfiguration {
         public Builder weightDecay(double coefficient, boolean applyLR) {
             //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
-            NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
             if(coefficient > 0.0) {
+                NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
                 this.regularization.add(new WeightDecay(coefficient, applyLR));
             }
             return this;
@@ -307,8 +307,8 @@ public class FineTuneConfiguration {
         public Builder weightDecayBias(double coefficient, boolean applyLR) {
             //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
-            NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
             if(coefficient > 0) {
+                NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
                 this.regularizationBias.add(new WeightDecay(coefficient, applyLR));
             }
             return this;

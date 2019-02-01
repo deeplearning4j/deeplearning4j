@@ -172,10 +172,6 @@ public class RegressionTest100a extends BaseDL4JTest {
         INDArray outAct = net.output(in);
 
         assertEquals(outExp, outAct);
-
-        //For backward compatibility given L2 fixes in 1.0.0-beta3
-        assertTrue(net.getLayerWiseConfigurations().isLegacyBatchScaledL2());
-        assertTrue(l2.isLegacyBatchScaledL2());
     }
 
     @Test
@@ -295,9 +291,6 @@ public class RegressionTest100a extends BaseDL4JTest {
 
         INDArray grad = net.getFlattenedGradients();
         assertEquals(gradExp, grad);
-
-        //For backward compatibility given L2 fixes in 1.0.0-beta3
-        assertTrue(net.getLayerWiseConfigurations().isLegacyBatchScaledL2());
     }
 
 
