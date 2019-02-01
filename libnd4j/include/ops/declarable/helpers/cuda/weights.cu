@@ -23,17 +23,63 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
+    template <typename T>
+    static __global__ void adjustWeightsKernel(void* inputBuffer,   Nd4jLong* inputShape,
+                                               void* weightsBuffer, Nd4jLong* weightsShape,
+                                               void* outputBuffer,  Nd4jLong* outputShape,
+                                               int minLength, int maxLength) {
+
+        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        int threadCount = gridDim.x * blockDim.x;
+        Nd4jLong inputLength = shape::length(inputShape);
+        Nd4jLong weightsLength = 0;
+        if (weightsBuffer != nullptr)
+            weightsLength = shape::length(weightsShape);
+
+        Nd4jLong outputLength = shape::length(outputShape);
+        for (Nd4jLong e = tid; e < inputLength; e += threadCount) {
+            Nd4jLong xOffset = shape::getIndexOffset(e, inputShape, inputLength);
+            int val = *(reinterpret_cast<int*>(inputBuffer) + xOffset);
+            if (val < maxLength) {
+                Nd4jLong zOffset = shape::getIndexOffset(val, outputShape, outputLength);
+                if (weightsBuffer != nullptr) {
+                    Nd4jLong yOffset = shape::getIndexOffset(e, weightsShape, weightsLength);
+                    *(reinterpret_cast<T *>(outputBuffer) + zOffset) += *(reinterpret_cast<T *>(weightsBuffer) + yOffset);
+                }
+                else {
+                    printf("outputBuffer[%ld] = %d\n", zOffset, static_cast<int>(*(reinterpret_cast<T *>(outputBuffer) + zOffset)));
+                    *(reinterpret_cast<T *>(outputBuffer) + zOffset) += T(1); //output->p(val, output->e<T>(val) + 1);
+                    printf("outputBuffer[%ld] = %d\n", zOffset, static_cast<int>(*(reinterpret_cast<T *>(outputBuffer) + zOffset)));
+                }
+                //printf("xOffset is %ld, zOffset is %ld\n", xOffset, zOffset);
+            }
+        }
+
+    }
 
     template <typename T>
-    static void adjustWeights_(NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
-
+    static void adjustWeights_(graph::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
+//        for (int e = 0; e < input->lengthOf(); e++) {
+//            int val = input->e<int>(e);
+//            if (val < maxLength) {
+//                if (weights != nullptr)
+//                    output->p(val, output->e<T>(val) + weights->e<T>(e));
+//                else
+//                    output->p(val, output->e<T>(val) + 1);
+//            }
+//        }
+        dim3 launchDims(256, 512, 8192);
+        auto stream = context->getCudaStream();
+        adjustWeightsKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input->specialBuffer(),
+                input->getSpecialShapeInfo(), weights?weights->specialBuffer():nullptr, weights?weights->getSpecialShapeInfo():nullptr,
+                output->specialBuffer(), output->specialShapeInfo(), minLength, maxLength);
     }
 
     void adjustWeights(graph::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
-        BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (input, weights, output, minLength, maxLength), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (context, input, weights, output, minLength, maxLength), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void adjustWeights_, (NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void adjustWeights_, (graph::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength), LIBND4J_TYPES);
 }
 }
 }
