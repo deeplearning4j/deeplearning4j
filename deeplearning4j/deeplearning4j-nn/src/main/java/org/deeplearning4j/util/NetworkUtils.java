@@ -372,13 +372,20 @@ public class NetworkUtils {
      * @param list   List. May be null
      * @param remove Type of objects to remove
      */
-    public static void removeInstances(List<?> list, Class<?> remove){
+    public static void removeInstances(List<?> list, Class<?> remove) {
+        removeInstancesWithWarning(list, remove, null);
+    }
+
+    public static void removeInstancesWithWarning(List<?> list, Class<?> remove, String warning){
         if(list == null || list.isEmpty())
             return;
         Iterator<?> iter = list.iterator();
         while(iter.hasNext()){
             Object o = iter.next();
             if(remove.isAssignableFrom(o.getClass())){
+                if(warning != null) {
+                    log.warn(warning);
+                }
                 iter.remove();
             }
         }

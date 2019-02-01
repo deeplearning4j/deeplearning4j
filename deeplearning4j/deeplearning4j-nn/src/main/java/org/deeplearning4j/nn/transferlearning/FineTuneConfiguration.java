@@ -230,7 +230,7 @@ public class FineTuneConfiguration {
         public Builder l2(double l2) {
             NetworkUtils.removeInstances(regularization, L2Regularization.class);
             if(l2 > 0.0) {
-                NetworkUtils.removeInstances(regularization, WeightDecay.class);
+                NetworkUtils.removeInstancesWithWarning(regularization, WeightDecay.class, "WeightDecay regularization removed: incompatible with added L2 regularization");
                 regularization.add(new L2Regularization(l2));
             }
             return this;
@@ -255,6 +255,7 @@ public class FineTuneConfiguration {
         public Builder l2Bias(double l2Bias) {
             NetworkUtils.removeInstances(regularizationBias, L2Regularization.class);
             if(l2Bias > 0.0) {
+                NetworkUtils.removeInstancesWithWarning(regularizationBias, WeightDecay.class, "WeightDecay bias regularization removed: incompatible with added L2 regularization");
                 regularizationBias.add(new L2Regularization(l2Bias));
             }
             return this;
@@ -282,7 +283,7 @@ public class FineTuneConfiguration {
             //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
             if(coefficient > 0.0) {
-                NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
+                NetworkUtils.removeInstancesWithWarning(this.regularization, L2Regularization.class, "L2 regularization removed: incompatible with added WeightDecay regularization");
                 this.regularization.add(new WeightDecay(coefficient, applyLR));
             }
             return this;
@@ -308,7 +309,7 @@ public class FineTuneConfiguration {
             //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
             if(coefficient > 0) {
-                NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
+                NetworkUtils.removeInstancesWithWarning(this.regularizationBias, L2Regularization.class, "L2 bias regularization removed: incompatible with added WeightDecay regularization");
                 this.regularizationBias.add(new WeightDecay(coefficient, applyLR));
             }
             return this;

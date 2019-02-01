@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class LayerConfigValidationTest extends BaseDL4JTest {
 
@@ -157,7 +158,7 @@ public class LayerConfigValidationTest extends BaseDL4JTest {
 
         BaseLayer layerConf = (BaseLayer) net.getLayer(0).conf().getLayer();
         assertEquals(expectedMomentum, ((Nesterovs) layerConf.getIUpdater()).getMomentum(), 1e-3);
-        assertEquals(expectedL1, TestUtils.getL1(layerConf), 1e-3);
+        assertNull(TestUtils.getL1Reg(layerConf.getRegularization()));
         assertEquals(0.5, TestUtils.getL2(layerConf), 1e-3);
 
         BaseLayer layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
@@ -179,9 +180,8 @@ public class LayerConfigValidationTest extends BaseDL4JTest {
         assertEquals(expectedAdamMeanDecay, ((Adam) layerConf1.getIUpdater()).getBeta1(), 1e-3);
         assertEquals(expectedAdamVarDecay, ((Adam) layerConf1.getIUpdater()).getBeta2(), 1e-3);
         assertEquals(new WeightInitDistribution(expectedDist), layerConf1.getWeightInitFn());
-        // l1 & l2 local should still be set whether regularization true or false
-        assertEquals(expectedL1, TestUtils.getL1(layerConf1), 1e-3);
-        assertEquals(expectedL2, TestUtils.getL2(layerConf1), 1e-3);
+        assertNull(TestUtils.getL1Reg(layerConf1.getRegularization()));
+        assertNull(TestUtils.getL2Reg(layerConf1.getRegularization()));
 
         //RMSProp Updater
         conf = new NeuralNetConfiguration.Builder().updater(new RmsProp(0.3)).list()
@@ -192,8 +192,8 @@ public class LayerConfigValidationTest extends BaseDL4JTest {
 
         layerConf = (BaseLayer) net.getLayer(0).conf().getLayer();
         assertEquals(expectedRmsDecay, ((RmsProp) layerConf.getIUpdater()).getRmsDecay(), 1e-3);
-        assertEquals(expectedL1, TestUtils.getL1(layerConf), 1e-3);
-        assertEquals(expectedL2, TestUtils.getL2(layerConf), 1e-3);
+        assertNull(TestUtils.getL1Reg(layerConf.getRegularization()));
+        assertNull(TestUtils.getL2Reg(layerConf.getRegularization()));
 
         layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
         assertEquals(0.4, ((RmsProp) layerConf1.getIUpdater()).getRmsDecay(), 1e-3);
