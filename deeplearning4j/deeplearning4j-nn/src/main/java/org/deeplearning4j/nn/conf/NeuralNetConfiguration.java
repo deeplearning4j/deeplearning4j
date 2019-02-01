@@ -781,6 +781,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * value, and can be overridden on a per-layer basis.
          *
          * @see #weightInit(Distribution)
+         * @deprecated Use {@link #weightInit(Distribution)}
          */
         @Deprecated
         public Builder dist(Distribution dist) {
@@ -788,7 +789,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * L1 regularization coefficient for the weights.<br>
+         * L1 regularization coefficient for the weights (excluding biases).<br>
          * Note: values set by this method will be applied to all applicable layers in the network, unless a different
          * value is explicitly set on a given layer. In other words: values set via this method are used as the default
          * value, and can be overridden on a per-layer basis.
@@ -801,10 +802,16 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * L2 regularization coefficient for the weights.<br>
+         * L2 regularization coefficient for the weights (excluding biases).<br>
+         * <b>Note</b>: Generally, {@link WeightDecay} (set via {@link #weightDecay(double)} should be preferred to
+         * L2 regularization. See {@link WeightDecay} javadoc for further details.<br>
          * Note: values set by this method will be applied to all applicable layers in the network, unless a different
          * value is explicitly set on a given layer. In other words: values set via this method are used as the default
-         * value, and can be overridden on a per-layer basis.
+         * value, and can be overridden on a per-layer basis.<br>
+         * Note: L2 regularization and weight decay usually should not be used together; if any weight decay (or L2) has
+         * been added for the biases, these will be removed first.
+         *
+         * @see #weightDecay(double, boolean)
          */
         public Builder l2(double l2) {
             //Check if existing L2 exists; if so, replace it. Also remove weight decay - it doesn't make sense to use both
@@ -828,9 +835,15 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /**
          * L2 regularization coefficient for the bias.<br>
+         * <b>Note</b>: Generally, {@link WeightDecay} (set via {@link #weightDecayBias(double,boolean)} should be preferred to
+         * L2 regularization. See {@link WeightDecay} javadoc for further details.<br>
          * Note: values set by this method will be applied to all applicable layers in the network, unless a different
          * value is explicitly set on a given layer. In other words: values set via this method are used as the default
-         * value, and can be overridden on a per-layer basis.
+         * value, and can be overridden on a per-layer basis.<br>
+         * Note: L2 regularization and weight decay usually should not be used together; if any weight decay (or L2) has
+         * been added for the biases, these will be removed first.
+         *
+         * @see #weightDecayBias(double, boolean)
          */
         public Builder l2Bias(double l2Bias) {
             NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
@@ -839,11 +852,31 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /**
+         * Add weight decay regularization for the network parameters (excluding biases).<br>
+         * This applies weight decay <i>with</i> multiplying the learning rate - see {@link WeightDecay} for more details.<br>
+         * Note: values set by this method will be applied to all applicable layers in the network, unless a different
+         * value is explicitly set on a given layer. In other words: values set via this method are used as the default
+         * value, and can be overridden on a per-layer basis.<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         * @see #weightDecay(double, boolean)
+         */
         public Builder weightDecay(double coefficient) {
             return weightDecay(coefficient, true);
         }
 
-        public Builder weightDecay(double coefficient, boolean applyLR){
+        /**
+         * Add weight decay regularization for the network parameters (excluding biases). See {@link WeightDecay} for more details.<br>
+         * Note: values set by this method will be applied to all applicable layers in the network, unless a different
+         * value is explicitly set on a given layer. In other words: values set via this method are used as the default
+         * value, and can be overridden on a per-layer basis.<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         * @param applyLR     Whether the learning rate should be multiplied in when performing weight decay updates. See {@link WeightDecay} for more details.
+         * @see #weightDecay(double, boolean)
+         */
+        public Builder weightDecay(double coefficient, boolean applyLR) {
             //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
             NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
@@ -851,12 +884,58 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        public Builder regularization(List<Regularization> regularization){
+        /**
+         * Weight decay for the biases only - see {@link #weightDecay(double)} for more details.
+         * This applies weight decay <i>with</i> multiplying the learning rate.<br>
+         * Note: values set by this method will be applied to all applicable layers in the network, unless a different
+         * value is explicitly set on a given layer. In other words: values set via this method are used as the default
+         * value, and can be overridden on a per-layer basis.<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         * @see #weightDecayBias(double, boolean)
+         */
+        public Builder weightDecayBias(double coefficient) {
+            return weightDecayBias(coefficient, true);
+        }
+
+        /**
+         * Weight decay for the biases only - see {@link #weightDecay(double)} for more details<br>
+         * Note: values set by this method will be applied to all applicable layers in the network, unless a different
+         * value is explicitly set on a given layer. In other words: values set via this method are used as the default
+         * value, and can be overridden on a per-layer basis.<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         */
+        public Builder weightDecayBias(double coefficient, boolean applyLR) {
+            //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
+            NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
+            NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
+            this.regularizationBias.add(new WeightDecay(coefficient, applyLR));
+            return this;
+        }
+
+        /**
+         * Set the regularization for the parameters (excluding biases) - for example {@link WeightDecay}<br>
+         * Note: values set by this method will be applied to all applicable layers in the network, unless a different
+         * value is explicitly set on a given layer. In other words: values set via this method are used as the default
+         * value, and can be overridden on a per-layer basis.<br>
+         *
+         * @param regularization Regularization to apply for the network parameters/weights (excluding biases)
+         */
+        public Builder regularization(List<Regularization> regularization) {
             this.regularization = regularization;
             return this;
         }
 
-        public Builder regularizationBias(List<Regularization> regularizationBias){
+        /**
+         * Set the regularization for the biases only - for example {@link WeightDecay}<br>
+         * Note: values set by this method will be applied to all applicable layers in the network, unless a different
+         * value is explicitly set on a given layer. In other words: values set via this method are used as the default
+         * value, and can be overridden on a per-layer basis.<br>
+         *
+         * @param regularizationBias Regularization to apply for the network biases only
+         */
+        public Builder regularizationBias(List<Regularization> regularizationBias) {
             this.regularizationBias = regularizationBias;
             return this;
         }

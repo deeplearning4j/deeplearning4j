@@ -12,7 +12,8 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 /**
  * L1 regularization: Implements updating as follows:<br>
  * {@code L = loss + l1 * sum_i abs(w[i])}<br>
- * {@code w[i] -= updater(gradient[i] + l1 * sign(w[i])}<br>
+ * {@code w[i] -= updater(gradient[i] + l1 * sign(w[i])) - where sign(w[i]) is +/- 1<br>
+ * Note that L1 regularization is applied before the updater (Adam/Nesterov/etc) is applied.
  *
  * @author Alex Black
  */

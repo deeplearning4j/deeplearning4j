@@ -238,7 +238,9 @@ public abstract class AbstractSameDiffLayer extends Layer {
 
         /**
          * L2 regularization coefficient (weights only). Use {@link #l2Bias(double)} to configure the l2 regularization
-         * coefficient for the bias.
+         * coefficient for the bias.<br>
+         * <b>Note</b>: Generally, {@link WeightDecay} (set via {@link #weightDecay(double,boolean)} should be preferred to
+         * L2 regularization. See {@link WeightDecay} javadoc for further details.<br>
          */
         public T l2(double l2) {
             //Check if existing L2 exists; if so, replace it. Also remove weight decay - it doesn't make sense to use both
@@ -258,12 +260,84 @@ public abstract class AbstractSameDiffLayer extends Layer {
         }
 
         /**
-         * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
+         * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}<br>
+         * <b>Note</b>: Generally, {@link WeightDecay} (set via {@link #weightDecayBias(double,boolean)} should be preferred to
+         * L2 regularization. See {@link WeightDecay} javadoc for further details.<br>
          */
         public T l2Bias(double l2Bias) {
             NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
             NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
             return (T) this;
+        }
+
+        /**
+         * Add weight decay regularization for the network parameters (excluding biases).<br>
+         * This applies weight decay <i>with</i> multiplying the learning rate - see {@link WeightDecay} for more details.<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         * @see #weightDecay(double, boolean)
+         */
+        public Builder weightDecay(double coefficient) {
+            return weightDecay(coefficient, true);
+        }
+
+        /**
+         * Add weight decay regularization for the network parameters (excluding biases). See {@link WeightDecay} for more details.<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         * @param applyLR     Whether the learning rate should be multiplied in when performing weight decay updates. See {@link WeightDecay} for more details.
+         * @see #weightDecay(double, boolean)
+         */
+        public Builder weightDecay(double coefficient, boolean applyLR) {
+            //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
+            NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
+            NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
+            this.regularization.add(new WeightDecay(coefficient, applyLR));
+            return this;
+        }
+
+        /**
+         * Weight decay for the biases only - see {@link #weightDecay(double)} for more details.
+         * This applies weight decay <i>with</i> multiplying the learning rate.<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         * @see #weightDecayBias(double, boolean)
+         */
+        public Builder weightDecayBias(double coefficient) {
+            return weightDecayBias(coefficient, true);
+        }
+
+        /**
+         * Weight decay for the biases only - see {@link #weightDecay(double)} for more details<br>
+         *
+         * @param coefficient Weight decay regularization coefficient
+         */
+        public Builder weightDecayBias(double coefficient, boolean applyLR) {
+            //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
+            NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
+            NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
+            this.regularizationBias.add(new WeightDecay(coefficient, applyLR));
+            return this;
+        }
+
+        /**
+         * Set the regularization for the parameters (excluding biases) - for example {@link WeightDecay}<br>
+         *
+         * @param regularization Regularization to apply for the network parameters/weights (excluding biases)
+         */
+        public Builder regularization(List<Regularization> regularization) {
+            this.regularization = regularization;
+            return this;
+        }
+
+        /**
+         * Set the regularization for the biases only - for example {@link WeightDecay}<br>
+         *
+         * @param regularizationBias Regularization to apply for the network biases only
+         */
+        public Builder regularizationBias(List<Regularization> regularizationBias) {
+            this.regularizationBias = regularizationBias;
+            return this;
         }
 
         /**
