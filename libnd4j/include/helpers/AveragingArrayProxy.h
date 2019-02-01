@@ -43,6 +43,8 @@ namespace nd4j {
         NDArray* readable(int row, int key);
         NDArray* writeable(int row, int key);
 
+        bool isEmpty();
+
         bool writeableExists(std::pair<int, int> &key);
         bool writeableExists(int row, int key);
 

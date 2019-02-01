@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/sg_cb.h>
+#include <AveragingArrayProxy.h>
 
 #define HS_MAX_EXP 6.0f
 
@@ -276,6 +277,10 @@ namespace nd4j {
             }
             BUILD_SINGLE_TEMPLATE(template void skipgram_, (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
+            void skipgramBatch_() {
+
+            }
+
             void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector) {
                 auto xType = syn0.dataType();
 
@@ -289,7 +294,9 @@ namespace nd4j {
 
                     auto batchSize = codes.sizeAt(0);
 
-                    // we're
+                    AveragingArrayProxy s0(&syn0);
+                    AveragingArrayProxy s1(&syn1);
+                    AveragingArrayProxy s1n(&syn1Neg);
 
                     for (int e = 0; e < batchSize; e++) {
                         auto sIndices = indices.subarray({NDIndex::point(e), NDIndex::all()});

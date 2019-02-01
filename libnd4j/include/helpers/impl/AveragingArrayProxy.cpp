@@ -52,6 +52,10 @@ namespace nd4j {
         }
     }
 
+    bool AveragingArrayProxy::isEmpty() {
+        return _original->isEmpty();
+    }
+
     NDArray* AveragingArrayProxy::writeable(int row, int key) {
         std::pair<int, int> k(row, key);
 
