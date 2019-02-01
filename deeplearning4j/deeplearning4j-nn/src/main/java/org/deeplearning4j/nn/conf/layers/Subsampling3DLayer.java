@@ -31,8 +31,10 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -157,15 +159,9 @@ public class Subsampling3DLayer extends NoParamLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
+    public List<Regularization> getRegularizationByParam(String paramName) {
         //Not applicable
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        //Not applicable
-        return 0;
+        return null;
     }
 
     @Override

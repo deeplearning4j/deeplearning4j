@@ -86,16 +86,6 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        return underlying.getL1ByParam(paramName); //No params
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return underlying.getL2ByParam(paramName); //No params
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         return false;
     }

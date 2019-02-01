@@ -17,6 +17,7 @@
 package org.deeplearning4j.regressiontest;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -37,6 +38,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -70,7 +72,7 @@ public class RegressionTest100a extends BaseDL4JTest {
 
         DenseLayer l0 = (DenseLayer) net.getLayer(0).conf().getLayer();
         assertEquals(new ActivationTanH(), l0.getActivationFn());
-        assertEquals(0.03, l0.getL2(), 1e-6);
+        assertEquals(new WeightDecay(0.03, false), TestUtils.getWeightDecayReg(l0));
         assertEquals(new RmsProp(0.95), l0.getIUpdater());
 
         CustomLayer l1 = (CustomLayer) net.getLayer(1).conf().getLayer();
@@ -135,21 +137,21 @@ public class RegressionTest100a extends BaseDL4JTest {
         assertEquals(new ActivationTanH(), l0.getActivationFn());
         assertEquals(200, l0.getNOut());
         assertEquals(new WeightInitXavier(), l0.getWeightInitFn());
-        assertEquals(0.001, l0.getL2(), 1e-6);
+        assertEquals(new WeightDecay(0.001, false), TestUtils.getWeightDecayReg(l0));
         assertEquals(new RmsProp(0.1), l0.getIUpdater());
 
         GravesLSTM l1 = (GravesLSTM) net.getLayer(1).conf().getLayer();
         assertEquals(new ActivationTanH(), l1.getActivationFn());
         assertEquals(200, l1.getNOut());
         assertEquals(new WeightInitXavier(), l1.getWeightInitFn());
-        assertEquals(0.001, l1.getL2(), 1e-6);
+        assertEquals(new WeightDecay(0.001, false), TestUtils.getWeightDecayReg(l1));
         assertEquals(new RmsProp(0.1), l1.getIUpdater());
 
         RnnOutputLayer l2 = (RnnOutputLayer) net.getLayer(2).conf().getLayer();
         assertEquals(new ActivationSoftmax(), l2.getActivationFn());
         assertEquals(77, l2.getNOut());
         assertEquals(new WeightInitXavier(), l2.getWeightInitFn());
-        assertEquals(0.001, l0.getL2(), 1e-6);
+        assertEquals(new WeightDecay(0.001, false), TestUtils.getWeightDecayReg(l0));
         assertEquals(new RmsProp(0.1), l0.getIUpdater());
 
         assertEquals(BackpropType.TruncatedBPTT, net.getLayerWiseConfigurations().getBackpropType());
@@ -171,10 +173,6 @@ public class RegressionTest100a extends BaseDL4JTest {
         INDArray outAct = net.output(in);
 
         assertEquals(outExp, outAct);
-
-        //For backward compatibility given L2 fixes in 1.0.0-beta3
-        assertTrue(net.getLayerWiseConfigurations().isLegacyBatchScaledL2());
-        assertTrue(l2.isLegacyBatchScaledL2());
     }
 
     @Test
@@ -189,7 +187,7 @@ public class RegressionTest100a extends BaseDL4JTest {
         assertArrayEquals(new int[]{256, 256}, l0.getEncoderLayerSizes());
         assertArrayEquals(new int[]{256, 256}, l0.getDecoderLayerSizes());
                 assertEquals(new WeightInitXavier(), l0.getWeightInitFn());
-        assertEquals(1e-4, l0.getL2(), 1e-6);
+        assertEquals(new WeightDecay(1e-4, false), TestUtils.getWeightDecayReg(l0));
         assertEquals(new Adam(0.05), l0.getIUpdater());
 
         INDArray outExp;
@@ -294,9 +292,6 @@ public class RegressionTest100a extends BaseDL4JTest {
 
         INDArray grad = net.getFlattenedGradients();
         assertEquals(gradExp, grad);
-
-        //For backward compatibility given L2 fixes in 1.0.0-beta3
-        assertTrue(net.getLayerWiseConfigurations().isLegacyBatchScaledL2());
     }
 
 

@@ -123,34 +123,6 @@ public class SeparableConvolution2D extends ConvolutionLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        switch (paramName) {
-            case SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY:
-                return l1;
-            case SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY:
-                return l1;
-            case SeparableConvolutionParamInitializer.BIAS_KEY:
-                return l1Bias;
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        switch (paramName) {
-            case SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY:
-                return l2;
-            case SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY:
-                return l2;
-            case SeparableConvolutionParamInitializer.BIAS_KEY:
-                return l2Bias;
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("SeparableConvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());

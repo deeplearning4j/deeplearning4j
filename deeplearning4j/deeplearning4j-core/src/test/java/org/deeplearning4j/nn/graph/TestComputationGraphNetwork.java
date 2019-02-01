@@ -1149,8 +1149,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraph g = new ComputationGraph(c);
         g.init();
 
-        g.calcL2();
-        g.calcL1();
+        g.calcRegularizationScore(true);
+        g.calcRegularizationScore(false);
     }
 
     @Test(expected = DL4JException.class)

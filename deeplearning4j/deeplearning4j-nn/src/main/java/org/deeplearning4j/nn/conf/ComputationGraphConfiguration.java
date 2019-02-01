@@ -109,9 +109,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected int[] topologicalOrder;
     protected List<String> topologicalOrderStr;
 
-    @Getter @Setter
-    protected boolean legacyBatchScaledL2 = true;   //Default to legacy for pre 1.0.0-beta3 networks on deserialization
-
     /**
      * @return YAML representation of configuration
      */
@@ -317,7 +314,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
         conf.cacheMode = this.cacheMode;
         conf.defaultConfiguration.cacheMode = this.cacheMode;
-        conf.legacyBatchScaledL2 = this.legacyBatchScaledL2;
         conf.validateOutputLayerConfig = this.validateOutputLayerConfig;
 
         return conf;
@@ -1068,7 +1064,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.validateOutputLayerConfig = validateOutputConfig;
 
             conf.defaultConfiguration = globalConfiguration.build();
-            conf.setLegacyBatchScaledL2(globalConfiguration.isLegacyBatchScaledL2());
 
             //Add preprocessors that were defined separately to the Layers to which they belong
             for (Map.Entry<String, InputPreProcessor> entry : inputPreProcessors.entrySet()) {

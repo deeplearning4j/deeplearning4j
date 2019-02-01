@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializerHelp
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -191,24 +192,13 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
     public abstract InputPreProcessor getPreProcessorForInputType(InputType inputType);
 
     /**
-     * Get the L1 coefficient for the given parameter. Different parameters may have different L1
-     * values, even for a single .l1(x) configuration. For example, biases generally aren't L1
-     * regularized, even if weights are
+     * Get the regularization types (l1/l2/weight decay) for the given parameter. Different parameters may have different
+     * regularization types.
      *
-     * @param paramName Parameter name
-     * @return L1 value for that parameter
+     * @param paramName Parameter name ("W", "b" etc)
+     * @return Regularization types (if any) for the specified parameter
      */
-    public abstract double getL1ByParam(String paramName);
-
-    /**
-     * Get the L2 coefficient for the given parameter. Different parameters may have different L2
-     * values, even for a single .l2(x) configuration. For example, biases generally aren't L1
-     * regularized, even if weights are
-     *
-     * @param paramName Parameter name
-     * @return L2 value for that parameter
-     */
-    public abstract double getL2ByParam(String paramName);
+    public abstract List<Regularization> getRegularizationByParam(String paramName);
 
     /**
      * Is the specified parameter a layerwise pretraining only parameter?<br> For example, visible

@@ -30,8 +30,10 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -51,10 +53,8 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
     private SDVertexParams vertexParams;
     private String name;
 
-    protected double l1 = Double.NaN;
-    protected double l2 = Double.NaN;
-    protected double l1Bias = Double.NaN;
-    protected double l2Bias = Double.NaN;
+    protected List<Regularization> regularization;
+    protected List<Regularization> regularizationBias;
     protected IUpdater updater;
     protected IUpdater biasUpdater;
     protected GradientNormalization gradientNormalization;
@@ -143,17 +143,11 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
 
 
     public void applyGlobalConfig(NeuralNetConfiguration.Builder b) {
-        if (Double.isNaN(l1)) {
-            l1 = b.getL1();
+        if(regularization == null || regularization.isEmpty()){
+            regularization = b.getRegularization();
         }
-        if (Double.isNaN(l2)) {
-            l2 = b.getL2();
-        }
-        if (Double.isNaN(l1Bias)) {
-            l1Bias = b.getL1Bias();
-        }
-        if (Double.isNaN(l2Bias)) {
-            l2Bias = b.getL2Bias();
+        if(regularizationBias == null || regularizationBias.isEmpty()){
+            regularizationBias = b.getRegularizationBias();
         }
         if (updater == null) {
             updater = b.getIUpdater();
@@ -181,35 +175,19 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        if (l1 == 0.0 && l1Bias == 0.0) {
-            return 0.0;
+    public List<Regularization> getRegularizationByParam(String paramName){
+        if((regularization == null || regularization.isEmpty()) && (regularizationBias == null || regularizationBias.isEmpty())){
+            return null;
         }
         if (getVertexParams().isWeightParam(paramName)) {
-            return l1;
+            return regularization;
         }
         if (getVertexParams().isBiasParam(paramName)) {
-            return l1Bias;
+            return regularizationBias;
         }
         throw new IllegalStateException("Unknown parameter name: " + paramName + " - not in weights ("
-                        + getVertexParams().getWeightParameterKeys() + ") or biases ("
-                        + getVertexParams().getBiasParameterKeys() + ")");
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        if (l2 == 0.0 && l2Bias == 0.0) {
-            return 0.0;
-        }
-        if (getVertexParams().isWeightParam(paramName)) {
-            return l2;
-        }
-        if (getVertexParams().isBiasParam(paramName)) {
-            return l2Bias;
-        }
-        throw new IllegalStateException("Unknown parameter name: " + paramName + " - not in weights ("
-                        + getVertexParams().getWeightParameterKeys() + ") or biases ("
-                        + getVertexParams().getBiasParameterKeys() + ")");
+                + getVertexParams().getWeightParameterKeys() + ") or biases ("
+                + getVertexParams().getBiasParameterKeys() + ")");
     }
 
     @Override
