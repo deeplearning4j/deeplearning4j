@@ -419,11 +419,17 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 idxSyn1 = new int[0];
                 interimCodes = new byte[0];
             }
-            for (int i = 0; i < interimCodes.length; ++i) {
-                codes[cnt][i] = interimCodes[i];
+            for (int i = 0; i < maxCols; ++i) {
+                if (i < w1.getCodeLength())
+                    codes[cnt][i] = interimCodes[i];
+                else
+                    codes[cnt][i] = -1;
             }
-            for (int i = 0; i < idxSyn1.length; ++i) {
-                indices[cnt][i]  = idxSyn1[i];
+            for (int i = 0; i < maxCols; ++i) {
+                if (i < w1.getCodeLength())
+                    indices[cnt][i]  = idxSyn1[i];
+                else
+                    indices[cnt][i] = -1;
             }
 
             //negative sampling
@@ -440,19 +446,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         INDArray randomValuesArray = Nd4j.createFromArray(randomValues);
         INDArray indicesArray = Nd4j.createFromArray(indices);
         INDArray codesArray = Nd4j.createFromArray(codes);
-
-        if (maxCols - targetArray.columns() > 0) {
-            Nd4j.pad(targetArray, new int[items.size()][maxCols - targetArray.columns()],Nd4j.PadMode.CONSTANT);
-            int newCols = targetArray.columns();
-        }
-
-        /*int cols1 = targetArray.columns();
-
-        int cols2 = ngStarterArray.columns();
-        int cols3 = alphasArray.columns();
-        int cols4 = randomValuesArray.columns();
-        int cols5 = indicesArray.columns();
-        int cols6 = codesArray.columns();*/
 
         val sg = new SkipGramRound(targetArray, ngStarterArray, syn0.get(), syn1.get(), Nd4j.empty(syn0.get().dataType()), expTable.get(),
                 Nd4j.empty(syn0.get().dataType()), (int) negative, indicesArray, codesArray, alphasArray, randomValuesArray,
