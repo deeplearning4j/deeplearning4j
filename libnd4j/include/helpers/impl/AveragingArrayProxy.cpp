@@ -124,14 +124,16 @@ namespace nd4j {
 
             auto originalRow = _original->subarray({NDIndex::point(row), NDIndex::all()});
 
-            originalRow->assign(0.0);
+            if (list.size() == 1) {
+                originalRow->assign(list.at(0));
+            } else {
+                originalRow->assign(0.0);
 
-            for (int e = 0; e < list.size(); e++) {
-                *originalRow += *(list.at(e));
-            }
+                for (int e = 0; e < list.size(); e++)
+                    *originalRow += *(list.at(e));
 
-            if (list.size() > 1)
                 *originalRow /= (int) list.size();
+            }
 
             delete originalRow;
         }
