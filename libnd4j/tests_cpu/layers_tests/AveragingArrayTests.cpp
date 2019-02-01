@@ -32,7 +32,7 @@ public:
 };
 
 TEST_F(AveragingArrayTests, test_basic_reads_1) {
-    auto exp0 = NDArrayFactory::create<double>('c', {5},{3.0, 3.0, 3.0, 3.0, 3.0});
+    auto exp0 = NDArrayFactory::create<double>('c', {1, 5},{3.0, 3.0, 3.0, 3.0, 3.0});
 
     auto original = NDArrayFactory::create<double>('c', {100, 5});
     original.assign(1.0);
@@ -57,6 +57,9 @@ TEST_F(AveragingArrayTests, test_basic_reads_1) {
 
     auto row1 = original.subarray({NDIndex::point(1), NDIndex::all()});
     auto row2 = original.subarray({NDIndex::point(2), NDIndex::all()});
+
+    row1->printIndexedBuffer("row1");
+    row2->printIndexedBuffer("row2");
 
     ASSERT_EQ(exp0, *row1);
     ASSERT_EQ(exp0, *row2);

@@ -23,17 +23,28 @@
 #define DEV_TESTS_AVERAGINGARRAYPROXY_H
 
 #include "NDArray.h"
+#include <utility>
+#include <map>
+#include <vector>
 
 namespace nd4j {
     class ND4J_EXPORT AveragingArrayProxy {
     protected:
         NDArray *_original;
+
+        std::map<std::pair<int,int>, NDArray*> _writeables;
+        std::map<int, std::vector<NDArray*>> _writeablesLinear;
+
+        std::vector<NDArray*> _references;
     public:
         explicit AveragingArrayProxy(NDArray *original);
         ~AveragingArrayProxy();
 
         NDArray* readable(int row, int key);
         NDArray* writeable(int row, int key);
+
+        bool writeableExists(std::pair<int, int> &key);
+        bool writeableExists(int row, int key);
 
         bool collapseWrites();
     };
