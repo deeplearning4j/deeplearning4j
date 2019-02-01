@@ -31,7 +31,13 @@ namespace nd4j {
     }
 
     bool AveragingArrayProxy::writeableExists(std::pair<int, int> &key) {
-        return _writeables.count(key) > 0;
+        _lock.lock();
+
+        auto r = _writeables.count(key) > 0;
+
+        _lock.unlock();
+
+        return r;
     }
 
     bool AveragingArrayProxy::writeableExists(int row, int key) {
@@ -42,12 +48,23 @@ namespace nd4j {
     NDArray* AveragingArrayProxy::readable(int row, int key) {
         std::pair<int, int> k(row, key);
 
-        if (writeableExists(k))
-            return _writeables[k];
-        else {
+        if (writeableExists(k)) {
+            _lock.lock();
+
+            auto r = _writeables[k];
+
+            _lock.unlock();
+
+            return r;
+        } else {
             auto readable = _original->subarray({NDIndex::point(row), NDIndex::all()});
 
+            _lock.lock();
+
             _references.emplace_back(readable);
+
+            _lock.unlock();
+
             return readable;
         }
     }
@@ -60,15 +77,23 @@ namespace nd4j {
         std::pair<int, int> k(row, key);
 
         // if writeable exists - just return it
-        if (writeableExists(k))
-            return _writeables[k];
-        else {
+        if (writeableExists(k)) {
+            _lock.lock();
+
+            auto r = _writeables[k];
+
+            _lock.unlock();
+
+            return r;
+        } else {
             // if doesn't - let's create it
             auto orig = _original->subarray({NDIndex::point(row), NDIndex::all()});
 
             // we don't want views here for obvious reasons
             auto writeable = orig->dup('c');
             delete orig;
+
+            _lock.lock();
 
             _writeables[k] = writeable;
             _references.emplace_back(writeable);
@@ -80,6 +105,8 @@ namespace nd4j {
             }
 
             _writeablesLinear[row].emplace_back(writeable);
+
+            _lock.unlock();
 
             return writeable;
         }

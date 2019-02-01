@@ -26,6 +26,7 @@
 #include <utility>
 #include <map>
 #include <vector>
+#include <mutex>
 
 namespace nd4j {
     class ND4J_EXPORT AveragingArrayProxy {
@@ -36,6 +37,8 @@ namespace nd4j {
         std::map<int, std::vector<NDArray*>> _writeablesLinear;
 
         std::vector<NDArray*> _references;
+
+        std::mutex _lock;
     public:
         explicit AveragingArrayProxy(NDArray *original);
         ~AveragingArrayProxy();
