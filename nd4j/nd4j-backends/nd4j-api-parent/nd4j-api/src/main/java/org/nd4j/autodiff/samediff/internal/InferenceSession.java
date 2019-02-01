@@ -339,6 +339,9 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                         //Workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/7092
                         get = get.reshape(get.length());
                     }
+                    if(valuesArr.rank() == 1 && get.rank() > 0){
+                        get = get.reshape(new long[0]);
+                    }
                     l.set(outIdx, get);
                 }
 
