@@ -101,9 +101,6 @@ public class TFGraphTestAllSameDiff {
             //Failing 2019/01/16 - Issue 15 https://github.com/deeplearning4j/deeplearning4j/issues/6958
             "where/cond_only.*",
 
-            //Still failing 2019/01/15 - https://github.com/deeplearning4j/deeplearning4j/issues/7008
-            "sepconv1d_layers/.*",
-
             //scatter_nd: a few cases failing as of 2019/01/08
             "scatter_nd/rank2shape_2indices",
             "scatter_nd/rank3shape_2indices",

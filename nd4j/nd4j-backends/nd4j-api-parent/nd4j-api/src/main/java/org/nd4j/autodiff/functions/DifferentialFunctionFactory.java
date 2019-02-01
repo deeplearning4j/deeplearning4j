@@ -1394,12 +1394,12 @@ public class DifferentialFunctionFactory {
         return new LogPoissonLossBp(sameDiff(), lossReduce, predictions, weights, label, true).outputVariables();
     }
 
-    public SDVariable lossMeanPairwiseSquaredError(SDVariable label, SDVariable predictions, SDVariable weights){
-        return new MeanPairwiseSquaredErrorLoss(sameDiff(), predictions, weights, label).outputVariable();
+    public SDVariable lossMeanPairwiseSquaredError(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
+        return new MeanPairwiseSquaredErrorLoss(sameDiff(), lossReduce, predictions, weights, label).outputVariable();
     }
 
-    public SDVariable[] lossMeanPairwiseSquaredErrorBp(SDVariable label, SDVariable predictions, SDVariable weights){
-        return new MeanPairwiseSquaredErrorLossBp(sameDiff(), predictions, weights, label).outputVariables();
+    public SDVariable[] lossMeanPairwiseSquaredErrorBp(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){
+        return new MeanPairwiseSquaredErrorLossBp(sameDiff(), lossReduce, predictions, weights, label).outputVariables();
     }
 
     public SDVariable lossMeanSquaredError(SDVariable label, SDVariable predictions, SDVariable weights, LossReduce lossReduce){

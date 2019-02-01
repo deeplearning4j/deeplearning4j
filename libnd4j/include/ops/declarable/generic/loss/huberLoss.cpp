@@ -201,6 +201,7 @@ DECLARE_SHAPE_FN(huber_loss) {
 				case 1: {											// 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
 
 					*dLdp *= *weightsBroad;
+					*dLdl *= *weightsBroad;
 
 					if(weights->isScalar())
 						dLdw->assign(E.reduceNumber(reduce::Sum));
@@ -222,11 +223,13 @@ DECLARE_SHAPE_FN(huber_loss) {
 
 					if (sum.e<double>(0) == 0.) {
 						*dLdp = 0.;
+						*dLdl = 0.;
 						*dLdw = 0.;
 					}
 					else {
 
 						*dLdp *= *weightsBroad / sum;
+						*dLdl *= *weightsBroad / sum;
 
 						if(weights->isScalar())
 							*dLdw = 0.;
@@ -251,6 +254,7 @@ DECLARE_SHAPE_FN(huber_loss) {
 
 					if (numOfNonZeroWeights == 0) {
 						*dLdp = 0.;
+						*dLdl = 0.;
 						*dLdw = 0.;
 					}
 					else {
@@ -268,6 +272,7 @@ DECLARE_SHAPE_FN(huber_loss) {
 
 						NDArray temp = *weightsBroad / numOfNonZeroWeightsScalar;
 						*dLdp *= temp;
+						*dLdl *= temp;
 					}
 					break;
 				}

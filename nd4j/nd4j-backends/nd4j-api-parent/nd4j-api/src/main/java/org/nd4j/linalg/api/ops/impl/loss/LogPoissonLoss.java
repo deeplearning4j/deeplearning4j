@@ -15,23 +15,26 @@ import java.util.List;
  * @author Paul Dubs
  */
 public class LogPoissonLoss extends BaseLoss {
-
-
     private boolean full;
 
     public LogPoissonLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights, SDVariable labels){
-        super(sameDiff, lossReduce, predictions, weights, labels);
+        this(sameDiff, lossReduce, predictions, weights, labels, false);
     }
 
     public LogPoissonLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights, SDVariable labels, boolean full){
         super(sameDiff, lossReduce, predictions, weights, labels);
         this.full = full;
-        if(full){
-            iArguments.add((long) 1 );
-        }
+        addArgs();
     }
 
     public LogPoissonLoss(){ }
+
+    protected void addArgs(){
+        super.addArgs();
+        if(full){
+            iArguments.add((long) 1);
+        }
+    }
 
     @Override
     public String opName() {
@@ -45,9 +48,9 @@ public class LogPoissonLoss extends BaseLoss {
 
         SDVariable[] grads;
         if(full) {
-            grads = f().lossLogPoissonBp(arg(2), arg(0), arg(1), lossReduce);
-        }else{
             grads = f().lossLogPoissonFullBp(arg(2), arg(0), arg(1), lossReduce);
+        }else{
+            grads = f().lossLogPoissonBp(arg(2), arg(0), arg(1), lossReduce);
         }
         return Arrays.asList(grads);
     }

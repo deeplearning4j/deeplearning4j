@@ -11,22 +11,27 @@ import org.nd4j.autodiff.samediff.SameDiff;
  */
 public class LogPoissonLossBp extends BaseLossBp {
 
-
     private boolean full = false;
 
     public LogPoissonLossBp(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights, SDVariable labels){
-        super(sameDiff, lossReduce, predictions, weights, labels);
+        this(sameDiff, lossReduce, predictions, weights, labels, false);
     }
     
     public LogPoissonLossBp(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights, SDVariable labels, boolean full){
         super(sameDiff, lossReduce, predictions, weights, labels);
         this.full = full;
+        addArgs();
+    }
+
+    public LogPoissonLossBp(){ }
+
+
+    protected void addArgs(){
+       super.addArgs();
         if(full){
             iArguments.add((long) 1);
         }
     }
-
-    public LogPoissonLossBp(){ }
 
     @Override
     public String opName() {

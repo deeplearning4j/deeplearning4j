@@ -361,6 +361,8 @@
 
         <flatbuffers.version>1.9.0</flatbuffers.version>
         <grpc.version>1.14.0</grpc.version>
+        <javax.version>1.2</javax.version>
+        <jaxb.version>2.3.0</jaxb.version>
 
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
