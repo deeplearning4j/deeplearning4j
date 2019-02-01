@@ -105,6 +105,7 @@ namespace nd4j {
             }
 
             _writeablesLinear[row].emplace_back(writeable);
+            _rows.emplace_back(row);
 
             _lock.unlock();
 
@@ -116,20 +117,21 @@ namespace nd4j {
         if (_writeables.empty())
             return false;
 
-        // TODO: parallelism here?
-        for (const auto &v:_writeablesLinear) {
-            auto row = v.first;
-            auto list = &(v.second);
+#pragma omp parallel for num_threads(4)
+        for (int r = 0; r < _rows.size(); r++) {
+            auto row = _rows[r];
+            auto list = _writeablesLinear.at(row);
 
             auto originalRow = _original->subarray({NDIndex::point(row), NDIndex::all()});
 
             originalRow->assign(0.0);
 
-            for (int e = 0; e < list->size(); e++) {
-                *originalRow += *(list->at(e));
+            for (int e = 0; e < list.size(); e++) {
+                *originalRow += *(list.at(e));
             }
 
-            *originalRow /= (int) list->size();
+            if (list.size() > 1)
+                *originalRow /= (int) list.size();
 
             delete originalRow;
         }

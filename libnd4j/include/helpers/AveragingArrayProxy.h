@@ -35,6 +35,7 @@ namespace nd4j {
 
         std::map<std::pair<int,int>, NDArray*> _writeables;
         std::map<int, std::vector<NDArray*>> _writeablesLinear;
+        std::vector<int> _rows;
 
         std::vector<NDArray*> _references;
 
