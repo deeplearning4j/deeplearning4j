@@ -338,12 +338,13 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             1) reqMem + hostOffset < totalSize, we just return pointer + offset
             2) go for either external spilled, or pinned allocation
          */
+
+        long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
+
         // we enforce 8 byte alignment to ensure CUDA doesn't blame us
         long div = requiredMemory % 8;
         if (div != 0)
             requiredMemory += (8 - div);
-
-        long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 
         // shortcut made to skip workspace
         if (!isUsed.get()) {
