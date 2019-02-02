@@ -142,6 +142,10 @@ public class LongShapeDescriptor {
     public static LongShapeDescriptor fromShape(long[] shape, @NonNull DataType dataType) {
         long extras = 0L;
         extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
+        return fromShape(shape, extras);
+    }
+
+    public static LongShapeDescriptor fromShape(long[] shape, long extras){
         val desc = new LongShapeDescriptor(shape, Nd4j.getStrides(shape, Nd4j.order()), 0, 1, Nd4j.order(), extras);
         return desc;
     }

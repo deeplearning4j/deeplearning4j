@@ -47,9 +47,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 @Slf4j
@@ -1935,5 +1933,19 @@ public class ShapeOpValidation extends BaseOpValidation {
         long[] shapeExp = new long[]{1,4,3};
 
         assertArrayEquals(shapeExp, shape);
+    }
+
+    @Test
+    public void testWhereAllFalse(){
+        INDArray in = Nd4j.create(DataType.BOOL, 1917);
+        DynamicCustomOp op = DynamicCustomOp.builder("Where")
+                .addInputs(in)
+                .addOutputs(Nd4j.empty(DataType.LONG))
+                .build();
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        Nd4j.getExecutioner().exec(op);
+        long[] shape = l.get(0).getShape();
+        boolean isEmpty = l.get(0).isEmpty();
+        assertTrue(isEmpty);    //Not empty, but should be
     }
 }
