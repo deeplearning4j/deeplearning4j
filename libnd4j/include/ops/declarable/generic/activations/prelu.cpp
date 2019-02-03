@@ -105,6 +105,10 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
     const std::vector<Nd4jLong> alphaShape = alpha->getShapeAsVector();
 
     //***** input validation *****//
+    
+    // temporary limitation imposed by Yurii
+    REQUIRE_TRUE(inputRank <= MAX_RANK/2, 0, "rank of input array should be <= MAX_RANK/2, but git %i instead!", inputRank);
+
     std::vector<Nd4jLong> expectedAlphaShape(&inputShape[1], &inputShape[inputRank]);
 
     REQUIRE_TRUE(inputRank > 1, 0, "PRELU_BP OP: wrong rank of input array, expected rank should be > 1, but got %i instead !", inputRank);   

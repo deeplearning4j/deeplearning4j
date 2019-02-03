@@ -181,28 +181,37 @@ namespace helpers {
 
     //////////////////////////////////////////////////////////////////////////
     void preluBP(graph::LaunchContext* context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
-
-        const Nd4jLong inputLen = input.lengthOf();
+        
+        const Nd4jLong alphaLen = alpha.lengthOf();
         const Nd4jLong* inputShapeInfo = input.getShapeInfo();
         const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
+        std::vector<Nd4jLong> inputIdxs(input.lengthOf()/alphaLen);
 
         dLdA.assign(0.0f);
 
-//#pragma omp parallel for if(inputLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(Nd4jLong i = 0; i < inputLen; ++i) {            
-            auto x   = input.e(i);
-            auto grO = dLdO.e(i);
-            if(x.e<float>(0) < 0.0) {
-                Nd4jLong alphaInd = shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo);
-                dLdI.p(i, grO * alpha.e(alphaInd));
-                auto prevVal = dLdA.e(alphaInd);
-                prevVal += (grO * x);
-                dLdA.p(alphaInd, prevVal );
-            }
-            else
-                dLdI.p(i, grO);
+// #pragma omp parallel for if(alphaLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(inputIdxs)
+#pragma omp parallel for schedule(guided) private(inputIdxs)
+        for(Nd4jLong i = 0; i < alphaLen; ++i) {
+
+            int numIdxs = shape::outerArrayIndexes(inputIdxs.data(), i, inputShapeInfo, alphaShapeInfo);
+            
+            for(Nd4jLong j = 0; j < numIdxs; ++j) {
+                
+                auto inInd = inputIdxs[j];
+                NDArray x = input.e(inInd);
+                NDArray grO = dLdO.e(inInd);
+                
+                if(x.e<float>(0) < 0.0) {                    
+                    dLdI.p(inInd, grO * alpha.e(i));
+                    auto prevVal = dLdA.e(i);
+                    prevVal += (grO * x);
+                    dLdA.p(i, prevVal );
+                }
+                else
+                    dLdI.p(inInd, grO);
+            }                      
+        }
     }
-}
 
     BUILD_SINGLE_TEMPLATE(template void _softMaxForVector, (graph::LaunchContext* context, void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo), FLOAT_TYPES);
     BUILD_SINGLE_TEMPLATE(template void _logSoftMaxForVector, (graph::LaunchContext* context, void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo), FLOAT_TYPES);

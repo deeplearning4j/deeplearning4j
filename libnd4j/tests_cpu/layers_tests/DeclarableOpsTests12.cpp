@@ -25,7 +25,6 @@
 #include <ops/ops.h>
 #include <GradCheck.h>
 
-
 using namespace nd4j;
 
 
@@ -587,3 +586,4 @@ TEST_F(DeclarableOpsTests12, TestMinimumBP_1) {
     ASSERT_TRUE(output1.equalsTo(exp1));
     ASSERT_TRUE(output2.equalsTo(exp2));
 }
+
