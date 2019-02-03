@@ -279,7 +279,7 @@ namespace nd4j {
             BUILD_SINGLE_TEMPLATE(template void skipgram_, (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
             template <typename T>
-            void skipgramBatchExec_(AveragingArrayProxy &s0, AveragingArrayProxy &s1, AveragingArrayProxy &s1n, void *vexpTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength) {
+            void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, int ngStarter, NDArray &indices, NDArray &codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength) {
                 //auto syn0 = reinterpret_cast<T*>(vsyn0);
                 //auto syn1 = reinterpret_cast<T*>(vsyn1);
                 //auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
@@ -290,19 +290,45 @@ namespace nd4j {
                 auto neu1e = new T[vectorLength];
                 memset(neu1e, 0, vectorLength * sizeof(T));
 
-                auto s0w = s0.writeable(target, omp_get_thread_num());
+                //auto s0w = s0.writeable(target, omp_get_thread_num());
 
                 // hierarchic softmax goes first (if enabled)
 
-                auto syn0row = reinterpret_cast<T*>(s0w->buffer());
+                //auto syn0row = reinterpret_cast<T*>(s0w->buffer());
+                auto numThreads = 10;
                 auto irow = 0;
-                if (hsRounds > 0) {
-                    for (int r = 0; r < hsRounds; r++) {
-                        irow = indices[r];
-                        if (irow < 0 || irow >= vocabSize)
-                            break;
+                if (!targets.isEmpty()) {
+                    auto bTarget = targets.bufferAsT<int>();
+                    auto bIndices = indices.bufferAsT<int>();
+                    auto bCodes = codes.bufferAsT<int>();
 
-                        hSoftmax_<T>(syn0row, s1.writeable(irow, omp_get_thread_num())->buffer(), expTable, neu1e, alpha, vectorLength, codes[r], expLength, infVector != nullptr);
+// parallel block and following loop will be the same for every thread
+//#pragma omp parallel num_threads(10)
+                    {
+                        for (int t = 0; t < targets.lengthOf(); t++) {
+                            // this value should be different for all threads
+                            auto target = bTarget[t];
+
+                            // we're deciding if this thread will process this given target, or not
+                            auto isOwner = target % numThreads == omp_get_thread_num();
+                            auto syn0row = isOwner ? s0.bufferWithOffset(target * vectorLength) : 0;
+
+                            for (int r = 0; r < hsRounds; r++) {
+                                // this row should be randomized as well, to reduce chances for race conditions
+                                irow = bIndices[r];
+                                if (irow < 0 || irow >= vocabSize)
+                                    isOwner = false;
+
+                                // all threads diverge here on top of
+                                if (isOwner) {
+                                    auto syn1row = s1.bufferWithOffset(irow * vectorLength);
+                                    hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, codes[r], expLength, infVector != nullptr);
+                                }
+
+                                // we synchronize all threads here so they move synchronously
+                                //#pragma omp barrier
+                            }
+                        }
                     }
                 }
 
@@ -341,7 +367,7 @@ namespace nd4j {
 
                 delete[] neu1e;
             }
-            BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (AveragingArrayProxy &syn0, AveragingArrayProxy &syn1, AveragingArrayProxy &syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
+            //BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (AveragingArrayProxy &syn0, AveragingArrayProxy &syn1, AveragingArrayProxy &syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
             void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector) {
                 auto xType = syn0.dataType();
@@ -356,6 +382,7 @@ namespace nd4j {
 
                     auto batchSize = codes.sizeAt(0);
 
+/*
                     AveragingArrayProxy s0(&syn0);
                     AveragingArrayProxy s1(&syn1);
                     AveragingArrayProxy s1n(&syn1Neg);
@@ -388,7 +415,7 @@ namespace nd4j {
 
                     if (!s1n.isEmpty())
                         s1n.collapseWrites();
-
+*/
                 } else
                     throw std::runtime_error("SkipGram: Codes must have rank 1 or 2");
             }
