@@ -324,10 +324,10 @@ namespace nd4j {
                                     auto syn1row = s1.bufferWithOffset(irow * vectorLength);
                                     hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, codes[r], expLength, infVector != nullptr);
                                 }
-
-                                // we synchronize all threads here so they move synchronously
-                                //#pragma omp barrier
                             }
+
+                            // we synchronize all threads here so they move synchronously
+                            //#pragma omp barrier
                         }
                     }
                 }
