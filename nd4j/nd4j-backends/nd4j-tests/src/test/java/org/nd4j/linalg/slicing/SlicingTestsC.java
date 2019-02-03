@@ -27,7 +27,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -89,7 +88,7 @@ public class SlicingTestsC extends BaseNd4jTest {
 
     @Test
     public void testSwapReshape() {
-        INDArray n2 = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[] {3, 5, 2});
+        INDArray n2 = Nd4j.create(Nd4j.linspace(1, 30, 30, DataType.FLOAT).data(), new int[] {3, 5, 2});
         INDArray swapped = n2.swapAxes(n2.shape().length - 1, 1);
         INDArray firstSlice2 = swapped.slice(0).slice(0);
         INDArray oneThreeFiveSevenNine = Nd4j.create(new float[] {1, 3, 5, 7, 9});

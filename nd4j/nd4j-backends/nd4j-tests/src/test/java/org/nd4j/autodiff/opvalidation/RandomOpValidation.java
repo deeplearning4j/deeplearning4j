@@ -51,12 +51,13 @@ public class RandomOpValidation extends BaseOpValidation {
 
     @Test
     public void testRandomOpsSDVarShape() {
+        Nd4j.getRandom().setSeed(12345);
         List<String> failed = new ArrayList<>();
 
         for (double[] shape : Arrays.asList(new double[]{1000.0}, new double[]{100, 10}, new double[]{40, 5, 5})) {
 
             for (int i = 0; i < 4; i++) {
-                INDArray arr = Nd4j.trueVector(shape);
+                INDArray arr = Nd4j.create(shape).castTo(DataType.INT);
 
                 Nd4j.getRandom().setSeed(12345);
                 SameDiff sd = SameDiff.create();
@@ -96,7 +97,7 @@ public class RandomOpValidation extends BaseOpValidation {
                             double mean = in.meanNumber().doubleValue();
                             double min = in.minNumber().doubleValue();
                             double max = in.maxNumber().doubleValue();
-                            int sum0 = Transforms.not(in.dup()).sumNumber().intValue();
+                            int sum0 = Transforms.not(in.castTo(DataType.BOOL)).castTo(DataType.DOUBLE).sumNumber().intValue();
                             int sum1 = in.sumNumber().intValue();
                             if ((in.length() == 1 && min == max && (min == 0 || min == 1)) ||
                                     (Math.abs(mean - 0.5) < 0.1 && min == 0 && max == 1 && (sum0 + sum1) == in.length()))
@@ -170,7 +171,7 @@ public class RandomOpValidation extends BaseOpValidation {
                             double mean = in.meanNumber().doubleValue();
                             double min = in.minNumber().doubleValue();
                             double max = in.maxNumber().doubleValue();
-                            int sum0 = Transforms.not(in.dup()).sumNumber().intValue();
+                            int sum0 = Transforms.not(in.castTo(DataType.BOOL)).castTo(DataType.DOUBLE).sumNumber().intValue();
                             int sum1 = in.sumNumber().intValue();
                             if ((in.length() == 1 && min == max && (min == 0 || min == 1)) ||
                                     (Math.abs(mean - 0.5) < 0.1 && min == 0 && max == 1 && (sum0 + sum1) == in.length()))
@@ -184,7 +185,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double stdev = in.std(true).getDouble(0);
-                            if (in.length() == 1 || (Math.abs(mean - 1) < 0.1 && Math.abs(stdev - 2) < 0.1))
+                            if (in.length() == 1 || (Math.abs(mean - 1) < 0.2 && Math.abs(stdev - 2) < 0.1))
                                 return null;
                             return "Failed: mean = " + mean + ", stdev = " + stdev;
                         };
@@ -239,7 +240,7 @@ public class RandomOpValidation extends BaseOpValidation {
                             INDArray log = Transforms.log(in, true);
                             double mean = log.meanNumber().doubleValue();
                             double stdev = log.std(true).getDouble(0);
-                            if (in.length() == 1 || (Math.abs(mean - 1) < 0.1 && Math.abs(stdev - 2) < 0.1))
+                            if (in.length() == 1 || (Math.abs(mean - 1) < 0.2 && Math.abs(stdev - 2) < 0.1))
                                 return null;
                             return "Failed: mean = " + mean + ", stdev = " + stdev;
                         };
@@ -297,7 +298,7 @@ public class RandomOpValidation extends BaseOpValidation {
 //        OpTestCase tc = new OpTestCase(new DistributionUniform(arr, Nd4j.createUninitialized(new long[]{100}), 0, 1));
         OpTestCase tc = new OpTestCase(new RandomBernoulli(arr, Nd4j.createUninitialized(new long[]{100}), 0.5));
 
-        tc.expectedOutput(0, LongShapeDescriptor.fromShape(new long[]{100}, DataType.DOUBLE), in -> {
+        tc.expectedOutput(0, LongShapeDescriptor.fromShape(new long[]{100}, DataType.FLOAT), in -> {
             double min = in.minNumber().doubleValue();
             double max = in.maxNumber().doubleValue();
             double mean = in.meanNumber().doubleValue();
@@ -349,9 +350,9 @@ public class RandomOpValidation extends BaseOpValidation {
         };
 
         List<INDArray> exp = Arrays.asList(
-                Nd4j.trueVector(new double[]{3, 6, 9, 12, 15}),
-                Nd4j.trueVector(new double[]{3, 2.5, 2, 1.5}),
-                Nd4j.trueVector(new double[]{0, 1, 2, 3, 4}));
+                Nd4j.create(new double[]{3, 6, 9, 12, 15}).castTo(DataType.FLOAT),
+                Nd4j.create(new double[]{3, 2.5, 2, 1.5}).castTo(DataType.FLOAT),
+                Nd4j.create(new double[]{0, 1, 2, 3, 4}).castTo(DataType.FLOAT));
 
         for(int i=0; i<testCases.length; i++ ){
             double[] d = testCases[i];

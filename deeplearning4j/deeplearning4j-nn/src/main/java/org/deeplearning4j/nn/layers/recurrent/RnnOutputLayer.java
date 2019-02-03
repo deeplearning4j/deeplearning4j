@@ -130,8 +130,6 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         applyDropOutIfNecessary(training, workspaceMgr);
         INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input, LayerWorkspaceMgr.noWorkspaces(), ArrayType.FF_WORKING_MEM);
 
-        //INDArray act2d = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(),
-        //        input2d.mmul(W).addiRowVector(b)));
         INDArray act2d = layerConf().getActivationFn().getActivation(input2d.mmul(W).addiRowVector(b), training);
         if (maskArray != null) {
             if(!maskArray.isColumnVectorOrScalar() || Arrays.equals(maskArray.shape(), act2d.shape())){
@@ -185,12 +183,11 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
     /**Compute the score for each example individually, after labels and input have been set.
      *
-     * @param fullNetworkL1 L1 regularization term for the entire network (or, 0.0 to not include regularization)
-     * @param fullNetworkL2 L2 regularization term for the entire network (or, 0.0 to not include regularization)
+     * @param fullNetRegTerm Regularization score term for the entire network (or, 0.0 to not include regularization)
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
+    public INDArray computeScoreForExamples(double fullNetRegTerm, LayerWorkspaceMgr workspaceMgr) {
         //For RNN: need to sum up the score over each time step before returning.
 
         if (input == null || labels == null)
@@ -206,11 +203,10 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
         // FIXME: int cast
         INDArray scoreArrayTs = TimeSeriesUtils.reshapeVectorToTimeSeriesMask(scoreArray, (int) input.size(0));
-        INDArray summedScores = scoreArrayTs.sum(1);
+        INDArray summedScores = scoreArrayTs.sum(true, 1);
 
-        double l1l2 = fullNetworkL1 + fullNetworkL2;
-        if (l1l2 != 0.0) {
-            summedScores.addi(l1l2);
+        if (fullNetRegTerm != 0.0) {
+            summedScores.addi(fullNetRegTerm);
         }
 
         return summedScores;

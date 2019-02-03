@@ -23,9 +23,7 @@ import org.nd4s.Implicits._
 object MapOps {
   def apply(x: INDArray, f: Double => Double): MapOps = new MapOps(x, f)
 }
-class MapOps(_x: INDArray, f: Double => Double)
-    extends BaseScalarOp(_x, null, _x, _x.length().toInt, 0)
-    with LeftAssociativeBinaryOp {
+class MapOps(_x: INDArray, f: Double => Double) extends BaseScalarOp(_x, null, _x, 0) with LeftAssociativeBinaryOp {
   x = _x
   def this() {
     this(0.toScalar, null)

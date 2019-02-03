@@ -39,16 +39,12 @@ public class Norm1 extends BaseReduceFloatOp {
     public Norm1() {
     }
 
-    public Norm1(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public Norm1(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
-    public Norm1(INDArray x) {
-        super(x);
-    }
-
-    public Norm1(INDArray x, INDArray z) {
-        super(x, null, z);
+    public Norm1(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
     @Override

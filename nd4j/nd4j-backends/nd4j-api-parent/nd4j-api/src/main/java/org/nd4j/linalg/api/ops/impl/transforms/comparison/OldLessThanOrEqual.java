@@ -67,12 +67,8 @@ public class OldLessThanOrEqual extends BaseTransformBoolOp {
         super(x, z);
     }
 
-    public OldLessThanOrEqual(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public OldLessThanOrEqual(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public OldLessThanOrEqual(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
     }
 
     public OldLessThanOrEqual(INDArray x) {

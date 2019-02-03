@@ -137,6 +137,9 @@ namespace nd4j {
         math_def FORCEINLINE T p_atan(T value);
 
         template <typename T>
+        math_def FORCEINLINE T p_tan(T value);
+
+        template <typename T>
         math_def FORCEINLINE T p_atanh(T value);
 
         template <typename T>
@@ -686,6 +689,29 @@ namespace nd4j {
         template <>
         math_def FORCEINLINE double p_atan(double value) {
             return atan(value);
+        }
+
+
+/////////
+
+        template <>
+        math_def FORCEINLINE float p_tan(float value) {
+            return tanf(value);
+        }
+
+        template <>
+        math_def FORCEINLINE float16 p_tan(float16 val) {
+            return static_cast<float16>(tanf((float) val));
+        }
+
+        template <>
+        math_def FORCEINLINE bfloat16 p_tan(bfloat16 val) {
+            return static_cast<bfloat16>(tanf((float) val));
+        }
+
+        template <>
+        math_def FORCEINLINE double p_tan(double value) {
+            return tan(value);
         }
 
 /////////

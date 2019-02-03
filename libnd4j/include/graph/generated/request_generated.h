@@ -35,7 +35,7 @@ struct FlatInferenceRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table
     return VerifyTableStart(verifier) &&
            VerifyField<int64_t>(verifier, VT_ID) &&
            VerifyOffset(verifier, VT_VARIABLES) &&
-           verifier.Verify(variables()) &&
+           verifier.VerifyVector(variables()) &&
            verifier.VerifyVectorOfTables(variables()) &&
            VerifyOffset(verifier, VT_CONFIGURATION) &&
            verifier.VerifyTable(configuration()) &&

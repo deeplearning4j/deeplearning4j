@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 
 	auto input   = INPUT_VARIABLE(0);
     auto indices = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
-	auto output  = OUTPUT_VARIABLE(0);
+	auto output  = OUTPUT_VARIABLE(0);	
 
 	const int numOfIntArgs = block.numI();
 
@@ -93,24 +93,23 @@ DECLARE_SHAPE_FN(gather) {
     
     	int indicesRank = shape::rank(indicesShapeInfo);
         
-    	if(shape::isScalar(indicesShapeInfo))
-    		indicesRank = 0;
-    	else if(shape::isVector(indicesShapeInfo))
-    		indicesRank = 1;
+    	// if(shape::isScalar(indicesShapeInfo))
+    	// 	indicesRank = 0;
+    	// else if(shape::isVector(indicesShapeInfo))
+    	// 	indicesRank = 1;
 
-    	int outputRank = inputRank + indicesRank - 1;
+    	int outputRank = inputRank + indicesRank - 1;    	
     	ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), Nd4jLong);
+
     	// fill output shapeInfo
     	outputShapeInfo[0] = outputRank;
     	int shapeIdx = 1;    
-    	for(int i = 0; i < axis; ++i)
-    		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
     	
-		if(!shape::isScalar(indicesShapeInfo) && shape::isVector(indicesShapeInfo))
-    		outputShapeInfo[shapeIdx++] = shape::length(indicesShapeInfo);
-    	else if(!shape::isScalar(indicesShapeInfo))
-    		for(int i = 0; i < indicesShapeInfo[0]; ++i)
-    			outputShapeInfo[shapeIdx++] = indicesShapeInfo[i+1];
+    	for(int i = 0; i < axis; ++i)    		
+    		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
+
+		for(int i = 0; i < indicesRank; ++i)
+    		outputShapeInfo[shapeIdx++] = indicesShapeInfo[i+1];
 
     	for(int i = axis+1; i < inputRank; ++i)
     		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];

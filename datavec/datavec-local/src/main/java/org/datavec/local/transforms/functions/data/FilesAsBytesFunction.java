@@ -26,7 +26,7 @@ import org.nd4j.linalg.primitives.Pair;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**A PairFunction that simply loads bytes[] from a a PortableDataStream, and wraps it (and the String key)
+/**A PairFunction that simply loads bytes[] from a PortableDataStream, and wraps it (and the String key)
  * in Text and BytesWritable respectively.
  * @author Alex Black
  */

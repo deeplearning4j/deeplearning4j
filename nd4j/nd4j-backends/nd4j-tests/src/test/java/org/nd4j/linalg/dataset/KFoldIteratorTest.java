@@ -16,8 +16,6 @@
 
 package org.nd4j.linalg.dataset;
 
-import java.util.HashSet;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -27,6 +25,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.KFoldIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+
+import java.util.HashSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -170,9 +170,7 @@ public class KFoldIteratorTest extends BaseNd4jTest {
             eachBatchSize[0] = 0;
             kBatchFeats = new INDArray[batchSizes.length];
             kBatchLabels = new INDArray[batchSizes.length];
-            for (int i = 0; i < dataRank; i++) {
-                eachBatchSize[i + 1] = dataShape[i];
-            }
+            System.arraycopy(dataShape, 0, eachBatchSize, 1, dataRank);
             for (int i = 0; i < batchSizes.length; i++) {
                 eachBatchSize[0] = batchSizes[i];
                 INDArray currentBatchF = Nd4j.rand(eachBatchSize);

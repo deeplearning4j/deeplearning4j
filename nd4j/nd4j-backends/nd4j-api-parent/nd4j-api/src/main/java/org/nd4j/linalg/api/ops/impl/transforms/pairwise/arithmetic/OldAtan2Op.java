@@ -45,34 +45,18 @@ public class OldAtan2Op extends BaseTransformAnyOp {
         super(sameDiff);
     }
 
-    public OldAtan2Op(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
     public OldAtan2Op(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public OldAtan2Op(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public OldAtan2Op(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public OldAtan2Op() {}
 
-    public OldAtan2Op(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public OldAtan2Op(INDArray x, INDArray y) {
-        super(x, y, x, x.lengthLong());
+        super(x, y, x);
     }
 
     public OldAtan2Op(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
     }
 
     @Override
@@ -94,17 +78,6 @@ public class OldAtan2Op extends BaseTransformAnyOp {
     public String tensorflowName() {
         return "ATan2";
     }
-
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (y == null)
-            throw new IllegalArgumentException("No components for atan2");
-    }
-
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

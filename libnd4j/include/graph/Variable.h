@@ -38,6 +38,8 @@ namespace nd4j {
             nd4j::NDArray *_ndarray = nullptr;
             std::string _name;
 
+            std::vector<Nd4jLong> _shape;
+
             bool _external = false;
             bool _readOnly = false;
             bool _placeholder = false;
@@ -101,6 +103,8 @@ namespace nd4j {
 
             std::string *getName();
             void setName(std::string *name);
+
+            std::vector<Nd4jLong>& shape();
 
 #ifndef __JAVACPP_HACK__
             /**

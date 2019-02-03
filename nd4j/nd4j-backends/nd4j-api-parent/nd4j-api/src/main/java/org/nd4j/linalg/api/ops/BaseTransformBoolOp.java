@@ -48,11 +48,6 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
         super(sameDiff, i_v, inPlace);
     }
 
-    public BaseTransformBoolOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-
     public BaseTransformBoolOp(SameDiff sameDiff) {
         super(sameDiff);
     }
@@ -73,14 +68,13 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
         super(x, z);
     }
 
+    public BaseTransformBoolOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
+    }
+
     public BaseTransformBoolOp() {
         super();
     }
-
-    public BaseTransformBoolOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
 
     public BaseTransformBoolOp(INDArray x) {
         super(x);
@@ -116,16 +110,16 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        val ret = new ArrayList<LongShapeDescriptor>(1);
-        if(arg() == null)
-            throw new ND4JIllegalStateException("No arg found for op!");
-
-        val arr = sameDiff.getArrForVarName(arg().getVarName());
-        if(arr == null)
+        if(x == null)
             return Collections.emptyList();
+        return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), DataType.BOOL));
+    }
 
-        ret.add(LongShapeDescriptor.fromShape(arr.shape(), DataType.BOOL));
-        this.n = arr.length();
-        return ret;
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //All bool tranform ops: always bool output type
+        SDVariable[] args = args();
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == args.length, "Expected exactly %s input datatype(s) for %s, got input %s", args.length, getClass(), dataTypes);
+        return Collections.singletonList(DataType.BOOL);
     }
 }

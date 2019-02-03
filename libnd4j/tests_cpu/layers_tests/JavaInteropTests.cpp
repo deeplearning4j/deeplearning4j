@@ -118,7 +118,7 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
     Nd4jLong iArgs[] = {1};
     auto hash = op.getOpHash();
 
-    auto shapeList = nativeOps.calculateOutputShapes(nullptr, hash, inputBuffers, inputShapes, 2, nullptr, 0, iArgs, 1);
+    auto shapeList = nativeOps.calculateOutputShapes(nullptr, hash, inputBuffers, inputShapes, 2, nullptr, 0, iArgs, 1, nullptr, 0);
 
     ASSERT_EQ(3, shapeList->size());
 
@@ -408,6 +408,96 @@ TEST_F(JavaInteropTests, Test_Synonyms_3) {
     ASSERT_EQ(nameExp, nameRef);
     ASSERT_EQ(nameRef, name);
 }
+
+TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
+    int inOutH = 35;
+    int inOutW = 35;
+    int inOutC = 192;
+
+    auto x = NDArrayFactory::create<float>('c', {1, inOutH, inOutW, inOutC});
+    auto z = NDArrayFactory::create<float>('c', {1, inOutH, inOutW, inOutC});
+    x.linspace(1.0);
+    z.linspace(1.0);
+
+    NativeOps nativeOps;
+    nd4j::ops::avgpool2d op;
+    //auto result = op.execute({&x}, {}, {3,3, 1,1, 0,0, 1,1, 1, 0, 1});
+
+    Nd4jLong exp[] = {3,3, 1,1, 0,0, 1,1, 1, 0, 1};
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
+
+    auto result = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 11, nullptr, 0, false);
+
+    ASSERT_EQ(Status::OK(), result);
+
+    int totalPadHeight = (inOutH - 1) * 1 + 3 - inOutH;
+    int padTop = totalPadHeight / 2;
+    int padBottom = totalPadHeight - totalPadHeight / 2;
+
+    int k = 3;
+
+    auto m = NDArrayFactory::create<float>('c', {1, inOutH, inOutW, inOutC});
+    auto c = NDArrayFactory::create<float>('c', {1, inOutH, inOutW, inOutC});
+
+    for (int h = 0; h < inOutH; h++) {
+        for (int w = 0; w < inOutW; w++) {
+            int hFrom = h - padTop;
+            int wFrom = w - padBottom;
+
+            int hTo = hFrom + k;
+            int wTo = wFrom + k;
+
+            hFrom = nd4j::math::nd4j_max<int>(0, hFrom);
+            wFrom = nd4j::math::nd4j_max<int>(0, wFrom);
+
+            hTo = nd4j::math::nd4j_min<int>(inOutH, hTo);
+            wTo = nd4j::math::nd4j_min<int>(inOutW, wTo);
+
+            int idxOut[4];
+            int idxIn[4];
+            for (int ch = 0; ch < inOutC; ch++) {
+                idxOut[1] = h;
+                idxOut[2] = w;
+                idxOut[3] = ch;
+                idxIn[3] = ch;
+
+                for (int kh = hFrom; kh < hTo; kh++) {
+                    for (int kw = wFrom; kw < wTo; kw++) {
+                        idxIn[1] = kh;
+                        idxIn[2] = kw;
+
+                        auto inVal = x.e<float>(0, kh, kw, ch);
+                        m.p(0, h, w, ch, inVal + m.e<float>(0, h, w, ch));
+                        c.p(0, h, w, ch, 1 + c.e<int>(0, h, w, ch));
+                    }
+                }
+            }
+        }
+    }
+    m /= c;
+
+    //z.printIndexedBuffer("z buffer", 100);
+    //m.printIndexedBuffer("m buffer", 100);
+    int cnt = 0;
+    int lim = 10;
+    for (int e = 0; e < z.lengthOf() && cnt < lim; e++) {
+        auto _m = m.e<float>(e);
+        auto _z = z.e<float>(e);
+        auto eq = nd4j::math::nd4j_eq<float>(_m, _z, 1e-5);
+        if (!eq) {
+            nd4j_printf("Difference at element e [%i]: <%f> vs <%f>\n", e, _m, _z);
+            cnt++;
+        }
+    }
+
+    ASSERT_EQ(m, z);
+}
+
 /*
 TEST_F(JavaInteropTests, Test_GraphReuse_1) {
     NativeOps nativeOps;
@@ -637,8 +727,8 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_2) {
 TEST_F(JavaInteropTests, Test_Inplace_Outputs_3) {
     auto input = NDArrayFactory::create<float>('c', {2, 3, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
     auto indices = NDArrayFactory::create<Nd4jLong>('c', {1, 6},   {0,1, 2,2, 1,2});
-    auto output = NDArrayFactory::create<float>('f', {2, 6, 4});
-    auto e = NDArrayFactory::create<float>('c', {2, 6, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16, 17,18,19,20, 21,22,23,24, 21,22,23,24, 17,18,19,20, 21,22,23,24});
+    auto output = NDArrayFactory::create<float>('f', {2, 1, 6, 4});
+    auto e = NDArrayFactory::create<float>('c', {2, 1, 6, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16, 17,18,19,20, 21,22,23,24, 21,22,23,24, 17,18,19,20, 21,22,23,24});
 
     nd4j::ops::gather op;
 
@@ -665,13 +755,13 @@ TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
     auto y = NDArrayFactory::create<float>('c', {3, 4, 5});
     auto z = NDArrayFactory::create<float>('c', {5});
 
-    std::vector<int> dims = {0, 1};
+    auto dims = NDArrayFactory::create<int>('c', {2}, {0, 1});
 
     NativeOps nativeOps;
     nativeOps.execReduce3(nullptr, 2, x.buffer(), x.shapeInfo(), nullptr, nullptr, nullptr, 
                         y.buffer(), y.shapeInfo(), nullptr, nullptr,
                         z.buffer(), z.shapeInfo(), nullptr, nullptr,
-                        dims.data(), (int) dims.size(), nullptr, nullptr, nullptr, nullptr);
+                        dims.buffer(), dims.shapeInfo(), dims.specialBuffer(), dims.specialShapeInfo(), nullptr, nullptr, nullptr, nullptr);
 }
 /*
 TEST_F(JavaInteropTests, Test_SimpleIf_Output) {
@@ -807,6 +897,47 @@ TEST_F(JavaInteropTests, Test_Mixed_Add_1) {
     ASSERT_EQ(arrayE, arrayZ);
 }
 
+TEST_F(JavaInteropTests, Test_Add_1) {
+    auto x = NDArrayFactory::create<int>('c', {5}, {1, 1, 1, 1, 1});
+    auto y = NDArrayFactory::create<int>('c', {5}, {1, 1, 1, 1, 1});
+    auto e = NDArrayFactory::create<int>('c', {5}, {2, 2, 2, 2, 2});
+
+    NativeOps nativeOps;
+    nd4j::ops::add op;
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), y.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), y.getShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) x.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) x.getShapeInfo()};
+
+    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+
+    ASSERT_EQ(e, x);
+}
+
+TEST_F(JavaInteropTests, zeta_test10) {
+
+    auto x = NDArrayFactory::create<double>('c', {3, 4}, {1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.01, 1.11, 1.12});
+    auto q = NDArrayFactory::create<double>('c', {3, 4}, {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.01, 0.11, 0.12});
+    auto z = NDArrayFactory::create<double>('c', {3, 4});
+
+    auto e = NDArrayFactory::create<double>('c', {3, 4}, {23.014574, 12.184081, 8.275731, 6.1532226, 4.776538, 3.7945523, 3.0541048, 2.4765317, 2.0163891, 205.27448, 21.090889, 19.477398});
+
+    NativeOps nativeOps;
+    nd4j::ops::zeta op;
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), q.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), q.getShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
+
+    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+
+    ASSERT_EQ(e, z);
+}
+
 TEST_F(JavaInteropTests, Test_Is_Max_1) {
     auto arrayX = NDArrayFactory::create<float>({1, 2, 1, 1});
     auto arrayZ = NDArrayFactory::create<bool>({0, 0, 0, 0});
@@ -869,7 +1000,7 @@ TEST_F(JavaInteropTests, Test_Boolean_Broadcastables_1) {
 
     nd4j::ops::greater_equal op;
     NativeOps ops;
-    auto shapeList = ops.calculateOutputShapes(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, nullptr, 0, nullptr, 0);
+    auto shapeList = ops.calculateOutputShapes(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, nullptr, 0, nullptr, 0, nullptr, 0);
 
     delete shapeList;
 }

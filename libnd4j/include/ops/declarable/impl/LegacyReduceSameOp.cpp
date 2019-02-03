@@ -21,6 +21,7 @@
 #include <ops/declarable/LegacyReduceSameOp.h>
 #include <helpers/TAD.h>
 #include <helpers/ShapeUtils.h>
+#include <Status.h>
 
 namespace nd4j {
     namespace ops {
@@ -43,22 +44,23 @@ namespace nd4j {
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
             nd4j_debug("Executing LegacyReduceSameOp: [%i]\n", opNum);
 
+            auto axis = *block.getAxis();
             bool allAxes = false;
 
             if (block.width() == 1) {
                 auto z = OUTPUT_VARIABLE(0);
 
-                if (block.getIArguments()->size() == x->rankOf())
+                if (axis.size() == x->rankOf())
                     allAxes = true;
 
 //                if ((block.getIArguments()->size() == 0) ||
 //                    (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
-                if (block.getAxis()->empty() || allAxes) {
+                if (axis.empty() || allAxes) {
                     // scalar
                     NativeOpExcutioner::execReduceSameScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
                 } else {
                     // TAD
-                    std::vector<int> dims(*block.getAxis());
+                    std::vector<int> dims(axis);
 
                     for (int e = 0; e < dims.size(); e++)
                         if (dims[e] < 0)
@@ -118,7 +120,7 @@ namespace nd4j {
                 }
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         /**

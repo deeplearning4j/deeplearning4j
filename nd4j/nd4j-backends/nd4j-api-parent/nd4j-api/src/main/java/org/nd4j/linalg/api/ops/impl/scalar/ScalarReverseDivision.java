@@ -34,14 +34,13 @@ public class ScalarReverseDivision extends BaseScalarOp {
     public ScalarReverseDivision() {
     }
 
-    public ScalarReverseDivision(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public ScalarReverseDivision(INDArray x, INDArray y, INDArray z, Number num) {
+        super(x, y, z, num);
     }
 
     public ScalarReverseDivision(INDArray x, Number num) {
         super(x, num);
     }
-
 
     public ScalarReverseDivision(SameDiff sameDiff, SDVariable i_v, Number scalar) {
         super(sameDiff, i_v, scalar);
@@ -49,14 +48,6 @@ public class ScalarReverseDivision extends BaseScalarOp {
 
     public ScalarReverseDivision(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
-    }
-
-    public ScalarReverseDivision(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, inPlace, extraArgs);
-    }
-
-    public ScalarReverseDivision(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, extraArgs);
     }
 
     @Override

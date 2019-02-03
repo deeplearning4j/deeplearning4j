@@ -1,9 +1,11 @@
 package org.nd4j.autodiff.samediff.serde;
 
 import com.google.flatbuffers.FlatBufferBuilder;
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
 import org.nd4j.graph.*;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
@@ -11,6 +13,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -29,8 +32,31 @@ public class FlatBuffersMapper {
      * @param type
      * @return
      */
-    public static byte getDataTypeAsByte(org.nd4j.linalg.api.buffer.DataType type) {
-        return SameDiff.getDataTypeAsByte(type);
+    public static byte getDataTypeAsByte(@NonNull org.nd4j.linalg.api.buffer.DataType type) {
+        switch (type) {
+            case FLOAT:
+                return DataType.FLOAT;
+            case DOUBLE:
+                return DataType.DOUBLE;
+            case HALF:
+                return DataType.HALF;
+            case INT:
+                return DataType.INT32;
+            case LONG:
+                return DataType.INT64;
+            case BOOL:
+                return DataType.BOOL;
+            case SHORT:
+                return DataType.INT16;
+            case BYTE:
+                return DataType.INT8;
+            case UBYTE:
+                return DataType.UINT8;
+            case UTF8:
+                return DataType.UTF8;
+            default:
+                throw new ND4JIllegalStateException("Unknown or unsupported DataType used: [" + type + "]");
+        }
     }
 
     /**
@@ -40,7 +66,28 @@ public class FlatBuffersMapper {
      * @return
      */
     public static org.nd4j.linalg.api.buffer.DataType getDataTypeFromByte(byte val) {
-        return SameDiff.getDataTypeFromByte(val);
+        if (val == DataType.FLOAT)
+            return org.nd4j.linalg.api.buffer.DataType.FLOAT;
+        else if (val == DataType.DOUBLE)
+            return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
+        else if (val == DataType.HALF)
+            return  org.nd4j.linalg.api.buffer.DataType.HALF;
+        else if (val == DataType.INT32)
+            return org.nd4j.linalg.api.buffer.DataType.INT;
+        else if (val == DataType.INT64)
+            return org.nd4j.linalg.api.buffer.DataType.LONG;
+        else if (val == DataType.INT8)
+            return org.nd4j.linalg.api.buffer.DataType.BYTE;
+        else if (val == DataType.BOOL)
+            return org.nd4j.linalg.api.buffer.DataType.BOOL;
+        else if (val == DataType.UINT8)
+            return org.nd4j.linalg.api.buffer.DataType.UBYTE;
+        else if (val == DataType.INT16)
+            return org.nd4j.linalg.api.buffer.DataType.SHORT;
+        else if (val == DataType.UTF8)
+            return org.nd4j.linalg.api.buffer.DataType.UTF8;
+        else
+            throw new RuntimeException("Unknown datatype: " + val);
     }
 
 
@@ -84,8 +131,14 @@ public class FlatBuffersMapper {
                 return name2.getHash();
             //return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
 
-        } else
-            return (long) Nd4j.getOpFactory().getOpNumByName(name);
+        } else {
+            try {
+                DifferentialFunction op =  DifferentialFunctionClassHolder.getInstance().getInstance(name);
+                return  op.opNum();
+            } catch (Exception e) {
+                throw new RuntimeException("Could not find op number for operation: [" + name + "]",e);
+            }
+        }
     }
 
 
@@ -96,7 +149,52 @@ public class FlatBuffersMapper {
      * @return Op type
      */
     public static Op.Type getTypeFromByte(byte type) {
-        return SameDiff.getTypeFromByte(type);
+        switch (type) {
+            case OpType.SCALAR:
+                return Op.Type.SCALAR;
+            case OpType.SCALAR_BOOL:
+                return Op.Type.SCALAR_BOOL;
+            case OpType.BROADCAST:
+                return Op.Type.BROADCAST;
+            case OpType.BROADCAST_BOOL:
+                return Op.Type.BROADCAST_BOOL;
+            case OpType.TRANSFORM_BOOL:
+                return Op.Type.TRANSFORM_BOOL;
+            case OpType.TRANSFORM_FLOAT:
+                return Op.Type.TRANSFORM_FLOAT;
+            case OpType.TRANSFORM_SAME:
+                return Op.Type.TRANSFORM_SAME;
+            case OpType.TRANSFORM_ANY:
+                return Op.Type.TRANSFORM_ANY;
+            case OpType.TRANSFORM_STRICT:
+                return Op.Type.TRANSFORM_STRICT;
+            case OpType.REDUCE_BOOL:
+                return Op.Type.REDUCE_BOOL;
+            case OpType.REDUCE_LONG:
+                return Op.Type.REDUCE_LONG;
+            case OpType.REDUCE_FLOAT:
+                return Op.Type.REDUCE_FLOAT;
+            case OpType.REDUCE_SAME:
+                return Op.Type.REDUCE_SAME;
+            case OpType.REDUCE_3:
+                return Op.Type.REDUCE3;
+            case OpType.INDEX_REDUCE:
+                return Op.Type.INDEXREDUCE;
+            case OpType.RANDOM:
+                return Op.Type.RANDOM;
+            case OpType.LOGIC:
+                return Op.Type.META;
+            case OpType.CUSTOM:
+                return Op.Type.CUSTOM;
+            case OpType.PAIRWISE:
+                return Op.Type.PAIRWISE;
+            case OpType.PAIRWISE_BOOL:
+                return Op.Type.PAIRWISE_BOOL;
+            case OpType.SUMMARYSTATS:
+                return Op.Type.SUMMARYSTATS;
+            default:
+                throw new UnsupportedOperationException("Unknown op type passed in: " + type);
+        }
     }
 
     /**
@@ -106,7 +204,63 @@ public class FlatBuffersMapper {
      * @return Byte representing the op type
      */
     public static byte getFlatOpType(Op.Type type) {
-        return SameDiff.getFlatOpType(type);
+        switch (type) {
+            case SCALAR:
+                return OpType.SCALAR;
+            case SCALAR_BOOL:
+                return OpType.SCALAR_BOOL;
+            case BROADCAST:
+                return OpType.BROADCAST;
+            case BROADCAST_BOOL:
+                return OpType.BROADCAST_BOOL;
+            case TRANSFORM_BOOL:
+                return OpType.TRANSFORM_BOOL;
+            case TRANSFORM_FLOAT:
+                return OpType.TRANSFORM_FLOAT;
+            case TRANSFORM_SAME:
+                return OpType.TRANSFORM_SAME;
+            case TRANSFORM_ANY:
+                return OpType.TRANSFORM_ANY;
+            case TRANSFORM_STRICT:
+                return OpType.TRANSFORM_STRICT;
+            case SPECIAL:
+                return OpType.TRANSFORM_STRICT;
+            case VARIANCE:
+            case REDUCE_FLOAT:
+                return OpType.REDUCE_FLOAT;
+            case REDUCE_BOOL:
+                return OpType.REDUCE_BOOL;
+            case REDUCE_SAME:
+                return OpType.REDUCE_SAME;
+            case REDUCE_LONG:
+                return OpType.REDUCE_LONG;
+            case REDUCE3:
+                return OpType.REDUCE_3;
+            case INDEXREDUCE:
+                return OpType.INDEX_REDUCE;
+            case RANDOM:
+                return OpType.RANDOM;
+            case MERGE:
+            case CONDITIONAL:
+            case LOOP:
+            case RETURN:
+            case ENTER:
+            case EXIT:
+            case NEXT_ITERATION:
+            case LOOP_COND:
+            case IF:
+                return OpType.LOGIC;
+            case CUSTOM:
+                return OpType.CUSTOM;
+            case PAIRWISE:
+                return OpType.PAIRWISE;
+            case PAIRWISE_BOOL:
+                return OpType.PAIRWISE_BOOL;
+            case SUMMARYSTATS:
+                return OpType.SUMMARYSTATS;
+            default:
+                throw new UnsupportedOperationException("Unknown op type passed in: " + type);
+        }
     }
 
 
@@ -161,11 +315,19 @@ public class FlatBuffersMapper {
         for( int i=0; i<extraInteger.length; i++ ){
             extraInteger[i] = fn.extraInteger(i);
         }
+        boolean[] extraBools = new boolean[fn.extraBoolsLength()];
+        for( int i=0; i<extraBools.length; i++ ){
+            extraBools[i] = fn.extraBools(i);
+        }
         int[] dimensions = new int[fn.dimensionsLength()];
         for( int i=0; i<dimensions.length; i++ ){
             dimensions[i] = fn.dimensions(i);
         }
-        //float scalar = fn.scalar();
+        FlatArray fa = fn.scalar();
+        INDArray scalar = null;
+        if(fa != null){
+            scalar = Nd4j.createFromFlatArray(fa);
+        }
 
         FlatProperties[] flatProperties = new FlatProperties[fn.propertiesLength()];
         for( int i=0; i<flatProperties.length; i++ ){
@@ -194,6 +356,7 @@ public class FlatBuffersMapper {
             //op.addTArgument();
             ((CustomOp) op).addIArgument(extraInteger);
             ((CustomOp) op).addTArgument(extraParams);
+            ((CustomOp) op).addBArgument(extraBools);
 
             op.setPropertiesForFunction(props);
             return op;
@@ -214,32 +377,29 @@ public class FlatBuffersMapper {
                 }
                 op.setExtraArgs(extraParamsObj);
             }
-            if(opType == Op.Type.SCALAR){
+            if(opType == Op.Type.SCALAR || opType == Op.Type.SCALAR_BOOL){
                 ScalarOp sOp = (ScalarOp)op;
-                //sOp.setScalar(scalar);
-            } else if(opType == Op.Type.REDUCE_FLOAT || opType == Op.Type.REDUCE3 || opType == Op.Type.SUMMARYSTATS || opType == Op.Type.VARIANCE) {
-                val ba = (BaseReduceFloatOp) op; //Reduce3 ops are also all BaseAccumulations
+                sOp.setScalar(scalar);
+            } else if(opType == Op.Type.REDUCE_FLOAT || opType == Op.Type.REDUCE3 || opType == Op.Type.SUMMARYSTATS || opType == Op.Type.VARIANCE
+                    || opType == Op.Type.REDUCE_BOOL || opType == Op.Type.REDUCE_LONG || opType == Op.Type.REDUCE_SAME) {
+                val ba = (BaseReduceOp) op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
+                ba.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
                 ba.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
-            } else if (opType == Op.Type.REDUCE_BOOL) {
-                throw new UnsupportedOperationException();
-            } else if (opType == Op.Type.REDUCE_LONG) {
-                throw new UnsupportedOperationException();
-            } else if (opType == Op.Type.REDUCE_SAME) {
-                throw new UnsupportedOperationException();
-            } else if (opType == Op.Type.TRANSFORM_BOOL) {
-                throw new UnsupportedOperationException();
-            } else if (opType == Op.Type.TRANSFORM_FLOAT) {
-                throw new UnsupportedOperationException();
-            } else if (opType == Op.Type.TRANSFORM_SAME) {
-                throw new UnsupportedOperationException();
-            } else if (opType == Op.Type.TRANSFORM_STRICT) {
-                throw new UnsupportedOperationException();
             } else if(opType == Op.Type.INDEXREDUCE){
                 BaseIndexAccumulation bia = (BaseIndexAccumulation)op;
                 bia.setDimensions(dimensions);
+                bia.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
                 bia.setNewFormat(true);  //Always "new" format (i.e., rank 0 scalars, not rank 2) for SameDiff-based exec
             }
+            /*
+            Op types that don't need any extra/special mapping:
+            TRANSFORM_BOOL - BooleanNot, IsFinite, IsInf, IsNaN, MatchConditionTransorm
+            TRANSFORM_ANY - IsMax, Assign
+            TRANSFORM_FLOAT - Histogram, Sqrt
+            TRANSFORM_STRICT - Cos, Log, Sigmoid, etc
+            TRANSFORM_SAME - Abs, Ceil, etc
+             */
 
             ((DifferentialFunction)op).setPropertiesForFunction(props);
             return (DifferentialFunction)op;
@@ -477,5 +637,35 @@ public class FlatBuffersMapper {
             }
         }
         return out;
+    }
+
+    public static byte toVarType(VariableType variableType){
+        switch (variableType){
+            case VARIABLE:
+                return VarType.VARIABLE;
+            case CONSTANT:
+                return VarType.CONSTANT;
+            case ARRAY:
+                return VarType.ARRAY;
+            case PLACEHOLDER:
+                return VarType.PLACEHOLDER;
+            default:
+                throw new RuntimeException("Unknown variable type: " + variableType);
+        }
+    }
+
+    public static VariableType fromVarType(byte varType){
+        switch (varType){
+            case VarType.VARIABLE:
+                return VariableType.VARIABLE;
+            case VarType.CONSTANT:
+                return VariableType.CONSTANT;
+            case VarType.ARRAY:
+                return VariableType.ARRAY;
+            case VarType.PLACEHOLDER:
+                return VariableType.PLACEHOLDER;
+            default:
+                throw new IllegalStateException("Unknown VarType byte value:" + varType);
+        }
     }
 }

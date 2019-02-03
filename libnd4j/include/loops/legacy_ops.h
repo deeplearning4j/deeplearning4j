@@ -50,7 +50,8 @@
        (3, Divide), \
        (4, ReverseDivide), \
        (5, ReverseSubtract), \
-       (6, CopyPws) ,\
+       (6, CopyPws), \
+       (7, Pow), \
        (13, MinPairwise) ,\
        (14, MaxPairwise) ,\
        (15, AMinPairwise) ,\
@@ -346,8 +347,8 @@
         (29, LogicalNot) ,\
         (30, LogicalAnd) ,\
         (31, PowDerivative), \
-        (32, LogPoisonLoss), \
-        (33, LogPoisonLossFull) , \
+        (32, LogPoissonLoss), \
+        (33, LogPoissonLossFull) , \
         (34, AMaxPairwise), \
         (35, AMinPairwise) ,\
         (36, TruncateMod)

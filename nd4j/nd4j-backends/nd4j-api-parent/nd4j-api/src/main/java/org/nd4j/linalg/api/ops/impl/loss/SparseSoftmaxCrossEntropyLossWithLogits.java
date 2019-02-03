@@ -20,18 +20,19 @@ import lombok.NoArgsConstructor;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -45,7 +46,7 @@ import java.util.Map;
 public class SparseSoftmaxCrossEntropyLossWithLogits extends DynamicCustomOp {
 
     public SparseSoftmaxCrossEntropyLossWithLogits(SameDiff sameDiff, SDVariable logits, SDVariable labels) {
-        super(null, sameDiff, new SDVariable[]{logits, labels}, false);
+        super(null, sameDiff, new SDVariable[]{labels, logits}, false);
     }
 
 
@@ -57,10 +58,10 @@ public class SparseSoftmaxCrossEntropyLossWithLogits extends DynamicCustomOp {
         TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
 
         //Switch order: TF uses [logits, labels]; libnd4j expects [labels, logits]
-        String[] inputs = initWith.getInputsForFunction(this);
-        String temp = inputs[0];
-        inputs[0] = inputs[1];
-        inputs[1] = temp;
+        SameDiffOp op = initWith.getOps().get(this.getOwnName());
+        List<String> list = op.getInputsToOp();
+        List<String> newList = Arrays.asList(list.get(1), list.get(0));
+        op.setInputsToOp(newList);
     }
 
     @Override
@@ -81,5 +82,18 @@ public class SparseSoftmaxCrossEntropyLossWithLogits extends DynamicCustomOp {
     @Override
     public Op.Type opType() {
         return Op.Type.CUSTOM;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected 2 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(1));    //Same as predictions (logits)
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grad){
+        //args: label, logits
+        SDVariable[] ret = f().lossSparseSoftmaxCrossEntropyBp(arg(1), arg(0));
+        return Arrays.asList(f().zerosLike(arg(0)), ret[0]);
     }
 }

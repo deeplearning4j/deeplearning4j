@@ -39,7 +39,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 @Slf4j
 public class LayerOpValidation extends BaseOpValidation {
@@ -292,7 +293,7 @@ public class LayerOpValidation extends BaseOpValidation {
             int[] inSize;
 
             //LRN
-            String msg = "7 - LRN with NCHW - input" + Arrays.toString(inSizeNCHW);
+            String msg = "LRN with NCHW - input" + Arrays.toString(inSizeNCHW);
             inSize = inSizeNCHW;
             in = sd.var("in", inSize);
             SDVariable out = sd.localResponseNormalization(in, LocalResponseNormalizationConfig.builder()
@@ -319,6 +320,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testIm2Col() {
+        OpValidationSuite.ignoreFailing();      //TEMPORARY DUE TO JVM CRASH: https://github.com/deeplearning4j/deeplearning4j/issues/6873
         Nd4j.getRandom().setSeed(12345);
 
         int[][] inputSizes = new int[][]{{1, 3, 8, 8}, {3, 6, 12, 12}};
@@ -328,7 +330,7 @@ public class LayerOpValidation extends BaseOpValidation {
         for (int[] inSizeNCHW : inputSizes) {
 
             SameDiff sd = SameDiff.create();
-            SDVariable var = sd.var("in", Nd4j.rand(inSizeNCHW));
+            SDVariable var = sd.var("in", Nd4j.rand(DataType.DOUBLE, inSizeNCHW));
             SDVariable im2col = sd.im2Col(var, Conv2DConfig.builder()
                     .kH(2).kW(2)
                     .sH(1).sW(1)
@@ -453,7 +455,7 @@ public class LayerOpValidation extends BaseOpValidation {
         assertEquals(1, outSizesBP.size());
         assertArrayEquals(inSize, outSizesBP.get(0).getShape());
 
-        Nd4j.getExecutioner().exec(avg2dDeriv);
+        Nd4j.getExecutioner().execAndReturn(avg2dDeriv);
     }
 
 

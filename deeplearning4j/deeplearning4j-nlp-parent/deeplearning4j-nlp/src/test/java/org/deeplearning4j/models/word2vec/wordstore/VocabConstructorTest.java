@@ -390,4 +390,21 @@ public class VocabConstructorTest {
         assertEquals("beta", result.wordAtIndex(5));
         assertEquals("alpha", result.wordAtIndex(0));
     }
+
+    @Test(timeout=5000)		// 5s timeout
+    public void testParallelTokenizationDisabled_Completes() throws Exception {
+        File inputFile = new ClassPathResource("big/raw_sentences.txt").getFile();
+        SentenceIterator iter = new BasicLineIterator(inputFile);
+
+        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iter).tokenizerFactory(t).build();
+
+        AbstractSequenceIterator<VocabWord> sequenceIterator =
+                new AbstractSequenceIterator.Builder<>(transformer).build();
+
+        VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>().addSource(sequenceIterator, 5)
+                .allowParallelTokenization( false)
+                .build();
+
+        constructor.buildJointVocabulary(false, true);
+    }
 }

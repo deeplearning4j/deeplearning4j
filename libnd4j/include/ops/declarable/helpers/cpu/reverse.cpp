@@ -180,16 +180,15 @@ static void _reverseSequence(const NDArray* input, const NDArray* seqLengths, ND
     }
 
 //////////////////////////////////////////////////////////////////////////
-void reverse(const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isLegacy) {
+void reverse(const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isBackProp) {
 
     // we need to reverse axis only if that's new op
-    std::vector<int> dimensions = isLegacy ? *intArgs : ShapeUtils::evalDimsToExclude(input->rankOf(), *intArgs);
+    std::vector<int> dimensions = isBackProp ? ShapeUtils::evalDimsToExclude(input->rankOf(), *intArgs) : *intArgs;
 
     auto listOut = output->allTensorsAlongDimension(dimensions);
     auto listIn  = input->allTensorsAlongDimension(dimensions);
        
-    NDArray* subArrIn  = nullptr;
-    NDArray* subArrOut = nullptr;
+    NDArray *subArrIn, *subArrOut;
 
     for(int i = 0; i < listIn->size(); ++i) {               // listIn->size() = listOut->size()
         subArrIn   = listIn->at(i);

@@ -29,7 +29,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Adam Gibson
@@ -264,7 +265,7 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     @Test
     public void testColumnSum() {
-        INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
+        INDArray twoByThree = Nd4j.linspace(1, 600, 600, DataType.FLOAT).reshape(150, 4);
         INDArray columnVar = twoByThree.sum(0);
         INDArray assertion = Nd4j.create(new float[] {44850.0f, 45000.0f, 45150.0f, 45300.0f});
         assertEquals(getFailureMessage(), assertion, columnVar);
@@ -334,7 +335,7 @@ public class ShapeTestsC extends BaseNd4jTest {
     public void testSumRow() {
         INDArray rowVector10 = Nd4j.ones(DataType.DOUBLE,1,10);
         INDArray sum1 = rowVector10.sum(1);
-        assertArrayEquals(sum1.shape(), new long[] {1, 1});
+        assertArrayEquals(new long[] {1}, sum1.shape());
         assertTrue(sum1.getDouble(0) == 10);
     }
 
@@ -342,7 +343,7 @@ public class ShapeTestsC extends BaseNd4jTest {
     public void testSumColumn() {
         INDArray colVector10 = Nd4j.ones(10, 1);
         INDArray sum0 = colVector10.sum(0);
-        assertArrayEquals(sum0.shape(), new long[] {1, 1});
+        assertArrayEquals( new long[] {1}, sum0.shape());
         assertTrue(sum0.getDouble(0) == 10);
     }
 
@@ -350,17 +351,17 @@ public class ShapeTestsC extends BaseNd4jTest {
     public void testSum2d() {
         INDArray arr = Nd4j.ones(10, 10);
         INDArray sum0 = arr.sum(0);
-        assertArrayEquals(sum0.shape(), new long[] {1, 10});
+        assertArrayEquals(new long[] {10}, sum0.shape());
 
         INDArray sum1 = arr.sum(1);
-        assertArrayEquals(sum1.shape(), new long[] {10, 1});
+        assertArrayEquals(new long[] {10}, sum1.shape());
     }
 
     @Test
     public void testSum2dv2() {
         INDArray arr = Nd4j.ones(10, 10);
         INDArray sumBoth = arr.sum(0, 1);
-        assertArrayEquals(sumBoth.shape(), new long[] {1, 1});
+        assertArrayEquals(new long[0], sumBoth.shape());
         assertTrue(sumBoth.getDouble(0) == 100);
     }
 

@@ -39,8 +39,8 @@ public class CountNonZero extends BaseReduceLongOp {
     }
 
 
-    public CountNonZero(INDArray x) {
-        super(x);
+    public CountNonZero(INDArray x, int... dimensions) {
+        super(x, dimensions);
     }
 
 

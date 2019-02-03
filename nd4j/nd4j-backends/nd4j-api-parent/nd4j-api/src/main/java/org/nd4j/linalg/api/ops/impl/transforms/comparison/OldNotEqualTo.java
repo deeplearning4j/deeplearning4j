@@ -48,16 +48,12 @@ public class OldNotEqualTo extends BaseTransformBoolOp {
         super(x);
     }
 
-    public OldNotEqualTo(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public OldNotEqualTo(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
     }
 
     public OldNotEqualTo(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public OldNotEqualTo(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     @Override

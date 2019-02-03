@@ -118,13 +118,6 @@ public class IndexingIterationTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testEmpty() {
-        INDArrayIndex empty = new NDArrayIndexEmpty();
-        assertFalse(empty.hasNext());
-        assertEquals(0, empty.length());
-    }
-
-    @Test
     public void testSpecifiedIndex() {
         INDArrayIndex indArrayIndex = new SpecifiedIndex(2);
         assertEquals(1, indArrayIndex.length());

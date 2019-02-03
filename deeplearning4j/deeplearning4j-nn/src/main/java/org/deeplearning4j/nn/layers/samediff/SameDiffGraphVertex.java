@@ -35,7 +35,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -99,7 +99,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         }
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            sameDiff.clearExecutionCache();
+//            sameDiff.clearExecutionCache();
             for(int i=0; i<inputs.length; i++ ){
                 String name = config.getVertexParams().getInputs().get(i);
                 sameDiff.associateArrayWithVariable(inputs[i].dup(), sameDiff.getVariable(name));
@@ -109,8 +109,8 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                     sameDiff.associateArrayWithVariable(paramTable.get(s), s);
                 }
             }
-            sameDiff.exec();
-            INDArray result = sameDiff.getArrForVarName(outputKey);
+            Map<String,INDArray> out = sameDiff.exec(null, outputKey);
+            INDArray result = out.get(outputKey);
             return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
         }
     }
@@ -121,7 +121,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
         INDArray[] dLdIns;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            sameDiff.clearExecutionCache();
+//            sameDiff.clearExecutionCache();
             //Set inputs
             for(int i=0; i<inputs.length; i++ ){
                 String name = config.getVertexParams().getInputs().get(i);
@@ -134,7 +134,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
 
-            sameDiff.execBackwards();
+            sameDiff.execBackwards(Collections.<String, INDArray>emptyMap());
             for(String s : paramTable.keySet() ){
                 INDArray sdGrad = sameDiff.grad(s).getArr();
                 INDArray dl4jGrad = gradTable.get(s);

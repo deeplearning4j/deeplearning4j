@@ -48,14 +48,13 @@ import java.util.Map;
 public abstract class BaseOp extends DifferentialFunction implements Op {
 
     protected INDArray x, y, z;
-    protected long n;
-    protected long numProcessed;
     protected Object[] extraArgs;
-    protected boolean passThrough;
     @Getter @Setter
     protected String xVertexId,yVertexId,zVertexId;
     // cached instance, for dataType checks
     protected DataBuffer extraArgz;
+
+    protected INDArray dimensionz;
 
     public BaseOp() {
     }
@@ -75,24 +74,15 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
      * @param z the output array
      */
     public BaseOp(INDArray x, INDArray z) {
-        this(x, z, x.lengthLong());
-    }
-
-    /**
-     * Specify an alternative output array
-     *
-     * @param x the input
-     * @param z the output
-     * @param n the number of elements to iterate on
-     */
-    public BaseOp(INDArray x, INDArray z, long n) {
-        this(x, null, z, n);
+        this(x, null, z);
     }
 
 
-    public BaseOp(INDArray x, INDArray y, INDArray z, long n) {
+    public BaseOp(INDArray x, INDArray y, INDArray z) {
         super(false);
-        init(x, y, z, n);
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
 
@@ -102,12 +92,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
      * @param x the ndarray
      */
     public BaseOp(INDArray x) {
-        this(x, null, x, x == null ? 0 : x.lengthLong());
-    }
-
-    @Override
-    public boolean isExecSpecial() {
-        return false;
+        this(x, null, x);
     }
 
     public static Type getOpType(Op op) {
@@ -115,14 +100,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
         if (op instanceof CustomOp) {
             return Type.CUSTOM;
-        } else if (op instanceof ShapeOp) {
-            return Type.SHAPE;
         } else if (op instanceof TransformOp) {
             if (op.y() == null) {
-                if (!op.isExecSpecial())
-                    type = Type.TRANSFORM_FLOAT;
-                else
-                    type = Type.TRANSFORM_STRICT;
+                type = Type.TRANSFORM_FLOAT;
             } else {
                 type = Op.Type.PAIRWISE;
             }
@@ -219,11 +199,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     }
 
     @Override
-    public boolean isPassThrough() {
-        return passThrough;
-    }
-
-    @Override
     public void setX(INDArray x) {
         if (x == null) {
             if (args() != null && args().length >= 1) {
@@ -237,7 +212,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 throw new ND4JIllegalStateException("Unable to set null array for x. Also unable to infer from differential function arguments");
         } else
             this.x = x;
-        numProcessed = 0;
     }
 
     @Override
@@ -249,7 +223,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     this.z = getResult.getArr();
                 else if(sameDiff.getShapeForVarName(getResult.getVarName()) != null) {
                     val shape = sameDiff.getShapeForVarName(getResult.getVarName());
-                    sameDiff.putArrayForVarName(getResult.getVarName(),getResult.getWeightInitScheme().create(getResult.dataType(), shape));
+                    sameDiff.setArrayForVariable(getResult.getVarName(),getResult.getWeightInitScheme().create(getResult.dataType(), shape));
                 }
                 else
                     throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");
@@ -258,7 +232,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");
         } else
             this.z = z;
-        numProcessed = 0;
     }
 
     @Override
@@ -275,7 +248,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 throw new ND4JIllegalStateException("Unable to set null array for y. Also unable to infer from differential function arguments");
         } else
             this.y = y;
-        numProcessed = 0;
     }
 
     @Override
@@ -285,47 +257,17 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
     @Override
     public INDArray x() {
-        if(x == null) {
-            if(sameDiff != null && args() != null && args().length > 0) {
-                this.x = sameDiff.getArrForVarName(args()[0].getVarName());
-                if(x == null && args()[0].getShape() != null) {
-                    x = args()[0].storeAndAllocateNewArray();
-                }
-            }
-        }
         return x;
     }
 
     @Override
     public INDArray y() {
-        if(y == null) {
-            if(sameDiff != null && args() != null && args().length > 1) {
-                this.y = sameDiff.getArrForVarName(args()[1].getVarName());
-                if(y == null && args()[1].getShape() != null) {
-                    y = args()[1].storeAndAllocateNewArray();
-                }
-            }
-        }
         return y;
     }
 
 
     @Override
     public INDArray z() {
-        if(z == null) {
-            if(sameDiff != null) {
-                this.z = outputVariables()[0].getArr();
-                if(this.z == null) {
-                    val var = outputVariables()[0];
-                    if(var.getShape() != null)
-                        this. z = var.storeAndAllocateNewArray();
-                }
-            }
-        }
-        else if(zVertexId != null && sameDiff != null && sameDiff.getArrForVarName(zVertexId) == null && z != null) {
-            sameDiff.putArrayForVarName(zVertexId,z);
-        }
-
         return z;
     }
 
@@ -342,81 +284,29 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             }
 
             if(isInPlace()) {
-                val newVars = sameDiff.generateOutputVariableForOp(this,null);
+                val newVars = sameDiff.generateOutputVariableForOp(this,null,false);
                 val inputArr = x();
                 //in place op
                 if(inputArr == null) {
                     return newVars;
                 }
 
-                sameDiff.putArrayForVarName(newVars[0].getVarName(),inputArr);
+                sameDiff.setArrayForVariable(newVars[0].getVarName(),inputArr);
                 z = inputArr;
                 if(sameDiff.getOutputsForFunction(this) == null)
                     sameDiff.addOutgoingFor(newVars,this);
                 return newVars;
             }
 
-            val newVars = sameDiff.generateOutputVariableForOp(this, baseName);
-
-            INDArray arr = null;
-            if(newVars == null || newVars.length < 1 || newVars[0].getShape() == null) {
-                arr = null;
-            }
-            else if(newVars[0].getArr() == null) {
-                arr = newVars[0].storeAndAllocateNewArray();
-            }
-            else
-                arr = newVars[0].getArr();
-
-            if(arr == null) {
-                val shapes = calculateOutputShape();
-                if(shapes != null && !shapes.isEmpty() && shapes.get(0) != null) {
-                    sameDiff.putShapeForVarName(newVars[0].getVarName(),shapes.get(0));
-                    arr = newVars[0].storeAndAllocateNewArray();
-                }
-            }
-
-            if(arr != null) {
-                setZ(arr);
-            }
-            if(sameDiff.getOutputsForFunction(this) == null)
-                sameDiff.addOutgoingFor(newVars,this);
+            SDVariable[] newVars = sameDiff.generateOutputVariableForOp(this, baseName, false);
+            if (sameDiff.getOutputsForFunction(this) == null)
+                sameDiff.addOutgoingFor(newVars, this);
             return newVars;
         }
 
         return new SDVariable[]{sameDiff.getVariable(zVertexId)};
     }
 
-
-
-    @Override
-    public long n() {
-        if(n == 0) {
-            if(arg() != null)
-                this.n = Shape.lengthOf(arg().getShape());
-
-        }
-        return n;
-    }
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.n = n;
-    }
-
-    @Override
-    public void setN(long n) {
-        this.n = n;
-    }
-
-    @Override
-    public long numProcessed() {
-        return numProcessed;
-    }
 
     @Override
     public String toString() {
@@ -450,17 +340,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
     }
 
-    @Override
-    public void exec() {
-        //no-op
-    }
-
-    @Override
-    public void exec(int... dimensions) {
-        //no-op
-    }
-
-
 
     @Override
     public boolean equals(Object o) {
@@ -469,9 +348,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
         BaseOp baseOp = (BaseOp) o;
 
-        if (n != baseOp.n) return false;
-        if (numProcessed != baseOp.numProcessed) return false;
-        if (passThrough != baseOp.passThrough) return false;
         if (x != null ? !x.equals(baseOp.x) : baseOp.x != null) return false;
         if (y != null ? !y.equals(baseOp.y) : baseOp.y != null) return false;
         if (z != null ? !z.equals(baseOp.z) : baseOp.z != null) return false;
@@ -486,11 +362,47 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         result = 31 * result + (x != null ? x.hashCode() : 0);
         result = 31 * result + (y != null ? y.hashCode() : 0);
         result = 31 * result + (z != null ? z.hashCode() : 0);
-        result = 31 * result + (int) (n ^ (n >>> 32));
-        result = 31 * result + (int) (numProcessed ^ (numProcessed >>> 32));
         result = 31 * result + Arrays.hashCode(extraArgs);
-        result = 31 * result + (passThrough ? 1 : 0);
         result = 31 * result + (extraArgz != null ? extraArgz.hashCode() : 0);
         return result;
+    }
+
+    protected void defineDimensions(int... dimensions){
+        if (dimensions != null && dimensions.length > 0) {
+            if(x != null) {
+                dimensions = Shape.normalizeAxis(x.rank(), dimensions);
+            }
+        }
+        this.dimensionz = Shape.ndArrayDimFromInt(dimensions);
+    }
+
+    public INDArray dimensions() {
+        return dimensionz;
+    }
+
+    public Number getFinalResult() {
+        if (this.z == null)
+            throw new ND4JIllegalStateException("Op.Z is null. Op wasn't executed yet?");
+
+        if (z.isEmpty())
+            throw new ND4JIllegalStateException("Can't get number from empty array");
+
+        if (!z.isScalar())
+            throw new ND4JIllegalStateException("Can't get final result scalar out of N-dim tensor");
+
+        if (z.isR())
+            return new Double(z.getDouble(0));
+        else if (z.isZ())
+            return new Long(z.getInt(0));
+        else if (z.isB())
+            return new Integer(z.getInt(0));
+
+        throw new ND4JIllegalStateException("???");
+    }
+
+    @Override
+    public int getNumOutputs(){
+        //Always 1 for legacy/base ops
+        return 1;
     }
 }

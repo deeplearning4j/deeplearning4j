@@ -48,7 +48,7 @@ public class ActivationRationalTanh extends BaseActivationFunction {
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
-        INDArray dLdz = Nd4j.getExecutioner().execAndReturn(new RationalTanhDerivative(in));
+        INDArray dLdz = Nd4j.getExecutioner().exec(new RationalTanhDerivative(in));
         dLdz.muli(epsilon);
         return new Pair<>(dLdz, null);
     }

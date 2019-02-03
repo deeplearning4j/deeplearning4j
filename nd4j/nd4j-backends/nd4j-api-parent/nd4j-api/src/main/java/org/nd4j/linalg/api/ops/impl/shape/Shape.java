@@ -20,8 +20,11 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -77,7 +80,7 @@ public class Shape extends DynamicCustomOp {
 
         val output_type = nodeDef.getAttrOrThrow("out_type").getType().getNumber();
         val dtype = DataTypeAdapter.dtypeConv(output_type);
-        iArguments.add((long) SameDiff.getDataTypeAsByte(dtype));
+        iArguments.add((long) FlatBuffersMapper.getDataTypeAsByte(dtype));
     }
 
     @Override
@@ -88,5 +91,13 @@ public class Shape extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         return Collections.singletonList(sameDiff.zerosLike(arg()));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
+        //Output type is always long (i.e., shape of array)
+        //TODO TF allows customizing type
+        return Collections.singletonList(DataType.LONG);
     }
 }

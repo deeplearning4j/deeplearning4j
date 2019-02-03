@@ -65,10 +65,6 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
         super();
     }
 
-    public BaseTransformStrictOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
 
     public BaseTransformStrictOp(INDArray x) {
         super(x);
@@ -110,16 +106,16 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        val ret = new ArrayList<LongShapeDescriptor>(1);
-        if(arg() == null)
-            throw new ND4JIllegalStateException("No arg found for op!");
-
-        val arr = sameDiff.getArrForVarName(arg().getVarName());
-        if(arr == null)
+        if(x == null)
             return Collections.emptyList();
+        return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), x.dataType()));
+    }
 
-        ret.add(LongShapeDescriptor.fromShape(arr.shape(), arr.dataType()));
-        this.n = arr.length();
-        return ret;
+    @Override
+    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+        //All strict tranform ops: FP in, FP out
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
+        Preconditions.checkState(dataTypes.get(0).isFPType(), "Only floating point types are supported for strict tranform ops - got %s", dataTypes.get(0));
+        return dataTypes;
     }
 }

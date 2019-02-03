@@ -25,7 +25,6 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.learning.legacy.AdaGrad;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -133,7 +132,7 @@ public class Tsne {
             //          doAlongDiagonal(qu,new Zero());
 
             INDArray Q = qu.div(qu.sumNumber().doubleValue());
-            BooleanIndexing.applyWhere(Q, Conditions.lessThan(1e-12), new Value(1e-12));
+            BooleanIndexing.replaceWhere(Q, 1e-12, Conditions.lessThan(1e-12));
 
             INDArray PQ = P.sub(Q).muli(qu);
 
@@ -153,9 +152,7 @@ public class Tsne {
                             .addi(gains.mul(0.8).muli(dY.cond(Conditions.greaterThan(0))
                                             .eq(iY.cond(Conditions.greaterThan(0)))));
 
-
-            BooleanIndexing.applyWhere(gains, Conditions.lessThan(minGain), new Value(minGain));
-
+            BooleanIndexing.replaceWhere(gains, minGain, Conditions.lessThan(minGain));
 
             INDArray gradChange = gains.mul(dY);
 
@@ -324,7 +321,7 @@ public class Tsne {
 
         //dont need data in memory after
         logger.info("Mean value of sigma " + sqrt(beta.rdiv(1)).mean(Integer.MAX_VALUE));
-        BooleanIndexing.applyWhere(p, Conditions.isNan(), new Value(1e-12));
+        BooleanIndexing.replaceWhere(p, 1e-12, Conditions.isNan());
 
         //set 0 along the diagonal
         INDArray permute = p.transpose();
@@ -335,7 +332,7 @@ public class Tsne {
 
         pOut.muli(4);
 
-        BooleanIndexing.applyWhere(pOut, Conditions.lessThan(1e-12), new Value(1e-12));
+        BooleanIndexing.replaceWhere(pOut, 1e-12, Conditions.lessThan(1e-12));
         //ensure no nans
 
         return pOut;

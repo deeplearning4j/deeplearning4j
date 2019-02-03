@@ -23,6 +23,8 @@
 #include <Status.h>
 #include <helpers/ShapeUtils.h>
 #include <NDArrayFactory.h>
+#include <graph/exceptions/graph_exception.h>
+#include <graph/exceptions/unresolved_input_exception.h>
 
 namespace nd4j {
     namespace ops {
@@ -148,6 +150,9 @@ namespace nd4j {
                     auto var = ctx.variable(p);
                     if (var->variableType() == VariableType::NDARRAY) {
                         NDArray *array = var->getNDArray();
+                        if (array == nullptr)
+                            throw unresolved_input_exception::build("Variable wasn't resolved prior shape calculation", p);
+
                         inSha.push_back(array->getShapeInfo());
 
                     }
@@ -302,7 +307,8 @@ namespace nd4j {
 
                     inputTypes[inT++] = array->dataType();
                     if (!_descriptor->checkInputMatch(cnt, array->dataType())) {
-                        nd4j_printf("Op [%s] failed check for input [%i], DataType: [%i]\n", _descriptor->getOpName()->data(), cnt, (int)array->dataType());
+                        auto ctype = DataTypeUtils::asString(array->dataType());
+                        nd4j_printf("Op [%sxnj failed check for input [%i], DataType: [%s]\n", _descriptor->getOpName()->data(), cnt, ctype.c_str());
                         return ND4J_STATUS_BAD_ARGUMENTS;
                     }
                 }
@@ -312,7 +318,7 @@ namespace nd4j {
 
             // checking optionally available outputs
             auto varSpace = block.getVariableSpace();
-            for (int index = 0; index < 65536; index++) {
+            for (int index = 0; index < DataTypeUtils::max<int>(); index++) {
                 if (varSpace->hasVariable(block.nodeId(), index)) {
                     auto var = block.variable(block.nodeId(), index);
 
@@ -561,7 +567,7 @@ namespace nd4j {
                     NDArray *aV = v->getNDArray();
 
                     // if array is empty intentionally - we're ok with that
-                    if (v->isEmpty())
+                    if (v->hasNDArray() && v->isEmpty())
                         continue;
 
                     if (aV == nullptr || !aV->nonNull()) {
@@ -678,13 +684,9 @@ namespace nd4j {
 
         nd4j::ResultSet* nd4j::ops::DeclarableOp::execute(const std::vector<NDArray*>& inputs, const std::vector<double>& tArgs, const std::vector<Nd4jLong>& iArgs, const std::vector<bool>& bArgs, bool isInplace, nd4j::DataType type) {
             VariableSpace variableSpace;
-            auto arrayList = new ResultSet();
             //ResultSet arrayList;
             FlowPath fp;
             variableSpace.setFlowPath(&fp);
-
-            if (isInplace)
-                arrayList->setNonRemovable();
 
             int cnt = -1;
             std::vector<int> in;
@@ -715,12 +717,16 @@ namespace nd4j {
                 block.getBArguments()->push_back(bArgs.at(e));
 
             Nd4jStatus status = this->execute(&block);
+            auto arrayList = new ResultSet();
+            if (isInplace)
+                arrayList->setNonRemovable();
+
             arrayList->setStatus(status);
             if (status != ND4J_STATUS_OK)
                 return arrayList;
 
 
-            for (int e = 0; e < 65536; e++) {
+            for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
                 std::pair<int,int> pair(1, e);
                 if (variableSpace.hasVariable(pair)) {
                     auto var = variableSpace.getVariable(pair);

@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -115,4 +116,13 @@ public class DynamicPartition extends DynamicCustomOp {
         return numPartitions;
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        //Output type: same as (data) input type
+        List<DataType> out = new ArrayList<>(numPartitions);
+        for( int i=0; i<numPartitions; i++ ){
+            out.add(dataTypes.get(0));
+        }
+        return out;
+    }
 }

@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -41,24 +42,12 @@ public class ELUDerivative extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ELUDerivative(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public ELUDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public ELUDerivative() {
 
     }
 
     public ELUDerivative(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public ELUDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public ELUDerivative(INDArray x) {
@@ -89,7 +78,7 @@ public class ELUDerivative extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().zero(outputVariables()[0].getShape());
-        return Arrays.asList(ret);
+        SDVariable ret = sameDiff.zerosLike(arg());
+        return Collections.singletonList(ret);
     }
 }

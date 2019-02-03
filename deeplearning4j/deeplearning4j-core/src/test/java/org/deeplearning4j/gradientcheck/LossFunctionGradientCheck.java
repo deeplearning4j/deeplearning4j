@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
@@ -444,10 +445,10 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 //KL divergence: should be a probability distribution for labels??
                 ret[1] = Nd4j.rand(labelsShape);
                 if(labelsShape.length == 2){
-                    Nd4j.getExecutioner().exec(new OldSoftMax(ret[1]), 1);
+                    Nd4j.getExecutioner().exec(new OldSoftMax(ret[1]));
                 } else if(labelsShape.length == 3) {
                     for (int i = 0; i < labelsShape[2]; i++) {
-                        Nd4j.getExecutioner().exec(new OldSoftMax(ret[1].get(all(), all(), point(i))), 1);
+                        Nd4j.getExecutioner().exec(new OldSoftMax(ret[1].get(all(), all(), point(i))));
                     }
                 } else {
                     throw new RuntimeException();

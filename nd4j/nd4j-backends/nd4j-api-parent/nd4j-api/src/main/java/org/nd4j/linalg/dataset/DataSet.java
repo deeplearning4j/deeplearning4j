@@ -388,11 +388,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return ret;
     }
 
-    @Override
-    public void apply(Condition condition, Function<Number, Number> function) {
-        BooleanIndexing.applyWhere(getFeatures(), condition, function);
-    }
-
     /**
      * Clone the dataset
      *
@@ -1330,9 +1325,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return reqMem;
     }
 
-    /**
-     * This method migrates this DataSet into current Workspace (if any)
-     */
     @Override
     public void migrate() {
         if (Nd4j.getMemoryManager().getCurrentWorkspace() != null) {
@@ -1350,9 +1342,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         }
     }
 
-    /**
-     * This method migrates this DataSet into current Workspace (if any)
-     */
     @Override
     public void detach() {
         if (features != null)

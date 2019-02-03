@@ -34,8 +34,8 @@ public class ScalarEquals extends BaseScalarBoolOp {
     public ScalarEquals() {
     }
 
-    public ScalarEquals(INDArray x, INDArray z, long n, Number num) {
-        super(x, null, z, n, num);
+    public ScalarEquals(INDArray x, INDArray z, Number num) {
+        super(x, null, z, num);
     }
 
     public ScalarEquals(INDArray x, Number num) {
@@ -53,14 +53,6 @@ public class ScalarEquals extends BaseScalarBoolOp {
 
     public ScalarEquals(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
-    }
-
-    public ScalarEquals(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, inPlace, extraArgs);
-    }
-
-    public ScalarEquals(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, extraArgs);
     }
 
     @Override
@@ -87,7 +79,6 @@ public class ScalarEquals extends BaseScalarBoolOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //Not continuously differentiable, but 0 gradient in most places
-
         return Arrays.asList(sameDiff.zerosLike(arg()));
     }
 

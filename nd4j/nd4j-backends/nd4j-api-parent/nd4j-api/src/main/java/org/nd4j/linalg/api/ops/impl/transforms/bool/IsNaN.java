@@ -36,26 +36,10 @@ public class IsNaN extends BaseTransformBoolOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public IsNaN(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public IsNaN(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public IsNaN() {}
 
     public IsNaN(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public IsNaN(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public IsNaN(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
     }
 
     public IsNaN(INDArray x) {

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import com.google.common.base.Preconditions;
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -36,6 +37,7 @@ import java.util.Map;
  * Subsampling layer also referred to as pooling in convolution neural nets
  *
  * Supports the following pooling types: MAX, AVG, SUM, PNORM
+ *
  * @author Adam Gibson
  */
 
@@ -50,7 +52,7 @@ public class SubsamplingLayer extends NoParamLayer {
     protected int[] kernelSize; // Same as filter size from the last conv layer
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
-    protected int[] dilation = new int[]{1,1};
+    protected int[] dilation = new int[] {1, 1};
     protected int pnorm;
     protected double eps;
     protected boolean cudnnAllowFallback = true;
@@ -76,16 +78,18 @@ public class SubsamplingLayer extends NoParamLayer {
     protected SubsamplingLayer(BaseSubsamplingBuilder builder) {
         super(builder);
         this.poolingType = builder.poolingType;
-        if (builder.kernelSize.length != 2)
+        if (builder.kernelSize.length != 2) {
             throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
+        }
         this.kernelSize = builder.kernelSize;
-        if (builder.stride.length != 2)
+        if (builder.stride.length != 2) {
             throw new IllegalArgumentException("Invalid stride, must be length 2");
+        }
         this.stride = builder.stride;
         this.padding = builder.padding;
         this.convolutionMode = builder.convolutionMode;
-        if(builder instanceof Builder){
-            this.dilation = ((Builder)builder).dilation;
+        if (builder instanceof Builder) {
+            this.dilation = ((Builder) builder).dilation;
         }
         this.pnorm = builder.pnorm;
         this.eps = builder.eps;
@@ -96,14 +100,18 @@ public class SubsamplingLayer extends NoParamLayer {
     public SubsamplingLayer clone() {
         SubsamplingLayer clone = (SubsamplingLayer) super.clone();
 
-        if (clone.kernelSize != null)
+        if (clone.kernelSize != null) {
             clone.kernelSize = clone.kernelSize.clone();
-        if (clone.stride != null)
+        }
+        if (clone.stride != null) {
             clone.stride = clone.stride.clone();
-        if (clone.padding != null)
+        }
+        if (clone.padding != null) {
             clone.padding = clone.padding.clone();
-        if (clone.dilation != null)
+        }
+        if (clone.dilation != null) {
             clone.dilation = clone.dilation.clone();
+        }
         return clone;
     }
 
@@ -155,18 +163,6 @@ public class SubsamplingLayer extends NoParamLayer {
     }
 
     @Override
-    public double getL1ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        //Not applicable
-        return 0;
-    }
-
-    @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("SubsamplingLayer does not contain parameters");
     }
@@ -180,8 +176,8 @@ public class SubsamplingLayer extends NoParamLayer {
         //TODO Subsampling helper memory use... (CuDNN etc)
 
         //During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
-        val im2colSizePerEx =
-                        c.getChannels() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
+        val im2colSizePerEx = c.getChannels() * outputType.getHeight() * outputType.getWidth() * kernelSize[0]
+                        * kernelSize[1];
 
         //Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         long trainingWorkingSizePerEx = im2colSizePerEx;
@@ -206,9 +202,24 @@ public class SubsamplingLayer extends NoParamLayer {
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     public static class Builder extends BaseSubsamplingBuilder<Builder> {
 
-        private int[] dilation = new int[]{1,1};
+        /**
+         * Kernel dilation. Default: {1, 1}, which is standard convolutions. Used for implementing dilated convolutions,
+         * which are also known as atrous convolutions.<br> NOTE: Kernel dilation is less common in practice for
+         * subsampling layers, compared to convolutional layers.
+         *
+         * For more details, see:
+         * <a href="https://arxiv.org/abs/1511.07122">Yu and Koltun (2014)</a> and
+         * <a href="https://arxiv.org/abs/1412.7062">Chen et al. (2014)</a>, as well as
+         * <a href="http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions">
+         * http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions</a><br>
+         *
+         * Dilation for kernel
+         */
+        private int[] dilation = new int[] {1, 1};
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             super(poolingType, kernelSize, stride);
@@ -254,11 +265,12 @@ public class SubsamplingLayer extends NoParamLayer {
         /**
          * Kernel size
          *
-         * @param kernelSize    kernel size in height and width dimensions
+         * @param kernelSize kernel size in height and width dimensions
          */
         public Builder kernelSize(int... kernelSize) {
-            if (kernelSize.length != 2)
+            if (kernelSize.length != 2) {
                 throw new IllegalArgumentException("Invalid input: must be length 2");
+            }
             this.kernelSize = kernelSize;
             return this;
         }
@@ -266,11 +278,12 @@ public class SubsamplingLayer extends NoParamLayer {
         /**
          * Stride
          *
-         * @param stride    stride in height and width dimensions
+         * @param stride stride in height and width dimensions
          */
         public Builder stride(int... stride) {
-            if (stride.length != 2)
+            if (stride.length != 2) {
                 throw new IllegalArgumentException("Invalid input: must be length 2");
+            }
             this.stride = stride;
             return this;
         }
@@ -278,29 +291,30 @@ public class SubsamplingLayer extends NoParamLayer {
         /**
          * Padding
          *
-         * @param padding    padding in the height and width dimensions
+         * @param padding padding in the height and width dimensions
          */
         public Builder padding(int... padding) {
-            if (padding.length != 2)
+            if (padding.length != 2) {
                 throw new IllegalArgumentException("Invalid input: must be length 2");
+            }
             this.padding = padding;
             return this;
         }
 
         /**
          * Kernel dilation. Default: {1, 1}, which is standard convolutions. Used for implementing dilated convolutions,
-         * which are also known as atrous convolutions.<br>
-         * NOTE: Kernel dilation is less common in practice for subsampling layers, compared to convolutional layers.
+         * which are also known as atrous convolutions.<br> NOTE: Kernel dilation is less common in practice for
+         * subsampling layers, compared to convolutional layers.
          *
          * For more details, see:
          * <a href="https://arxiv.org/abs/1511.07122">Yu and Koltun (2014)</a> and
          * <a href="https://arxiv.org/abs/1412.7062">Chen et al. (2014)</a>, as well as
          * <a href="http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions">
-         *     http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions</a><br>
+         * http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions</a><br>
          *
          * @param dilation Dilation for kernel
          */
-        public Builder dilation(int... dilation){
+        public Builder dilation(int... dilation) {
             this.dilation = dilation;
             return this;
         }
@@ -309,27 +323,61 @@ public class SubsamplingLayer extends NoParamLayer {
         @Override
         @SuppressWarnings("unchecked")
         public SubsamplingLayer build() {
-            if (poolingType == org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0)
+            if (poolingType == org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0) {
                 throw new IllegalStateException(
                                 "Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
+            }
             ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new SubsamplingLayer(this);
         }
+
+        @Override
+        public void setKernelSize(int[] kernelSize) {
+            kernelSize(kernelSize);
+        }
+
+        @Override
+        public void setStride(int[] stride) {
+            stride(stride);
+        }
+
+        @Override
+        public void setPadding(int[] padding) {
+            padding(padding);
+        }
     }
 
     @NoArgsConstructor
+    @Getter
+    @Setter
     protected static abstract class BaseSubsamplingBuilder<T extends BaseSubsamplingBuilder<T>>
                     extends Layer.Builder<T> {
+
         protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType =
                         org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
+
         protected int[] kernelSize = new int[] {1, 1}; // Same as filter size from the last conv layer
         protected int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
         protected int[] padding = new int[] {0, 0};
+
+        /**
+         * Set the convolution mode for the Convolution layer. See {@link ConvolutionMode} for more details
+         *
+         * Convolution mode for layer
+         */
         protected ConvolutionMode convolutionMode = null;
         protected int pnorm;
         protected double eps = 1e-8;
+
+        /**
+         * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
+         * (non-CuDNN) implementation for ConvolutionLayer will be used
+         *
+         * Whether fallback to non-CuDNN implementation should be used
+         */
         protected boolean cudnnAllowFallback = true;
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {
@@ -387,10 +435,9 @@ public class SubsamplingLayer extends NoParamLayer {
         }
 
         /**
-         * Set the convolution mode for the Convolution layer.
-         * See {@link ConvolutionMode} for more details
+         * Set the convolution mode for the Convolution layer. See {@link ConvolutionMode} for more details
          *
-         * @param convolutionMode    Convolution mode for layer
+         * @param convolutionMode Convolution mode for layer
          */
         public T convolutionMode(ConvolutionMode convolutionMode) {
             this.convolutionMode = convolutionMode;
@@ -403,27 +450,37 @@ public class SubsamplingLayer extends NoParamLayer {
         }
 
         public T pnorm(int pnorm) {
-            if (pnorm <= 0)
+            if (pnorm <= 0) {
                 throw new IllegalArgumentException("Invalid input: p-norm value must be greater than 0");
+            }
             this.pnorm = pnorm;
             return (T) this;
         }
 
+        public void setPnorm(int pnorm){
+            pnorm(pnorm);
+        }
+
         public T eps(double eps) {
-            if (eps <= 0)
+            if (eps <= 0) {
                 throw new IllegalArgumentException("Invalid input: epsilon for p-norm must be greater than 0");
+            }
             this.eps = eps;
             return (T) this;
         }
 
+        public void setEps(double eps){
+            eps(eps);
+        }
+
         /**
          * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
-         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in (non-CuDNN)
-         * implementation for ConvolutionLayer will be used
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
+         * (non-CuDNN) implementation for ConvolutionLayer will be used
          *
          * @param allowFallback Whether fallback to non-CuDNN implementation should be used
          */
-        public T cudnnAllowFallback(boolean allowFallback){
+        public T cudnnAllowFallback(boolean allowFallback) {
             this.cudnnAllowFallback = allowFallback;
             return (T) this;
         }

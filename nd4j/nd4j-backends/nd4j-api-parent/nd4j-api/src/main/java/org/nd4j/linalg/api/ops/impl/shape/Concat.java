@@ -21,8 +21,10 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp;
@@ -35,7 +37,7 @@ import java.util.*;
 
 @Slf4j
 public class Concat extends DynamicCustomOp {
-    private int concatDimension;
+    private int concatDimension = -1;
 
     public Concat(){
 
@@ -50,32 +52,6 @@ public class Concat extends DynamicCustomOp {
     @Override
     public String opName() {
         return "concat";
-    }
-
-
-    @Override
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
-        val propertiesToResolve = sameDiff.propertiesToResolveForFunction(this);
-        if(!propertiesToResolve.isEmpty()) {
-            val varName = propertiesToResolve.get(0);
-            val var = sameDiff.getVariable(varName);
-            if(var == null) {
-                throw new ND4JIllegalStateException("No variable found with name " +varName);
-            }
-            else if(var.getArr() == null) {
-                throw new ND4JIllegalStateException("Array with variable name " + varName + " unset!");
-            }
-
-            val arr = var.getArr();
-            concatDimension = arr.getInt(0);
-            addIArgument(concatDimension);
-        }
-
-        //don't pass both iArg and last axis down to libnd4j
-        if(inputArguments().length == args().length) {
-            val inputArgs = inputArguments();
-            removeInputArgument(inputArgs[inputArguments().length - 1]);
-        }
     }
 
     @Override
@@ -211,5 +187,16 @@ public class Concat extends DynamicCustomOp {
         SDVariable[] bpArgs = Arrays.copyOf(args, args.length + 1);
         bpArgs[bpArgs.length-1] = i_v.get(0);
         return Arrays.asList(new ConcatBp(sameDiff, concatDimension, bpArgs).outputVariables());
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        DataType first = dataTypes.get(0);
+        for( int i=1; i<dataTypes.size(); i++ ){
+            DataType dt = dataTypes.get(i);
+            Preconditions.checkState(first == dt, "All inputs must have same datatype - got %s and %s for inputs 0 and %s respectively", first, dt, i);
+        }
+        //Output type is same as input types
+        return Collections.singletonList(first);
     }
 }

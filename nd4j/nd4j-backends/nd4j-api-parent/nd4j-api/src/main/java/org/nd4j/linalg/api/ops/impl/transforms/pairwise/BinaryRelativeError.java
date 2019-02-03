@@ -20,10 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
-import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
@@ -45,38 +42,23 @@ public class BinaryRelativeError extends BaseTransformSameOp {
         super(sameDiff);
     }
 
-    public BinaryRelativeError(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
     public BinaryRelativeError(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
-    }
-
-    public BinaryRelativeError(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public BinaryRelativeError(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
     }
 
     public BinaryRelativeError() {
     }
 
-    public BinaryRelativeError(INDArray x, INDArray y, INDArray z, double threshold, long n) {
-        super(x, y, z, n);
-        this.threshold = threshold;
-    }
-
     public BinaryRelativeError(INDArray x, INDArray y, double threshold) {
-        super(x, y, x, x.lengthLong());
+        super(x, y, x);
         this.threshold = threshold;
+        this.extraArgs = new Object[] {threshold};
     }
 
     public BinaryRelativeError(INDArray x, INDArray y, INDArray z, double threshold) {
-        super(x, y, z, x.lengthLong());
+        super(x, y, z);
         this.threshold = threshold;
+        this.extraArgs = new Object[] {threshold};
     }
 
     @Override
@@ -97,12 +79,6 @@ public class BinaryRelativeError extends BaseTransformSameOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No  onnx opName found for " + opName());
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {threshold};
     }
 
 

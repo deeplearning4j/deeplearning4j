@@ -38,12 +38,12 @@ public class CompressionMagicTests extends BaseNd4jTest {
     }
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
 
     }
 
     @Test
-    public void testMagicDecompression1() throws Exception {
+    public void testMagicDecompression1() {
         INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");
@@ -56,7 +56,7 @@ public class CompressionMagicTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testMagicDecompression4() throws Exception {
+    public void testMagicDecompression4() {
         INDArray array = Nd4j.linspace(1, 100, 2500, DataType.FLOAT);
 
         INDArray compressed = Nd4j.getCompressor().compress(array, "GZIP");

@@ -36,23 +36,11 @@ public class Sigmoid extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Sigmoid(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Sigmoid(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Sigmoid() {
     }
 
     public Sigmoid(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Sigmoid(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Sigmoid(INDArray ndArray) {

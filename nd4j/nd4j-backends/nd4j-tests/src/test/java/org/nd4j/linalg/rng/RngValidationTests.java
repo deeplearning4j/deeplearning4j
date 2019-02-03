@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.nd4j.OpValidationSuite;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -15,14 +16,15 @@ import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
-import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -81,6 +83,7 @@ public class RngValidationTests {
 
     @Test
     public void validateRngDistributions(){
+        OpValidationSuite.ignoreFailing();      //https://github.com/deeplearning4j/deeplearning4j/issues/6958 - 2018-01-09
 
         List<TestCase> testCases = new ArrayList<>();
         for(DataType type : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
@@ -234,8 +237,8 @@ public class RngValidationTests {
             }
 
             //Check for NaNs, Infs, etc
-            int countNaN = Nd4j.getExecutioner().execAndReturn(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isNan())).castTo(DataType.INT).sumNumber().intValue();
-            int countInf = Nd4j.getExecutioner().execAndReturn(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isInfinite())).castTo(DataType.INT).sumNumber().intValue();
+            int countNaN = Nd4j.getExecutioner().exec(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isNan())).castTo(DataType.INT).sumNumber().intValue();
+            int countInf = Nd4j.getExecutioner().exec(new MatchConditionTransform(z, Nd4j.create(DataType.BOOL, z.shape()), Conditions.isInfinite())).castTo(DataType.INT).sumNumber().intValue();
             assertEquals("NaN - expected 0 values", 0, countNaN);
             assertEquals("Infinite - expected 0 values", 0, countInf);
 
@@ -344,7 +347,7 @@ public class RngValidationTests {
             case "binomial":
                 return new BinomialDistribution(tc.arr(), tc.prop("n"), (double)tc.prop("p"));
             case "truncated_normal":
-                return new TruncatedNormalDistribution(tc.arr(), (double)tc.prop("mean"), (double)tc.prop("std") );
+                return new TruncatedNormalDistribution(tc.arr(), (double)tc.prop("mean"), tc.prop("std"));
             case "dropout":
                 INDArray z = tc.arr();
                 z.assign(1.0);

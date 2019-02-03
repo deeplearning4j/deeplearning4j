@@ -35,23 +35,11 @@ public class Sqrt extends BaseTransformFloatOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Sqrt(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Sqrt(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Sqrt() {
     }
 
     public Sqrt(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Sqrt(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Sqrt(INDArray x) {

@@ -134,9 +134,9 @@ public class MaskedReductionUtil {
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(input, negInfMask, withInf, 0, 2));
                 //At this point: all the masked out steps have value -inf, hence can't be the output of the MAX op
 
-                INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(withInf, 2));
+                INDArray isMax = Nd4j.getExecutioner().exec(new IsMax(withInf, 2));
 
-                return Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(isMax, epsilon2d, isMax, 0, 1));
+                return Nd4j.getExecutioner().exec(new BroadcastMulOp(isMax, epsilon2d, isMax, 0, 1));
             case AVG:
             case SUM:
                 //if out = sum(in,dims) then dL/dIn = dL/dOut -> duplicate to each step and mask
@@ -290,9 +290,9 @@ public class MaskedReductionUtil {
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(input, negInfMask, withInf, dimensions));
                 //At this point: all the masked out steps have value -inf, hence can't be the output of the MAX op
 
-                INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(withInf, 2, 3));
+                INDArray isMax = Nd4j.getExecutioner().exec(new IsMax(withInf, 2, 3));
 
-                return Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(isMax, epsilon2d, isMax, 0, 1));
+                return Nd4j.getExecutioner().exec(new BroadcastMulOp(isMax, epsilon2d, isMax, 0, 1));
             case AVG:
             case SUM:
                 //if out = sum(in,dims) then dL/dIn = dL/dOut -> duplicate to each step and mask

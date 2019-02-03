@@ -356,7 +356,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
                         log.info("deleting external device allocation... ");
 
                     val sizez = pair.getRequiredMemory();
-                    AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, Nd4j.getAffinityManager().getDeviceForCurrentThread(), sizez);
+                    if (sizez != null)
+                        AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, Nd4j.getAffinityManager().getDeviceForCurrentThread(), sizez);
                 }
             }
         } catch (Exception e) {

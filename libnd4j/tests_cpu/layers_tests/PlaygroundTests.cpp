@@ -43,7 +43,58 @@ public:
     }
 };
 
+TEST_F(PlaygroundTests, Test_Reduce_Mechanics) {
+    auto length = 8192;
+    auto x = new double[length];
+    double finalVal = 0.0;
+    for (int e = 0; e < length; e++) {
+        x[e] = 1.0;
+    }
 
+    BlockInformation info(length, 1024);
+    auto blocks = new double[info.threads];
+
+    printf("num_threads: [%i]\n", info.threads);
+
+#pragma omp parallel num_threads(info.threads) if (info.threads > 1) proc_bind(AFFINITY) default(shared)
+    {
+        double local = 0.0;
+        for (int i = omp_get_thread_num(); i < info.chunks; i += info.threads) {
+            Nd4jLong newOffset = (i * info.items);
+            auto chunk = x + newOffset;
+            Nd4jLong itemsToLoop = info.items;
+            if (i * info.items >= length) {
+                break;
+            }
+
+            //handle modulo case
+            if (newOffset + info.items >= length) {
+                itemsToLoop = length - newOffset;
+            }
+
+// FIXME: proper reduction should be used here
+            for (Nd4jLong j = 0; j < itemsToLoop && i * info.items + j < length; j++) {
+                auto curr = simdOps::Mean<double,double>::op(chunk[j], nullptr);
+                local = simdOps::Mean<double,double>::update(local, curr, nullptr);
+            }
+
+        }
+
+        blocks[omp_get_thread_num()] = local;
+    }
+
+// FIXME: proper reduction should be used here
+    for (int i = 0; i < info.threads; i++) {
+        finalVal = simdOps::Mean<double,double>::update(finalVal, blocks[i], nullptr);
+    }
+
+
+    finalVal = simdOps::Mean<double,double>::postProcess(finalVal, length, nullptr);
+    delete[] blocks;
+    delete[] x;
+    printf("result: [%f]\n", (float) finalVal);
+    ASSERT_NEAR(1.0, finalVal, 1e-5);
+}
 
 TEST_F(PlaygroundTests, LambdaTest_1) {
     auto array = NDArrayFactory::create<float>('c', {8192, 1024});
@@ -716,7 +767,7 @@ void loopSpan(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, fl
         auto zi = z + zEws * index;        
         #pragma omp simd
         for (Nd4jLong j = 0; j < itemsToLoop; j++) 
-            zi[j * zEws] = simdOps::LogPoisonLoss<float, float, float>::op(xi[j * xEws], yi[j * yEws]);
+            zi[j * zEws] = simdOps::LogPoissonLoss<float, float, float>::op(xi[j * xEws], yi[j * yEws]);
     }
 }
 
@@ -731,7 +782,7 @@ void loopSimple(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, 
     
     #pragma omp parallel for simd schedule(static, span_size) if (len > ELEMENT_THRESHOLD) proc_bind(close) default(shared)
     for(Nd4jLong i = 0; i < len; ++i)
-        z[i * zEws] = simdOps::LogPoisonLoss<float, float, float>::op(x[i * xEws], y[i * yEws]);
+        z[i * zEws] = simdOps::LogPoissonLoss<float, float, float>::op(x[i * xEws], y[i * yEws]);
 
 }
 
@@ -807,7 +858,7 @@ void loop1(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float
             Nd4jLong xOffset = shape::getIndexOffset(j+threadOffset, xShapeInfo, len);
             Nd4jLong yOffset = shape::getIndexOffset(j+threadOffset, yShapeInfo, len);
             Nd4jLong zOffset = shape::getIndexOffset(j+threadOffset, zShapeInfo, len);
-            z[xOffset] = simdOps::LogPoisonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
+            z[xOffset] = simdOps::LogPoissonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
         }
     }
 }
@@ -826,7 +877,7 @@ void loop2(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo, float
         Nd4jLong xOffset = shape::getIndexOffset(i, xShapeInfo, len);
         Nd4jLong yOffset = shape::getIndexOffset(i, yShapeInfo, len);
         Nd4jLong zOffset = shape::getIndexOffset(i, zShapeInfo, len);
-        z[xOffset] = simdOps::LogPoisonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
+        z[xOffset] = simdOps::LogPoissonLoss<float, float, float>::op(x[xOffset], y[xOffset]);
     }
 
 }

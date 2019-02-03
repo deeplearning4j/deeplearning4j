@@ -36,23 +36,11 @@ public class HardTanh extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public HardTanh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public HardTanh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public HardTanh() {
     }
 
     public HardTanh(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public HardTanh(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public HardTanh(INDArray x) {

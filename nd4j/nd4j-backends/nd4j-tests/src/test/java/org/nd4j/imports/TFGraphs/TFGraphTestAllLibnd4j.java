@@ -24,7 +24,6 @@ import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -35,9 +34,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-
-import static org.nd4j.imports.TFGraphs.TFGraphTestAllHelper.checkOnlyOutput;
-import static org.nd4j.imports.TFGraphs.TFGraphTestAllHelper.fetchTestParams;
 
 /**
  * Created by susaneraly on 11/29/17.
@@ -68,50 +64,25 @@ public class TFGraphTestAllLibnd4j {
     private static final String MODEL_FILENAME = "frozen_model.pb";
 
     private static final String[] SKIP_ARR = new String[] {
-            "deep_mnist",
-            "deep_mnist_no_dropout",
-            "ssd_mobilenet_v1_coco",
-            "yolov2_608x608",
-            "inception_v3_with_softmax",
+            //"deep_mnist",
+            //"deep_mnist_no_dropout",
+            //"ssd_mobilenet_v1_coco",
+            //"yolov2_608x608",
+            //"inception_v3_with_softmax",
             "conv_5" // still RNG differences
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
 
     private static final String[] SKIP_FOR_LIBND4J_EXEC = new String[]{
-            //These are issues that need to be looked into more and fixed
-            "reductions/max.*",
-            "reductions/mean.*",
-            "reductions/min.*",
-            "reductions/prod.*",
-            "reductions/sum.*",
-            "reductions/moments.*",
-            "multiple_outs_a",
-            "multiple_outs_b",
-
-            //Crashing
-            "cnn3d_layers/.*",
-
             //Exceptions - need to look into:
             "alpha_dropout/.*",
             "layers_dropout/.*",
-            "losses/.*",
-
-            //Failing only on libnd4j/native graph execution
-            "logsumexp/.*",
-            "reduce_all/.*",
-            "reduce_any/.*",
-            "split/.*",
-
-            "reductions/count_nonzero.*",
-            "sufficient_statistics.*",
-
-            "histogram_fixed.*",
-            "unsorted_segment.*",
+            //"losses/.*",
 
             //These can't pass until this is fixed: https://github.com/deeplearning4j/deeplearning4j/issues/6465#issuecomment-424209155
             //i.e., reduction ops with newFormat/keepDims args
-            "l2_normalize/.*",
-            "norm_tests/.*",
+            //"l2_normalize/.*",
+            //"norm_tests/.*",
             "g_06",
 
             //JVM crashes
@@ -120,7 +91,7 @@ public class TFGraphTestAllLibnd4j {
     };
 
     @BeforeClass
-    public static void beforeClass() throws Exception {
+    public static void beforeClass() {
         Nd4j.setDataType(DataType.FLOAT);
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
@@ -131,7 +102,7 @@ public class TFGraphTestAllLibnd4j {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -150,7 +121,7 @@ public class TFGraphTestAllLibnd4j {
         }
     }
 
-    public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws IOException {
+    public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;

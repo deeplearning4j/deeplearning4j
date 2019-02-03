@@ -151,7 +151,7 @@ public class LossMixtureDensity extends DifferentialFunction implements ILossFun
 
         // Alpha is a softmax because
         // the alpha should all sum to 1 for a given gaussian mixture.
-        mdc.alpha = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(mdc.alpha));
+        mdc.alpha = Nd4j.getExecutioner().exec(new OldSoftMax(mdc.alpha));
 
         // Mu comes directly from the network as an unmolested value.
         // Note that this effectively means that the output layer of
@@ -266,7 +266,7 @@ public class LossMixtureDensity extends DifferentialFunction implements ILossFun
         INDArray exponentMax = exponent.max(1);
         exponent.subiColumnVector(exponentMax);
         INDArray pi = Transforms.exp(exponent).muli(normalPart);
-        INDArray piDivisor = pi.sum(1);
+        INDArray piDivisor = pi.sum(true,1);
         pi.diviColumnVector(piDivisor);
 
         // See Bishop equation (35)
@@ -342,7 +342,7 @@ public class LossMixtureDensity extends DifferentialFunction implements ILossFun
     private INDArray negativeLogLikelihood(INDArray labels, INDArray alpha, INDArray mu, INDArray sigma) {
         INDArray labelsMinusMu = labelsMinusMu(labels, mu);
         INDArray diffsquared = labelsMinusMu.mul(labelsMinusMu).sum(2);
-        INDArray phitimesalphasum = phi(diffsquared, sigma).muli(alpha).sum(1);
+        INDArray phitimesalphasum = phi(diffsquared, sigma).muli(alpha).sum(true,1);
 
         // result = See Bishop(28,29)
         INDArray result = Transforms.log(phitimesalphasum).negi();

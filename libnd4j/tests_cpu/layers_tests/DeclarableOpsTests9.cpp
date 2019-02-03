@@ -1321,6 +1321,27 @@ TEST_F(DeclarableOpsTests9, test_unstack_1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, test_unstack_SGO_1) {
+    auto x = NDArrayFactory::create<double>({1, 2, 3, 4, 5});
+    x.linspace(1.0);
+    auto z1 = NDArrayFactory::create<double>(1);
+    auto z2 = NDArrayFactory::create<double>(2);
+    auto z3 = NDArrayFactory::create<double>(3);
+    auto z4 = NDArrayFactory::create<double>(4);
+    auto z5 = NDArrayFactory::create<double>(5);
+    std::vector<NDArray*> z({&z1, &z2, &z3, &z4, &z5});
+    nd4j::ops::unstack op;
+    auto result = op.execute({&x}, {}, {0});
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(5, result->size());
+    for (size_t i = 0; i < result->size(); i++) {
+        ASSERT_TRUE(result->at(i)->isSameShape(z[i]));
+        ASSERT_TRUE(result->at(i)->equalsTo(z[i]));
+    }
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, concat_test10) {
 
     auto x0 = NDArrayFactory::create<double>('c', {2,3,4});

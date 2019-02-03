@@ -21,6 +21,8 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.RandomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -57,6 +59,10 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
         sameDiff.addArgsFor(new String[0], this);
     }
 
+    public BaseRandomOp(INDArray x, INDArray y, INDArray z){
+        super(x,y,z);
+    }
+
     @Override
     public Type opType() {
         return Type.RANDOM;
@@ -73,5 +79,12 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
                 ret.add(LongShapeDescriptor.fromShape(shape, Shape.pickPairwiseDataType(args()[0].dataType(), Nd4j.dataType())));
             return ret;
         }
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes == null || inputDataTypes.isEmpty(), "Expected no input data types for %s, got %s", getClass().getName(), inputDataTypes);
+        //TODO MAKE CONFIGUREABLE - https://github.com/deeplearning4j/deeplearning4j/issues/6854
+        return Collections.singletonList(DataType.FLOAT);
     }
 }

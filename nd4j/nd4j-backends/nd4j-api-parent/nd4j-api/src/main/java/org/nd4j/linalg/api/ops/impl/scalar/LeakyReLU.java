@@ -62,32 +62,22 @@ public class LeakyReLU extends BaseScalarOp {
     public LeakyReLU(INDArray x, double alpha) {
         super(x, alpha);
         this.alpha = alpha;
-        init(x, y, z, n); //Need to re-init to properly set alpha in extra args array
+        this.extraArgs = new Object[]{alpha};
     }
 
     public LeakyReLU(INDArray x, INDArray z, double alpha) {
-        super(x, null, z, x.length(), alpha);
+        super(x, null, z, alpha);
         this.alpha = alpha;
-        init(x, y, z, n);
-    }
-
-    public LeakyReLU(INDArray x, INDArray z, long n, double alpha) {
-        super(x, null, z, n, alpha);
-        this.alpha = alpha;
-        init(x, y, z, n);
+        this.extraArgs = new Object[]{alpha};
     }
 
 
     public LeakyReLU(INDArray x, INDArray z) {
-        this(x, z, 0.0);
-    }
-
-    public LeakyReLU(INDArray x, INDArray z, long n) {
-        this(x, z, n, 0.0);
+        this(x, z, 0.01);
     }
 
     public LeakyReLU(INDArray x) {
-        super(x, 0.0);
+        super(x, 0.01);
     }
 
     @Override
@@ -98,13 +88,6 @@ public class LeakyReLU extends BaseScalarOp {
     @Override
     public String opName() {
         return "leakyrelu";
-    }
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[]{alpha};
     }
 
     @Override

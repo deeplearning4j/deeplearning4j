@@ -21,6 +21,7 @@
 #include <ops/declarable/LegacyReduceFloatOp.h>
 #include <helpers/TAD.h>
 #include <helpers/ShapeUtils.h>
+#include <Status.h>
 
 namespace nd4j {
     namespace ops {
@@ -44,11 +45,12 @@ namespace nd4j {
             nd4j_debug("Executing LegacyReduceFloatOp: [%i]\n", opNum);
 
             bool allAxes = false;
+            auto axis = *block.getAxis();
 
             if (block.width() == 1) {
                 auto z = OUTPUT_VARIABLE(0);
 
-                if (block.getIArguments()->size() == x->rankOf())
+                if (axis.size() == x->rankOf())
                     allAxes = true;
 
                 // _axis.(block.getIArguments()->size() == 0) ||
@@ -112,32 +114,13 @@ namespace nd4j {
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    //auto newShape = ShapeUtils::evalReduceShapeInfo(x->ordering(), axis, *x);
-                    //auto z = new NDArray(newShape, x->getWorkspace());
                     auto z = OUTPUT_VARIABLE(0);
 
                     NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
-
-                    //RELEASE(newShape, x->getWorkspace());
-
-                    /* this is waste because output shape already correct and used all needed.
-                    // keepDims processing, for TF compatibility
-                    if (block.getBArguments()->size() > 0 && B_ARG(0)) {
-                        // z->printShapeInfo("z shape before");
-                        std::vector<Nd4jLong> newshape(z->getShapeAsVector());
-                        for (int e = 0; e < axis.size(); e++) {
-                            auto a = axis.at(e);
-                            newshape.insert(newshape.begin() + a, 1);
-                        }
-                        z->reshapei(z->ordering(), newshape);
-                        // z->printShapeInfo("z shape after");
-                    }
-                    */
-                    //OVERWRITE_RESULT(z);
                 }
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         /**

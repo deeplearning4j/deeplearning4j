@@ -61,7 +61,7 @@ namespace nd4j {
 
 
             // optional scalar. used in scalar ops and in summary stats
-            float _scalar;
+            NDArray _scalar;
 
             bool _hasExternalOutputs;
             bool _hasExternalInputs;
@@ -231,7 +231,7 @@ namespace nd4j {
 
             }
 
-            static nd4j::ops::DeclarableOp* buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum, double scalar);
+            static nd4j::ops::DeclarableOp* buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum, NDArray *scalar);
         };
     }
 }

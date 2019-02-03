@@ -38,11 +38,11 @@ import java.util.HashMap;
 public class MultiLayerUpdater extends BaseMultiLayerUpdater<MultiLayerNetwork> {
 
     public MultiLayerUpdater(MultiLayerNetwork network) {
-        this(network, null, network.getLayerWiseConfigurations().isLegacyBatchScaledL2());
+        this(network, null);
     }
 
-    public MultiLayerUpdater(MultiLayerNetwork network, INDArray updaterState, boolean legacyBatchScaledL2) {
-        super(network, updaterState, legacyBatchScaledL2);
+    public MultiLayerUpdater(MultiLayerNetwork network, INDArray updaterState) {
+        super(network, updaterState);
 
         layersByName = new HashMap<>();
         Layer[] l = network.getLayers();
@@ -55,9 +55,7 @@ public class MultiLayerUpdater extends BaseMultiLayerUpdater<MultiLayerNetwork> 
     protected Trainable[] getOrderedLayers() {
         Layer[] layers = network.getLayers();
         Trainable[] t = new Trainable[layers.length];
-        for( int i=0; i<layers.length; i++ ){
-            t[i] = layers[i];
-        }
+        System.arraycopy(layers, 0, t, 0, layers.length);
         return t;
     }
 
@@ -81,6 +79,6 @@ public class MultiLayerUpdater extends BaseMultiLayerUpdater<MultiLayerNetwork> 
 
     @Override
     public Updater clone() {
-        return new MultiLayerUpdater(network, null, legacyBatchScaledL2);
+        return new MultiLayerUpdater(network, null);
     }
 }

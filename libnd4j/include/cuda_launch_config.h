@@ -285,7 +285,7 @@ namespace __cuda_launch_config_detail
         else
         {
             // GPUs of compute capability 2.x and higher allocate registers to warps
-            // Number of regs per warp is regs per thread times times warp size, rounded up to allocation unit
+            // Number of regs per warp is regs per thread times warp size, rounded up to allocation unit
             const int regsPerWarp = util::round_i(attributes.numRegs * properties.warpSize, regAllocationUnit);
             const int numSides = num_sides_per_multiprocessor(properties);
             const int numRegsPerSide = properties.regsPerBlock / numSides;

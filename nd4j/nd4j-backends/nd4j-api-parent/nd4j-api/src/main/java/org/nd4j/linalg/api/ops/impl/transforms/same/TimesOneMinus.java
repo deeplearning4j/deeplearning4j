@@ -33,26 +33,10 @@ public class TimesOneMinus extends BaseTransformSameOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public TimesOneMinus(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public TimesOneMinus(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public TimesOneMinus() {}
 
     public TimesOneMinus(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public TimesOneMinus(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public TimesOneMinus(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
     }
 
     public TimesOneMinus(INDArray x) {

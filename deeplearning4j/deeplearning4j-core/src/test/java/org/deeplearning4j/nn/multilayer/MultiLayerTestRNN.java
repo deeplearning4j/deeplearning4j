@@ -24,6 +24,8 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
@@ -748,5 +750,28 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         mln.fit(ds);
         INDArray afterParams = mln.params();
         assertNotEquals(initialParams, afterParams);
+    }
+
+    @Test
+    public void testInvalidTPBTT() {
+        int nIn = 8;
+        int nOut = 25;
+        int nHiddenUnits = 17;
+
+        try {
+            new NeuralNetConfiguration.Builder()
+                    .list()
+                    .layer(new org.deeplearning4j.nn.conf.layers.LSTM.Builder().nIn(nIn).nOut(nHiddenUnits).build())
+                    .layer(new GlobalPoolingLayer())
+                    .layer(new OutputLayer.Builder(LossFunction.MSE).nIn(nHiddenUnits)
+                            .nOut(nOut)
+                            .activation(Activation.TANH).build())
+                    .backpropType(BackpropType.TruncatedBPTT)
+                    .build();
+            fail("Exception expected");
+        } catch (IllegalStateException e){
+//            e.printStackTrace();
+            assertTrue(e.getMessage().contains("TBPTT") && e.getMessage().contains("validateTbpttConfig"));
+        }
     }
 }

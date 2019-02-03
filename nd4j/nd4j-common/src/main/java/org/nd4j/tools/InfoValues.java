@@ -36,7 +36,9 @@ public class InfoValues {
 		//
 		int Max_K = Math.min( this.titleA.length - 1, titleA.length - 1 );
 		//
-		for ( int i = 0; i <= Max_K; i++ ) this.titleA[ i ] = titleA[ i ];
+		if (Max_K + 1 >= 0){
+			System.arraycopy(titleA, 0, this.titleA, 0, Max_K + 1);
+		}
 		//
 	}
 	//

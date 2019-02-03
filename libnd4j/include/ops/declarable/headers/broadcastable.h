@@ -337,6 +337,14 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_tf_atan2)
         DECLARE_BROADCASTABLE_OP(tf_atan2, 0, 0);
         #endif
+
+        /**
+         * Broadcastable pow implementation
+         * @tparam T
+         */
+        #if NOT_EXCLUDED(OP_Pow)
+        DECLARE_BROADCASTABLE_OP(Pow, 0, 0);
+        #endif
     }
 }
 

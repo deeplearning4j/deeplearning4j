@@ -78,10 +78,14 @@ namespace nd4j {
             void printOutNode(Node* node);
 
             void prepareOutputs();
+
         public:
             Graph(const FlatGraph *flatGraph = nullptr, VariableSpace *variableSpace = nullptr);
 
             ~Graph();
+
+            // this method applies toposort to nodes
+            void toposortNodes();
 
             // method that'll print out graph
             Nd4jStatus validate();
@@ -129,7 +133,7 @@ namespace nd4j {
             std::map<int, nd4j::graph::Node*> *getMapped();
 
             /**
-             * This method returns outputs of of this graph
+             * This method returns outputs of this graph
              * @return
              */
             std::vector<nd4j::graph::Variable*> *fetchOutputs();

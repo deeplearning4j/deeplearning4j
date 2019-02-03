@@ -51,7 +51,7 @@ public class ScalarGreaterThan extends BaseScalarBoolOp {
     }
 
     public ScalarGreaterThan(INDArray x, INDArray z, Number num) {
-        super(x, null, z, x.length(), num);
+        super(x, null, z, num);
     }
 
     public ScalarGreaterThan(INDArray x, Number num) {

@@ -36,22 +36,10 @@ public class Cube extends BaseTransformSameOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Cube(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Cube(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Cube() {}
 
     public Cube(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Cube(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Cube(INDArray x) {

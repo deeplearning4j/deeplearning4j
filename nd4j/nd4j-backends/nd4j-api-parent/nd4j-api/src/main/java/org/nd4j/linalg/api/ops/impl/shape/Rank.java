@@ -21,6 +21,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -59,7 +60,7 @@ public class Rank extends DynamicCustomOp {
             val inputShape = initWith.getShapeForVarName(input.getVarName());
             val resultLength = Nd4j.scalar(inputShape.length);
             val thisResultId = outputVertex;
-            initWith.putArrayForVarName(thisResultId, resultLength);
+            initWith.setArrayForVariable(thisResultId, resultLength);
             initWith.putShapeForVarName(thisResultId, new long[]{1, 1});
         }
     }
@@ -87,7 +88,7 @@ public class Rank extends DynamicCustomOp {
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
         List<LongShapeDescriptor> ret = new ArrayList<>();
-        ret.add(LongShapeDescriptor.fromShape(new long[]{}, DataType.BYTE));
+        ret.add(LongShapeDescriptor.fromShape(new long[]{}, DataType.INT));
         return ret;
     }
 
@@ -97,4 +98,10 @@ public class Rank extends DynamicCustomOp {
         return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
+        //Output type is always int
+        return Collections.singletonList(DataType.INT);
+    }
 }
