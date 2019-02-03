@@ -17,7 +17,7 @@ package org.deeplearning4j.scalnet.examples.dl4j.recurrent
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.Updater
-import org.deeplearning4j.scalnet.layers.recurrent.{ GravesLSTM, RnnOutputLayer }
+import org.deeplearning4j.scalnet.layers.recurrent.{GravesLSTM, RnnOutputLayer}
 import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.nd4j.linalg.activations.Activation
@@ -72,7 +72,7 @@ object BasicRNNExample extends App with Logging {
     var output = rnn.rnnTimeStep(init)
 
     val predicted: Vector[Char] = learningString.map { _ =>
-      val sampledCharacterIdx = Nd4j.getExecutioner.exec(new IMax(output), 1).getInt(0)
+      val sampledCharacterIdx = output.argMax(1).getInt(0)
       val nextInput = Nd4j.zeros(learningChars.length)
       nextInput.putScalar(sampledCharacterIdx, 1)
       output = rnn.rnnTimeStep(nextInput)

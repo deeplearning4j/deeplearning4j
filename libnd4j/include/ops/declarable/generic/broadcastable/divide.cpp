@@ -75,19 +75,22 @@ namespace nd4j {
 
                 // X gradient
                 //epsNext->applyPairwiseLambda(y, lambdaX, gradX);
-                epsNext->applyPairwiseTransform(pairwise::Divide, y, gradX);
-
+                gradX->assign((*epsNext) / (*y));
                 // Y gradient
                 //epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
-                gradY->assign(epsNext * - (*x) / ((*y) * (*y)));
+                gradY->assign((*epsNext) * (*x) / ((*y) * (*y)));
+                gradY->applyTransform(transform::Neg, nullptr, nullptr);
 
             } else if (y->isScalar()) {
                 // scalar case
 
                 auto tmp = epsNext->reduceNumber(reduce::Sum);
                 auto tmpX = x->reduceNumber(reduce::Sum);
-                gradY->assign(tmp * -tmpX / ((*y) * (*y)));
-                
+                tmpX.printBuffer("SumX");
+                tmp.printBuffer("Sum Eps");
+                gradY->assign(tmp * tmpX / ((*y) * (*y)));
+                gradY->applyTransform(transform::Neg, nullptr, nullptr);
+
                 //epsNext->applyLambda(lambdaS, gradX);
                 epsNext->applyScalarArr(scalar::Divide, y, gradX, nullptr);
             } else {

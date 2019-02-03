@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -37,22 +38,10 @@ public class HardTanhDerivative extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public HardTanhDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public HardTanhDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public HardTanhDerivative() {}
 
     public HardTanhDerivative(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public HardTanhDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public HardTanhDerivative(INDArray x) {
@@ -81,8 +70,8 @@ public class HardTanhDerivative extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().one(outputVariables()[0].getShape());
-        return Arrays.asList(ret);
+        SDVariable ret = sameDiff.onesLike(outputVariables()[0]);
+        return Collections.singletonList(ret);
     }
 
 }

@@ -43,26 +43,14 @@ public class OldMax extends BaseTransformSameOp {
         super(sameDiff);
     }
 
-    public OldMax(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
     public OldMax(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public OldMax(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public OldMax(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public OldMax() {}
 
-    public OldMax(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public OldMax(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
     }
 
     public OldMax(INDArray x) {
@@ -71,10 +59,6 @@ public class OldMax extends BaseTransformSameOp {
 
     public OldMax(INDArray ndArray, INDArray dup) {
         super(ndArray, dup);
-    }
-
-    public OldMax(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     @Override

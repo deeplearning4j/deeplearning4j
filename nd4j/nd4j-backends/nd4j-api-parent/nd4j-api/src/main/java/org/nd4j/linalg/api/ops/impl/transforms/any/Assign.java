@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.BaseTransformAnyOp;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,23 +38,11 @@ public class Assign extends BaseTransformAnyOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Assign(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Assign(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Assign() {
     }
 
     public Assign(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Assign(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Assign(INDArray x) {
@@ -83,8 +72,7 @@ public class Assign extends BaseTransformAnyOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-
-        return Arrays.asList(sameDiff.one("grad-" + UUID.randomUUID().toString(), i_v.get(0).getShape()));
+        return Collections.singletonList(sameDiff.zerosLike(i_v.get(0)));
     }
 
 }

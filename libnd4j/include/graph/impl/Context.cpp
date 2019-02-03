@@ -100,9 +100,7 @@ namespace nd4j {
             this->_tArgs.clear();
             this->_inputs.clear();
 #ifdef HAVE_MKLDNN
-            if (_mkldnnStream != nullptr) {
-                delete _mkldnnStream;
-            }
+            this->_mkldnnStreams.clear();
 #endif
         }
 
@@ -267,10 +265,15 @@ namespace nd4j {
                 var->markRemovable(removable);
             } else {
                 auto var = _variableSpace->getVariable(pair);
-                if (var->getNDArray() != array) {
-                    if (var->isRemovable() && var->getNDArray() != nullptr)
-                        delete var->getNDArray();
+                if (var->hasNDArray()) {
+                    if (var->getNDArray() != array) {
+                        if (var->isRemovable() && var->hasNDArray())
+                            delete var->getNDArray();
 
+                        var->setNDArray(array);
+                        var->markRemovable(removable);
+                    }
+                } else {
                     var->setNDArray(array);
                     var->markRemovable(removable);
                 }
@@ -311,9 +314,9 @@ namespace nd4j {
             auto var = ensureVariable(idx);
 
             if (var->variableType() == VariableType::NDARRAY) {
-                return var->getNDArray() != nullptr;
+                return var->hasNDArray();
             } else if (var->variableType() == VariableType::ARRAY_LIST) {
-                return var->getNDArrayList() != nullptr;
+                return var->hasNDArrayList();
             }
 
             return false;

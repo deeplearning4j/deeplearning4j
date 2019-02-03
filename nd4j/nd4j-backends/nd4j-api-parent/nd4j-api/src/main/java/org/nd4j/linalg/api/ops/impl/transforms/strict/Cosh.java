@@ -38,25 +38,12 @@ public class Cosh extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Cosh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Cosh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Cosh() {
     }
 
     public Cosh(INDArray x, INDArray z) {
         super(x, z);
     }
-
-    public Cosh(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public Cosh(INDArray x) {
         super(x);
     }

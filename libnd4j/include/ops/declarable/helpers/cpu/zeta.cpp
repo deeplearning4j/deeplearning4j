@@ -114,22 +114,22 @@ static FORCEINLINE T zetaSlow(const T x, const T q) {
 //////////////////////////////////////////////////////////////////////////
 // calculate the Hurwitz zeta function for arrays
 template <typename T>
-static NDArray zeta_(const NDArray& x, const NDArray& q) {
+static NDArray zeta_(const NDArray& x, const NDArray& q, NDArray* output) {
 
-	auto result = NDArray(&x, false, x.getWorkspace());
+	//auto result = NDArray(&x, false, x.getWorkspace());
 
 #pragma omp parallel for if(x.lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)	
 	for(int i = 0; i < x.lengthOf(); ++i)
-		result.p(i, zeta<T>(x.e<T>(i), q.e<T>(i)));
+		output->p(i, zeta<T>(x.e<T>(i), q.e<T>(i)));
 
-	return result;
+	return *output;
 }
 
-	NDArray zeta(const NDArray& x, const NDArray& q) {
-		BUILD_SINGLE_SELECTOR(x.dataType(), return zeta_, (x, q), FLOAT_TYPES);
+	NDArray zeta(const NDArray& x, const NDArray& q, NDArray* output) {
+		BUILD_SINGLE_SELECTOR(x.dataType(), return zeta_, (x, q, output), FLOAT_TYPES);
 	}
 
-	BUILD_SINGLE_TEMPLATE(template NDArray zeta_, (const NDArray& x, const NDArray& q), FLOAT_TYPES);
+	BUILD_SINGLE_TEMPLATE(template NDArray zeta_, (const NDArray& x, const NDArray& q, NDArray* output), FLOAT_TYPES);
 
 
     template float16 zeta(float16, float16);

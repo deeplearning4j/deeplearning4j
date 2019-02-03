@@ -50,6 +50,10 @@ import java.util.Map;
  * belong to the example are in the negative set. This loss function trains the network to produce a higher value for
  * labels that are in the positive set than those that are in the negative set.
  * <p>
+ * Notice that in order to learn anything at all, this loss function <b>requires</b> that your example labels are not
+ * all 0 or all 1. In these cases the loss gradient will be 0. If you have to work with examples like that, you should
+ * try using a ComputationGraph with two LossLayers, one using LossMultiLabel and the other one using LossBinaryXENT.
+ * <p>
  * For a more detailed explanation and the actual formulas, read the original paper by Zhang and Zhou. The
  * implementation on scoreArray is based on equation 3, while computeGradient is based on equation 11. The main
  * difference being that -(c_k - c_l) = (c_l - c_k) was used to simplify the calculations.
@@ -84,7 +88,7 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
 
         final INDArray positive = labels;
         final INDArray negative = labels.eq(0.0).castTo(Nd4j.defaultFloatingPointType());
-        final INDArray normFactor = negative.sum(1).castTo(Nd4j.defaultFloatingPointType()).muli(positive.sum(1));
+        final INDArray normFactor = negative.sum(true,1).castTo(Nd4j.defaultFloatingPointType()).muli(positive.sum(true,1));
 
 
         long examples = positive.size(0);
@@ -96,27 +100,38 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
             final INDArray locNegative = negative.getRow(i);
             final Double locNormFactor = normFactor.getDouble(i);
 
-            final INDArray operandA = Nd4j.ones(shape[1], shape[0]).mmul(locCfn);
-            final INDArray operandB = operandA.transpose();
-
-            final INDArray pairwiseSub = Transforms.exp(operandA.sub(operandB));
-
-            final INDArray selection = locPositive.transpose().mmul(locNegative);
-
-            final INDArray classificationDifferences = pairwiseSub.muli(selection).divi(locNormFactor);
-
-            if (scoreOutput != null) {
-                if (mask != null) {
-                    final INDArray perLabel = classificationDifferences.sum(0);
-                    LossUtil.applyMask(perLabel, mask.getRow(i));
-                    perLabel.sum(scoreOutput.getRow(i), 0);
-                } else {
-                    classificationDifferences.sum(scoreOutput.getRow(i), 0, 1);
+            final int outSetSize = locNegative.sumNumber().intValue();
+            if(outSetSize == 0 || outSetSize == locNegative.columns()){
+                if (scoreOutput != null) {
+                    scoreOutput.getRow(i).assign(0);
                 }
-            }
 
-            if (gradientOutput != null) {
-                gradientOutput.getRow(i).assign(classificationDifferences.sum(0).addi(classificationDifferences.sum(1).transposei().negi()));
+                if (gradientOutput != null) {
+                    gradientOutput.getRow(i).assign(0);
+                }
+            }else {
+                final INDArray operandA = Nd4j.ones(shape[1], shape[0]).mmul(locCfn);
+                final INDArray operandB = operandA.transpose();
+
+                final INDArray pairwiseSub = Transforms.exp(operandA.sub(operandB));
+
+                final INDArray selection = locPositive.transpose().mmul(locNegative);
+
+                final INDArray classificationDifferences = pairwiseSub.muli(selection).divi(locNormFactor);
+
+                if (scoreOutput != null) {
+                    if (mask != null) {
+                        final INDArray perLabel = classificationDifferences.sum(0);
+                        LossUtil.applyMask(perLabel, mask.getRow(i));
+                        perLabel.sum(scoreOutput.getRow(i), 0);
+                    } else {
+                        classificationDifferences.sum(scoreOutput.getRow(i), 0, 1);
+                    }
+                }
+
+                if (gradientOutput != null) {
+                    gradientOutput.getRow(i).assign(classificationDifferences.sum(true, 0).addi(classificationDifferences.sum(true,1).transposei().negi()));
+                }
             }
         }
 
@@ -151,7 +166,7 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
     @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
-        return scoreArr.sum(1);
+        return scoreArr.sum(true,1);
     }
 
     @Override

@@ -36,23 +36,10 @@ public class Log1p extends BaseTransformStrictOp {
     public Log1p(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
-
-    public Log1p(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Log1p(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Log1p() {}
 
     public Log1p(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Log1p(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Log1p(INDArray x) {

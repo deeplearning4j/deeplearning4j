@@ -431,7 +431,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         network.init();
 
         network.setInput(next.getFeatures());
-        INDArray activationsActual = network.activate(next.getFeatures());
+        INDArray activationsActual = network.output(next.getFeatures());
         assertEquals(10, activationsActual.shape()[1], 1e-2);
 
         network.fit(next);

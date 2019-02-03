@@ -18,6 +18,7 @@
 // Created by george@skymind.io on 6/1/2018.
 //
 #include <ops/declarable/helpers/reduce_dot.h>
+#include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -46,14 +47,20 @@ namespace ops {
             // dL/dx_i = y_i
             //    
             //REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_sum_bp: The second param shape should be the same as result shape.");
-            if (epsilon->isScalar()) {
+            if (epsilon->lengthOf() == 1) { // scalar of reduced to scalar with keep dimensions
                 output1->assign(epsilon);
                 output1->applyPairwiseTransform(pairwise::Multiply, inputY, output1, nullptr);
                 output2->assign(epsilon);
                 output2->applyPairwiseTransform(pairwise::Multiply, inputX, output2, nullptr);
             }
             else {
-                auto axes = *block.getIArguments();
+                std::vector<int> axes; // = *block.getIArguments();
+                if (block.width() > 3) { // axes as last array
+                    auto axesArr = INPUT_VARIABLE(3);
+                    helpers::adjustAxis(inputX, axesArr, axes);
+                } else
+                    axes = *block.getIArguments();
+
                 helpers::reduceDotBP(inputX, inputY, epsilon, output1, output2, axes);
             }
 

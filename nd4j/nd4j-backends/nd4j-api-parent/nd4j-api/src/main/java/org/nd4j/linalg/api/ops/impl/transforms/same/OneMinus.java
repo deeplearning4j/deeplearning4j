@@ -36,22 +36,10 @@ public class OneMinus extends BaseTransformSameOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public OneMinus(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public OneMinus(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public OneMinus() {}
 
     public OneMinus(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public OneMinus(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public OneMinus(INDArray x) {

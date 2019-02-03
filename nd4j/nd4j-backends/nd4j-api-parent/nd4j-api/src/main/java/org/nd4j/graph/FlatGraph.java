@@ -31,12 +31,12 @@ public final class FlatGraph extends Table {
   public int placeholdersLength() { int o = __offset(14); return o != 0 ? __vector_len(o) : 0; }
 
   public static int createFlatGraph(FlatBufferBuilder builder,
-                                    long id,
-                                    int variablesOffset,
-                                    int nodesOffset,
-                                    int outputsOffset,
-                                    int configurationOffset,
-                                    int placeholdersOffset) {
+      long id,
+      int variablesOffset,
+      int nodesOffset,
+      int outputsOffset,
+      int configurationOffset,
+      int placeholdersOffset) {
     builder.startObject(6);
     FlatGraph.addId(builder, id);
     FlatGraph.addPlaceholders(builder, placeholdersOffset);
@@ -69,6 +69,4 @@ public final class FlatGraph extends Table {
   public static void finishFlatGraphBuffer(FlatBufferBuilder builder, int offset) { builder.finish(offset); }
   public static void finishSizePrefixedFlatGraphBuffer(FlatBufferBuilder builder, int offset) { builder.finishSizePrefixed(offset); }
 }
-
-
 

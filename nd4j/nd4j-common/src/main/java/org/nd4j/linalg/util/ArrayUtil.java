@@ -149,6 +149,15 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static <T> T[] nTimes(int n, T toReplicate, Class<T> tClass){
+        Preconditions.checkState(n>=0, "Invalid number of times to replicate: must be >= 0, got %s", n);
+        T[] out = (T[])Array.newInstance(tClass, n);
+        for( int i=0; i<n; i++ ){
+            out[i] = toReplicate;
+        }
+        return out;
+    }
+
     /**
      * Returns true if all of the elements in the
      * given int array are unique
@@ -831,7 +840,7 @@ public class ArrayUtil {
 
 
     /**
-     * Returns a subset of an array from 0 to "to"
+     * Returns a subset of an array from 0 to "to" (exclusive)
      *
      * @param data the data to getFromOrigin a subset of
      * @param to   the end point of the data
@@ -843,8 +852,7 @@ public class ArrayUtil {
 
 
     /**
-     * Returns a subset of an array from 0 to "to"
-     * using the specified stride
+     * Returns a subset of an array from 0 to "to" (exclusive) using the specified stride
      *
      * @param data   the data to getFromOrigin a subset of
      * @param to     the end point of the data
@@ -917,10 +925,9 @@ public class ArrayUtil {
 
 
     /**
-     * Generate an int array ranging from
-     * from to to.
-     * if from is > to this method will
-     * count backwards
+     * Generate an int array ranging from "from" to "to".
+     * The total number of elements is (from-to)/increment - i.e., range(0,2,1) returns [0,1]
+     * If from is > to this method will count backwards
      *
      * @param from      the from
      * @param to        the end point of the data
@@ -979,10 +986,9 @@ public class ArrayUtil {
     }
 
     /**
-     * Generate an int array ranging from
-     * from to to.
-     * if from is > to this method will
-     * count backwards
+     * Generate an int array ranging from "from" to "to".
+     * The total number of elements is (from-to) - i.e., range(0,2) returns [0,1]
+     * If from is > to this method will count backwards
      *
      * @param from the from
      * @param to   the end point of the data
@@ -1178,7 +1184,7 @@ public class ArrayUtil {
 
     public static long[] removeIndex(long[] data, int... index) {
         if (index.length >= data.length) {
-            throw new IllegalStateException("Illegal remove: indexes.length > data.length (index.length="
+            throw new IllegalStateException("Illegal remove: indexes.length >= data.length (index.length="
                     + index.length + ", data.length=" + data.length + ")");
         }
         int offset = 0;
@@ -2734,7 +2740,7 @@ public class ArrayUtil {
         } else if (current instanceof short[]) {
             shape[shape.length - 1] = ((short[]) current).length;
         } else
-            throw new IllegalStateException("Unknown array opType"); //Should never happen
+            throw new IllegalStateException("Unknown array type"); //Should never happen
         return shape;
     }
 
@@ -3076,6 +3082,7 @@ public class ArrayUtil {
     }
 
     public static long[][] toPrimitives(Long[][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new long[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3085,6 +3092,7 @@ public class ArrayUtil {
     }
 
     public static int[][] toPrimitives(Integer[][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new int[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3094,6 +3102,7 @@ public class ArrayUtil {
     }
 
     public static short[][] toPrimitives(Short[][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new short[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3103,6 +3112,7 @@ public class ArrayUtil {
     }
 
     public static byte[][] toPrimitives(Byte[][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new byte[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3112,6 +3122,7 @@ public class ArrayUtil {
     }
 
     public static double[][] toPrimitives(Double[][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new double[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3121,6 +3132,7 @@ public class ArrayUtil {
     }
 
     public static float[][] toPrimitives(Float[][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new float[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3130,6 +3142,7 @@ public class ArrayUtil {
     }
 
     public static boolean [][] toPrimitives(Boolean[][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new boolean[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3139,6 +3152,7 @@ public class ArrayUtil {
     }
 
     public static long[][][] toPrimitives(Long[][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new long[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3149,6 +3163,7 @@ public class ArrayUtil {
     }
 
     public static int[][][] toPrimitives(Integer[][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new int[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3159,6 +3174,7 @@ public class ArrayUtil {
     }
 
     public static short[][][] toPrimitives(Short[][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new short[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3169,6 +3185,7 @@ public class ArrayUtil {
     }
 
     public static byte[][][] toPrimitives(Byte[][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new byte[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3179,6 +3196,7 @@ public class ArrayUtil {
     }
 
     public static double[][][] toPrimitives(Double[][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new double[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3189,6 +3207,7 @@ public class ArrayUtil {
     }
 
     public static float[][][] toPrimitives(Float[][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new float[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3199,6 +3218,7 @@ public class ArrayUtil {
     }
 
     public static boolean[][][] toPrimitives(Boolean[][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new boolean[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3209,6 +3229,7 @@ public class ArrayUtil {
     }
 
     public static long[][][][] toPrimitives(Long[][][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new long[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3220,6 +3241,7 @@ public class ArrayUtil {
     }
 
     public static int[][][][] toPrimitives(Integer[][][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new int[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3231,6 +3253,7 @@ public class ArrayUtil {
     }
 
     public static short[][][][] toPrimitives(Short[][][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new short[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3242,6 +3265,7 @@ public class ArrayUtil {
     }
 
     public static byte[][][][] toPrimitives(Byte[][][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new byte[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3253,6 +3277,7 @@ public class ArrayUtil {
     }
 
     public static double[][][][] toPrimitives(Double[][][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new double[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3264,6 +3289,7 @@ public class ArrayUtil {
     }
 
     public static float[][][][] toPrimitives(Float[][][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new float[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3275,6 +3301,7 @@ public class ArrayUtil {
     }
 
     public static boolean[][][][] toPrimitives(Boolean[][][][] array) {
+        ArrayUtil.assertNotRagged(array);
         val res = new boolean[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
@@ -3283,5 +3310,87 @@ public class ArrayUtil {
                         res[i][j][k][l] = array[i][j][k][l];
 
         return res;
+    }
+
+
+    /**
+     * Assert that the specified array is not ragged (i.e., is rectangular).<br>
+     * Can be used to check Object arrays with any number of dimensions (up to rank 4), or primitive arrays with rank 2 or higher<br>
+     * An IllegalStateException is thrown if the array is ragged
+     *
+     * @param array Array to check
+     */
+    public static <T> void assertNotRagged(T[] array){
+        Class<?> c = array.getClass().getComponentType();
+        int[] arrayShape = ArrayUtil.arrayShape(array, true);
+        int rank = arrayShape.length;
+
+        if(rank == 1){
+            //Rank 1 cannot be ragged
+            return;
+        }
+
+        if(rank >= 2){
+            for( int i=1; i<arrayShape[0]; i++ ){
+                Object subArray = array[i];
+                int len = arrayLength(subArray);
+                Preconditions.checkState(arrayShape[1] == len, "Ragged array detected: array[0].length=%s does not match array[%s].length=%s", arrayShape[1], i, len);
+            }
+            if(rank == 2)
+                return;
+        }
+        if(rank >= 3){
+
+            for( int i=0; i<arrayShape[0]; i++ ){
+                for( int j=0; j<arrayShape[1]; j++ ){
+                    Object subArray = ((Object[][])array)[i][j];
+                    int len = arrayLength(subArray);
+                    Preconditions.checkState(arrayShape[2] == len, "Ragged array detected: array[0][0].length=%s does not match array[%s][%s].length=%s", arrayShape[2], i, j, len);
+                }
+            }
+
+            if(rank == 3)
+                return;
+        }
+        if(rank >= 4){
+            for( int i=0; i<arrayShape[0]; i++ ){
+                for( int j=0; j<arrayShape[1]; j++ ){
+                    for( int k=0; k<arrayShape[2]; k++ ){
+                        Object subArray = ((Object[][][])array)[i][j][k];
+                        int len = arrayLength(subArray);
+                        Preconditions.checkState(arrayShape[3] == len, "Ragged array detected: array[0][0][0].length=%s does not match array[%s][%s][%s].length=%s",
+                                arrayShape[3], i, j, k, len);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Calculate the length of the object or primitive array. If
+     * @param current
+     * @return
+     */
+    public static int arrayLength(Object current){
+        if (current instanceof Object[]) {
+            return ((Object[]) current).length;
+        } else if (current instanceof double[]) {
+            return ((double[]) current).length;
+        } else if (current instanceof float[]) {
+            return ((float[]) current).length;
+        } else if (current instanceof long[]) {
+            return ((long[]) current).length;
+        } else if (current instanceof int[]) {
+            return ((int[]) current).length;
+        } else if (current instanceof byte[]) {
+            return ((byte[]) current).length;
+        } else if (current instanceof char[]) {
+            return ((char[]) current).length;
+        } else if (current instanceof boolean[]) {
+            return ((boolean[]) current).length;
+        } else if (current instanceof short[]) {
+            return ((short[]) current).length;
+        } else
+            throw new IllegalStateException("Unknown array type (or not an array): " + current.getClass()); //Should never happen
     }
 }

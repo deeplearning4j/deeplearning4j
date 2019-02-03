@@ -38,6 +38,19 @@ public:
     }
 };
 
+template <typename T>
+class TypedDeclarableOpsTests10 : public testing::Test {
+public:
+
+    TypedDeclarableOpsTests10() {
+        printf("\n");
+        fflush(stdout);
+    }
+};
+
+typedef ::testing::Types<double, float> TestingTypes;
+TYPED_TEST_CASE(TypedDeclarableOpsTests10, TestingTypes);
+
 TEST_F(DeclarableOpsTests10, Test_ArgMax_1) {
     auto x = NDArrayFactory::create<double>('c', {3, 3});
     auto e = NDArrayFactory::create<Nd4jLong>(8);
@@ -186,7 +199,7 @@ TEST_F(DeclarableOpsTests10, MirrorPad_SGO_Test_1) {
     auto pad = NDArrayFactory::create<int>('c', {1, 2}, {1, 1});
 //    auto value(10.0);
 
-    auto exp = NDArrayFactory::create<double>({5., 1., 2., 3., 4., 5., 1.});
+    auto exp = NDArrayFactory::create<double>({2., 1., 2., 3., 4., 5., 4.});
 
     nd4j::ops::mirror_pad op;
 
@@ -1901,6 +1914,69 @@ TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1) {
     //expected.printIndexedBuffer("Expect for 4x5");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, ReduceLogSumExpTest_1) {
+
+    NDArray input   = NDArrayFactory::create<double> ('c', {3,3}, {0, 1, 0, 0, 1, 0, 0, 0, 0});
+
+    NDArray expected = NDArrayFactory::create<double>(2.5206409f);
+
+    nd4j::ops::reduce_logsumexp op;
+    auto results = op.execute({&input}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, ReduceLogSumExpTest_2) {
+
+    NDArray input = NDArrayFactory::create<double>('c', {3,3}, {0, 1, 0, 0, 1, 0, 0, 0, 0});
+
+    NDArray expected = NDArrayFactory::create<double>({1.0986123f, 1.8619947f, 1.0986123f});
+
+    nd4j::ops::reduce_logsumexp op;
+    auto results = op.execute({&input}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+//    result->printIndexedBuffer("REDUCE_LOGSUMEXP");
+//    expected.printIndexedBuffer("LSE EXPECTED");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, ReduceLogSumExpTest_3) {
+
+    NDArray input = NDArrayFactory::create<float>('c', {3,3}, {0, 1, 0, 0, 1, 0, 0, 0, 0});
+
+    NDArray expected = NDArrayFactory::create<float>('c', {1,3}, {1.0986123f, 1.8619947f, 1.0986123f});
+
+    nd4j::ops::reduce_logsumexp op;
+    auto results = op.execute({&input}, {1.f}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+//    result->printIndexedBuffer("REDUCE_LOGSUMEXP");
+//    expected.printIndexedBuffer("LSE EXPECTED");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
     delete results;
 }
 
@@ -2325,6 +2401,142 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
 }
 
 ////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_CropAndResize_1) {
+
+    NDArray images = NDArrayFactory::create<double>('c', {1,2,2,1}, {1,2,3,4});
+    NDArray boxes = NDArrayFactory::create<double>('c', {1,4}, {0,0,1,1});
+    NDArray boxI = NDArrayFactory::create<double>('c', {1}, {0.f});
+    NDArray cropSize = NDArrayFactory::create<double>({1.f, 1.f});
+
+    //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray expected = NDArrayFactory::create<double>('c', {1,1,1,1}, {2.5f});
+
+    nd4j::ops::crop_and_resize op;
+    auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    result->printIndexedBuffer("Cropped and Resized");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_CropAndResize_2) {
+
+    NDArray images    = NDArrayFactory::create<float>('c', {1,2,2,1}, {1,2,3,4});
+    NDArray boxes = NDArrayFactory::create<float>('c', {1,4}, {0,0,1,1});
+    NDArray boxI = NDArrayFactory::create<float>('c', {1}, {0.f});
+    NDArray cropSize = NDArrayFactory::create<float>({1.f, 1.f});
+
+    //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray expected = NDArrayFactory::create<float>('c', {1,1,1,1}, {4.f});
+
+    nd4j::ops::crop_and_resize op;
+    auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    result->printIndexedBuffer("Cropped and Resized");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_CropAndResize_3) {
+
+    NDArray images   ('c', {1,2,2,1}, {1,2,3,4});
+    NDArray boxes('c', {1,4}, {0,0,1,1});
+    NDArray boxI('c', {1}, {0});
+    NDArray cropSize = NDArrayFactory::create<float>({3.f, 3.f});
+
+    //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray expected('c', {1,3,3,1}, {1, 1.5f, 2., 2.f, 2.5f, 3.f, 3.f, 3.5f, 4.f});
+
+    nd4j::ops::crop_and_resize op;
+    auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    result->printIndexedBuffer("Cropped and Resized");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_CropAndResize_4) {
+
+    NDArray images('c', {1,2,2,1}, {1,2,3,4});
+    NDArray boxes('c', {1,4}, {0,0,1,1});
+    NDArray boxI('c', {1}, {0});
+    NDArray cropSize = NDArrayFactory::create<float>({3.f, 3.f});
+
+    //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray expected('c', {1,3,3,1}, {1, 2.f, 2.f, 3.f, 4, 4.f, 3.f, 4.f, 4.f});
+
+    nd4j::ops::crop_and_resize op;
+    auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    result->printIndexedBuffer("Cropped and Resized");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
+
+    NDArray x = NDArrayFactory::create<float>('c', {2,3}, {-63.80f, -63.75f, -63.70f, -63.5f, 0.0f, 0.1f});
+    NDArray exp = NDArrayFactory::create<float>('c', {2,3},  {-63.75f, -63.75f, -63.75f, -63.251953f, 0.0f, 0.0f});
+    NDArray min = NDArrayFactory::create<float>(-63.65f);
+    NDArray max = NDArrayFactory::create<float>(0.1f);
+
+    nd4j::ops::fake_quant_with_min_max_vars op;
+    auto results = op.execute({&x, &min, &max}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    result->printIndexedBuffer("Quantized");
+    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_2) {
+
+    NDArray x = NDArrayFactory::create<double>('c', {2,3}, {-63.80, -63.75, -63.4, -63.5, 0.0, 0.1});
+    NDArray exp = NDArrayFactory::create<double>('c', {2,3},  {-63.75, -63.75, -63.251953, -63.251953, 0.0, 0.0});
+    NDArray min = NDArrayFactory::create<double>(-63.65);
+    NDArray max = NDArrayFactory::create<double>(0.1);
+
+    nd4j::ops::fake_quant_with_min_max_vars op;
+    auto results = op.execute({&x, &min, &max}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    result->printIndexedBuffer("Quantized2");
+    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, batchnorm_new_test1) {
 
     auto input    = NDArrayFactory::create<double>('c', {2,3,4});
@@ -2479,3 +2691,5 @@ TEST_F(DeclarableOpsTests10, printIndexedTest_1) {
     delete lastDims;
 
 }
+
+

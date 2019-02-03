@@ -69,6 +69,35 @@ TEST_F(DeclarableOpsTests9, reduceStDevBP_test3) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, reduceStDevBP_test03) {
+
+    auto x = NDArrayFactory::create<double>('c', {3,4});
+    auto gradO1 = NDArrayFactory::create<double>('c', {3,1}, {1.,2.,3.});
+    auto gradO2 = NDArrayFactory::create<double>('c', {3}, {1.,2.,3.});
+    auto exp = NDArrayFactory::create<double>('c', {3,4}, {-0.335410, -0.111803, 0.111803, 0.335410, -0.670820, -0.223607, 0.223607, 0.670820, -1.006231, -0.335410, 0.335410, 1.006231});
+    auto axis = NDArrayFactory::create<int>('c', {1}, {1});
+    x.linspace(1);
+
+    nd4j::ops::reduce_stdev_bp op;
+
+    auto result = op.execute({&x, &gradO2, &axis}, {}, {}, {false, false});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+    // output->printIndexedBuffer();
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO1}, {1,0}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    output = result->at(0);
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
     
     const int N = 50000;
@@ -1288,6 +1317,27 @@ TEST_F(DeclarableOpsTests9, test_unstack_1) {
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_EQ(5, result->size());
 
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, test_unstack_SGO_1) {
+    auto x = NDArrayFactory::create<double>({1, 2, 3, 4, 5});
+    x.linspace(1.0);
+    auto z1 = NDArrayFactory::create<double>(1);
+    auto z2 = NDArrayFactory::create<double>(2);
+    auto z3 = NDArrayFactory::create<double>(3);
+    auto z4 = NDArrayFactory::create<double>(4);
+    auto z5 = NDArrayFactory::create<double>(5);
+    std::vector<NDArray*> z({&z1, &z2, &z3, &z4, &z5});
+    nd4j::ops::unstack op;
+    auto result = op.execute({&x}, {}, {0});
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(5, result->size());
+    for (size_t i = 0; i < result->size(); i++) {
+        ASSERT_TRUE(result->at(i)->isSameShape(z[i]));
+        ASSERT_TRUE(result->at(i)->equalsTo(z[i]));
+    }
     delete result;
 }
 

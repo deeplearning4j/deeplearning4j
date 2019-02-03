@@ -43,10 +43,6 @@ public class RationalTanh extends BaseTransformStrictOp {
         super(x, z);
     }
 
-    public RationalTanh(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public RationalTanh(INDArray x) {
         super(x);
     }

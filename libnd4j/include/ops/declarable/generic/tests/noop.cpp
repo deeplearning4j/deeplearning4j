@@ -25,7 +25,7 @@
 
 namespace nd4j {
     namespace ops {
-        OP_IMPL(noop, -1, -1, true) {
+        OP_IMPL(noop, -2, -2, true) {
             // Fastest op ever.
             return Status::OK();
         }

@@ -30,7 +30,7 @@ import java.util.List;
 
 /**
  * Label provider for object detection, for use with {@link org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader}.
- * This label provider reads the datasets from the the PASCAL Visual Object Classes - VOC2007 to VOC2012 datasets.<br>
+ * This label provider reads the datasets from the PASCAL Visual Object Classes - VOC2007 to VOC2012 datasets.<br>
  * The VOC datasets contain 20 classes and (for VOC2012) 17,125 images.<br>
  * <a href="http://host.robots.ox.ac.uk/pascal/VOC/voc2007/">http://host.robots.ox.ac.uk/pascal/VOC/voc2007/</a><br>
  * <a href="http://host.robots.ox.ac.uk/pascal/VOC/voc2012/">http://host.robots.ox.ac.uk/pascal/VOC/voc2012/</a>

@@ -35,23 +35,11 @@ public class Square extends BaseTransformSameOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Square(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Square(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Square() {
     }
 
     public Square(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Square(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Square(INDArray x) {

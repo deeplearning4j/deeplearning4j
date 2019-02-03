@@ -83,7 +83,7 @@ public class EvalCustomThreshold extends BaseNd4jTest {
         INDArray p2 = probs.dup();
         INDArray p2c = p2.getColumn(1);
         p2c.muli(2.0);
-        Nd4j.getExecutioner().exec(new ScalarMin(p2c, null, p2c, p2c.length(), 1.0));
+        Nd4j.getExecutioner().exec(new ScalarMin(p2c, null, p2c, 1.0));
         p2.getColumn(0).assign(p2.getColumn(1).rsub(1.0));
 
         Evaluation e025 = new Evaluation(0.25);

@@ -39,23 +39,11 @@ public class SoftSign extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SoftSign(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public SoftSign(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public SoftSign() {
     }
 
     public SoftSign(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public SoftSign(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public SoftSign(INDArray x) {

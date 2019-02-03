@@ -9,17 +9,15 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.*;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 @Slf4j
@@ -31,8 +29,8 @@ public class FlatBufferSerdeTest {
     @Test
     public void testBasic() throws Exception {
         SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
-        sd.addAsPlaceHolder("in");
+        INDArray arr = Nd4j.linspace(1,12,12).reshape(3,4);
+        SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape() );
         SDVariable tanh = sd.tanh("out", in);
 
         ByteBuffer bb = sd.asFlatBuffers();
@@ -81,12 +79,12 @@ public class FlatBufferSerdeTest {
 
     @Test
     public void testSimple() throws Exception {
-        for( int i=0; i<10; i++ ) {
+        for( int i=8; i<10; i++ ) {
             for(boolean execFirst : new boolean[]{false, true}) {
                 log.info("Starting test: i={}, execFirst={}", i, execFirst);
                 SameDiff sd = SameDiff.create();
-                SDVariable in = sd.var("in", Nd4j.linspace(1, 12, 12).reshape(3, 4));
-                sd.addAsPlaceHolder("in");
+                INDArray arr = Nd4j.linspace(1, 12, 12, org.nd4j.linalg.api.buffer.DataType.FLOAT).reshape(3, 4);
+                SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape());
                 SDVariable x;
                 switch (i) {
                     case 0:
@@ -117,12 +115,12 @@ public class FlatBufferSerdeTest {
                         break;
                     case 8:
                         //Reduce 3:
-                        SDVariable y = sd.var("in2", Nd4j.linspace(1,12,12).muli(0.1).addi(0.5).reshape(3,4));
+                        SDVariable y = sd.var("in2", Nd4j.linspace(1,12,12, org.nd4j.linalg.api.buffer.DataType.FLOAT).muli(0.1).addi(0.5).reshape(3,4));
                         x = sd.cosineSimilarity(in, y);
                         break;
                     case 9:
                         //Reduce 3 (along dim)
-                        SDVariable z = sd.var("in2", Nd4j.linspace(1,12,12).muli(0.1).addi(0.5).reshape(3,4));
+                        SDVariable z = sd.var("in2", Nd4j.linspace(1,12,12, org.nd4j.linalg.api.buffer.DataType.FLOAT).muli(0.1).addi(0.5).reshape(3,4));
                         x = sd.cosineSimilarity(in, z, 1);
                         break;
                     default:
@@ -130,7 +128,7 @@ public class FlatBufferSerdeTest {
                 }
 
                 if(execFirst){
-                    sd.execAndEndResult();
+                    sd.exec(Collections.singletonMap("in", arr), Collections.singletonList(x.getVarName()));
                 }
 
                 File f = testDir.newFile();
@@ -155,18 +153,22 @@ public class FlatBufferSerdeTest {
                 }
 
 
-                INDArray outOrig = sd.execAndEndResult();
-                INDArray outRestored = restored.execAndEndResult();
+                Map<String,INDArray> m = sd.exec(Collections.singletonMap("in", arr), Collections.singletonList(x.getVarName()));
+                INDArray outOrig = m.get(x.getVarName());
+                Map<String,INDArray> m2 = restored.exec(Collections.singletonMap("in", arr), Collections.singletonList(x.getVarName()));
+                INDArray outRestored = m2.get(x.getVarName());
 
-                assertEquals(outOrig, outRestored);
+                assertEquals(String.valueOf(i), outOrig, outRestored);
 
 
                 //Check placeholders
-                Set<String> phBefore = sd.getPlaceHolderVarNames();
-                Set<String> phAfter = restored.getPlaceHolderVarNames();
-
-                assertEquals(1, phBefore.size());
-                assertEquals(phBefore, phAfter);
+                Map<String,SDVariable> vBefore = sd.variableMap();
+                Map<String,SDVariable> vAfter = sd.variableMap();
+                assertEquals(vBefore.keySet(), vAfter.keySet());
+                for(String s : vBefore.keySet()){
+                    assertEquals(s, vBefore.get(s).isPlaceHolder(), vAfter.get(s).isPlaceHolder());
+                    assertEquals(s, vBefore.get(s).isConstant(), vAfter.get(s).isConstant());
+                }
             }
         }
     }

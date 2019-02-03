@@ -41,7 +41,7 @@ public class ActivationSoftmax extends BaseActivationFunction {
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
-        INDArray out = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(in));
+        INDArray out = Nd4j.getExecutioner().exec(new OldSoftMax(in));
         INDArray x = out.mul(epsilon).sum(1);
         INDArray dLdz = out.mul(epsilon.subColumnVector(x));
         return new Pair<>(dLdz, null);

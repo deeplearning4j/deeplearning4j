@@ -39,12 +39,8 @@ public class Reciprocal extends BaseTransformSameOp {
     public Reciprocal() {
     }
 
-    public Reciprocal(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public Reciprocal(INDArray x, INDArray z) {
-        super(x, z, x.lengthLong());
+        super(x, z);
     }
 
     public Reciprocal(INDArray x) {
@@ -75,12 +71,6 @@ public class Reciprocal extends BaseTransformSameOp {
     public String[] tensorflowNames(){
         return new String[]{"Reciprocal", "Inv"};
     }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {

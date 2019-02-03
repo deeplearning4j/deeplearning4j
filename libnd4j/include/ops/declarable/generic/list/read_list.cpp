@@ -31,7 +31,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(list->height() > 0, 0, "ReadList: number of elements in list should be positive prior to Read call");
 
-            if (block.getIArguments()->size() > 0) {
+            if (block.numI() > 0) {
                 auto index = INT_ARG(0);
 
                 REQUIRE_TRUE(list->isWritten(index), 0, "ReadList: requested index [%i] wasn't written yet", index);

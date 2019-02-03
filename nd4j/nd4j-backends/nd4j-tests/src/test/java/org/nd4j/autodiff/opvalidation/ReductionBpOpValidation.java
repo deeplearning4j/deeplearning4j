@@ -33,7 +33,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 
 @Slf4j
 public class ReductionBpOpValidation extends BaseOpValidation {
@@ -45,7 +44,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
     }
 
     @Before
-    public void before() throws Exception {
+    public void before() {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
 
@@ -54,13 +53,13 @@ public class ReductionBpOpValidation extends BaseOpValidation {
     }
 
     @After
-    public void after() throws Exception {
+    public void after() {
         Nd4j.setDataType(initialType);
     }
 
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
@@ -744,7 +743,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4).castTo(DataType.DOUBLE);
 
             double norm2 = preReduceInput.norm2Number().doubleValue();
 
@@ -752,10 +751,10 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             if (keepDims) {
                 dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
-                dLdOut = Nd4j.trueScalar(0.5);
+                dLdOut = Nd4j.scalar(DataType.DOUBLE, 0.5);
             }
             INDArray dLdInExpected = preReduceInput.div(norm2).muli(0.5);
-            INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+            INDArray dLdIn = Nd4j.createUninitialized(DataType.DOUBLE, 3, 4);
 
             String err = OpValidation.validate(new OpTestCase(new Norm2Bp(preReduceInput, dLdOut, dLdIn, keepDims))
                     .expectedOutput(0, dLdInExpected));

@@ -41,16 +41,12 @@ public class  AMean extends BaseReduceFloatOp {
 
     public AMean() {}
 
-    public AMean(INDArray x, INDArray z, long n) {
-        super(x, null, z, n);
+    public AMean(INDArray x, INDArray z, int... dimensions) {
+        super(x, null, z, dimensions);
     }
 
-    public AMean(INDArray x) {
+    public AMean(INDArray x, int... dimensions) {
         super(x);
-    }
-
-    public AMean(INDArray x, INDArray z) {
-        super(x, null, z, x.lengthLong());
     }
 
     @Override

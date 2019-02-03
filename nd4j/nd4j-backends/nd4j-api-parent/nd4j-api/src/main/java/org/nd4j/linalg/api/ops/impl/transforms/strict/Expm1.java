@@ -38,23 +38,11 @@ public class Expm1 extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Expm1(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Expm1(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Expm1() {
     }
 
     public Expm1(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Expm1(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Expm1(INDArray x) {

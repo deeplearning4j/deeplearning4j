@@ -23,11 +23,11 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(unsorted_segment_prod, 2, 1, false, 0, 1) {
+        CUSTOM_OP_IMPL(unsorted_segment_prod, 2, 1, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
             auto idxSegments = INPUT_VARIABLE(1);
             auto segmentedOutput = OUTPUT_VARIABLE(0);
-            Nd4jLong numOfClasses = INT_ARG(0);
+            Nd4jLong numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<Nd4jLong>(0) : INT_ARG(0);
             REQUIRE_TRUE(idxSegments->isVector(), 0, "unsorted_segment_prod: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "unsorted_segment_prod: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
@@ -46,7 +46,7 @@ namespace nd4j {
             auto in = inputShape->at(0);
             int outRank = shape::rank(in);
             Nd4jLong* outputShape = nullptr;
-            Nd4jLong numOfClasses = INT_ARG(0);
+            Nd4jLong numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<Nd4jLong>(0) : INT_ARG(0);
 
             ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
 
@@ -71,7 +71,8 @@ namespace nd4j {
         }
         DECLARE_TYPES(unsorted_segment_prod_bp) {
             getOpDescriptor()
-                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS})
+					->setAllowedOutputTypes(1, {ALL_INTS})
                     ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
                     ->setSameMode(false);
         }

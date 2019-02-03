@@ -1363,8 +1363,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             workspaceMgr.assertCurrentWorkspace(ArrayType.ACTIVATIONS, null);
 
             //Score: sum of the scores for the various output layers...
-            double l1 = calcL1();
-            double l2 = calcL2();
+            double r = calcRegularizationScore(true);
 
             score = 0.0;
             int outNum = 0;
@@ -1384,12 +1383,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 vertexLayer.setMaskArray((labelMaskArrays == null) ? null : labelMaskArrays[outNum]);
 
                 try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
-                    score += ((IOutputLayer) vertexLayer).computeScore(l1, l2, true, workspaceMgr);
+                    score += ((IOutputLayer) vertexLayer).computeScore(r, true, workspaceMgr);
                 }
 
-                //Only want to add l1/l2 once...
-                l1 = 0.0;
-                l2 = 0.0;
+                //Only want to add l1/l2 component once...
+                r = 0.0;
                 outNum++;
             }
 
@@ -1897,7 +1895,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         setLayerMaskArrays(fMask, lMask);
 
         //Verify that no workspace is open externally
-        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active before call to ffToLayerActivationsDetached");
+        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active before call to ffToLayerActivationsDetached", true);
 
         LayerWorkspaceMgr workspaceMgr;
         WorkspaceMode wsm = (train ? configuration.getTrainingWorkspaceMode() : configuration.getInferenceWorkspaceMode());
@@ -2039,7 +2037,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         WorkspaceMode wsm = (train ? configuration.getTrainingWorkspaceMode() : configuration.getInferenceWorkspaceMode());
         if(wsm == WorkspaceMode.NONE){
             //Verify that no workspace is open externally
-            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in ffToLayerActivationsDetached");
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in ffToLayerActivationsDetached", true);
 
             workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
         } else {
@@ -2742,28 +2740,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         return cg;
     }
 
-    /**
-     * Calculate the L2 regularization term for all layers in the entire network. This is the sum of the L2 terms
-     * for each layer individually
-     */
-    public double calcL2() {
-        double l2 = 0.0;
-        for (Layer l : layers) {
-            l2 += l.calcL2(true);
-        }
-        return l2;
-    }
 
-    /**
-     * Calculate the L1 regularization term for all layers in the entire network. This is the sum of the L1 terms
-     * for each layer individually
-     */
-    public double calcL1() {
-        double l1 = 0.0;
-        for (Layer l : layers) {
-            l1 += l.calcL1(true);
+    public double calcRegularizationScore(boolean backpropParamsOnly){
+        double scoreSum = 0.0;
+        for (int i = 0; i < layers.length; i++) {
+            scoreSum += layers[i].calcRegularizationScore(backpropParamsOnly);
         }
-        return l1;
+        return scoreSum;
     }
 
     /**
@@ -2985,8 +2968,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             setLabels(labels);
 
             //Score: sum of the scores for the various output layers...
-            double l1 = calcL1();
-            double l2 = calcL2();
+            double r = calcRegularizationScore(true);
 
             int i = 0;
             for (String s : configuration.getNetworkOutputs()) {
@@ -3000,11 +2982,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 IOutputLayer ol = (IOutputLayer) outLayer;
                 ol.setLabels(labels[i++]);
 
-                score += ((LayerVertex) gv).computeScore(l1, l2, training, mgr);
+                score += ((LayerVertex) gv).computeScore(r, training, mgr);
 
                 //Only want to add l1/l2 once...
-                l1 = 0.0;
-                l2 = 0.0;
+                r = 0.0;
             }
         }
 
@@ -3080,8 +3061,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             setLabels(labels);
 
 
-            double l1 = (addRegularizationTerms ? calcL1() : 0.0);
-            double l2 = (addRegularizationTerms ? calcL2() : 0.0);
+            double r = (addRegularizationTerms ? calcRegularizationScore(true) : 0.0);
             int i = 0;
             for (String s : configuration.getNetworkOutputs()) {
                 GraphVertex gv = verticesMap.get(s);
@@ -3096,7 +3076,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                 INDArray scoreCurrLayer;
                 try(MemoryWorkspace wsFF = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
-                    scoreCurrLayer =((LayerVertex) gv).computeScoreForExamples(l1, l2, mgr);
+                    scoreCurrLayer =((LayerVertex) gv).computeScoreForExamples(r, mgr);
                 }
                 if (out == null)
                     out = scoreCurrLayer.detach();
@@ -3104,8 +3084,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     out.addi(scoreCurrLayer);
 
                 //Only want to add l1/l2 once...
-                l1 = 0.0;
-                l2 = 0.0;
+                r = 0.0;
             }
         }
 
@@ -3897,15 +3876,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
 
     /**
-     * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class.
-     * Defaults to exact mode for {@link ROC} class, instead of thresholded
-     *
-     * @param iterator          Data to evaluate on
-     * @return ROC evaluation on the given dataset
+     * @deprecated To be removed - use {@link #evaluateROC(DataSetIterator, int)} to enforce selection of appropriate ROC/threshold configuration
      */
+    @Deprecated
     public <T extends ROC> T evaluateROC(DataSetIterator iterator) {
         return evaluateROC(iterator, 0);
     }
+
     /**
      * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class
      *
@@ -3922,12 +3899,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class.
-     * Defaults to exact mode for {@link ROC} class, instead of thresholded
-     *
-     * @param iterator          Data to evaluate on
-     * @return ROC evaluation on the given dataset
+     * @deprecated To be removed - use {@link #evaluateROC(DataSetIterator, int)} to enforce selection of appropriate ROC/threshold configuration
      */
+    @Deprecated
     public <T extends ROC> T evaluateROC(MultiDataSetIterator iterator) {
         return evaluateROC(iterator, 0);
     }
@@ -3948,12 +3922,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Evaluate the network on the specified data, using the {@link ROCMultiClass} class.
-     * Defaults to exact mode for {@link ROCMultiClass} class, instead of thresholded
-     *
-     * @param iterator          Data to evaluate on
-     * @return Multi-class ROC evaluation on the given dataset
+     * @deprecated To be removed - use {@link #evaluateROCMultiClass(DataSetIterator, int)} to enforce selection of appropriate ROC/threshold configuration
      */
+    @Deprecated
     public <T extends ROCMultiClass> T evaluateROCMultiClass(DataSetIterator iterator) {
         return evaluateROCMultiClass(iterator, 0);
     }

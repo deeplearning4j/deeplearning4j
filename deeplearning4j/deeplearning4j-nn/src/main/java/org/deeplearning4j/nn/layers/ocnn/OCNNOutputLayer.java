@@ -84,14 +84,13 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
 
     /** Compute score after labels and input have been set.
-     * @param fullNetworkL1 L1 regularization term for the entire network
-     * @param fullNetworkL2 L2 regularization term for the entire network
+     * @param fullNetRegTerm Regularization score term for the entire network
      * @param training whether score should be calculated at train or test time (this affects things like application of
      *                 dropout, etc)
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
+    public double computeScore(double fullNetRegTerm, boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = preOutput2d(training, workspaceMgr);
@@ -100,12 +99,11 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
         double score = lossFunction.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
                 layerConf().getActivationFn(), maskArray,false);
-        score += fullNetworkL1 + fullNetworkL2;
         if(conf().isMiniBatch())
             score /= getInputMiniBatchSize();
 
+        score += fullNetRegTerm;
         this.score = score;
-
         return score;
     }
 
@@ -230,20 +228,6 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public INDArray labelProbabilities(INDArray examples) {
-        float[] decision = examples.data().asFloat();
-        for(int i = 0; i < decision.length; i++) {
-            if(decision[i] < 0) {
-                decision[i] = 0.0f;
-            }
-            else {
-                decision[i] = 1.0f;
-            }
-        }
-        return Nd4j.create(decision);
-    }
-
 
     @Override
     public Layer.Type type() {
@@ -287,12 +271,11 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
     /**Compute the score for each example individually, after labels and input have been set.
      *
-     * @param fullNetworkL1 L1 regularization term for the entire network (or, 0.0 to not include regularization)
-     * @param fullNetworkL2 L2 regularization term for the entire network (or, 0.0 to not include regularization)
+     * @param fullNetRegTerm Regularization score term for the entire network (or, 0.0 to not include regularization)
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
+    public INDArray computeScoreForExamples(double fullNetRegTerm, LayerWorkspaceMgr workspaceMgr) {
         //For RNN: need to sum up the score over each time step before returning.
 
         if (input == null || labels == null)
@@ -305,9 +288,8 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
                         layerConf().getActivationFn(), maskArray);
         INDArray summedScores = scoreArray.sum(1);
 
-        double l1l2 = fullNetworkL1 + fullNetworkL2;
-        if (l1l2 != 0.0) {
-            summedScores.addi(l1l2);
+        if (fullNetRegTerm != 0.0) {
+            summedScores.addi(fullNetRegTerm);
         }
 
         return summedScores;

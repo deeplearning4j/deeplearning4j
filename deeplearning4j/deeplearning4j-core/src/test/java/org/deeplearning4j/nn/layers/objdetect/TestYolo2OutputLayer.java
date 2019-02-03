@@ -138,7 +138,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
         y2impl.setInput(input, LayerWorkspaceMgr.noWorkspaces());
         y2impl.setLabels(labels);
-        double score = y2impl.computeScore(0, 0, true, LayerWorkspaceMgr.noWorkspaces());
+        double score = y2impl.computeScore(0.0, true, LayerWorkspaceMgr.noWorkspaces());
 
         System.out.println("SCORE: " + score);
         assertTrue(score > 0.0);
@@ -150,7 +150,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         y2impl = (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer) netLoaded.getLayer(1);
         y2impl.setInput(input, LayerWorkspaceMgr.noWorkspaces());
         y2impl.setLabels(labels);
-        double score2 = y2impl.computeScore(0, 0, true, LayerWorkspaceMgr.noWorkspaces());
+        double score2 = y2impl.computeScore(0.0, true, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(score, score2, 1e-8);
 
@@ -350,7 +350,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
         org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ol = (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer) net.getLayer(1);
 
-        Method m = ol.getClass().getDeclaredMethod("calculateIOULabelPredicted", INDArray.class, INDArray.class, INDArray.class, INDArray.class, INDArray.class);
+        Method m = ol.getClass().getDeclaredMethod("calculateIOULabelPredicted", INDArray.class, INDArray.class, INDArray.class, INDArray.class, INDArray.class, INDArray.class);
         m.setAccessible(true);
 
         INDArray labelTL = ds.getLabels().get(interval(0,1), interval(0,2), all(), all());
@@ -379,7 +379,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         INDArray objectPresentMask = labelImgClasses.reshape(labelImgClasses.ordering(), 1, labelImgClasses.size(0), labelImgClasses.size(1));   //Only 1 class here, so same thing as object present mask...
         objectPresentMask = objectPresentMask.castTo(DataType.BOOL);
 
-        Object ret = m.invoke(ol, labelTL, labelBR, predictedWH, predictedXYInGrid, objectPresentMask);
+        Object ret = m.invoke(ol, labelTL, labelBR, predictedWH, predictedXYInGrid, objectPresentMask.castTo(DataType.DOUBLE), objectPresentMask);
         Field fIou = ret.getClass().getDeclaredField("iou");
         fIou.setAccessible(true);
         INDArray iou = (INDArray)fIou.get(ret);

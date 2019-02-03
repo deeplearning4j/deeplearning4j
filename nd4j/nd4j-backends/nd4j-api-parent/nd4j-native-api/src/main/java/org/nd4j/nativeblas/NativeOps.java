@@ -128,8 +128,8 @@ public abstract class NativeOps extends Pointer {
                                          @Cast("Nd4jLong *") LongPointer resultShapeInfoBuffer,
                                          Pointer dResult,
                                          @Cast("Nd4jLong *") LongPointer dResultShapeInfoBuffer,
-                                         IntPointer dimension,
-                                         int dimensionLength);
+                                         Pointer hDimension, @Cast("Nd4jLong *") LongPointer hDimensionShape,
+                                         Pointer dDimension, @Cast("Nd4jLong *") LongPointer dDimensionShape);
 
     /**
      * @param opNum
@@ -156,8 +156,8 @@ public abstract class NativeOps extends Pointer {
                                        @Cast("Nd4jLong *") LongPointer resultShapeInfo,
                                        Pointer dresult,
                                        @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
-                                       IntPointer dimension,
-                                       int dimensionLength);
+                                       Pointer hDimension, @Cast("Nd4jLong *") LongPointer hDimensionShape,
+                                       Pointer dDimension, @Cast("Nd4jLong *") LongPointer dDimensionShape);
 
     public abstract void execBroadcastBool(PointerPointer extraPointers,
                                            int opNum,
@@ -173,8 +173,8 @@ public abstract class NativeOps extends Pointer {
                                            @Cast("Nd4jLong *") LongPointer resultShapeInfo,
                                            Pointer dresult,
                                            @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
-                                           IntPointer dimension,
-                                           int dimensionLength);
+                                           Pointer hDimension, @Cast("Nd4jLong *") LongPointer hDimensionShape,
+                                           Pointer dDimension, @Cast("Nd4jLong *") LongPointer dDimensionShape);
 
 
     /**
@@ -297,8 +297,8 @@ public abstract class NativeOps extends Pointer {
                                          @Cast("Nd4jLong *") LongPointer resultShapeInfo,
                                          Pointer dresult,
                                          @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
-                                         IntPointer dimension,
-                                         int dimensionLength);
+                                         Pointer hDimension, @Cast("Nd4jLong *") LongPointer hDimensionShape,
+                                         Pointer dDimension, @Cast("Nd4jLong *") LongPointer dDimensionShape);
 
 
     public abstract void execReduceSame(PointerPointer extraPointers,
@@ -312,8 +312,8 @@ public abstract class NativeOps extends Pointer {
                                         @Cast("Nd4jLong *") LongPointer resultShapeInfo,
                                         Pointer dresult,
                                         @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
-                                        IntPointer dimension,
-                                        int dimensionLength);
+                                        Pointer hDimension, @Cast("Nd4jLong *") LongPointer hDimensionShape,
+                                        Pointer dDimension, @Cast("Nd4jLong *") LongPointer dDimensionShape);
 
     public abstract void execReduceBool(PointerPointer extraPointers,
                                         int opNum,
@@ -326,8 +326,8 @@ public abstract class NativeOps extends Pointer {
                                         @Cast("Nd4jLong *") LongPointer resultShapeInfo,
                                         Pointer dresult,
                                         @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
-                                        IntPointer dimension,
-                                        int dimensionLength);
+                                        Pointer hDimension, @Cast("Nd4jLong *") LongPointer hDimensionShape,
+                                        Pointer dDimension, @Cast("Nd4jLong *") LongPointer dDimensionShape);
 
     public abstract void execReduceLong(PointerPointer extraPointers,
                                         int opNum,
@@ -340,8 +340,8 @@ public abstract class NativeOps extends Pointer {
                                         @Cast("Nd4jLong *") LongPointer resultShapeInfo,
                                         Pointer dresult,
                                         @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
-                                        IntPointer dimension,
-                                        int dimensionLength);
+                                        Pointer hDimension, @Cast("Nd4jLong *") LongPointer hDimensionShape,
+                                        Pointer dDimension, @Cast("Nd4jLong *") LongPointer dDimensionShape);
 
     /**
      * @param opNum
@@ -403,8 +403,8 @@ public abstract class NativeOps extends Pointer {
                                      Pointer dy, @Cast("Nd4jLong *") LongPointer dyShapeInfo,
                                      Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfoBuffer,
                                      Pointer dresult, @Cast("Nd4jLong *") LongPointer dresultShapeInfoBuffer,
-                                     IntPointer dimension,
-                                     int dimensionLength,
+                                     Pointer hDimension, @Cast("Nd4jLong *") LongPointer hDimensionShape,
+                                     Pointer dDimension, @Cast("Nd4jLong *") LongPointer dDimensionShape,
                                      @Cast("Nd4jLong *") LongPointer tadOnlyShapeInfo, @Cast("Nd4jLong *") LongPointer tadOffsets,
                                      @Cast("Nd4jLong *") LongPointer yTadOnlyShapeInfo, @Cast("Nd4jLong *") LongPointer yTadOffsets);
 
@@ -417,8 +417,8 @@ public abstract class NativeOps extends Pointer {
                                         Pointer dy, @Cast("Nd4jLong *") LongPointer dyShapeInfo,
                                         Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfoBuffer,
                                         Pointer dresult, @Cast("Nd4jLong *") LongPointer dresultShapeInfoBuffer,
-                                        IntPointer dimension,
-                                        int dimensionLength,
+                                        Pointer hDimension, @Cast("Nd4jLong *") LongPointer hDimensionShape,
+                                        Pointer dDimension, @Cast("Nd4jLong *") LongPointer dDimensionShape,
                                         @Cast("Nd4jLong *") LongPointer xTadShape,
                                         @Cast("Nd4jLong *") LongPointer xOffsets,
                                         @Cast("Nd4jLong *") LongPointer yTadShape,
@@ -505,8 +505,8 @@ public abstract class NativeOps extends Pointer {
                                           Pointer extraParams,
                                           Pointer result, @Cast("Nd4jLong *") LongPointer resultShapeInfoBuffer,
                                           Pointer dresult, @Cast("Nd4jLong *") LongPointer dresultShapeInfoBuffer,
-                                          IntPointer dimension,
-                                          int dimensionLength,
+                                          Pointer hDimension, @Cast("Nd4jLong *") LongPointer hDimensionShape,
+                                          Pointer dDimension, @Cast("Nd4jLong *") LongPointer dDimensionShape,
                                           boolean biasCorrected,
                                           @Cast("Nd4jLong *") LongPointer tadShapeInfo,
                                           @Cast("Nd4jLong *") LongPointer tadOffsets);
@@ -584,8 +584,8 @@ public abstract class NativeOps extends Pointer {
                                     Pointer scalars, @Cast("Nd4jLong *") LongPointer scalarShapeInfo,
                                     Pointer dscalars, @Cast("Nd4jLong *") LongPointer dscalarShapeInfo,
                                     Pointer extraParams,
-                                    IntPointer dimension,
-                                    int dimensionLength,
+                                    Pointer hDimension, @Cast("Nd4jLong *") LongPointer hDimensionShape,
+                                    Pointer dDimension, @Cast("Nd4jLong *") LongPointer dDimensionShape,
                                     @Cast("Nd4jLong *") LongPointer tadShapeInfo, @Cast("Nd4jLong *") LongPointer tadOffsets,
                                     @Cast("Nd4jLong *") LongPointer tadShapeInfoZ, @Cast("Nd4jLong *") LongPointer tadOffsetsZ);
 
@@ -598,8 +598,8 @@ public abstract class NativeOps extends Pointer {
                                         Pointer scalars, @Cast("Nd4jLong *") LongPointer scalarShapeInfo,
                                         Pointer dscalars, @Cast("Nd4jLong *") LongPointer dscalarShapeInfo,
                                         Pointer extraParams,
-                                        IntPointer dimension,
-                                        int dimensionLength,
+                                        Pointer hDimension, @Cast("Nd4jLong *") LongPointer hDimensionShape,
+                                        Pointer dDimension, @Cast("Nd4jLong *") LongPointer dDimensionShape,
                                         @Cast("Nd4jLong *") LongPointer tadShapeInfo, @Cast("Nd4jLong *") LongPointer tadOffsets,
                                         @Cast("Nd4jLong *") LongPointer tadShapeInfoZ, @Cast("Nd4jLong *") LongPointer tadOffsetsZ);
 
@@ -1017,6 +1017,27 @@ public abstract class NativeOps extends Pointer {
     public abstract Pointer pointerForAddress(long address);
 
 
+    ////// NPZ ///////
+    public abstract Pointer mapFromNpzFile(BytePointer path);
+
+    public abstract int getNumNpyArraysInMap(Pointer map);
+
+    public abstract String getNpyArrayNameFromMap(Pointer map, int index);
+
+    public abstract Pointer getNpyArrayFromMap(Pointer map, int index);
+
+    public abstract Pointer getNpyArrayData(Pointer npArray);
+
+    public abstract  LongPointer getNpyArrayShape(Pointer npArray);
+
+    public abstract int getNpyArrayRank(Pointer npArray);
+
+    public abstract char getNpyArrayOrder(Pointer npArray);
+
+    public abstract int getNpyArrayElemSize(Pointer npArray);
+    ///////
+
+
     public abstract void tear(PointerPointer extras,
                               Pointer tensor, @Cast("Nd4jLong *") LongPointer xShapeInfo,
                               Pointer dtensor, @Cast("Nd4jLong *") LongPointer dxShapeInfo,
@@ -1071,7 +1092,7 @@ public abstract class NativeOps extends Pointer {
 
     public abstract Pointer calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs);
 
-    public abstract Pointer calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputBunffers, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs);
+    public abstract Pointer calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputBunffers, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs, @Cast("bool *") BooleanPointer bArgs, int numBArgs);
 
     public abstract int registerGraph(PointerPointer extraPointers, long graphId, Pointer flatBufferPointer);
 
@@ -1085,7 +1106,13 @@ public abstract class NativeOps extends Pointer {
 
     public abstract void deleteIntArray(Pointer pointer);
 
+    public abstract void deleteLongArray(Pointer pointer);
+
     public abstract void deletePointerArray(Pointer pointer);
+
+    public abstract void deleteNPArrayStruct(Pointer pointer);
+
+    public abstract void deleteNPArrayMap(Pointer pointer);
 
     public abstract void deleteVariablesSet(Pointer pointer);
 

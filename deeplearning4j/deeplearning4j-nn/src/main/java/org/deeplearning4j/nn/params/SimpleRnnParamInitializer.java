@@ -19,13 +19,10 @@ package org.deeplearning4j.nn.params;
 import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.nn.weights.WeightInitUtil;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
 
 import java.util.*;
 
@@ -96,24 +93,18 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
         Map<String,INDArray> m;
 
         if (initializeParams) {
-            Distribution dist = Distributions.createDistribution(c.getDist());
-
             m = getSubsets(paramsView, nIn, nOut, false);
-            INDArray w = WeightInitUtil.initWeights(nIn, nOut, new long[]{nIn, nOut}, c.getWeightInit(), dist, 'f', m.get(WEIGHT_KEY));
+            INDArray w = c.getWeightInitFn().init(nIn, nOut, new long[]{nIn, nOut}, 'f', m.get(WEIGHT_KEY));
             m.put(WEIGHT_KEY, w);
 
-            WeightInit rwInit;
-            Distribution rwDist = dist;
-            if (c.getWeightInitRecurrent() != null) {
-                rwInit = c.getWeightInitRecurrent();
-                if(c.getDistRecurrent() != null) {
-                    rwDist = Distributions.createDistribution(c.getDistRecurrent());
-                }
+            IWeightInit rwInit;
+            if (c.getWeightInitFnRecurrent() != null) {
+                rwInit = c.getWeightInitFnRecurrent();
             } else {
-                rwInit = c.getWeightInit();
+                rwInit = c.getWeightInitFn();
             }
 
-            INDArray rw = WeightInitUtil.initWeights(nOut, nOut, new long[]{nOut, nOut}, rwInit, rwDist, 'f', m.get(RECURRENT_WEIGHT_KEY));
+            INDArray rw = rwInit.init(nOut, nOut, new long[]{nOut, nOut}, 'f', m.get(RECURRENT_WEIGHT_KEY));
             m.put(RECURRENT_WEIGHT_KEY, rw);
 
             m.get(BIAS_KEY).assign(c.getBiasInit());

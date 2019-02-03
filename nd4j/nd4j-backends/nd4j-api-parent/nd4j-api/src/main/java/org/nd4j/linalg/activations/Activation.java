@@ -24,7 +24,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarSet;
 import org.nd4j.linalg.api.ops.impl.transforms.same.OldIdentity;
-import org.nd4j.linalg.api.ops.impl.scalar.RectifedLinear;
+import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
 import org.nd4j.linalg.api.ops.impl.scalar.Step;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
@@ -185,7 +185,7 @@ public enum Activation {
             case RATIONALTANH:
                 return new RationalTanh(in);
             case RELU:
-                return new RectifedLinear(in);
+                return new RectifiedLinear(in);
             case SIGMOID:
                 return new Sigmoid(in);
             case SOFTMAX:

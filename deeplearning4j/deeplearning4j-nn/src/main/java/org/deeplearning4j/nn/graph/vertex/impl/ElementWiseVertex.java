@@ -78,7 +78,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
         nInForwardPass = inputs.length;
         if (inputs.length == 1)
-            return inputs[0];
+            return workspaceMgr.dup(ArrayType.ACTIVATIONS, inputs[0]);
 
         switch (op) {
             case Add:
@@ -96,8 +96,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
             case Subtract:
                 if (inputs.length != 2)
                     throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
-                return Nd4j.getExecutioner().execAndReturn(
-                        new OldSubOp(inputs[0], inputs[1], workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].shape())));
+                return Nd4j.getExecutioner().exec(new OldSubOp(inputs[0], inputs[1], workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].shape())));
             case Product:
                 INDArray product =  workspaceMgr.dup(ArrayType.ACTIVATIONS, inputs[0]);
                 for (int i = 1; i < inputs.length; i++) {
@@ -124,7 +123,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
             throw new IllegalStateException("Cannot do backward pass: errors not set");
 
         if (nInForwardPass == 1)
-            return new Pair<>(null, new INDArray[] {epsilon});
+            return new Pair<>(null, new INDArray[] {workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon)});
 
         switch (op) {
             case Add:
@@ -208,12 +207,12 @@ public class ElementWiseVertex extends BaseGraphVertex {
         if (maskArrays.length == 1) {
             return new Pair<>(maskArrays[0], currentMaskState);
         } else {
-            INDArray ret = maskArrays[0].dup(maskArrays[0].ordering());
-            Nd4j.getExecutioner().exec(new Or(maskArrays[0], maskArrays[1], ret));
+            INDArray ret = Nd4j.createUninitialized(DataType.BOOL, maskArrays[0].shape());  //maskArrays[0].dup(maskArrays[0].ordering());
+            Nd4j.getExecutioner().exec(new Or(maskArrays[0].castTo(DataType.BOOL), maskArrays[1].castTo(DataType.BOOL), ret));
             for (int i = 2; i < maskArrays.length; i++) {
-                Nd4j.getExecutioner().exec(new Or(maskArrays[i], ret, ret));
+                Nd4j.getExecutioner().exec(new Or(maskArrays[i].castTo(DataType.BOOL), ret, ret));
             }
-            return new Pair<>(ret, currentMaskState);
+            return new Pair<>(ret.castTo(Nd4j.defaultFloatingPointType()), currentMaskState);
         }
     }
 

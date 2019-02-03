@@ -19,9 +19,12 @@ package org.nd4j.linalg.api.ops.impl.controlflow;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -53,5 +56,20 @@ public class Where extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "Where";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputTypes) {
+        Preconditions.checkState(inputTypes != null && (inputTypes.size() == 1 || inputTypes.size() == 3),
+                "Expected 1 or 3 input types, got %s for op %s",inputTypes, getClass());
+        if(inputTypes.size() == 3) {
+            Preconditions.checkState(inputTypes.get(1) == inputTypes.get(2), "X and Y input must be same type, got inputs %s for op %s", inputTypes, getClass());
+            //Output type same as x/y types
+            return Collections.singletonList(inputTypes.get(1));
+        } else {
+            //Coordinates of true elements
+            //TODO allow this to be configured
+            return Collections.singletonList(DataType.LONG);
+        }
     }
 }

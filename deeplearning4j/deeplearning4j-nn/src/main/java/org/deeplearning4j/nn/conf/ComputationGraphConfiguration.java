@@ -17,21 +17,26 @@
 package org.deeplearning4j.nn.conf;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.nn.weights.IWeightInit;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -104,9 +109,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected int[] topologicalOrder;
     protected List<String> topologicalOrderStr;
 
-    @Getter @Setter
-    protected boolean legacyBatchScaledL2 = true;   //Default to legacy for pre 1.0.0-beta3 networks on deserialization
-
     /**
      * @return YAML representation of configuration
      */
@@ -166,7 +168,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         try {
             conf = mapper.readValue(json, ComputationGraphConfiguration.class);
         } catch (Exception e) {
-            //Check if this exception came from legacy legacy deserializer...
+            //Check if this exception came from legacy deserializer...
             String msg = e.getMessage();
             if(msg != null && msg.contains("legacy")){
                 throw new RuntimeException("Error deserializing ComputationGraphConfiguration - configuration may have a custom " +
@@ -224,10 +226,60 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                                         e);
                     }
                 }
+
+                handleLegacyWeightInitFromJson(json, layer, mapper, vertices);
             }
         }
 
         return conf;
+    }
+
+    /**
+     * Handle {@link WeightInit} and {@link Distribution} from legacy configs in Json format. Copied from handling of {@link Activation}
+     * above.
+     * @return True if all is well and layer iteration shall continue. False else-wise.
+     */
+    private static void handleLegacyWeightInitFromJson(String json, Layer layer, ObjectMapper mapper, JsonNode vertices) {
+        if (layer instanceof BaseLayer && ((BaseLayer) layer).getWeightInitFn() == null) {
+            String layerName = layer.getLayerName();
+
+            try {
+                if (vertices == null) {
+                    JsonNode jsonNode = mapper.readTree(json);
+                    vertices = jsonNode.get("vertices");
+                }
+
+                JsonNode vertexNode = vertices.get(layerName);
+                JsonNode layerVertexNode = vertexNode.get("LayerVertex");
+                if (layerVertexNode == null || !layerVertexNode.has("layerConf")
+                        || !layerVertexNode.get("layerConf").has("layer")) {
+                    return;
+                }
+                JsonNode layerWrapperNode = layerVertexNode.get("layerConf").get("layer");
+
+                if (layerWrapperNode == null || layerWrapperNode.size() != 1) {
+                    return;
+                }
+
+                JsonNode layerNode = layerWrapperNode.elements().next();
+                JsonNode weightInit = layerNode.get("weightInit"); //Should only have 1 element: "dense", "output", etc
+                JsonNode distribution = layerNode.get("dist");
+
+                Distribution dist = null;
+                if(distribution != null) {
+                    dist = mapper.treeToValue(distribution, Distribution.class);
+                }
+
+                if (weightInit != null) {
+                    final IWeightInit wi = WeightInit.valueOf(weightInit.asText()).getWeightInitFunction(dist);
+                    ((BaseLayer) layer).setWeightInitFn(wi);
+                }
+
+            } catch (IOException e) {
+                log.warn("Layer with null ActivationFn field or pre-0.7.2 activation function detected: could not parse JSON",
+                        e);
+            }
+        }
     }
 
     @Override
@@ -262,7 +314,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
         conf.cacheMode = this.cacheMode;
         conf.defaultConfiguration.cacheMode = this.cacheMode;
-        conf.legacyBatchScaledL2 = this.legacyBatchScaledL2;
         conf.validateOutputLayerConfig = this.validateOutputLayerConfig;
 
         return conf;
@@ -609,6 +660,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected boolean allowDisconnected = false;
         protected boolean allowNoOutput = false;
         protected boolean validateOutputConfig = true;
+        protected boolean validateTbpttConfig = true;
 
         public GraphBuilder(NeuralNetConfiguration.Builder globalConfiguration) {
             this.globalConfiguration = globalConfiguration;
@@ -941,6 +993,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Enabled by default. If enabled, an exception will be throw when using the (invalid) combination of truncated
+         * backpropagation through time (TBPTT) with either a GlobalPoolingLayer or LastTimeStepLayer.<br>
+         * It is possible to disable this validation to allow what is almost certainly an invalid configuration to be used,
+         * however this is not recommended.
+         *
+         * @param validate Whether TBPTT validation should be performed
+         */
+        public GraphBuilder validateTbpttConfig(boolean validate){
+            this.validateTbpttConfig = validate;
+            return this;
+        }
+
+        /**
          * For the (perhaps partially constructed) network configuration, return a map of activation sizes for each
          * layer and vertex in the graph.<br>
          * Note 1: The network configuration may be incomplete, but the inputs have been added to the layer already.<br>
@@ -999,7 +1064,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.validateOutputLayerConfig = validateOutputConfig;
 
             conf.defaultConfiguration = globalConfiguration.build();
-            conf.setLegacyBatchScaledL2(globalConfiguration.isLegacyBatchScaledL2());
 
             //Add preprocessors that were defined separately to the Layers to which they belong
             for (Map.Entry<String, InputPreProcessor> entry : inputPreProcessors.entrySet()) {
@@ -1048,6 +1112,22 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     if (e.getValue() instanceof LayerVertex) {
                         Layer l = ((LayerVertex) e.getValue()).getLayerConf().getLayer();
                         OutputLayerUtil.validateOutputLayer(e.getKey(), l); //No-op for non output/loss layers
+                    }
+                }
+            }
+
+            if(backpropType == BackpropType.TruncatedBPTT && validateTbpttConfig){
+                //Check for invalid combination - tbptt plus LastTimeStepLayer or
+                for(Map.Entry<String,GraphVertex> e : vertices.entrySet()){
+                    GraphVertex gv = e.getValue();
+                    Layer l = (gv instanceof LayerVertex ? ((LayerVertex)gv).getLayerConf().getLayer() : null);
+                    if(gv instanceof LastTimeStepVertex || (l != null && (l instanceof LastTimeStep || l instanceof GlobalPoolingLayer))){
+                        String s = (l == null ? gv.getClass().getName() : l.getClass().getName());
+                        String n = e.getKey();
+                        throw new IllegalStateException("Invalid network configuration detected: Truncated backpropagation through time (TBPTT)" +
+                                " cannot be used with layer \"" + n + "\" of type " + s + ": TBPTT is incompatible with this layer type (which is designed " +
+                                "to process entire sequences at once, and does support the type of sequence segments that TPBTT uses).\n" +
+                                "This check can be disabled using validateTbpttConfig(false) but this is not recommended.");
                     }
                 }
             }

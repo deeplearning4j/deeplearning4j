@@ -39,20 +39,11 @@ public class SoftMaxDerivative extends OldSoftMax {
         super(x, z);
     }
 
-    public SoftMaxDerivative(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
     public SoftMaxDerivative(INDArray x) {
         super(x);
     }
 
     public SoftMaxDerivative() {}
-
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
 
     @Override
     public int opNum() {
@@ -73,12 +64,4 @@ public class SoftMaxDerivative extends OldSoftMax {
     public String opName() {
         return "_softmaxderivative";
     }
-
-
-    @Override
-    public void exec(int... dimensions) {
-        super.exec(dimensions);
-        z.muli(z.rsub(1));
-    }
-
 }

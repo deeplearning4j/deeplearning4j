@@ -33,7 +33,6 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -212,7 +211,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .convolutionMode(ConvolutionMode.Same)
                 .updater(new NoOp())
-                .weightInit(WeightInit.DISTRIBUTION).dist(new GaussianDistribution(0,0.1))
+                .dist(new GaussianDistribution(0,0.1))
                 .seed(12345)
                 .list()
                 .layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nOut(4).build())

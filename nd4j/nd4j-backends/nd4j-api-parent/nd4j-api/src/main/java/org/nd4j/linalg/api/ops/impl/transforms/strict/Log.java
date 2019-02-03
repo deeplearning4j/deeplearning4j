@@ -36,23 +36,11 @@ public class Log extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Log(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Log(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Log() {
     }
 
     public Log(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Log(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Log(INDArray x) {

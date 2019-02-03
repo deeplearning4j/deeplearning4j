@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -60,12 +59,12 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
     }
 
     @Before
-    public void startUp() throws Exception {
+    public void startUp() {
         Nd4j.getMemoryManager().togglePeriodicGc(false);
     }
 
     @After
-    public void shutUp() throws Exception {
+    public void shutUp() {
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         Nd4j.setDataType(this.initialType);
@@ -78,7 +77,7 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
      * @throws Exception
      */
     @Test
-    public void endlessTest1() throws Exception {
+    public void endlessTest1() {
 
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(
                         WorkspaceConfiguration.builder().initialSize(100 * 1024L * 1024L).build());
@@ -105,7 +104,7 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
      * @throws Exception
      */
     @Test
-    public void endlessTest2() throws Exception {
+    public void endlessTest2() {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(
                         WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L).build());
 
@@ -139,7 +138,7 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
      * @throws Exception
      */
     @Test
-    public void endlessTest3() throws Exception {
+    public void endlessTest3() {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(
                         WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L).build());
 
@@ -168,7 +167,7 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
-    public void endlessTest4() throws Exception {
+    public void endlessTest4() {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(
                         WorkspaceConfiguration.builder().initialSize(100 * 1024L * 1024L).build());
         while (true) {
@@ -211,7 +210,7 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
-    public void endlessTest6() throws Exception {
+    public void endlessTest6() {
         Nd4j.getMemoryManager().togglePeriodicGc(false);
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
                         .policyLearning(LearningPolicy.NONE).build();
@@ -228,7 +227,7 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
     }
 
     @Test
-    public void endlessValidation1() throws Exception {
+    public void endlessValidation1() {
         Nd4j.getMemoryManager().togglePeriodicGc(true);
 
         AtomicLong counter = new AtomicLong(0);
@@ -247,7 +246,7 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
 
 
     @Test
-    public void testPerf1() throws Exception {
+    public void testPerf1() {
         Nd4j.getWorkspaceManager()
                         .setDefaultWorkspaceConfiguration(WorkspaceConfiguration.builder().initialSize(50000L).build());
 

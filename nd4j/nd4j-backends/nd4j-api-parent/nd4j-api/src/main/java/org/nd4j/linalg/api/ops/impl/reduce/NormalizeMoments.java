@@ -19,16 +19,18 @@ package org.nd4j.linalg.api.ops.impl.reduce;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Map;
+import java.util.*;
 
 @NoArgsConstructor
 public class NormalizeMoments extends DynamicCustomOp {
@@ -75,6 +77,15 @@ public class NormalizeMoments extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "normalize_moments";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 3, "Expected 3 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        //Count, mean_ss, variance_ss
+        if(inputDataTypes.get(1).isFPType())
+            return Arrays.asList(inputDataTypes.get(0), inputDataTypes.get(0));
+        return Arrays.asList(Nd4j.defaultFloatingPointType(), Nd4j.defaultFloatingPointType());
     }
 
 }

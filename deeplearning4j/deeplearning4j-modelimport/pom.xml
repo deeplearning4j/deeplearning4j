@@ -81,6 +81,12 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- For unit tests -->
         <dependency>
             <groupId>junit</groupId>
@@ -104,13 +110,6 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-datavec-iterators</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-common</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

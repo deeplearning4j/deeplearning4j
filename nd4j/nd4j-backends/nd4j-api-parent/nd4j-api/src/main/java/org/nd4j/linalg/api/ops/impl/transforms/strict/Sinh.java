@@ -37,20 +37,8 @@ public class Sinh extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Sinh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Sinh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Sinh(INDArray x, INDArray z) {
         super(x, z);
-    }
-
-    public Sinh(INDArray x, INDArray z, long n) {
-        super(x, z, n);
     }
 
     public Sinh(INDArray x) {

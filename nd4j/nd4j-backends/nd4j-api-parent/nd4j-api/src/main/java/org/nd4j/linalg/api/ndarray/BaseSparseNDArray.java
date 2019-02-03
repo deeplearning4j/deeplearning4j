@@ -294,7 +294,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
                     List<Integer> row = indices.get(i);
                     for(int j = 0; j < row.size(); j++) {
                         INDArray slice = slice(row.get(j));
-                        Nd4j.getExecutioner().exec(new Assign(new INDArray[]{slice,element},new INDArray[]{slice}));
+                        Nd4j.getExecutioner().execAndReturn(new Assign(new INDArray[]{slice,element},new INDArray[]{slice}));
                         arrList.add(slice(row.get(j)));
                     }
 
@@ -526,6 +526,17 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public INDArray putScalar(long[] i, int value) {
         return null;
+    }
+
+
+    @Override
+    public INDArray isInfinite() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray isNaN() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -829,11 +840,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public INDArray cond(Condition condition) {
-        return null;
-    }
-
-    @Override
-    public INDArray condi(Condition condition) {
         return null;
     }
 
@@ -1143,10 +1149,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
             result.assign(gemmResultArr);
         }
 
-
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
-            Nd4j.clearNans(result);
-
         return result;
     }
 
@@ -1301,6 +1303,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
+    public INDArray sum(boolean keepDims, int... dimension){
+        return null;
+    }
+
+    @Override
     public Number sumNumber() {
         return null;
     }
@@ -1347,6 +1354,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public int getInt(int... indices) {
+        return 0;
+    }
+
+    @Override
+    public long getLong(long... indices) {
         return 0;
     }
 
@@ -1880,7 +1892,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
      */
     @Override
     public INDArray entropy(int... dimension) {
-        return Nd4j.getExecutioner().exec(new Entropy(this), dimension);
+        return Nd4j.getExecutioner().exec(new Entropy(this, dimension));
     }
 
     /**
@@ -1890,7 +1902,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
      */
     @Override
     public INDArray shannonEntropy(int... dimension) {
-        return Nd4j.getExecutioner().exec(new ShannonEntropy(this), dimension);
+        return Nd4j.getExecutioner().exec(new ShannonEntropy(this, dimension));
     }
 
     /**
@@ -1900,7 +1912,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
      */
     @Override
     public INDArray logEntropy(int... dimension) {
-        return Nd4j.getExecutioner().exec(new LogEntropy(this), dimension);
+        return Nd4j.getExecutioner().exec(new LogEntropy(this, dimension));
     }
 
     @Override
@@ -1988,5 +2000,15 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public boolean none() {
         return false;
+    }
+
+    @Override
+    public INDArray like() {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public INDArray ulike() {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }

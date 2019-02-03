@@ -17,6 +17,7 @@
 package org.deeplearning4j.regressiontest;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -28,7 +29,9 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitDistribution;
+import org.deeplearning4j.nn.weights.WeightInitRelu;
+import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.impl.*;
@@ -37,6 +40,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
@@ -75,7 +79,7 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertTrue(l0.getActivationFn() instanceof ActivationReLU);
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
-        assertEquals(WeightInit.XAVIER, l0.getWeightInit());
+        assertEquals(new WeightInitXavier(), l0.getWeightInitFn());
         assertTrue(l0.getIUpdater() instanceof Nesterovs);
         Nesterovs n = (Nesterovs) l0.getIUpdater();
         assertEquals(0.9, n.getMomentum(), 1e-6);
@@ -88,7 +92,7 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertTrue(l1.getLossFn() instanceof LossMCXENT);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
-        assertEquals(WeightInit.XAVIER, l1.getWeightInit());
+        assertEquals(new WeightInitXavier(), l1.getWeightInitFn());
         assertTrue(l1.getIUpdater() instanceof Nesterovs);
         assertEquals(0.9, ((Nesterovs)l1.getIUpdater()).getMomentum(), 1e-6);
         assertEquals(0.15, ((Nesterovs)l1.getIUpdater()).getLearningRate(), 1e-6);
@@ -98,10 +102,6 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
         int updaterSize = (int) new Nesterovs().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
-
-        //For backward compatibility given L2 fixes in 1.0.0-beta3
-        assertTrue(net.getLayerWiseConfigurations().isLegacyBatchScaledL2());
-        assertTrue(l1.isLegacyBatchScaledL2());
     }
 
     @Test
@@ -119,16 +119,15 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertTrue(l0.getActivationFn() instanceof ActivationLReLU);
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
-        assertEquals(WeightInit.DISTRIBUTION, l0.getWeightInit());
-        assertEquals(new NormalDistribution(0.1, 1.2), l0.getDist());
+        assertEquals(new WeightInitDistribution(new NormalDistribution(0.1, 1.2)), l0.getWeightInitFn());
         assertTrue(l0.getIUpdater() instanceof RmsProp);
         RmsProp r = (RmsProp) l0.getIUpdater();
         assertEquals(0.96, r.getRmsDecay(), 1e-6);
         assertEquals(0.15, r.getLearningRate(), 1e-6);
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(new Dropout(0.6), l0.getIDropout());
-        assertEquals(0.1, l0.getL1(), 1e-6);
-        assertEquals(0.2, l0.getL2(), 1e-6);
+        assertEquals(0.1, TestUtils.getL1(l0), 1e-6);
+        assertEquals(new WeightDecay(0.2,false), TestUtils.getWeightDecayReg(l0));
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
         assertEquals(1.5, l0.getGradientNormalizationThreshold(), 1e-5);
 
@@ -137,16 +136,15 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertTrue(l1.getLossFn() instanceof LossMSE);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
-        assertEquals(WeightInit.DISTRIBUTION, l1.getWeightInit());
-        assertEquals(new NormalDistribution(0.1, 1.2), l1.getDist());
+        assertEquals(new WeightInitDistribution(new NormalDistribution(0.1, 1.2)), l1.getWeightInitFn());
         assertTrue(l1.getIUpdater() instanceof RmsProp);
         r = (RmsProp) l1.getIUpdater();
         assertEquals(0.96, r.getRmsDecay(), 1e-6);
         assertEquals(0.15, r.getLearningRate(), 1e-6);
         assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertEquals(new Dropout(0.6), l1.getIDropout());
-        assertEquals(0.1, l1.getL1(), 1e-6);
-        assertEquals(0.2, l1.getL2(), 1e-6);
+        assertEquals(0.1, TestUtils.getL1(l1), 1e-6);
+        assertEquals(new WeightDecay(0.2, false), TestUtils.getWeightDecayReg(l1));
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l1.getGradientNormalization());
         assertEquals(1.5, l1.getGradientNormalizationThreshold(), 1e-5);
 
@@ -154,10 +152,6 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
         int updaterSize = (int) new RmsProp().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
-
-        //For backward compatibility given L2 fixes in 1.0.0-beta3
-        assertTrue(net.getLayerWiseConfigurations().isLegacyBatchScaledL2());
-        assertTrue(l1.isLegacyBatchScaledL2());
     }
 
     @Test
@@ -175,7 +169,7 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertTrue(l0.getActivationFn() instanceof ActivationTanH);
         assertEquals(3, l0.getNIn());
         assertEquals(3, l0.getNOut());
-        assertEquals(WeightInit.RELU, l0.getWeightInit());
+        assertEquals(new WeightInitRelu(), l0.getWeightInitFn());
         assertTrue(l0.getIUpdater() instanceof RmsProp);
         RmsProp r = (RmsProp) l0.getIUpdater();
         assertEquals(0.96, r.getRmsDecay(), 1e-6);
@@ -198,7 +192,7 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood);
         assertEquals(26 * 26 * 3, l2.getNIn());
         assertEquals(5, l2.getNOut());
-        assertEquals(WeightInit.RELU, l2.getWeightInit());
+        assertEquals(new WeightInitRelu(), l2.getWeightInitFn());
         assertTrue(l2.getIUpdater() instanceof RmsProp);
         r = (RmsProp) l2.getIUpdater();
         assertEquals(0.96, r.getRmsDecay(), 1e-6);
@@ -210,10 +204,6 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
         int updaterSize = (int) new RmsProp().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
-
-        //For backward compatibility given L2 fixes in 1.0.0-beta3
-        assertTrue(net.getLayerWiseConfigurations().isLegacyBatchScaledL2());
-        assertTrue(l2.isLegacyBatchScaledL2());
     }
 
     @Test
@@ -246,10 +236,6 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertEquals(5, l2.getNOut());
         assertTrue(l2.getActivationFn() instanceof ActivationSoftmax);
         assertTrue(l2.getLossFn() instanceof LossMCXENT);
-
-        //For backward compatibility given L2 fixes in 1.0.0-beta3
-        assertTrue(net.getLayerWiseConfigurations().isLegacyBatchScaledL2());
-        assertTrue(l2.isLegacyBatchScaledL2());
     }
 
     @Test
@@ -283,9 +269,5 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertEquals(5, l2.getNOut());
         assertTrue(l2.getActivationFn() instanceof ActivationSoftmax);
         assertTrue(l2.getLossFn() instanceof LossMCXENT);
-
-        //For backward compatibility given L2 fixes in 1.0.0-beta3
-        assertTrue(net.getConfiguration().isLegacyBatchScaledL2());
-        assertTrue(l2.isLegacyBatchScaledL2());
     }
 }

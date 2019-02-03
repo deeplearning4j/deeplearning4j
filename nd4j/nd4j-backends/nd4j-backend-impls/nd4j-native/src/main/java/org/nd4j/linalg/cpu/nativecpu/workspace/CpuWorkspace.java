@@ -18,10 +18,13 @@ package org.nd4j.linalg.cpu.nativecpu.workspace;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.memory.enums.LocationPolicy;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
@@ -68,6 +71,7 @@ public class CpuWorkspace extends Nd4jWorkspace {
                     log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
 
                 workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
+                AllocationsTracker.getInstance().markAllocated(AllocationKind.WORKSPACE, 0, currentSize.get() + SAFETY_OFFSET);
             }
         } else if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {
             long flen = tempFile.length();
@@ -129,7 +133,7 @@ public class CpuWorkspace extends Nd4jWorkspace {
         if (isDebug.get())
             log.info("Destroying workspace...");
 
-        currentSize.set(0);
+        val sizez = currentSize.getAndSet(0);
         hostOffset.set(0);
         deviceOffset.set(0);
 
@@ -139,8 +143,11 @@ public class CpuWorkspace extends Nd4jWorkspace {
         clearPinnedAllocations(extended);
 
         if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.RAM) {
-            if (workspace.getHostPointer() != null)
+            if (workspace.getHostPointer() != null) {
                 NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
+
+                AllocationsTracker.getInstance().markReleased(AllocationKind.WORKSPACE, 0, sizez);
+            }
         } else if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {
             if (workspace.getHostPointer() != null)
                 NativeOpsHolder.getInstance().getDeviceNativeOps().munmapFile(null, mmap, tempFile.length());

@@ -40,6 +40,12 @@ namespace nd4j {
             for (int e = 0; e < input->rankOf(); e++)
                 if (e != dim)
                     dims.emplace_back(e);
+            if (dims.size() == 0 && input->rankOf() == 1) { // split vector into lenthOf scalars
+                for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
+                    auto outE = OUTPUT_VARIABLE(e);
+                    outE->assign(input->e(e));
+                }
+            }
 
             auto tads = input->allTensorsAlongDimension(dims);
             //nd4j_printf("Tad size: %d\n",tads->size());
@@ -73,11 +79,18 @@ namespace nd4j {
             for (int e = 0; e < shape::rank(inShape); e++)
                 if (e != dim)
                     dims.emplace_back(e);
+            if (dims.size() == 0 && shape::rank(inShape) == 1) { // split vector into lenthOf scalars
+                //
+                auto result = SHAPELIST();
+                for (Nd4jLong e = 0; e < shape::length(inShape); e++)
+                    result->push_back(ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(inShape), block.workspace()));
+                return result;
+            }
 
             shape::TAD tad(inShape, dims.data(), (int) dims.size());
             tad.createTadOnlyShapeInfo();
             Nd4jLong numTads = shape::length(inShape) / shape::tadLength(inShape, dims.data(), (int) dims.size());
-            
+
             std::vector<Nd4jLong> shape(shape::rank(tad.tadOnlyShapeInfo));
             for (int e = 0; e < shape::rank(tad.tadOnlyShapeInfo); e++)
                 shape[e] = shape::shapeOf(tad.tadOnlyShapeInfo)[e];
@@ -90,7 +103,7 @@ namespace nd4j {
                     shape.erase(shape.end());
                 }
             }
-            
+
             auto result = SHAPELIST();
             for (int e = 0; e < numTads; e++) {
                 Nd4jLong *newShape;
@@ -98,10 +111,10 @@ namespace nd4j {
                 if (shape::order(inShape) == 'c')
                     shape::shapeBuffer(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
                 else
-                    shape::shapeBufferFortran(shape.size(), ArrayOptions::dataType(inShape), shape.data(), newShape);
+                    shape::shapeBufferFortran(shape.size(), ArrayOptions::dataType(inShape), shape.data(),
+                                              newShape);
                 result->push_back(newShape);
             }
-
             return result;
         }
 

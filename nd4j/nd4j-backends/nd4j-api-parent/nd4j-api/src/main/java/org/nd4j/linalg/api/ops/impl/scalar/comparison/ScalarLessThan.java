@@ -35,7 +35,7 @@ public class ScalarLessThan extends BaseScalarBoolOp {
     }
 
     public ScalarLessThan(INDArray x, INDArray z, Number num) {
-        super(x, null, z, x.length(), num);
+        super(x, null, z, num);
     }
 
     public ScalarLessThan(INDArray x, Number num) {

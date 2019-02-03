@@ -51,9 +51,10 @@ public class DistributionStats implements NormalizerStats {
      */
     public DistributionStats(@NonNull INDArray mean, @NonNull INDArray std) {
         Transforms.max(std, Nd4j.EPS_THRESHOLD, false);
-        if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD)) {
-            logger.info("API_INFO: Std deviation found to be zero. Transform will round up to epsilon to avoid nans.");
-        }
+        // FIXME: obvious bug here
+//        if (std.min(1) == Nd4j.scalar(Nd4j.EPS_THRESHOLD)) {
+//            logger.info("API_INFO: Std deviation found to be zero. Transform will round up to epsilon to avoid nans.");
+//        }
 
         this.mean = mean;
         this.std = std;

@@ -31,7 +31,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.i18n.I18NProvider;
 import org.deeplearning4j.ui.i18n.I18NResource;
@@ -47,16 +47,16 @@ import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import play.libs.Json;
 import play.mvc.Result;
 import play.mvc.Results;
 
-import java.io.File;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static play.mvc.Results.ok;
@@ -86,12 +86,12 @@ public class TrainModule implements UIModule {
     };
 
     private final int maxChartPoints; //Technically, the way it's set up: won't exceed 2*maxChartPoints
-    private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
+    private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new WeakHashMap<>());
     private String currentSessionID;
     private int currentWorkerIdx;
-    private Map<String, AtomicInteger> workerIdxCount = Collections.synchronizedMap(new HashMap<>()); //Key: session ID
-    private Map<String, Map<Integer, String>> workerIdxToName = Collections.synchronizedMap(new HashMap<>()); //Key: session ID
-    private Map<String, Long> lastUpdateForSession = Collections.synchronizedMap(new HashMap<>());
+    private Map<String, AtomicInteger> workerIdxCount = new ConcurrentHashMap<>(); //Key: session ID
+    private Map<String, Map<Integer, String>> workerIdxToName = new ConcurrentHashMap<>(); //Key: session ID
+    private Map<String, Long> lastUpdateForSession = new ConcurrentHashMap<>();
 
     public TrainModule() {
         String maxChartPointsProp = System.getProperty(DL4JSystemProperties.CHART_MAX_POINTS_PROPERTY);
@@ -181,15 +181,25 @@ public class TrainModule implements UIModule {
     }
 
     @Override
-    public void onDetach(StatsStorage statsStorage) {
+    public synchronized void onDetach(StatsStorage statsStorage) {
+        Set<String> toRemove = new HashSet<>();
         for (String s : knownSessionIDs.keySet()) {
             if (knownSessionIDs.get(s) == statsStorage) {
-                knownSessionIDs.remove(s);
+//                knownSessionIDs.remove(s);
+                toRemove.add(s);
+                workerIdxCount.remove(s);
+                workerIdxToName.remove(s);
+                currentSessionID = null;
+                getDefaultSession();
             }
+        }
+        for(String s : toRemove) {
+//            knownSessionIDs.put(s, null);
+            knownSessionIDs.remove(s);
         }
     }
 
-    private void getDefaultSession() {
+    private synchronized void getDefaultSession() {
         if (currentSessionID != null)
             return;
 
@@ -373,7 +383,7 @@ public class TrainModule implements UIModule {
     }
 
     private Result getOverviewData() {
-        Long lastUpdate = lastUpdateForSession.get(currentSessionID);
+        Long lastUpdate = (currentSessionID == null ? null : lastUpdateForSession.get(currentSessionID));
         if (lastUpdate == null)
             lastUpdate = -1L;
         I18N i18N = I18NProvider.getInstance();
@@ -940,13 +950,13 @@ public class TrainModule implements UIModule {
                         layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerNParams"),
                                         String.valueOf(nParams)});
                         if (nParams > 0) {
-                            WeightInit wi = bl.getWeightInit();
-                            String str = wi.toString();
-                            if (wi == WeightInit.DISTRIBUTION) {
-                                str += bl.getDist();
+                            try {
+                                String str = JsonMappers.getMapper().writeValueAsString(bl.getWeightInitFn());
+                                layerInfoRows.add(new String[] {
+                                                i18N.getMessage("train.model.layerinfotable.layerWeightInit"), str});
+                            } catch (JsonProcessingException e) {
+                                throw new RuntimeException(e);
                             }
-                            layerInfoRows.add(new String[] {
-                                            i18N.getMessage("train.model.layerinfotable.layerWeightInit"), str});
 
                             IUpdater u = bl.getIUpdater();
                             String us = (u == null ? "" : u.getClass().getSimpleName());

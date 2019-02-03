@@ -798,6 +798,7 @@ namespace nd4j {
         std::vector<Nd4jLong> getShapeAsVector() const;
         std::vector<Nd4jLong> getShapeInfoAsVector();
         std::vector<int64_t> getShapeInfoAsFlatVector();
+        std::vector<int64_t> getShapeAsFlatVector();
 				
         /**
         *  set new order and shape in case of suitable array length (in-place operation)
@@ -1849,6 +1850,9 @@ bool NDArray::isSameShapeStrict(const NDArray *other) const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isEmpty() const {
+    if (this->_shapeInfo == nullptr)
+            return false;
+    
     return ArrayOptions::arrayType(this->getShapeInfo()) == ArrayType::EMPTY;
 }
 

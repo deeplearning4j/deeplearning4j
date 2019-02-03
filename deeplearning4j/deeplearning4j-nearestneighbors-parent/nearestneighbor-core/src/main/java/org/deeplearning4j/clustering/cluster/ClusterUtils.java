@@ -27,6 +27,8 @@ import org.deeplearning4j.clustering.strategy.OptimisationStrategy;
 import org.deeplearning4j.clustering.util.MathUtils;
 import org.deeplearning4j.clustering.util.MultiThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
@@ -215,7 +217,7 @@ public class ClusterUtils {
                         for (int k = clusterIdx + 1, l = clusterSet.getClusterCount(); k < l; k++) {
                             Cluster toCluster = clusterSet.getClusters().get(k);
                             double distance = Nd4j.getExecutioner()
-                                            .execAndReturn(Nd4j.getOpFactory().createAccum(
+                                            .execAndReturn(ClusterUtils.createDistanceFunctionOp(
                                                             clusterSet.getDistanceFunction(),
                                                             fromCluster.getCenter().getArray(),
                                                             toCluster.getCenter().getArray()))
@@ -249,7 +251,7 @@ public class ClusterUtils {
             //shouldn't need to inverse here. other parts of
             //the code should interpret the "distance" or score here
             double distance = Nd4j.getExecutioner()
-                            .execAndReturn(Nd4j.getOpFactory().createAccum(distanceFunction,
+                            .execAndReturn(ClusterUtils.createDistanceFunctionOp(distanceFunction,
                                             cluster.getCenter().getArray(), point.getArray()))
                             .getFinalResult().doubleValue();
             info.getPointDistancesFromCenter().put(point.getId(), distance);
@@ -480,5 +482,24 @@ public class ClusterUtils {
         }
 
         MultiThreadUtils.parallelTasks(tasks, executorService);
+    }
+
+    public static BaseReduce3Op createDistanceFunctionOp(String distanceFunction, INDArray x, INDArray y){
+        switch (distanceFunction){
+            case "cosinedistance":
+                return new CosineDistance(x,y);
+            case CosineSimilarity.OP_NAME:
+                return new CosineSimilarity(x,y);
+            case "dot":
+                return new Dot(x,y);
+            case EuclideanDistance.OP_NAME:
+                return new EuclideanDistance(x,y);
+            case "jaccarddistance":
+                return new JaccardDistance(x,y);
+            case ManhattanDistance.OP_NAME:
+                return new ManhattanDistance(x,y);
+            default:
+                throw new IllegalStateException("Unknown distance function: " + distanceFunction);
+        }
     }
 }

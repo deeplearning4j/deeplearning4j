@@ -36,6 +36,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -66,6 +67,11 @@ public class TestDataTypes extends BaseDL4JTest {
     public void beforeTest(){
         Nd4j.getExecutioner().setProfilingMode(getProfilingMode());
         Nd4j.setDataType(DataType.HALF);
+    }
+
+    @Override
+    public OpExecutioner.ProfilingMode getProfilingMode(){
+        return OpExecutioner.ProfilingMode.NAN_PANIC;
     }
 
     @Test
@@ -127,8 +133,8 @@ public class TestDataTypes extends BaseDL4JTest {
 
         Nd4j.setDataType(DataType.DOUBLE);
         INDArray fp64Train = outMapTrain.get(DataType.DOUBLE);
-        INDArray fp32Train = outMapTrain.get(DataType.FLOAT);
-        INDArray fp16Train = outMapTrain.get(DataType.HALF);
+        INDArray fp32Train = outMapTrain.get(DataType.FLOAT).castTo(DataType.DOUBLE);
+        INDArray fp16Train = outMapTrain.get(DataType.HALF).castTo(DataType.DOUBLE);
 
         assertTrue(fp64Train.equalsWithEps(fp32Train, 1e-3));
         assertTrue(fp64Train.equalsWithEps(fp16Train, 1e-2));

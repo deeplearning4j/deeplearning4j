@@ -4179,7 +4179,6 @@ INLINEDEF _CUDA_HD bool areStridesDefault(const Nd4jLong* shapeInfo) {
         // check if min dimension is still negative and whether max dimension is bigger then rank-1
         if(dimensions[0] < 0 || dimensions.back() > (rank-1))
             throw std::runtime_error("shape::checkDimensions method: the negative dimension is still present in input array after transform or the too big dimension is present ( > rank of array) !");
-
     }
 
 

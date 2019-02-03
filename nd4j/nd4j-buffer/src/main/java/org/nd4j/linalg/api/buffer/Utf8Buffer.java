@@ -18,10 +18,12 @@ package org.nd4j.linalg.api.buffer;
 
 
 import lombok.NonNull;
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -144,8 +146,6 @@ public class Utf8Buffer extends BaseDataBuffer {
         references.add(pointer);
         ((LongIndexer) indexer).put(index, pointer.address());
     }
-
-
 
     /**
      * Initialize the opType of this buffer

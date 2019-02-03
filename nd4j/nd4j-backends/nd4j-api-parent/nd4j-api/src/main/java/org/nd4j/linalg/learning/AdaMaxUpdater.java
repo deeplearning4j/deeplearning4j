@@ -81,7 +81,7 @@ public class AdaMaxUpdater implements GradientUpdater<AdaMax> {
         //u = max(B_2 * u, |grad|)
         u.muli(config.getBeta2());
         Transforms.abs(gradient, false); //In-place should be OK here, original gradient values aren't used again later
-        Nd4j.getExecutioner().exec(new OldMax(u, gradient, u, u.length()));
+        Nd4j.getExecutioner().exec(new OldMax(u, gradient, u));
 
         double beta1t = FastMath.pow(config.getBeta1(), iteration + 1);
 

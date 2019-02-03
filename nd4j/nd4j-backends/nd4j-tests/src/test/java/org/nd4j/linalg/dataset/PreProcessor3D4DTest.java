@@ -58,8 +58,8 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
         int timeSteps = 15;
         int samples = 100;
         //multiplier for the features
-        INDArray featureScaleA = Nd4j.create(new double[] {1, -2, 3}).reshape(3, 1).castTo(DataType.FLOAT);
-        INDArray featureScaleB = Nd4j.create(new double[] {2, 2, 3}).reshape(3, 1).castTo(DataType.FLOAT);
+        INDArray featureScaleA = Nd4j.create(new double[] {1, -2, 3}).reshape(3, 1);
+        INDArray featureScaleB = Nd4j.create(new double[] {2, 2, 3}).reshape(3, 1);
 
         Construct3dDataSet caseA = new Construct3dDataSet(featureScaleA, timeSteps, samples, 1);
         Construct3dDataSet caseB = new Construct3dDataSet(featureScaleB, timeSteps, samples, 1);
@@ -96,7 +96,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
 
         //generating a dataset with consecutive numbers as feature values. Dataset also has masks
         int samples = 100;
-        INDArray featureScale = Nd4j.create(new float[] {1, 2, 10}).reshape(3, 1);
+        INDArray featureScale = Nd4j.create(new double[] {1, 2, 10}).reshape(3, 1);
         int timeStepsU = 5;
         Construct3dDataSet sampleU = new Construct3dDataSet(featureScale, timeStepsU, samples, 1);
         int timeStepsV = 3;
@@ -145,7 +145,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testStdX() throws Exception {
+    public void testStdX() {
         INDArray array = Nd4j.create(new double[] {11.10, 22.20, 33.30, 44.40, 55.50, 66.60, 77.70, 88.80, 99.90,
                         111.00, 122.10, 133.20, 144.30, 155.40, 166.50, 177.60, 188.70, 199.80, 210.90, 222.00, 233.10,
                         244.20, 255.30, 266.40, 277.50, 288.60, 299.70, 310.80, 321.90, 333.00, 344.10, 355.20, 366.30,
@@ -233,7 +233,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
                         1, 251.00, 1, 260.00, 1, 269.00, 1, 278.00, 1, 287.00, 1, 296.00, 1, 305.00, 1, 314.00, 1,
                         323.00, 1, 332.00, 1, 341.00, 1, 350.00}).reshape(1, -1);
 
-        float templateStd = array.std(1).getFloat(0, 0);
+        float templateStd = array.std(1).getFloat(0);
 
         assertEquals(301.22601, templateStd, 0.01);
     }
@@ -352,7 +352,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             //calculating stats
             // The theoretical mean should be the mean of 1,..samples*timesteps
             float theoreticalMean = origin - 1 + (samples * timeSteps + 1) / 2.0f;
-            expectedMean = Nd4j.create(new double[] {theoreticalMean, theoreticalMean, theoreticalMean}).reshape(3, 1).castTo(Nd4j.defaultFloatingPointType());
+            expectedMean = Nd4j.create(new double[] {theoreticalMean, theoreticalMean, theoreticalMean}).reshape(3, 1).castTo(featureScale.dataType());
             expectedMean.muliColumnVector(featureScale);
 
             float stdNaturalNums = (float) Math.sqrt((samples * samples * timeSteps * timeSteps - 1) / 12);

@@ -145,7 +145,7 @@ public class RandomProjectionLSH implements LSH {
                             Arrays.toString(data.shape()), inDimension));
         }
         INDArray projected = data.mmul(randomProjection);
-        INDArray res = Nd4j.getExecutioner().execAndReturn(new Sign(projected));
+        INDArray res = Nd4j.getExecutioner().exec(new Sign(projected));
         return res;
     }
 

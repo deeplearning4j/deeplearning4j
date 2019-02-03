@@ -121,13 +121,11 @@ public class KerasEmbedding extends KerasLayer {
                 .inferInputLength(inferInputLength)
                 .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout).activation(Activation.IDENTITY)
-                .weightInit(weightInit)
+                .weightInit(weightInit.getWeightInitFunction(distribution))
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization)
                 .hasBias(false);
-        if (distribution != null)
-            builder.dist(distribution);
         if (embeddingConstraint != null)
             builder.constrainWeights(embeddingConstraint);
         this.layer = builder.build();
@@ -204,7 +202,7 @@ public class KerasEmbedding extends KerasLayer {
 
     /**
      * Get Keras input length from Keras layer configuration. In Keras input_length, if present, denotes
-     * the number of indices to embed per mini-batch, i.e. input will be of of shape (mb, input_length)
+     * the number of indices to embed per mini-batch, i.e. input will be of shape (mb, input_length)
      * and (mb, 1) else.
      *
      * @param layerConfig dictionary containing Keras layer configuration

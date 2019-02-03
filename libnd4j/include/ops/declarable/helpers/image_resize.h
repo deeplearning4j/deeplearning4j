@@ -28,6 +28,7 @@ namespace helpers {
 
     int resizeBilinearFunctor(NDArray const* image, int width, int height, bool center, NDArray* output);
     int resizeNeighborFunctor(NDArray const* image, int width, int height, bool center, NDArray* output);
+    void cropAndResizeFunctor(NDArray const* images, NDArray const* boxes, NDArray const* indices, NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops);
 }
 }
 }

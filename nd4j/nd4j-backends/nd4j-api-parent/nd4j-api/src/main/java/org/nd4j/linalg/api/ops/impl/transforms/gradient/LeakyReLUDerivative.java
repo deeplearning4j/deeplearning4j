@@ -38,13 +38,7 @@ public class LeakyReLUDerivative extends BaseScalarOp {
         this.alpha = alpha;
         this.extraArgs = new Object[] {alpha};
     }
-/*
-    public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double alpha) {
-        super(sameDiff, i_v, shape, alpha, inPlace, extraArgs);
-        this.alpha = alpha;
-        this.extraArgs = new Object[] {alpha};
-    }
-*/
+
     public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double alpha) {
         super(sameDiff, i_v, alpha, extraArgs);
         this.alpha = alpha;
@@ -54,33 +48,23 @@ public class LeakyReLUDerivative extends BaseScalarOp {
     public LeakyReLUDerivative() {}
 
     public LeakyReLUDerivative(INDArray x, INDArray z) {
-        super(x, null, z, x.length(), 0.01);
-    }
-
-    public LeakyReLUDerivative(INDArray x, INDArray z, long n) {
-        super(x, null, z, n, 0.01);
+        this(x, z, 0.01);
     }
 
     public LeakyReLUDerivative(INDArray x) {
-        super(x, null, x, x.length(), 0.01);
+        this(x,x,0.01);
     }
 
     public LeakyReLUDerivative(INDArray x, INDArray z, double alpha) {
-        super(x, null, z, x.length(), alpha);
+        super(x, null, z, alpha);
         this.alpha = alpha;
-        init(x, y, z, n); //Need to re-init to properly set alpha in extra args array
-    }
-
-    public LeakyReLUDerivative(INDArray x, INDArray z, long n, double alpha) {
-        super(x, null, z, n, alpha);
-        this.alpha = alpha;
-        init(x, y, z, n);
+        this.extraArgs = new Object[] {alpha};
     }
 
     public LeakyReLUDerivative(INDArray x, double alpha) {
         super(x, alpha);
         this.alpha = alpha;
-        init(x, y, z, n);
+        this.extraArgs = new Object[] {alpha};
     }
 
     @Override
@@ -102,14 +86,6 @@ public class LeakyReLUDerivative extends BaseScalarOp {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        this.extraArgs = new Object[] {alpha};
-    }
-
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

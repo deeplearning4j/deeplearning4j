@@ -34,8 +34,8 @@ public class ScalarGreaterThanOrEqual extends BaseScalarBoolOp {
     public ScalarGreaterThanOrEqual() {
     }
 
-    public ScalarGreaterThanOrEqual(INDArray x, INDArray z, long n, Number num) {
-        super(x, null, z, n, num);
+    public ScalarGreaterThanOrEqual(INDArray x, INDArray z, Number num) {
+        super(x, null, z, num);
     }
 
     public ScalarGreaterThanOrEqual(INDArray x, Number num) {

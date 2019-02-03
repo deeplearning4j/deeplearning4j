@@ -17,9 +17,9 @@
 package org.deeplearning4j.nn.transferlearning;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
 import org.deeplearning4j.nn.conf.distribution.ConstantDistribution;
@@ -31,6 +31,8 @@ import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitDistribution;
+import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,12 +44,7 @@ import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 /**
  * Created by susaneraly on 2/17/17.
@@ -138,11 +135,9 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
         BaseLayer bl0 = ((BaseLayer) modelNow.getLayer("layer0").conf().getLayer());
         BaseLayer bl1 = ((BaseLayer) modelNow.getLayer("layer1").conf().getLayer());
         BaseLayer bl3 = ((BaseLayer) modelNow.getLayer("layer3").conf().getLayer());
-        assertEquals(bl0.getWeightInit(), WeightInit.DISTRIBUTION);
-        assertEquals(bl0.getDist(), new NormalDistribution(1, 1e-1));
-        assertEquals(bl1.getWeightInit(), WeightInit.XAVIER);
-        assertEquals(bl1.getDist(), null);
-        assertEquals(bl1.getWeightInit(), WeightInit.XAVIER);
+        assertEquals(bl0.getWeightInitFn(), new WeightInitDistribution(new NormalDistribution(1, 1e-1)));
+        assertEquals(bl1.getWeightInitFn(), new WeightInitXavier());
+        assertEquals(bl1.getWeightInitFn(), new WeightInitXavier());
 
         ComputationGraph modelExpectedArch = new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In")
                         .addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In")
@@ -481,7 +476,7 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
         assertNull(l.getIDropout());
         assertNull(l.getWeightNoise());
         assertNull(l.getConstraints());
-        assertEquals(0.0, l.getL2(), 0.0);
+        assertNull(TestUtils.getL2Reg(l));
     }
 
 

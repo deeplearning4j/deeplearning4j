@@ -26,17 +26,13 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
 
@@ -67,7 +63,7 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
     }
 
     public static void compareArrays(int rank, char ordering, TemporaryFolder testDir) throws Exception {
-        List<Pair<INDArray, String>> all = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,ordering, DataType.FLOAT);
+        List<Pair<INDArray, String>> all = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,ordering, Nd4j.defaultFloatingPointType());
         Iterator<Pair<INDArray,String>> iter = all.iterator();
         int cnt = 0;
         while (iter.hasNext()) {
@@ -96,13 +92,13 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
             List<Pair<INDArray, String>> l = null;
             switch (testShape.length){
                 case 2:
-                    l = NDArrayCreationUtil.getAllTestMatricesWithShape(testShape[0], testShape[1], 12345, DataType.FLOAT);
+                    l = NDArrayCreationUtil.getAllTestMatricesWithShape(testShape[0], testShape[1], 12345, Nd4j.defaultFloatingPointType());
                     break;
                 case 3:
-                    l = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, testShape, DataType.FLOAT);
+                    l = NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, testShape, Nd4j.defaultFloatingPointType());
                     break;
                 case 4:
-                    l = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, testShape, DataType.FLOAT);
+                    l = NDArrayCreationUtil.getAll4dTestArraysWithShape(12345, testShape, Nd4j.defaultFloatingPointType());
                     break;
                 default:
                     throw new RuntimeException();

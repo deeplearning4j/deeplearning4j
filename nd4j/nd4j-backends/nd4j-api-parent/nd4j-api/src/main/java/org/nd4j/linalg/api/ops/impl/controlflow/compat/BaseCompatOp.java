@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
 import lombok.NonNull;
 import lombok.val;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
@@ -33,6 +34,14 @@ import java.util.Map;
 
 public abstract class BaseCompatOp extends DynamicCustomOp {
     protected String frameName;
+
+    public BaseCompatOp(SameDiff sameDiff, SDVariable[] inputs){
+        super(null, sameDiff, inputs);
+    }
+
+    public BaseCompatOp(){
+
+    }
 
     public String getFrameName() {
         return frameName;

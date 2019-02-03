@@ -38,12 +38,8 @@ public class AMax extends BaseTransformSameOp  {
 
     public AMax() {}
 
-    public AMax(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
     public AMax(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.length());
+        super(x, y, z);
     }
 
 

@@ -38,7 +38,7 @@ struct FlatTiming FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
            VerifyOffset(verifier, VT_NAME) &&
-           verifier.Verify(name()) &&
+           verifier.VerifyString(name()) &&
            VerifyOffset(verifier, VT_TIMING) &&
            verifier.VerifyTable(timing()) &&
            verifier.EndTable();
@@ -120,10 +120,10 @@ struct FlatResult FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyField<int64_t>(verifier, VT_ID) &&
            VerifyOffset(verifier, VT_VARIABLES) &&
-           verifier.Verify(variables()) &&
+           verifier.VerifyVector(variables()) &&
            verifier.VerifyVectorOfTables(variables()) &&
            VerifyOffset(verifier, VT_TIMING) &&
-           verifier.Verify(timing()) &&
+           verifier.VerifyVector(timing()) &&
            verifier.VerifyVectorOfTables(timing()) &&
            VerifyField<int64_t>(verifier, VT_FOOTPRINTFORWARD) &&
            VerifyField<int64_t>(verifier, VT_FOOTPRINTBACKWARD) &&

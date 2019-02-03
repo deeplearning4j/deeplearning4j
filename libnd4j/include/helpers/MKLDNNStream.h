@@ -29,8 +29,8 @@ namespace nd4j {
     protected:
         std::string _opName;
 
-        std::vector<NDArray*> _inputs;
-        std::vector<NDArray*> _outputs;
+        std::vector<const NDArray*> _inputs;
+        std::vector<const NDArray*> _outputs;
         std::vector<float> _floatArguments;
         std::vector<int> _intArguments;
 
@@ -39,11 +39,23 @@ namespace nd4j {
         mkldnn::primitive _operation;
 
     public:
-        static bool isSupported() { return false; }
+        template <typename X, typename Y>
+        static bool isSupported() {
+            return typeid(X) == typeid(float) && typeid(Y) == typeid(float);
+        }
+
+        static bool isSupported(const std::vector<const NDArray*> &arrays) {
+            for (auto i = arrays.begin(); i != arrays.end(); i++) {
+                if (*i != nullptr && (*i)->dataType() != nd4j::DataType::FLOAT32) {
+                    return false;
+                }
+            }
+            return true;
+        }
 
         MKLDNNStream(const std::string &opName) : _opName(opName) { }
 
-        bool checkAndReset(const std::vector<NDArray*> &inputs, const std::vector<NDArray*> &outputs,
+        bool checkAndReset(const std::vector<const NDArray*> &inputs, const std::vector<const NDArray*> &outputs,
                 const std::vector<float> &floatArguments, const std::vector<int> &intArguments) {
             if (inputs != _inputs || outputs != _outputs || floatArguments != _floatArguments || intArguments != _intArguments) {
                 _inputs = inputs;

@@ -59,7 +59,7 @@ public class EvalJsonTest extends BaseNd4jTest {
                 System.out.println(e.getClass() + "\n" + json + "\n\n");
             }
 
-            IEvaluation fromJson = (IEvaluation) BaseEvaluation.fromJson(json, BaseEvaluation.class);
+            IEvaluation fromJson = BaseEvaluation.fromJson(json, BaseEvaluation.class);
             assertEquals(e.toJson(), fromJson.toJson());
         }
     }
@@ -109,7 +109,7 @@ public class EvalJsonTest extends BaseNd4jTest {
                 System.out.println(e.getClass() + "\n" + json + "\n\n");
             }
 
-            IEvaluation fromJson = (IEvaluation) BaseEvaluation.fromJson(json, BaseEvaluation.class);
+            IEvaluation fromJson = BaseEvaluation.fromJson(json, BaseEvaluation.class);
             assertEquals(e.toJson(), fromJson.toJson());
         }
     }

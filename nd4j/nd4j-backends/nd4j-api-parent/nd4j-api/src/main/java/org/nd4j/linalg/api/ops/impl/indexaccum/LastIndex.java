@@ -54,19 +54,18 @@ public class LastIndex extends BaseIndexAccumulation {
     public LastIndex() {}
 
 
-    public LastIndex(INDArray x, @NonNull Condition condition) {
-        this(x, condition, Nd4j.EPS_THRESHOLD);
+    public LastIndex(INDArray x, @NonNull Condition condition, int... dimensions) {
+        this(x, condition, Nd4j.EPS_THRESHOLD, dimensions);
     }
 
-    public LastIndex(INDArray x, @NonNull Condition condition, double eps) {
-        super(x,null,null,x.length());
+    public LastIndex(INDArray x, @NonNull Condition condition, double eps, int... dimensions) {
+        super(x,null, dimensions);
         this.condition = condition;
         this.compare = condition.getValue();
         this.mode = condition.condtionNum();
         this.eps = eps;
         this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
-
 
     @Override
     public Map<String, Object> propertiesForFunction() {
@@ -103,10 +102,5 @@ public class LastIndex extends BaseIndexAccumulation {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.singletonList(sameDiff.zerosLike(arg()));
-    }
-
-    @Override
-    public float zeroHalf() {
-        return 0;
     }
 }

@@ -101,7 +101,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
-                                        .nOut(lstmNHiddenUnits).weightInit(WeightInit.DISTRIBUTION)
+                                        .nOut(lstmNHiddenUnits)
                                         .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build())
                         .build();
 
@@ -168,7 +168,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
         final NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
-                                        .nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
+                                        .nOut(layerSize)
                                         .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build())
                         .build();
 
@@ -226,7 +226,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
         final NeuralNetConfiguration confBidirectional = new NeuralNetConfiguration.Builder()
                         .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
-                                        .nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
+                                        .nOut(layerSize)
                                         .dist(new UniformDistribution(-0.1, 0.1)).activation(Activation.TANH).build())
                         .build();
 
@@ -265,7 +265,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         final NeuralNetConfiguration confBidirectional =
                         new NeuralNetConfiguration.Builder()
                                         .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
-                                                        .nIn(nIn).nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
+                                                        .nIn(nIn).nOut(layerSize)
                                                         .dist(new UniformDistribution(-0.1, 0.1))
                                                         .activation(Activation.TANH).updater(new NoOp()).build())
                                         .build();
@@ -448,10 +448,10 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                         .l2(0.001)
                         .seed(12345).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
-                                        .activation(Activation.TANH).nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
+                                        .activation(Activation.TANH).nIn(2).nOut(2)
                                         .dist(new UniformDistribution(-0.05, 0.05)).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
-                                        .activation(Activation.TANH).nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
+                                        .activation(Activation.TANH).nIn(2).nOut(2)
                                         .dist(new UniformDistribution(-0.05, 0.05)).build())
                         .layer(2, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder()
                                         .activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT)

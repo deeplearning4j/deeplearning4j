@@ -110,7 +110,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      * @return
      */
     @Override
-    public Op exec(Op op) {
+    public INDArray exec(Op op) {
         /*
             We pass this op to GridProcessor through check for possible MetaOp concatenation
             Also, it's the GriOp entry point
@@ -119,10 +119,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         invokeWatchdog(op);
 
-        if (op instanceof GradientOp) {
-            commit();
-            op.exec();
-        } else if (op instanceof ReduceOp) {
+        if (op instanceof ReduceOp) {
             exec((ReduceOp) op, new int[] {Integer.MAX_VALUE});
         } else if (op instanceof IndexAccumulation) {
             exec((IndexAccumulation) op, new int[] {Integer.MAX_VALUE});
@@ -136,7 +133,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             pushToGrid(new OpDescriptor(op));
         }
 
-        return op;
+        return op.z();
     }
 
 
@@ -269,7 +266,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
             //logger.info("Sending BroadcastOp to CudaExecutioner");
             if (dimensions != null) {
-                super.exec(broadcastOp, dimensions);
+                super.exec(broadcastOp);
             } else {
                 super.invoke(broadcastOp);
             }
@@ -279,7 +276,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 flushQueue();
 
             //logger.info("Sending IndexAccumulationOp to CudaExecutioner");
-            super.exec(indexAccumulation, dimensions);
+            //super.exec(indexAccumulation, dimensions);
         } else if (op instanceof MetaOp) {
             //     logger.info("Executing MetaOp");
             metaCounter.incrementAndGet();
@@ -606,11 +603,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         if(op.z() == null || op.z() == op.x()){
             INDArray ret = null;
-            if (Math.abs(op.zeroDouble()) < Nd4j.EPS_THRESHOLD) {
-                ret = Nd4j.zeros(retShape);
-            } else {
-                ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-            }
+            ret = Nd4j.createUninitialized(retShape);
+
 
             op.setZ(ret);
         } else if(!Arrays.equals(retShape, op.z().shape())){
@@ -657,11 +651,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
                 ret = Nd4j.create(xT, yT);
             } else {
-                if (Math.abs(op.zeroDouble()) < Nd4j.EPS_THRESHOLD) {
                     ret = Nd4j.zeros(retShape);
-                } else {
-                    ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-                }
             }
 
             op.setZ(ret);
@@ -674,16 +664,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         }
     }
 
-    @Override
-    public Op exec(Op op, int... dimension) {
-        // FIXME: make sure we're not going this route
-        // if (1>0) throw new UnsupportedOperationException("Bad execution route");
-        flushQueue();
-
-        return super.exec(op, dimension);
-    }
-
-    @Override
     public INDArray exec(ReduceOp op, int... dimension) {
 
 
@@ -694,7 +674,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             // processAsGridOp(op, dimension);
             flushQueue();
 
-            super.exec(op, new int[] {Integer.MAX_VALUE});
+            //super.exec(op, new int[] {Integer.MAX_VALUE});
         } else {
             buildZ(op, dimension);
             processAsGridOp(op, dimension);
@@ -704,7 +684,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     }
 
 
-    @Override
     public INDArray exec(IndexAccumulation op, int... dimension) {
         //        buildZ(op, dimension);
 
@@ -722,7 +701,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         return op.z();
     }
 
-    @Override
+
     public INDArray exec(BroadcastOp op, int... dimension) {
         processAsGridOp(op, dimension);
 
@@ -748,12 +727,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     // FIXME: remove CudaContext return opType. We just don't need it
     @Override
     protected CudaContext invoke(TransformOp op) {
-        if (op.isExecSpecial()) {
-            flushQueue();
-            super.invoke(op);
-        } else {
-            processAsGridOp(op, null);
-        }
+        processAsGridOp(op, null);
         return null;
     }
 

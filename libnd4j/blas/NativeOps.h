@@ -119,7 +119,8 @@ public:
             void *extraParams,
             void *hZ, Nd4jLong *hZShapeInfo,
             void *dZ, Nd4jLong *dZShapeInfo,
-            int *dimension, int dimensionLength);
+            void *hDimension, Nd4jLong *hDimensionShape,
+            void *dDimension, Nd4jLong *dDimensionShape);
 
     /**
      *
@@ -142,7 +143,8 @@ public:
             void *dY, Nd4jLong *dYShapeInfo,
             void *hZ, Nd4jLong *hZShapeInfo,
             void *dZ, Nd4jLong *dZShapeInfo,
-            int *dimension,int dimensionLength);
+            void *hDimension, Nd4jLong *hDimensionShape,
+            void *dDimension, Nd4jLong *dDimensionShape);
 
 
     void   execBroadcastBool(
@@ -154,7 +156,8 @@ public:
             void *dY, Nd4jLong *dYShapeInfo,
             void *hZ, Nd4jLong *hZShapeInfo,
             void *dZ, Nd4jLong *dZShapeInfo,
-            int *dimension,int dimensionLength);
+            void *hDimension, Nd4jLong *hDimensionShape,
+            void *dDimension, Nd4jLong *dDimensionShape);
 
     /**
      *
@@ -248,7 +251,8 @@ public:
                             void *extraParams,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension,int dimensionLength);
+                           void *hDimension, Nd4jLong *hDimensionShape,
+                           void *dDimension, Nd4jLong *dDimensionShape);
 
 
     void   execReduceSame(Nd4jPointer *extraPointers,
@@ -258,7 +262,8 @@ public:
                       void *extraParams,
                       void *hZ, Nd4jLong *hZShapeInfo,
                       void *dZ, Nd4jLong *dZShapeInfo,
-                      int *dimension, int dimensionLength);
+                          void *hDimension, Nd4jLong *hDimensionShape,
+                          void *dDimension, Nd4jLong *dDimensionShape);
 
 
     void   execReduceBool(Nd4jPointer *extraPointers,
@@ -268,7 +273,8 @@ public:
                       void *extraParams,
                       void *hZ, Nd4jLong *hZShapeInfo,
                       void *dZ, Nd4jLong *dZShapeInfo,
-                      int *dimension, int dimensionLength);
+                          void *hDimension, Nd4jLong *hDimensionShape,
+                          void *dDimension, Nd4jLong *dDimensionShape);
 
 
     void   execReduceLong(Nd4jPointer *extraPointers,
@@ -278,7 +284,8 @@ public:
                       void *extraParams,
                       void *hZ, Nd4jLong *hZShapeInfo,
                       void *dZ, Nd4jLong *dZShapeInfo,
-                      int *dimension, int dimensionLength);
+                          void *hDimension, Nd4jLong *hDimensionShape,
+                          void *dDimension, Nd4jLong *dDimensionShape);
 
     /**
      *
@@ -343,8 +350,8 @@ public:
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension,
-                            int dimensionLength,
+                            void *hDimension, Nd4jLong *hDimensionShape,
+                            void *dDimension, Nd4jLong *dDimensionShape,
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
 
@@ -358,7 +365,8 @@ public:
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength,
+                            void *hDimension, Nd4jLong *hDimensionShape,
+                            void *dDimension, Nd4jLong *dDimensionShape,
                             Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
                             Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets);
 
@@ -443,8 +451,8 @@ public:
                                   void *extraParams,
                                   void *hZ, Nd4jLong *hZShapeInfo,
                                   void *dZ, Nd4jLong *dZShapeInfo,
-                                  int *dimension,
-                                  int dimensionLength,
+                                  void *hDimension, Nd4jLong *hDimensionShape,
+                                  void *dDimension, Nd4jLong *dDimensionShape,
                                   bool biasCorrected,
                                   Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
@@ -520,8 +528,8 @@ public:
                           void *hScalars, Nd4jLong *hScalarShapeInfo,
                           void *dScalars, Nd4jLong *dScalarShapeInfo,
                           void *extraParams,
-                          int *dimension,
-                          int dimensionLength,
+                          void *hDimension, Nd4jLong *hDimensionShape,
+                          void *dDimension, Nd4jLong *dDimensionShape,
                           Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                           Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
@@ -534,8 +542,8 @@ public:
                     void *hScalars, Nd4jLong *hScalarShapeInfo,
                     void *dScalars, Nd4jLong *dScalarShapeInfo,
                     void *extraParams,
-                    int *dimension,
-                    int dimensionLength,
+                    void *hDimension, Nd4jLong *hDimensionShape,
+                    void *dDimension, Nd4jLong *dDimensionShape,
                     Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                     Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
@@ -1378,6 +1386,93 @@ public:
     }
 
 
+    ////// NPZ //////
+
+    void* mapFromNpzFile(std::string path){
+        cnpy::npz_t* mapPtr = new cnpy::npz_t();
+        cnpy::npz_t map = cnpy::npzLoad(path);
+        mapPtr->insert(map.begin(), map.end());
+        return reinterpret_cast<void*>(mapPtr);
+    }
+
+
+    int getNumNpyArraysInMap(void *map){
+        cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
+        int n = arrays->size();
+        return n;
+    }
+
+    const char* getNpyArrayNameFromMap(void *map, int index){
+        cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
+        cnpy::npz_t::iterator it = arrays->begin();
+        cnpy::npz_t::iterator end = arrays->end();
+        int cnt = 0;
+        for(; it != end; ++it, ++cnt){
+            if (cnt == index){
+                // FIXME: @fariz, this is a leak!
+                return const_cast<const char *>(strdup(it->first.c_str()));
+            }
+        }
+        throw std::runtime_error("No array at index.");
+    }
+
+    void* getNpyArrayFromMap(void *map, int index){
+        cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
+        cnpy::npz_t::iterator it = arrays->begin();
+        cnpy::npz_t::iterator end = arrays->end();
+        cnpy::NpyArray *arr = new cnpy::NpyArray();
+        int cnt = 0;
+        for(; it != end; ++it, ++cnt){
+            if (cnt == index){
+                *arr = it->second;
+                return arr;
+            }
+        }
+        throw std::runtime_error("No array at index.");
+    }
+
+    void* getNpyArrayData(void *npArray){
+        cnpy::NpyArray* npyArray2 = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        return reinterpret_cast<void*>(npyArray2->data);
+    }
+
+    int getNpyArrayRank(void *npArray){
+        cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        int rank = arr->shape.size();
+        return rank;
+    }
+
+    Nd4jLong* getNpyArrayShape(void *npArray){
+        cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        int ndim = arr->shape.size();
+        Nd4jLong* shape = new Nd4jLong[ndim];
+        for (int i=0; i<ndim; i++){
+            shape[i] = arr->shape.at(i);
+        }
+        return shape;
+    }
+
+    char getNpyArrayOrder(void *npArray){
+        cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        return (arr->fortranOrder)?'f':'c';
+    }
+
+    int getNpyArrayElemSize(void *npArray){
+        cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        return arr->wordSize;
+    }
+
+    void deleteNPArrayStruct(void *npArray){
+        cnpy::NpyArray* arr = reinterpret_cast<cnpy::NpyArray*>(npArray);
+        delete arr;
+    }
+
+    void deleteNPArrayMap(void *map){
+        cnpy::npz_t* arrays = reinterpret_cast<cnpy::npz_t*>(map);
+        delete arrays;
+    }
+    //////
+
 /**
   * Get the element size for a numpy array
   * @param npyArray  the numpy array's address
@@ -1493,7 +1588,7 @@ public:
     // customOp executioner
     int execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool* bArgs, int numBArgs, bool isInplace);
     nd4j::ShapeList* calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs);
-    nd4j::ShapeList* calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs);
+    nd4j::ShapeList* calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool *bArgs, int numBArgs);
 
     void deleteShapeList(Nd4jPointer shapeList);
 

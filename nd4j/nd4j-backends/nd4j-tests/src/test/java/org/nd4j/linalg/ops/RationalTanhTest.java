@@ -44,7 +44,7 @@ public class RationalTanhTest extends BaseNd4jTest {
 
         double eps = 1e-6;
         INDArray A = Nd4j.linspace(-3, 3, 10).reshape(2, 5);
-        INDArray ADer = Nd4j.getExecutioner().execAndReturn(new RationalTanhDerivative(A.dup()));
+        INDArray ADer = Nd4j.getExecutioner().exec(new RationalTanhDerivative(A.dup()));
 
         double[] a = A.data().asDouble();
         double[] aDer = ADer.data().asDouble();

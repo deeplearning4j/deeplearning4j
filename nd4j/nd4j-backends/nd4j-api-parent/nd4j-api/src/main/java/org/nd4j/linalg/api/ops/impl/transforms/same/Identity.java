@@ -18,7 +18,11 @@ package org.nd4j.linalg.api.ops.impl.transforms.same;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -60,8 +64,20 @@ public class Identity extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //TODO can we skip the identity here?
-        return Collections.singletonList(sameDiff.identity(i_v.get(0)));
+        return i_v;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
+        return dataTypes;
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        if(inputArguments == null || inputArguments.isEmpty())
+            return Collections.emptyList();
+        return Collections.singletonList(inputArguments.get(0).shapeDescriptor());
     }
 
 }

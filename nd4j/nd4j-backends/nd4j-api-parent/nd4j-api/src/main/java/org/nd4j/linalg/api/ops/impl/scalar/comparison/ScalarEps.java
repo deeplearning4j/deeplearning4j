@@ -34,10 +34,6 @@ public class ScalarEps extends BaseScalarBoolOp {
     public ScalarEps() {
     }
 
-    public ScalarEps(INDArray x, INDArray z, long n, Number num) {
-        super(x, null, z, n, num);
-    }
-
     public ScalarEps(INDArray x, Number num) {
         super(x, num);
     }
@@ -47,20 +43,16 @@ public class ScalarEps extends BaseScalarBoolOp {
         this(x, 0);
     }
 
+    public ScalarEps(INDArray x, INDArray z, Number num) {
+        super(x, null, z, num);
+    }
+
     public ScalarEps(SameDiff sameDiff, SDVariable i_v, Number scalar) {
         super(sameDiff, i_v, scalar);
     }
 
     public ScalarEps(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
-    }
-
-    public ScalarEps(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, inPlace, extraArgs);
-    }
-
-    public ScalarEps(SameDiff sameDiff, SDVariable i_v, Number scalar, Object[] extraArgs) {
-        super(sameDiff, i_v, scalar, extraArgs);
     }
 
     @Override

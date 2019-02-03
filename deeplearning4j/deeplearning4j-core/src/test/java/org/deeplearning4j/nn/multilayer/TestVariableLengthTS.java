@@ -300,7 +300,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                         MultiLayerConfiguration conf =
                                         new NeuralNetConfiguration.Builder().seed(12345L).list()
                                                         .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp()).build())
                                                         .layer(1, new RnnOutputLayer.Builder(
@@ -363,7 +363,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                         MultiLayerConfiguration conf =
                                         new NeuralNetConfiguration.Builder().seed(12345L).list()
                                                         .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp()).build())
                                                         .layer(1, new RnnOutputLayer.Builder(
@@ -379,7 +379,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                         MultiLayerConfiguration conf2 =
                                         new NeuralNetConfiguration.Builder().seed(12345L).list()
                                                         .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
-                                                                        .weightInit(WeightInit.DISTRIBUTION)
+
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp()).build())
                                                         .layer(1, new RnnOutputLayer.Builder(
@@ -601,7 +601,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
         }
         INDArray out = Nd4j.createUninitialized(in.shape(), 'f');
         CustomOp op = DynamicCustomOp.builder("reverse")
-                .addIntegerArguments(new int[]{0,1})
+                .addIntegerArguments(2)
                 .addInputs(in)
                 .addOutputs(out)
                 .callInplace(false)

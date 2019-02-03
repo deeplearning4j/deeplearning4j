@@ -75,11 +75,6 @@ public class LegacyPooling2D extends BaseTransformFloatOp {
     }
 
     @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
     public int opNum() {
         return 2;
     }

@@ -115,7 +115,7 @@ namespace nd4j {
             // now fetch and transfer variables to Conditional node
             // but only if return wasn't called at the end of scope
             if (!isReturn) {
-                for (int e = 0; e < 65536; e++) {
+                for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
                     std::pair<int, int> pair(lastNode, e);
                     std::pair<int, int> pairNew(node->id(), e);
                     if (__variableSpace->hasVariable(pair)) {

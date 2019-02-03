@@ -86,7 +86,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
                 return x.divColumnVector(xNorm2);
             } else {
                 INDArray out = Nd4j.createUninitialized(x.shape(), x.ordering());
-                return Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(x, xNorm2, out, 0));
+                return Nd4j.getExecutioner().exec(new BroadcastDivOp(x, xNorm2, out, 0));
             }
         }
     }

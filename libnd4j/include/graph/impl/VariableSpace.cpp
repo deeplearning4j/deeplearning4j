@@ -267,7 +267,7 @@ namespace nd4j {
 
                 auto local = id < 0 ? _variables.at(id) : _temporary.at(id);
 
-                if (local->getNDArray() == nullptr && variable->getNDArray() != nullptr) {
+                if (!local->hasNDArray() && variable->hasNDArray()) {
                     // nd4j_verbose("Saving variable for node_%i\n", id);
                     local->setNDArray(variable->getNDArray());
                 }

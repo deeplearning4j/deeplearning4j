@@ -734,6 +734,8 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_7) {
 
     auto exp = MmulHelper::mmul(&x, &y);
 
+    exp->printShapeInfo("exp shape");
+
     nd4j::ops::batched_gemm op;
     auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 112, 2, 3, 5, 5, 3, 2, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
@@ -752,6 +754,39 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_7) {
 
     delete exp;
     delete result;
+}
+
+TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_Validation_1) {
+    auto a = NDArrayFactory::create<float>('c', {1, 3}, {1, 1, 1});
+    auto b = NDArrayFactory::create<double>('c', {1, 3}, {0, 0, 0});
+    auto x = NDArrayFactory::create<float16>('c', {2, 5}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    auto y = NDArrayFactory::create<float>('c', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+
+    nd4j::ops::batched_gemm op;
+    try {
+        auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 112, 2, 3, 5, 5, 3, 2, 3});
+        delete result;
+        ASSERT_TRUE(false);
+    } catch (std::invalid_argument &e) {
+        //
+    }
+}
+
+TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_Validation_2) {
+    auto a = NDArrayFactory::create<float>('c', {1, 3}, {1, 1, 1});
+    auto b = NDArrayFactory::create<float>('c', {1, 3}, {0, 0, 0});
+    auto x = NDArrayFactory::create<float>('c', {2, 5}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    auto y = NDArrayFactory::create<float>('c', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+
+    auto z = NDArrayFactory::create<double>('c', {2, 3});
+
+    nd4j::ops::batched_gemm op;
+    try {
+        auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {&z}, {}, {112, 112, 2, 3, 5, 5, 3, 2, 3}, {});
+        ASSERT_TRUE(false);
+    } catch (std::invalid_argument &e) {
+        //
+    }
 }
 
 TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_1) {
@@ -1921,6 +1956,81 @@ TEST_F(DeclarableOpsTests3, zeta_test7) {
 
     delete results;
 }
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, zeta_test8) {
+
+    auto x= NDArrayFactory::create<float>('c', {3,4}, {1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.01,1.11,1.12});
+    auto q= NDArrayFactory::create<float>('c', {3,4}, {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.01, 0.11, 0.12});
+
+    //q.linspace(1.);
+    //x.assign(10.);
+
+    auto expected= NDArrayFactory::create<float>('c', {3,4}, {23.014574, 12.184081, 8.275731, 6.1532226, 4.776538, 3.7945523, 3.0541048, 2.4765317, 2.0163891, 205.27448, 21.090889, 19.477398});
+
+    nd4j::ops::zeta op;
+    auto results = op.execute({&x, &q}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, zeta_test9) {
+
+    auto x= NDArrayFactory::create<float>('c', {3,4}, {1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.01,1.11,1.12});
+    auto q= NDArrayFactory::create<float>('c', {3,4}, {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.01, 0.11, 0.12});
+    auto z= NDArrayFactory::create<float>('c', {3,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.});
+
+    //q.linspace(1.);
+    //x.assign(10.);
+
+    auto expected= NDArrayFactory::create<float>('c', {3,4}, {23.014574, 12.184081, 8.275731, 6.1532226, 4.776538, 3.7945523, 3.0541048, 2.4765317, 2.0163891, 205.27448, 21.090889, 19.477398});
+
+    nd4j::ops::zeta op;
+    auto results = op.execute({&x, &q}, {&z}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results);
+
+    //auto *output = results->at(0);
+    z.printIndexedBuffer("Zeta output");
+    ASSERT_TRUE(expected.isSameShape(z));
+    ASSERT_TRUE(expected.equalsTo(z));
+
+//    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, zeta_test10) {
+
+    auto x= NDArrayFactory::create<float>('c', {3,4}, {1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.01,1.11,1.12});
+    auto q= NDArrayFactory::create<float>('c', {3,4}, {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.01, 0.11, 0.12});
+    auto z= NDArrayFactory::create<float>('c', {3,4});
+
+    //q.linspace(1.);
+    //x.assign(10.);
+
+    auto expected= NDArrayFactory::create<float>('c', {3,4}, {23.014574, 12.184081, 8.275731, 6.1532226, 4.776538, 3.7945523, 3.0541048, 2.4765317, 2.0163891, 205.27448, 21.090889, 19.477398});
+
+    nd4j::ops::zeta op;
+    auto results = op.execute({&x, &q}, {&z}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results);
+
+    //auto *output = results->at(0);
+    z.printIndexedBuffer("Zeta output");
+    ASSERT_TRUE(expected.isSameShape(z));
+    ASSERT_TRUE(expected.equalsTo(z));
+
+//    delete results;
+}
+
 
 TEST_F(DeclarableOpsTests3, Test_SplitV_Validation_1) {
     auto x = NDArrayFactory::create<float>('c', {8, 7});
