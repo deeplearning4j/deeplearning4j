@@ -290,12 +290,12 @@ namespace nd4j {
                 T sneu1e[600];
 
                 const auto numThreads = 24;
-                const auto idxShift = indices.sizeAt(1);
-                const auto hsRounds = codes.sizeAt(1);
+                const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
+                const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
 
 
 
-                if (!targets.isEmpty()) {
+                if (!indices.isEmpty()) {
                     auto bTarget = targets.bufferAsT<int>();
                     auto bIndices = indices.bufferAsT<int>();
                     auto bCodes = codes.bufferAsT<int8_t>();
