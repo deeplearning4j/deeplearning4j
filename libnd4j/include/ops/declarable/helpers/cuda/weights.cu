@@ -33,12 +33,12 @@ namespace helpers {
                                                Nd4jLong inputLength, Nd4jLong weightsLength,
                                                Nd4jLong outputLength, int maxLength) {
 
-        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        auto tid = threadIdx.x;
         int threadCount = gridDim.x * blockDim.x;
-//        __shared__ T* outputPart;
-
+        __shared__ T* outputPart;
+        __shared__ Nd4jLong offset;
         //for (int e = 0; e < inputLength; e++) {
-        for (Nd4jLong e = tid; e < inputLength; e++) {
+        for (Nd4jLong e = tid; e < inputLength; e += blockDim.x) {
             printf("%d %d %d\n", blockIdx.x, blockDim.x, threadIdx.x);
 
             Nd4jLong xOffset = shape::getIndexOffset(e, inputShape, inputLength);
@@ -47,16 +47,20 @@ namespace helpers {
                 Nd4jLong zOffset = shape::getIndexOffset(val, outputShape, outputLength);
                 if (weightsBuffer != nullptr) {
                     Nd4jLong yOffset = shape::getIndexOffset(e, weightsShape, weightsLength);
-                    reinterpret_cast<T *>(outputBuffer)[0] +=  reinterpret_cast<T *>(weightsBuffer)[yOffset];
+                    //atomicAdd();
+                    //reinterpret_cast<T *>(outputBuffer)[0] +=  reinterpret_cast<T *>(weightsBuffer)[yOffset];
+                    nd4j::math::atomics::nd4j_atomicAdd(reinterpret_cast<T *>(outputBuffer), reinterpret_cast<T *>(weightsBuffer)[yOffset]); //output->p(val, output->e<T>(val) + 1);
                 }
                 else {
                     //printf("outputBuffer[0] = %d\n", static_cast<int>(*(reinterpret_cast<T *>(outputBuffer))));
-                    reinterpret_cast<T *>(outputBuffer)[0] += T(1); //output->p(val, output->e<T>(val) + 1);
+                    nd4j::math::atomics::nd4j_atomicAdd(reinterpret_cast<T *>(outputBuffer), T(1)); //output->p(val, output->e<T>(val) + 1);
                     //            printf("outputBuffer[%ld] = %d\n", zOffset, static_cast<int>(*(reinterpret_cast<T *>(outputBuffer) + zOffset)));
                 }
                 //printf("xOffset is %ld, zOffset is %ld\n", xOffset, zOffset);
             }
         }
+        if (threadIdx.x + offset < outputLength)
+            reinterpret_cast<T *>(outputBuffer)[threadIdx.x + offset] = outputPart[threadIdx.x];
     }
 
         template <typename T>
