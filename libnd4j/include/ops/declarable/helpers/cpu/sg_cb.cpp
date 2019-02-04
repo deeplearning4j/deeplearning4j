@@ -291,13 +291,16 @@ namespace nd4j {
 
                 auto numThreads = 10;
                 auto idxShift = indices.sizeAt(1);
-                bool isOwner = true;
+                auto isOwner = true;
+
 
                 auto irow = 0;
                 if (!targets.isEmpty()) {
                     auto bTarget = targets.bufferAsT<int>();
                     auto bIndices = indices.bufferAsT<int>();
                     auto bCodes = codes.bufferAsT<int>();
+                    auto numTargets = targets.lengthOf();
+
 
 // parallel block and following loop will be the same for every thread
 //#pragma omp parallel num_threads(10) private(neu1e)
@@ -305,9 +308,17 @@ namespace nd4j {
                         // if vectorLength > pre-defined value we'll allocate new array
                         T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
 
-                        for (int t = 0; t < targets.lengthOf(); t++) {
-                            // this value should be different for all threads
-                            auto target = bTarget[t];
+                        // initial target position
+                        // f can't be higher than batch size
+                        int f = omp_get_thread_num();
+
+                        for (int t = 0; t < numTargets; t++) {
+                            // this value should be different for all threads, so we're shifting values here
+                            if (f >= numTargets)
+                                f = 0;
+
+                            // actual target for THIS thread
+                            auto target = bTarget[f];
 
                             // if previous cycle used neu1e - nullify it
                             if (isOwner)
@@ -340,6 +351,9 @@ namespace nd4j {
                                     syn0row[e] += neu1e[e];
                                 }
                             }
+
+                            // now we increment further step
+                            f++;
                         }
 
                         // optional deallocation
@@ -368,20 +382,6 @@ namespace nd4j {
                         //nSampling_<T>(syn0row, s1n.writeable(irow, omp_get_thread_num())->buffer(), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
                     }
                 }
-
-                if (infVector == nullptr) {
-//#pragma omp simd
-//                    for (int e = 0; e < vectorLength; e++) {
-//                        syn0row[e] += neu1e[e];
-//                    }
-                } else {
-#pragma omp simd
-                    for (int e = 0; e < vectorLength; e++) {
-                        infVector[e] += neu1e[e];
-                    }
-                }
-
-                delete[] neu1e;
             }
             //BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (AveragingArrayProxy &syn0, AveragingArrayProxy &syn1, AveragingArrayProxy &syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength), FLOAT_TYPES);
 
