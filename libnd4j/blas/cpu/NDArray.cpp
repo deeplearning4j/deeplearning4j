@@ -2402,7 +2402,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
         if(result.ordering() == 'c') {           //  ews == 1 always here
 //#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(Nd4jLong i=0;  i<resultLen; ++i) {
-                auto yOffset = shape::subArrayIndex(i, newShapeInfo, _shapeInfo);
+                auto yOffset = shape::subArrayOffset(i, newShapeInfo, _shapeInfo);
                 BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
 
             }
@@ -2413,7 +2413,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
             for(int i=0;  i<resultLen; ++i) {
 
                 auto xOffset = result.getOffset(i);
-                auto yOffset = shape::subArrayIndex(i, newShapeInfo, _shapeInfo);
+                auto yOffset = shape::subArrayOffset(i, newShapeInfo, _shapeInfo);
                 BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
             }
         }
@@ -2449,14 +2449,14 @@ NDArray NDArray::e(const Nd4jLong i) const {
         if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
 //#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(Nd4jLong i=0;  i<targetLen; ++i) {
-                auto yOffset = shape::subArrayIndex(i, target._shapeInfo, _shapeInfo);
+                auto yOffset = shape::subArrayOffset(i, target._shapeInfo, _shapeInfo);
                 BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
         else if(target.ordering() == 'c' && ews > 1) {
 //#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(int i=0;  i<targetLen; ++i) {
-                auto yOffset = shape::subArrayIndex(i, target._shapeInfo, _shapeInfo);
+                auto yOffset = shape::subArrayOffset(i, target._shapeInfo, _shapeInfo);
                 BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i*ews, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
@@ -2465,7 +2465,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
             for(int i=0;  i<targetLen; ++i) {
 
                 auto xOffset = target.getOffset(i);
-                auto yOffset = shape::subArrayIndex(i, target._shapeInfo, _shapeInfo);
+                auto yOffset = shape::subArrayOffset(i, target._shapeInfo, _shapeInfo);
                 BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, xOffset, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
@@ -2486,14 +2486,14 @@ NDArray NDArray::e(const Nd4jLong i) const {
         if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
 //#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for (int i = 0; i < targetLen; ++i) {
-                auto yOffset = shape::subArrayIndex(i, target._shapeInfo, _shapeInfo);
+                auto yOffset = shape::subArrayOffset(i, target._shapeInfo, _shapeInfo);
                 BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
         else if(target.ordering() == 'c' && ews > 1) {
 //#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
             for(int i=0;  i<targetLen; ++i) {
-                auto yOffset = shape::subArrayIndex(i, target._shapeInfo, _shapeInfo);
+                auto yOffset = shape::subArrayOffset(i, target._shapeInfo, _shapeInfo);
                 BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, i*ews, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
@@ -2503,7 +2503,7 @@ NDArray NDArray::e(const Nd4jLong i) const {
             for(int i=0;  i<targetLen; ++i) {
 
                 auto xOffset = target.getOffset(i);
-                auto yOffset = shape::subArrayIndex(i, target._shapeInfo, _shapeInfo);
+                auto yOffset = shape::subArrayOffset(i, target._shapeInfo, _shapeInfo);
                 BUILD_DOUBLE_SELECTOR(target._dataType, _dataType, templatedDoubleAssign, (target._buffer, xOffset, _buffer, yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
